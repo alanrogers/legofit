@@ -32,6 +32,14 @@ unsigned Dbl_first_geq(double val, unsigned len, double v[len]);
     exit(1);\
 }while(0)
 
+#define   CHECKMEM(x) do {                                  \
+        if(!(x)) {                                          \
+            fprintf(stderr, "%s:%s:%d: allocation error\n", \
+                    __FILE__,__func__,__LINE__);            \
+            exit(EXIT_FAILURE);                             \
+        }                                                   \
+    } while(0);
+
 #define REQUIRE(x,file,lineno) do { \
   if (!(x)) { \
     dostacktrace(__FILE__,__LINE__,stderr); \

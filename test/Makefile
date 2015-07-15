@@ -54,8 +54,12 @@ XBINARY := xbinary.o binary.o
 xbinary : $(XBINARY)
 	$(CC) $(CFLAGS) -o $@ $(XBINARY) $(lib)
 
+XHASHTAB := xhashtab.o hashtab.o misc.o
+xhashtab : $(XHASHTAB)
+	$(CC) $(CFLAGS) -o $@ $(XHASHTAB) $(lib)
+
 # Make dependencies file
-depend : *.c *.h
+depend : *.c 
 	echo '#Automatically generated dependency info' > depend
 	$(CC) -MM $(incl) *.c >> depend
 

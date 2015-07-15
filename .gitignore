@@ -1,0 +1,7 @@
+*.o
+*~
+try.c
+core
+depend
+xhashtab
+try
