@@ -23,8 +23,6 @@ int main(void) {
     CHECKMEM(ht);
     assert(0 == HashTab_size(ht));
 
-    HashTab_print(ht);
-
     char *key1 = strdup("key1");
     char *val1 = strdup("val1");
     e = HashTab_get(ht, key1);
@@ -54,6 +52,14 @@ int main(void) {
 
     printf("Number of elements in HashTab: %lu\n",
            HashTab_size(ht));
+
+    HashTab_free(ht);
+    free(key1);
+    free(val1);
+    free(key2);
+    free(val2);
+    free(key3);
+    free(val3);
 
     return 0;
 }

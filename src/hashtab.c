@@ -8,9 +8,10 @@
 
 #define KEYSIZE 20
 
-// hashDim must be a power of 2
-#define HASHDIM 2u
+// HASHDIM must be a power of 2
+#define HASHDIM 32u
 
+// Make sure HASHDIM is a power of 2
 #if (HASHDIM==0u || (HASHDIM & (HASHDIM-1u)))
 # error HASHDIM must be a power of 2
 #endif
@@ -19,7 +20,7 @@
 struct El {
     struct El  *next;
     char        key[KEYSIZE];
-    void *value;
+    void       *value;
 };
 
 struct HashTab {
