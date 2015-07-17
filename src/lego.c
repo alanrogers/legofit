@@ -1,6 +1,6 @@
 /**
- * @file L.c
- * @brief Simulate branch lengths under model of L
+ * @file lego.c
+ * @brief Simulate branch lengths
  */
 
 #include "gptree.h"

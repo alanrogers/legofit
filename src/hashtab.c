@@ -27,11 +27,18 @@ struct HashTab {
     El         *tab[HASHDIM];
 };
 
+struct HashTabSeq {
+    struct HashTab ht;
+    int ndx;
+    El *el;
+};
+
 unsigned    strhash(const char *ss);
 El         *El_new(const char *key);
 void        El_free(El * e);
 El         *El_find(El * self, El ** found, const char *key);
 void        El_print(El * self);
+void        HashTabSeq_nextBucket(HashTabSeq *self);
 
 /// Hash a character string
 unsigned strhash(const char *ss) {
@@ -155,4 +162,55 @@ void HashTab_print(HashTab *self) {
         El_print(self->tab[i]);
         putchar('\n');
     }
+}
+
+// This object is for stepping through the entries of a hash table.
+HashTabSeq *HashTabSeq_new(HashTab *ht) {
+    HashTabSeq *self = malloc(sizeof *self);
+    CHECKMEM(*self);
+
+    self->ht = ht;
+    self->ndx = -1;
+    self->el = NULL;
+}
+
+// Find the next bucket, ignoring empty buckets. If all remaining buckets
+// are empty, set self->ndx equal to HASHDIM.
+void HashTabSeq_nextBucket(HashTabSeq *self) {
+    ++self->ndx;
+    while(self->ndx < HASHDIM && self->ht->tab[self->ndx]==NULL)
+        ++self->ndx;
+}
+
+// Return the next element in table.
+El *HashTabSeq_next(HashTabSeq *self) {
+    if(self->ndx < 0) {
+        HashTabSeq_nextBucket(self);
+        if(self->ndx == HASHDIM) {
+            self->el = NULL;
+            return NULL;
+        }
+        self->el = self->ht->tab[self->ndx];
+        return self->el;
+    }
+    if(self->el == NULL) {
+        if(self->ndx != HASHDIM) {
+            fprintf(stderr,"%s:%s:%d: this shouldn't happen.",
+                    __FILE__, __func__, __LINE__);
+            exit(EXIT_FAILURE);
+        }
+        return NULL;
+    }
+    self->el = self->el->next;
+    if(self->el == NULL) {
+        HashTabSeq_nextBucket(self);
+        if(self->ndx == HASHDIM)
+            return NULL;
+        self->el = self->ht->tab[self->ndx];
+    }
+    return self->el;
+}
+
+void HashTabSeq_free(HashTabSeq *self) {
+    free(self);
 }

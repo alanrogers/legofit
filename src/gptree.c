@@ -32,7 +32,42 @@ struct PopNode {
     Gene *sample[MAXSAMPLES];
 };
 
+/// Find root of population tree, starting from given node.
+PopNode *PopNode_root(PopNode *self) {
+    assert(self);
+    switch(self->nparents) {
+    case 0:
+        return self;
+        break;
+    case 1:
+        return PopNode_root(self->parent[0]);
+        break;
+    case 2:
+        PopNode *r0 = PopNode_root(self->parent[0]);
+        PopNode *r1 = PopNode_root(self->parent[1]);
+        if(r0 != r1) {
+            fprintf(stderr,"%s:%s:%d: Node has multiple roots\n",
+                    __FILE__, __func__, __LINE__);
+            exit(EXIT_FAILURE);
+        }
+        return r0;
+        break;
+    default:
+            fprintf(stderr,"%s:%s:%d: Node %d parents\n",
+                    __FILE__, __func__, __LINE__, self->nparents);
+            exit(EXIT_FAILURE);
+    }
+    /* NOTREACHED */
+    return NULL;
+}
+
 static void PopNode_sanityCheck(PopNode *pnode, const char *file, int lineno);
+
+void PopNode_set(PopNode *self, double K, double start, double end) {
+    self->K = K;
+    self->start = start;
+    self->end = end;
+}
 
 /** Remove all references to samples from tree of populations */
 void PopNode_clear(PopNode *pnode) {
@@ -164,6 +199,8 @@ void PopNode_addChild(PopNode *parent, PopNode *child) {
     assert(parent->nchildren < 2);
     parent->child[parent->nchildren] = child;
     ++parent->nchildren;
+    ++child->nparents;
+    assert(child->nparents < 3);
     PopNode_sanityCheck(parent, __FILE__, __LINE__);
     PopNode_sanityCheck(child, __FILE__, __LINE__);
 }
@@ -191,12 +228,12 @@ void PopNode_addSample(PopNode *pnode, Gene *gene) {
 }
 
 void PopNode_mix(PopNode *pnode, double m, PopNode *immigrant, PopNode *native) {
-    pnode->nparents = 2;
     pnode->parent[0] = native;
     pnode->parent[1] = immigrant;
     pnode->mix = m;
     PopNode_addChild(immigrant, pnode);
     PopNode_addChild(native, pnode);
+    assert(pnode->nparents == 2);
     PopNode_sanityCheck(pnode, __FILE__, __LINE__);
     PopNode_sanityCheck(immigrant, __FILE__, __LINE__);
     PopNode_sanityCheck(native, __FILE__, __LINE__);

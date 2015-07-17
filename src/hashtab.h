@@ -10,4 +10,7 @@ void        HashTab_free(HashTab * self);
 El         *HashTab_get(HashTab * self, const char *key);
 unsigned long HashTab_size(HashTab * self);
 void        HashTab_print(HashTab *self);
+HashTabSeq *HashTabSeq_new(HashTab *ht);
+El         *HashTabSeq_next(HashTabSeq *self);
+void        HashTabSeq_free(HashTabSeq *self);
 #endif
