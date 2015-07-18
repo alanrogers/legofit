@@ -28,7 +28,7 @@ struct HashTab {
 };
 
 struct HashTabSeq {
-    struct HashTab ht;
+    struct HashTab *ht;
     int ndx;
     El *el;
 };
@@ -37,7 +37,6 @@ unsigned    strhash(const char *ss);
 El         *El_new(const char *key);
 void        El_free(El * e);
 El         *El_find(El * self, El ** found, const char *key);
-void        El_print(El * self);
 void        HashTabSeq_nextBucket(HashTabSeq *self);
 
 /// Hash a character string
@@ -167,11 +166,12 @@ void HashTab_print(HashTab *self) {
 // This object is for stepping through the entries of a hash table.
 HashTabSeq *HashTabSeq_new(HashTab *ht) {
     HashTabSeq *self = malloc(sizeof *self);
-    CHECKMEM(*self);
+    CHECKMEM(self);
 
     self->ht = ht;
     self->ndx = -1;
     self->el = NULL;
+    return self;
 }
 
 // Find the next bucket, ignoring empty buckets. If all remaining buckets

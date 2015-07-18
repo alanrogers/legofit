@@ -32,8 +32,58 @@ struct PopNode {
     Gene *sample[MAXSAMPLES];
 };
 
+static void PopNode_sanityCheck(PopNode *pnode, const char *file, int lineno);
+
+void PopNode_sanityFromLeaf(PopNode *self, const char *file, int line) {
+#ifndef NDEBUG
+    REQUIRE(self!=NULL, file, line);
+    switch(self->nparents) {
+    case 0:
+        REQUIRE(self->parent[0]==NULL, file, line);
+        REQUIRE(self->parent[1]==NULL, file, line);
+        REQUIRE(self->mix == 0.0, file, line);
+        if(!isinf(self->end))
+            PopNode_printShallow(self, stderr);
+        REQUIRE(isinf(self->end), file, line);
+        break;
+    case 1:
+        REQUIRE(self->parent[0]!=NULL, file, line);
+        REQUIRE(self->parent[1]==NULL, file, line);
+        REQUIRE(self->mix == 0.0, file, line);
+        break;
+    default:
+        REQUIRE(self->nparents==2, file, line);
+        REQUIRE(self->parent[0]!=NULL, file, line);
+        REQUIRE(self->parent[1]!=NULL, file, line);
+        REQUIRE(self->mix > 0.0, file, line);
+        break;
+    }
+    switch(self->nchildren) {
+    case 0:
+        REQUIRE(self->child[0]==NULL, file, line);
+        REQUIRE(self->child[1]==NULL, file, line);
+        break;
+    case 1:
+        REQUIRE(self->child[0]!=NULL, file, line);
+        REQUIRE(self->child[1]==NULL, file, line);
+        break;
+    default:
+        REQUIRE(self->nchildren==2, file, line);
+        REQUIRE(self->child[0]!=NULL, file, line);
+        REQUIRE(self->child[1]!=NULL, file, line);
+        break;
+    }
+    REQUIRE(self->start < self->end, file, line);
+    if(self->nparents > 0)
+        PopNode_sanityFromLeaf(self->parent[0], file, line);
+    if(self->nparents > 1)
+        PopNode_sanityFromLeaf(self->parent[1], file, line);
+#endif
+}
+
 /// Find root of population tree, starting from given node.
 PopNode *PopNode_root(PopNode *self) {
+    PopNode *r0, *r1;
     assert(self);
     switch(self->nparents) {
     case 0:
@@ -43,8 +93,8 @@ PopNode *PopNode_root(PopNode *self) {
         return PopNode_root(self->parent[0]);
         break;
     case 2:
-        PopNode *r0 = PopNode_root(self->parent[0]);
-        PopNode *r1 = PopNode_root(self->parent[1]);
+        r0 = PopNode_root(self->parent[0]);
+        r1 = PopNode_root(self->parent[1]);
         if(r0 != r1) {
             fprintf(stderr,"%s:%s:%d: Node has multiple roots\n",
                     __FILE__, __func__, __LINE__);
@@ -60,8 +110,6 @@ PopNode *PopNode_root(PopNode *self) {
     /* NOTREACHED */
     return NULL;
 }
-
-static void PopNode_sanityCheck(PopNode *pnode, const char *file, int lineno);
 
 void PopNode_set(PopNode *self, double K, double start, double end) {
     self->K = K;
@@ -93,6 +141,39 @@ void PopNode_print(FILE *fp, PopNode *pnode, int indent) {
 
     for(i=0; i < pnode->nchildren; ++i)
         PopNode_print(fp, pnode->child[i], indent+1);
+}
+
+void PopNode_printShallow(PopNode *self, FILE *fp) {
+    fprintf(fp, "%p K=%lf ntrval=(%lf,",
+            self, self->K, self->start);
+    if(self->end < DBL_MAX)
+        fprintf(fp, "%lf)", self->end);
+    else
+        fprintf(fp, "Inf)");
+
+    switch(self->nparents) {
+    case 0:
+        fprintf(fp, " par=0");
+        break;
+    case 1:
+        fprintf(fp, " par=%p", self->parent[0]);
+        break;
+    default:
+        fprintf(fp, " par=[%p,%p]", self->parent[0], self->parent[1]);
+        break;
+    }
+    switch(self->nchildren) {
+    case 0:
+        fprintf(fp, " child=0");
+        break;
+    case 1:
+        fprintf(fp, " child=%p", self->child[0]);
+        break;
+    default:
+        fprintf(fp, " child=[%p,%p]", self->child[0], self->child[1]);
+        break;
+    }
+    putc('\n', fp);
 }
 
 Gene *Gene_new(tipId_t tipId) {

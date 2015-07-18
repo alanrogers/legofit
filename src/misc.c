@@ -334,3 +334,25 @@ unsigned Dbl_first_geq(double val, unsigned len, double v[len]) {
     return hi;
 }
 
+void unitTstResult(const char *facility, const char *result) {
+    printf("%-26s %s\n", facility, result);
+}
+
+/*
+ * In string str, count the number of contiguous chunks of characters
+ * belonging to set.
+ */
+int strCountSetChunks(const char *str, const char *sep) {
+    int         nchunks = 0, i;
+
+    while(*str != '\0') {
+        i = strcspn(str, sep);  /* skip chars not in set */
+        str += i;
+        i = strspn(str, sep);   /* skip chars in set */
+        if(i > 0) {
+            ++nchunks;
+            str += i;
+        }
+    }
+    return nchunks;
+}

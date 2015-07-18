@@ -22,7 +22,9 @@ void pictex(double *x, double *y, unsigned n, const char *xlbl,
             const char *ylbl, const char *plotheading, const char *fname);
 void pictex_par(double *x, double *y, unsigned n, const char *xlbl,
             const char *ylbl, const char *plotheading, const char *fname);
+void        unitTstResult(const char *facility, const char *result);
 unsigned Dbl_first_geq(double val, unsigned len, double v[len]);
+int         strCountSetChunks(const char *str, const char *sep);
 
 
 #define ERR(code, msg) do{\
@@ -33,12 +35,12 @@ unsigned Dbl_first_geq(double val, unsigned len, double v[len]);
 }while(0)
 
 #define   CHECKMEM(x) do {                                  \
-        if(!(x)) {                                          \
+        if((x)==NULL) {                                     \
             fprintf(stderr, "%s:%s:%d: allocation error\n", \
                     __FILE__,__func__,__LINE__);            \
             exit(EXIT_FAILURE);                             \
         }                                                   \
-    } while(0);
+    } while(0)
 
 #define REQUIRE(x,file,lineno) do { \
   if (!(x)) { \

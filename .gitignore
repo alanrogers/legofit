@@ -1,7 +1,9 @@
 *.o
+*.lgo
 *~
 try.c
 core
 depend
 xhashtab
+xmktree
 try

@@ -136,7 +136,7 @@ int Tokenizer_strip(Tokenizer * t, const char *extraneous) {
 
         if(t->tokptr[curr] == end) {
             /* remove empty token from list */
-            myassert(strlen(t->tokptr[curr]) == 0);
+            assert(strlen(t->tokptr[curr]) == 0);
             memmove(t->tokptr + curr, t->tokptr + curr + 1,
                     (t->n - curr - 1) * sizeof(t->tokptr[0]));
             --(t->n);

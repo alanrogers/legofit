@@ -6,8 +6,7 @@ opt :=  -O0 -fno-inline-functions -DDEBUG     # For debugging
 prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
 
-targets := impfun fhat q rn rd pN_KN pd pn rn_kappa
-tests := xzeroin xbinary
+tests := xzeroin xbinary xhashtab xmktree
 
 CC := gcc
 
@@ -32,7 +31,7 @@ CFLAGS := -g -std=gnu99 $(warn) $(incl) $(opt) $(prof) $(osargs)
 lib := -L/usr/local/lib -lgsl -lgslcblas -lpthread -lm
 
 .c.o:
-	$(CC) $(CFLAGS) $(incl) -c -o ${@F}  $<
+	$(CC) $(CFLAGS) -c -o ${@F}  $<
 
 all : $(targets)
 
@@ -57,6 +56,13 @@ xbinary : $(XBINARY)
 XHASHTAB := xhashtab.o hashtab.o misc.o
 xhashtab : $(XHASHTAB)
 	$(CC) $(CFLAGS) -o $@ $(XHASHTAB) $(lib)
+
+xmktree.o : mktree.c
+	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/mktree.c
+
+XMKTREE := xmktree.o hashtab.o misc.o tokenizer.o gptree.o
+xmktree : $(XMKTREE)
+	$(CC) $(CFLAGS) -o $@ $(XMKTREE) $(lib)
 
 # Make dependencies file
 depend : *.c 

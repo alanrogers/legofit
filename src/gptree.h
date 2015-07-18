@@ -28,7 +28,9 @@ Gene * PopNode_coalesce(PopNode *pnode, gsl_rng *rng);
 void PopNode_free(PopNode *pnode);
 void PopNode_clear(PopNode *pnode);
 void PopNode_print(FILE *fp, PopNode *pnode, int indent);
+void PopNode_printShallow(PopNode *self, FILE *fp);
 PopNode *PopNode_root(PopNode *self);
+void PopNode_sanityFromLeaf(PopNode *self, const char *file, int line);
 double survival(double t, double K);
 
 #endif

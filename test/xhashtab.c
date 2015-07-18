@@ -53,6 +53,16 @@ int main(void) {
     printf("Number of elements in HashTab: %lu\n",
            HashTab_size(ht));
 
+    HashTabSeq *hts = HashTabSeq_new(ht);
+    CHECKMEM(hts);
+    e = HashTabSeq_next(hts);
+    while(e != NULL) {
+        El_print(e);
+        putchar('\n');
+        e = HashTabSeq_next(hts);
+    }
+
+    HashTabSeq_free(hts);
     HashTab_free(ht);
     free(key1);
     free(val1);
