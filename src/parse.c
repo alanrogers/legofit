@@ -361,7 +361,7 @@ PopNode    *mktree(FILE * fp, HashTab * ht) {
 
         if(!strchr(buff, '\n') && !feof(fp)) {
             fprintf(stderr, "ERR@%s:%d: input buffer overflow."
-                    " buff size: %d\n", __FILE__, __LINE__, sizeof(buff));
+                    " buff size: %zu\n", __FILE__, __LINE__, sizeof buff);
             exit(EXIT_FAILURE);
         }
         Tokenizer_split(tkz, buff, " \t="); // tokenize
