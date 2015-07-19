@@ -6,7 +6,7 @@ opt :=  -O0 -fno-inline-functions -DDEBUG     # For debugging
 prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
 
-tests := xzeroin xbinary xhashtab xmktree
+tests := xzeroin xbinary xhashtab xparse
 
 CC := gcc
 
@@ -57,12 +57,12 @@ XHASHTAB := xhashtab.o hashtab.o misc.o
 xhashtab : $(XHASHTAB)
 	$(CC) $(CFLAGS) -o $@ $(XHASHTAB) $(lib)
 
-xmktree.o : mktree.c
-	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/mktree.c
+xparse.o : parse.c
+	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/parse.c
 
-XMKTREE := xmktree.o hashtab.o misc.o tokenizer.o gptree.o
-xmktree : $(XMKTREE)
-	$(CC) $(CFLAGS) -o $@ $(XMKTREE) $(lib)
+XPARSE := xparse.o hashtab.o misc.o tokenizer.o gptree.o
+xparse : $(XPARSE)
+	$(CC) $(CFLAGS) -o $@ $(XPARSE) $(lib)
 
 # Make dependencies file
 depend : *.c 

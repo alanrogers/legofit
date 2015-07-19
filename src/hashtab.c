@@ -109,10 +109,16 @@ El *El_find(El * self, El ** found, const char *key) {
     return self;
 }
 
-void El_print(El * self) {
+void El_printShallow(El * self) {
     if(self == NULL)
         return;
     printf(" [%s, %p]", self->key, self->value);
+}
+
+void El_print(El * self) {
+    if(self == NULL)
+        return;
+    El_printShallow(self);
     El_print(self->next);
 }
 

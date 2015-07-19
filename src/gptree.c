@@ -42,8 +42,10 @@ void PopNode_sanityFromLeaf(PopNode *self, const char *file, int line) {
         REQUIRE(self->parent[0]==NULL, file, line);
         REQUIRE(self->parent[1]==NULL, file, line);
         REQUIRE(self->mix == 0.0, file, line);
-        if(!isinf(self->end))
+        if(!isinf(self->end)) {
+            fflush(stdout);
             PopNode_printShallow(self, stderr);
+        }
         REQUIRE(isinf(self->end), file, line);
         break;
     case 1:
@@ -131,7 +133,7 @@ void PopNode_clear(PopNode *pnode) {
 void PopNode_print(FILE *fp, PopNode *pnode, int indent) {
     int i;
     for(i=0; i< indent; ++i)
-        fputs("---|", fp);
+        fputs("   ", fp);
     fprintf(fp, "%p K=%lf ntrval=(%lf,",
             pnode, pnode->K, pnode->start);
     if(pnode->end < DBL_MAX)
@@ -258,14 +260,14 @@ void Gene_free(Gene *gene) {
     free(gene);
 }
 
-PopNode *PopNode_new(double K, double start, double end) {
+PopNode *PopNode_new(double K, double start) {
     PopNode *pnode = malloc(sizeof(PopNode));
     checkmem(pnode, __FILE__, __LINE__);
 
     pnode->nparents = pnode->nchildren = pnode->nsamples = 0;
     pnode->K = K;
     pnode->start = start;
-    pnode->end = end;
+    pnode->end = HUGE_VAL;
 
     memset(pnode->sample, 0, sizeof(pnode->sample));
     memset(pnode->parent, 0, sizeof(pnode->parent));
@@ -275,13 +277,25 @@ PopNode *PopNode_new(double K, double start, double end) {
     return pnode;
 }
 
-/** Add a child population to parent population */
+/// Connect parent and child 
 void PopNode_addChild(PopNode *parent, PopNode *child) {
-    assert(parent->nchildren < 2);
+    if(parent->nchildren > 1)
+        EPRINTF(("%s:%s:%d: Can't add child because parent already has %d.\n",
+                 __FILE__,__func__,__LINE__, parent->nchildren));
+    if(child->nparents > 1)
+        EPRINTF(("%s:%s:%d: Can't add parent because child already has %d.\n",
+                 __FILE__,__func__,__LINE__, child->nparents));
+    if(child->end < HUGE_VAL) {
+        if(child->end != parent->start)
+            EPRINTF(("%s:%s:%d: Date mismatch. child->end=%lf != %lf = parent->start\n",
+                     __FILE__,__func__,__LINE__,
+                     child->end, parent->start));
+    }else
+        child->end = parent->start;
     parent->child[parent->nchildren] = child;
+    child->parent[child->nparents] = parent;
     ++parent->nchildren;
     ++child->nparents;
-    assert(child->nparents < 3);
     PopNode_sanityCheck(parent, __FILE__, __LINE__);
     PopNode_sanityCheck(child, __FILE__, __LINE__);
 }
@@ -308,25 +322,39 @@ void PopNode_addSample(PopNode *pnode, Gene *gene) {
     PopNode_sanityCheck(pnode, __FILE__, __LINE__);
 }
 
-void PopNode_mix(PopNode *pnode, double m, PopNode *immigrant, PopNode *native) {
-    pnode->parent[0] = native;
-    pnode->parent[1] = immigrant;
-    pnode->mix = m;
-    PopNode_addChild(immigrant, pnode);
-    PopNode_addChild(native, pnode);
-    assert(pnode->nparents == 2);
-    PopNode_sanityCheck(pnode, __FILE__, __LINE__);
-    PopNode_sanityCheck(immigrant, __FILE__, __LINE__);
+void PopNode_mix(PopNode *child, double m, PopNode *introgressor, PopNode *native) {
+    if(introgressor->nchildren > 1)
+        EPRINTF(("%s:%s:%d: Can't add child because introgressor already has %d.\n",
+                 __FILE__,__func__,__LINE__, introgressor->nchildren));
+    if(native->nchildren > 1)
+        EPRINTF(("%s:%s:%d: Can't add child because native parent already has %d.\n",
+                 __FILE__,__func__,__LINE__, native->nchildren));
+    if(child->nparents > 0)
+        EPRINTF(("%s:%s:%d: Can't add 2 parents because child already has %d.\n",
+                 __FILE__,__func__,__LINE__, child->nparents));
+    if(child->end < HUGE_VAL) {
+        if(child->end != introgressor->start)
+            EPRINTF(("%s:%s:%d: Date mismatch. child->end=%lf != %lf = introgressor->start\n",
+                     __FILE__,__func__,__LINE__,
+                     child->end, introgressor->start));
+        if(child->end != native->start)
+            EPRINTF(("%s:%s:%d: Date mismatch. child->end=%lf != %lf = native->start\n",
+                     __FILE__,__func__,__LINE__,
+                     child->end, native->start));
+    }else
+        child->end = native->start;
+    
+    child->parent[0] = native;
+    child->parent[1] = introgressor;
+    child->nparents = 2;
+    child->mix = m;
+    introgressor->child[introgressor->nchildren] = child;
+    ++introgressor->nchildren;
+    native->child[native->nchildren] = child;
+    ++native->nchildren;
+    PopNode_sanityCheck(child, __FILE__, __LINE__);
+    PopNode_sanityCheck(introgressor, __FILE__, __LINE__);
     PopNode_sanityCheck(native, __FILE__, __LINE__);
-}
-
-void PopNode_endToEnd(PopNode *pnode, PopNode *ancestor) {
-    pnode->nparents = 1;
-    pnode->parent[0] = ancestor;
-    pnode->mix = 0.0;
-    PopNode_addChild(ancestor, pnode);
-    PopNode_sanityCheck(pnode, __FILE__, __LINE__);
-    PopNode_sanityCheck(ancestor, __FILE__, __LINE__);
 }
 
 void PopNode_join(PopNode *parent, PopNode *lchild, PopNode *rchild) {
