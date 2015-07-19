@@ -64,3 +64,16 @@ void printWhichBits(size_t const size, void const * const ptr) {
     }
 }
 
+/// Count the number of 1 bits. From p 85 of Hacker's Delight, 2nd
+/// Edn, by Henry S. Warren, Jr. This algorithm is fast when the
+/// number of 1 bits is small, and it makes no assumption about the 
+/// number of bits in an unsigned long.
+int num1bits(unsigned long x) {
+    int n=0;
+
+    while(x != 0) {
+        ++n;
+        x = x & (x-1);
+    }
+    return n;
+}

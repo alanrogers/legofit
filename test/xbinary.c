@@ -10,6 +10,11 @@
 #include "binary.h"
 #include <stdio.h>
 #include <limits.h>
+#include <assert.h>
+
+#ifdef NDEBUG
+#error "Unit tests must be compiled without -DNDEBUG flag"
+#endif
 
 int main(int argv, char* argc[])
 {
@@ -25,5 +30,27 @@ int main(int argv, char* argc[])
     printBits(sizeof(f), &f);
     printWhichBits(sizeof(f), &f);
     putchar('\n');
+
+    assert(!isPow2(0UL));
+    assert(isPow2(1UL));
+    assert(isPow2(2UL));
+    assert(!isPow2(3UL));
+    assert(isPow2(4UL));
+    assert(!isPow2(5UL));
+    assert(!isPow2(6UL));
+    assert(!isPow2(7UL));
+    assert(isPow2(8UL));
+
+    assert(num1bits(0UL)==0);
+    assert(num1bits(1UL)==1);
+    assert(num1bits(2UL)==1);
+    assert(num1bits(3UL)==2);
+    assert(num1bits(4UL)==1);
+    assert(num1bits(5UL)==2);
+    assert(num1bits(6UL)==2);
+    assert(num1bits(7UL)==3);
+    assert(num1bits(8UL)==1);
+    assert(num1bits((1UL << 1) | (1UL<<3) | (1UL<<5) | (1UL<<9))==4);
+
     return 0;
 }
