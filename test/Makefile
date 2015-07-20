@@ -71,6 +71,13 @@ XSAMPNDX := xsampndx.o gptree.o misc.o
 xsampndx : $(XSAMPNDX)
 	$(CC) $(CFLAGS) -o $@ $(XSAMPNDX) $(lib)
 
+xbranchtab.o : branchtab.c
+	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/branchtab.c
+
+XBRANCHTAB := xbranchtab.o gptree.o misc.o binary.o
+xbranchtab : $(XBRANCHTAB)
+	$(CC) $(CFLAGS) -o $@ $(XBRANCHTAB) $(lib)
+
 # Make dependencies file
 depend : *.c 
 	echo '#Automatically generated dependency info' > depend

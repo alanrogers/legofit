@@ -130,6 +130,9 @@ HashTab    *HashTab_new(void) {
 }
 
 void HashTab_free(HashTab * self) {
+    int i;
+    for(i=0; i < BT_DIM; ++i)
+        El_free(self->tab[i]);
     free(self);
 }
 

@@ -6,8 +6,7 @@
 BranchTab    *BranchTab_new(void);
 void          BranchTab_free(BranchTab * self);
 double        BranchTab_get(BranchTab * self, tipId_t tipid);
-double        BranchTab_tabulate(BranchTab * self, tipId_t tipid,
-                                 double branch);
+void          BranchTab_add(BranchTab * self, tipId_t key, double value);
 unsigned long BranchTab_size(BranchTab * self);
 void          BranchTab_print(BranchTab *self);
 #endif

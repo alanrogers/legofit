@@ -31,6 +31,27 @@ int main(int argv, char* argc[])
     printWhichBits(sizeof(f), &f);
     putchar('\n');
 
+    ui = UINT_MAX;
+    printf("%12s: ", "UINT_MAX");
+    printBits(sizeof(ui), &ui);
+    ui >>= 2;
+    printf("%12s: ", "UINT_MAX>>2");
+    printBits(sizeof(ui), &ui);
+
+    i = -1;
+    printf("%12s: ", "-1");
+    printBits(sizeof(i), &i);
+    i >>= 2;
+    printf("%12s: ", "-1 >>2");
+    printBits(sizeof(i), &i);
+
+    ui = -1;
+    printf("%12s: ", "-1u");
+    printBits(sizeof(ui), &ui);
+    ui >>= 2;
+    printf("%12s: ", "-1u >>2");
+    printBits(sizeof(ui), &ui);
+
     assert(!isPow2(0UL));
     assert(isPow2(1UL));
     assert(isPow2(2UL));
