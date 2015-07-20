@@ -209,7 +209,7 @@ void Gene_tabulate(Gene *self, BranchTab *bt) {
         return;
 
     if(self->parent && !isPow2(self->tipId))
-        BranchTab_tabulate(bt, self->branch);
+        BranchTab_tabulate(bt, self->tipId, self->branch);
 
     Gene_tabulate(self->lchild, bt);
     Gene_tabulate(self->rchild, bt);
