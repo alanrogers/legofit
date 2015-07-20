@@ -5,12 +5,13 @@
 #include <gsl/gsl_rng.h>
 
 #define POPNAMESIZE 30
-#define MAXSAMP (8*(sizeof(tipId_t)))
+#define MAXSAMP ((int)(8*sizeof(tipId_t)))
 
 Gene *Gene_new(tipId_t tipId);
-void Gene_addToBranch(Gene *gene, double x);
+void  Gene_tabulate(Gene *self, BranchTab *bt);
+void  Gene_addToBranch(Gene *gene, double x);
 Gene *Gene_join(Gene *lchild, Gene *rchild);
-void Gene_free(Gene *gene);
+void  Gene_free(Gene *gene);
 double Gene_lastInterval(Gene *gene, tipId_t *tipId);
 double Gene_checkInterval(Gene *gene, tipId_t *tipId, double *branch);
 double Gene_getRightLen(Gene *gene, tipId_t tipId);

@@ -3,7 +3,6 @@
 
 #include "typedefs.h"
 
-PopNode    *parse(FILE * fp, HashTab * ht);
-PopNode    *mktree(FILE * fp, HashTab * ht);
+PopNode    *mktree(FILE * fp, HashTab * ht, SampNdx *sndx);
 
 #endif

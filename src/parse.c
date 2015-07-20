@@ -2,6 +2,7 @@
 #include "hashtab.h"
 #include "misc.h"
 #include "parse.h"
+#include "sampndx.h"
 #include "tokenizer.h"
 #include <assert.h>
 #include <stdio.h>
@@ -88,7 +89,7 @@
 
 int         getDbl(double *x, Tokenizer * tkz, int i);
 int         getULong(unsigned long *x, Tokenizer * tkz, int i);
-void        parseSegment(Tokenizer *tkz, HashTab *ht);
+void        parseSegment(Tokenizer *tkz, HashTab *ht, SampNdx *sndx);
 void        parseDerive(Tokenizer *tkz, HashTab *ht);
 void        parseMix(Tokenizer *tkz, HashTab *ht);
 
@@ -111,7 +112,7 @@ int getULong(unsigned long *x, Tokenizer * tkz, int i) {
 }
 
 // segment a   t=0     N=100    samples=1
-void parseSegment(Tokenizer *tkz, HashTab *ht) {
+void parseSegment(Tokenizer *tkz, HashTab *ht, SampNdx *sndx) {
     char *popName;
     double t, N;
     unsigned long nsamples=0;
@@ -184,9 +185,9 @@ void parseSegment(Tokenizer *tkz, HashTab *ht) {
                      __FILE__,__func__,__LINE__,
                      Tokenizer_token(tkz, curr - 1)));
         else {
-            if(nsamples > MAXSAMPLES) 
+            if(nsamples > MAXSAMP) 
                 EPRINTF(("%s:%s:%d: %lu samples is too many: max is %d:\n",
-                         __FILE__,__func__,__LINE__, nsamples, MAXSAMPLES));
+                         __FILE__,__func__,__LINE__, nsamples, MAXSAMP));
             ++curr;
         }
     }
@@ -204,6 +205,7 @@ void parseSegment(Tokenizer *tkz, HashTab *ht) {
     }else
         EPRINTF(("%s:%s:%d: duplicate \"segment %s\"\n",
                  __FILE__,__func__,__LINE__, popName));
+    SampNdx_addSamples(sndx, nsamples, thisNode, popName);
 }
 
 // derive a from ab
@@ -347,7 +349,7 @@ void parseMix(Tokenizer *tkz, HashTab *ht) {
     PopNode_mix(childNode, m[1], parNode1, parNode0);
 }
 
-PopNode    *mktree(FILE * fp, HashTab * ht) {
+PopNode    *mktree(FILE * fp, HashTab * ht, SampNdx *sndx) {
     int         ntokens;
     char        buff[500];
     Tokenizer  *tkz = Tokenizer_new(50);
@@ -368,7 +370,7 @@ PopNode    *mktree(FILE * fp, HashTab * ht) {
 
         char *tok = Tokenizer_token(tkz, 0);
         if(0 == strcmp(tok, "segment"))
-            parseSegment(tkz, ht);
+            parseSegment(tkz, ht, sndx);
         else if(0 == strcmp(tok, "mix"))
             parseMix(tkz, ht);
         else if(0 == strcmp(tok, "derive"))
@@ -469,10 +471,16 @@ int main(int argc, char **argv) {
     }
 
     HashTab *ht = HashTab_new();
-    PopNode *root = mktree(fp, ht);
+    SampNdx sndx;
+    SampNdx_init(&sndx);
+    PopNode *root = mktree(fp, ht, &sndx);
 
-    if(verbose)
+    if(verbose) {
         PopNode_print(stdout, root, 0);
+        unsigned i;
+        for(i=0; i < SampNdx_size(&sndx); ++i)
+            printf("%2u %s\n", i, SampNdx_lbl(&sndx, i));
+    }
 
     HashTab_free(ht);
     return 0;

@@ -193,6 +193,28 @@ Gene *Gene_new(tipId_t tipId) {
     return gene;
 }
 
+/**
+ * Tabulate branch lengths by tipId.
+ *
+ * Ignore root (which has null parent) because mutations
+ * there don't contribute to genetic variation.
+ * 
+ * Ignore nodes with only one descendant, which are recognizable because 
+ * their tipIds are powers of 2.
+ * 
+ * Tabulate everything else.
+ */
+void Gene_tabulate(Gene *self, BranchTab *bt) {
+    if(self==NULL)
+        return;
+
+    if(self->parent && !isPow2(self->tipId))
+        BranchTab_tabulate(bt, self->branch);
+
+    Gene_tabulate(self->lchild, bt);
+    Gene_tabulate(self->rchild, bt);
+}
+
 void Gene_addToBranch(Gene *gene, double x) {
     gene->branch += x;
 }
@@ -213,7 +235,8 @@ Gene *Gene_join(Gene *lchild, Gene *rchild) {
  */
 double Gene_lastInterval(Gene *gene, tipId_t *tipId) {
     if(gene->lchild==NULL || gene->rchild==NULL)
-        eprintf("%s:%s%d: root has null children: can't calculate branch length\n",
+        eprintf("%s:%s%d: root has null children:"
+                " can't calculate branch length\n",
                 __FILE__,__func__,__LINE__);
     Gene *child;
     if(gene->lchild->branch < gene->rchild->branch)
