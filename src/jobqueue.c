@@ -105,7 +105,7 @@ JobQueue   *JobQueue_new(int nthreads) {
                 __FILE__, __LINE__, i, strerror(i));
 
     jq->nthreads = nthreads;
-    jq->thread = malloc(nthreads * sizeof jq->thread[0]);
+    jq->thread = malloc(nthreads * sizeof(jq->thread[0]));
 
     /* launch threads */
     for(i = 0; i < nthreads; ++i) {

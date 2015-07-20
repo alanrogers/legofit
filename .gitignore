@@ -6,4 +6,6 @@ core
 depend
 xhashtab
 xparse
+xbinary
+xsampndx
 try

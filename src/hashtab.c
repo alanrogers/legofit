@@ -66,12 +66,12 @@ unsigned strhash(const char *ss) {
 }
 
 El         *El_new(const char *key) {
-    El         *new = malloc(sizeof *new);
+    El         *new = malloc(sizeof(*new));
     CHECKMEM(new);
 
     new->next = NULL;
-    snprintf(new->key, sizeof new->key, "%s", key);
-    assert(0 == strncmp(new->key, key, sizeof new->key));
+    snprintf(new->key, sizeof(new->key), "%s", key);
+    assert(0 == strncmp(new->key, key, sizeof(new->key)));
     new->value = NULL;
     return new;
 }
@@ -96,7 +96,7 @@ void El_set(El * self, void *value) {
 El *El_find(El * self, El ** found, const char *key) {
     int comparison;
     if(self == NULL
-       || 0 > (comparison = strncmp(key, self->key, sizeof self->key))) {
+       || 0 > (comparison = strncmp(key, self->key, sizeof(self->key)))) {
         *found = El_new(key);
         (*found)->next = self;
         return *found;
@@ -104,7 +104,7 @@ El *El_find(El * self, El ** found, const char *key) {
         self->next = El_find(self->next, found, key);
         return self;
     }
-    assert(0 == strncmp(key, self->key, sizeof self->key));
+    assert(0 == strncmp(key, self->key, sizeof(self->key)));
     *found = self;
     return self;
 }
@@ -123,9 +123,9 @@ void El_print(El * self) {
 }
 
 HashTab    *HashTab_new(void) {
-    HashTab    *new = malloc(sizeof *new);
+    HashTab    *new = malloc(sizeof(*new));
     CHECKMEM(new);
-    memset(new->tab, 0, sizeof new->tab);
+    memset(new->tab, 0, sizeof(new->tab));
     return new;
 }
 
@@ -171,7 +171,7 @@ void HashTab_print(HashTab *self) {
 
 // This object is for stepping through the entries of a hash table.
 HashTabSeq *HashTabSeq_new(HashTab *ht) {
-    HashTabSeq *self = malloc(sizeof *self);
+    HashTabSeq *self = malloc(sizeof(*self));
     CHECKMEM(self);
 
     self->ht = ht;

@@ -48,9 +48,6 @@
 // derive ab from abc
 // derive c  from abc
 
-#define POPNAMESIZE 30
-#define MAXSAMPLES 10
-
 #if 1
 #  define CHECK_INDEX(ndx,n) do{                                \
         if((ndx)>=(n)){                                         \
@@ -356,12 +353,12 @@ PopNode    *mktree(FILE * fp, HashTab * ht) {
     Tokenizer  *tkz = Tokenizer_new(50);
 
     while(1) {
-        if(fgets(buff, sizeof buff, fp) == NULL)
+        if(fgets(buff, sizeof(buff), fp) == NULL)
             break;
 
         if(!strchr(buff, '\n') && !feof(fp)) {
             fprintf(stderr, "ERR@%s:%d: input buffer overflow."
-                    " buff size: %zu\n", __FILE__, __LINE__, sizeof buff);
+                    " buff size: %zu\n", __FILE__, __LINE__, sizeof(buff));
             exit(EXIT_FAILURE);
         }
         Tokenizer_split(tkz, buff, " \t="); // tokenize
@@ -454,7 +451,7 @@ int main(int argc, char **argv) {
 
     if(argc > 1) {
         if(argc!=2 || 0!=strcmp(argv[1], "-v")) {
-            fprintf(stderr,"usage: xmktree [-v]\n");
+            fprintf(stderr,"usage: xparse [-v]\n");
             exit(EXIT_FAILURE);
         }
         verbose = 1;

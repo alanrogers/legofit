@@ -584,7 +584,7 @@ TaskArg *TaskArg_new(const TaskArg *template, unsigned rng_seed) {
     memcpy(a, template, sizeof(TaskArg));
     a->rng_seed = rng_seed;
 
-    memset(a->sitePatCount, 0, sizeof a->sitePatCount);
+    memset(a->sitePatCount, 0, sizeof(a->sitePatCount));
 
     return a;
 }

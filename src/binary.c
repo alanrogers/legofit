@@ -14,7 +14,7 @@ void printBits(size_t size, void const * const ptr) {
         while(j-- > 0) {
             byte = b[i] & (1<<j);
             byte >>= j;
-            printf("%u", byte);
+            printf("%u", (unsigned) byte);
         }
     }
     putchar('\n');
@@ -26,7 +26,7 @@ void printBits(size_t size, void const * const ptr) {
  * of array bit. It is an error if the number of nonzero bits exceeds
  * maxbits.
  */
-int getBits(unsigned long x, int maxbits, int *bit) {
+int getBits(tipId_t x, int maxbits, int bit[maxbits]) {
     size_t len = 8*sizeof(x);
     size_t i;
     int nbits=0;
@@ -34,8 +34,9 @@ int getBits(unsigned long x, int maxbits, int *bit) {
     for(i=0; i < len; ++i) {
         if( (x>>i) & 1) {
             if(nbits == maxbits) {
-                fprintf(stderr,"%s:%d: Too many nonzero bits in %lu. Max is %d\n",
-                        __FILE__, __LINE__, x, maxbits);
+                fprintf(stderr,"%s:%d: Too many nonzero bits in %lu."
+                        " Max is %d\n",
+                        __FILE__, __LINE__, (unsigned long) x, maxbits);
                 exit(1);
             }
             bit[nbits++] = i;
@@ -67,8 +68,8 @@ void printWhichBits(size_t const size, void const * const ptr) {
 /// Count the number of 1 bits. From p 85 of Hacker's Delight, 2nd
 /// Edn, by Henry S. Warren, Jr. This algorithm is fast when the
 /// number of 1 bits is small, and it makes no assumption about the 
-/// number of bits in an unsigned long.
-int num1bits(unsigned long x) {
+/// number of bits in x.
+int num1bits(tipId_t x) {
     int n=0;
 
     while(x != 0) {

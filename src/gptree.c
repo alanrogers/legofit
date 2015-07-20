@@ -29,7 +29,7 @@ struct PopNode {
     struct PopNode *parent[2];
     struct PopNode *child[2];
     double mix;  /*mix=frac of pop derived from parent[1] */
-    Gene *sample[MAXSAMPLES];
+    Gene *sample[MAXSAMP];
 };
 
 static void PopNode_sanityCheck(PopNode *pnode, const char *file, int lineno);
@@ -178,6 +178,10 @@ void PopNode_printShallow(PopNode *self, FILE *fp) {
     putc('\n', fp);
 }
 
+int PopNode_nsamples(PopNode *self) {
+    return self->nsamples;
+}
+
 Gene *Gene_new(tipId_t tipId) {
     Gene *gene = malloc(sizeof(Gene));
     checkmem(gene, __FILE__, __LINE__);
@@ -312,7 +316,7 @@ static void PopNode_sanityCheck(PopNode *pnode, const char *file, int lineno) {
 }
 
 void PopNode_addSample(PopNode *pnode, Gene *gene) {
-    if(pnode->nsamples == MAXSAMPLES) {
+    if(pnode->nsamples == MAXSAMP) {
         fprintf(stderr,"%s:%s:%d: Too many samples\n",
                 __FILE__,__func__,__LINE__);
         exit(1);
@@ -369,7 +373,7 @@ void PopNode_join(PopNode *parent, PopNode *lchild, PopNode *rchild) {
 }
 
 void PopNode_newGene(PopNode *pnode, unsigned ndx) {
-    assert(1 + pnode->nsamples < MAXSAMPLES);
+    assert(1 + pnode->nsamples < MAXSAMP);
 
     assert(ndx < sizeof(tipId_t));
     Gene *gene = Gene_new(1UL << ndx);

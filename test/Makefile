@@ -64,6 +64,13 @@ XPARSE := xparse.o hashtab.o misc.o tokenizer.o gptree.o
 xparse : $(XPARSE)
 	$(CC) $(CFLAGS) -o $@ $(XPARSE) $(lib)
 
+xsampndx.o : sampndx.c
+	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/sampndx.c
+
+XSAMPNDX := xsampndx.o gptree.o misc.o
+xsampndx : $(XSAMPNDX)
+	$(CC) $(CFLAGS) -o $@ $(XSAMPNDX) $(lib)
+
 # Make dependencies file
 depend : *.c 
 	echo '#Automatically generated dependency info' > depend

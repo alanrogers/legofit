@@ -1,13 +1,11 @@
 #ifndef ARR_GPTREE_H
 #define ARR_GPTREE_H
 
-typedef struct PopNode PopNode;
-typedef struct Gene Gene;
-typedef unsigned long tipId_t;
-
-enum { MAXSAMPLES = 4 };
-
+#include "typedefs.h"
 #include <gsl/gsl_rng.h>
+
+#define POPNAMESIZE 30
+#define MAXSAMP (8*(sizeof(tipId_t)))
 
 Gene *Gene_new(tipId_t tipId);
 void Gene_addToBranch(Gene *gene, double x);
@@ -30,6 +28,7 @@ void PopNode_print(FILE *fp, PopNode *pnode, int indent);
 void PopNode_printShallow(PopNode *self, FILE *fp);
 PopNode *PopNode_root(PopNode *self);
 void PopNode_sanityFromLeaf(PopNode *self, const char *file, int line);
+int PopNode_nsamples(PopNode *self);
 double survival(double t, double K);
 
 #endif
