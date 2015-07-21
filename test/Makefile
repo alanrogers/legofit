@@ -60,7 +60,7 @@ xhashtab : $(XHASHTAB)
 xparse.o : parse.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/parse.c
 
-XPARSE := xparse.o hashtab.o misc.o tokenizer.o gptree.o sampndx.o
+XPARSE := xparse.o hashtab.o misc.o tokenizer.o gptree.o sampndx.o branchtab.o
 xparse : $(XPARSE)
 	$(CC) $(CFLAGS) -o $@ $(XPARSE) $(lib)
 
@@ -77,6 +77,10 @@ xbranchtab.o : branchtab.c
 XBRANCHTAB := xbranchtab.o gptree.o misc.o binary.o
 xbranchtab : $(XBRANCHTAB)
 	$(CC) $(CFLAGS) -o $@ $(XBRANCHTAB) $(lib)
+
+Q := q.o misc.o gptree.o hashtab.o branchtab.o
+q : $(Q)
+	$(CC) $(CFLAGS) -o $@ $(Q) $(lib)
 
 # Make dependencies file
 depend : *.c 

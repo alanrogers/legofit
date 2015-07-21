@@ -53,6 +53,8 @@ void PopNode_sanityFromLeaf(PopNode *self, const char *file, int line) {
     case 1:
         REQUIRE(self->parent[0]!=NULL, file, line);
         REQUIRE(self->parent[1]==NULL, file, line);
+        if(self->mix != 0.0)
+            PopNode_printShallow(self, stdout);
         REQUIRE(self->mix == 0.0, file, line);
         break;
     default:

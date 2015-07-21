@@ -285,6 +285,7 @@ int main(int argc, char **argv) {
     double      branchLength[npat];
     BranchTab_toArrays(taskarg[0]->branchtab, npat, pat, branchLength);
 
+#if 1
     {
         // Normalize so branchLength distribution sums to 1.
         double      sum = 0.0;
@@ -293,6 +294,10 @@ int main(int argc, char **argv) {
         for(j = 0; j < npat; ++j)
             branchLength[j] /= sum;
     }
+#else
+    for(j = 0; j < npat; ++j)
+        branchLength[j] /= nreps;
+#endif
 
     printf("%15s %10s\n", "SitePattern", "Prob");
     char        buff[100];

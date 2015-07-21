@@ -363,6 +363,12 @@ PopNode    *mktree(FILE * fp, HashTab * ht, SampNdx *sndx) {
                     " buff size: %zu\n", __FILE__, __LINE__, sizeof(buff));
             exit(EXIT_FAILURE);
         }
+
+        // strip trailing comments
+        char *comment = strchr(buff, '#');
+        if(comment)
+            *comment = '\0';
+
         Tokenizer_split(tkz, buff, " \t="); // tokenize
         ntokens = Tokenizer_strip(tkz, " \t=\n");
         if(ntokens == 0)
@@ -435,10 +441,11 @@ PopNode    *mktree(FILE * fp, HashTab * ht, SampNdx *sndx) {
 //
 //  t = 0  1    3    5.5     inf
 const char *tstInput =
+    " # this is a comment\n"
     "segment a   t=0     N=100    samples=1\n"
     "segment b   t=0     N=123    samples=2\n"
     "segment c   t=1     N=213.4  samples=1\n"
-    "segment bb  t=1     N=32.1\n"
+    "segment bb  t=1     N=32.1 # another comment\n"
     "segment ab  t=3     N=222\n"
     "segment abc t=5.5e0 N=1.2e2\n"
     "mix b from 0.9 bb + 0.1 c\n"

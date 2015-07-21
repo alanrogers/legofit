@@ -1,10 +1,11 @@
+destination := $(HOME)/bin
 #opt := -DNDEBUG -O3  -finline-functions  # For full optimization
 opt :=  -O0 -fno-inline-functions -DDEBUG     # For debugging
 #prof := -pg -rdynamic                    # For profiling
 prof :=
 incl := -I/usr/local/include -I/opt/local/include
 
-targets := L
+target := lego
 tests := xzeroin xbinary
 
 CC := gcc
@@ -32,7 +33,7 @@ lib := -L/usr/local/lib -lgsl -lgslcblas -lpthread -lm
 .c.o:
 	$(CC) $(CFLAGS) $(incl) -c -o ${@F}  $<
 
-all : $(targets)
+all : $(target)
 
 test : $(tests)
 	-./xbinary
@@ -52,6 +53,9 @@ depend : *.c *.h
 
 clean :
 	rm -f *.a *.o *~ gmon.out *.tmp $(targets) $(tests) core.* vgcore.*
+
+install : $(target)
+	cp $(target) $(destination)
 
 include depend
 
