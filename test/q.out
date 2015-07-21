@@ -4,18 +4,24 @@
 #             : kappa=0.736207 lambda=1.134483 zeta=0.189655
 # Rel pop size: X=2.000000 Y=1.000000 N=0.100000 D=0.100000
 #             : XY=2.000000 ND=0.200000 URHUMAN=1.000000
-# admixture->Y: mN=0.020000 mD=0.000000
-# Inx         : 0.168778
-# Iny         : 0.200918
-# Ixy         : 0.630304
+# admixture->Y: mN=0.020000 mD=0.010000
+# Inx         : 0.167441
+# Iny         : 0.208279
+# Ixy         : 0.624280
 segment   x t= 0.00 N=    2.00 samples=1
 segment   y t= 0.00 N=    1.00 samples=1
+segment   w t= 0.04 N=    1.00
 segment   z t= 0.09 N=    1.00
 segment   n t= 0.09 N=    0.10 samples=1
+segment   d t= 0.04 N=    0.10 samples=1
 segment  xy t= 0.19 N=    2.00
-segment xyn t= 1.13 N=    1.00
-mix y from 0.980000 z + 0.020000 n
+segment  nd t= 0.74 N=    0.20
+segment   a t= 1.13 N=    1.00
+mix y from 0.990000 w + 0.010000 d
+mix w from 0.980000 z + 0.020000 n
 derive x from xy
 derive z from xy
-derive xy from xyn
-derive n from xyn
+derive xy from a
+derive n from nd
+derive d from nd
+derive nd from a

@@ -39,7 +39,7 @@ int main(void) {
 
 
     double mN = 0.02;            // N->EV gene flow
-    double mD = 0.00;            // D->V gene flow
+    double mD = 0.01;            // D->V gene flow
 
     // Time backwards from the present, units of twoN0 gen
     double alpha = 25e3/s;       // Denisovan admixture
@@ -98,15 +98,21 @@ int main(void) {
 
     segment("x", 0, K_X, 1);
     segment("y", 0, K_Y, 1);
+    segment("w", alpha, K_Y, 0);
     segment("z", delta, K_Y, 0);
     segment("n", delta, K_N, 1);
+    segment("d", alpha, K_D, 1);
     segment("xy", zeta, K_XY,0);
-    segment("xyn", lambda, 1.0, 0);
-    mix("y", "z", mN, "n");
+    segment("nd", kappa, K_ND,0);
+    segment("a", lambda, 1.0, 0);
+    mix("y", "w", mD, "d");
+    mix("w", "z", mN, "n");
     derive("x", "xy");
     derive("z", "xy");
-    derive("xy", "xyn");
-    derive("n", "xyn");
+    derive("xy", "a");
+    derive("n", "nd");
+    derive("d", "nd");
+    derive("nd", "a");
     
     return 0;
 }
