@@ -35,7 +35,6 @@ struct PopNode {
 };
 
 static void PopNode_sanityCheck(PopNode *pnode, const char *file, int lineno);
-static void unlinkParent(PopNode *self, PopNode *par);
 
 void PopNode_sanityFromLeaf(PopNode *self, const char *file, int line) {
 #ifndef NDEBUG
@@ -228,6 +227,7 @@ Gene *Gene_join(Gene *lchild, Gene *rchild) {
     checkmem(parent, __FILE__, __LINE__);
     parent->lchild = lchild;
     parent->rchild = rchild;
+    lchild->parent = rchild->parent = parent;
     return parent;
 }
 
@@ -495,44 +495,9 @@ Gene * PopNode_coalesce(PopNode *pnode, gsl_rng *rng) {
     return (pnode->nsamples == 1 ? pnode->sample[0] : NULL);
 }
 
-/// Free node and descendants
+/// Free node but not descendants
 void PopNode_free(PopNode *self) {
-    PopNode_sanityCheck(pnode, __FILE__, __LINE__);
-    switch(self->nchildren) {
-    case 2:
-        PopNode_free(self->child[1]);
-        // fall through
-    case 1:
-        PopNode_free(self->child[0]);
-        break;
-    }
-    switch(self->nparents) {
-    case 2:
-        unlinkParent(self, self->parent[1]);
-        // fall through
-    case 1:
-        unlinkParent(self, self->parent[0]);
-        break;
-    }
     free(self);
-}
-
-static void unlinkParent(PopNode *self, PopNode *par) {
-    switch(par->nchildren) {
-    case 2:
-        if(par->child[1] == self) {
-            par->nchildren=1;
-            par->child[1] = NULL;
-            break;
-        }
-        // fall through
-    case 1:
-        if(par->child[0] == self) {
-            par->nchildren -= 1;
-            par->child[1] = NULL;
-        }
-        break;
-    }
 }
 
 /** survival fuction */

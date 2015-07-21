@@ -7,6 +7,8 @@ BranchTab    *BranchTab_new(void);
 void          BranchTab_free(BranchTab * self);
 double        BranchTab_get(BranchTab * self, tipId_t tipid);
 void          BranchTab_add(BranchTab * self, tipId_t key, double value);
-unsigned long BranchTab_size(BranchTab * self);
+unsigned      BranchTab_size(BranchTab * self);
 void          BranchTab_print(BranchTab *self);
+void          BranchTab_plusEquals(BranchTab *lhs, BranchTab *rhs);
+void          BranchTab_toArrays(BranchTab *self, unsigned n, tipId_t key[n], double value[n]);
 #endif

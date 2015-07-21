@@ -37,7 +37,9 @@ unsigned    strhash(const char *ss);
 El         *El_new(const char *key);
 void        El_free(El * e);
 El         *El_find(El * self, El ** found, const char *key);
+void        El_map(El *self, void(*f)(void *value, void *data), void *data);
 void        HashTabSeq_nextBucket(HashTabSeq *self);
+void        freeValue(void *value, void *unused);
 
 /// Hash a character string
 unsigned strhash(const char *ss) {
@@ -63,6 +65,12 @@ unsigned strhash(const char *ss) {
     // Same as hash % HASHDIM but faster. Requires
     // that HASHDIM be a power of 2.
     return hashval  & (HASHDIM-1u);
+}
+
+/// For use by HashTab_map. Will free every non-NULL value in table.
+void freeValue(void *p, void *unused) {
+    if(p)
+        free(p);
 }
 
 El         *El_new(const char *key) {
@@ -122,6 +130,14 @@ void El_print(El * self) {
     El_print(self->next);
 }
 
+/// Apply function f(value, data) to all values in list.
+void El_map(El *self, void(*f)(void *value, void *data), void *data) {
+    if(self==NULL)
+        return;
+    (*f)(self->value, data);
+    El_map(self->next, f, data);
+}
+
 HashTab    *HashTab_new(void) {
     HashTab    *new = malloc(sizeof(*new));
     CHECKMEM(new);
@@ -131,7 +147,7 @@ HashTab    *HashTab_new(void) {
 
 void HashTab_free(HashTab * self) {
     int i;
-    for(i=0; i < BT_DIM; ++i)
+    for(i=0; i < HASHDIM; ++i)
         El_free(self->tab[i]);
     free(self);
 }
@@ -170,6 +186,19 @@ void HashTab_print(HashTab *self) {
         El_print(self->tab[i]);
         putchar('\n');
     }
+}
+
+/// Apply function f(value, data) to all values in table.
+void HashTab_map(HashTab *self, void(*f)(void *value, void *data), void *data) {
+    unsigned i;
+
+    for(i=0; i<HASHDIM; ++i)
+        El_map(self->tab[i], f, data);
+}
+
+/// Free all non-NULL values in table.
+void HashTab_freeValues(HashTab *self) {
+    HashTab_map(self, freeValue, NULL);
 }
 
 // This object is for stepping through the entries of a hash table.
@@ -223,3 +252,4 @@ El *HashTabSeq_next(HashTabSeq *self) {
 void HashTabSeq_free(HashTabSeq *self) {
     free(self);
 }
+

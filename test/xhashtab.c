@@ -9,6 +9,7 @@
 
 #include "hashtab.h"
 #include "misc.h"
+#include "gptree.h"
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
@@ -16,6 +17,15 @@
 #ifdef NDEBUG
 #error "Unit tests must be compiled without -DNDEBUG flag"
 #endif
+
+void prval(void *vx, void *vfp);
+
+// For use by HashTab_map. It will print every node in the table.
+void prval(void *vx, void *vfp) {
+    PopNode *node = (PopNode *) vx;
+    FILE *fp = (FILE *) vfp;
+    PopNode_printShallow(node, fp);
+}
 
 int main(void) {
     El *e;
@@ -48,7 +58,11 @@ int main(void) {
     assert(0 == strcmp(val2, (char*) El_get(HashTab_get(ht, key2))));
     assert(0 == strcmp(val3, (char*) El_get(HashTab_get(ht, key3))));
 
+    printf("Calling HashTab_print\n");
     HashTab_print(ht);
+
+    printf("Calling HashTab_map to print table\n");
+    HashTab_map(ht, prval, stdout);
 
     printf("Number of elements in HashTab: %lu\n",
            HashTab_size(ht));

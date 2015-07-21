@@ -53,7 +53,7 @@ XBINARY := xbinary.o binary.o
 xbinary : $(XBINARY)
 	$(CC) $(CFLAGS) -o $@ $(XBINARY) $(lib)
 
-XHASHTAB := xhashtab.o hashtab.o misc.o
+XHASHTAB := xhashtab.o hashtab.o misc.o gptree.o branchtab.o
 xhashtab : $(XHASHTAB)
 	$(CC) $(CFLAGS) -o $@ $(XHASHTAB) $(lib)
 

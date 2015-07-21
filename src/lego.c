@@ -10,6 +10,7 @@
 #include "binary.h"
 #include "branchtab.h"
 #include "gptree.h"
+#include "hashtab.h"
 #include "jobqueue.h"
 #include "misc.h"
 #include "parse.h"
@@ -18,14 +19,18 @@
 #include <float.h>
 #include <gsl/gsl_randist.h>
 #include <math.h>
+#include <getopt.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/types.h>
 #include <time.h>
+#include <unistd.h>
 
 typedef struct TaskArg TaskArg;
 
 /** Data structure used by each thread */
 struct TaskArg {
+    const char *fname;
     unsigned    rng_seed;
     unsigned long nreps;
     SampNdx     sndx;
@@ -34,124 +39,269 @@ struct TaskArg {
     BranchTab  *branchtab;
 };
 
-TaskArg    *TaskArg_new(const TaskArg * template, unsigned rng_seed);
+TaskArg    *TaskArg_new(const TaskArg * template, unsigned rng_seed,
+                        unsigned nreps);
 void        TaskArg_free(TaskArg * targ);
 int         taskfun(void *varg);
+char       *patLbl(size_t n, char buff[n], tipId_t tid, SampNdx * sndx);
+void        usage(void);
+
+void usage(void) {
+    fprintf(stderr, "usage: lego [options] input_file_name\n");
+    fprintf(stderr, "   where options may include:\n");
+    tellopt("-i <x> or --nItr <x>", "number of iterations in simulation");
+    tellopt("-t <x> or --threads <x>", "number of threads (default is auto)");
+    tellopt("-h or --help", "print this message");
+    exit(1);
+}
 
 /**
  * Construct a new TaskArg by copying a template, but then assign
  * a distinct random number seed.
  */
-TaskArg    *TaskArg_new(const TaskArg * template, unsigned rng_seed) {
+TaskArg    *TaskArg_new(const TaskArg * template, unsigned rng_seed,
+                        unsigned nreps) {
     TaskArg    *a = malloc(sizeof(TaskArg));
     checkmem(a, __FILE__, __LINE__);
 
     memcpy(a, template, sizeof(TaskArg));
     a->rng_seed = rng_seed;
+    a->nreps = nreps;
+    a->branchtab = BranchTab_new();
+    SampNdx_init(&(a->sndx));
 
     return a;
 }
 
 /** TaskArg destructor */
-void TaskArg_free(TaskArg * targ) {
-    free(targ);
+void TaskArg_free(TaskArg * self) {
+    BranchTab_free(self->branchtab);
+    free(self);
 }
 
 /** function run by each thread */
 int taskfun(void *varg) {
     TaskArg    *targ = (TaskArg *) varg;
 
-    int         i, bit[64];
-    int         maxbits = sizeof(bit) / sizeof(bit[0]);
     unsigned long rep;
     gsl_rng    *rng = gsl_rng_alloc(gsl_rng_taus);
     gsl_rng_set(rng, targ->rng_seed);
-    SampNdx     sndx;
-    SampNdx_init(&sndx);
-    BranchTab  *bt = BranchTab_new();
-
-    PopNode    *rootPop = mktree(targ->fp, targ->ht, &sndx);
+    HashTab    *ht = HashTab_new();
+    PopNode    *rootPop = NULL;
+    {
+        // Build population tree as specified in file targ->fname.
+        // After this section, rootPop points to the ancestral population,
+        // ht is a table that maps population names to nodes in the
+        // population tree, and sndx is an index of samples. The call
+        // to HashTab_freeValues (at the end of this function)
+        // deallocates all population nodes. 
+        FILE       *fp = fopen(targ->fname, "r");
+        if(fp == NULL)
+            eprintf("%s:%s:%d: can't open file %s.\n",
+                    __FILE__, __func__, __LINE__, targ->fname);
+        rootPop = mktree(fp, ht, &(targ->sndx));
+        fclose(fp);
+    }
 
     for(rep = 0; rep < targ->nreps; ++rep) {
-        PopNode_clear(rootPop);
-        SampNdx_populateTree(&sndx);
+        PopNode_clear(rootPop); // remove old samples 
+        SampNdx_populateTree(&(targ->sndx));    // add new samples
 
-        /* coalescent simulation */
+        // coalescent simulation generates gene genealogy within
+        // population tree.
         Gene       *root = PopNode_coalesce(rootPop, rng);
         assert(root);
 
+        // Traverse gene tree, accumulating branch lengths in bins
+        // that correspond to site patterns.
         Gene_tabulate(root, targ->branchtab);
+
+        // Free gene genealogy but not population tree.
         Gene_free(root);
     }
 
     gsl_rng_free(rng);
-    PopNode_free(rootPop);
+    HashTab_freeValues(ht);     // free all PopNode pointers
+    HashTab_free(ht);
 
     return 0;
 }
 
-int main(void) {
+/// Generate a label for site pattern tid. Label goes into
+/// buff. Function returns a pointer to buff;
+char       *patLbl(size_t n, char buff[n], tipId_t tid, SampNdx * sndx) {
+    int         maxbits = 40;
+    int         bit[maxbits];
+    int         i, nbits;
+    nbits = getBits(tid, maxbits, bit);
+    buff[0] = '\0';
+    char        lbl[100];
+    for(i = 0; i < nbits; ++i) {
+        snprintf(lbl, sizeof(lbl), "%s",
+                 SampNdx_lbl(sndx, (unsigned) bit[i]));
+        if(strlen(buff) + strlen(lbl) >= n)
+            eprintf("%s:%s:%d: buffer overflow\n", __FILE__, __func__,
+                    __LINE__);
+        strcat(buff, lbl);
+        if(i + 1 < nbits && 1 + strlen(buff) < n)
+            strcat(buff, ":");
+    }
+    return buff;
+}
 
-#if 0
-    /* for production */
-    int         nthreads = 28;  /* number of threads to launch */
-    int         nTasks = 50;    /* total number of tasks */
-    unsigned long nreps = 1000000;
-#else
-    /* for debugging */
-    int         nthreads = 2;   /* number of threads to launch */
-    int         nTasks = 5;     /* total number of tasks */
-    unsigned long nreps = 100;
+int main(int argc, char **argv) {
+
+    static struct option myopts[] = {
+        /* {char *name, int has_arg, int *flag, int val} */
+        {"nItr", required_argument, 0, 'i'},
+        {"threads", required_argument, 0, 't'},
+        {"help", no_argument, 0, 'h'},
+        {NULL, 0, NULL, 0}
+    };
+
+    printf("#################################################\n"
+           "# lego: estimate probabilities of site patterns #\n"
+           "#################################################\n");
+    putchar('\n');
+
+    int i, j;
+    time_t      currtime = time(NULL);
+#ifdef __TIMESTAMP__
+    printf("# Program was compiled: %s\n", __TIMESTAMP__);
 #endif
+    printf("# Program was run     : %s\n", ctime(&currtime));
+
+    printf("# cmd:");
+    for(i = 0; i < argc; ++i)
+        printf(" %s", argv[i]);
+    putchar('\n');
+
+    fflush(stdout);
+
+    int         nTasks = 0;     // total number of tasks
+    int         optndx;
+    unsigned long nreps = 100;
+    char        fname[200] = { '\0' };
+
+    /* command line arguments */
+    for(;;) {
+        i = getopt_long(argc, argv, "i:t:h", myopts, &optndx);
+        if(i == -1)
+            break;
+        switch (i) {
+        case ':':
+        case '?':
+            usage();
+            break;
+        case 'i':
+            nreps = strtol(optarg, 0, 10);
+            break;
+        case 't':
+            nTasks = strtol(optarg, NULL, 10);
+            break;
+        case 'h':
+        default:
+            usage();
+        }
+    }
+
+    /* remaining option gives file name */
+    switch (argc - optind) {
+    case 0:
+        fprintf(stderr, "Command line must specify input file\n");
+        usage();
+        break;
+    case 1:
+        snprintf(fname, sizeof(fname), "%s", argv[optind]);
+        break;
+    default:
+        fprintf(stderr, "Only one input file is allowed\n");
+        usage();
+    }
+    assert(fname[0] != '\0');
+
+    if(nTasks == 0)
+        nTasks = getNumCores();
+
+    if(nTasks > nreps)
+        nTasks = nreps;
+
+    // Divide repetitions among tasks.
+    long        reps[nTasks];
+    {
+        ldiv_t      qr = ldiv((long) nreps, (long) nTasks);
+        assert(qr.quot > 0);
+        for(j = 0; j < nTasks; ++j)
+            reps[j] = qr.quot;
+        if(qr.rem)
+            reps[0] += qr.rem;
+#ifndef NDEBUG
+        // make sure the total number of repetitions is nreps.
+        long        sumreps = 0;
+        for(j = 0; j < nTasks; ++j) {
+            assert(reps[j] > 0);
+            sumreps += reps[j];
+        }
+        assert(sumreps = nreps);
+#endif
+    }
 
     TaskArg     targ = {
+        .fname = fname,
         .rng_seed = 0,
-        .nreps = nreps,
+        .nreps = 0,
+        .branchtab = NULL
     };
 
     TaskArg    *taskarg[nTasks];
-
-    int         j;
-    time_t      currtime = time(NULL);
-
-    if(nthreads == 0)
-        nthreads = getNumCores();
-
-    if(nthreads > nTasks)
-        nthreads = nTasks;
+    unsigned    pid = (unsigned) getpid();
 
     printf("nreps       : %lu\n", nreps);
-    printf("nthreads    : %d\n", nthreads);
-    printf("nTasks      : %d\n", nTasks);
+    printf("nthreads    : %d\n", nTasks);
+    printf("input file  : %s\n", fname);
 
     for(j = 0; j < nTasks; ++j)
-        taskarg[j] = TaskArg_new(&targ, (unsigned) currtime + j);
+        taskarg[j] = TaskArg_new(&targ, currtime + pid + j, reps[j]);
 
-    JobQueue   *jq = JobQueue_new(nthreads);
-    if(jq == NULL)
-        eprintf("ERR@%s:%d: Bad return from JobQueue_new",
-                __FILE__, __LINE__);
-    for(j = 0; j < nTasks; ++j)
-        JobQueue_addJob(jq, taskfun, taskarg[j]);
-    JobQueue_waitOnJobs(jq);
+    {
+        JobQueue   *jq = JobQueue_new(nTasks);
+        if(jq == NULL)
+            eprintf("ERR@%s:%d: Bad return from JobQueue_new",
+                    __FILE__, __LINE__);
+        for(j = 0; j < nTasks; ++j)
+            JobQueue_addJob(jq, taskfun, taskarg[j]);
+        JobQueue_waitOnJobs(jq);
+        JobQueue_free(jq);
+    }
     fprintf(stderr, "Back from threads\n");
 
-    double      maxval = 0.0;
-    printf("%8s %8s %8s %8s %8s %8s %8s %8s\n",
-           "EQ", "oQ", "EIxy", "oIxy", "EInx", "oInx", "EIny", "oIny");
-    for(j = 0; j < nTasks; ++j) {
-        maxval = fmax(maxval, taskarg[j]->Qtheory);
-        maxval = fmax(maxval, taskarg[j]->Qsim);
-        printf("%8.4lf %8.4lf", taskarg[j]->Qtheory, taskarg[j]->Qsim);
-        printf(" %8.4lf %8.4lf", taskarg[j]->Ixy,
-               taskarg[j]->branchTab[1][0]);
-        printf(" %8.4lf %8.4lf", taskarg[j]->Inx,
-               taskarg[j]->branchTab[2][0]);
-        printf(" %8.4lf %8.4lf", taskarg[j]->Iny,
-               taskarg[j]->branchTab[2][1]);
-        putchar('\n');
+    // Add all branchtabs into branchtab[0]
+    for(j = 1; j < nTasks; ++j)
+        BranchTab_plusEquals(taskarg[0]->branchtab, taskarg[j]->branchtab);
+
+    // Put site patterns and branch lengths into arrays.
+    unsigned    npat = BranchTab_size(taskarg[0]->branchtab);
+    tipId_t     pat[npat];
+    double      branchLength[npat];
+    BranchTab_toArrays(taskarg[0]->branchtab, npat, pat, branchLength);
+
+    {
+        // Normalize so branchLength distribution sums to 1.
+        double      sum = 0.0;
+        for(j = 0; j < npat; ++j)
+            sum += branchLength[j];
+        for(j = 0; j < npat; ++j)
+            branchLength[j] /= sum;
     }
-    printf("\n%% max val: %0.4lf\n", maxval);
+
+    printf("%15s %10s\n", "SitePattern", "Prob");
+    char        buff[100];
+    for(j = 0; j < npat; ++j) {
+        char        buff2[100];
+        snprintf(buff2, sizeof(buff2), "[%s]",
+                 patLbl(sizeof(buff), buff, pat[j], &(taskarg[0]->sndx)));
+        printf("%15s %10.7lf\n", buff2, branchLength[j]);
+    }
 
     for(j = 0; j < nTasks; ++j)
         TaskArg_free(taskarg[j]);

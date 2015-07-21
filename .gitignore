@@ -1,6 +1,6 @@
 *.o
-*.lgo
 *~
+mktree-tmp.lgo
 try.c
 core
 depend

@@ -124,7 +124,7 @@ void BTLink_print(BTLink * self) {
 BranchTab    *BranchTab_new(void) {
     BranchTab    *new = malloc(sizeof(*new));
     CHECKMEM(new);
-    memset(new, 0, sizeof(new));
+    memset(new, 0, sizeof(*new));
     return new;
 }
 
@@ -153,9 +153,9 @@ void BranchTab_add(BranchTab * self, tipId_t key, double value) {
 }
 
 /// Return the number of elements in the BranchTab.
-unsigned long BranchTab_size(BranchTab * self) {
+unsigned BranchTab_size(BranchTab * self) {
     unsigned    i;
-    unsigned long size = 0;
+    unsigned    size = 0;
 
     for(i = 0; i < BT_DIM; ++i) {
         BTLink *el;
@@ -171,6 +171,30 @@ void BranchTab_print(BranchTab *self) {
         printf("%2u:", i);
         BTLink_print(self->tab[i]);
         putchar('\n');
+    }
+}
+
+/// Add each entry in table rhs to table lhs
+void BranchTab_plusEquals(BranchTab *lhs, BranchTab *rhs) {
+    int i;
+    for(i=0; i<BT_DIM; ++i) {
+        BTLink *link;
+        for(link=rhs->tab[i]; link!=NULL; link=link->next)
+            BranchTab_add(lhs, link->key, link->value);
+    }
+}
+
+void BranchTab_toArrays(BranchTab *self, unsigned n, tipId_t key[n], double value[n]) {
+    int i, j=0;
+    for(i=0; i<BT_DIM; ++i) {
+        BTLink *link;
+        for(link=self->tab[i]; link!=NULL; link=link->next) {
+            if(j >= n)
+                eprintf("%s:%s:%d: buffer overflow\n", __FILE__,__func__,__LINE__);
+            key[j] = link->key;
+            value[j] = link->value;
+            ++j;
+        }
     }
 }
 

@@ -27,6 +27,14 @@ void dostacktrace(const char *file, int line, FILE * ofp) {
 }
 
 /*
+ * Describe an option. For use in "usage" functions.
+ */
+void tellopt(const char *opt, const char *description) {
+    fprintf(stderr, "   %s\n      %s\n", opt, description);
+    return;
+}
+
+/*
  * An almost platform-independent function that returns the number of
  * CPU cores on the current machine.
  * Source: http://stackoverflow.com/questions/150355/
