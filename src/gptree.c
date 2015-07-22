@@ -61,7 +61,7 @@ void PopNode_sanityFromLeaf(PopNode *self, const char *file, int line) {
         REQUIRE(self->nparents==2, file, line);
         REQUIRE(self->parent[0]!=NULL, file, line);
         REQUIRE(self->parent[1]!=NULL, file, line);
-        REQUIRE(self->mix > 0.0, file, line);
+        REQUIRE(self->mix >= 0.0, file, line);
         break;
     }
     switch(self->nchildren) {
