@@ -271,11 +271,11 @@ void parseMix(Tokenizer *tkz, HashTab *ht) {
     // Read first mixture fraction
     CHECK_INDEX(curr, ntokens);
     if(getDbl(&m[0], tkz, curr++)
-       || m[0] <= 0.0
-       || m[0] >= 1.0 ) {
-        EPRINTF(("%s:%s:%d: bad mixture fraction \"%s\"\n",
+       || m[0] < 0.0
+       || m[0] > 1.0 ) {
+        EPRINTF(("%s:%s:%d: bad mixture fraction \"%s\"->%0.20lf\n",
                  __FILE__,__func__,__LINE__,
-                 Tokenizer_token(tkz, curr-1)));
+                 Tokenizer_token(tkz, curr-1), m[0]));
     }
     
     // Read name of parent0
@@ -291,11 +291,11 @@ void parseMix(Tokenizer *tkz, HashTab *ht) {
     // Read 2nd mixture fraction
     CHECK_INDEX(curr, ntokens);
     if(getDbl(&m[1], tkz, curr++)
-       || m[1] <= 0.0
-       || m[1] >= 1.0 ) {
-        EPRINTF(("%s:%s:%d: bad mixture fraction \"%s\"\n",
+       || m[1] < 0.0
+       || m[1] > 1.0 ) {
+        EPRINTF(("%s:%s:%d: bad mixture fraction \"%s\"->%0.20lf\n",
                  __FILE__,__func__,__LINE__,
-                 Tokenizer_token(tkz, curr-1)));
+                 Tokenizer_token(tkz, curr-1), m[1]));
     }
     
     // Read name of parent1
