@@ -12,19 +12,22 @@
 #include <stdio.h>
 
 void segment(const char *name, double t, double n, int samples);
-void mix(const char *ego, const char *ancestor, double m, const char *introgressor);
+void mix(const char *ego, const char *ancestor, double m,
+         const char *introgressor);
 void derive(const char *ego, const char *ancestor);
 
 
 void segment(const char *name, double t, double n, int samples) {
-    printf("segment %3s t=%5.2lf N=%8.2lf", name, t, n);
+    printf("segment %3s t=%9.6lf N=%9.6lf", name, t, n);
     if(samples)
         printf(" samples=%d", samples);
     putchar('\n');
 }
 
-void mix(const char *ego, const char *ancestor, double m, const char *introgressor) {
-    printf("mix %s from %lf %s + %lf %s\n", ego, 1-m, ancestor, m, introgressor);
+void mix(const char *ego, const char *ancestor, double m,
+         const char *introgressor) {
+    printf("mix %s from %9.6lf %s + %9.6lf %s\n", ego, 1-m, ancestor, m,
+           introgressor);
 }
 
 void derive(const char *ego, const char *ancestor) {

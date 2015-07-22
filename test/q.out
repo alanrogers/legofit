@@ -8,17 +8,17 @@
 # Inx         : 0.167441
 # Iny         : 0.208279
 # Ixy         : 0.624280
-segment   x t= 0.00 N=    2.00 samples=1
-segment   y t= 0.00 N=    1.00 samples=1
-segment   w t= 0.04 N=    1.00
-segment   z t= 0.09 N=    1.00
-segment   n t= 0.09 N=    0.10 samples=1
-segment   d t= 0.04 N=    0.10 samples=1
-segment  xy t= 0.19 N=    2.00
-segment  nd t= 0.74 N=    0.20
-segment   a t= 1.13 N=    1.00
-mix y from 0.990000 w + 0.010000 d
-mix w from 0.980000 z + 0.020000 n
+segment   x t= 0.000000 N= 2.000000 samples=1
+segment   y t= 0.000000 N= 1.000000 samples=1
+segment   w t= 0.043103 N= 1.000000
+segment   z t= 0.094828 N= 1.000000
+segment   n t= 0.094828 N= 0.100000 samples=1
+segment   d t= 0.043103 N= 0.100000 samples=1
+segment  xy t= 0.189655 N= 2.000000
+segment  nd t= 0.736207 N= 0.200000
+segment   a t= 1.134483 N= 1.000000
+mix y from  0.990000 w +  0.010000 d
+mix w from  0.980000 z +  0.020000 n
 derive x from xy
 derive z from xy
 derive xy from a
