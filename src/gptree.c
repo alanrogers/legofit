@@ -411,9 +411,7 @@ void PopNode_newGene(PopNode *pnode, unsigned ndx) {
     PopNode_sanityCheck(pnode, __FILE__, __LINE__);
 }
 
-/**
- * Coalesce gene tree within population tree.
- */
+/// Coalesce gene tree within population tree.
 Gene * PopNode_coalesce(PopNode *pnode, gsl_rng *rng) {
     unsigned long i, j, k;
     double x;
@@ -428,10 +426,8 @@ Gene * PopNode_coalesce(PopNode *pnode, gsl_rng *rng) {
         PopNode_print(stdout, pnode, 0);
     assert(t < pnode->end);
 
-    /*
-     * Coalescent loop continues until only one sample is left
-     * or we reach the end of the interval.
-     */
+    // Coalescent loop continues until only one sample is left
+    // or we reach the end of the interval.
     while(pnode->nsamples > 1 && t < pnode->end) {
         double m;
         {
@@ -441,10 +437,12 @@ Gene * PopNode_coalesce(PopNode *pnode, gsl_rng *rng) {
         x = gsl_ran_exponential(rng, m);
 
         if(t + x < pnode->end) {
-            /* coalescent event within interval */
+            // coalescent event within interval
             t += x;
             for(i=0; i < pnode->nsamples; ++i)
                 Gene_addToBranch(pnode->sample[i], x);
+
+            // choose a random pair to join
             i = gsl_rng_uniform_int(rng, pnode->nsamples);
             j = gsl_rng_uniform_int(rng, pnode->nsamples-1);
             if(j >= i)
@@ -455,6 +453,7 @@ Gene * PopNode_coalesce(PopNode *pnode, gsl_rng *rng) {
                 j = k;
             }
             assert(i<j);
+
             pnode->sample[i] = Gene_join(pnode->sample[i], pnode->sample[j]);
             checkmem(pnode->sample[i], __FILE__, __LINE__);
             --pnode->nsamples;
@@ -463,7 +462,7 @@ Gene * PopNode_coalesce(PopNode *pnode, gsl_rng *rng) {
                 pnode->sample[pnode->nsamples] = NULL;
             }
         }else{
-            /* no coalescent event within interval */
+            // no coalescent event within interval
             x = pnode->end - t;
             for(i=0; i < pnode->nsamples; ++i)
                 Gene_addToBranch(pnode->sample[i], x);
@@ -471,7 +470,7 @@ Gene * PopNode_coalesce(PopNode *pnode, gsl_rng *rng) {
         }
     }
 
-    /* Make sure we're at the end of the interval */
+    // Make sure we're at the end of the interval
     if(t < pnode->end) {
         assert(pnode->nsamples < 2);
         x = pnode->end - t;
@@ -480,11 +479,11 @@ Gene * PopNode_coalesce(PopNode *pnode, gsl_rng *rng) {
         t = pnode->end;
     }
 
-    /* If we have both samples and parents, then move samples to parents */
+    // If we have both samples and parents, then move samples to parents
     if(pnode->nsamples > 0 && pnode->nparents > 0) {
         assert(t == pnode->end);
         for(i=0; i < pnode->nsamples; ++i) {
-            /* move current sample to parental population */
+            // move current sample to parental population 
             if(pnode->nparents > 1 && gsl_rng_uniform(rng) < pnode->mix) {
                 PopNode_addSample(pnode->parent[1], pnode->sample[i]);
             }else if(pnode->nparents > 0)
@@ -502,7 +501,7 @@ void PopNode_free(PopNode *self) {
     free(self);
 }
 
-/** survival fuction */
+/// survival fuction
 double survival(double t, double K) {
     assert(t>=0.0);
     assert(K>0.0);
