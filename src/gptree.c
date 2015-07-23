@@ -17,7 +17,6 @@
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 
-
 struct Gene {
     tipId_t tipId;
     struct Gene *parent, *lchild, *rchild;
