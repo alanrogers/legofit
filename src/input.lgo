@@ -1,9 +1,9 @@
-segment a   t=0     N=100    samples=1
-segment b   t=0     N=123    samples=1
-segment c   t=1     N=2.4  samples=1
-segment bb  t=1     N=32.1
-segment ab  t=3     N=8e0
-segment abc t=9.5e0 N=12
+segment a   t=0     twoN=100    samples=1
+segment b   t=0     twoN=123    samples=1
+segment c   t=1     twoN=2.4  samples=1
+segment bb  t=1     twoN=32.1
+segment ab  t=3     twoN=8e0
+segment abc t=9.5e0 twoN=12
 mix b from 0.9 bb + 0.1 c
 derive a from ab
 derive bb from ab

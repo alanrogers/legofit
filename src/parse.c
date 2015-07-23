@@ -23,7 +23,7 @@
 // The input file begins with a series of "segment" statements that define each
 // of the segments in the tree. The segment statements also provide
 // the time (backwards from the present) at which the segment starts,
-// and the size, N, of the population. Optionally, it also provides
+// and the size, twoN, of the population. Optionally, it also provides
 // the number of haploid samples observed in this segment of the tree.
 //
 // The statements that follow the segment statements describe how the
@@ -37,12 +37,12 @@
 //
 // Here is input that would generate the tree above:
 //
-// segment a   t=0     N=100    samples=1
-// segment b   t=0     N=123    samples=2
-// segment c   t=1     N=213.4  samples=1
-// segment bb  t=1     N=32.1
-// segment ab  t=3     N=222
-// segment abc t=5.5e0 N=1.2e2
+// segment a   t=0     twoN=100    samples=1
+// segment b   t=0     twoN=123    samples=2
+// segment c   t=1     twoN=213.4  samples=1
+// segment bb  t=1     twoN=32.1
+// segment ab  t=3     twoN=222
+// segment abc t=5.5e0 twoN=1.2e2
 // mix    b  from 0.9 bb + 0.1 c
 // derive a  from ab
 // derive bb from ab
@@ -111,10 +111,10 @@ int getULong(unsigned long *x, Tokenizer * tkz, int i) {
     return 1;                   // failure
 }
 
-// segment a   t=0     N=100    samples=1
+// segment a   t=0     twoN=100    samples=1
 void parseSegment(Tokenizer *tkz, HashTab *ht, SampNdx *sndx) {
     char *popName;
-    double t, N;
+    double t, twoN;
     unsigned long nsamples=0;
     int curr=1,  ntokens = Tokenizer_ntokens(tkz);
 
@@ -147,24 +147,24 @@ void parseSegment(Tokenizer *tkz, HashTab *ht, SampNdx *sndx) {
         ++curr;
     }
     
-    // Read N
+    // Read twoN
     CHECK_INDEX(curr, ntokens);
-    if(0 != strcmp("N", Tokenizer_token(tkz, curr++))) {
-        fprintf(stderr, "Got %s when expecting N on input:\n",
+    if(0 != strcmp("twoN", Tokenizer_token(tkz, curr++))) {
+        fprintf(stderr, "Got %s when expecting twoN on input:\n",
                 Tokenizer_token(tkz, curr - 1));
         Tokenizer_print(tkz, stderr);
         exit(EXIT_FAILURE);
     }
     CHECK_INDEX(curr, ntokens);
-    if(getDbl(&N, tkz, curr)) {
+    if(getDbl(&twoN, tkz, curr)) {
         fprintf(stderr,
-                "Can't parse \"%s\" as a double. Expecting value of N\n",
+                "Can't parse \"%s\" as a double. Expecting value of twoN\n",
                 Tokenizer_token(tkz, curr));
         Tokenizer_print(tkz, stderr);
         exit(EXIT_FAILURE);
     } else {
-        if(N <= 0.0) {
-            fprintf(stderr, "Bad value of N: \"%s\" in input line:\n",
+        if(twoN <= 0.0) {
+            fprintf(stderr, "Bad value of twoN: \"%s\" in input line:\n",
                     Tokenizer_token(tkz, curr));
             Tokenizer_print(tkz, stderr);
             exit(EXIT_FAILURE);
@@ -200,7 +200,7 @@ void parseSegment(Tokenizer *tkz, HashTab *ht, SampNdx *sndx) {
     El *e = HashTab_get(ht, popName);
     PopNode *thisNode = (PopNode *) El_get(e);
     if(thisNode == NULL) {
-        thisNode = PopNode_new(N, t);
+        thisNode = PopNode_new(twoN, t);
         El_set(e, thisNode);
     }else
         EPRINTF(("%s:%s:%d: duplicate \"segment %s\"\n",
@@ -442,12 +442,12 @@ PopNode    *mktree(FILE * fp, HashTab * ht, SampNdx *sndx) {
 //  t = 0  1    3    5.5     inf
 const char *tstInput =
     " # this is a comment\n"
-    "segment a   t=0     N=100    samples=1\n"
-    "segment b   t=0     N=123    samples=2\n"
-    "segment c   t=1     N=213.4  samples=1\n"
-    "segment bb  t=1     N=32.1 # another comment\n"
-    "segment ab  t=3     N=222\n"
-    "segment abc t=5.5e0 N=1.2e2\n"
+    "segment a   t=0     twoN=100    samples=1\n"
+    "segment b   t=0     twoN=123    samples=2\n"
+    "segment c   t=1     twoN=213.4  samples=1\n"
+    "segment bb  t=1     twoN=32.1 # another comment\n"
+    "segment ab  t=3     twoN=222\n"
+    "segment abc t=5.5e0 twoN=1.2e2\n"
     "mix b from 0.9 bb + 0.1 c\n"
     "derive a from ab\n"
     "derive bb from ab\n"

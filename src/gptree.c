@@ -25,11 +25,11 @@ struct Gene {
 
 struct PopNode {
     int nparents, nchildren, nsamples;
-    double K;          /* ratio of current pop size to ancestral pop size */
-    double start, end; /* duration of this PopNode */
+    double twoN;       // current pop size to ancestral pop size 
+    double start, end; // duration of this PopNode
     struct PopNode *parent[2];
     struct PopNode *child[2];
-    double mix;  /*mix=frac of pop derived from parent[1] */
+    double mix;        // mix=frac of pop derived from parent[1]
     Gene *sample[MAXSAMP];
 };
 
@@ -116,8 +116,8 @@ PopNode *PopNode_root(PopNode *self) {
     return NULL;
 }
 
-void PopNode_set(PopNode *self, double K, double start, double end) {
-    self->K = K;
+void PopNode_set(PopNode *self, double twoN, double start, double end) {
+    self->twoN = twoN;
     self->start = start;
     self->end = end;
 }
@@ -137,8 +137,8 @@ void PopNode_print(FILE *fp, PopNode *pnode, int indent) {
     int i;
     for(i=0; i< indent; ++i)
         fputs("   ", fp);
-    fprintf(fp, "%p K=%lf ntrval=(%lf,",
-            pnode, pnode->K, pnode->start);
+    fprintf(fp, "%p twoN=%lf ntrval=(%lf,",
+            pnode, pnode->twoN, pnode->start);
     if(pnode->end < DBL_MAX)
         fprintf(fp, "%lf)\n", pnode->end);
     else
@@ -149,8 +149,8 @@ void PopNode_print(FILE *fp, PopNode *pnode, int indent) {
 }
 
 void PopNode_printShallow(PopNode *self, FILE *fp) {
-    fprintf(fp, "%p K=%lf ntrval=(%lf,",
-            self, self->K, self->start);
+    fprintf(fp, "%p twoN=%lf ntrval=(%lf,",
+            self, self->twoN, self->start);
     if(self->end < DBL_MAX)
         fprintf(fp, "%lf)", self->end);
     else
@@ -291,12 +291,12 @@ void Gene_free(Gene *gene) {
     free(gene);
 }
 
-PopNode *PopNode_new(double K, double start) {
+PopNode *PopNode_new(double twoN, double start) {
     PopNode *pnode = malloc(sizeof(PopNode));
     checkmem(pnode, __FILE__, __LINE__);
 
     pnode->nparents = pnode->nchildren = pnode->nsamples = 0;
-    pnode->K = K;
+    pnode->twoN = twoN;
     pnode->start = start;
     pnode->end = HUGE_VAL;
 
@@ -431,7 +431,7 @@ Gene * PopNode_coalesce(PopNode *pnode, gsl_rng *rng) {
         double m;
         {
             int n = pnode->nsamples;
-            m = 2.0 * pnode->K / (n*(n-1));
+            m = 2.0 * pnode->twoN / (n*(n-1));
         }
         x = gsl_ran_exponential(rng, m);
 
@@ -501,8 +501,8 @@ void PopNode_free(PopNode *self) {
 }
 
 /// survival fuction
-double survival(double t, double K) {
+double survival(double t, double twoN) {
     assert(t>=0.0);
-    assert(K>0.0);
-    return exp(-t/K);
+    assert(twoN>0.0);
+    return exp(-t/twoN);
 }
