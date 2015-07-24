@@ -45,6 +45,7 @@ void        TaskArg_free(TaskArg * targ);
 int         taskfun(void *varg);
 char       *patLbl(size_t n, char buff[n], tipId_t tid, SampNdx * sndx);
 void        usage(void);
+int         comparePtrs(const void *void_x, const void *void_y);
 
 void usage(void) {
     fprintf(stderr, "usage: lego [options] input_file_name\n");
@@ -54,6 +55,30 @@ void usage(void) {
     tellopt("-h or --help", "print this message");
     exit(1);
 }
+
+/// Compare pointers to pointers to two tipId_t values.
+///
+/// @param void_x,void_y pointers to pointers to tipId_t values
+/// @returns <0, 0, or >0 depending on whether the first arg is <,
+/// ==, or > the second.
+int comparePtrs(const void *void_x, const void *void_y) {
+    tipId_t * const * x = (tipId_t * const *) void_x;
+    tipId_t * const * y = (tipId_t * const *) void_y;
+
+    int diff1bits = num1bits(**x) - num1bits(**y);
+    if(diff1bits)
+        return diff1bits;
+
+    // Reverse order of bits so that low-order bit
+    // is most significant. This ensures that the
+    // first lines of output will refer to the first
+    // segment listed in the input data.
+    unsigned rx = reverseBits(**x);
+    unsigned ry = reverseBits(**y);
+
+    return ry - rx;
+}
+
 
 /**
  * Construct a new TaskArg by copying a template, but then assign
@@ -164,7 +189,7 @@ int main(int argc, char **argv) {
            "#################################################\n");
     putchar('\n');
 
-    int i, j;
+    int         i, j;
     time_t      currtime = time(NULL);
 #ifdef __TIMESTAMP__
     printf("# Program was compiled: %s\n", __TIMESTAMP__);
@@ -299,13 +324,22 @@ int main(int argc, char **argv) {
         branchLength[j] /= nreps;
 #endif
 
+    // Determine order for printing lines of output
+    tipId_t  *ptr[npat];
+    unsigned ord[npat];
+    for(j=0; j < npat; ++j)
+        ptr[j] = pat+j;
+    qsort(ptr, (size_t) npat, sizeof(ptr[0]), comparePtrs);
+    for(i=0; i<npat; ++i)
+        ord[i] = ptr[i]-pat;
+
     printf("%15s %10s\n", "SitePattern", "Prob");
     char        buff[100];
     for(j = 0; j < npat; ++j) {
         char        buff2[100];
         snprintf(buff2, sizeof(buff2), "[%s]",
-                 patLbl(sizeof(buff), buff, pat[j], &(taskarg[0]->sndx)));
-        printf("%15s %10.7lf\n", buff2, branchLength[j]);
+                 patLbl(sizeof(buff), buff, pat[ord[j]], &(taskarg[0]->sndx)));
+        printf("%15s %10.7lf\n", buff2, branchLength[ord[j]]);
     }
 
     for(j = 0; j < nTasks; ++j)

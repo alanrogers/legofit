@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <limits.h>
 #include <assert.h>
+#include <stdint.h>
 
 #ifdef NDEBUG
 #error "Unit tests must be compiled without -DNDEBUG flag"
@@ -72,6 +73,28 @@ int main(int argv, char* argc[])
     assert(num1bits(7UL)==3);
     assert(num1bits(8UL)==1);
     assert(num1bits((1UL << 1) | (1UL<<3) | (1UL<<5) | (1UL<<9))==4);
+
+    uint32_t u32, r32;
+    u32 = 1 | (1 << 3) | (1 << 17);
+    r32 = rev32(u32);
+    assert(u32 == rev32(r32));
+    printf("u32:");
+    printBits(sizeof(u32), &u32);
+    putchar('\n');
+    printf("r32:");
+    printBits(sizeof(r32), &r32);
+    putchar('\n');
+
+    uint64_t u64, r64;
+    u64 = 1ULL | (1ULL << 3) | (1ULL << 17) | (1ULL << 47);
+    r64 = rev64(u64);
+    assert(u64 == rev64(r64));
+    printf("u64:");
+    printBits(sizeof(u64), &u64);
+    putchar('\n');
+    printf("r64:");
+    printBits(sizeof(r64), &r64);
+    putchar('\n');
 
     return 0;
 }

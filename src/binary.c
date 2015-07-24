@@ -1,6 +1,44 @@
 #include "binary.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
+#include <assert.h>
+
+tipId_t reverseBits(tipId_t x) {
+    if(sizeof(x)==4)
+        return rev32(x);
+    assert(sizeof(x) == 8);
+    return rev64(x);
+}
+
+// Reverse bits in a 32-bit integer
+// p 129 of Hacker's Delight, 2nd edn.
+uint32_t rev32(uint32_t x) {
+    x = (x & 0x55555555) <<  1 | (x & 0xAAAAAAAA) >>  1;
+    x = (x & 0x33333333) <<  2 | (x & 0xCCCCCCCC) >>  2;
+    x = (x & 0x0F0F0F0F) <<  4 | (x & 0xF0F0F0F0) >>  4;
+    x = (x & 0x00FF00FF) <<  8 | (x & 0xFF00FF00) >>  8;
+    x = (x & 0x0000FFFF) << 16 | (x & 0xFFFF0000) >> 16;
+    return x;
+}
+
+// Reverse bits in a 64-bit integer.
+// This just extends the pattern in rev32.
+uint64_t rev64(uint64_t x) {
+    x = (x & 0x5555555555555555) <<  1
+        | (x & 0xAAAAAAAAAAAAAAAA) >>  1;
+    x = (x & 0x3333333333333333) <<  2
+        | (x & 0xCCCCCCCCCCCCCCCC) >>  2;
+    x = (x & 0x0F0F0F0F0F0F0F0F) <<  4
+        | (x & 0xF0F0F0F0F0F0F0F0) >>  4;
+    x = (x & 0x00FF00FF00FF00FF) <<  8
+        | (x & 0xFF00FF00FF00FF00) >>  8;
+    x = (x & 0x0000FFFF0000FFFF) << 16
+        | (x & 0xFFFF0000FFFF0000) >> 16;
+    x = (x & 0x00000000FFFFFFFF) << 32
+        | (x & 0xFFFFFFFF00000000) >> 32;
+    return x;
+}
 
 /* assumes little endian */
 void printBits(size_t size, void const * const ptr) {
