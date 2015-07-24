@@ -285,9 +285,9 @@ int main(int argc, char **argv) {
     TaskArg    *taskarg[nTasks];
     unsigned    pid = (unsigned) getpid();
 
-    printf("nreps       : %lu\n", nreps);
-    printf("nthreads    : %d\n", nTasks);
-    printf("input file  : %s\n", fname);
+    printf("# nreps       : %lu\n", nreps);
+    printf("# nthreads    : %d\n", nTasks);
+    printf("# input file  : %s\n", fname);
 
     for(j = 0; j < nTasks; ++j)
         taskarg[j] = TaskArg_new(&targ, currtime + pid + j, reps[j]);
@@ -302,7 +302,7 @@ int main(int argc, char **argv) {
         JobQueue_waitOnJobs(jq);
         JobQueue_free(jq);
     }
-    fprintf(stderr, "Back from threads\n");
+    fflush(stdout);
 
     // Add all branchtabs into branchtab[0]
     for(j = 1; j < nTasks; ++j)
@@ -337,7 +337,7 @@ int main(int argc, char **argv) {
     for(i=0; i<npat; ++i)
         ord[i] = ptr[i]-pat;
 
-    printf("%15s %10s\n", "SitePattern", "Prob");
+    printf("#%14s %10s\n", "SitePattern", "Prob");
     char        buff[100];
     for(j = 0; j < npat; ++j) {
         char        buff2[100];
