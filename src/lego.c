@@ -65,14 +65,18 @@ int comparePtrs(const void *void_x, const void *void_y) {
     tipId_t * const * x = (tipId_t * const *) void_x;
     tipId_t * const * y = (tipId_t * const *) void_y;
 
+    // Major sort is on the number of samples
+    // represented in the site pattern. Patterns with
+    // fewer samples come first.
     int diff1bits = num1bits(**x) - num1bits(**y);
     if(diff1bits)
         return diff1bits;
 
     // Reverse order of bits so that low-order bit
     // is most significant. This ensures that the
-    // first lines of output will refer to the first
-    // segment listed in the input data.
+    // sort order of samples corresponds to the
+    // order in which they were listed in the input
+    // data.
     unsigned rx = reverseBits(**x);
     unsigned ry = reverseBits(**y);
 
