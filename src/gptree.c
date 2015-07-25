@@ -311,16 +311,20 @@ PopNode *PopNode_new(double twoN, double start) {
 /// Connect parent and child 
 void PopNode_addChild(PopNode *parent, PopNode *child) {
     if(parent->nchildren > 1)
-        EPRINTF(("%s:%s:%d: Can't add child because parent already has %d.\n",
-                 __FILE__,__func__,__LINE__, parent->nchildren));
+        eprintf("%s:%s:%d: Can't add child because parent already has %d.\n",
+                 __FILE__,__func__,__LINE__, parent->nchildren);
     if(child->nparents > 1)
-        EPRINTF(("%s:%s:%d: Can't add parent because child already has %d.\n",
-                 __FILE__,__func__,__LINE__, child->nparents));
+        eprintf("%s:%s:%d: Can't add parent because child already has %d.\n",
+                 __FILE__,__func__,__LINE__, child->nparents);
+    if(child->start > parent->start)
+        eprintf("%s:%s:%d: Child start (%lf) must be < parent start (%lf)\n",
+                __FILE__, __func__, __LINE__,
+                child->start, parent->start);
     if(child->end < HUGE_VAL) {
         if(child->end != parent->start)
-            EPRINTF(("%s:%s:%d: Date mismatch. child->end=%lf != %lf = parent->start\n",
+            eprintf("%s:%s:%d: Date mismatch. child->end=%lf != %lf = parent->start\n",
                      __FILE__,__func__,__LINE__,
-                     child->end, parent->start));
+                     child->end, parent->start);
     }else
         child->end = parent->start;
     parent->child[parent->nchildren] = child;
