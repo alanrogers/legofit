@@ -27,9 +27,9 @@ struct PopNode {
     int nparents, nchildren, nsamples;
     double twoN;       // current pop size to ancestral pop size 
     double start, end; // duration of this PopNode
+    double mix;        // mix=frac of pop derived from parent[1]
     struct PopNode *parent[2];
     struct PopNode *child[2];
-    double mix;        // mix=frac of pop derived from parent[1]
     Gene *sample[MAXSAMP];
 };
 
@@ -149,8 +149,8 @@ void PopNode_print(FILE *fp, PopNode *pnode, int indent) {
 }
 
 void PopNode_printShallow(PopNode *self, FILE *fp) {
-    fprintf(fp, "%p twoN=%lf ntrval=(%lf,",
-            self, self->twoN, self->start);
+    fprintf(fp, "%p twoN=%lf mix=%lf ntrval=(%lf,",
+            self, self->twoN, self->mix, self->start);
     if(self->end < DBL_MAX)
         fprintf(fp, "%lf)", self->end);
     else
@@ -297,6 +297,7 @@ PopNode *PopNode_new(double twoN, double start) {
 
     pnode->nparents = pnode->nchildren = pnode->nsamples = 0;
     pnode->twoN = twoN;
+    pnode->mix = 0.0;
     pnode->start = start;
     pnode->end = HUGE_VAL;
 
