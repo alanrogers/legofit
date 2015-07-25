@@ -41,7 +41,7 @@ uint64_t rev64(uint64_t x) {
 }
 
 /* assumes little endian */
-void printBits(size_t size, void const * const ptr) {
+void printBits(size_t size, void const * const ptr, FILE *fp) {
     unsigned char const * const b = (unsigned char const * const) ptr;
     unsigned char byte;
     size_t i, j;
@@ -52,10 +52,10 @@ void printBits(size_t size, void const * const ptr) {
         while(j-- > 0) {
             byte = b[i] & (1<<j);
             byte >>= j;
-            printf("%u", (unsigned) byte);
+            fprintf(fp, "%u", (unsigned) byte);
         }
     }
-    putchar('\n');
+    putc('\n', fp);
 }
 
 /*
