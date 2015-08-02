@@ -5,6 +5,7 @@ try.c
 core
 depend
 xhashtab
+xgptree
 xparse
 xbinary
 xsampndx
