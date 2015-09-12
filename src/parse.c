@@ -323,7 +323,6 @@ void parseMix(Tokenizer *tkz, HashTab *ht) {
         EPRINTF(("%s:%s:%d: Mixture fractions (%lf, %lf) must sum to 1.\n",
                  __FILE__,__func__,__LINE__, m[0], m[1]));
 
-
     assert(strlen(childName) > 0);
     El *childEl = HashTab_get(ht, childName);
     PopNode *childNode = (PopNode *) El_get(childEl);
