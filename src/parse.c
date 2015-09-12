@@ -175,26 +175,26 @@ void parseSegment(Tokenizer *tkz, HashTab *ht, SampNdx *sndx) {
     // Read (optional) number of samples
     if(curr < ntokens) {
         if(0 != strcmp("samples", Tokenizer_token(tkz, curr++)))
-            EPRINTF(("%s:%s:%d: got %s when expecting \"samples\"\n",
+            eprintf("%s:%s:%d: got %s when expecting \"samples\"\n",
                      __FILE__,__func__,__LINE__,
-                     Tokenizer_token(tkz, curr - 1)));
+                     Tokenizer_token(tkz, curr - 1));
         CHECK_INDEX(curr, ntokens);
         if(getULong(&nsamples, tkz, curr)) 
-            EPRINTF(("%s:%s:%d: Can't parse \"%s\" as an unsigned int."
+            eprintf("%s:%s:%d: Can't parse \"%s\" as an unsigned int."
                     " Expecting value of \"samples\"\n",
                      __FILE__,__func__,__LINE__,
-                     Tokenizer_token(tkz, curr - 1)));
+                     Tokenizer_token(tkz, curr - 1));
         else {
             if(nsamples > MAXSAMP) 
-                EPRINTF(("%s:%s:%d: %lu samples is too many: max is %d:\n",
-                         __FILE__,__func__,__LINE__, nsamples, MAXSAMP));
+                eprintf("%s:%s:%d: %lu samples is too many: max is %d:\n",
+                         __FILE__,__func__,__LINE__, nsamples, MAXSAMP);
             ++curr;
         }
     }
 
     if(curr < ntokens)
-        EPRINTF(("%s:%s:%d: extra token \"%s\" at end of line\n",
-                 __FILE__,__func__,__LINE__, Tokenizer_token(tkz,curr)));
+        eprintf("%s:%s:%d: extra token \"%s\" at end of line\n",
+                 __FILE__,__func__,__LINE__, Tokenizer_token(tkz,curr));
 
     assert(strlen(popName) > 0);
     El *e = HashTab_get(ht, popName);
@@ -203,8 +203,8 @@ void parseSegment(Tokenizer *tkz, HashTab *ht, SampNdx *sndx) {
         thisNode = PopNode_new(twoN, t);
         El_set(e, thisNode);
     }else
-        EPRINTF(("%s:%s:%d: duplicate \"segment %s\"\n",
-                 __FILE__,__func__,__LINE__, popName));
+        eprintf("%s:%s:%d: duplicate \"segment %s\"\n",
+                 __FILE__,__func__,__LINE__, popName);
     SampNdx_addSamples(sndx, nsamples, thisNode, popName);
 }
 
@@ -231,23 +231,23 @@ void parseDerive(Tokenizer *tkz, HashTab *ht) {
     parName = Tokenizer_token(tkz, curr++);
 
     if(curr < ntokens)
-        EPRINTF(("%s:%s:%d: extra token \"%s\" at end of line\n",
-                 __FILE__,__func__,__LINE__, Tokenizer_token(tkz,curr)));
+        eprintf("%s:%s:%d: extra token \"%s\" at end of line\n",
+                 __FILE__,__func__,__LINE__, Tokenizer_token(tkz,curr));
 
     assert(strlen(childName) > 0);
     El *childEl = HashTab_get(ht, childName);
     PopNode *childNode = (PopNode *) El_get(childEl);
     if(childNode == NULL) {
-        EPRINTF(("%s:%s:%d: child segment \"%s\" undefined\n",
-                 __FILE__,__func__,__LINE__, childName));
+        eprintf("%s:%s:%d: child segment \"%s\" undefined\n",
+                 __FILE__,__func__,__LINE__, childName);
     }
 
     assert(strlen(parName) > 0);
     El *parEl = HashTab_get(ht, parName);
     PopNode *parNode = (PopNode *) El_get(parEl);
     if(parNode == NULL) {
-        EPRINTF(("%s:%s:%d: parent segment \"%s\" undefined\n",
-                 __FILE__,__func__,__LINE__, parName));
+        eprintf("%s:%s:%d: parent segment \"%s\" undefined\n",
+                 __FILE__,__func__,__LINE__, parName);
     }
     PopNode_addChild(parNode, childNode);
 }
@@ -265,17 +265,17 @@ void parseMix(Tokenizer *tkz, HashTab *ht) {
     // Read word "from"
     CHECK_INDEX(curr, ntokens);
     if(0 != strcmp("from", Tokenizer_token(tkz, curr++)))
-        EPRINTF(("%s:%s:%d: got %s when expecting \"from\" on input:\n",
-                 __FILE__,__func__,__LINE__, Tokenizer_token(tkz, curr - 1)));
+        eprintf("%s:%s:%d: got %s when expecting \"from\" on input:\n",
+                 __FILE__,__func__,__LINE__, Tokenizer_token(tkz, curr - 1));
 
     // Read first mixture fraction
     CHECK_INDEX(curr, ntokens);
     if(getDbl(&m[0], tkz, curr++)
        || m[0] < 0.0
        || m[0] > 1.0 ) {
-        EPRINTF(("%s:%s:%d: bad mixture fraction \"%s\"->%0.20lf\n",
+        eprintf("%s:%s:%d: bad mixture fraction \"%s\"->%0.20lf\n",
                  __FILE__,__func__,__LINE__,
-                 Tokenizer_token(tkz, curr-1), m[0]));
+                 Tokenizer_token(tkz, curr-1), m[0]);
     }
     
     // Read name of parent0
@@ -285,17 +285,17 @@ void parseMix(Tokenizer *tkz, HashTab *ht) {
     // Read symbol "+"
     CHECK_INDEX(curr, ntokens);
     if(0 != strcmp("+", Tokenizer_token(tkz, curr++)))
-        EPRINTF(("%s:%s:%d: got %s when expecting \"+\" on input:\n",
-                 __FILE__,__func__,__LINE__, Tokenizer_token(tkz, curr - 1)));
+        eprintf("%s:%s:%d: got %s when expecting \"+\" on input:\n",
+                 __FILE__,__func__,__LINE__, Tokenizer_token(tkz, curr - 1));
 
     // Read 2nd mixture fraction
     CHECK_INDEX(curr, ntokens);
     if(getDbl(&m[1], tkz, curr++)
        || m[1] < 0.0
        || m[1] > 1.0 ) {
-        EPRINTF(("%s:%s:%d: bad mixture fraction \"%s\"->%0.20lf\n",
+        eprintf("%s:%s:%d: bad mixture fraction \"%s\"->%0.20lf\n",
                  __FILE__,__func__,__LINE__,
-                 Tokenizer_token(tkz, curr-1), m[1]));
+                 Tokenizer_token(tkz, curr-1), m[1]);
     }
     
     // Read name of parent1
@@ -303,8 +303,8 @@ void parseMix(Tokenizer *tkz, HashTab *ht) {
     parName[1] = Tokenizer_token(tkz, curr++);
 
     if(curr < ntokens)
-        EPRINTF(("%s:%s:%d: extra token \"%s\" at end of line\n",
-                 __FILE__,__func__,__LINE__, Tokenizer_token(tkz,curr)));
+        eprintf("%s:%s:%d: extra token \"%s\" at end of line\n",
+                 __FILE__,__func__,__LINE__, Tokenizer_token(tkz,curr));
 
     // For no good reason, I'm ensuring that m[1] < m[0]
     if(m[0] < m[1]) {
@@ -320,30 +320,30 @@ void parseMix(Tokenizer *tkz, HashTab *ht) {
         parName[1] = s;
     }
     if(fabs(1.0 - m[0] - m[1]) > 0.001)
-        EPRINTF(("%s:%s:%d: Mixture fractions (%lf, %lf) must sum to 1.\n",
-                 __FILE__,__func__,__LINE__, m[0], m[1]));
+        eprintf("%s:%s:%d: Mixture fractions (%lf, %lf) must sum to 1.\n",
+                 __FILE__,__func__,__LINE__, m[0], m[1]);
 
     assert(strlen(childName) > 0);
     El *childEl = HashTab_get(ht, childName);
     PopNode *childNode = (PopNode *) El_get(childEl);
     if(childNode == NULL) {
-        EPRINTF(("%s:%s:%d: child segment \"%s\" undefined\n",
-                 __FILE__,__func__,__LINE__, childName));
+        eprintf("%s:%s:%d: child segment \"%s\" undefined\n",
+                 __FILE__,__func__,__LINE__, childName);
     }
 
     assert(strlen(parName[0]) > 0);
     El *parEl0 = HashTab_get(ht, parName[0]);
     PopNode *parNode0 = (PopNode *) El_get(parEl0);
     if(parNode0 == NULL)
-        EPRINTF(("%s:%s:%d: parent segment \"%s\" undefined\n",
-                 __FILE__,__func__,__LINE__, parName[0]));
+        eprintf("%s:%s:%d: parent segment \"%s\" undefined\n",
+                 __FILE__,__func__,__LINE__, parName[0]);
 
     assert(strlen(parName[1]) > 0);
     El *parEl1 = HashTab_get(ht, parName[1]);
     PopNode *parNode1 = (PopNode *) El_get(parEl1);
     if(parNode1 == NULL)
-        EPRINTF(("%s:%s:%d: parent segment \"%s\" undefined\n",
-                 __FILE__,__func__,__LINE__, parName[1]));
+        eprintf("%s:%s:%d: parent segment \"%s\" undefined\n",
+                 __FILE__,__func__,__LINE__, parName[1]);
 
     PopNode_mix(childNode, m[1], parNode1, parNode0);
 }
