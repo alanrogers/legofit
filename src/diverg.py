@@ -1,4 +1,8 @@
 #!/usr/bin/python
+# diverg.py
+#
+# This program compares the output of two runs of the lego program and summarizes
+# the difference between them using the Kullback-Leibler divergence.
 from math import log
 import sys
 
