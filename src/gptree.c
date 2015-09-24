@@ -334,7 +334,7 @@ void PopNode_mix(PopNode * child, double m, PopNode * introgressor,
 void PopNode_newGene(PopNode * self, unsigned ndx) {
     assert(1 + self->nsamples < MAXSAMP);
 
-    assert(ndx < sizeof(tipId_t));
+    assert(ndx < 8*sizeof(tipId_t));
     Gene       *gene = Gene_new(1UL << ndx);
     checkmem(gene, __FILE__, __LINE__);
     self->sample[self->nsamples] = gene;
