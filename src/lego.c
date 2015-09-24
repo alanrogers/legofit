@@ -337,11 +337,11 @@ int main(int argc, char **argv) {
     for(i=0; i<npat; ++i)
         ord[i] = ptr[i]-pat;
 
-    printf("#%14s %10s\n", "SitePattern", "Prob");
+    printf("#%14s %10s\n", "SitePat", "Prob");
     char        buff[100];
     for(j = 0; j < npat; ++j) {
         char        buff2[100];
-        snprintf(buff2, sizeof(buff2), "[%s]",
+        snprintf(buff2, sizeof(buff2), "%s",
                  patLbl(sizeof(buff), buff, pat[ord[j]], &(taskarg[0]->sndx)));
         printf("%15s %10.7lf\n", buff2, branchLength[ord[j]]);
     }
