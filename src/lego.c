@@ -195,10 +195,10 @@ int main(int argc, char **argv) {
 
     int         i, j;
     time_t      currtime = time(NULL);
-#ifdef __TIMESTAMP__
-    printf("# Program was compiled: %s\n", __TIMESTAMP__);
+#if defined(__DATE__) && defined(__TIME__)
+    printf("# Program was compiled: %s %s\n", __DATE__, __TIME__);
 #endif
-    printf("# Program was run     : %s\n", ctime(&currtime));
+    printf("# Program was run: %s\n", ctime(&currtime));
 
     printf("# cmd:");
     for(i = 0; i < argc; ++i)

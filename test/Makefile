@@ -6,7 +6,8 @@ opt :=  -O0 -fno-inline-functions -DDEBUG     # For debugging
 prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
 
-tests := xzeroin xbinary xhashtab xparse xgptree
+#tests := xzeroin xbinary xhashtab xparse xgptree xbranchtab
+tests := xbinary xhashtab xparse xgptree xbranchtab
 
 CC := gcc
 
@@ -33,11 +34,14 @@ lib := -L/usr/local/lib -lgsl -lgslcblas -lpthread -lm
 .c.o:
 	$(CC) $(CFLAGS) -c -o ${@F}  $<
 
-all : $(targets)
+all : $(tests)
 
 test : $(tests)
 	-./xbinary
-	-./xzeroin
+	-./xhashtab
+	-./xparse
+	-./xgptree
+#	-./xzeroin
 	@echo "ALL UNIT TESTS WERE COMPLETED."
 
 zeroin.o : zeroin.h
