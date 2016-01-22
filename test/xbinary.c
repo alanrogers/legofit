@@ -22,36 +22,36 @@ int main(int argv, char* argc[])
     int i = 2;
     unsigned ui = UINT_MAX;
     float f = 23.45f;
-    printBits(sizeof(i), &i);
+    printBits(sizeof(i), &i, stdout);
     printWhichBits(sizeof(i), &i);
     putchar('\n');
-    printBits(sizeof(ui), &ui);
+    printBits(sizeof(ui), &ui, stdout);
     printWhichBits(sizeof(ui), &ui);
     putchar('\n');
-    printBits(sizeof(f), &f);
+    printBits(sizeof(f), &f, stdout);
     printWhichBits(sizeof(f), &f);
     putchar('\n');
 
     ui = UINT_MAX;
     printf("%12s: ", "UINT_MAX");
-    printBits(sizeof(ui), &ui);
+    printBits(sizeof(ui), &ui, stdout);
     ui >>= 2;
     printf("%12s: ", "UINT_MAX>>2");
-    printBits(sizeof(ui), &ui);
+    printBits(sizeof(ui), &ui, stdout);
 
     i = -1;
     printf("%12s: ", "-1");
-    printBits(sizeof(i), &i);
+    printBits(sizeof(i), &i, stdout);
     i >>= 2;
     printf("%12s: ", "-1 >>2");
-    printBits(sizeof(i), &i);
+    printBits(sizeof(i), &i, stdout);
 
     ui = -1;
     printf("%12s: ", "-1u");
-    printBits(sizeof(ui), &ui);
+    printBits(sizeof(ui), &ui, stdout);
     ui >>= 2;
     printf("%12s: ", "-1u >>2");
-    printBits(sizeof(ui), &ui);
+    printBits(sizeof(ui), &ui, stdout);
 
     assert(!isPow2(0UL));
     assert(isPow2(1UL));
@@ -79,10 +79,10 @@ int main(int argv, char* argc[])
     r32 = rev32(u32);
     assert(u32 == rev32(r32));
     printf("u32:");
-    printBits(sizeof(u32), &u32);
+    printBits(sizeof(u32), &u32, stdout);
     putchar('\n');
     printf("r32:");
-    printBits(sizeof(r32), &r32);
+    printBits(sizeof(r32), &r32, stdout);
     putchar('\n');
 
     uint64_t u64, r64;
@@ -90,10 +90,10 @@ int main(int argv, char* argc[])
     r64 = rev64(u64);
     assert(u64 == rev64(r64));
     printf("u64:");
-    printBits(sizeof(u64), &u64);
+    printBits(sizeof(u64), &u64, stdout);
     putchar('\n');
     printf("r64:");
-    printBits(sizeof(r64), &r64);
+    printBits(sizeof(r64), &r64, stdout);
     putchar('\n');
 
     return 0;

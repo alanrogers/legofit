@@ -184,13 +184,15 @@ void BranchTab_plusEquals(BranchTab *lhs, BranchTab *rhs) {
     }
 }
 
-void BranchTab_toArrays(BranchTab *self, unsigned n, tipId_t key[n], double value[n]) {
+void BranchTab_toArrays(BranchTab *self, unsigned n, tipId_t key[n],
+						double value[n]) {
     int i, j=0;
     for(i=0; i<BT_DIM; ++i) {
         BTLink *link;
         for(link=self->tab[i]; link!=NULL; link=link->next) {
             if(j >= n)
-                eprintf("%s:%s:%d: buffer overflow\n", __FILE__,__func__,__LINE__);
+                eprintf("%s:%s:%d: buffer overflow\n",
+						__FILE__,__func__,__LINE__);
             key[j] = link->key;
             value[j] = link->value;
             ++j;
@@ -246,5 +248,6 @@ int main(int argc, char **argv) {
     if(verbose)
         BranchTab_print(bt);
     BranchTab_free(bt);
+	unitTstResult("BranchTab", "OK");
 }
 #endif
