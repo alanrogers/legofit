@@ -19,12 +19,13 @@
 //
 //  t = 0  1    3    5.5     inf
 //
-// In this tree, a, b, c, bb, ab, and abc represent segments of the population tree. 
-// The input file begins with a series of "segment" statements that define each
-// of the segments in the tree. The segment statements also provide
-// the time (backwards from the present) at which the segment starts,
-// and the size, twoN, of the population. Optionally, it also provides
-// the number of haploid samples observed in this segment of the tree.
+// In this tree, a, b, c, bb, ab, and abc represent segments of the
+// population tree.  The input file begins with a series of "segment"
+// statements that define each of the segments in the tree. The
+// segment statements also provide the time (backwards from the
+// present) at which the segment starts, and the size, twoN, of the
+// population. Optionally, it also provides the number of haploid
+// samples observed in this segment of the tree.
 //
 // The statements that follow the segment statements describe how the
 // segments are connected. The "mix" statement is used when a segment
@@ -148,6 +149,10 @@ void parseSegment(Tokenizer *tkz, HashTab *ht, SampNdx *sndx) {
     }
     
     // Read twoN
+	if(curr >= ntokens) {
+		fprintf(stderr, "curr=%d >= ntokens=%d\n", curr, ntokens);
+		Tokenizer_print(tkz, stderr);
+	}
     CHECK_INDEX(curr, ntokens);
     if(0 != strcmp("twoN", Tokenizer_token(tkz, curr++))) {
         fprintf(stderr, "Got %s when expecting twoN on input:\n",
