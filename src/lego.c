@@ -119,11 +119,11 @@ int taskfun(void *varg) {
     PopNode    *rootPop = NULL;
     {
         // Build population tree as specified in file targ->fname.
-        // After this section, rootPop points to the ancestral population,
-        // ht is a table that maps population names to nodes in the
-        // population tree, and sndx is an index of samples. The call
-        // to HashTab_freeValues (at the end of this function)
-        // deallocates all population nodes. 
+        // After this section, rootPop points to the ancestral
+        // population, ht is a table that maps population names to
+        // nodes in the population tree, and targ->sndx is an index of
+        // samples. The call to HashTab_freeValues (at the end of this
+        // function) deallocates all population nodes.
         FILE       *fp = fopen(targ->fname, "r");
         if(fp == NULL)
             eprintf("%s:%s:%d: can't open file %s.\n",
@@ -212,7 +212,7 @@ int main(int argc, char **argv) {
     unsigned long nreps = 100;
     char        fname[200] = { '\0' };
 
-    /* command line arguments */
+    // command line arguments
     for(;;) {
         i = getopt_long(argc, argv, "i:t:h", myopts, &optndx);
         if(i == -1)
@@ -234,7 +234,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    /* remaining option gives file name */
+    // remaining option gives file name 
     switch (argc - optind) {
     case 0:
         fprintf(stderr, "Command line must specify input file\n");
@@ -262,8 +262,9 @@ int main(int argc, char **argv) {
         assert(qr.quot > 0);
         for(j = 0; j < nTasks; ++j)
             reps[j] = qr.quot;
-        if(qr.rem)
-            reps[0] += qr.rem;
+        assert(qr.rem < nTasks);
+        for(j=0; j < qr.rem)
+            reps[j] += 1;
 #ifndef NDEBUG
         // make sure the total number of repetitions is nreps.
         long        sumreps = 0;
