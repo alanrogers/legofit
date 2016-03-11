@@ -263,7 +263,7 @@ int main(int argc, char **argv) {
         for(j = 0; j < nTasks; ++j)
             reps[j] = qr.quot;
         assert(qr.rem < nTasks);
-        for(j=0; j < qr.rem)
+        for(j=0; j < qr.rem; ++j)
             reps[j] += 1;
 #ifndef NDEBUG
         // make sure the total number of repetitions is nreps.
