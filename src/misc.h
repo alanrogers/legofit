@@ -39,14 +39,6 @@ static inline double survival(double t, double twoN);
     exit(1);\
 }while(0)
 
-// Print error message and abort. Call with doubled parentheses
-// like this:
-//    EPRINTF(("%s:%d: bad value %d\n",__FILE__,__LINE__, i));
-#  define EPRINTF(arg) do{                        \
-        printf arg ;                            \
-        exit(EXIT_FAILURE);                     \
-    }while(0)
-
 #  define   CHECKMEM(x) do {                                  \
         if((x)==NULL) {                                     \
             fprintf(stderr, "%s:%s:%d: allocation error\n", \
