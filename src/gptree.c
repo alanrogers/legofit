@@ -136,7 +136,7 @@ void PopNode_sanityFromLeaf(PopNode * self, const char *file, int line) {
         REQUIRE(self->child[1] != NULL, file, line);
         break;
     }
-    REQUIRE(self->start < self->end, file, line);
+    REQUIRE(self->start <= self->end, file, line);
     if(self->nparents > 0)
         PopNode_sanityFromLeaf(self->parent[0], file, line);
     if(self->nparents > 1)
@@ -365,9 +365,9 @@ Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng) {
         (void) PopNode_coalesce(self->child[1], rng);
 
     double      t = self->start;
-    if(!(t < self->end))
+    if(!(t <= self->end))
         PopNode_print(stdout, self, 0);
-    assert(t < self->end);
+    assert(t <= self->end);
 
     // Coalescent loop continues until only one sample is left
     // or we reach the end of the interval.
