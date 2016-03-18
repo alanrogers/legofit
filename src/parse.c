@@ -133,7 +133,8 @@ void parseSegment(Tokenizer *tkz, HashTab *ht, SampNdx *sndx) {
     }
     CHECK_INDEX(curr, ntokens);
     if(getDbl(&t, tkz, curr)) {
-        fprintf(stderr,
+		fflush(stdout);
+        fprintf(stderr, 
                 "Can't parse \"%s\" as a double. Expecting value of t\n",
                 Tokenizer_token(tkz, curr));
         Tokenizer_print(tkz, stderr);
