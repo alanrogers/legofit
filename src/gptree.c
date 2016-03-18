@@ -263,7 +263,7 @@ void PopNode_addChild(PopNode * parent, PopNode * child) {
         eprintf("%s:%s:%d: Can't add parent because child already has %d.\n",
                 __FILE__, __func__, __LINE__, child->nparents);
     if(child->start > parent->start)
-        eprintf("%s:%s:%d: Child start (%lf) must be < parent start (%lf)\n",
+        eprintf("%s:%s:%d: Child start (%lf) must be <= parent start (%lf)\n",
                 __FILE__, __func__, __LINE__, child->start, parent->start);
     if(child->end < HUGE_VAL) {
         if(child->end != parent->start)
