@@ -305,16 +305,23 @@ void PopNode_addSample(PopNode * self, Gene * gene) {
 void PopNode_mix(PopNode * child, double m, PopNode * introgressor,
                  PopNode * native) {
     if(introgressor->nchildren > 1)
-        EPRINTF(("%s:%s:%d: Can't add child because introgressor already has %d.\n", __FILE__, __func__, __LINE__, introgressor->nchildren));
+        EPRINTF(("%s:%s:%d: Can't add child because introgressor already has %d.\n",
+				 __FILE__, __func__, __LINE__, introgressor->nchildren));  
     if(native->nchildren > 1)
-        EPRINTF(("%s:%s:%d: Can't add child because native parent already has %d.\n", __FILE__, __func__, __LINE__, native->nchildren));
+        EPRINTF(("%s:%s:%d: Can't add child because native parent already has %d.\n",
+				 __FILE__, __func__, __LINE__, native->nchildren));
     if(child->nparents > 0)
-        EPRINTF(("%s:%s:%d: Can't add 2 parents because child already has %d.\n", __FILE__, __func__, __LINE__, child->nparents));
+        EPRINTF(("%s:%s:%d: Can't add 2 parents because child already has %d.\n",
+				 __FILE__, __func__, __LINE__, child->nparents));
     if(child->end < HUGE_VAL) {
         if(child->end != introgressor->start)
-            EPRINTF(("%s:%s:%d: Date mismatch. child->end=%lf != %lf = introgressor->start\n", __FILE__, __func__, __LINE__, child->end, introgressor->start));
+            EPRINTF(("%s:%s:%d: Date mismatch."
+					 " child->end=%lf != %lf = introgressor->start\n",
+					 __FILE__, __func__, __LINE__, child->end, introgressor->start));
         if(child->end != native->start)
-            EPRINTF(("%s:%s:%d: Date mismatch. child->end=%lf != %lf = native->start\n", __FILE__, __func__, __LINE__, child->end, native->start));
+            EPRINTF(("%s:%s:%d: Date mismatch."
+					 " child->end=%lf != %lf = native->start\n",
+					 __FILE__, __func__, __LINE__, child->end, native->start));
     } else
         child->end = native->start;
 
