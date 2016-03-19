@@ -258,10 +258,10 @@ void parseDerive(Tokenizer *tkz, HashTab *ht) {
     PopNode_addChild(parNode, childNode);
 }
 
-// mix    b  from 0.9 bb + 0.1 c
+// mix    b  from bb + 0.1 c
 void parseMix(Tokenizer *tkz, HashTab *ht) {
     char *childName, *parName[2];
-    double m[2];
+    double m;
     int curr=1,  ntokens = Tokenizer_ntokens(tkz);
 
     // Read name of child
@@ -286,15 +286,11 @@ void parseMix(Tokenizer *tkz, HashTab *ht) {
 
     // Read mixture fraction
     CHECK_INDEX(curr, ntokens);
-    if(getDbl(&m[1], tkz, curr++)
-       || m[1] < 0.0
-       || m[1] > 1.0 ) {
+    if(getDbl(&m, tkz, curr++) || m < 0.0 || m > 1.0 ) {
         eprintf("%s:%s:%d: bad mixture fraction \"%s\"->%0.20lf\n",
                  __FILE__,__func__,__LINE__,
-                 Tokenizer_token(tkz, curr-1), m[1]);
+                 Tokenizer_token(tkz, curr-1), m);
     }
-	m[0] = 1.0 - m[1];
-    
     // Read name of parent1
     CHECK_INDEX(curr, ntokens);
     parName[1] = Tokenizer_token(tkz, curr++);
@@ -303,21 +299,8 @@ void parseMix(Tokenizer *tkz, HashTab *ht) {
         eprintf("%s:%s:%d: extra token \"%s\" at end of line\n",
                  __FILE__,__func__,__LINE__, Tokenizer_token(tkz,curr));
 
-    // For no good reason, I'm ensuring that m[1] < m[0]
-    if(m[0] < m[1]) {
-        double x;
-        char *s;
-
-        x = m[0];
-        m[0] = m[1];
-        m[1] = x;
-
-        s = parName[0];
-        parName[0] = parName[1];
-        parName[1] = s;
-    }
-    assert(1.0 - m[0] - m[1] < 0.000001);
-	assert(m[1] <= m[0]);
+    assert(m <= 1.0);
+    assert(m >= 0.0);
 
     assert(strlen(childName) > 0);
     El *childEl = HashTab_get(ht, childName);
@@ -341,7 +324,7 @@ void parseMix(Tokenizer *tkz, HashTab *ht) {
         eprintf("%s:%s:%d: parent segment \"%s\" undefined\n",
                  __FILE__,__func__,__LINE__, parName[1]);
 
-    PopNode_mix(childNode, m[1], parNode1, parNode0);
+    PopNode_mix(childNode, m, parNode1, parNode0);
 }
 
 PopNode    *mktree(FILE * fp, HashTab * ht, SampNdx *sndx) {
@@ -443,7 +426,7 @@ const char *tstInput =
     "segment bb  t=1     twoN=32.1 # another comment\n"
     "segment ab  t=3     twoN=222\n"
     "segment abc t=5.5e0 twoN=1.2e2\n"
-    "mix b from 0.9 bb + 0.1 c\n"
+    "mix b from bb + 0.1 c\n"
     "derive a from ab\n"
     "derive bb from ab\n"
     "derive ab from abc\n"
