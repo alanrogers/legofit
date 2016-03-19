@@ -4,7 +4,7 @@ segment c   t=1     twoN=2.4  samples=1
 segment bb  t=1     twoN=32.1
 segment ab  t=3     twoN=8e0
 segment abc t=9.5e0 twoN=12
-mix b from 0.9 bb + 0.1 c
+mix b from bb + 0.1 c
 derive a from ab
 derive bb from ab
 derive ab from abc

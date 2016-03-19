@@ -44,7 +44,7 @@
 // segment bb  t=1     twoN=32.1
 // segment ab  t=3     twoN=222
 // segment abc t=5.5e0 twoN=1.2e2
-// mix    b  from 0.9 bb + 0.1 c
+// mix    b  from bb + 0.1 c
 // derive a  from ab
 // derive bb from ab
 // derive ab from abc
@@ -274,16 +274,6 @@ void parseMix(Tokenizer *tkz, HashTab *ht) {
         eprintf("%s:%s:%d: got %s when expecting \"from\" on input:\n",
                  __FILE__,__func__,__LINE__, Tokenizer_token(tkz, curr - 1));
 
-    // Read first mixture fraction
-    CHECK_INDEX(curr, ntokens);
-    if(getDbl(&m[0], tkz, curr++)
-       || m[0] < 0.0
-       || m[0] > 1.0 ) {
-        eprintf("%s:%s:%d: bad mixture fraction \"%s\"->%0.20lf\n",
-                 __FILE__,__func__,__LINE__,
-                 Tokenizer_token(tkz, curr-1), m[0]);
-    }
-    
     // Read name of parent0
     CHECK_INDEX(curr, ntokens);
     parName[0] = Tokenizer_token(tkz, curr++);
@@ -294,7 +284,7 @@ void parseMix(Tokenizer *tkz, HashTab *ht) {
         eprintf("%s:%s:%d: got %s when expecting \"+\" on input:\n",
                  __FILE__,__func__,__LINE__, Tokenizer_token(tkz, curr - 1));
 
-    // Read 2nd mixture fraction
+    // Read mixture fraction
     CHECK_INDEX(curr, ntokens);
     if(getDbl(&m[1], tkz, curr++)
        || m[1] < 0.0
@@ -303,6 +293,7 @@ void parseMix(Tokenizer *tkz, HashTab *ht) {
                  __FILE__,__func__,__LINE__,
                  Tokenizer_token(tkz, curr-1), m[1]);
     }
+	m[0] = 1.0 - m[1];
     
     // Read name of parent1
     CHECK_INDEX(curr, ntokens);
@@ -325,9 +316,8 @@ void parseMix(Tokenizer *tkz, HashTab *ht) {
         parName[0] = parName[1];
         parName[1] = s;
     }
-    if(fabs(1.0 - m[0] - m[1]) > 0.001)
-        eprintf("%s:%s:%d: Mixture fractions (%lf, %lf) must sum to 1.\n",
-                 __FILE__,__func__,__LINE__, m[0], m[1]);
+    assert(1.0 - m[0] - m[1] < 0.000001);
+	assert(m[1] <= m[0]);
 
     assert(strlen(childName) > 0);
     El *childEl = HashTab_get(ht, childName);
