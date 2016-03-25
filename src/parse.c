@@ -90,7 +90,8 @@
 
 int         getDbl(double *x, Tokenizer * tkz, int i);
 int         getULong(unsigned long *x, Tokenizer * tkz, int i);
-void        parseSegment(Tokenizer *tkz, HashTab *ht, SampNdx *sndx);
+void        parseSegment(Tokenizer *tkz, HashTab *ht, SampNdx *sndx,
+						 ParStore *fixed, Bounds *bnd);
 void        parseDerive(Tokenizer *tkz, HashTab *ht);
 void        parseMix(Tokenizer *tkz, HashTab *ht);
 
@@ -113,7 +114,8 @@ int getULong(unsigned long *x, Tokenizer * tkz, int i) {
 }
 
 // segment a   t=0     twoN=100    samples=1
-void parseSegment(Tokenizer *tkz, HashTab *ht, SampNdx *sndx) {
+void parseSegment(Tokenizer *tkz, HashTab *ht, SampNdx *sndx,
+				  ParStore *fixed, Bounds *bnd) {
     char *popName;
     double t, twoN;
     unsigned long nsamples=0;
@@ -206,7 +208,10 @@ void parseSegment(Tokenizer *tkz, HashTab *ht, SampNdx *sndx) {
     El *e = HashTab_get(ht, popName);
     PopNode *thisNode = (PopNode *) El_get(e);
     if(thisNode == NULL) {
-        thisNode = PopNode_new(twoN, t);
+		double *twoNptr, *tPtr;
+		twoNptr = ParStore_addPar(fixed, twoN, bnd->lo_twoN, bnd->hi_twoN);
+		tPtr = ParStore_addPar(fixed, t, bnd->lo_t, bnd->hi_t);
+        thisNode = PopNode_new(twoNptr, tPtr);
         El_set(e, thisNode);
     }else
         eprintf("%s:%s:%d: duplicate \"segment %s\"\n",
@@ -327,7 +332,8 @@ void parseMix(Tokenizer *tkz, HashTab *ht) {
     PopNode_mix(childNode, m, parNode1, parNode0);
 }
 
-PopNode    *mktree(FILE * fp, HashTab * ht, SampNdx *sndx) {
+PopNode    *mktree(FILE * fp, HashTab * ht, SampNdx *sndx, ParStore *fixed,
+				   Bounds *bnd) {
     int         ntokens;
     char        buff[500];
     Tokenizer  *tkz = Tokenizer_new(50);

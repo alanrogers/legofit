@@ -14,6 +14,7 @@
 #include "jobqueue.h"
 #include "misc.h"
 #include "parse.h"
+#include "parstore.h"
 #include "sampndx.h"
 #include <assert.h>
 #include <float.h>
@@ -34,6 +35,7 @@ struct TaskArg {
     unsigned    rng_seed;
     unsigned long nreps;
     SampNdx     sndx;
+	Bounds      bnd;
 
     // Returned value
     BranchTab  *branchtab;
@@ -116,6 +118,7 @@ int taskfun(void *varg) {
     gsl_rng    *rng = gsl_rng_alloc(gsl_rng_taus);
     gsl_rng_set(rng, targ->rng_seed);
     HashTab    *ht = HashTab_new();
+	ParStore   *fixed = ParStore_new();  // fixed parameters
     PopNode    *rootPop = NULL;
     {
         // Build population tree as specified in file targ->fname.
@@ -128,7 +131,7 @@ int taskfun(void *varg) {
         if(fp == NULL)
             eprintf("%s:%s:%d: can't open file %s.\n",
                     __FILE__, __func__, __LINE__, targ->fname);
-        rootPop = mktree(fp, ht, &(targ->sndx));
+        rootPop = mktree(fp, ht, &(targ->sndx), fixed, &(targ->bnd));
         fclose(fp);
     }
 
@@ -152,6 +155,7 @@ int taskfun(void *varg) {
     gsl_rng_free(rng);
     HashTab_freeValues(ht);     // free all PopNode pointers
     HashTab_free(ht);
+	ParStore_free(fixed);
 
     return 0;
 }
@@ -195,6 +199,8 @@ int main(int argc, char **argv) {
 
     int         i, j;
     time_t      currtime = time(NULL);
+	double      lo_twoN = 0.0, hi_twoN = 1e6;  // twoN bounds
+	double      lo_t = 0.0, hi_t = 1e6;        // t bounds
 #if defined(__DATE__) && defined(__TIME__)
     printf("# Program was compiled: %s %s\n", __DATE__, __TIME__);
 #endif
@@ -280,6 +286,12 @@ int main(int argc, char **argv) {
         .fname = fname,
         .rng_seed = 0,
         .nreps = 0,
+		.bnd = {
+			.lo_twoN = lo_twoN,
+			.hi_twoN = hi_twoN,
+			.lo_t = lo_t,
+			.hi_t = hi_t
+		},
         .branchtab = NULL
     };
 

@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 
+typedef struct Bounds Bounds;
 typedef struct BranchTab BranchTab;
 typedef struct El El;
 typedef struct Gene Gene;

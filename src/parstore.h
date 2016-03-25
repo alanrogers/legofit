@@ -13,6 +13,10 @@ struct ParStore {
     double      hi[MAXPAR];     // upper bounds
 };
 
+struct Bounds {
+	double lo_twoN, hi_twoN, lo_t, hi_t;
+};
+
 ParStore   *ParStore_new(void);
 void        ParStore_free(ParStore * self);
 double     *ParStore_addPar(ParStore * self, double value, double lo, double hi);
