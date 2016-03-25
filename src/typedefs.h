@@ -8,6 +8,7 @@ typedef struct El El;
 typedef struct Gene Gene;
 typedef struct HashTab HashTab;
 typedef struct HashTabSeq HashTabSeq;
+typedef struct ParStore ParStore;
 typedef struct PopNode PopNode;
 typedef struct SampNdx SampNdx;
 typedef struct Tokenizer Tokenizer;
