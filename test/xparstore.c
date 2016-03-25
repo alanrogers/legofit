@@ -12,10 +12,12 @@
 #include <assert.h>
 
 #ifdef NDEBUG
-#error "Unit tests must be compiled without -DNDEBUG flag"
+#  error "Unit tests must be compiled without -DNDEBUG flag"
 #endif
 
 int main(void) {
+    ParStore *ps = ParStore_new();
+    assert(ParStore_nPar(ps) == 0);
 
-
+    return 0;
 }

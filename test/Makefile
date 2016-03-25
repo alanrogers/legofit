@@ -79,7 +79,7 @@ xgptree : $(XGPTREE)
 xsampndx.o : sampndx.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/sampndx.c
 
-XPARSTORE := xparstore.o misc.o
+XPARSTORE := xparstore.o misc.o parstore.o
 xparstore : $(XPARSTORE)
 	$(CC) $(CFLAGS) -o $@ $(XPARSTORE) $(lib)
 
