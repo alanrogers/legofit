@@ -15,13 +15,14 @@ struct ParStore {
 
 ParStore   *ParStore_new(void);
 void        ParStore_free(ParStore * self);
-double     *addPar(ParStore * self, double value, double lo, double hi);
+double     *ParStore_addPar(ParStore * self, double value, double lo, double hi);
 
 static inline int ParStore_nPar(ParStore * self);
 static inline double ParStore_get(ParStore * self, int i);
 static inline void ParStore_set(ParStore * self, int i, double value);
 static inline double ParStore_loBnd(ParStore * self, int i);
 static inline double ParStore_hiBnd(ParStore * self, int i);
+static inline double *ParStore_getPtr(ParStore * self);
 
 /// Return the number of parameters
 static inline int ParStore_nPar(ParStore * self) {
@@ -55,4 +56,10 @@ static inline double ParStore_hiBnd(ParStore * self, int i) {
 
     return self->hi[i];
 }
+
+/// Return pointer to array of values
+static inline double * ParStore_getPtr(ParStore * self) {
+    return &self->val[0];
+}
+
 #endif
