@@ -7,7 +7,7 @@ prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
 
 #tests := xzeroin xbinary xhashtab xparse xgptree xbranchtab
-tests := xbinary xhashtab xparse xgptree xbranchtab
+tests := xbinary xhashtab xparse xgptree xbranchtab xparstore
 
 CC := gcc
 
@@ -41,6 +41,7 @@ test : $(tests)
 	-./xhashtab
 	-./xparse
 	-./xgptree
+	-./xparstore
 #	-./xzeroin
 	@echo "ALL UNIT TESTS WERE COMPLETED."
 
@@ -77,6 +78,10 @@ xgptree : $(XGPTREE)
 
 xsampndx.o : sampndx.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/sampndx.c
+
+XPARSTORE := xparstore.o misc.o
+xparstore : $(XPARSTORE)
+	$(CC) $(CFLAGS) -o $@ $(XPARSTORE) $(lib)
 
 XSAMPNDX := xsampndx.o gptree.o misc.o
 xsampndx : $(XSAMPNDX)
