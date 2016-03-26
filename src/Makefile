@@ -1,7 +1,7 @@
 destination := $(HOME)/bin
 #opt := -O3  -finline-functions  # Optimization + debugging
-opt := -DNDEBUG -O3  -finline-functions  # For full optimization
-#opt :=  -O0 -fno-inline-functions -DDEBUG     # For debugging
+#opt := -DNDEBUG -O3  -finline-functions  # For full optimization
+opt :=  -O0 -fno-inline-functions -DDEBUG     # For debugging
 #prof := -pg -rdynamic                    # For profiling
 prof :=
 incl := -I/usr/local/include -I/opt/local/include
@@ -41,7 +41,8 @@ test : $(tests)
 	-./xzeroin
 	@echo "ALL UNIT TESTS WERE COMPLETED."
 
-LEGO := lego.o gptree.o binary.o jobqueue.o misc.o branchtab.o hashtab.o sampndx.o parse.o tokenizer.o
+LEGO := lego.o gptree.o binary.o jobqueue.o misc.o branchtab.o \
+  hashtab.o sampndx.o parse.o tokenizer.o parstore.o
 lego : $(LEGO)
 	$(CC) $(CFLAGS) -o $@ $(LEGO) $(lib)
 

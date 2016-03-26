@@ -22,9 +22,9 @@ void prval(void *vx, void *vfp);
 
 // For use by HashTab_map. It will print every node in the table.
 void prval(void *vx, void *vfp) {
-    PopNode *node = (PopNode *) vx;
+    char *s = (char *) vx;
     FILE *fp = (FILE *) vfp;
-    PopNode_printShallow(node, fp);
+    fprintf(fp, "%s\n", s);
 }
 
 int main(void) {

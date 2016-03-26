@@ -25,9 +25,9 @@ struct Gene {
 
 struct PopNode {
     int         nparents, nchildren, nsamples;
-    double      twoN;           // current pop size to ancestral pop size 
-    double      start, end;     // duration of this PopNode
-    double      mix;            // mix=frac of pop derived from parent[1]
+    double      *twoN;           // ptr to current pop size
+    double      *start, *end;    // duration of this PopNode
+    double      *mix;            // ptr to frac of pop derived from parent[1]
     struct PopNode *parent[2];
     struct PopNode *child[2];
     Gene       *sample[MAXSAMP];
@@ -100,25 +100,25 @@ void PopNode_sanityFromLeaf(PopNode * self, const char *file, int line) {
     case 0:
         REQUIRE(self->parent[0] == NULL, file, line);
         REQUIRE(self->parent[1] == NULL, file, line);
-        REQUIRE(self->mix == 0.0, file, line);
-        if(!isinf(self->end)) {
+        REQUIRE(*self->mix == 0.0, file, line);
+        if(!isinf(*self->end)) {
             fflush(stdout);
             PopNode_printShallow(self, stderr);
         }
-        REQUIRE(isinf(self->end), file, line);
+        REQUIRE(isinf(*self->end), file, line);
         break;
     case 1:
         REQUIRE(self->parent[0] != NULL, file, line);
         REQUIRE(self->parent[1] == NULL, file, line);
-        if(self->mix != 0.0)
+        if(*self->mix != 0.0)
             PopNode_printShallow(self, stdout);
-        REQUIRE(self->mix == 0.0, file, line);
+        REQUIRE(*self->mix == 0.0, file, line);
         break;
     default:
         REQUIRE(self->nparents == 2, file, line);
         REQUIRE(self->parent[0] != NULL, file, line);
         REQUIRE(self->parent[1] != NULL, file, line);
-        REQUIRE(self->mix >= 0.0, file, line);
+        REQUIRE(*self->mix >= 0.0, file, line);
         break;
     }
     switch (self->nchildren) {
@@ -136,7 +136,7 @@ void PopNode_sanityFromLeaf(PopNode * self, const char *file, int line) {
         REQUIRE(self->child[1] != NULL, file, line);
         break;
     }
-    REQUIRE(self->start <= self->end, file, line);
+    REQUIRE(*self->start <= *self->end, file, line);
     if(self->nparents > 0)
         PopNode_sanityFromLeaf(self->parent[0], file, line);
     if(self->nparents > 1)
@@ -189,9 +189,10 @@ void PopNode_print(FILE * fp, PopNode * self, int indent) {
     int         i;
     for(i = 0; i < indent; ++i)
         fputs("   ", fp);
-    fprintf(fp, "%p twoN=%lf ntrval=(%lf,", self, self->twoN, self->start);
-    if(self->end < DBL_MAX)
-        fprintf(fp, "%lf)\n", self->end);
+    fprintf(fp, "%p twoN=%lf ntrval=(%lf,", self, *self->twoN,
+			*self->start);
+    if(*self->end < DBL_MAX)
+        fprintf(fp, "%lf)\n", *self->end);
     else
         fprintf(fp, "Inf)\n");
 
@@ -201,9 +202,9 @@ void PopNode_print(FILE * fp, PopNode * self, int indent) {
 
 void PopNode_printShallow(PopNode * self, FILE * fp) {
     fprintf(fp, "%p twoN=%lf mix=%lf ntrval=(%lf,",
-            self, self->twoN, self->mix, self->start);
-    if(self->end < DBL_MAX)
-        fprintf(fp, "%lf)", self->end);
+            self, *self->twoN, *self->mix, *self->start);
+    if(*self->end < DBL_MAX)
+        fprintf(fp, "%lf)", *self->end);
     else
         fprintf(fp, "Inf)");
 
@@ -236,15 +237,18 @@ int PopNode_nsamples(PopNode * self) {
     return self->nsamples;
 }
 
-PopNode    *PopNode_new(double twoN, double start) {
+PopNode    *PopNode_new(double *twoN, double *start, double *end,
+						double *mix) {
     PopNode    *new = malloc(sizeof(PopNode));
     checkmem(new, __FILE__, __LINE__);
 
     new->nparents = new->nchildren = new->nsamples = 0;
     new->twoN = twoN;
-    new->mix = 0.0;
+    new->mix = mix;
     new->start = start;
-    new->end = HUGE_VAL;
+    new->end = end;
+	*new->mix = 0.0;
+    *new->end = HUGE_VAL;
 
     memset(new->sample, 0, sizeof(new->sample));
     memset(new->parent, 0, sizeof(new->parent));
@@ -262,16 +266,16 @@ void PopNode_addChild(PopNode * parent, PopNode * child) {
     if(child->nparents > 1)
         eprintf("%s:%s:%d: Can't add parent because child already has %d.\n",
                 __FILE__, __func__, __LINE__, child->nparents);
-    if(child->start > parent->start)
+    if(*child->start > *parent->start)
         eprintf("%s:%s:%d: Child start (%lf) must be <= parent start (%lf)\n",
-                __FILE__, __func__, __LINE__, child->start, parent->start);
-    if(child->end < HUGE_VAL) {
-        if(child->end != parent->start)
+                __FILE__, __func__, __LINE__, *child->start, *parent->start);
+    if(*child->end < HUGE_VAL) {
+        if(*child->end != *parent->start)
             eprintf
                 ("%s:%s:%d: Date mismatch. child->end=%lf != %lf = parent->start\n",
-                 __FILE__, __func__, __LINE__, child->end, parent->start);
+                 __FILE__, __func__, __LINE__, *child->end, *parent->start);
     } else
-        child->end = parent->start;
+        *child->end = *parent->start;
     parent->child[parent->nchildren] = child;
     child->parent[child->nparents] = parent;
     ++parent->nchildren;
@@ -280,7 +284,8 @@ void PopNode_addChild(PopNode * parent, PopNode * child) {
     PopNode_sanityCheck(child, __FILE__, __LINE__);
 }
 
-static void PopNode_sanityCheck(PopNode * self, const char *file, int lineno) {
+static void PopNode_sanityCheck(PopNode * self,
+								const char *file, int lineno) {
 #ifndef NDEBUG
     int         i;
 
@@ -305,35 +310,40 @@ void PopNode_addSample(PopNode * self, Gene * gene) {
 void PopNode_mix(PopNode * child, double m, PopNode * introgressor,
                  PopNode * native) {
     if(introgressor->nchildren > 1)
-        eprintf("%s:%s:%d: Can't add child because introgressor already has %d.\n",
+        eprintf("%s:%s:%d:"
+				" Can't add child because introgressor already has %d.\n",
 				 __FILE__, __func__, __LINE__, introgressor->nchildren);  
     if(native->nchildren > 1)
-        eprintf("%s:%s:%d: Can't add child because native parent already has %d.\n",
+        eprintf("%s:%s:%d:"
+				" Can't add child because native parent already has %d.\n",
 				 __FILE__, __func__, __LINE__, native->nchildren);
     if(child->nparents > 0)
-        eprintf("%s:%s:%d: Can't add 2 parents because child already has %d.\n",
+        eprintf("%s:%s:%d:"
+				" Can't add 2 parents because child already has %d.\n",
 				 __FILE__, __func__, __LINE__, child->nparents);
-    if(child->end < HUGE_VAL) {
-        if(child->end != introgressor->start)
+    if(*child->end < HUGE_VAL) {
+        if(*child->end != *introgressor->start)
             eprintf("%s:%s:%d: Date mismatch."
 					 " child->end=%lf != %lf=introgressor->start\n",
-					 __FILE__, __func__, __LINE__, child->end, introgressor->start);
-        if(child->end != native->start)
+					 __FILE__, __func__, __LINE__,
+					*child->end, *introgressor->start);
+        if(*child->end != *native->start)
             eprintf("%s:%s:%d: Date mismatch."
 					 " child->end=%lf != %lf=native->start\n",
-					 __FILE__, __func__, __LINE__, child->end, native->start);
-	} else if(native->start != introgressor->start) {
+					 __FILE__, __func__, __LINE__,
+					*child->end, *native->start);
+	} else if(*native->start != *introgressor->start) {
 		eprintf("%s:%s:%d: Date mismatch."
 				 "native->start=%lf != %lf=introgressor->start\n",
 				 __FILE__, __func__, __LINE__,
-				 native->start, introgressor->start);
+				 *native->start, *introgressor->start);
     } else
-        child->end = native->start;
+        *child->end = *native->start;
 
     child->parent[0] = native;
     child->parent[1] = introgressor;
     child->nparents = 2;
-    child->mix = m;
+    *child->mix = m;
     introgressor->child[introgressor->nchildren] = child;
     ++introgressor->nchildren;
     native->child[native->nchildren] = child;
@@ -364,22 +374,21 @@ Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng) {
     if(self->child[1])
         (void) PopNode_coalesce(self->child[1], rng);
 
-    double      t = self->start;
-    if(!(t <= self->end))
+    double      t = *self->start;
+    if(!(t <= *self->end))
         PopNode_print(stdout, self, 0);
-    assert(t <= self->end);
+    assert(t <= *self->end);
 
     // Coalescent loop continues until only one sample is left
     // or we reach the end of the interval.
-    while(self->nsamples > 1 && t < self->end) {
-        double      m;
+    while(self->nsamples > 1 && t < *self->end) {
         {
             int         n = self->nsamples;
-            m = 2.0 * self->twoN / (n * (n - 1));
+            double      mean = 2.0 * *self->twoN / (n * (n - 1));
+			x = gsl_ran_exponential(rng, mean);
         }
-        x = gsl_ran_exponential(rng, m);
 
-        if(t + x < self->end) {
+        if(t + x < *self->end) {
             // coalescent event within interval
             t += x;
             for(i = 0; i < self->nsamples; ++i)
@@ -406,27 +415,28 @@ Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng) {
             }
         } else {
             // no coalescent event within interval
-            x = self->end - t;
+            x = *self->end - t;
             for(i = 0; i < self->nsamples; ++i)
                 Gene_addToBranch(self->sample[i], x);
-            t = self->end;
+            t = *self->end;
         }
     }
 
     // Make sure we're at the end of the interval
-    if(t < self->end) {
+    if(t < *self->end) {
         assert(self->nsamples < 2);
-        x = self->end - t;
+        x = *self->end - t;
         for(i = 0; i < self->nsamples; ++i)
             Gene_addToBranch(self->sample[i], x);
-        t = self->end;
+        t = *self->end;
     }
+
     // If we have both samples and parents, then move samples to parents
     if(self->nsamples > 0 && self->nparents > 0) {
-        assert(t == self->end);
+        assert(t == *self->end);
         for(i = 0; i < self->nsamples; ++i) {
             // move current sample to parental population 
-            if(self->nparents > 1 && gsl_rng_uniform(rng) < self->mix) {
+            if(self->nparents > 1 && gsl_rng_uniform(rng) < *self->mix) {
                 PopNode_addSample(self->parent[1], self->sample[i]);
             } else if(self->nparents > 0)
                 PopNode_addSample(self->parent[0], self->sample[i]);
@@ -519,12 +529,16 @@ int main(int argc, char **argv) {
 
     unitTstResult("Gene", "OK");
 
-    double twoN0 = 1.0, t0= 0.0;
-    PopNode *p0 = PopNode_new(twoN0, t0);
-    assert(p0->twoN == twoN0);
-    assert(p0->start == t0);
-    assert(p0->mix == 0.0);
-    assert(p0->end == HUGE_VAL);
+    double twoN0 = 1.0, start0= 0.0, end0, m0;
+    PopNode *p0 = PopNode_new(&twoN0, &start0, &end0, &m0);
+    assert(p0->twoN == &twoN0);
+    assert(p0->start == &start0);
+    assert(p0->end == &end0);
+    assert(p0->mix == &m0);
+    assert(*p0->mix == 0.0);
+    assert(*p0->mix == m0);
+    assert(*p0->end == HUGE_VAL);
+    assert(*p0->end == end0);
     assert(p0->nsamples == 0);
     assert(p0->nchildren == 0);
     assert(p0->child[0] == NULL);
@@ -532,12 +546,17 @@ int main(int argc, char **argv) {
     assert(p0->parent[0] == NULL);
     assert(p0->parent[1] == NULL);
 
-    double twoN1 = 100.0, t1= 123.0;
-    PopNode *p1 = PopNode_new(twoN1, t1);
-    assert(p1->twoN == twoN1);
-    assert(p1->start == t1);
-    assert(p1->mix == 0.0);
-    assert(p1->end == HUGE_VAL);
+	if(verbose) 
+		PopNode_printShallow(p0, stdout);
+
+    double twoN1 = 100.0, start1= 123.0, end1, m1;
+    PopNode *p1 = PopNode_new(&twoN1, &start1, &end1, &m1);
+    assert(p1->twoN == &twoN1);
+    assert(p1->start == &start1);
+    assert(p1->end == &end1);
+    assert(p1->mix == &m1);
+    assert(*p1->mix == 0.0);
+    assert(*p1->end == HUGE_VAL);
     assert(p1->nsamples == 0);
     assert(p1->nchildren == 0);
     assert(p1->child[0] == NULL);
@@ -556,6 +575,9 @@ int main(int argc, char **argv) {
     assert(p0->nparents == 1);
     assert(p1->child[0] == p0);
     assert(p0->parent[0] == p1);
+
+	if(verbose) 
+		PopNode_printShallow(p1, stdout);
 
     unitTstResult("PopNode", "untested");
 

@@ -3,6 +3,7 @@
 #include "misc.h"
 #include "parse.h"
 #include "sampndx.h"
+#include "parstore.h"
 #include "tokenizer.h"
 #include <assert.h>
 #include <stdio.h>
@@ -92,7 +93,7 @@ int         getDbl(double *x, Tokenizer * tkz, int i);
 int         getULong(unsigned long *x, Tokenizer * tkz, int i);
 void        parseSegment(Tokenizer *tkz, HashTab *ht, SampNdx *sndx,
 						 ParStore *fixed, Bounds *bnd);
-void        parseDerive(Tokenizer *tkz, HashTab *ht);
+void        parseDerive(Tokenizer *tkz, HashTab *ht); 
 void        parseMix(Tokenizer *tkz, HashTab *ht);
 
 int getDbl(double *x, Tokenizer * tkz, int i) {
@@ -208,10 +209,15 @@ void parseSegment(Tokenizer *tkz, HashTab *ht, SampNdx *sndx,
     El *e = HashTab_get(ht, popName);
     PopNode *thisNode = (PopNode *) El_get(e);
     if(thisNode == NULL) {
-		double *twoNptr, *tPtr;
+		// Allocate storage for parameters within ParStore.
+		double *twoNptr, *startPtr, *endPtr, *mPtr;
 		twoNptr = ParStore_addPar(fixed, twoN, bnd->lo_twoN, bnd->hi_twoN);
-		tPtr = ParStore_addPar(fixed, t, bnd->lo_t, bnd->hi_t);
-        thisNode = PopNode_new(twoNptr, tPtr);
+		startPtr = ParStore_addPar(fixed, t, bnd->lo_t, bnd->hi_t);
+		endPtr = ParStore_addPar(fixed, HUGE_VAL, bnd->lo_t, HUGE_VAL);
+		mPtr = ParStore_addPar(fixed, 0.0, 0.0, 1.0);
+
+		// Create new node, with pointers to the newly-allocated parameters
+        thisNode = PopNode_new(twoNptr, startPtr, endPtr, mPtr);
         El_set(e, thisNode);
     }else
         eprintf("%s:%s:%d: duplicate \"segment %s\"\n",
@@ -360,7 +366,7 @@ PopNode    *mktree(FILE * fp, HashTab * ht, SampNdx *sndx, ParStore *fixed,
 
         char *tok = Tokenizer_token(tkz, 0);
         if(0 == strcmp(tok, "segment"))
-            parseSegment(tkz, ht, sndx);
+            parseSegment(tkz, ht, sndx, fixed, bnd);
         else if(0 == strcmp(tok, "mix"))
             parseMix(tkz, ht);
         else if(0 == strcmp(tok, "derive"))
@@ -464,16 +470,25 @@ int main(int argc, char **argv) {
     HashTab *ht = HashTab_new();
     SampNdx sndx;
     SampNdx_init(&sndx);
-    PopNode *root = mktree(fp, ht, &sndx);
+	ParStore *fixed = ParStore_new();  // fixed parameters
+	Bounds   bnd = {
+		.lo_twoN = 0.0,
+		.hi_twoN = 1e7,
+		.lo_t = 0.0,
+		.hi_t = HUGE_VAL
+	};
+    PopNode *root = mktree(fp, ht, &sndx, fixed, &bnd);
 
     if(verbose) {
         PopNode_print(stdout, root, 0);
         unsigned i;
         for(i=0; i < SampNdx_size(&sndx); ++i)
             printf("%2u %s\n", i, SampNdx_lbl(&sndx, i));
+		printf("Used %d parameters in \"fixed\".\n", ParStore_nPar(fixed));
     }
 
     HashTab_free(ht);
+	ParStore_free(fixed);
     return 0;
 }
 #endif

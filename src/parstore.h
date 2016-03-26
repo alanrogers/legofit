@@ -4,7 +4,7 @@
 #  include "typedefs.h"
 #  include "misc.h"
 #  include <assert.h>
-#  define MAXPAR 10
+#  define MAXPAR 50
 
 struct ParStore {
     int         n;              // number of parameters

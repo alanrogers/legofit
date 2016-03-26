@@ -32,16 +32,19 @@ void ParStore_free(ParStore * self) {
 }
 
 /// Add parameter to ParStore and return a pointer to that value.
-double     *ParStore_addPar(ParStore * self, double value, double lo, double hi) {
+double     *ParStore_addPar(ParStore * self, double value, double lo,
+							double hi) {
     int         i = self->n;
 
     if(++self->n >= MAXPAR)
-        eprintf("%s:%s:%d: buffer overflow in ParStore. "
-                "Increase MAXPAR and recompile.\n",
-                __FILE__, __func__, __LINE__);
+        eprintf("%s:%s:%d: buffer overflow in ParStore."
+				" n=%d. MAXPAR=%d."
+                " Increase MAXPAR and recompile.\n",
+                __FILE__, __func__, __LINE__,
+				self->n, MAXPAR);
 
-    if(value < lo || value >= hi)
-        eprintf("%s:%s:%d: value (%lf) not in range [%lf,%lf)\n",
+    if(value < lo || value > hi)
+        eprintf("%s:%s:%d: value (%lf) not in range [%lf,%lf]\n",
                 __FILE__, __func__, __LINE__, value, lo, hi);
 
     self->val[i] = value;
