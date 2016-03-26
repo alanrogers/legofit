@@ -89,17 +89,29 @@
         exit(EXIT_FAILURE);                                     \
     }while(0)
 
-int         getDbl(double *x, Tokenizer * tkz, int i);
+int         getDbl(double *x, int *vary, Tokenizer * tkz, int i);
 int         getULong(unsigned long *x, Tokenizer * tkz, int i);
 void        parseSegment(Tokenizer *tkz, HashTab *ht, SampNdx *sndx,
-						 ParStore *fixed, Bounds *bnd);
+						 ParStore *fixed, ParStore *var, Bounds *bnd);
 void        parseDerive(Tokenizer *tkz, HashTab *ht); 
 void        parseMix(Tokenizer *tkz, HashTab *ht);
 
-int getDbl(double *x, Tokenizer * tkz, int i) {
+int getDbl(double *x, int *vary, Tokenizer * tkz, int i) {
     char       *end = NULL;
+	const char *tok = Tokenizer_token(tkz, i);
 
-    *x = strtod(Tokenizer_token(tkz, i), &end);
+	// Set "vary" flag if token begins with "*"
+	if(*tok == '*') {
+		if(variable != NULL)
+			*variable = 1;
+		else
+			eprintf("%s:%s:%d: asterisk illegal in token \"%s\".\n",
+					__FILE__,__func__,__LINE__, tok);
+		++tok;
+	}else
+		*variable = 0;
+
+    *x = strtod(tok, &end);
     if(end != NULL && *end == '\0')
         return 0;               // success
     return 1;                   // failure
@@ -116,7 +128,7 @@ int getULong(unsigned long *x, Tokenizer * tkz, int i) {
 
 // segment a   t=0     twoN=100    samples=1
 void parseSegment(Tokenizer *tkz, HashTab *ht, SampNdx *sndx,
-				  ParStore *fixed, Bounds *bnd) {
+				  ParStore *fixed, ParStore *var, Bounds *bnd) {
     char *popName;
     double t, twoN;
     unsigned long nsamples=0;
@@ -135,7 +147,8 @@ void parseSegment(Tokenizer *tkz, HashTab *ht, SampNdx *sndx,
         exit(EXIT_FAILURE);
     }
     CHECK_INDEX(curr, ntokens);
-    if(getDbl(&t, tkz, curr)) {
+	int vary_t;
+    if(getDbl(&t, &vary_t, tkz, curr)) {
 		fflush(stdout);
         fprintf(stderr, 
                 "Can't parse \"%s\" as a double. Expecting value of t\n",
@@ -165,7 +178,8 @@ void parseSegment(Tokenizer *tkz, HashTab *ht, SampNdx *sndx,
         exit(EXIT_FAILURE);
     }
     CHECK_INDEX(curr, ntokens);
-    if(getDbl(&twoN, tkz, curr)) {
+	int vary_twoN;
+    if(getDbl(&twoN, &vary_twoN, tkz, curr)) {
         fprintf(stderr,
                 "Can't parse \"%s\" as a double. Expecting value of twoN\n",
                 Tokenizer_token(tkz, curr));
@@ -211,9 +225,17 @@ void parseSegment(Tokenizer *tkz, HashTab *ht, SampNdx *sndx,
     if(thisNode == NULL) {
 		// Allocate storage for parameters within ParStore.
 		double *twoNptr, *startPtr, *endPtr, *mPtr;
-		twoNptr = ParStore_addPar(fixed, twoN, bnd->lo_twoN, bnd->hi_twoN);
-		startPtr = ParStore_addPar(fixed, t, bnd->lo_t, bnd->hi_t);
+
+		ParStore *parstore = (vary_twoN ? var : fixed);
+		twoNptr = ParStore_addPar(parstore, twoN, bnd->lo_twoN, bnd->hi_twoN);
+
+		parstore = (vary_t ? var : fixed);
+		startPtr = ParStore_addPar(var, t, bnd->lo_t, bnd->hi_t);
+
 		endPtr = ParStore_addPar(fixed, HUGE_VAL, bnd->lo_t, HUGE_VAL);
+
+		// Problem: mPtr is allocated here, but I don't know yet
+		// whether it is fixed or variable.
 		mPtr = ParStore_addPar(fixed, 0.0, 0.0, 1.0);
 
 		// Create new node, with pointers to the newly-allocated parameters
@@ -297,7 +319,7 @@ void parseMix(Tokenizer *tkz, HashTab *ht) {
 
     // Read mixture fraction
     CHECK_INDEX(curr, ntokens);
-    if(getDbl(&m, tkz, curr++) || m < 0.0 || m > 1.0 ) {
+    if(getDbl(&m, NULL, tkz, curr++) || m < 0.0 || m > 1.0 ) {
         eprintf("%s:%s:%d: bad mixture fraction \"%s\"->%0.20lf\n",
                  __FILE__,__func__,__LINE__,
                  Tokenizer_token(tkz, curr-1), m);
