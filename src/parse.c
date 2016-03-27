@@ -91,12 +91,12 @@
 
 int         getDbl(double *x, Tokenizer * tkz, int i);
 int         getULong(unsigned long *x, Tokenizer * tkz, int i);
-void		parseParam(Tokenizer *tkz, HashTab *partbl, ParStore *fixed,
+void		parseParam(Tokenizer *tkz, ParKeyVal **pkv, ParStore *fixed,
 					   ParStore *var);
-void        parseSegment(Tokenizer *tkz, HashTab *poptbl, HashTab *partbl,
+void        parseSegment(Tokenizer *tkz, HashTab *poptbl, ParKeyVal **pkv,
 						 SampNdx *sndx);
 void        parseDerive(Tokenizer *tkz, HashTab *poptbl); 
-void        parseMix(Tokenizer *tkz, HashTab *poptbl, HashTab *partbl);
+void        parseMix(Tokenizer *tkz, HashTab *poptbl, ParKeyVal **pkv);
 
 int getDbl(double *x, Tokenizer * tkz, int i) {
     char       *end = NULL;
@@ -118,7 +118,7 @@ int getULong(unsigned long *x, Tokenizer * tkz, int i) {
 }
 
 // param fixed|varies name=100
-void		parseParam(Tokenizer *tkz, HashTab *partbl, ParStore *fixed,
+void		parseParam(Tokenizer *tkz, ParKeyVal **pkv, ParStore *fixed,
 					   ParStore *varies) {
 	int curr=1, ntokens = Tokenizer_ntokens(tkz);
 	int isfixed=0;
@@ -162,21 +162,16 @@ void		parseParam(Tokenizer *tkz, HashTab *partbl, ParStore *fixed,
         Tokenizer_print(tkz, stderr);
         exit(EXIT_FAILURE);
     }
+
+	// Allocate and initialize parameter in ParStore
 	double ptr;
 	if(isfixed)
 		ptr = ParStore_addPar(fixed, value);
 	else
 		ptr = ParStore_addPar(varies, value);
 
-	// Add parameter name and pointer to hash table
-	El *e = HashTab_get(partbl, name);
-	ParPtr *thisParPtr = (ParPtr *) El_get(e);
-	if(thisParPtr != NULL)
-		eprintf("%s:%s:%d: param \"%s\" declared twice in .lgo file.\n",
-				__FILE__,__func__,__LINE__, name);
-	thisParPtr = (ParPtr *) ParPtr_new(ptr);
-	CHECKMEM(thisParPtr);
-	El_set(e, thisParPtr);
+	// Add parameter name and pointer to linked list
+	*pkv = ParKeyVal_add(*pkv, name, ptr);
 }
 
 // segment a   t=0     twoN=100    samples=1
@@ -417,7 +412,7 @@ PopNode    *mktree(FILE * fp, HashTab * poptbl, SampNdx *sndx, ParStore *fixed,
     int         ntokens;
     char        buff[500];
     Tokenizer  *tkz = Tokenizer_new(50);
-	HashTab    *partbl = HashTab_new(); // table of pointers to parameters
+	ParKeyVal    *pkv = NULL;  // table of pointers to parameters
 
     while(1) {
         if(fgets(buff, sizeof(buff), fp) == NULL)
@@ -441,11 +436,11 @@ PopNode    *mktree(FILE * fp, HashTab * poptbl, SampNdx *sndx, ParStore *fixed,
 
         char *tok = Tokenizer_token(tkz, 0);
 		if(0 == strcmp(tok, "param"))
-			parseParam(tkz, partbl, fixed, var, bnd);
+			parseParam(tkz, &pkv, fixed, var, bnd);
         else if(0 == strcmp(tok, "segment"))
-            parseSegment(tkz, poptbl, partbl, sndx);
+            parseSegment(tkz, poptbl, &pkv, sndx);
         else if(0 == strcmp(tok, "mix"))
-            parseMix(tkz, poptbl, partbl);
+            parseMix(tkz, poptbl, &pkv);
         else if(0 == strcmp(tok, "derive"))
             parseDerive(tkz, poptbl);
         else
