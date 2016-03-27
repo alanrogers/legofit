@@ -119,6 +119,7 @@ int taskfun(void *varg) {
     gsl_rng_set(rng, targ->rng_seed);
     HashTab    *ht = HashTab_new();
 	ParStore   *fixed = ParStore_new();  // fixed parameters
+	ParStore   *var = ParStore_new();    // variable parameters
     PopNode    *rootPop = NULL;
     {
         // Build population tree as specified in file targ->fname.
@@ -131,7 +132,7 @@ int taskfun(void *varg) {
         if(fp == NULL)
             eprintf("%s:%s:%d: can't open file %s.\n",
                     __FILE__, __func__, __LINE__, targ->fname);
-        rootPop = mktree(fp, ht, &(targ->sndx), fixed, &(targ->bnd));
+        rootPop = mktree(fp, ht, &(targ->sndx), fixed, var, &(targ->bnd));
         fclose(fp);
     }
 

@@ -8,9 +8,9 @@ twoN varies 2Nc=213.4
 twoN fixed  2Nbb=32.1
 twoN varies 2Nab=222 
 twoN fixed  2Nabc=1.2e2
-mixFrac varies Mc
+mixFrac varies Mc=0.02
 segment a   t=T0     twoN=2Na    samples=1
-segment b   t=T0     twoN=2Nb    samples=2
+segment b   t=T0     twoN=2Nb    samples=1
 segment c   t=Tc     twoN=2Nc    samples=1
 segment bb  t=Tc     twoN=2Nbb
 segment ab  t=Tab    twoN=2Nab

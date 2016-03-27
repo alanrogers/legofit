@@ -295,6 +295,8 @@ static void PopNode_sanityCheck(PopNode * self, const char *file,
 }
 
 void PopNode_addSample(PopNode * self, Gene * gene) {
+	assert(self!=NULL);
+	assert(gene!=NULL);
     if(self->nsamples == MAXSAMP) {
         fprintf(stderr, "%s:%s:%d: Too many samples\n",
                 __FILE__, __func__, __LINE__);
@@ -442,16 +444,23 @@ Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng) {
 		switch(self->nparents) {
 		case 1:
 			// add all samples to parent 0
-			for(i = 0; i < self->nsamples; ++i)
+			for(i = 0; i < self->nsamples; ++i) {
+				assert(self->sample[i]);
                 PopNode_addSample(self->parent[0], self->sample[i]);
+			}
 			break;
 		default:
 			// distribute samples among parents
 			assert(self->nparents==2);
-            if(gsl_rng_uniform(rng) < *self->mix) {
-                PopNode_addSample(self->parent[1], self->sample[i]);
-            } else
-                PopNode_addSample(self->parent[0], self->sample[i]);
+			for(i = 0; i < self->nsamples; ++i) {
+				if(gsl_rng_uniform(rng) < *self->mix) {
+					assert(self->sample[i]);
+					PopNode_addSample(self->parent[1], self->sample[i]);
+				} else {
+					assert(self->sample[i]);
+					PopNode_addSample(self->parent[0], self->sample[i]);
+				}
+			}
 		}
         self->nsamples = 0;
     }

@@ -51,7 +51,7 @@
 // twoN fixed  2Nbb=32.1
 // twoN varies 2Nab=222 
 // twoN fixed  2Nabc=1.2e2
-// mixFrac varies Mc
+// mixFrac varies Mc=0.8
 // segment a   t=T0     twoN=2Na    samples=1
 // segment b   t=T0     twoN=2Nb    samples=2
 // segment c   t=Tc     twoN=2Nc    samples=1
@@ -142,6 +142,10 @@ void		parseParam(Tokenizer *tkz, enum paramType type,
 	int curr=1, ntokens = Tokenizer_ntokens(tkz);
 	int isfixed=0;
 
+	printf("%s:%s:%d\n", __FILE__,__func__,__LINE__);
+	Tokenizer_print(tkz, stdout);
+	fflush(stdout);
+
 	// Read type of parameter: "fixed" or "varies"
 	{
 		char *tok;
@@ -168,6 +172,9 @@ void		parseParam(Tokenizer *tkz, enum paramType type,
 	if( !isalnum(*name) )
 		eprintf("%s:%s:%d: \"%s\" is not a legal parameter name.\n",
 				__FILE__,__func__,__LINE__, name);
+
+	printf("%s:%s:%d\n", __FILE__,__func__,__LINE__);
+	fflush(stdout);
 
 	// Read parameter value
     CHECK_INDEX(curr, ntokens);
