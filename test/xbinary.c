@@ -17,8 +17,7 @@
 #error "Unit tests must be compiled without -DNDEBUG flag"
 #endif
 
-int main(int argv, char* argc[])
-{
+int main(void) {
     int i = 2;
     unsigned ui = UINT_MAX;
     float f = 23.45f;

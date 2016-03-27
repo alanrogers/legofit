@@ -3,11 +3,13 @@
 #include "misc.h"
 #include "parse.h"
 #include "sampndx.h"
+#include "parkeyval.h"
 #include "parstore.h"
 #include "tokenizer.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include <string.h>
 
 // Consider the following tree of populations:
@@ -39,13 +41,24 @@
 //
 // Here is input that would generate the tree above:
 //
-// segment a   t=0     twoN=100    samples=1
-// segment b   t=0     twoN=123    samples=2
-// segment c   t=1     twoN=213.4  samples=1
-// segment bb  t=1     twoN=32.1
-// segment ab  t=3     twoN=222
-// segment abc t=5.5e0 twoN=1.2e2
-// mix    b  from bb + 0.1 c
+// time fixed  T0=0
+// time varies Tc=1
+// time varies Tab=3
+// time varies Tabc=5.5
+// twoN varies 2Na=100
+// twoN fixed  2Nb=123
+// twoN varies 2Nc=213.4
+// twoN fixed  2Nbb=32.1
+// twoN varies 2Nab=222 
+// twoN fixed  2Nabc=1.2e2
+// mixFrac varies Mc
+// segment a   t=T0     twoN=2Na    samples=1
+// segment b   t=T0     twoN=2Nb    samples=2
+// segment c   t=Tc     twoN=2Nc    samples=1
+// segment bb  t=Tc     twoN=2Nbb
+// segment ab  t=Tab    twoN=2Nab
+// segment abc t=Tabc   twoN=2Nabc
+// mix    b  from bb + Mc * c
 // derive a  from ab
 // derive bb from ab
 // derive ab from abc
@@ -89,14 +102,17 @@
         exit(EXIT_FAILURE);                                     \
     }while(0)
 
+enum paramType { TwoN, Time, MixFrac };
+
 int         getDbl(double *x, Tokenizer * tkz, int i);
 int         getULong(unsigned long *x, Tokenizer * tkz, int i);
-void		parseParam(Tokenizer *tkz, ParKeyVal **pkv, ParStore *fixed,
-					   ParStore *var);
-void        parseSegment(Tokenizer *tkz, HashTab *poptbl, ParKeyVal **pkv,
-						 SampNdx *sndx);
-void        parseDerive(Tokenizer *tkz, HashTab *poptbl); 
-void        parseMix(Tokenizer *tkz, HashTab *poptbl, ParKeyVal **pkv);
+void		parseParam(Tokenizer *tkz, enum paramType type,
+					   ParKeyVal **pkv, ParStore *fixed,
+					   ParStore *varies, Bounds *bnd);
+void        parseSegment(Tokenizer *tkz, HashTab *poptbl, SampNdx *sndx,
+						 ParKeyVal *pkv);
+void        parseDerive(Tokenizer *tkz, HashTab *poptbl);
+void        parseMix(Tokenizer *tkz, HashTab *poptbl, ParKeyVal *pkv);
 
 int getDbl(double *x, Tokenizer * tkz, int i) {
     char       *end = NULL;
@@ -117,9 +133,12 @@ int getULong(unsigned long *x, Tokenizer * tkz, int i) {
     return 1;                   // failure
 }
 
-// param fixed|varies name=100
-void		parseParam(Tokenizer *tkz, ParKeyVal **pkv, ParStore *fixed,
-					   ParStore *varies) {
+// twoN    fixed|varies name=100
+// time    fixed|varies name=100
+// mixFrac fixed|varies name=100
+void		parseParam(Tokenizer *tkz, enum paramType type,
+					   ParKeyVal **pkv, ParStore *fixed, ParStore *varies,
+					   Bounds *bnd) {
 	int curr=1, ntokens = Tokenizer_ntokens(tkz);
 	int isfixed=0;
 
@@ -129,9 +148,9 @@ void		parseParam(Tokenizer *tkz, ParKeyVal **pkv, ParStore *fixed,
 		CHECK_INDEX(curr, ntokens);
 		tok = Tokenizer_token(tkz, curr++);
 		if(0 == strcmp("fixed", tok))
-			fixed = 1;
+			isfixed = 1;
 		else if(0 == strcmp("varies", tok))
-			fixed = 0;
+			isfixed = 0;
 		else {
 			fprintf(stderr, "%s:%s:%d: got %s when expecting"
 					" \"fixed\" or \"varies\".\n",
@@ -146,7 +165,7 @@ void		parseParam(Tokenizer *tkz, ParKeyVal **pkv, ParStore *fixed,
 	CHECK_INDEX(curr, ntokens);
 	name = Tokenizer_token(tkz, curr++);
 	assert(name != NULL);
-	if( !isalpha(*name) )
+	if( !isalnum(*name) )
 		eprintf("%s:%s:%d: \"%s\" is not a legal parameter name.\n",
 				__FILE__,__func__,__LINE__, name);
 
@@ -163,12 +182,32 @@ void		parseParam(Tokenizer *tkz, ParKeyVal **pkv, ParStore *fixed,
         exit(EXIT_FAILURE);
     }
 
+	// Set bounds, based on type of parameter
+	double lo, hi;
+	switch(type) {
+	case TwoN:
+		lo = bnd->lo_twoN;
+		hi = bnd->hi_twoN;
+		break;
+	case Time:
+		lo = bnd->lo_t;
+		hi = bnd->hi_t;
+		break;
+	case MixFrac:
+		lo = 0.0;
+		hi = 1.0;
+		break;
+	default:
+		eprintf("%s:%s:%d: This shouldn't happen\n",
+				__FILE__,__func__,__LINE__);
+	}
+
 	// Allocate and initialize parameter in ParStore
-	double ptr;
+	double *ptr;
 	if(isfixed)
-		ptr = ParStore_addPar(fixed, value);
+		ptr = ParStore_addPar(fixed, value, lo, hi);
 	else
-		ptr = ParStore_addPar(varies, value);
+		ptr = ParStore_addPar(varies, value, lo, hi);
 
 	// Add parameter name and pointer to linked list
 	*pkv = ParKeyVal_add(*pkv, name, ptr);
@@ -176,9 +215,9 @@ void		parseParam(Tokenizer *tkz, ParKeyVal **pkv, ParStore *fixed,
 
 // segment a   t=0     twoN=100    samples=1
 void parseSegment(Tokenizer *tkz, HashTab *poptbl, SampNdx *sndx,
-				  ParStore *fixed, ParStore *var, Bounds *bnd) {
-    char *popName;
-    double t, twoN;
+				  ParKeyVal *pkv) {
+    char *popName, *tok;
+    double *tPtr, *twoNptr;
     unsigned long nsamples=0;
     int curr=1,  ntokens = Tokenizer_ntokens(tkz);
 
@@ -189,27 +228,18 @@ void parseSegment(Tokenizer *tkz, HashTab *poptbl, SampNdx *sndx,
     // Read t
     CHECK_INDEX(curr, ntokens);
     if(0 != strcmp("t", Tokenizer_token(tkz, curr++))) {
-        fprintf(stderr, "Got %s when expecting t on input:\n",
+        fprintf(stderr, "Got %s when expecting \"t\" on input:\n",
                 Tokenizer_token(tkz, curr - 1));
         Tokenizer_print(tkz, stderr);
         exit(EXIT_FAILURE);
     }
     CHECK_INDEX(curr, ntokens);
-    if(getDbl(&t, tkz, curr)) {
-		fflush(stdout);
-        fprintf(stderr, 
-                "Can't parse \"%s\" as a double. Expecting value of t\n",
-                Tokenizer_token(tkz, curr));
+    tok = Tokenizer_token(tkz, curr++);
+	if(ParKeyVal_get(pkv, &tPtr, tok)) {
+		fprintf(stderr,"%s:%s:%d: Parameter \"%s\" is undefined\n",
+				__FILE__,__func__,__LINE__,tok);
         Tokenizer_print(tkz, stderr);
         exit(EXIT_FAILURE);
-    } else {
-        if(t < 0.0) {
-            fprintf(stderr, "Bad value of t: \"%s\" in input line:\n",
-                    Tokenizer_token(tkz, curr));
-            Tokenizer_print(tkz, stderr);
-            exit(EXIT_FAILURE);
-        }
-        ++curr;
     }
     
     // Read twoN
@@ -219,27 +249,18 @@ void parseSegment(Tokenizer *tkz, HashTab *poptbl, SampNdx *sndx,
 	}
     CHECK_INDEX(curr, ntokens);
     if(0 != strcmp("twoN", Tokenizer_token(tkz, curr++))) {
-        fprintf(stderr, "Got %s when expecting twoN on input:\n",
+        fprintf(stderr, "Got %s when expecting \"twoN\" on input:\n",
                 Tokenizer_token(tkz, curr - 1));
         Tokenizer_print(tkz, stderr);
         exit(EXIT_FAILURE);
     }
     CHECK_INDEX(curr, ntokens);
-	int vary_twoN;
-    if(getDbl(&twoN, &vary_twoN, tkz, curr)) {
-        fprintf(stderr,
-                "Can't parse \"%s\" as a double. Expecting value of twoN\n",
-                Tokenizer_token(tkz, curr));
+    tok = Tokenizer_token(tkz, curr++);
+	if(ParKeyVal_get(pkv, &twoNptr, tok)) {
+		fprintf(stderr,"%s:%s:%dParameter \"%s\" is undefined\n",
+				__FILE__,__func__,__LINE__,tok);
         Tokenizer_print(tkz, stderr);
         exit(EXIT_FAILURE);
-    } else {
-        if(twoN <= 0.0) {
-            fprintf(stderr, "Bad value of twoN: \"%s\" in input line:\n",
-                    Tokenizer_token(tkz, curr));
-            Tokenizer_print(tkz, stderr);
-            exit(EXIT_FAILURE);
-        }
-        ++curr;
     }
 
     // Read (optional) number of samples
@@ -270,23 +291,8 @@ void parseSegment(Tokenizer *tkz, HashTab *poptbl, SampNdx *sndx,
     El *e = HashTab_get(poptbl, popName);
     PopNode *thisNode = (PopNode *) El_get(e);
     if(thisNode == NULL) {
-		// Allocate storage for parameters within ParStore.
-		double *twoNptr, *startPtr, *endPtr, *mPtr;
-
-		ParStore *parstore = (vary_twoN ? var : fixed);
-		twoNptr = ParStore_addPar(parstore, twoN, bnd->lo_twoN, bnd->hi_twoN);
-
-		parstore = (vary_t ? var : fixed);
-		startPtr = ParStore_addPar(var, t, bnd->lo_t, bnd->hi_t);
-
-		endPtr = ParStore_addPar(fixed, HUGE_VAL, bnd->lo_t, HUGE_VAL);
-
-		// Problem: mPtr is allocated here, but I don't know yet
-		// whether it is fixed or variable.
-		mPtr = ParStore_addPar(fixed, 0.0, 0.0, 1.0);
-
 		// Create new node, with pointers to the newly-allocated parameters
-        thisNode = PopNode_new(twoNptr, startPtr, endPtr, mPtr);
+        thisNode = PopNode_new(twoNptr, tPtr);
         El_set(e, thisNode);
     }else
         eprintf("%s:%s:%d: duplicate \"segment %s\"\n",
@@ -339,9 +345,9 @@ void parseDerive(Tokenizer *tkz, HashTab *poptbl) {
 }
 
 // mix    b  from bb + 0.1 c
-void parseMix(Tokenizer *tkz, HashTab *poptbl) {
-    char *childName, *parName[2];
-    double m;
+void parseMix(Tokenizer *tkz, HashTab *poptbl, ParKeyVal *pkv) {
+    char *childName, *parName[2], *tok;
+    double *mPtr;
     int curr=1,  ntokens = Tokenizer_ntokens(tkz);
 
     // Read name of child
@@ -364,13 +370,23 @@ void parseMix(Tokenizer *tkz, HashTab *poptbl) {
         eprintf("%s:%s:%d: got %s when expecting \"+\" on input:\n",
                  __FILE__,__func__,__LINE__, Tokenizer_token(tkz, curr - 1));
 
-    // Read mixture fraction
+    // Read mixture fraction, mPtr
     CHECK_INDEX(curr, ntokens);
-    if(getDbl(&m, NULL, tkz, curr++) || m < 0.0 || m > 1.0 ) {
-        eprintf("%s:%s:%d: bad mixture fraction \"%s\"->%0.20lf\n",
-                 __FILE__,__func__,__LINE__,
-                 Tokenizer_token(tkz, curr-1), m);
+    CHECK_INDEX(curr, ntokens);
+    tok = Tokenizer_token(tkz, curr++);
+	if(ParKeyVal_get(pkv, &mPtr, tok)) {
+		fprintf(stderr,"%s:%s:%d: Parameter \"%s\" is undefined\n",
+				__FILE__,__func__,__LINE__,tok);
+        Tokenizer_print(tkz, stderr);
+        exit(EXIT_FAILURE);
     }
+
+    // Read symbol "*"
+    CHECK_INDEX(curr, ntokens);
+    if(0 != strcmp("*", Tokenizer_token(tkz, curr++)))
+        eprintf("%s:%s:%d: got %s when expecting \"*\" on input:\n",
+                 __FILE__,__func__,__LINE__, Tokenizer_token(tkz, curr - 1));
+
     // Read name of parent1
     CHECK_INDEX(curr, ntokens);
     parName[1] = Tokenizer_token(tkz, curr++);
@@ -378,9 +394,6 @@ void parseMix(Tokenizer *tkz, HashTab *poptbl) {
     if(curr < ntokens)
         eprintf("%s:%s:%d: extra token \"%s\" at end of line\n",
                  __FILE__,__func__,__LINE__, Tokenizer_token(tkz,curr));
-
-    assert(m <= 1.0);
-    assert(m >= 0.0);
 
     assert(strlen(childName) > 0);
     El *childEl = HashTab_get(poptbl, childName);
@@ -404,7 +417,7 @@ void parseMix(Tokenizer *tkz, HashTab *poptbl) {
         eprintf("%s:%s:%d: parent segment \"%s\" undefined\n",
                  __FILE__,__func__,__LINE__, parName[1]);
 
-    PopNode_mix(childNode, m, parNode1, parNode0);
+    PopNode_mix(childNode, mPtr, parNode1, parNode0);
 }
 
 PopNode    *mktree(FILE * fp, HashTab * poptbl, SampNdx *sndx, ParStore *fixed,
@@ -412,7 +425,7 @@ PopNode    *mktree(FILE * fp, HashTab * poptbl, SampNdx *sndx, ParStore *fixed,
     int         ntokens;
     char        buff[500];
     Tokenizer  *tkz = Tokenizer_new(50);
-	ParKeyVal    *pkv = NULL;  // table of pointers to parameters
+	ParKeyVal    *pkv = NULL;  // linked list of parameters
 
     while(1) {
         if(fgets(buff, sizeof(buff), fp) == NULL)
@@ -435,12 +448,16 @@ PopNode    *mktree(FILE * fp, HashTab * poptbl, SampNdx *sndx, ParStore *fixed,
             continue;
 
         char *tok = Tokenizer_token(tkz, 0);
-		if(0 == strcmp(tok, "param"))
-			parseParam(tkz, &pkv, fixed, var, bnd);
+		if(0 == strcmp(tok, "twoN"))
+			parseParam(tkz, TwoN, &pkv, fixed, var, bnd);
+		else if(0 == strcmp(tok, "time"))
+			parseParam(tkz, Time, &pkv, fixed, var, bnd);
+		else if(0 == strcmp(tok, "mixFrac"))
+			parseParam(tkz, MixFrac, &pkv, fixed, var, bnd);
         else if(0 == strcmp(tok, "segment"))
-            parseSegment(tkz, poptbl, &pkv, sndx);
+            parseSegment(tkz, poptbl, sndx, pkv);
         else if(0 == strcmp(tok, "mix"))
-            parseMix(tkz, poptbl, &pkv);
+            parseMix(tkz, poptbl, pkv);
         else if(0 == strcmp(tok, "derive"))
             parseDerive(tkz, poptbl);
         else
@@ -543,13 +560,14 @@ int main(int argc, char **argv) {
     SampNdx sndx;
     SampNdx_init(&sndx);
 	ParStore *fixed = ParStore_new();  // fixed parameters
+	ParStore *var = ParStore_new();    // variable parameters
 	Bounds   bnd = {
 		.lo_twoN = 0.0,
 		.hi_twoN = 1e7,
 		.lo_t = 0.0,
 		.hi_t = HUGE_VAL
 	};
-    PopNode *root = mktree(fp, poptbl, &sndx, fixed, &bnd);
+    PopNode *root = mktree(fp, poptbl, &sndx, fixed, var, &bnd);
 
     if(verbose) {
         PopNode_print(stdout, root, 0);

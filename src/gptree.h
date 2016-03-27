@@ -11,7 +11,7 @@ void        Gene_tabulate(Gene * self, BranchTab * bt);
 void        Gene_free(Gene * gene);
 PopNode    *PopNode_new(double *twoNptr, double *tPtr);
 void        PopNode_addChild(PopNode * parent, PopNode * child);
-void        PopNode_mix(PopNode * child, double m, PopNode * introgressor,
+void        PopNode_mix(PopNode * child, double *mPtr, PopNode * introgressor,
                         PopNode * native);
 void        PopNode_newGene(PopNode * self, unsigned ndx);
 void        PopNode_addSample(PopNode * self, Gene * gene);

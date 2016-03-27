@@ -274,7 +274,6 @@ void PopNode_addChild(PopNode * parent, PopNode * child) {
 					__FILE__, __func__, __LINE__,
 					*child->end, *parent->start);
 	}
-XXXXXXXXXXXXXX
     parent->child[parent->nchildren] = child;
     child->parent[child->nparents] = parent;
     ++parent->nchildren;
@@ -283,8 +282,8 @@ XXXXXXXXXXXXXX
     PopNode_sanityCheck(child, __FILE__, __LINE__);
 }
 
-static void PopNode_sanityCheck(PopNode * self,
-								const char *file, int lineno) {
+static void PopNode_sanityCheck(PopNode * self, const char *file,
+								int lineno) {
 #ifndef NDEBUG
     int         i;
 
@@ -306,7 +305,7 @@ void PopNode_addSample(PopNode * self, Gene * gene) {
     PopNode_sanityCheck(self, __FILE__, __LINE__);
 }
 
-void PopNode_mix(PopNode * child, double m, PopNode * introgressor,
+void PopNode_mix(PopNode * child, double *mPtr, PopNode * introgressor,
                  PopNode * native) {
     if(introgressor->nchildren > 1)
         eprintf("%s:%s:%d:"
@@ -320,29 +319,29 @@ void PopNode_mix(PopNode * child, double m, PopNode * introgressor,
         eprintf("%s:%s:%d:"
 				" Can't add 2 parents because child already has %d.\n",
 				 __FILE__, __func__, __LINE__, child->nparents);
-    if(*child->end < HUGE_VAL) {
-        if(*child->end != *introgressor->start)
+    if(child->end != NULL) {
+        if(child->end != introgressor->start)
             eprintf("%s:%s:%d: Date mismatch."
-					 " child->end=%lf != %lf=introgressor->start\n",
+					 " child->end=%p != %p=introgressor->start\n",
 					 __FILE__, __func__, __LINE__,
-					*child->end, *introgressor->start);
-        if(*child->end != *native->start)
+					child->end, introgressor->start);
+        if(child->end != native->start)
             eprintf("%s:%s:%d: Date mismatch."
-					 " child->end=%lf != %lf=native->start\n",
+					 " child->end=%p != %p=native->start\n",
 					 __FILE__, __func__, __LINE__,
-					*child->end, *native->start);
-	} else if(*native->start != *introgressor->start) {
+					child->end, native->start);
+	} else if(native->start != introgressor->start) {
 		eprintf("%s:%s:%d: Date mismatch."
-				 "native->start=%lf != %lf=introgressor->start\n",
+				 "native->start=%p != %p=introgressor->start\n",
 				 __FILE__, __func__, __LINE__,
-				 *native->start, *introgressor->start);
+				 native->start, introgressor->start);
     } else
-        *child->end = *native->start;
+        child->end = native->start;
 
     child->parent[0] = native;
     child->parent[1] = introgressor;
     child->nparents = 2;
-    *child->mix = m;
+    child->mix = mPtr;
     introgressor->child[introgressor->nchildren] = child;
     ++introgressor->nchildren;
     native->child[native->nchildren] = child;
@@ -367,6 +366,7 @@ void PopNode_newGene(PopNode * self, unsigned ndx) {
 Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng) {
     unsigned long i, j, k;
     double      x;
+	double end = (NULL==self->end ? HUGE_VAL : *self->end);
 
     if(self->child[0])
         (void) PopNode_coalesce(self->child[0], rng);
@@ -374,20 +374,24 @@ Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng) {
         (void) PopNode_coalesce(self->child[1], rng);
 
     double      t = *self->start;
-    if(!(t <= *self->end))
+#ifndef NDEBUG
+    if(t > end) {
         PopNode_print(stdout, self, 0);
-    assert(t <= *self->end);
+		eprintf("%s:%s:%d: start=%lf > %lf=end\n",
+				__FILE__,__func__,__LINE__, t, end);
+	}
+#endif
 
     // Coalescent loop continues until only one sample is left
     // or we reach the end of the interval.
-    while(self->nsamples > 1 && t < *self->end) {
+    while(self->nsamples > 1 && t < end) {
         {
             int         n = self->nsamples;
             double      mean = 2.0 * *self->twoN / (n * (n - 1));
 			x = gsl_ran_exponential(rng, mean);
         }
 
-        if(t + x < *self->end) {
+        if(t + x < end) {
             // coalescent event within interval
             t += x;
             for(i = 0; i < self->nsamples; ++i)
@@ -414,32 +418,41 @@ Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng) {
             }
         } else {
             // no coalescent event within interval
-            x = *self->end - t;
+			assert(isfinite(end));
+            x = end - t;
             for(i = 0; i < self->nsamples; ++i)
                 Gene_addToBranch(self->sample[i], x);
-            t = *self->end;
+            t = end;
         }
     }
 
     // Make sure we're at the end of the interval
-    if(t < *self->end) {
+    if(t < end) {
         assert(self->nsamples < 2);
-        x = *self->end - t;
+        x = end - t;  // may be infinite
         for(i = 0; i < self->nsamples; ++i)
             Gene_addToBranch(self->sample[i], x);
-        t = *self->end;
+        t = end;      // may be infinite
     }
 
     // If we have both samples and parents, then move samples to parents
     if(self->nsamples > 0 && self->nparents > 0) {
-        assert(t == *self->end);
-        for(i = 0; i < self->nsamples; ++i) {
-            // move current sample to parental population 
-            if(self->nparents > 1 && gsl_rng_uniform(rng) < *self->mix) {
-                PopNode_addSample(self->parent[1], self->sample[i]);
-            } else if(self->nparents > 0)
+        assert(t == end);
+		assert(NULL!=self->mix || self->nparents <= 1);
+		switch(self->nparents) {
+		case 1:
+			// add all samples to parent 0
+			for(i = 0; i < self->nsamples; ++i)
                 PopNode_addSample(self->parent[0], self->sample[i]);
-        }
+			break;
+		default:
+			// distribute samples among parents
+			assert(self->nparents==2);
+            if(gsl_rng_uniform(rng) < *self->mix) {
+                PopNode_addSample(self->parent[1], self->sample[i]);
+            } else
+                PopNode_addSample(self->parent[0], self->sample[i]);
+		}
         self->nsamples = 0;
     }
 
@@ -528,16 +541,12 @@ int main(int argc, char **argv) {
 
     unitTstResult("Gene", "OK");
 
-    double twoN0 = 1.0, start0= 0.0, end0, m0;
-    PopNode *p0 = PopNode_new(&twoN0, &start0, &end0, &m0);
+    double twoN0 = 1.0, start0= 0.0;
+    PopNode *p0 = PopNode_new(&twoN0, &start0);
     assert(p0->twoN == &twoN0);
     assert(p0->start == &start0);
-    assert(p0->end == &end0);
-    assert(p0->mix == &m0);
-    assert(*p0->mix == 0.0);
-    assert(*p0->mix == m0);
-    assert(*p0->end == HUGE_VAL);
-    assert(*p0->end == end0);
+    assert(p0->end == NULL);
+    assert(p0->mix == NULL);
     assert(p0->nsamples == 0);
     assert(p0->nchildren == 0);
     assert(p0->child[0] == NULL);
@@ -548,14 +557,12 @@ int main(int argc, char **argv) {
 	if(verbose) 
 		PopNode_printShallow(p0, stdout);
 
-    double twoN1 = 100.0, start1= 123.0, end1, m1;
-    PopNode *p1 = PopNode_new(&twoN1, &start1, &end1, &m1);
+    double twoN1 = 100.0, start1= 123.0;
+    PopNode *p1 = PopNode_new(&twoN1, &start1);
     assert(p1->twoN == &twoN1);
     assert(p1->start == &start1);
-    assert(p1->end == &end1);
-    assert(p1->mix == &m1);
-    assert(*p1->mix == 0.0);
-    assert(*p1->end == HUGE_VAL);
+    assert(p1->end == NULL);
+    assert(p1->mix == NULL);
     assert(p1->nsamples == 0);
     assert(p1->nchildren == 0);
     assert(p1->child[0] == NULL);

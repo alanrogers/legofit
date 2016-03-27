@@ -74,3 +74,12 @@ int ParKeyVal_get(ParKeyVal * node, double **valPtr, const char *key) {
     // else..
     return ParKeyVal_get(node->next, valPtr, key);
 }
+
+void ParKeyVal_print(ParKeyVal *self, FILE *fp) {
+	if(self == NULL)
+		fprintf(fp,"NULL\n");
+	else {
+		fprintf(fp,"[%p:%s,%p]->", self, self->key, self->valPtr);
+		ParKeyVal_print(self->next, fp);
+	}
+}
