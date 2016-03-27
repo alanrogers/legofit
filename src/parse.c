@@ -89,27 +89,18 @@
         exit(EXIT_FAILURE);                                     \
     }while(0)
 
-int         getDbl(double *x, int *vary, Tokenizer * tkz, int i);
+int         getDbl(double *x, Tokenizer * tkz, int i);
 int         getULong(unsigned long *x, Tokenizer * tkz, int i);
-void        parseSegment(Tokenizer *tkz, HashTab *ht, SampNdx *sndx,
-						 ParStore *fixed, ParStore *var, Bounds *bnd);
-void        parseDerive(Tokenizer *tkz, HashTab *ht); 
-void        parseMix(Tokenizer *tkz, HashTab *ht);
+void		parseParam(Tokenizer *tkz, HashTab *partbl, ParStore *fixed,
+					   ParStore *var);
+void        parseSegment(Tokenizer *tkz, HashTab *poptbl, HashTab *partbl,
+						 SampNdx *sndx);
+void        parseDerive(Tokenizer *tkz, HashTab *poptbl); 
+void        parseMix(Tokenizer *tkz, HashTab *poptbl, HashTab *partbl);
 
-int getDbl(double *x, int *vary, Tokenizer * tkz, int i) {
+int getDbl(double *x, Tokenizer * tkz, int i) {
     char       *end = NULL;
 	const char *tok = Tokenizer_token(tkz, i);
-
-	// Set "vary" flag if token begins with "*"
-	if(*tok == '*') {
-		if(variable != NULL)
-			*variable = 1;
-		else
-			eprintf("%s:%s:%d: asterisk illegal in token \"%s\".\n",
-					__FILE__,__func__,__LINE__, tok);
-		++tok;
-	}else
-		*variable = 0;
 
     *x = strtod(tok, &end);
     if(end != NULL && *end == '\0')
@@ -126,8 +117,70 @@ int getULong(unsigned long *x, Tokenizer * tkz, int i) {
     return 1;                   // failure
 }
 
+// param fixed|varies name=100
+void		parseParam(Tokenizer *tkz, HashTab *partbl, ParStore *fixed,
+					   ParStore *varies) {
+	int curr=1, ntokens = Tokenizer_ntokens(tkz);
+	int isfixed=0;
+
+	// Read type of parameter: "fixed" or "varies"
+	{
+		char *tok;
+		CHECK_INDEX(curr, ntokens);
+		tok = Tokenizer_token(tkz, curr++);
+		if(0 == strcmp("fixed", tok))
+			fixed = 1;
+		else if(0 == strcmp("varies", tok))
+			fixed = 0;
+		else {
+			fprintf(stderr, "%s:%s:%d: got %s when expecting"
+					" \"fixed\" or \"varies\".\n",
+					__FILE__,__func__,__LINE__, tok);
+			Tokenizer_print(tkz, stderr);
+			exit(EXIT_FAILURE);
+		}
+	}
+
+	// Read parameter name
+	char *name;
+	CHECK_INDEX(curr, ntokens);
+	name = Tokenizer_token(tkz, curr++);
+	assert(name != NULL);
+	if( !isalpha(*name) )
+		eprintf("%s:%s:%d: \"%s\" is not a legal parameter name.\n",
+				__FILE__,__func__,__LINE__, name);
+
+	// Read parameter value
+    CHECK_INDEX(curr, ntokens);
+	double value;
+    if(getDbl(&value, tkz, curr)) {
+		fflush(stdout);
+        fprintf(stderr, 
+                "%s:%s:%d:Can't parse \"%s\" as a double.\n",
+				__FILE__,__func__,__LINE__,
+                Tokenizer_token(tkz, curr));
+        Tokenizer_print(tkz, stderr);
+        exit(EXIT_FAILURE);
+    }
+	double ptr;
+	if(isfixed)
+		ptr = ParStore_addPar(fixed, value);
+	else
+		ptr = ParStore_addPar(varies, value);
+
+	// Add parameter name and pointer to hash table
+	El *e = HashTab_get(partbl, name);
+	ParPtr *thisParPtr = (ParPtr *) El_get(e);
+	if(thisParPtr != NULL)
+		eprintf("%s:%s:%d: param \"%s\" declared twice in .lgo file.\n",
+				__FILE__,__func__,__LINE__, name);
+	thisParPtr = (ParPtr *) ParPtr_new(ptr);
+	CHECKMEM(thisParPtr);
+	El_set(e, thisParPtr);
+}
+
 // segment a   t=0     twoN=100    samples=1
-void parseSegment(Tokenizer *tkz, HashTab *ht, SampNdx *sndx,
+void parseSegment(Tokenizer *tkz, HashTab *poptbl, SampNdx *sndx,
 				  ParStore *fixed, ParStore *var, Bounds *bnd) {
     char *popName;
     double t, twoN;
@@ -147,8 +200,7 @@ void parseSegment(Tokenizer *tkz, HashTab *ht, SampNdx *sndx,
         exit(EXIT_FAILURE);
     }
     CHECK_INDEX(curr, ntokens);
-	int vary_t;
-    if(getDbl(&t, &vary_t, tkz, curr)) {
+    if(getDbl(&t, tkz, curr)) {
 		fflush(stdout);
         fprintf(stderr, 
                 "Can't parse \"%s\" as a double. Expecting value of t\n",
@@ -220,7 +272,7 @@ void parseSegment(Tokenizer *tkz, HashTab *ht, SampNdx *sndx,
                  __FILE__,__func__,__LINE__, Tokenizer_token(tkz,curr));
 
     assert(strlen(popName) > 0);
-    El *e = HashTab_get(ht, popName);
+    El *e = HashTab_get(poptbl, popName);
     PopNode *thisNode = (PopNode *) El_get(e);
     if(thisNode == NULL) {
 		// Allocate storage for parameters within ParStore.
@@ -248,7 +300,7 @@ void parseSegment(Tokenizer *tkz, HashTab *ht, SampNdx *sndx,
 }
 
 // derive a from ab
-void parseDerive(Tokenizer *tkz, HashTab *ht) {
+void parseDerive(Tokenizer *tkz, HashTab *poptbl) {
     char *childName, *parName;
     int curr=1,  ntokens = Tokenizer_ntokens(tkz);
 
@@ -274,7 +326,7 @@ void parseDerive(Tokenizer *tkz, HashTab *ht) {
                  __FILE__,__func__,__LINE__, Tokenizer_token(tkz,curr));
 
     assert(strlen(childName) > 0);
-    El *childEl = HashTab_get(ht, childName);
+    El *childEl = HashTab_get(poptbl, childName);
     PopNode *childNode = (PopNode *) El_get(childEl);
     if(childNode == NULL) {
         eprintf("%s:%s:%d: child segment \"%s\" undefined\n",
@@ -282,7 +334,7 @@ void parseDerive(Tokenizer *tkz, HashTab *ht) {
     }
 
     assert(strlen(parName) > 0);
-    El *parEl = HashTab_get(ht, parName);
+    El *parEl = HashTab_get(poptbl, parName);
     PopNode *parNode = (PopNode *) El_get(parEl);
     if(parNode == NULL) {
         eprintf("%s:%s:%d: parent segment \"%s\" undefined\n",
@@ -292,7 +344,7 @@ void parseDerive(Tokenizer *tkz, HashTab *ht) {
 }
 
 // mix    b  from bb + 0.1 c
-void parseMix(Tokenizer *tkz, HashTab *ht) {
+void parseMix(Tokenizer *tkz, HashTab *poptbl) {
     char *childName, *parName[2];
     double m;
     int curr=1,  ntokens = Tokenizer_ntokens(tkz);
@@ -336,7 +388,7 @@ void parseMix(Tokenizer *tkz, HashTab *ht) {
     assert(m >= 0.0);
 
     assert(strlen(childName) > 0);
-    El *childEl = HashTab_get(ht, childName);
+    El *childEl = HashTab_get(poptbl, childName);
     PopNode *childNode = (PopNode *) El_get(childEl);
     if(childNode == NULL) {
         eprintf("%s:%s:%d: child segment \"%s\" undefined\n",
@@ -344,14 +396,14 @@ void parseMix(Tokenizer *tkz, HashTab *ht) {
     }
 
     assert(strlen(parName[0]) > 0);
-    El *parEl0 = HashTab_get(ht, parName[0]);
+    El *parEl0 = HashTab_get(poptbl, parName[0]);
     PopNode *parNode0 = (PopNode *) El_get(parEl0);
     if(parNode0 == NULL)
         eprintf("%s:%s:%d: parent segment \"%s\" undefined\n",
                  __FILE__,__func__,__LINE__, parName[0]);
 
     assert(strlen(parName[1]) > 0);
-    El *parEl1 = HashTab_get(ht, parName[1]);
+    El *parEl1 = HashTab_get(poptbl, parName[1]);
     PopNode *parNode1 = (PopNode *) El_get(parEl1);
     if(parNode1 == NULL)
         eprintf("%s:%s:%d: parent segment \"%s\" undefined\n",
@@ -360,11 +412,12 @@ void parseMix(Tokenizer *tkz, HashTab *ht) {
     PopNode_mix(childNode, m, parNode1, parNode0);
 }
 
-PopNode    *mktree(FILE * fp, HashTab * ht, SampNdx *sndx, ParStore *fixed,
-				   Bounds *bnd) {
+PopNode    *mktree(FILE * fp, HashTab * poptbl, SampNdx *sndx, ParStore *fixed,
+				   ParStore *var, Bounds *bnd) {
     int         ntokens;
     char        buff[500];
     Tokenizer  *tkz = Tokenizer_new(50);
+	HashTab    *partbl = HashTab_new(); // table of pointers to parameters
 
     while(1) {
         if(fgets(buff, sizeof(buff), fp) == NULL)
@@ -387,12 +440,14 @@ PopNode    *mktree(FILE * fp, HashTab * ht, SampNdx *sndx, ParStore *fixed,
             continue;
 
         char *tok = Tokenizer_token(tkz, 0);
-        if(0 == strcmp(tok, "segment"))
-            parseSegment(tkz, ht, sndx, fixed, bnd);
+		if(0 == strcmp(tok, "param"))
+			parseParam(tkz, partbl, fixed, var, bnd);
+        else if(0 == strcmp(tok, "segment"))
+            parseSegment(tkz, poptbl, partbl, sndx);
         else if(0 == strcmp(tok, "mix"))
-            parseMix(tkz, ht);
+            parseMix(tkz, poptbl, partbl);
         else if(0 == strcmp(tok, "derive"))
-            parseDerive(tkz, ht);
+            parseDerive(tkz, poptbl);
         else
             ILLEGAL_INPUT(tok);
     }
@@ -404,10 +459,10 @@ PopNode    *mktree(FILE * fp, HashTab * ht, SampNdx *sndx, ParStore *fixed,
     // with an error.
     PopNode    *root = NULL;
     {
-        HashTabSeq *hts = HashTabSeq_new(ht);
-        CHECKMEM(hts);
+        HashTabSeq *popseq = HashTabSeq_new(poptbl);
+        CHECKMEM(popseq);
 
-        El         *el = HashTabSeq_next(hts);
+        El         *el = HashTabSeq_next(popseq);
         while(el != NULL) {
             PopNode    *node = El_get(el);
             assert(node != NULL);
@@ -428,9 +483,9 @@ PopNode    *mktree(FILE * fp, HashTab * ht, SampNdx *sndx, ParStore *fixed,
                     exit(EXIT_FAILURE);
                 }
             }
-            el = HashTabSeq_next(hts);
+            el = HashTabSeq_next(popseq);
         }
-        HashTabSeq_free(hts);
+        HashTabSeq_free(popseq);
     }
     Tokenizer_free(tkz);
     return root;
@@ -489,7 +544,7 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    HashTab *ht = HashTab_new();
+    HashTab *poptbl = HashTab_new();
     SampNdx sndx;
     SampNdx_init(&sndx);
 	ParStore *fixed = ParStore_new();  // fixed parameters
@@ -499,7 +554,7 @@ int main(int argc, char **argv) {
 		.lo_t = 0.0,
 		.hi_t = HUGE_VAL
 	};
-    PopNode *root = mktree(fp, ht, &sndx, fixed, &bnd);
+    PopNode *root = mktree(fp, poptbl, &sndx, fixed, &bnd);
 
     if(verbose) {
         PopNode_print(stdout, root, 0);
@@ -509,7 +564,7 @@ int main(int argc, char **argv) {
 		printf("Used %d parameters in \"fixed\".\n", ParStore_nPar(fixed));
     }
 
-    HashTab_free(ht);
+    HashTab_free(poptbl);
 	ParStore_free(fixed);
     return 0;
 }

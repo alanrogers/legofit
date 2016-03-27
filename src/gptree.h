@@ -9,8 +9,7 @@
 
 void        Gene_tabulate(Gene * self, BranchTab * bt);
 void        Gene_free(Gene * gene);
-PopNode    *PopNode_new(double *twoNptr, double *startPtr, double *endPtr,
-						double *mPtr);
+PopNode    *PopNode_new(double *twoNptr, double *tPtr);
 void        PopNode_addChild(PopNode * parent, PopNode * child);
 void        PopNode_mix(PopNode * child, double m, PopNode * introgressor,
                         PopNode * native);

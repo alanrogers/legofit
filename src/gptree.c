@@ -100,24 +100,20 @@ void PopNode_sanityFromLeaf(PopNode * self, const char *file, int line) {
     case 0:
         REQUIRE(self->parent[0] == NULL, file, line);
         REQUIRE(self->parent[1] == NULL, file, line);
-        REQUIRE(*self->mix == 0.0, file, line);
-        if(!isinf(*self->end)) {
-            fflush(stdout);
-            PopNode_printShallow(self, stderr);
-        }
-        REQUIRE(isinf(*self->end), file, line);
+        REQUIRE(self->mix == NULL, file, line);
+        REQUIRE(self->end == NULL, file, line);
         break;
     case 1:
         REQUIRE(self->parent[0] != NULL, file, line);
         REQUIRE(self->parent[1] == NULL, file, line);
-        if(*self->mix != 0.0)
-            PopNode_printShallow(self, stdout);
-        REQUIRE(*self->mix == 0.0, file, line);
+        REQUIRE(self->mix == NULL, file, line);
         break;
     default:
         REQUIRE(self->nparents == 2, file, line);
         REQUIRE(self->parent[0] != NULL, file, line);
         REQUIRE(self->parent[1] != NULL, file, line);
+		REQUIRE(self->end != NULL, file, line);
+		REQUIRE(self->mix != NULL, file, line);
         REQUIRE(*self->mix >= 0.0, file, line);
         break;
     }
@@ -136,7 +132,7 @@ void PopNode_sanityFromLeaf(PopNode * self, const char *file, int line) {
         REQUIRE(self->child[1] != NULL, file, line);
         break;
     }
-    REQUIRE(*self->start <= *self->end, file, line);
+    REQUIRE(self->end==NULL || *self->start <= *self->end, file, line);
     if(self->nparents > 0)
         PopNode_sanityFromLeaf(self->parent[0], file, line);
     if(self->nparents > 1)
@@ -191,7 +187,7 @@ void PopNode_print(FILE * fp, PopNode * self, int indent) {
         fputs("   ", fp);
     fprintf(fp, "%p twoN=%lf ntrval=(%lf,", self, *self->twoN,
 			*self->start);
-    if(*self->end < DBL_MAX)
+    if(self->end != NULL)
         fprintf(fp, "%lf)\n", *self->end);
     else
         fprintf(fp, "Inf)\n");
@@ -201,12 +197,14 @@ void PopNode_print(FILE * fp, PopNode * self, int indent) {
 }
 
 void PopNode_printShallow(PopNode * self, FILE * fp) {
-    fprintf(fp, "%p twoN=%lf mix=%lf ntrval=(%lf,",
-            self, *self->twoN, *self->mix, *self->start);
-    if(*self->end < DBL_MAX)
+    fprintf(fp, "%p twoN=%lf ntrval=(%lf,",
+            self, *self->twoN, *self->start);
+    if(self->end != NULL)
         fprintf(fp, "%lf)", *self->end);
     else
         fprintf(fp, "Inf)");
+	if(self->mix != NULL)
+		fprintf(fp, " mix=%lf", *self->mix);
 
     switch (self->nparents) {
     case 0:
@@ -219,6 +217,7 @@ void PopNode_printShallow(PopNode * self, FILE * fp) {
         fprintf(fp, " par=[%p,%p]", self->parent[0], self->parent[1]);
         break;
     }
+
     switch (self->nchildren) {
     case 0:
         fprintf(fp, " child=0");
@@ -237,18 +236,15 @@ int PopNode_nsamples(PopNode * self) {
     return self->nsamples;
 }
 
-PopNode    *PopNode_new(double *twoN, double *start, double *end,
-						double *mix) {
+PopNode    *PopNode_new(double *twoN, double *start) {
     PopNode    *new = malloc(sizeof(PopNode));
     checkmem(new, __FILE__, __LINE__);
 
     new->nparents = new->nchildren = new->nsamples = 0;
     new->twoN = twoN;
-    new->mix = mix;
+    new->mix = NULL;
     new->start = start;
-    new->end = end;
-	*new->mix = 0.0;
-    *new->end = HUGE_VAL;
+    new->end = NULL;
 
     memset(new->sample, 0, sizeof(new->sample));
     memset(new->parent, 0, sizeof(new->parent));
@@ -269,13 +265,16 @@ void PopNode_addChild(PopNode * parent, PopNode * child) {
     if(*child->start > *parent->start)
         eprintf("%s:%s:%d: Child start (%lf) must be <= parent start (%lf)\n",
                 __FILE__, __func__, __LINE__, *child->start, *parent->start);
-    if(*child->end < HUGE_VAL) {
-        if(*child->end != *parent->start)
-            eprintf
-                ("%s:%s:%d: Date mismatch. child->end=%lf != %lf = parent->start\n",
-                 __FILE__, __func__, __LINE__, *child->end, *parent->start);
-    } else
-        *child->end = *parent->start;
+    if(child->end == NULL) {
+        child->end = parent->start;
+    } else {
+		if(child->end != parent->start)
+			eprintf("%s:%s:%d: Date mismatch."
+					" child->end=%lf != %lf = parent->start\n",
+					__FILE__, __func__, __LINE__,
+					*child->end, *parent->start);
+	}
+XXXXXXXXXXXXXX
     parent->child[parent->nchildren] = child;
     child->parent[child->nparents] = parent;
     ++parent->nchildren;
