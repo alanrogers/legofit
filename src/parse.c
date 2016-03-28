@@ -3,7 +3,6 @@
 #include "misc.h"
 #include "parse.h"
 #include "sampndx.h"
-#include "parkeyval.h"
 #include "parstore.h"
 #include "tokenizer.h"
 #include <assert.h>
@@ -42,16 +41,16 @@
 // Here is input that would generate the tree above:
 //
 // time fixed  T0=0
-// time varies Tc=1
-// time varies Tab=3
-// time varies Tabc=5.5
-// twoN varies 2Na=100
+// time free Tc=1
+// time free Tab=3
+// time free Tabc=5.5
+// twoN free 2Na=100
 // twoN fixed  2Nb=123
-// twoN varies 2Nc=213.4
+// twoN free 2Nc=213.4
 // twoN fixed  2Nbb=32.1
-// twoN varies 2Nab=222 
+// twoN free 2Nab=222 
 // twoN fixed  2Nabc=1.2e2
-// mixFrac varies Mc=0.8
+// mixFrac free Mc=0.8
 // segment a   t=T0     twoN=2Na    samples=1
 // segment b   t=T0     twoN=2Nb    samples=2
 // segment c   t=Tc     twoN=2Nc    samples=1
@@ -102,17 +101,16 @@
         exit(EXIT_FAILURE);                                     \
     }while(0)
 
-enum paramType { TwoN, Time, MixFrac };
+enum ParamType { TwoN, Time, MixFrac };
 
 int         getDbl(double *x, Tokenizer * tkz, int i);
 int         getULong(unsigned long *x, Tokenizer * tkz, int i);
-void		parseParam(Tokenizer *tkz, enum paramType type,
-					   ParKeyVal **pkv, ParStore *fixed,
-					   ParStore *varies, Bounds *bnd);
+void		parseParam(Tokenizer *tkz, enum ParamType type,
+					   ParStore *parstore, Bounds *bnd);
 void        parseSegment(Tokenizer *tkz, HashTab *poptbl, SampNdx *sndx,
-						 ParKeyVal *pkv);
+						 ParStore *parstore);
 void        parseDerive(Tokenizer *tkz, HashTab *poptbl);
-void        parseMix(Tokenizer *tkz, HashTab *poptbl, ParKeyVal *pkv);
+void        parseMix(Tokenizer *tkz, HashTab *poptbl, ParStore *parstore);
 
 int getDbl(double *x, Tokenizer * tkz, int i) {
     char       *end = NULL;
@@ -133,31 +131,26 @@ int getULong(unsigned long *x, Tokenizer * tkz, int i) {
     return 1;                   // failure
 }
 
-// twoN    fixed|varies name=100
-// time    fixed|varies name=100
-// mixFrac fixed|varies name=100
-void		parseParam(Tokenizer *tkz, enum paramType type,
-					   ParKeyVal **pkv, ParStore *fixed, ParStore *varies,
-					   Bounds *bnd) {
+// twoN    fixed|free name=100
+// time    fixed|free name=100
+// mixFrac fixed|free name=100
+void		parseParam(Tokenizer *tkz, enum ParamType type,
+					   ParStore *parstore, Bounds *bnd) {
 	int curr=1, ntokens = Tokenizer_ntokens(tkz);
 	int isfixed=0;
 
-	printf("%s:%s:%d\n", __FILE__,__func__,__LINE__);
-	Tokenizer_print(tkz, stdout);
-	fflush(stdout);
-
-	// Read type of parameter: "fixed" or "varies"
+	// Read type of parameter: "fixed" or "free"
 	{
 		char *tok;
 		CHECK_INDEX(curr, ntokens);
 		tok = Tokenizer_token(tkz, curr++);
 		if(0 == strcmp("fixed", tok))
 			isfixed = 1;
-		else if(0 == strcmp("varies", tok))
+		else if(0 == strcmp("free", tok))
 			isfixed = 0;
 		else {
 			fprintf(stderr, "%s:%s:%d: got %s when expecting"
-					" \"fixed\" or \"varies\".\n",
+					" \"fixed\" or \"free\".\n",
 					__FILE__,__func__,__LINE__, tok);
 			Tokenizer_print(tkz, stderr);
 			exit(EXIT_FAILURE);
@@ -173,9 +166,6 @@ void		parseParam(Tokenizer *tkz, enum paramType type,
 		eprintf("%s:%s:%d: \"%s\" is not a legal parameter name.\n",
 				__FILE__,__func__,__LINE__, name);
 
-	printf("%s:%s:%d\n", __FILE__,__func__,__LINE__);
-	fflush(stdout);
-
 	// Read parameter value
     CHECK_INDEX(curr, ntokens);
 	double value;
@@ -189,40 +179,36 @@ void		parseParam(Tokenizer *tkz, enum paramType type,
         exit(EXIT_FAILURE);
     }
 
-	// Set bounds, based on type of parameter
-	double lo, hi;
-	switch(type) {
-	case TwoN:
-		lo = bnd->lo_twoN;
-		hi = bnd->hi_twoN;
-		break;
-	case Time:
-		lo = bnd->lo_t;
-		hi = bnd->hi_t;
-		break;
-	case MixFrac:
-		lo = 0.0;
-		hi = 1.0;
-		break;
-	default:
-		eprintf("%s:%s:%d: This shouldn't happen\n",
-				__FILE__,__func__,__LINE__);
-	}
-
 	// Allocate and initialize parameter in ParStore
-	double *ptr;
 	if(isfixed)
-		ptr = ParStore_addPar(fixed, value, lo, hi);
-	else
-		ptr = ParStore_addPar(varies, value, lo, hi);
-
-	// Add parameter name and pointer to linked list
-	*pkv = ParKeyVal_add(*pkv, name, ptr);
+		ParStore_addFixedPar(parstore, value, name);
+	else {
+        // Set bounds, based on type of parameter
+        double lo, hi;
+        switch(type) {
+        case TwoN:
+            lo = bnd->lo_twoN;
+            hi = bnd->hi_twoN;
+            break;
+        case Time:
+            lo = bnd->lo_t;
+            hi = bnd->hi_t;
+            break;
+        case MixFrac:
+            lo = 0.0;
+            hi = 1.0;
+            break;
+        default:
+            eprintf("%s:%s:%d: This shouldn't happen\n",
+                    __FILE__,__func__,__LINE__);
+        }
+		ParStore_addFreePar(parstore, value, lo, hi, name);
+    }
 }
 
 // segment a   t=0     twoN=100    samples=1
 void parseSegment(Tokenizer *tkz, HashTab *poptbl, SampNdx *sndx,
-				  ParKeyVal *pkv) {
+				  ParStore *parstore) {
     char *popName, *tok;
     double *tPtr, *twoNptr;
     unsigned long nsamples=0;
@@ -242,12 +228,14 @@ void parseSegment(Tokenizer *tkz, HashTab *poptbl, SampNdx *sndx,
     }
     CHECK_INDEX(curr, ntokens);
     tok = Tokenizer_token(tkz, curr++);
-	if(ParKeyVal_get(pkv, &tPtr, tok)) {
+    tPtr = ParStore_findPtr(parstore, tok);
+	if(NULL == tPtr) {
 		fprintf(stderr,"%s:%s:%d: Parameter \"%s\" is undefined\n",
 				__FILE__,__func__,__LINE__,tok);
         Tokenizer_print(tkz, stderr);
         exit(EXIT_FAILURE);
     }
+
     
     // Read twoN
 	if(curr >= ntokens) {
@@ -263,9 +251,10 @@ void parseSegment(Tokenizer *tkz, HashTab *poptbl, SampNdx *sndx,
     }
     CHECK_INDEX(curr, ntokens);
     tok = Tokenizer_token(tkz, curr++);
-	if(ParKeyVal_get(pkv, &twoNptr, tok)) {
+    twoNptr = ParStore_findPtr(parstore, tok);
+	if(NULL == twoNptr) {
 		fprintf(stderr,"%s:%s:%dParameter \"%s\" is undefined\n",
-				__FILE__,__func__,__LINE__,tok);
+				__FILE__,__func__,__LINE__, tok);
         Tokenizer_print(tkz, stderr);
         exit(EXIT_FAILURE);
     }
@@ -298,7 +287,7 @@ void parseSegment(Tokenizer *tkz, HashTab *poptbl, SampNdx *sndx,
     El *e = HashTab_get(poptbl, popName);
     PopNode *thisNode = (PopNode *) El_get(e);
     if(thisNode == NULL) {
-		// Create new node, with pointers to the newly-allocated parameters
+		// Create new node, with pointers to the relevant parameters
         thisNode = PopNode_new(twoNptr, tPtr);
         El_set(e, thisNode);
     }else
@@ -352,7 +341,7 @@ void parseDerive(Tokenizer *tkz, HashTab *poptbl) {
 }
 
 // mix    b  from bb + 0.1 c
-void parseMix(Tokenizer *tkz, HashTab *poptbl, ParKeyVal *pkv) {
+void parseMix(Tokenizer *tkz, HashTab *poptbl, ParStore *parstore) {
     char *childName, *parName[2], *tok;
     double *mPtr;
     int curr=1,  ntokens = Tokenizer_ntokens(tkz);
@@ -381,9 +370,10 @@ void parseMix(Tokenizer *tkz, HashTab *poptbl, ParKeyVal *pkv) {
     CHECK_INDEX(curr, ntokens);
     CHECK_INDEX(curr, ntokens);
     tok = Tokenizer_token(tkz, curr++);
-	if(ParKeyVal_get(pkv, &mPtr, tok)) {
+    mPtr = ParStore_findPtr(parstore, tok);
+	if(NULL == mPtr) {
 		fprintf(stderr,"%s:%s:%d: Parameter \"%s\" is undefined\n",
-				__FILE__,__func__,__LINE__,tok);
+				__FILE__,__func__,__LINE__, tok);
         Tokenizer_print(tkz, stderr);
         exit(EXIT_FAILURE);
     }
@@ -427,12 +417,11 @@ void parseMix(Tokenizer *tkz, HashTab *poptbl, ParKeyVal *pkv) {
     PopNode_mix(childNode, mPtr, parNode1, parNode0);
 }
 
-PopNode    *mktree(FILE * fp, HashTab * poptbl, SampNdx *sndx, ParStore *fixed,
-				   ParStore *var, Bounds *bnd) {
+PopNode    *mktree(FILE * fp, HashTab * poptbl, SampNdx *sndx, 
+				   ParStore *parstore, Bounds *bnd) {
     int         ntokens;
     char        buff[500];
     Tokenizer  *tkz = Tokenizer_new(50);
-	ParKeyVal    *pkv = NULL;  // linked list of parameters
 
     while(1) {
         if(fgets(buff, sizeof(buff), fp) == NULL)
@@ -456,15 +445,15 @@ PopNode    *mktree(FILE * fp, HashTab * poptbl, SampNdx *sndx, ParStore *fixed,
 
         char *tok = Tokenizer_token(tkz, 0);
 		if(0 == strcmp(tok, "twoN"))
-			parseParam(tkz, TwoN, &pkv, fixed, var, bnd);
+			parseParam(tkz, TwoN, parstore, bnd);
 		else if(0 == strcmp(tok, "time"))
-			parseParam(tkz, Time, &pkv, fixed, var, bnd);
+			parseParam(tkz, Time, parstore, bnd);
 		else if(0 == strcmp(tok, "mixFrac"))
-			parseParam(tkz, MixFrac, &pkv, fixed, var, bnd);
+			parseParam(tkz, MixFrac, parstore, bnd);
         else if(0 == strcmp(tok, "segment"))
-            parseSegment(tkz, poptbl, sndx, pkv);
+            parseSegment(tkz, poptbl, sndx, parstore);
         else if(0 == strcmp(tok, "mix"))
-            parseMix(tkz, poptbl, pkv);
+            parseMix(tkz, poptbl, parstore);
         else if(0 == strcmp(tok, "derive"))
             parseDerive(tkz, poptbl);
         else
@@ -528,18 +517,28 @@ PopNode    *mktree(FILE * fp, HashTab * poptbl, SampNdx *sndx, ParStore *fixed,
 //  t = 0  1    3    5.5     inf
 const char *tstInput =
     " # this is a comment\n"
-    "segment a   t=0     twoN=100    samples=1\n"
-    "segment b   t=0     twoN=123    samples=2\n"
-    "segment c   t=1     twoN=213.4  samples=1\n"
-    "segment bb  t=1     twoN=32.1 # another comment\n"
-    "segment ab  t=3     twoN=222\n"
-    "segment abc t=5.5e0 twoN=1.2e2\n"
-    "mix b from bb + 0.1 c\n"
-    "derive a from ab\n"
+    "time fixed  T0=0\n"
+    "time free   Tc=1\n"
+    "time free   Tab=3\n"
+    "time free   Tabc=5.5\n"
+    "twoN free   2Na=100\n"
+    "twoN fixed  2Nb=123\n"
+    "twoN free   2Nc=213.4\n"
+    "twoN fixed  2Nbb=32.1\n"
+    "twoN free   2Nab=222\n"
+    "twoN fixed  2Nabc=1.2e2\n"
+    "mixFrac free Mc=0.02\n"
+    "segment a   t=T0     twoN=2Na    samples=1\n"
+    "segment b   t=T0     twoN=2Nb    samples=1\n"
+    "segment c   t=Tc     twoN=2Nc    samples=1\n"
+    "segment bb  t=Tc     twoN=2Nbb\n"
+    "segment ab  t=Tab    twoN=2Nab\n"
+    "segment abc t=Tabc   twoN=2Nabc\n"
+    "mix    b  from bb + Mc * c\n"
+    "derive a  from ab\n"
     "derive bb from ab\n"
     "derive ab from abc\n"
-    "derive c from abc\n";
-
+    "derive c  from abc\n";
 int main(int argc, char **argv) {
 
     int verbose=0;
@@ -566,26 +565,30 @@ int main(int argc, char **argv) {
     HashTab *poptbl = HashTab_new();
     SampNdx sndx;
     SampNdx_init(&sndx);
-	ParStore *fixed = ParStore_new();  // fixed parameters
-	ParStore *var = ParStore_new();    // variable parameters
+	ParStore *parstore = ParStore_new();  // parameters
 	Bounds   bnd = {
 		.lo_twoN = 0.0,
 		.hi_twoN = 1e7,
 		.lo_t = 0.0,
 		.hi_t = HUGE_VAL
 	};
-    PopNode *root = mktree(fp, poptbl, &sndx, fixed, var, &bnd);
+    PopNode *root = mktree(fp, poptbl, &sndx, parstore, &bnd);
 
     if(verbose) {
         PopNode_print(stdout, root, 0);
         unsigned i;
         for(i=0; i < SampNdx_size(&sndx); ++i)
             printf("%2u %s\n", i, SampNdx_lbl(&sndx, i));
-		printf("Used %d parameters in \"fixed\".\n", ParStore_nPar(fixed));
+		printf("Used %d fixed parameters in \"parstore\".\n",
+               ParStore_nFixed(parstore));
+		printf("Used %d free parameters in \"parstore\".\n",
+               ParStore_nFree(parstore));
     }
 
+    unitTstResult("mktree", "needs more testing");
+
     HashTab_free(poptbl);
-	ParStore_free(fixed);
+	ParStore_free(parstore);
     return 0;
 }
 #endif

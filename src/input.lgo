@@ -1,14 +1,14 @@
 time fixed  T0=0
-time varies Tc=1
-time varies Tab=3
-time varies Tabc=5.5
-twoN varies 2Na=100
+time free   Tc=1
+time free   Tab=3
+time free   Tabc=5.5
+twoN free   2Na=100
 twoN fixed  2Nb=123
-twoN varies 2Nc=213.4
+twoN free   2Nc=213.4
 twoN fixed  2Nbb=32.1
-twoN varies 2Nab=222 
+twoN free   2Nab=222 
 twoN fixed  2Nabc=1.2e2
-mixFrac varies Mc=0.02
+mixFrac free Mc=0.02
 segment a   t=T0     twoN=2Na    samples=1
 segment b   t=T0     twoN=2Nb    samples=1
 segment c   t=Tc     twoN=2Nc    samples=1

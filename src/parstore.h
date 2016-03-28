@@ -16,8 +16,6 @@ void        ParStore_addFreePar(ParStore * self, double value,
                                 double lo, double hi, const char *name);
 void        ParStore_addFixedPar(ParStore * self, double value,
                                  const char *name);
-double     *ParStore_addPar(ParStore * self, int isfixed, double value,
-                            double lo, double hi, const char *name);
 int         ParStore_nFixed(ParStore * self);
 int         ParStore_nFree(ParStore * self);
 double      ParStore_getFixed(ParStore * self, int i);
