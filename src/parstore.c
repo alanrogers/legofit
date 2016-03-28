@@ -146,7 +146,7 @@ double ParStore_hiFixed(ParStore * self, int i) {
 }
 
 /// Return high bound of i'th free parameter
-double ParStore_hiFixed(ParStore * self, int i) {
+double ParStore_hiFree(ParStore * self, int i) {
     assert(i < self->nFree);
     return self->hiFree[i];
 }
