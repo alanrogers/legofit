@@ -41,17 +41,19 @@ int main(int argc, char* argv[]){
 	pkv = ParKeyVal_add(pkv, "z", &z);
 
 	double *ptr;
-	assert(0 == ParKeyVal_get(pkv, &ptr, "x"));
+	ptr = ParKeyVal_get(pkv, "x");
 	assert(ptr == &x);
 	assert(*ptr == 1.0);
 
-	assert(0 == ParKeyVal_get(pkv, &ptr, "y"));
+	ptr = ParKeyVal_get(pkv, "y");
 	assert(ptr == &y);
 	assert(*ptr == 2.0);
 		   
-	assert(0 == ParKeyVal_get(pkv, &ptr, "z"));
+	ptr = ParKeyVal_get(pkv, "z");
 	assert(ptr == &z);
 	assert(*ptr == 3.0);
+
+	assert(NULL == ParKeyVal_get(pkv, "nonexistent"));
 
 	if(verbose)
 		ParKeyVal_print(pkv, stdout);

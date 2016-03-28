@@ -51,28 +51,21 @@ ParKeyVal  *ParKeyVal_add(ParKeyVal * node, const char *key, double *vptr) {
     return node;
 }
 
-/// Find key in linked list. On success, set *valPtr to corresponding
-/// value and return 0. On failure, set *valPtr to NULL and return 1.
-int ParKeyVal_get(ParKeyVal * node, double **valPtr, const char *key) {
+/// Find key in linked list. On success, return pointer corresponding
+/// to key. On failure, return NULL.
+double *ParKeyVal_get(ParKeyVal * node, const char *key) {
 
-    if(node == NULL) {
-        // Failed
-        *valPtr = NULL;
-        return 1;
-    }
+    if(node == NULL)
+		return NULL;
 
     int         i = strcmp(key, node->key);
-    if(i < 0) {
-        // Failed
-        *valPtr = NULL;
-        return 1;
-    } else if(i == 0) {
-        // Success
-        *valPtr = node->valPtr;
-        return 0;
-    }
-    // else..
-    return ParKeyVal_get(node->next, valPtr, key);
+    if(i < 0)        // Failed
+		return NULL;
+
+    if(i == 0)  // Success
+		return node->valPtr;
+
+    return ParKeyVal_get(node->next, key);
 }
 
 void ParKeyVal_print(ParKeyVal *self, FILE *fp) {
