@@ -17,27 +17,50 @@
 
 int main(void) {
     ParStore *ps = ParStore_new();
-    assert(ParStore_nPar(ps) == 0);
+    assert(ParStore_nFixed(ps) == 0);
+    assert(ParStore_nFree(ps) == 0);
 
-    double *x, *y;
+    double val, *ptr, *vec;
 
-    x = ParStore_addPar(ps, 12.3, 2.0, 15.0);
-    assert(ParStore_nPar(ps) == 1);
-    assert(ParStore_get(ps, 0) == *x);
-    assert(ParStore_get(ps, 0) == 12.3);
-    assert(ParStore_loBnd(ps, 0) == 2.0);
-    assert(ParStore_hiBnd(ps, 0) == 15.0);
+    val = 12.3;
+    ParStore_addFixedPar(ps, val, "x");
+    ptr = ParStore_findPtr(ps, "x");
+    assert(*ptr == val);
+    assert(ParStore_nFixed(ps) == 1);
+    assert(ParStore_nFree(ps) == 0);
+    assert(ParStore_getFixed(ps, 0) == val);
 
-    y = ParStore_addPar(ps, -0.23, -1.0, 0.0);
-    assert(ParStore_nPar(ps) == 2);
-    assert(ParStore_get(ps, 1) == *y);
-    assert(ParStore_get(ps, 1) == -0.23);
-    assert(ParStore_loBnd(ps, 1) == -1.0);
-    assert(ParStore_hiBnd(ps, 1) == 0.0);
+    val = 23.4;
+    ParStore_addFreePar(ps, val, 10.0, 30.0, "y");
+    ptr = ParStore_findPtr(ps, "y");
+    assert(*ptr == val);
+    assert(ParStore_nFixed(ps) == 1);
+    assert(ParStore_nFree(ps) == 1);
+    assert(ParStore_getFree(ps, 0) == val);
+    assert(ParStore_loFree(ps, 0) == 10.0);
+    assert(ParStore_hiFree(ps, 0) == 30.0);
+    vec = ParStore_rawArray(ps);
+    assert(vec[0] == val);
 
-    x = ParStore_getPtr(ps);
-    assert(x[0] == 12.3);
-    assert(x[1] == -0.23);
+    val = 88.3;
+    ParStore_addFixedPar(ps, val, "w");
+    ptr = ParStore_findPtr(ps, "w");
+    assert(*ptr == val);
+    assert(ParStore_nFixed(ps) == 2);
+    assert(ParStore_nFree(ps) == 1);
+    assert(ParStore_getFixed(ps, 1) == val);
+
+    val = -23.8;
+    ParStore_addFreePar(ps, val, -100.0, 0.0, "z");
+    ptr = ParStore_findPtr(ps, "z");
+    assert(*ptr == val);
+    assert(ParStore_nFixed(ps) == 2);
+    assert(ParStore_nFree(ps) == 2);
+    assert(ParStore_getFree(ps, 1) == val);
+    assert(ParStore_loFree(ps, 1) == -100.0);
+    assert(ParStore_hiFree(ps, 1) == 0.0);
+    vec = ParStore_rawArray(ps);
+    assert(vec[1] == val);
 
     ParStore_free(ps);
 

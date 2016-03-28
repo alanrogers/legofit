@@ -17,21 +17,20 @@
  */
 
 #include "parstore.h"
+#include "parkeyval.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
 struct ParStore {
-    int         nFixed, nFree;  // number of parameters
+    int         nFixed, nFree;      // number of parameters
     double      fixedVal[MAXPAR];   // parameter values
     double      freeVal[MAXPAR];    // parameter values
-    double      loFixed[MAXPAR];    // lower bounds
-    double      loFree[MAXPAR]; // lower bounds
-    double      hiFixed[MAXPAR];    // upper bounds
-    double      hiFree[MAXPAR]; // upper bounds
+    double      loFree[MAXPAR];     // lower bounds
+    double      hiFree[MAXPAR];     // upper bounds
     char       *nameFixed[MAXPAR];  // Parameter names
     char       *nameFree[MAXPAR];   // Parameter names
-    ParKeyVal  *head;           // linked list of name/ptr pairs
+    ParKeyVal  *head;               // linked list of name/ptr pairs
 };
 
 /// Constructor
@@ -56,46 +55,50 @@ void ParStore_free(ParStore * self) {
     free(self);
 }
 
-/// Add parameter to ParStore and return a pointer to that value.
-double     *ParStore_addPar(ParStore * self, int isfixed, double value,
-                            double lo, double hi, const char *name) {
-    int        *n;
-    double     *valVec, *loVec, *hiVec;
-    char       *nameVec;
-    if(isfixed) {
-        n = &self->nFixed;
-        valVec = self->fixedVal;
-        loVec = self->loFixed;
-        hiVec = self->hiFixed;
-        nameVec = self->nameFixed;
-    } else {
-        n = &self->nFree;
-        valVec = self->freeVal;
-        loVec = self->loFree;
-        hiVec = self->hiFree;
-        nameVec = self->nameFree;
-    }
+/// Add free parameter to ParStore.
+void ParStore_addFreePar(ParStore * self, double value,
+                        double lo, double hi, const char *name) {
+    int         i = self->nFree;
 
-    int         i = *n;
-
-    if(++*n >= MAXPAR)
-        eprintf("%s:%s:%d: buffer overflow in ParStore."
-                " n=%d. MAXPAR=%d."
+    if(++self->nFree >= MAXPAR)
+        eprintf("%s:%s:%d: buffer overflow."
+                " nFree=%d. MAXPAR=%d."
                 " Increase MAXPAR and recompile.\n",
-                __FILE__, __func__, __LINE__, *n, MAXPAR);
+                __FILE__, __func__, __LINE__,
+                self->nFree, MAXPAR);
 
     if(value < lo || value > hi)
         eprintf("%s:%s:%d: value (%lf) not in range [%lf,%lf]\n",
-                __FILE__, __func__, __LINE__, value, lo, hi);
+                __FILE__, __func__, __LINE__,
+                value, lo, hi);
 
-    valVec[i] = value;
-    loVec[i] = lo;
-    hiVec[i] = hi;
-    nameVec[i] = strdup(name);
+    self->freeVal[i] = value;
+    self->loFree[i] = lo;
+    self->hiFree[i] = hi;
+    self->nameFree[i] = strdup(name);
+    CHECKMEM(self->nameFree[i]);
 
     // Linked list associates pointer with parameter name.
-    self->head = ParKeyVal_add(self->head, name, valVec + i);
-    return valVec + i;
+    self->head = ParKeyVal_add(self->head, name, self->freeVal + i);
+}
+
+/// Add fixed parameter to ParStore.
+void ParStore_addFixedPar(ParStore * self, double value, const char *name) {
+    int         i = self->nFixed;
+
+    if(++self->nFixed >= MAXPAR)
+        eprintf("%s:%s:%d: buffer overflow."
+                " nFixed=%d. MAXPAR=%d."
+                " Increase MAXPAR and recompile.\n",
+                __FILE__, __func__, __LINE__,
+                self->nFixed, MAXPAR);
+
+    self->fixedVal[i] = value;
+    self->nameFixed[i] = strdup(name);
+    CHECKMEM(self->nameFixed[i]);
+
+    // Linked list associates pointer with parameter name.
+    self->head = ParKeyVal_add(self->head, name, self->fixedVal + i);
 }
 
 /// Return the number of fixed parameters
@@ -104,7 +107,7 @@ int ParStore_nFixed(ParStore * self) {
 }
 
 /// Return the number of free parameters
-int ParStore_nFixed(ParStore * self) {
+int ParStore_nFree(ParStore * self) {
     return self->nFree;
 }
 
@@ -126,22 +129,10 @@ void ParStore_setFree(ParStore * self, int i, double value) {
     self->freeVal[i] = value;
 }
 
-/// Return low bound of i'th fixed parameter
-double ParStore_loFixed(ParStore * self, int i) {
-    assert(i < self->nFixed);
-    return self->loFixed[i];
-}
-
 /// Return low bound of i'th free parameter
-double ParStore_loFixed(ParStore * self, int i) {
+double ParStore_loFree(ParStore * self, int i) {
     assert(i < self->nFree);
     return self->loFree[i];
-}
-
-/// Return high bound of i'th fixed parameter
-double ParStore_hiFixed(ParStore * self, int i) {
-    assert(i < self->nFixed);
-    return self->hiFixed[i];
 }
 
 /// Return high bound of i'th free parameter
@@ -151,11 +142,11 @@ double ParStore_hiFree(ParStore * self, int i) {
 }
 
 /// Return pointer to array of free values
-double     *ParStore_getFreePtr(ParStore * self) {
+double     *ParStore_rawArray(ParStore * self) {
     return &self->freeVal[0];
 }
 
 /// Return pointer associated with parameter name.
-double     *ParStore_getPtr(ParStore * self, const char *name) {
+double     *ParStore_findPtr(ParStore * self, const char *name) {
     return ParKeyVal_get(self->head, name);
 }
