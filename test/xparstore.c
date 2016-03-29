@@ -10,6 +10,7 @@
 #include "parstore.h"
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
 
 #ifdef NDEBUG
 #  error "Unit tests must be compiled without -DNDEBUG flag"
@@ -61,6 +62,35 @@ int main(void) {
     assert(ParStore_hiFree(ps, 1) == 0.0);
     vec = ParStore_rawArray(ps);
     assert(vec[1] == val);
+
+    ParStore *ps2 = ParStore_dup(ps);
+    size_t offset = ((size_t) ps2) - ((size_t) ps);
+    int    i;
+
+    assert(ParStore_nFree(ps2) == ParStore_nFree(ps));
+    assert(ParStore_nFixed(ps2) == ParStore_nFixed(ps));
+
+    for(i=0; i < ParStore_nFixed(ps); ++i) {
+        assert(ParStore_getFixed(ps2, i) == ParStore_getFixed(ps, i));
+        const char *name1 = ParStore_getNameFixed(ps, i);
+        const char *name2 = ParStore_getNameFixed(ps2, i);
+        assert(0 == strcmp(name1, name2));
+        size_t position1 = (size_t) ParStore_findPtr(ps, name1);
+        size_t position2 = (size_t) ParStore_findPtr(ps2, name1);
+        assert(offset == position2 - position1);
+    }
+
+    for(i=0; i < ParStore_nFree(ps); ++i) {
+        assert(ParStore_getFree(ps2, i) == ParStore_getFree(ps, i));
+        assert(ParStore_loFree(ps2, i) == ParStore_loFree(ps, i));
+        assert(ParStore_hiFree(ps2, i) == ParStore_hiFree(ps, i));
+        const char *name1 = ParStore_getNameFree(ps, i);
+        const char *name2 = ParStore_getNameFree(ps2, i);
+        assert(0 == strcmp(name1, name2));
+        size_t position1 = (size_t) ParStore_findPtr(ps, name1);
+        size_t position2 = (size_t) ParStore_findPtr(ps2, name1);
+        assert(offset == position2 - position1);
+    }
 
     ParStore_free(ps);
 

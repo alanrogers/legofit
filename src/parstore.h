@@ -20,6 +20,8 @@ int         ParStore_nFixed(ParStore * self);
 int         ParStore_nFree(ParStore * self);
 double      ParStore_getFixed(ParStore * self, int i);
 double      ParStore_getFree(ParStore * self, int i);
+const char *ParStore_getNameFixed(ParStore * self, int i);
+const char *ParStore_getNameFree(ParStore * self, int i);
 void        ParStore_setFree(ParStore * self, int i, double value);
 double      ParStore_loFree(ParStore * self, int i);
 double      ParStore_hiFree(ParStore * self, int i);

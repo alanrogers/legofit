@@ -145,6 +145,18 @@ double ParStore_getFree(ParStore * self, int i) {
     return self->freeVal[i];
 }
 
+/// Get name of i'th fixed parameter
+const char *ParStore_getNameFixed(ParStore * self, int i) {
+    assert(i < self->nFixed);
+    return self->nameFixed[i];
+}
+
+/// Get name of i'th free parameter
+const char *ParStore_getNameFree(ParStore * self, int i) {
+    assert(i < self->nFree);
+    return self->nameFree[i];
+}
+
 /// Set value of i'th free parameter
 void ParStore_setFree(ParStore * self, int i, double value) {
     assert(i < self->nFree);
