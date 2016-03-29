@@ -41,6 +41,27 @@ ParStore   *ParStore_new(void) {
     return self;
 }
 
+/// Duplicate a ParStore
+ParStore *ParStore_dup(ParStore *old) {
+    ParStore *new = malloc(sizeof(ParStore));
+    checkmem(new, __FILE__, __LINE__);
+    memcpy(new, old, sizeif(ParStore));
+    new->head = NULL;
+
+    int i;
+    for(i=0; i < new->nFree; ++i) {
+        new->nameFree[i] = strdup(old->nameFree[i]);
+        new->head = ParKeyVal_add(new->head, new->nameFree[i],
+                                  new->freeVal + i);
+    }
+
+    for(i=0; i < new->nFixed; ++i) {
+        new->nameFixed[i] = strdup(old->nameFixed[i]);
+        new->head = ParKeyVal_add(new->head, new->nameFixed[i],
+                                  new->fixedVal + i);
+    }
+}
+
 /// Destructor
 void ParStore_free(ParStore * self) {
     int         i;

@@ -25,5 +25,6 @@ double      ParStore_loFree(ParStore * self, int i);
 double      ParStore_hiFree(ParStore * self, int i);
 double     *ParStore_rawArray(ParStore * self);
 double     *ParStore_findPtr(ParStore * self, const char *name);
+ParStore   *ParStore_dup(ParStore *old);
 
 #endif
