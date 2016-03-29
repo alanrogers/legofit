@@ -60,6 +60,7 @@ ParStore *ParStore_dup(ParStore *old) {
         new->head = ParKeyVal_add(new->head, new->nameFixed[i],
                                   new->fixedVal + i);
     }
+    return new;
 }
 
 /// Destructor
