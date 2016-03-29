@@ -45,7 +45,7 @@ ParStore   *ParStore_new(void) {
 ParStore *ParStore_dup(ParStore *old) {
     ParStore *new = malloc(sizeof(ParStore));
     checkmem(new, __FILE__, __LINE__);
-    memcpy(new, old, sizeif(ParStore));
+    memcpy(new, old, sizeof(ParStore));
     new->head = NULL;
 
     int i;
