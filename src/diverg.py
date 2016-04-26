@@ -64,6 +64,12 @@ for i in range(len(pat1)):
         exit(1)
     widpat = max(widpat, len(pat1[i]), len(pat2[i]))
 
+# Normalize probabilities
+s1 = sum(prob1)
+s2 = sum(prob2)
+prob1 = [z/s1 for z in prob1]
+prob2 = [z/s2 for z in prob2]
+
 fmt = "%%%ds %%%ds %%%ds %%6s" % (widpat, wid1, wid2)
 print fmt % ("SitePat", fname1, fname2, "KL")
 fmt = "%%%ds %%%d.5f %%%d.5f %%6.3f" % (widpat, wid1, wid2)
