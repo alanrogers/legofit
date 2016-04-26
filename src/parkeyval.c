@@ -1,3 +1,13 @@
+/**
+ * @file parkeyval.c
+ * @author Alan R. Rogers
+ * @brief Linked list associating parameter names with pointers to
+ * parameter values.  
+ *
+ * @copyright Copyright (c) 2016, Alan R. Rogers 
+ * <rogers@anthro.utah.edu>. This file is released under the Internet
+ * Systems Consortium License, which can be found in file "LICENSE".
+ */
 #include "parkeyval.h"
 #include "misc.h"
 #include <string.h>

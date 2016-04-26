@@ -1,3 +1,14 @@
+/**
+ * @file branchtab.c
+ * @author Alan R. Rogers
+ * @brief Hash table associating key (an unsigned int whose bits encode
+ * the descendants of a node in a gene tree) and value (a double
+ * representing the length of the ascending branch)
+ *
+ * @copyright Copyright (c) 2016, Alan R. Rogers 
+ * <rogers@anthro.utah.edu>. This file is released under the Internet
+ * Systems Consortium License, which can be found in file "LICENSE".
+ */
 #include "branchtab.h"
 #include "misc.h"
 #include <assert.h>
