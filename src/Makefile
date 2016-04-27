@@ -57,6 +57,7 @@ clean :
 	rm -f *.a *.o *~ gmon.out *.tmp $(targets) $(tests) core.* vgcore.*
 
 install : $(target)
+	cp diverg.py $(destination)
 	cp $(target) $(destination)
 
 include depend
