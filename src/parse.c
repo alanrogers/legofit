@@ -199,6 +199,7 @@ void		parseParam(Tokenizer *tkz, enum ParamType type,
             hi = 1.0;
             break;
         default:
+			lo = hi = 0.0;
             eprintf("%s:%s:%d: This shouldn't happen\n",
                     __FILE__,__func__,__LINE__);
         }
