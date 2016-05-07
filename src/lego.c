@@ -261,6 +261,8 @@ int main(int argc, char **argv) {
     if(nTasks > nreps)
         nTasks = nreps;
 
+    // Estimate site pattern probabilities
+
     // Divide repetitions among tasks.
     long        reps[nTasks];
     {

@@ -101,6 +101,9 @@ void El_set(El * self, void *value) {
     self->value = value;
 }
 
+/// Return El corresponding to key. If no such El exists,
+/// allocate a new one, insert it into hashtab, and return that.
+/// Note that El_find does not return NULL if key is missing.
 El *El_find(El * self, El ** found, const char *key) {
     int comparison;
     if(self == NULL
