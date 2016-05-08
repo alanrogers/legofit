@@ -33,39 +33,12 @@ struct HashTabSeq {
     El *el;
 };
 
-unsigned    strhash(const char *ss);
 El         *El_new(const char *key);
 void        El_free(El * e);
 El         *El_find(El * self, El ** found, const char *key);
 void        El_map(El *self, void(*f)(void *value, void *data), void *data);
 void        HashTabSeq_nextBucket(HashTabSeq *self);
 void        freeValue(void *value, void *unused);
-
-/// Hash a character string
-unsigned strhash(const char *ss) {
-    unsigned long hashval;
-    int c;
-    const unsigned char *s = (const unsigned char *) ss;
-#if 0
-    // Kernighan and Richie, 2nd edn.
-    for(hashval = 0; *s != '\0'; ++s)
-        hashval += c + 31 * hashval;
-#elif 1
-    // djb2
-    hashval = 5381;
-    while((c = *s++))
-        hashval = ((hashval << 5) + hashval) +  c;
-#else
-    // sdbm
-    hashval = 0;
-    while((c = *s++))
-        hashval = c + (hashval << 6) + (hashval << 16) - hashval;
-#endif
-
-    // Same as hash % HASHDIM but faster. Requires
-    // that HASHDIM be a power of 2.
-    return hashval  & (HASHDIM-1u);
-}
 
 /// For use by HashTab_map. Will free every non-NULL value in table.
 void freeValue(void *p, void *unused) {

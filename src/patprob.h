@@ -8,8 +8,8 @@ unsigned patprob(unsigned maxpat,
                  double prob[maxpat],
                  int nTasks,
                  unsigned long nreps,
+                 int pointNdx,
                  const char *fname,
-                 Bounds *bnd,
-                 unsigned rng_seed);
+                 Bounds bnd);
 
 #endif

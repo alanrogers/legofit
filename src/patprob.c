@@ -9,9 +9,14 @@
 #include "hashtab.h"
 #include "parse.h"
 #include "parstore.h"
+#include "jobqueue.h"
 #include "sampndx.h"
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
+#include <time.h>
+#include <unistd.h>
+#include <limits.h>
 
 typedef struct TaskArg TaskArg;
 
@@ -115,11 +120,13 @@ unsigned patprob(unsigned maxpat,
                  double prob[maxpat],
                  int nTasks,
                  unsigned long nreps,
+                 int pointNdx,
                  const char *fname,
-                 Bounds *bnd,
-                 unsigned rng_seed) {
+                 Bounds bnd) {
 
-    int i, j;
+    int j;
+
+    unsigned long currtime = (unsigned long ) time(NULL);
 
     // Divide repetitions among tasks.
     long        reps[nTasks];
@@ -157,8 +164,27 @@ unsigned patprob(unsigned maxpat,
     printf("# nthreads    : %d\n", nTasks);
     printf("# input file  : %s\n", fname);
 
-    for(j = 0; j < nTasks; ++j)
-        taskarg[j] = TaskArg_new(&targ, currtime + pid + j, reps[j]);
+    /*
+     * Generate a seed that is unique across points and threads.
+     * First step creates a character string that concatenates
+     * the decimal representation of time, process id, and index
+     * of current point. This string is then hashed to a 32-bit
+     * unsigned integer, which stored in a 64-bit unsigned
+     * integer, lseed. Inside the loop, we add j to this seed to get
+     * the seed for the j'th thread, and apply modulus to avoid
+     * overflow.
+     */
+    unsigned long lseed;
+    {
+        char s[50]; // strlen(s) will not exceed 40
+        snprintf(s, sizeof(s), "%lu%u%u", currtime, pid, pointNdx);
+        assert(1+strlen(s) < sizeof(s));
+        lseed = strhash(s);
+    }
+    for(j = 0; j < nTasks; ++j) {
+        unsigned seed = (unsigned) ((lseed + j) % UINT_MAX);
+        taskarg[j] = TaskArg_new(&targ, seed, reps[j]);
+    }
 
     {
         JobQueue   *jq = JobQueue_new(nTasks);
