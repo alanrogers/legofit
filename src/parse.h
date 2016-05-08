@@ -3,6 +3,6 @@
 
 #include "typedefs.h"
 PopNode    *mktree(FILE * fp, HashTab * poptbl, SampNdx *sndx, 
-				   ParStore *parstore, Bounds *bnd);
+				   LblNdx *lndx, ParStore *parstore, Bounds *bnd);
 
 #endif

@@ -2,9 +2,9 @@
 #include "hashtab.h"
 #include "misc.h"
 #include "parse.h"
-#include "sampndx.h"
 #include "parstore.h"
 #include "tokenizer.h"
+#include "lblndx.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -108,7 +108,7 @@ int         getULong(unsigned long *x, Tokenizer * tkz, int i);
 void		parseParam(Tokenizer *tkz, enum ParamType type,
 					   ParStore *parstore, Bounds *bnd);
 void        parseSegment(Tokenizer *tkz, HashTab *poptbl, SampNdx *sndx,
-						 ParStore *parstore);
+						 LblNdx *lndx, ParStore *parstore);
 void        parseDerive(Tokenizer *tkz, HashTab *poptbl);
 void        parseMix(Tokenizer *tkz, HashTab *poptbl, ParStore *parstore);
 
@@ -209,7 +209,7 @@ void		parseParam(Tokenizer *tkz, enum ParamType type,
 
 // segment a   t=0     twoN=100    samples=1
 void parseSegment(Tokenizer *tkz, HashTab *poptbl, SampNdx *sndx,
-				  ParStore *parstore) {
+				  LblNdx *lndx, ParStore *parstore) {
     char *popName, *tok;
     double *tPtr, *twoNptr;
     unsigned long nsamples=0;
@@ -294,7 +294,8 @@ void parseSegment(Tokenizer *tkz, HashTab *poptbl, SampNdx *sndx,
     }else
         eprintf("%s:%s:%d: duplicate \"segment %s\"\n",
                  __FILE__,__func__,__LINE__, popName);
-    SampNdx_addSamples(sndx, nsamples, thisNode, popName);
+    LblNdx_addSamples(lndx, nsamples, popName);
+    SampNdx_addSamples(sndx, nsamples, thisNode);
 }
 
 // derive a from ab
@@ -419,7 +420,7 @@ void parseMix(Tokenizer *tkz, HashTab *poptbl, ParStore *parstore) {
 }
 
 PopNode    *mktree(FILE * fp, HashTab * poptbl, SampNdx *sndx, 
-				   ParStore *parstore, Bounds *bnd) {
+				   LblNdx *lndx, ParStore *parstore, Bounds *bnd) {
     int         ntokens;
     char        buff[500];
     Tokenizer  *tkz = Tokenizer_new(50);
@@ -452,7 +453,7 @@ PopNode    *mktree(FILE * fp, HashTab * poptbl, SampNdx *sndx,
 		else if(0 == strcmp(tok, "mixFrac"))
 			parseParam(tkz, MixFrac, parstore, bnd);
         else if(0 == strcmp(tok, "segment"))
-            parseSegment(tkz, poptbl, sndx, parstore);
+            parseSegment(tkz, poptbl, sndx, lndx, parstore);
         else if(0 == strcmp(tok, "mix"))
             parseMix(tkz, poptbl, parstore);
         else if(0 == strcmp(tok, "derive"))
@@ -566,6 +567,8 @@ int main(int argc, char **argv) {
     HashTab *poptbl = HashTab_new();
     SampNdx sndx;
     SampNdx_init(&sndx);
+	LblNdx lndx;
+	LblNdx_init(&lndx);
 	ParStore *parstore = ParStore_new();  // parameters
 	Bounds   bnd = {
 		.lo_twoN = 0.0,
@@ -573,13 +576,13 @@ int main(int argc, char **argv) {
 		.lo_t = 0.0,
 		.hi_t = HUGE_VAL
 	};
-    PopNode *root = mktree(fp, poptbl, &sndx, parstore, &bnd);
+    PopNode *root = mktree(fp, poptbl, &sndx, &lndx, parstore, &bnd);
 
     if(verbose) {
         PopNode_print(stdout, root, 0);
         unsigned i;
-        for(i=0; i < SampNdx_size(&sndx); ++i)
-            printf("%2u %s\n", i, SampNdx_lbl(&sndx, i));
+        for(i=0; i < LblNdx_size(&lndx); ++i)
+            printf("%2u %s\n", i, LblNdx_lbl(&lndx, i));
 		printf("Used %d fixed parameters in \"parstore\".\n",
                ParStore_nFixed(parstore));
 		printf("Used %d free parameters in \"parstore\".\n",

@@ -16,7 +16,7 @@
 #include "parse.h"
 #include "patprob.h"
 #include "parstore.h"
-#include "sampndx.h"
+#include "lblndx.h"
 #include <assert.h>
 #include <float.h>
 #include <gsl/gsl_randist.h>
@@ -28,7 +28,7 @@
 #include <time.h>
 #include <unistd.h>
 
-char       *patLbl(size_t n, char buff[n], tipId_t tid, SampNdx * sndx);
+char       *patLbl(size_t n, char buff[n], tipId_t tid, LblNdx * lblndx);
 void        usage(void);
 int         comparePtrs(const void *void_x, const void *void_y);
 
@@ -70,7 +70,7 @@ int comparePtrs(const void *void_x, const void *void_y) {
 
 /// Generate a label for site pattern tid. Label goes into
 /// buff. Function returns a pointer to buff;
-char       *patLbl(size_t n, char buff[n], tipId_t tid, SampNdx * sndx) {
+char       *patLbl(size_t n, char buff[n], tipId_t tid, LblNdx * lblndx) {
     int         maxbits = 40;
     int         bit[maxbits];
     int         i, nbits;
@@ -79,7 +79,7 @@ char       *patLbl(size_t n, char buff[n], tipId_t tid, SampNdx * sndx) {
     char        lbl[100];
     for(i = 0; i < nbits; ++i) {
         snprintf(lbl, sizeof(lbl), "%s",
-                 SampNdx_lbl(sndx, (unsigned) bit[i]));
+                 LblNdx_lbl(lblndx, (unsigned) bit[i]));
         if(strlen(buff) + strlen(lbl) >= n)
             eprintf("%s:%s:%d: buffer overflow\n", __FILE__, __func__,
                     __LINE__);
@@ -204,7 +204,9 @@ int main(int argc, char **argv) {
     printf("# nthreads    : %d\n", nTasks);
     printf("# input file  : %s\n", fname);
 
-	unsigned npat = patprob(maxpat, pat, prob, nTasks, reps, 0, fname, bnd);
+	LblNdx lblndx;
+	unsigned npat = patprob(maxpat, pat, prob, &lblndx, nTasks, reps, 0,
+							fname, bnd);
 
     // Determine order for printing lines of output
     tipId_t  *ptr[npat];
@@ -220,8 +222,8 @@ int main(int argc, char **argv) {
     for(j = 0; j < npat; ++j) {
         char        buff2[100];
         snprintf(buff2, sizeof(buff2), "%s",
-                 patLbl(sizeof(buff), buff, pat[ord[j]], &(taskarg[0]->sndx)));
-        printf("%15s %10.7lf\n", buff2, branchLength[ord[j]]);
+                 patLbl(sizeof(buff), buff, pat[ord[j]], &lblndx));
+        printf("%15s %10.7lf\n", buff2, prob[ord[j]]);
     }
 
     return 0;

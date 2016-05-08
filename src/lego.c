@@ -15,7 +15,6 @@
 #include "misc.h"
 #include "parse.h"
 #include "parstore.h"
-#include "sampndx.h"
 #include <assert.h>
 #include <float.h>
 #include <gsl/gsl_randist.h>

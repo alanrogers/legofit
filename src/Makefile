@@ -47,7 +47,7 @@ lego : $(LEGO)
 	$(CC) $(CFLAGS) -o $@ $(LEGO) $(lib)
 
 LEGO2 := lego2.o patprob.o gptree.o binary.o jobqueue.o misc.o parse.o \
-  branchtab.o hashtab.o sampndx.o tokenizer.o parstore.o parkeyval.o
+  branchtab.o hashtab.o lblndx.o tokenizer.o parstore.o parkeyval.o
 lego2 : $(LEGO2)
 	$(CC) $(CFLAGS) -o $@ $(LEGO2) $(lib)
 

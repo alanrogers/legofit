@@ -10,7 +10,8 @@
 #include "parse.h"
 #include "parstore.h"
 #include "jobqueue.h"
-#include "sampndx.h"
+#include "lblndx.h"
+#include "gptree.h"
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
@@ -26,6 +27,7 @@ struct TaskArg {
     unsigned    rng_seed;
     unsigned long nreps;
     SampNdx     sndx;
+    LblNdx      lblndx;
 	Bounds      bnd;
 
     // Returned value
@@ -50,6 +52,7 @@ TaskArg    *TaskArg_new(const TaskArg * template, unsigned rng_seed,
     a->rng_seed = rng_seed;
     a->nreps = nreps;
     a->branchtab = BranchTab_new();
+    LblNdx_init(&(a->lblndx));
     SampNdx_init(&(a->sndx));
 
     return a;
@@ -75,14 +78,15 @@ int taskfun(void *varg) {
         // Build population tree as specified in file targ->fname.
         // After this section, rootPop points to the ancestral
         // population, ht is a table that maps population names to
-        // nodes in the population tree, and targ->sndx is an index of
-        // samples. The call to HashTab_freeValues (at the end of this
-        // function) deallocates all population nodes.
+        // nodes in the population tree, and targ->lblndx is an index of
+        // sample labels. The call to HashTab_freeValues (at the end
+        // of this function) deallocates all population nodes.
         FILE       *fp = fopen(targ->fname, "r");
         if(fp == NULL)
             eprintf("%s:%s:%d: can't open file %s.\n",
                     __FILE__, __func__, __LINE__, targ->fname);
-        rootPop = mktree(fp, ht, &(targ->sndx), parstore, &(targ->bnd));
+        rootPop = mktree(fp, ht, &(targ->sndx), &(targ->lblndx), parstore,
+						 &(targ->bnd));
         fclose(fp);
     }
 
@@ -118,11 +122,13 @@ int taskfun(void *varg) {
 unsigned patprob(unsigned maxpat,
                  tipId_t pat[maxpat],
                  double prob[maxpat],
-                 int nTasks,
+        		 LblNdx *lblndx,
+				 int nTasks,
 				 long reps[nTasks],
                  int pointNdx,
-                 const char *fname,
+		                 const char *fname,
                  Bounds bnd) {
+	assert(lblndx != NULL);
     int j;
     unsigned long currtime = (unsigned long ) time(NULL);
 
@@ -187,6 +193,8 @@ unsigned patprob(unsigned maxpat,
         for(j = 0; j < npat; ++j)
             prob[j] /= sum;
     }
+
+	*lblndx = taskarg[0]->lblndx;
 
     for(j = 0; j < nTasks; ++j)
         TaskArg_free(taskarg[j]);

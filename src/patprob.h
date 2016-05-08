@@ -6,6 +6,7 @@
 unsigned patprob(unsigned maxpat,
                  tipId_t pat[maxpat],
                  double prob[maxpat],
+				 LblNdx *lblndx,
                  int nTasks,
 				 long reps[nTasks],
                  int pointNdx,
