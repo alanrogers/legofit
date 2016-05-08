@@ -17,4 +17,5 @@ void        HashTab_freeValues(HashTab *self);
 HashTabSeq *HashTabSeq_new(HashTab *ht);
 El         *HashTabSeq_next(HashTabSeq *self);
 void        HashTabSeq_free(HashTabSeq *self);
+unsigned    strhash(const char *ss);
 #endif

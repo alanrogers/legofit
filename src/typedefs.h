@@ -9,6 +9,7 @@ typedef struct El El;
 typedef struct Gene Gene;
 typedef struct HashTab HashTab;
 typedef struct HashTabSeq HashTabSeq;
+typedef struct LblNdx LblNdx;
 typedef struct ParKeyVal ParKeyVal;
 typedef struct ParStore ParStore;
 typedef struct PopNode PopNode;

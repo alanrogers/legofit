@@ -7,7 +7,7 @@ unsigned patprob(unsigned maxpat,
                  tipId_t pat[maxpat],
                  double prob[maxpat],
                  int nTasks,
-                 unsigned long nreps,
+				 long reps[nTasks],
                  int pointNdx,
                  const char *fname,
                  Bounds bnd);

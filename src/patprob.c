@@ -36,7 +36,6 @@ TaskArg    *TaskArg_new(const TaskArg * template, unsigned rng_seed,
                         unsigned nreps);
 void        TaskArg_free(TaskArg * targ);
 int         taskfun(void *varg);
-char       *patLbl(size_t n, char buff[n], tipId_t tid, SampNdx * sndx);
 
 /**
  * Construct a new TaskArg by copying a template, but then assign
@@ -114,40 +113,18 @@ int taskfun(void *varg) {
 
 /// Run simulations to estimate site pattern probabilities.
 /// On return, pat[i] identifies the i'th pattern, and prob[i]
-/// estimates its probability.  
+/// estimates its probability.  Function returns the number of
+/// patterns detected--the length of pat and prob.
 unsigned patprob(unsigned maxpat,
                  tipId_t pat[maxpat],
                  double prob[maxpat],
                  int nTasks,
-                 unsigned long nreps,
+				 long reps[nTasks],
                  int pointNdx,
                  const char *fname,
                  Bounds bnd) {
-
     int j;
-
     unsigned long currtime = (unsigned long ) time(NULL);
-
-    // Divide repetitions among tasks.
-    long        reps[nTasks];
-    {
-        ldiv_t      qr = ldiv((long) nreps, (long) nTasks);
-        assert(qr.quot > 0);
-        for(j = 0; j < nTasks; ++j)
-            reps[j] = qr.quot;
-        assert(qr.rem < nTasks);
-        for(j=0; j < qr.rem; ++j)
-            reps[j] += 1;
-#ifndef NDEBUG
-        // make sure the total number of repetitions is nreps.
-        long        sumreps = 0;
-        for(j = 0; j < nTasks; ++j) {
-            assert(reps[j] > 0);
-            sumreps += reps[j];
-        }
-        assert(sumreps = nreps);
-#endif
-    }
 
     TaskArg     targ = {
         .fname = fname,
@@ -160,10 +137,6 @@ unsigned patprob(unsigned maxpat,
     TaskArg    *taskarg[nTasks];
     unsigned    pid = (unsigned) getpid();
 
-    printf("# nreps       : %lu\n", nreps);
-    printf("# nthreads    : %d\n", nTasks);
-    printf("# input file  : %s\n", fname);
-
     /*
      * Generate a seed that is unique across points and threads.
      * First step creates a character string that concatenates
@@ -174,9 +147,9 @@ unsigned patprob(unsigned maxpat,
      * the seed for the j'th thread, and apply modulus to avoid
      * overflow.
      */
-    unsigned long lseed;
+    long unsigned lseed;
     {
-        char s[50]; // strlen(s) will not exceed 40
+        char s[50]; // strlen(s) should not exceed 40
         snprintf(s, sizeof(s), "%lu%u%u", currtime, pid, pointNdx);
         assert(1+strlen(s) < sizeof(s));
         lseed = strhash(s);
@@ -189,14 +162,13 @@ unsigned patprob(unsigned maxpat,
     {
         JobQueue   *jq = JobQueue_new(nTasks);
         if(jq == NULL)
-            eprintf("ERR@%s:%d: Bad return from JobQueue_new",
-                    __FILE__, __LINE__);
+            eprintf("s:%s:%d: Bad return from JobQueue_new",
+                    __FILE__, __func__, __LINE__);
         for(j = 0; j < nTasks; ++j)
             JobQueue_addJob(jq, taskfun, taskarg[j]);
         JobQueue_waitOnJobs(jq);
         JobQueue_free(jq);
     }
-    fflush(stdout);
 
     // Add all branchtabs into branchtab[0]
     for(j = 1; j < nTasks; ++j)
@@ -216,5 +188,8 @@ unsigned patprob(unsigned maxpat,
             prob[j] /= sum;
     }
 
-    return npat;
+    for(j = 0; j < nTasks; ++j)
+        TaskArg_free(taskarg[j]);
+		
+	return npat;
 }

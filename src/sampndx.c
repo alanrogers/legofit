@@ -93,6 +93,8 @@ int main(int argc, char **argv) {
     SampNdx_populateTree(&sndx);
     assert(3 == PopNode_nsamples(pnode));
 
+	unitTstResult("SampNdx", "OK");
+
     return 0;
 }
 #endif

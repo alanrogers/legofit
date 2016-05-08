@@ -7,6 +7,12 @@
 #  define POPNAMESIZE 30
 #  define MAXSAMP ((int)(8*sizeof(tipId_t)))
 
+struct SampNdx {
+    unsigned    n;              // number of samples
+    char        lbl[MAXSAMP][POPNAMESIZE];
+    PopNode    *node[MAXSAMP];
+};
+
 void        Gene_tabulate(Gene * self, BranchTab * bt);
 void        Gene_free(Gene * gene);
 PopNode    *PopNode_new(double *twoNptr, double *tPtr);
@@ -24,5 +30,11 @@ PopNode    *PopNode_root(PopNode * self);
 void        PopNode_sanityFromLeaf(PopNode * self, const char *file,
                                    int line);
 int         PopNode_nsamples(PopNode * self);
+
+void        SampNdx_init(SampNdx * self);
+void        SampNdx_addSamples(SampNdx * self, unsigned nsamples,
+							   PopNode * pnode);
+void        SampNdx_populateTree(SampNdx * self);
+unsigned    SampNdx_size(SampNdx * self);
 
 #endif

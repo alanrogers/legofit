@@ -7,7 +7,8 @@ prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
 
 #tests := xzeroin xbinary xhashtab xparse xgptree xbranchtab
-tests := xbinary xhashtab xparse xgptree xbranchtab xparstore xparkeyval
+tests := xbinary xhashtab xparse xgptree xbranchtab xparstore \
+  xparkeyval xlblndx xsampndx
 
 CC := gcc
 
@@ -43,6 +44,8 @@ test : $(tests)
 	-./xgptree
 	-./xparkeyval
 	-./xparstore
+	-./xlblndx
+	-./xsampndx
 #	-./xzeroin
 	@echo "ALL UNIT TESTS WERE COMPLETED."
 
@@ -78,9 +81,6 @@ XGPTREE := xgptree.o misc.o branchtab.o
 xgptree : $(XGPTREE)
 	$(CC) $(CFLAGS) -o $@ $(XGPTREE) $(lib)
 
-xsampndx.o : sampndx.c
-	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/sampndx.c
-
 XPARSTORE := xparstore.o misc.o parstore.o parkeyval.o
 xparstore : $(XPARSTORE)
 	$(CC) $(CFLAGS) -o $@ $(XPARSTORE) $(lib)
@@ -88,6 +88,16 @@ xparstore : $(XPARSTORE)
 XPARKEYVAL := xparkeyval.o parkeyval.o misc.o
 xparkeyval : $(XPARKEYVAL)
 	$(CC) $(CFLAGS) -o $@ $(XPARKEYVAL) $(lib)
+
+xlblndx.o : lblndx.c
+	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/lblndx.c
+
+XLBLNDX := xlblndx.o misc.o
+xlblndx : $(XLBLNDX)
+	$(CC) $(CFLAGS) -o $@ $(XLBLNDX) $(lib)
+
+xsampndx.o : sampndx.c
+	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/sampndx.c
 
 XSAMPNDX := xsampndx.o gptree.o misc.o
 xsampndx : $(XSAMPNDX)

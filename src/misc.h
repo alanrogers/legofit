@@ -26,7 +26,6 @@ void        pictex(double *x, double *y, unsigned n, const char *xlbl,
 void        pictex_par(double *x, double *y, unsigned n, const char *xlbl,
                        const char *ylbl, const char *plotheading,
                        const char *fname);
-unsigned    strhash(const char *ss);
 void        unitTstResult(const char *facility, const char *result);
 void        tellopt(const char *opt, const char *description);
 unsigned    Dbl_first_geq(double val, unsigned len, double v[len]);
