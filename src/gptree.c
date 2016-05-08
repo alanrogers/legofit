@@ -270,9 +270,9 @@ void PopNode_addChild(PopNode * parent, PopNode * child) {
     } else {
 		if(child->end != parent->start)
 			eprintf("%s:%s:%d: Date mismatch."
-					" child->end=%lf != %lf = parent->start\n",
+					" child->end=%p != %p = parent->start\n",
 					__FILE__, __func__, __LINE__,
-					*child->end, *parent->start);
+					child->end, parent->start);
 	}
     parent->child[parent->nchildren] = child;
     child->parent[child->nparents] = parent;
