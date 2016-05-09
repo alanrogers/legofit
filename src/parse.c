@@ -210,8 +210,7 @@ void		parseParam(Tokenizer *tkz, enum ParamType type,
 
 // segment a   t=0     twoN=100    samples=1
 void parseSegment(Tokenizer *tkz, HashTab *poptbl, SampNdx *sndx,
-				  LblNdx *lndx, ParStore *parstore,
-                   NodeStore *ns) {
+				  LblNdx *lndx, ParStore *parstore, NodeStore *ns) {
     char *popName, *tok;
     double *tPtr, *twoNptr;
     unsigned long nsamples=0;
@@ -420,9 +419,8 @@ void parseMix(Tokenizer *tkz, HashTab *poptbl, ParStore *parstore) {
     PopNode_mix(childNode, mPtr, parNode1, parNode0);
 }
 
-PopNode    *mktree(FILE * fp, SampNdx *sndx, 
-				   LblNdx *lndx, ParStore *parstore, Bounds *bnd,
-                   NodeStore *ns) {
+PopNode    *mktree(FILE * fp, SampNdx *sndx, LblNdx *lndx, ParStore *parstore,
+                   Bounds *bnd, NodeStore *ns) {
     int         ntokens;
     char        buff[500];
     Tokenizer  *tkz = Tokenizer_new(50);
@@ -457,7 +455,7 @@ PopNode    *mktree(FILE * fp, SampNdx *sndx,
 		else if(0 == strcmp(tok, "mixFrac"))
 			parseParam(tkz, MixFrac, parstore, bnd);
         else if(0 == strcmp(tok, "segment"))
-            parseSegment(tkz, poptbl, sndx, lndx, parstore);
+            parseSegment(tkz, poptbl, sndx, lndx, parstore, ns);
         else if(0 == strcmp(tok, "mix"))
             parseMix(tkz, poptbl, parstore);
         else if(0 == strcmp(tok, "derive"))
@@ -603,7 +601,6 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    HashTab *poptbl = HashTab_new();
     SampNdx sndx;
     SampNdx_init(&sndx);
 	LblNdx lndx;
@@ -616,11 +613,20 @@ int main(int argc, char **argv) {
 		.hi_t = HUGE_VAL
 	};
 
-    assert(6 == countSegments(fp));
+    int nseg = countSegments(fp);
+    assert(6 == nseg);
     unitTstResult("countSegments", "OK");
 
     rewind(fp);
-    PopNode *root = mktree(fp, poptbl, &sndx, &lndx, parstore, &bnd);
+
+    PopNode  nodeVec[nseg];
+    PopNode *root;
+
+    {
+        NodeStore *ns = NodeStore_new(nseg, nodeVec);
+        root = mktree(fp, &sndx, &lndx, parstore, &bnd, ns);
+        NodeStore_free(ns);
+    }
 
     if(verbose) {
         PopNode_print(stdout, root, 0);
@@ -635,7 +641,6 @@ int main(int argc, char **argv) {
 
     unitTstResult("mktree", "needs more testing");
 
-    HashTab_free(poptbl);
 	ParStore_free(parstore);
     return 0;
 }

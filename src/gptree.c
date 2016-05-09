@@ -26,19 +26,9 @@ struct Gene {
     double      branch;
 };
 
-struct PopNode {
-    int         nparents, nchildren, nsamples;
-    double      *twoN;           // ptr to current pop size
-    double      *start, *end;    // duration of this PopNode
-    double      *mix;            // ptr to frac of pop derived from parent[1]
-    struct PopNode *parent[2];
-    struct PopNode *child[2];
-    Gene       *sample[MAXSAMP];
-};
-
 struct GPTree {
     int nseg; // number of segments in population tree.
-    PopNode *popNodeVec; // array of length nseg
+    PopNode *pnv; // array of length nseg
     PopNode *rootPop;
     Gene *rootGene;
     int nNodes;
@@ -539,10 +529,10 @@ GPTree *GPTree_new(const char *fname, Bounds bnd) {
                 __FILE__, __func__, __LINE__, fname);
     self->nseg = countSegments(fp);
     rewind(fp);
-    self->popNodeVec = malloc(self->nseg * sizeof(self->popNodeVec[0]));
-    CHECKMEM(self->popNodeVec);
+    self->pnv = malloc(self->nseg * sizeof(self->pnv[0]));
+    CHECKMEM(self->pnv);
 
-    NodeStore *ns = NodeStore_new(self->nseg, self->popNodeVec);
+    NodeStore *ns = NodeStore_new(self->nseg, self->pnv);
     CHECKMEM(ns);
 
     self->rootPop = mktree(fp, &self->sndx, &self->lblndx, self->parstore,
@@ -555,18 +545,70 @@ GPTree *GPTree_new(const char *fname, Bounds bnd) {
 
 /// Destructor.
 void GPTree_free(GPTree *self) {
+    Gene_free(self->rootGene);
     PopNode_clear(self->rootPop);
-    free(self->popNodeVec);
+    free(self->pnv);
     ParStore_free(self->parstore);
     free(self);
 }
 
-NodeStore *NodeStore_new(int len, PopNode v[len]) {
+// Add increment INC to pointer PTR. Units are sizeof(char)
+// rather than the size of the object to which PTR refers.
+#define INCR_PTR(PTR,INC) do{                         \
+        (PTR) = ((size_t) (PTR)) + ((size_t) (INC));  \
+    }while(0);
+
+/// Duplicate a GPTree object
+GPTree *GPTree_dup(GPTree *old) {
+    Gene_free(old->rootGene);
+    old->rootGene = NULL;
+    PopNode_clear(old->rootPop);
+
+    GPTree *new = malloc(sizeof(GPTree));
+    CHECKMEM(new);
+    memcpy(new, old, sizeof(GPTree));
+
+    new->parstore = ParStore_dup(old->parstore);
+
+    new->pnv = malloc(old->nseg * sizeof(PopNode));
+    CHECKMEM(new->pnv);
+    memcpy(new->pnv, old->pnv);
+
+    assert(old->nseg == new->nseg);
+
+    /*
+     * Adjust the pointers within each PopNode object so they refer to
+     * the memory allocated in "new" rather than that in "old".
+     * dpar is the offset between new and old for parameter pointers.
+     * dpop is the analogous offset for PopNode pointers. Everything
+     * has to be cast to size_t, because we are not doing pointer
+     * arithmetic in the usual sense. Ordinarily, ptr+3 means
+     * ptr + 3*sizeof(*ptr). We want it to mean ptr+3*sizeof(char).
+     */
+    int i, j;
+    size_t dpar = ((size_t) new->parstore) - ((size_t) old->parstore);
+    size_t dpop = ((size_t) new->pnv) - ((size_t) old->pnv);
+    for(i=0; i < old->nseg; ++i) {
+        INCR_PTR(new->pnv[i].twoN,  dpar);
+        INCR_PTR(new->pnv[i].start, dpar);
+        INCR_PTR(new->pnv[i].end,   dpar);
+        for(j = 0; j < new->nparents; ++j)
+            INCR_PTR(new->pnv[i].parent[j], dpop);
+        for(j = 0; j < new->nchildren; ++j)
+            INCR_PTR(new->pnv[i].child[j],  dpop);
+    }
+
+    return new;
+}
+
+NodeStore *NodeStore_new(int len, PopNode *v) {
     NodeStore *self = malloc(sizeof(NodeStore));
     CHECKMEM(self);
+
     self->nused = 0;
     self->len = len;
     self->v = v;
+    return self;
 }
 
 void NodeStore_free(NodeStore *self) {
@@ -578,7 +620,7 @@ PopNode *NodeStore_alloc(NodeStore *self) {
     if(self->nused >= self->len)
         eprintf("%s:%s:%d: Ran out of PopNode objects.\n",
                 __FILE__, __func__, __LINE__);
-    return self->v[self->nused++];
+    return &self->v[self->nused++];
 }
 
 #ifdef TEST
@@ -657,8 +699,26 @@ int main(int argc, char **argv) {
 
     unitTstResult("Gene", "OK");
 
+    int nseg = 10;
+    PopNode v[nseg];
+    NodeStore *ns = NodeStore_new(nseg, v);
+    CHECKMEM(ns);
+
+    PopNode *node = NodeStore_alloc(ns);
+    assert(node == v);
+    node = NodeStore_alloc(ns);
+    assert(node == &v[1]);
+    node = NodeStore_alloc(ns);
+    assert(node == &v[2]);
+
+    NodeStore_free(ns);
+	unitTstResult("NodeStore", "OK");
+    
+    ns = NodeStore_new(nseg, v);
+    CHECKMEM(ns);
+
     double twoN0 = 1.0, start0= 0.0;
-    PopNode *p0 = PopNode_new(&twoN0, &start0);
+    PopNode *p0 = PopNode_new(&twoN0, &start0, ns);
     assert(p0->twoN == &twoN0);
     assert(p0->start == &start0);
     assert(p0->end == NULL);
@@ -674,7 +734,7 @@ int main(int argc, char **argv) {
 		PopNode_printShallow(p0, stdout);
 
     double twoN1 = 100.0, start1= 123.0;
-    PopNode *p1 = PopNode_new(&twoN1, &start1);
+    PopNode *p1 = PopNode_new(&twoN1, &start1, ns);
     assert(p1->twoN == &twoN1);
     assert(p1->start == &start1);
     assert(p1->end == NULL);
@@ -712,13 +772,14 @@ int main(int argc, char **argv) {
 
 	double twoN = 100.0;
 	double start = 20.0;
-    PopNode    *pnode = PopNode_new(&twoN, &start);
+    PopNode    *pnode = PopNode_new(&twoN, &start, ns);
     SampNdx_addSamples(&sndx, 1, pnode);
     SampNdx_addSamples(&sndx, 2, pnode);
 
     assert(3 == SampNdx_size(&sndx));
     SampNdx_populateTree(&sndx);
     assert(3 == PopNode_nsamples(pnode));
+    NodeStore_free(ns);
 
 	unitTstResult("SampNdx", "OK");
 

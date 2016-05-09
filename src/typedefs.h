@@ -11,6 +11,7 @@ typedef struct GPTree GPTree;
 typedef struct HashTab HashTab;
 typedef struct HashTabSeq HashTabSeq;
 typedef struct LblNdx LblNdx;
+typedef struct NodeStore NodeStore;
 typedef struct ParKeyVal ParKeyVal;
 typedef struct ParStore ParStore;
 typedef struct PopNode PopNode;

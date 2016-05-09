@@ -105,6 +105,7 @@ int taskfun(void *varg) {
 
         // Free gene genealogy but not population tree.
         Gene_free(root);
+        root = NULL;
     }
 
     gsl_rng_free(rng);

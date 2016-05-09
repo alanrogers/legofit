@@ -76,7 +76,8 @@ xparse : $(XPARSE)
 xgptree.o : gptree.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/gptree.c
 
-XGPTREE := xgptree.o misc.o branchtab.o
+XGPTREE := xgptree.o misc.o branchtab.o parstore.o parse.o lblndx.o \
+        parkeyval.o tokenizer.o hashtab.o
 xgptree : $(XGPTREE)
 	$(CC) $(CFLAGS) -o $@ $(XGPTREE) $(lib)
 

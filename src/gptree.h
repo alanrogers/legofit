@@ -13,6 +13,16 @@ struct SampNdx {
     PopNode    *node[MAXSAMP];
 };
 
+struct PopNode {
+    int         nparents, nchildren, nsamples;
+    double      *twoN;           // ptr to current pop size
+    double      *start, *end;    // duration of this PopNode
+    double      *mix;            // ptr to frac of pop derived from parent[1]
+    struct PopNode *parent[2];
+    struct PopNode *child[2];
+    Gene       *sample[MAXSAMP];
+};
+
 void        Gene_tabulate(Gene * self, BranchTab * bt);
 void        Gene_free(Gene * gene);
 PopNode    *PopNode_new(double *twoN, double *start, NodeStore *ns);
@@ -40,7 +50,7 @@ unsigned    SampNdx_size(SampNdx * self);
 GPTree     *GPTree_new(const char *fname, Bounds bnd);
 void        GPTree_free(GPTree *self);
 
-NodeStore  *NodeStore_new(int len, PopNode v[len]);
+NodeStore  *NodeStore_new(int len, PopNode *v);
 void        NodeStore_free(NodeStore *self);
 PopNode    *NodeStore_alloc(NodeStore *self);
 
