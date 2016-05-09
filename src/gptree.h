@@ -36,7 +36,9 @@ void        SampNdx_addSamples(SampNdx * self, unsigned nsamples,
 							   PopNode * pnode);
 void        SampNdx_populateTree(SampNdx * self);
 unsigned    SampNdx_size(SampNdx * self);
+
 GPTree     *GPTree_new(const char *fname, Bounds bnd);
+void        GPTree_free(GPTree *self);
 
 NodeStore  *NodeStore_new(int len, PopNode v[len]);
 void        NodeStore_free(NodeStore *self);

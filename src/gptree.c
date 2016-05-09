@@ -39,7 +39,7 @@ struct PopNode {
 struct GPTree {
     int nseg; // number of segments in population tree.
     PopNode *popNodeVec; // array of length nseg
-    PopNode rootPop;
+    PopNode *rootPop;
     Gene *rootGene;
     int nNodes;
     Bounds bnd;
@@ -551,6 +551,14 @@ GPTree *GPTree_new(const char *fname, Bounds bnd) {
     fclose(fp);
     NodeStore_free(ns);
     return self;
+}
+
+/// Destructor.
+void GPTree_free(GPTree *self) {
+    PopNode_clear(self->rootPop);
+    free(self->popNodeVec);
+    ParStore_free(self->parstore);
+    free(self);
 }
 
 NodeStore *NodeStore_new(int len, PopNode v[len]) {
