@@ -107,8 +107,8 @@ int main(int argc, char **argv) {
 
     int         i, j;
     time_t      currtime = time(NULL);
-	double      lo_twoN = 0.0, hi_twoN = 1e6;  // twoN bounds
-	double      lo_t = 0.0, hi_t = 1e6;        // t bounds
+    double      lo_twoN = 0.0, hi_twoN = 1e6;  // twoN bounds
+    double      lo_t = 0.0, hi_t = 1e6;        // t bounds
 #if defined(__DATE__) && defined(__TIME__)
     printf("# Program was compiled: %s %s\n", __DATE__, __TIME__);
 #endif
@@ -194,19 +194,19 @@ int main(int argc, char **argv) {
     printf("# nthreads    : %d\n", nTasks);
     printf("# input file  : %s\n", fname);
 
-	int maxpat = 10;
-	tipId_t pat[maxpat];
-	double prob[maxpat];
-	LblNdx lblndx;
-	Bounds bnd = {
-			.lo_twoN = lo_twoN,
-			.hi_twoN = hi_twoN,
-			.lo_t = lo_t,
-			.hi_t = hi_t
-	};
+    int maxpat = 10;
+    tipId_t pat[maxpat];
+    double prob[maxpat];
+    LblNdx lblndx;
+    Bounds bnd = {
+            .lo_twoN = lo_twoN,
+            .hi_twoN = hi_twoN,
+            .lo_t = lo_t,
+            .hi_t = hi_t
+    };
 
-	unsigned npat = patprob(maxpat, pat, prob, &lblndx, nTasks, reps, 0,
-							fname, bnd);
+    unsigned npat = patprob(maxpat, pat, prob, &lblndx, nTasks, reps, 0,
+                            fname, bnd);
 
     // Determine order for printing lines of output
     tipId_t  *ptr[npat];
