@@ -28,7 +28,7 @@ struct TaskArg {
     unsigned long nreps;
     SampNdx     sndx;
     LblNdx      lblndx;
-	Bounds      bnd;
+    Bounds      bnd;
 
     // Returned value
     BranchTab  *branchtab;
@@ -72,7 +72,7 @@ int taskfun(void *varg) {
     gsl_rng    *rng = gsl_rng_alloc(gsl_rng_taus);
     gsl_rng_set(rng, targ->rng_seed);
     HashTab    *ht = HashTab_new();
-	ParStore   *parstore = ParStore_new();  // parameters
+    ParStore   *parstore = ParStore_new();  // parameters
     PopNode    *rootPop = NULL;
     {
         // Build population tree as specified in file targ->fname.
@@ -86,7 +86,7 @@ int taskfun(void *varg) {
             eprintf("%s:%s:%d: can't open file %s.\n",
                     __FILE__, __func__, __LINE__, targ->fname);
         rootPop = mktree(fp, ht, &(targ->sndx), &(targ->lblndx), parstore,
-						 &(targ->bnd));
+                         &(targ->bnd));
         fclose(fp);
     }
 
@@ -108,9 +108,9 @@ int taskfun(void *varg) {
     }
 
     gsl_rng_free(rng);
-    HashTab_freeValues(ht);     // free all PopNode pointers
+    HashTab_freeValues(ht);     // DANGEROUS CODE
     HashTab_free(ht);
-	ParStore_free(parstore);
+    ParStore_free(parstore);
 
     return 0;
 }
@@ -122,13 +122,13 @@ int taskfun(void *varg) {
 unsigned patprob(unsigned maxpat,
                  tipId_t pat[maxpat],
                  double prob[maxpat],
-        		 LblNdx *lblndx,
-				 int nTasks,
-				 long reps[nTasks],
+                 LblNdx *lblndx,
+                 int nTasks,
+                 long reps[nTasks],
                  int pointNdx,
-		                 const char *fname,
+                 const char *fname,
                  Bounds bnd) {
-	assert(lblndx != NULL);
+    assert(lblndx != NULL);
     int j;
     unsigned long currtime = (unsigned long ) time(NULL);
 
@@ -136,7 +136,7 @@ unsigned patprob(unsigned maxpat,
         .fname = fname,
         .rng_seed = 0,
         .nreps = 0,
-		.bnd = bnd,
+        .bnd = bnd,
         .branchtab = NULL
     };
 
@@ -194,10 +194,10 @@ unsigned patprob(unsigned maxpat,
             prob[j] /= sum;
     }
 
-	*lblndx = taskarg[0]->lblndx;
+    *lblndx = taskarg[0]->lblndx;
 
     for(j = 0; j < nTasks; ++j)
         TaskArg_free(taskarg[j]);
-		
-	return npat;
+        
+    return npat;
 }

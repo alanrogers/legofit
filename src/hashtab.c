@@ -172,11 +172,6 @@ void HashTab_map(HashTab *self, void(*f)(void *value, void *data), void *data) {
         El_map(self->tab[i], f, data);
 }
 
-/// Free all non-NULL values in table.
-void HashTab_freeValues(HashTab *self) {
-    HashTab_map(self, freeValue, NULL);
-}
-
 // This object is for stepping through the entries of a hash table.
 HashTabSeq *HashTabSeq_new(HashTab *ht) {
     HashTabSeq *self = malloc(sizeof(*self));

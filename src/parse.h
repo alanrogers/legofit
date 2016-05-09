@@ -2,7 +2,8 @@
 #define HAVE_PARSE
 
 #include "typedefs.h"
-PopNode    *mktree(FILE * fp, HashTab * poptbl, SampNdx *sndx, 
-				   LblNdx *lndx, ParStore *parstore, Bounds *bnd);
+int         countSegments(FILE * fp);
+PopNode    *mktree(FILE * fp, SampNdx *sndx, LblNdx *lndx, ParStore *parstore,
+                   Bounds *bnd, NodeStore *ns);
 
 #endif

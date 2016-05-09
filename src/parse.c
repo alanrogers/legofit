@@ -108,7 +108,8 @@ int         getULong(unsigned long *x, Tokenizer * tkz, int i);
 void		parseParam(Tokenizer *tkz, enum ParamType type,
 					   ParStore *parstore, Bounds *bnd);
 void        parseSegment(Tokenizer *tkz, HashTab *poptbl, SampNdx *sndx,
-						 LblNdx *lndx, ParStore *parstore);
+						 LblNdx *lndx, ParStore *parstore,
+                         NodeStore *ns);
 void        parseDerive(Tokenizer *tkz, HashTab *poptbl);
 void        parseMix(Tokenizer *tkz, HashTab *poptbl, ParStore *parstore);
 
@@ -209,7 +210,8 @@ void		parseParam(Tokenizer *tkz, enum ParamType type,
 
 // segment a   t=0     twoN=100    samples=1
 void parseSegment(Tokenizer *tkz, HashTab *poptbl, SampNdx *sndx,
-				  LblNdx *lndx, ParStore *parstore) {
+				  LblNdx *lndx, ParStore *parstore,
+                   NodeStore *ns) {
     char *popName, *tok;
     double *tPtr, *twoNptr;
     unsigned long nsamples=0;
@@ -237,7 +239,6 @@ void parseSegment(Tokenizer *tkz, HashTab *poptbl, SampNdx *sndx,
         exit(EXIT_FAILURE);
     }
 
-    
     // Read twoN
 	if(curr >= ntokens) {
 		fprintf(stderr, "curr=%d >= ntokens=%d\n", curr, ntokens);
@@ -289,7 +290,7 @@ void parseSegment(Tokenizer *tkz, HashTab *poptbl, SampNdx *sndx,
     PopNode *thisNode = (PopNode *) El_get(e);
     if(thisNode == NULL) {
 		// Create new node, with pointers to the relevant parameters
-        thisNode = PopNode_new(twoNptr, tPtr);
+        thisNode = PopNode_new(twoNptr, tPtr, ns);
         El_set(e, thisNode);
     }else
         eprintf("%s:%s:%d: duplicate \"segment %s\"\n",
@@ -419,11 +420,14 @@ void parseMix(Tokenizer *tkz, HashTab *poptbl, ParStore *parstore) {
     PopNode_mix(childNode, mPtr, parNode1, parNode0);
 }
 
-PopNode    *mktree(FILE * fp, HashTab * poptbl, SampNdx *sndx, 
-				   LblNdx *lndx, ParStore *parstore, Bounds *bnd) {
+PopNode    *mktree(FILE * fp, SampNdx *sndx, 
+				   LblNdx *lndx, ParStore *parstore, Bounds *bnd,
+                   NodeStore *ns) {
     int         ntokens;
     char        buff[500];
     Tokenizer  *tkz = Tokenizer_new(50);
+
+    HashTab *poptbl = HashTab_new();
 
     while(1) {
         if(fgets(buff, sizeof(buff), fp) == NULL)
@@ -498,7 +502,42 @@ PopNode    *mktree(FILE * fp, HashTab * poptbl, SampNdx *sndx,
         HashTabSeq_free(popseq);
     }
     Tokenizer_free(tkz);
+    HashTab_free(poptbl);
     return root;
+}
+
+/// Count the number of "segment" statements in input file.
+int countSegments(FILE * fp) {
+    int         ntokens, nseg=0;
+    char        buff[500];
+    Tokenizer  *tkz = Tokenizer_new(50);
+
+    while(1) {
+        if(fgets(buff, sizeof(buff), fp) == NULL)
+            break;
+
+        if(!strchr(buff, '\n') && !feof(fp)) {
+            fprintf(stderr, "ERR@%s:%d: input buffer overflow."
+                    " buff size: %zu\n", __FILE__, __LINE__, sizeof(buff));
+            exit(EXIT_FAILURE);
+        }
+
+        // strip trailing comments
+        char *comment = strchr(buff, '#');
+        if(comment)
+            *comment = '\0';
+
+        Tokenizer_split(tkz, buff, " \t="); // tokenize
+        ntokens = Tokenizer_strip(tkz, " \t=\n");
+        if(ntokens == 0)
+            continue;
+
+        char *tok = Tokenizer_token(tkz, 0);
+		if(0 == strcmp(tok, "segment"))
+            ++nseg;
+    }
+    Tokenizer_free(tkz);
+    return nseg;
 }
 
 #ifdef TEST
@@ -576,6 +615,11 @@ int main(int argc, char **argv) {
 		.lo_t = 0.0,
 		.hi_t = HUGE_VAL
 	};
+
+    assert(6 == countSegments(fp));
+    unitTstResult("countSegments", "OK");
+
+    rewind(fp);
     PopNode *root = mktree(fp, poptbl, &sndx, &lndx, parstore, &bnd);
 
     if(verbose) {

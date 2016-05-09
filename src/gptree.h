@@ -15,7 +15,7 @@ struct SampNdx {
 
 void        Gene_tabulate(Gene * self, BranchTab * bt);
 void        Gene_free(Gene * gene);
-PopNode    *PopNode_new(double *twoNptr, double *tPtr);
+PopNode    *PopNode_new(double *twoN, double *start, NodeStore *ns);
 void        PopNode_addChild(PopNode * parent, PopNode * child);
 void        PopNode_mix(PopNode * child, double *mPtr, PopNode * introgressor,
                         PopNode * native);
@@ -36,5 +36,10 @@ void        SampNdx_addSamples(SampNdx * self, unsigned nsamples,
 							   PopNode * pnode);
 void        SampNdx_populateTree(SampNdx * self);
 unsigned    SampNdx_size(SampNdx * self);
+GPTree     *GPTree_new(const char *fname, Bounds bnd);
+
+NodeStore  *NodeStore_new(int len, PopNode v[len]);
+void        NodeStore_free(NodeStore *self);
+PopNode    *NodeStore_alloc(NodeStore *self);
 
 #endif

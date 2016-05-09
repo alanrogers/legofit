@@ -8,6 +8,9 @@
 #include "misc.h"
 #include "binary.h"
 #include "branchtab.h"
+#include "parstore.h"
+#include "parse.h"
+#include "lblndx.h"
 #include <math.h>
 #include <float.h>
 #include <string.h>
@@ -31,6 +34,23 @@ struct PopNode {
     struct PopNode *parent[2];
     struct PopNode *child[2];
     Gene       *sample[MAXSAMP];
+};
+
+struct GPTree {
+    int nseg; // number of segments in population tree.
+    PopNode *popNodeVec; // array of length nseg
+    PopNode rootPop;
+    Gene *rootGene;
+    int nNodes;
+    Bounds bnd;
+    ParStore *parstore;
+    LblNdx lblndx;
+    SampNdx sndx;
+};
+
+struct NodeStore {
+    int nused, len;
+    PopNode *v; // not locally owned
 };
 
 static void PopNode_sanityCheck(PopNode * self, const char *file, int lineno);
@@ -236,8 +256,8 @@ int PopNode_nsamples(PopNode * self) {
     return self->nsamples;
 }
 
-PopNode    *PopNode_new(double *twoN, double *start) {
-    PopNode    *new = malloc(sizeof(PopNode));
+PopNode    *PopNode_new(double *twoN, double *start, NodeStore *ns) {
+    PopNode    *new = NodeStore_alloc(ns);
     checkmem(new, __FILE__, __LINE__);
 
     new->nparents = new->nchildren = new->nsamples = 0;
@@ -502,6 +522,55 @@ void SampNdx_populateTree(SampNdx * self) {
 
 unsigned SampNdx_size(SampNdx * self) {
     return self->n;
+}
+
+GPTree *GPTree_new(const char *fname, Bounds bnd) {
+    GPTree *self = malloc(sizeof(GPTree));
+    CHECKMEM(self);
+
+    memset(self, 0, sizeof(GPTree));
+    self->bnd = bnd;
+    self->parstore = ParStore_new();
+    LblNdx_init(&self->lblndx);
+    SampNdx_init(&self->sndx);
+    FILE *fp = fopen(fname, "r");
+    if(fp == NULL)
+        eprintf("%s:%s:%d: can't open file \"%s\".\n",
+                __FILE__, __func__, __LINE__, fname);
+    self->nseg = countSegments(fp);
+    rewind(fp);
+    self->popNodeVec = malloc(self->nseg * sizeof(self->popNodeVec[0]));
+    CHECKMEM(self->popNodeVec);
+
+    NodeStore *ns = NodeStore_new(self->nseg, self->popNodeVec);
+    CHECKMEM(ns);
+
+    self->rootPop = mktree(fp, &self->sndx, &self->lblndx, self->parstore,
+                           &self->bnd, ns);
+
+    fclose(fp);
+    NodeStore_free(ns);
+    return self;
+}
+
+NodeStore *NodeStore_new(int len, PopNode v[len]) {
+    NodeStore *self = malloc(sizeof(NodeStore));
+    CHECKMEM(self);
+    self->nused = 0;
+    self->len = len;
+    self->v = v;
+}
+
+void NodeStore_free(NodeStore *self) {
+    // Does not free self->v
+    free(self);
+}
+
+PopNode *NodeStore_alloc(NodeStore *self) {
+    if(self->nused >= self->len)
+        eprintf("%s:%s:%d: Ran out of PopNode objects.\n",
+                __FILE__, __func__, __LINE__);
+    return self->v[self->nused++];
 }
 
 #ifdef TEST
