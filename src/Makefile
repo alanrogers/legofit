@@ -41,15 +41,10 @@ test : $(tests)
 	-./xzeroin
 	@echo "ALL UNIT TESTS WERE COMPLETED."
 
-LEGO := lego.o gptree.o binary.o jobqueue.o misc.o branchtab.o \
-  hashtab.o sampndx.o parse.o tokenizer.o parstore.o parkeyval.o
+LEGO := lego.o patprob.o gptree.o binary.o jobqueue.o misc.o parse.o \
+  branchtab.o hashtab.o lblndx.o tokenizer.o parstore.o parkeyval.o
 lego : $(LEGO)
 	$(CC) $(CFLAGS) -o $@ $(LEGO) $(lib)
-
-LEGO2 := lego2.o patprob.o gptree.o binary.o jobqueue.o misc.o parse.o \
-  branchtab.o hashtab.o lblndx.o tokenizer.o parstore.o parkeyval.o
-lego2 : $(LEGO2)
-	$(CC) $(CFLAGS) -o $@ $(LEGO2) $(lib)
 
 zeroin.o : zeroin.h
 
