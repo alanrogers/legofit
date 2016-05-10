@@ -1,7 +1,8 @@
 #ifndef ARR_GENE
 #define ARR_GENE
 
-#include "branchtab.h"
+#  include "typedefs.h"
+#  include "branchtab.h"
 
 struct Gene {
     tipId_t     tipId;
