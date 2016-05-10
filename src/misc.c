@@ -365,3 +365,15 @@ int strCountSetChunks(const char *str, const char *sep) {
     return nchunks;
 }
 
+/// duplicate memory block
+void       *memdup(const void *p, size_t n) {
+    void       *q;
+
+    assert(p != NULL);
+    assert(n > 0);
+
+    q = malloc(n);
+    checkmem(q, __FILE__, __LINE__);
+    memcpy(q, p, n);
+    return q;
+}

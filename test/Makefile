@@ -6,8 +6,7 @@ opt :=  -O0 -fno-inline-functions -DDEBUG     # For debugging
 prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
 
-#tests := xzeroin xbinary xhashtab xparse xgptree xbranchtab
-tests := xbinary xhashtab xparse xgptree xbranchtab xparstore \
+tests := xbinary xhashtab xparse xgene xgptree xbranchtab xparstore \
   xparkeyval xlblndx
 
 CC := gcc
@@ -40,6 +39,7 @@ all : $(tests)
 test : $(tests)
 	-./xbinary
 	-./xhashtab
+	-./xgene
 	-./xparse
 	-./xgptree
 	-./xparkeyval
@@ -72,6 +72,13 @@ XPARSE := xparse.o hashtab.o misc.o tokenizer.o gptree.o lblndx.o \
        branchtab.o parstore.o parkeyval.o
 xparse : $(XPARSE)
 	$(CC) $(CFLAGS) -o $@ $(XPARSE) $(lib)
+
+xgene.o : gene.c
+	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/gene.c
+
+XGENE := xgene.o branchtab.o misc.o binary.o
+xgene : $(XGENE)
+	$(CC) $(CFLAGS) -o $@ $(XGENE) $(lib)
 
 xgptree.o : gptree.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/gptree.c

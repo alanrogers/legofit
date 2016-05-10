@@ -30,6 +30,8 @@ void        unitTstResult(const char *facility, const char *result);
 void        tellopt(const char *opt, const char *description);
 unsigned    Dbl_first_geq(double val, unsigned len, double v[len]);
 int         strCountSetChunks(const char *str, const char *sep);
+void       *memdup(const void *p, size_t n);
+
 static inline double survival(double t, double twoN);
 
 #  define ERR(code, msg) do{\
