@@ -2,6 +2,7 @@
 #  define ARR_POPNODE_H
 
 #  include "typedefs.h"
+#  include <gsl/gsl_rng.h>
 
 #  define POPNAMESIZE 30
 #  define MAXSAMP ((int)(8*sizeof(tipId_t)))
@@ -37,11 +38,19 @@ PopNode    *PopNode_root(PopNode * self);
 void        PopNode_sanityFromLeaf(PopNode * self, const char *file,
                                    int line);
 int         PopNode_nsamples(PopNode * self);
+void        PopNode_shiftParamPtrs(PopNode *self, size_t dp);
+void        PopNode_shiftPopNodePtrs(PopNode *self, size_t dp);
 
 void        SampNdx_init(SampNdx * self);
 void        SampNdx_addSamples(SampNdx * self, unsigned nsamples,
 							   PopNode * pnode);
 void        SampNdx_populateTree(SampNdx * self);
 unsigned    SampNdx_size(SampNdx * self);
+
+NodeStore  *NodeStore_new(int len, PopNode *v);
+void        NodeStore_free(NodeStore *self);
+PopNode    *NodeStore_alloc(NodeStore *self);
+
+
 
 #endif

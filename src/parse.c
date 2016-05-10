@@ -3,6 +3,7 @@
 #include "misc.h"
 #include "parse.h"
 #include "parstore.h"
+#include "popnode.h"
 #include "tokenizer.h"
 #include "lblndx.h"
 #include <assert.h>
@@ -642,6 +643,7 @@ int main(int argc, char **argv) {
     unitTstResult("mktree", "needs more testing");
 
 	ParStore_free(parstore);
+    fclose(fp);
     return 0;
 }
 #endif

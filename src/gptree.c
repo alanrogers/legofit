@@ -6,20 +6,10 @@
 
 #include "gptree.h"
 #include "gene.h"
-#include "misc.h"
-#include "binary.h"
-#include "branchtab.h"
-#include "parstore.h"
-#include "parse.h"
 #include "lblndx.h"
-#include <math.h>
-#include <float.h>
+#include "parse.h"
+#include "parstore.h"
 #include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <assert.h>
-#include <gsl/gsl_rng.h>
-#include <gsl/gsl_randist.h>
 
 struct GPTree {
     int nseg; // number of segments in population tree.
@@ -32,42 +22,6 @@ struct GPTree {
     LblNdx lblndx;
     SampNdx sndx;
 };
-
-struct NodeStore {
-    int nused, len;
-    PopNode *v; // not locally owned
-};
-
-
-/// Set everything to zero.
-void SampNdx_init(SampNdx * self) {
-    memset(self, 0, sizeof(*self));
-}
-
-/// Add samples for a single population. Should be called once for
-/// each sampled population.
-void SampNdx_addSamples(SampNdx * self, unsigned nsamples,
-						PopNode * pnode) {
-    unsigned    i;
-    if(self->n + nsamples >= MAXSAMP)
-        eprintf("%s:%s:%d: too many samples\n", __FILE__, __func__, __LINE__);
-    for(i = 0; i < nsamples; ++i) {
-        self->node[self->n] = pnode;
-        self->n += 1;
-    }
-}
-
-/// Put samples into the gene tree. Should be done at the start of
-/// each simulation.
-void SampNdx_populateTree(SampNdx * self) {
-    unsigned    i;
-    for(i = 0; i < self->n; ++i)
-        PopNode_newGene(self->node[i], i);
-}
-
-unsigned SampNdx_size(SampNdx * self) {
-    return self->n;
-}
 
 GPTree *GPTree_new(const char *fname, Bounds bnd) {
     GPTree *self = malloc(sizeof(GPTree));
@@ -107,12 +61,6 @@ void GPTree_free(GPTree *self) {
     free(self);
 }
 
-// Add increment INC to pointer PTR. Units are sizeof(char)
-// rather than the size of the object to which PTR refers.
-#define INCR_PTR(PTR,INC) do{                         \
-        (PTR) = ((size_t) (PTR)) + ((size_t) (INC));  \
-    }while(0);
-
 /// Duplicate a GPTree object
 GPTree *GPTree_dup(GPTree *old) {
     Gene_free(old->rootGene);
@@ -133,42 +81,15 @@ GPTree *GPTree_dup(GPTree *old) {
      * arithmetic in the usual sense. Ordinarily, ptr+3 means
      * ptr + 3*sizeof(*ptr). We want it to mean ptr+3*sizeof(char).
      */
-    int i, j;
+    int i;
     size_t dpar = ((size_t) new->parstore) - ((size_t) old->parstore);
     size_t dpop = ((size_t) new->pnv) - ((size_t) old->pnv);
     for(i=0; i < old->nseg; ++i) {
-        INCR_PTR(new->pnv[i].twoN,  dpar);
-        INCR_PTR(new->pnv[i].start, dpar);
-        INCR_PTR(new->pnv[i].end,   dpar);
-        for(j = 0; j < new->nparents; ++j)
-            INCR_PTR(new->pnv[i].parent[j], dpop);
-        for(j = 0; j < new->nchildren; ++j)
-            INCR_PTR(new->pnv[i].child[j],  dpop);
+        PopNode_shiftParamPtrs(&new->pnv[i], dpar);
+        PopNode_shiftPopNodePtrs(&new->pnv[i], dpop);
     }
 
     return new;
-}
-
-NodeStore *NodeStore_new(int len, PopNode *v) {
-    NodeStore *self = malloc(sizeof(NodeStore));
-    CHECKMEM(self);
-
-    self->nused = 0;
-    self->len = len;
-    self->v = v;
-    return self;
-}
-
-void NodeStore_free(NodeStore *self) {
-    // Does not free self->v
-    free(self);
-}
-
-PopNode *NodeStore_alloc(NodeStore *self) {
-    if(self->nused >= self->len)
-        eprintf("%s:%s:%d: Ran out of PopNode objects.\n",
-                __FILE__, __func__, __LINE__);
-    return &self->v[self->nused++];
 }
 
 #ifdef TEST
@@ -180,6 +101,43 @@ PopNode *NodeStore_alloc(NodeStore *self) {
 #error "Unit tests must be compiled without -DNDEBUG flag"
 #endif
 
+#include <assert.h>
+
+#ifdef NDEBUG
+#error "Unit tests must be compiled without -DNDEBUG flag"
+#endif
+
+//      a-------|
+//              |ab--|
+//      b--|bb--|    |
+//         |         |abc--
+//         |c--------|
+//
+//  t = 0  1    3    5.5     inf
+const char *tstInput =
+    " # this is a comment\n"
+    "time fixed  T0=0\n"
+    "time free   Tc=1\n"
+    "time free   Tab=3\n"
+    "time free   Tabc=5.5\n"
+    "twoN free   2Na=100\n"
+    "twoN fixed  2Nb=123\n"
+    "twoN free   2Nc=213.4\n"
+    "twoN fixed  2Nbb=32.1\n"
+    "twoN free   2Nab=222\n"
+    "twoN fixed  2Nabc=1.2e2\n"
+    "mixFrac free Mc=0.02\n"
+    "segment a   t=T0     twoN=2Na    samples=1\n"
+    "segment b   t=T0     twoN=2Nb    samples=1\n"
+    "segment c   t=Tc     twoN=2Nc    samples=1\n"
+    "segment bb  t=Tc     twoN=2Nbb\n"
+    "segment ab  t=Tab    twoN=2Nab\n"
+    "segment abc t=Tabc   twoN=2Nabc\n"
+    "mix    b  from bb + Mc * c\n"
+    "derive a  from ab\n"
+    "derive bb from ab\n"
+    "derive ab from abc\n"
+    "derive c  from abc\n";
 int main(int argc, char **argv) {
 
     int verbose=0;
@@ -192,93 +150,19 @@ int main(int argc, char **argv) {
         verbose = 1;
     }
 
-    tipId_t id1 = 1;
-    tipId_t id2 = 2;
+    const char *tstFname = "mktree-tmp.lgo";
+    FILE       *fp = fopen(tstFname, "w");
+    fputs(tstInput, fp);
+    fclose(fp);
+    fp = fopen(tstFname, "r");
+    if(fp == NULL) {
+        fprintf(stderr, "%s:%d: Can't open file \"%s\"\n",
+                __FILE__, __LINE__, tstFname);
+        exit(1);
+    }
 
-    int nseg = 10;
-    PopNode v[nseg];
-    NodeStore *ns = NodeStore_new(nseg, v);
-    CHECKMEM(ns);
-
-    PopNode *node = NodeStore_alloc(ns);
-    assert(node == v);
-    node = NodeStore_alloc(ns);
-    assert(node == &v[1]);
-    node = NodeStore_alloc(ns);
-    assert(node == &v[2]);
-
-    NodeStore_free(ns);
-	unitTstResult("NodeStore", "OK");
-    
-    ns = NodeStore_new(nseg, v);
-    CHECKMEM(ns);
-
-    double twoN0 = 1.0, start0= 0.0;
-    PopNode *p0 = PopNode_new(&twoN0, &start0, ns);
-    assert(p0->twoN == &twoN0);
-    assert(p0->start == &start0);
-    assert(p0->end == NULL);
-    assert(p0->mix == NULL);
-    assert(p0->nsamples == 0);
-    assert(p0->nchildren == 0);
-    assert(p0->child[0] == NULL);
-    assert(p0->child[1] == NULL);
-    assert(p0->parent[0] == NULL);
-    assert(p0->parent[1] == NULL);
-
-	if(verbose) 
-		PopNode_printShallow(p0, stdout);
-
-    double twoN1 = 100.0, start1= 123.0;
-    PopNode *p1 = PopNode_new(&twoN1, &start1, ns);
-    assert(p1->twoN == &twoN1);
-    assert(p1->start == &start1);
-    assert(p1->end == NULL);
-    assert(p1->mix == NULL);
-    assert(p1->nsamples == 0);
-    assert(p1->nchildren == 0);
-    assert(p1->child[0] == NULL);
-    assert(p1->child[1] == NULL);
-    assert(p1->parent[0] == NULL);
-    assert(p1->parent[1] == NULL);
-
-    Gene *g1 = Gene_new(id1);
-    Gene *g2 = Gene_new(id2);
-    PopNode_addSample(p1, g1);
-    PopNode_addSample(p1, g2);
-    assert(p1->nsamples == 2);
-
-    PopNode_addChild(p1, p0);
-    assert(p1->nchildren == 1);
-    assert(p0->nparents == 1);
-    assert(p1->child[0] == p0);
-    assert(p0->parent[0] == p1);
-
-	if(verbose) 
-		PopNode_printShallow(p1, stdout);
-
-    unitTstResult("PopNode", "untested");
-
-    SampNdx     sndx = {.n = 3 };
-    assert(sndx.n == 3);
-    assert(SampNdx_size(&sndx) == 3);
-
-    SampNdx_init(&sndx);
-    assert(SampNdx_size(&sndx) == 0);
-
-	double twoN = 100.0;
-	double start = 20.0;
-    PopNode    *pnode = PopNode_new(&twoN, &start, ns);
-    SampNdx_addSamples(&sndx, 1, pnode);
-    SampNdx_addSamples(&sndx, 2, pnode);
-
-    assert(3 == SampNdx_size(&sndx));
-    SampNdx_populateTree(&sndx);
-    assert(3 == PopNode_nsamples(pnode));
-    NodeStore_free(ns);
-
-	unitTstResult("SampNdx", "OK");
-
+    fclose(fp);
+    unitTstResult("GPTree", "untested");
     return 0;
 }
 #endif

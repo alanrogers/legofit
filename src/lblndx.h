@@ -1,7 +1,8 @@
 #ifndef ARR_LBLNDX
 #  define ARR_LBLNDX
 
-#include "gptree.h"
+#  include "gptree.h"
+#  include "popnode.h"
 
 struct LblNdx {
     unsigned    n;              // number of samples

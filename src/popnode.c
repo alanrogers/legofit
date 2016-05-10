@@ -8,6 +8,13 @@
 #include "popnode.h"
 #include "gene.h"
 #include "misc.h"
+#include <string.h>
+#include <gsl/gsl_randist.h>
+
+struct NodeStore {
+    int nused, len;
+    PopNode *v; // not locally owned
+};
 
 static void PopNode_sanityCheck(PopNode * self, const char *file, int lineno);
 
@@ -391,3 +398,214 @@ Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng) {
 void PopNode_free(PopNode * self) {
     free(self);
 }
+
+// Add increment INC to pointer PTR. Units are sizeof(char)
+// rather than the size of the object to which PTR refers.
+#define INCR_PTR(PTR,INC) do{                                   \
+        (PTR) = (void *) (((size_t) (PTR)) + ((size_t) (INC))); \
+    }while(0);
+
+/// Add dp to each parameter pointer, using ordinary (not pointer)
+/// arithmetic.
+void PopNode_shiftParamPtrs(PopNode *self, size_t dp) {
+    INCR_PTR(self->twoN, dp);
+    INCR_PTR(self->start, dp);
+    INCR_PTR(self->end, dp);
+}
+
+/// Add dp to each PopNode pointer, using ordinary (not pointer)
+/// arithmetic.
+void PopNode_shiftPopNodePtrs(PopNode *self, size_t dp) {
+    int i;
+    for(i=0; i < self->nparents; ++i)
+        INCR_PTR(self->parent[i], dp);
+
+    for(i=0; i < self->nchildren; ++i)
+        INCR_PTR(self->child[i], dp);
+}
+
+NodeStore *NodeStore_new(int len, PopNode *v) {
+    NodeStore *self = malloc(sizeof(NodeStore));
+    CHECKMEM(self);
+
+    self->nused = 0;
+    self->len = len;
+    self->v = v;
+    return self;
+}
+
+void NodeStore_free(NodeStore *self) {
+    // Does not free self->v
+    free(self);
+}
+
+PopNode *NodeStore_alloc(NodeStore *self) {
+    if(self->nused >= self->len)
+        eprintf("%s:%s:%d: Ran out of PopNode objects.\n",
+                __FILE__, __func__, __LINE__);
+    return &self->v[self->nused++];
+}
+
+/// Set everything to zero.
+void SampNdx_init(SampNdx * self) {
+    memset(self, 0, sizeof(*self));
+}
+
+/// Add samples for a single population. Should be called once for
+/// each sampled population.
+void SampNdx_addSamples(SampNdx * self, unsigned nsamples,
+						PopNode * pnode) {
+    unsigned    i;
+    if(self->n + nsamples >= MAXSAMP)
+        eprintf("%s:%s:%d: too many samples\n", __FILE__, __func__, __LINE__);
+    for(i = 0; i < nsamples; ++i) {
+        self->node[self->n] = pnode;
+        self->n += 1;
+    }
+}
+
+/// Put samples into the gene tree. Should be done at the start of
+/// each simulation.
+void SampNdx_populateTree(SampNdx * self) {
+    unsigned    i;
+    for(i = 0; i < self->n; ++i)
+        PopNode_newGene(self->node[i], i);
+}
+
+unsigned SampNdx_size(SampNdx * self) {
+    return self->n;
+}
+
+
+
+#ifdef TEST
+
+#include <string.h>
+#include <assert.h>
+
+#ifdef NDEBUG
+#error "Unit tests must be compiled without -DNDEBUG flag"
+#endif
+
+int main(int argc, char **argv) {
+
+    int verbose=0;
+
+    if(argc > 1) {
+        if(argc!=2 || 0!=strcmp(argv[1], "-v")) {
+            fprintf(stderr,"usage: xpopnode [-v]\n");
+            exit(EXIT_FAILURE);
+        }
+        verbose = 1;
+    }
+
+    tipId_t id1 = 1;
+    tipId_t id2 = 2;
+
+    int nseg = 10;
+    PopNode v[nseg];
+    NodeStore *ns = NodeStore_new(nseg, v);
+    CHECKMEM(ns);
+
+    PopNode *node = NodeStore_alloc(ns);
+    assert(node == v);
+    node = NodeStore_alloc(ns);
+    assert(node == &v[1]);
+    node = NodeStore_alloc(ns);
+    assert(node == &v[2]);
+
+    NodeStore_free(ns);
+	unitTstResult("NodeStore", "OK");
+
+    ns = NodeStore_new(nseg, v);
+    CHECKMEM(ns);
+
+    double twoN0 = 1.0, start0= 0.0;
+    PopNode *p0 = PopNode_new(&twoN0, &start0, ns);
+    assert(p0->twoN == &twoN0);
+    assert(p0->start == &start0);
+    assert(p0->end == NULL);
+    assert(p0->mix == NULL);
+    assert(p0->nsamples == 0);
+    assert(p0->nchildren == 0);
+    assert(p0->child[0] == NULL);
+    assert(p0->child[1] == NULL);
+    assert(p0->parent[0] == NULL);
+    assert(p0->parent[1] == NULL);
+
+	if(verbose) 
+		PopNode_printShallow(p0, stdout);
+
+    double twoN1 = 100.0, start1= 123.0;
+    PopNode *p1 = PopNode_new(&twoN1, &start1, ns);
+    assert(p1->twoN == &twoN1);
+    assert(p1->start == &start1);
+    assert(p1->end == NULL);
+    assert(p1->mix == NULL);
+    assert(p1->nsamples == 0);
+    assert(p1->nchildren == 0);
+    assert(p1->child[0] == NULL);
+    assert(p1->child[1] == NULL);
+    assert(p1->parent[0] == NULL);
+    assert(p1->parent[1] == NULL);
+
+    Gene *g1 = Gene_new(id1);
+    Gene *g2 = Gene_new(id2);
+    PopNode_addSample(p1, g1);
+    PopNode_addSample(p1, g2);
+    assert(p1->nsamples == 2);
+
+    PopNode_addChild(p1, p0);
+    assert(p1->nchildren == 1);
+    assert(p0->nparents == 1);
+    assert(p1->child[0] == p0);
+    assert(p0->parent[0] == p1);
+
+	if(verbose) 
+		PopNode_printShallow(p1, stdout);
+
+    size_t twoNloc = (size_t) p1->twoN;
+    size_t startloc = (size_t) p1->start;
+    size_t endloc = (size_t) p1->end;
+    PopNode_shiftParamPtrs(p1, (size_t) 1u);
+    assert(twoNloc+1u == (size_t) p1->twoN);
+    assert(startloc+1u == (size_t) p1->start);
+    assert(endloc+1u == (size_t) p1->end);
+
+    int i;
+    size_t parent[2], child[2];
+    for(i=0; i < p1->nparents; ++i)
+        parent[i] = (size_t) p1->parent[i];
+    for(i=0; i < p1->nchildren; ++i)
+        child[i] = (size_t) p1->child[i];
+    PopNode_shiftPopNodePtrs(p1, (size_t) 1u);
+    for(i=0; i < p1->nparents; ++i)
+        assert(parent[i]+1u == (size_t) p1->parent[i]);
+    for(i=0; i < p1->nchildren; ++i)
+        assert(child[i]+1u == (size_t) p1->child[i]);
+
+    unitTstResult("PopNode", "untested");
+
+    SampNdx     sndx = {.n = 3 };
+    assert(sndx.n == 3);
+    assert(SampNdx_size(&sndx) == 3);
+
+    SampNdx_init(&sndx);
+    assert(SampNdx_size(&sndx) == 0);
+
+	double twoN = 100.0;
+	double start = 20.0;
+    PopNode    *pnode = PopNode_new(&twoN, &start, ns);
+    SampNdx_addSamples(&sndx, 1, pnode);
+    SampNdx_addSamples(&sndx, 2, pnode);
+
+    assert(3 == SampNdx_size(&sndx));
+    SampNdx_populateTree(&sndx);
+    assert(3 == PopNode_nsamples(pnode));
+    NodeStore_free(ns);
+
+	unitTstResult("SampNdx", "OK");
+
+    return 0;
+}
+#endif

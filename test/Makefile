@@ -7,7 +7,7 @@ prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
 
 tests := xbinary xhashtab xparse xgene xgptree xbranchtab xparstore \
-  xparkeyval xlblndx
+  xparkeyval xlblndx xpopnode
 
 CC := gcc
 
@@ -41,6 +41,7 @@ test : $(tests)
 	-./xhashtab
 	-./xgene
 	-./xparse
+	-./xpopnode
 	-./xgptree
 	-./xparkeyval
 	-./xparstore
@@ -80,11 +81,18 @@ XGENE := xgene.o branchtab.o misc.o binary.o
 xgene : $(XGENE)
 	$(CC) $(CFLAGS) -o $@ $(XGENE) $(lib)
 
+xpopnode.o : popnode.c
+	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/popnode.c
+
+XPOPNODE := xpopnode.o misc.o gene.o branchtab.o
+xpopnode : $(XPOPNODE)
+	$(CC) $(CFLAGS) -o $@ $(XPOPNODE) $(lib)
+
 xgptree.o : gptree.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/gptree.c
 
 XGPTREE := xgptree.o misc.o branchtab.o parstore.o parse.o lblndx.o \
-        parkeyval.o tokenizer.o hashtab.o
+        parkeyval.o tokenizer.o hashtab.o gene.o popnode.o
 xgptree : $(XGPTREE)
 	$(CC) $(CFLAGS) -o $@ $(XGPTREE) $(lib)
 
