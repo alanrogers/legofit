@@ -33,49 +33,50 @@ ParKeyVal  *ParKeyVal_new(const char *key, double *vptr, ParKeyVal * next) {
     snprintf(self->key, sizeof(self->key), "%s", key);
     self->valPtr = vptr;
     self->next = next;
+    ParKeyVal_sanityCheck(self, __FILE__, __LINE__);
     return self;
 }
 
 // Destructor
-void ParKeyVal_free(ParKeyVal * node) {
-    if(node == NULL)
+void ParKeyVal_free(ParKeyVal * self) {
+    if(self == NULL)
         return;
-    ParKeyVal_free(node->next);
-    free(node);
+    ParKeyVal_free(self->next);
+    free(self);
 }
 
 /// Insert a new key/pointer pair into sorted linked list.
-ParKeyVal  *ParKeyVal_add(ParKeyVal * node, const char *key, double *vptr) {
-    if(node == NULL)
+ParKeyVal  *ParKeyVal_add(ParKeyVal * self, const char *key, double *vptr) {
+    if(self == NULL)
         return ParKeyVal_new(key, vptr, NULL);
 
-    int         i = strcmp(key, node->key);
+    int         i = strcmp(key, self->key);
     if(i < 0)
-        return ParKeyVal_new(key, vptr, node);
+        return ParKeyVal_new(key, vptr, self);
     else if(i == 0)
         eprintf("%s:%s:%d: Duplicate key \"%s\".\n",
                 __FILE__, __func__, __LINE__, key);
 
     // else..
-    node->next = ParKeyVal_add(node->next, key, vptr);
-    return node;
+    self->next = ParKeyVal_add(self->next, key, vptr);
+    return self;
 }
 
 /// Find key in linked list. On success, return pointer corresponding
 /// to key. On failure, return NULL.
-double *ParKeyVal_get(ParKeyVal * node, const char *key) {
+double *ParKeyVal_get(ParKeyVal * self, const char *key) {
 
-    if(node == NULL)
+    if(self == NULL)
 		return NULL;
 
-    int         i = strcmp(key, node->key);
+    int         i = strcmp(key, self->key);
     if(i < 0)        // Failed
 		return NULL;
 
     if(i == 0)  // Success
-		return node->valPtr;
+		return self->valPtr;
 
-    return ParKeyVal_get(node->next, key);
+    return ParKeyVal_get(self->next, key);
 }
 
 void ParKeyVal_print(ParKeyVal *self, FILE *fp) {
@@ -85,4 +86,24 @@ void ParKeyVal_print(ParKeyVal *self, FILE *fp) {
 		fprintf(fp,"[%p:%s,%p]->", self, self->key, self->valPtr);
 		ParKeyVal_print(self->next, fp);
 	}
+}
+
+void        ParKeyVal_sanityCheck(ParKeyVal *self, const char *file, int line) {
+#ifndef NDEBUG
+    if(self==NULL)
+        return;
+    REQUIRE(self->valPtr != NULL, file, line);
+    ParKeyVal_sanityCheck(self->next, file, line);
+#endif
+}
+
+
+/// Return nonzero if name is legal; zero otherwise
+int legalName(const char *name) {
+    const char *legal =
+        "abcdefghijklmnopqrstuvwxyz"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "0123456789"
+        "._:@$";
+    return strlen(name) == strspn(name, legal);
 }

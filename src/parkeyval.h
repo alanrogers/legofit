@@ -8,5 +8,7 @@ void        ParKeyVal_free(ParKeyVal *node);
 ParKeyVal  *ParKeyVal_add(ParKeyVal *node, const char *key, double *vptr);
 double     *ParKeyVal_get(ParKeyVal *node, const char *key);
 void        ParKeyVal_print(ParKeyVal *self, FILE *fp);
+void        ParKeyVal_sanityCheck(ParKeyVal *self, const char *file, int line);
+int         legalName(const char *name);
 
 #endif

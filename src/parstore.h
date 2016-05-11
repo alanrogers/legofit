@@ -28,5 +28,9 @@ double      ParStore_hiFree(ParStore * self, int i);
 double     *ParStore_rawArray(ParStore * self);
 double     *ParStore_findPtr(ParStore * self, const char *name);
 ParStore   *ParStore_dup(ParStore *old);
+void        ParStore_sanityCheck(ParStore *self, const char *file, int line);
+void        ParStore_print(ParStore *self, FILE *fp);
+
+void        Bounds_sanityCheck(Bounds *self, const char *file, int line);
 
 #endif

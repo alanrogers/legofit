@@ -14,5 +14,6 @@ void        LblNdx_addSamples(LblNdx * self, unsigned nsamples,
 							   const char *lbl);
 const char *LblNdx_lbl(LblNdx * self, unsigned i);
 unsigned    LblNdx_size(LblNdx * self);
+void        LblNdx_sanityCheck(LblNdx *self, const char *file, int line);
 
 #endif

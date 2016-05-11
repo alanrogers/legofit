@@ -16,7 +16,6 @@ struct GPTree {
     PopNode *pnv; // array of length nseg
     PopNode *rootPop;
     Gene *rootGene;
-    int nNodes;
     Bounds bnd;
     ParStore *parstore;
     LblNdx lblndx;
@@ -49,13 +48,16 @@ GPTree *GPTree_new(const char *fname, Bounds bnd) {
 
     fclose(fp);
     NodeStore_free(ns);
+    GPTree_sanityCheck(self, __FILE__, __LINE__);
     return self;
 }
 
 /// Destructor.
 void GPTree_free(GPTree *self) {
     Gene_free(self->rootGene);
+    self->rootGene = NULL;
     PopNode_clear(self->rootPop);
+    self->rootPop = NULL;
     free(self->pnv);
     ParStore_free(self->parstore);
     free(self);
@@ -84,12 +86,26 @@ GPTree *GPTree_dup(GPTree *old) {
     int i;
     size_t dpar = ((size_t) new->parstore) - ((size_t) old->parstore);
     size_t dpop = ((size_t) new->pnv) - ((size_t) old->pnv);
+    INCR_PTR(new->rootPop, dpop);
     for(i=0; i < old->nseg; ++i) {
         PopNode_shiftParamPtrs(&new->pnv[i], dpar);
         PopNode_shiftPopNodePtrs(&new->pnv[i], dpop);
     }
 
+    GPTree_sanityCheck(new, __FILE__, __LINE__);
     return new;
+}
+
+void GPTree_sanityCheck(GPTree *self, const char *file, int line) {
+#ifndef NDEBUG
+    REQUIRE(self->nseg > 0,                         file, line);
+    REQUIRE(self->pnv != NULL,                      file, line);
+    REQUIRE(self->rootPop >= self->pnv,             file, line);
+    REQUIRE(self->rootPop < self->pnv + self->nseg, file, line);
+    Bounds_sanityCheck(&self->bnd,                  file, line);
+    ParStore_sanityCheck(self->parstore,            file, line);
+    LblNdx_sanityCheck(&self->lblndx,               file, line);
+#endif
 }
 
 #ifdef TEST
@@ -140,28 +156,32 @@ const char *tstInput =
     "derive c  from abc\n";
 int main(int argc, char **argv) {
 
-    int verbose=0;
+    //    int verbose=0;
 
     if(argc > 1) {
         if(argc!=2 || 0!=strcmp(argv[1], "-v")) {
             fprintf(stderr,"usage: xgptree [-v]\n");
             exit(EXIT_FAILURE);
         }
-        verbose = 1;
+        //        verbose = 1;
     }
 
-    const char *tstFname = "mktree-tmp.lgo";
-    FILE       *fp = fopen(tstFname, "w");
+    const char *fname = "mktree-tmp.lgo";
+    FILE       *fp = fopen(fname, "w");
     fputs(tstInput, fp);
     fclose(fp);
-    fp = fopen(tstFname, "r");
-    if(fp == NULL) {
-        fprintf(stderr, "%s:%d: Can't open file \"%s\"\n",
-                __FILE__, __LINE__, tstFname);
-        exit(1);
-    }
 
-    fclose(fp);
+	Bounds   bnd = {
+		.lo_twoN = 0.0,
+		.hi_twoN = 1e7,
+		.lo_t = 0.0,
+		.hi_t = HUGE_VAL
+	};
+    GPTree *g = GPTree_new(fname, bnd);
+    GPTree *g2 = GPTree_dup(g);
+    GPTree_free(g);
+    GPTree_free(g2);
+
     unitTstResult("GPTree", "untested");
     return 0;
 }

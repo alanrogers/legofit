@@ -23,43 +23,53 @@
 #include <stdlib.h>
 
 struct ParStore {
-    int         nFixed, nFree;      // number of parameters
+    int         nFixed, nFree;  // number of parameters
     double      fixedVal[MAXPAR];   // parameter values
     double      freeVal[MAXPAR];    // parameter values
-    double      loFree[MAXPAR];     // lower bounds
-    double      hiFree[MAXPAR];     // upper bounds
+    double      loFree[MAXPAR]; // lower bounds
+    double      hiFree[MAXPAR]; // upper bounds
     char       *nameFixed[MAXPAR];  // Parameter names
     char       *nameFree[MAXPAR];   // Parameter names
-    ParKeyVal  *head;               // linked list of name/ptr pairs
+    ParKeyVal  *head;           // linked list of name/ptr pairs
 };
+
+void ParStore_print(ParStore *self, FILE *fp) {
+    int i;
+    fprintf(fp, "%5d fixed:\n", self->nFixed);
+    for(i=0; i < self->nFixed; ++i)
+        fprintf(fp, "   %6s = %lf\n", self->nameFixed[i], self->fixedVal[i]);
+    fprintf(fp, "%5d free :\n", self->nFree);
+    for(i=0; i < self->nFree; ++i)
+        fprintf(fp, "   %6s = %lf\n", self->nameFree[i], self->freeVal[i]);
+}
 
 /// Constructor
 ParStore   *ParStore_new(void) {
     ParStore   *self = malloc(sizeof(ParStore));
-    checkmem(self, __FILE__, __LINE__);
+    CHECKMEM(self);
     memset(self, 0, sizeof(ParStore));
+    ParStore_sanityCheck(self, __FILE__, __LINE__);
     return self;
 }
 
 /// Duplicate a ParStore
-ParStore *ParStore_dup(ParStore *old) {
-    ParStore *new = malloc(sizeof(ParStore));
-    checkmem(new, __FILE__, __LINE__);
-    memcpy(new, old, sizeof(ParStore));
+ParStore   *ParStore_dup(ParStore * old) {
+    ParStore   *new = memdup(old, sizeof(ParStore));
     new->head = NULL;
 
-    int i;
-    for(i=0; i < new->nFree; ++i) {
+    int         i;
+    for(i = 0; i < new->nFree; ++i) {
         new->nameFree[i] = strdup(old->nameFree[i]);
         new->head = ParKeyVal_add(new->head, new->nameFree[i],
                                   new->freeVal + i);
     }
 
-    for(i=0; i < new->nFixed; ++i) {
+    for(i = 0; i < new->nFixed; ++i) {
         new->nameFixed[i] = strdup(old->nameFixed[i]);
         new->head = ParKeyVal_add(new->head, new->nameFixed[i],
                                   new->fixedVal + i);
     }
+    ParStore_sanityCheck(new, __FILE__, __LINE__);
     return new;
 }
 
@@ -79,20 +89,18 @@ void ParStore_free(ParStore * self) {
 
 /// Add free parameter to ParStore.
 void ParStore_addFreePar(ParStore * self, double value,
-                        double lo, double hi, const char *name) {
+                         double lo, double hi, const char *name) {
     int         i = self->nFree;
 
     if(++self->nFree >= MAXPAR)
         eprintf("%s:%s:%d: buffer overflow."
                 " nFree=%d. MAXPAR=%d."
                 " Increase MAXPAR and recompile.\n",
-                __FILE__, __func__, __LINE__,
-                self->nFree, MAXPAR);
+                __FILE__, __func__, __LINE__, self->nFree, MAXPAR);
 
     if(value < lo || value > hi)
         eprintf("%s:%s:%d: value (%lf) not in range [%lf,%lf]\n",
-                __FILE__, __func__, __LINE__,
-                value, lo, hi);
+                __FILE__, __func__, __LINE__, value, lo, hi);
 
     self->freeVal[i] = value;
     self->loFree[i] = lo;
@@ -112,8 +120,7 @@ void ParStore_addFixedPar(ParStore * self, double value, const char *name) {
         eprintf("%s:%s:%d: buffer overflow."
                 " nFixed=%d. MAXPAR=%d."
                 " Increase MAXPAR and recompile.\n",
-                __FILE__, __func__, __LINE__,
-                self->nFixed, MAXPAR);
+                __FILE__, __func__, __LINE__, self->nFixed, MAXPAR);
 
     self->fixedVal[i] = value;
     self->nameFixed[i] = strdup(name);
@@ -183,4 +190,39 @@ double     *ParStore_rawArray(ParStore * self) {
 /// Return pointer associated with parameter name.
 double     *ParStore_findPtr(ParStore * self, const char *name) {
     return ParKeyVal_get(self->head, name);
+}
+
+void Bounds_sanityCheck(Bounds * self, const char *file, int line) {
+#ifndef NDEBUG
+    REQUIRE(self, file, line);
+    REQUIRE(self->lo_twoN >= 0.0, file, line);
+    REQUIRE(self->lo_twoN < self->hi_twoN, file, line);
+    REQUIRE(self->lo_t >= 0.0, file, line);
+    REQUIRE(self->lo_t < self->hi_t, file, line);
+#endif
+}
+
+void ParStore_sanityCheck(ParStore *self, const char *file, int line) {
+#ifndef NDEBUG
+    REQUIRE(self, file, line);
+    REQUIRE(self->nFixed >= 0, file, line);
+    REQUIRE(self->nFree >= 0, file, line);
+    REQUIRE(self->nFixed < MAXPAR, file, line);
+    REQUIRE(self->nFree < MAXPAR, file, line);
+
+    // Make sure each name consists only of legal characters.
+    int i;
+    char *s;
+    for(i=0; i < self->nFixed; ++i) {
+        s = self->nameFixed[i];
+        REQUIRE(NULL != s, file, line);
+        REQUIRE(legalName(s), file, line);
+    }
+    for(i=0; i < self->nFree; ++i) {
+        s = self->nameFree[i];
+        REQUIRE(NULL != s, file, line);
+        REQUIRE(legalName(s), file, line);
+    }
+    ParKeyVal_sanityCheck(self->head, file, line);
+#endif    
 }

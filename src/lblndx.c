@@ -4,6 +4,7 @@
  */
 #include "lblndx.h"
 #include "misc.h"
+#include "parkeyval.h"
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
@@ -11,6 +12,7 @@
 /// Set everything to zero.
 void LblNdx_init(LblNdx * self) {
     memset(self, 0, sizeof(*self));
+    LblNdx_sanityCheck(self, __FILE__, __LINE__);
 }
 
 /// Add samples for a single population. Should be called once for
@@ -26,6 +28,7 @@ void LblNdx_addSamples(LblNdx * self, unsigned nsamples, const char *lbl) {
             snprintf(self->lbl[self->n], POPNAMESIZE, "%s.%u", lbl, i);
         self->n += 1;
     }
+    LblNdx_sanityCheck(self, __FILE__, __LINE__);
 }
 
 /// Return the label associated with index i.
@@ -36,6 +39,19 @@ const char *LblNdx_lbl(LblNdx * self, unsigned i) {
 
 unsigned LblNdx_size(LblNdx * self) {
     return self->n;
+}
+
+void        LblNdx_sanityCheck(LblNdx *self, const char *file, int line) {
+#ifndef NDEBUG
+    REQUIRE(self, file, line);
+    REQUIRE(self->n < MAXSAMP, file, line);
+
+    int i;
+    for(i=0; i < self->n; ++i) {
+        REQUIRE(NULL != self->lbl[i], file, line);
+        REQUIRE(legalName(self->lbl[i]), file, line);
+    }
+#endif
 }
 
 #ifdef TEST

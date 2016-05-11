@@ -7,6 +7,12 @@
 #  define POPNAMESIZE 30
 #  define MAXSAMP ((int)(8*sizeof(tipId_t)))
 
+// Add increment INC to pointer PTR. Units are sizeof(char)
+// rather than the size of the object to which PTR refers.
+#define INCR_PTR(PTR,INC) do{                                   \
+        (PTR) = (void *) (((size_t) (PTR)) + ((size_t) (INC))); \
+    }while(0);
+
 struct SampNdx {
     unsigned    n;              // number of samples
     char        lbl[MAXSAMP][POPNAMESIZE];

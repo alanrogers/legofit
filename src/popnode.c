@@ -399,12 +399,6 @@ void PopNode_free(PopNode * self) {
     free(self);
 }
 
-// Add increment INC to pointer PTR. Units are sizeof(char)
-// rather than the size of the object to which PTR refers.
-#define INCR_PTR(PTR,INC) do{                                   \
-        (PTR) = (void *) (((size_t) (PTR)) + ((size_t) (INC))); \
-    }while(0);
-
 /// Add dp to each parameter pointer, using ordinary (not pointer)
 /// arithmetic.
 void PopNode_shiftParamPtrs(PopNode *self, size_t dp) {

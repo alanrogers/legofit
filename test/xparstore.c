@@ -16,7 +16,21 @@
 #  error "Unit tests must be compiled without -DNDEBUG flag"
 #endif
 
-int main(void) {
+int main(int argc, char **argv) {
+	int verbose=0;
+
+	switch (argc) {
+    case 1:
+        break;
+    case 2:
+        if(strncmp(argv[1], "-v", 2) != 0)
+            eprintf("usage: xparstore [-v]\n");
+        verbose = 1;
+        break;
+    default:
+        eprintf("usage: xparstore [-v]\n");
+    }
+
     ParStore *ps = ParStore_new();
     assert(ParStore_nFixed(ps) == 0);
     assert(ParStore_nFree(ps) == 0);
@@ -63,6 +77,9 @@ int main(void) {
     vec = ParStore_rawArray(ps);
     assert(vec[1] == val);
 
+    if(verbose)
+        ParStore_print(ps, stdout);
+
     ParStore *ps2 = ParStore_dup(ps);
     size_t offset = ((size_t) ps2) - ((size_t) ps);
     int    i;
@@ -91,8 +108,11 @@ int main(void) {
         size_t position2 = (size_t) ParStore_findPtr(ps2, name1);
         assert(offset == position2 - position1);
     }
+    if(verbose)
+        ParStore_print(ps2, stdout);
 
     ParStore_free(ps);
+    ParStore_free(ps2);
 
     unitTstResult("ParStore", "OK");
 
