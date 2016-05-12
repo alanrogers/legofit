@@ -23,19 +23,15 @@ typedef struct TaskArg TaskArg;
 
 /** Data structure used by each thread */
 struct TaskArg {
-    const char *fname;
     unsigned    rng_seed;
     unsigned long nreps;
-    SampNdx     sndx;
-    LblNdx      lblndx;
-    Bounds      bnd;
+    GPTree     *gptree;
 
     // Returned value
     BranchTab  *branchtab;
 };
 
-TaskArg    *TaskArg_new(const TaskArg * template, unsigned rng_seed,
-                        unsigned nreps);
+TaskArg    *TaskArg_new(unsigned rng_seed, GPTree *gptree, unsigned nreps);
 void        TaskArg_free(TaskArg * targ);
 int         taskfun(void *varg);
 
@@ -43,17 +39,14 @@ int         taskfun(void *varg);
  * Construct a new TaskArg by copying a template, but then assign
  * a distinct random number seed.
  */
-TaskArg    *TaskArg_new(const TaskArg * template, unsigned rng_seed,
-                        unsigned nreps) {
+TaskArg    *TaskArg_new(unsigned rng_seed, GPTree *gptree, unsigned nreps) {
     TaskArg    *a = malloc(sizeof(TaskArg));
     checkmem(a, __FILE__, __LINE__);
 
-    memcpy(a, template, sizeof(TaskArg));
     a->rng_seed = rng_seed;
     a->nreps = nreps;
+    a->gptree = GPTree_dup(gptree);
     a->branchtab = BranchTab_new();
-    LblNdx_init(&(a->lblndx));
-    SampNdx_init(&(a->sndx));
 
     return a;
 }
@@ -61,57 +54,17 @@ TaskArg    *TaskArg_new(const TaskArg * template, unsigned rng_seed,
 /** TaskArg destructor */
 void TaskArg_free(TaskArg * self) {
     BranchTab_free(self->branchtab);
+    GPTree_free(self->gptree);
     free(self);
 }
 
 /** function run by each thread */
 int taskfun(void *varg) {
     TaskArg    *targ = (TaskArg *) varg;
-
-    unsigned long rep;
     gsl_rng    *rng = gsl_rng_alloc(gsl_rng_taus);
     gsl_rng_set(rng, targ->rng_seed);
-    HashTab    *ht = HashTab_new();
-    ParStore   *parstore = ParStore_new();  // parameters
-    PopNode    *rootPop = NULL;
-    {
-        // Build population tree as specified in file targ->fname.
-        // After this section, rootPop points to the ancestral
-        // population, ht is a table that maps population names to
-        // nodes in the population tree, and targ->lblndx is an index of
-        // sample labels. The call to HashTab_freeValues (at the end
-        // of this function) deallocates all population nodes.
-        FILE       *fp = fopen(targ->fname, "r");
-        if(fp == NULL)
-            eprintf("%s:%s:%d: can't open file %s.\n",
-                    __FILE__, __func__, __LINE__, targ->fname);
-        rootPop = mktree(fp, ht, &(targ->sndx), &(targ->lblndx), parstore,
-                         &(targ->bnd));
-        fclose(fp);
-    }
-
-    for(rep = 0; rep < targ->nreps; ++rep) {
-        PopNode_clear(rootPop); // remove old samples 
-        SampNdx_populateTree(&(targ->sndx));    // add new samples
-
-        // coalescent simulation generates gene genealogy within
-        // population tree.
-        Gene       *root = PopNode_coalesce(rootPop, rng);
-        assert(root);
-
-        // Traverse gene tree, accumulating branch lengths in bins
-        // that correspond to site patterns.
-        Gene_tabulate(root, targ->branchtab);
-
-        // Free gene genealogy but not population tree.
-        Gene_free(root);
-        root = NULL;
-    }
-
+    GPTree_simulate(targ->gptree, targ->branchtab, rng, targ->nreps);
     gsl_rng_free(rng);
-    HashTab_freeValues(ht);     // DANGEROUS CODE
-    HashTab_free(ht);
-    ParStore_free(parstore);
 
     return 0;
 }
@@ -123,23 +76,13 @@ int taskfun(void *varg) {
 unsigned patprob(unsigned maxpat,
                  tipId_t pat[maxpat],
                  double prob[maxpat],
+                 GPTree *gptree,
                  LblNdx *lblndx,
                  int nTasks,
                  long reps[nTasks],
-                 int pointNdx,
-                 const char *fname,
-                 Bounds bnd) {
-    assert(lblndx != NULL);
+                 int pointNdx) {
     int j;
     unsigned long currtime = (unsigned long ) time(NULL);
-
-    TaskArg     targ = {
-        .fname = fname,
-        .rng_seed = 0,
-        .nreps = 0,
-        .bnd = bnd,
-        .branchtab = NULL
-    };
 
     TaskArg    *taskarg[nTasks];
     unsigned    pid = (unsigned) getpid();
@@ -163,7 +106,7 @@ unsigned patprob(unsigned maxpat,
     }
     for(j = 0; j < nTasks; ++j) {
         unsigned seed = (unsigned) ((lseed + j) % UINT_MAX);
-        taskarg[j] = TaskArg_new(&targ, seed, reps[j]);
+        taskarg[j] = TaskArg_new(seed, gptree, reps[j]);
     }
 
     {

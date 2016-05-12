@@ -22,6 +22,28 @@ struct GPTree {
     SampNdx sndx;
 };
 
+void GPTree_simulate(GPTree *self, BranchTab *branchtab, gsl_rng *rng,
+                     unsigned long nreps) {
+    unsigned long rep;
+    for(rep = 0; rep < nreps; ++rep) {
+        PopNode_clear(self->rootPop); // remove old samples 
+        SampNdx_populateTree(&(self->sndx));    // add new samples
+
+        // coalescent simulation generates gene genealogy within
+        // population tree.
+        self->rootGene = PopNode_coalesce(self->rootPop, rng);
+        assert(self->rootGene);
+
+        // Traverse gene tree, accumulating branch lengths in bins
+        // that correspond to site patterns.
+        Gene_tabulate(self->rootGene, branchtab);
+
+        // Free gene genealogy but not population tree.
+        Gene_free(self->rootGene);
+        self->rootGene = NULL;
+    }
+}
+
 GPTree *GPTree_new(const char *fname, Bounds bnd) {
     GPTree *self = malloc(sizeof(GPTree));
     CHECKMEM(self);
@@ -64,10 +86,14 @@ void GPTree_free(GPTree *self) {
 }
 
 /// Duplicate a GPTree object
-GPTree *GPTree_dup(GPTree *old) {
-    Gene_free(old->rootGene);
-    old->rootGene = NULL;
-    PopNode_clear(old->rootPop);
+GPTree *GPTree_dup(const GPTree *old) {
+    if(old->rootGene != NULL)
+        eprintf("%s:%s:%d: old->rootGene must be NULL on entry\n",
+                __FILE__,__func__,__LINE__);
+    if(!PopNode_isClear(old->rootPop))
+        eprintf("%s:%s:%d: clear GPTree of samples before call"
+                " to GPTree_dup\n",
+                __FILE__,__func__,__LINE__);
 
     GPTree *new   = memdup(old, sizeof(GPTree));
     new->parstore = ParStore_dup(old->parstore);
@@ -130,6 +156,10 @@ int GPTree_equals(GPTree *lhs, GPTree *rhs) {
     if(!SampNdx_equals(&lhs->sndx, &rhs->sndx))
         return 0;
     return 1;
+}
+
+LblNdx *GPTree_getLblNdxPtr(GPTree *self) {
+    return &self->lblndx;
 }
 
 #ifdef TEST

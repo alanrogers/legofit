@@ -37,6 +37,7 @@ void        PopNode_addSample(PopNode * self, Gene * gene);
 Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng);
 void        PopNode_free(PopNode * self);
 void        PopNode_clear(PopNode * self);
+int         PopNode_isClear(const PopNode *self);
 void        PopNode_print(FILE * fp, PopNode * self, int indent);
 void        PopNode_printShallow(PopNode * self, FILE * fp);
 PopNode    *PopNode_root(PopNode * self);

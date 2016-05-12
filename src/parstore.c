@@ -53,7 +53,7 @@ ParStore   *ParStore_new(void) {
 }
 
 /// Duplicate a ParStore
-ParStore   *ParStore_dup(ParStore * old) {
+ParStore   *ParStore_dup(const ParStore * old) {
     ParStore   *new = memdup(old, sizeof(ParStore));
     new->head = NULL;
 

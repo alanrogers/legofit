@@ -106,6 +106,21 @@ void PopNode_clear(PopNode * self) {
     PopNode_sanityCheck(self, __FILE__, __LINE__);
 }
 
+/// Return 1 if PopNode tree is empty of samples
+int PopNode_isClear(const PopNode *self) {
+    if(self==0)
+        return 1;
+    if(self->nsamples > 0)
+        return 0;
+
+    int i;
+    for(i=0; i < self->nchildren; ++i) {
+        if(!PopNode_isClear(self->child[i]))
+            return 0;
+    }
+    return 1;
+}
+
 void PopNode_print(FILE * fp, PopNode * self, int indent) {
     int         i;
     for(i = 0; i < indent; ++i)

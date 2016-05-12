@@ -197,15 +197,15 @@ int main(int argc, char **argv) {
     int maxpat = 10;
     tipId_t pat[maxpat];
     double prob[maxpat];
-    LblNdx lblndx;
     Bounds bnd = {
             .lo_twoN = lo_twoN,
             .hi_twoN = hi_twoN,
             .lo_t = lo_t,
             .hi_t = hi_t
     };
+    GPTree *gptree = GPTree_new(fname, bnd);
 
-    unsigned npat = patprob(maxpat, pat, prob, &lblndx, nTasks, reps, 0,
+    unsigned npat = patprob(maxpat, pat, prob, gptree, nTasks, reps, 0,
                             fname, bnd);
 
     // Determine order for printing lines of output
@@ -222,9 +222,12 @@ int main(int argc, char **argv) {
     for(j = 0; j < npat; ++j) {
         char        buff2[100];
         snprintf(buff2, sizeof(buff2), "%s",
-                 patLbl(sizeof(buff), buff, pat[ord[j]], &lblndx));
+                 patLbl(sizeof(buff), buff, pat[ord[j]],
+                        GPTree_getLblNdxPtr(gptree)));
         printf("%15s %10.7lf\n", buff2, prob[ord[j]]);
     }
+
+    GPTree_free(gptree);
 
     return 0;
 }
