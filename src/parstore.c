@@ -192,16 +192,6 @@ double     *ParStore_findPtr(ParStore * self, const char *name) {
     return ParKeyVal_get(self->head, name);
 }
 
-void Bounds_sanityCheck(Bounds * self, const char *file, int line) {
-#ifndef NDEBUG
-    REQUIRE(self, file, line);
-    REQUIRE(self->lo_twoN >= 0.0, file, line);
-    REQUIRE(self->lo_twoN < self->hi_twoN, file, line);
-    REQUIRE(self->lo_t >= 0.0, file, line);
-    REQUIRE(self->lo_t < self->hi_t, file, line);
-#endif
-}
-
 void ParStore_sanityCheck(ParStore *self, const char *file, int line) {
 #ifndef NDEBUG
     REQUIRE(self, file, line);
@@ -226,3 +216,52 @@ void ParStore_sanityCheck(ParStore *self, const char *file, int line) {
     ParKeyVal_sanityCheck(self->head, file, line);
 #endif    
 }
+
+int         ParStore_equals(ParStore *lhs, ParStore *rhs) {
+    if(lhs == rhs)
+        return 1;
+    if(lhs->nFixed != rhs->nFixed)
+        return 0;
+    if(lhs->nFree != rhs->nFree)
+        return 0;
+    if(0 != memcmp(lhs->fixedVal, rhs->fixedVal,
+                   lhs->nFixed*sizeof(lhs->fixedVal[0])))
+        return 0;
+    if(0 != memcmp(lhs->freeVal, rhs->freeVal,
+                   lhs->nFree*sizeof(lhs->freeVal[0])))
+        return 0;
+    if(0 != memcmp(lhs->loFree, rhs->loFree,
+                   lhs->nFree*sizeof(lhs->loFree[0])))
+        return 0;
+    if(0 != memcmp(lhs->hiFree, rhs->hiFree,
+                   lhs->nFree*sizeof(lhs->hiFree[0])))
+        return 0;
+    int i;
+    for(i=0; i < lhs->nFixed; ++i)
+        if(0 != strcmp(lhs->nameFixed[i], rhs->nameFixed[i]))
+            return 0;
+    for(i=0; i < lhs->nFree; ++i)
+        if(0 != strcmp(lhs->nameFree[i], rhs->nameFree[i]))
+            return 0;
+    return ParKeyVal_equals(lhs->head, rhs->head);
+}
+
+void Bounds_sanityCheck(Bounds * self, const char *file, int line) {
+#ifndef NDEBUG
+    REQUIRE(self, file, line);
+    REQUIRE(self->lo_twoN >= 0.0, file, line);
+    REQUIRE(self->lo_twoN < self->hi_twoN, file, line);
+    REQUIRE(self->lo_t >= 0.0, file, line);
+    REQUIRE(self->lo_t < self->hi_t, file, line);
+#endif
+}
+
+int         Bounds_equals(Bounds *lhs, Bounds *rhs) {
+    if(lhs == rhs)
+        return 1;
+    return lhs->lo_twoN == rhs->lo_twoN
+        && lhs->hi_twoN == rhs->hi_twoN
+        && lhs->lo_t == rhs->lo_t
+        && lhs->hi_t == rhs->hi_t;
+}
+

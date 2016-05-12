@@ -108,6 +108,30 @@ void GPTree_sanityCheck(GPTree *self, const char *file, int line) {
 #endif
 }
 
+/// Return 1 if two GPTree objects are equal, 0 if they differ.  Abort
+/// with an error if the GPTree pointers are different but one or more
+/// of the internal pointers is the same.  Does not access rootPop or
+/// rootGene.
+int GPTree_equals(GPTree *lhs, GPTree *rhs) {
+    if(lhs == rhs)
+        return 0;
+    if(lhs->pnv == rhs->pnv)
+        eprintf("%s:%s:%d: two GPTree objects share a PopNode pointer\n",
+                __FILE__,__func__,__LINE__);
+    if(lhs->parstore == rhs->parstore)
+        eprintf("%s:%s:%d: two GPTree objects share a ParStore pointer\n",
+                __FILE__,__func__,__LINE__);
+    if(!Bounds_equals(&lhs->bnd, &rhs->bnd))
+        return 0;
+    if(!ParStore_equals(lhs->parstore, rhs->parstore))
+        return 0;
+    if(!LblNdx_equals(&lhs->lblndx, r&hs->ndx))
+        return 0;
+    if(!SampNdx_equals(&lhs->sndx, &rhs->sndx))
+        return 0;
+    return 1;
+}
+
 #ifdef TEST
 
 #include <string.h>

@@ -31,6 +31,18 @@ int main(int argc, char **argv) {
         eprintf("usage: xparstore [-v]\n");
     }
 
+    Bounds bnd0 = {
+        .lo_twoN = 0.0,
+        .hi_twoN = 1e12,
+        .lo_t = 0,
+        .hi_t = 1e10
+    };
+    Bounds_sanityCheck(&bnd0, __FILE__, __LINE__);
+    Bounds bnd1 = bnd0;
+    Bounds_sanityCheck(&bnd1, __FILE__, __LINE__);
+    assert(Bounds_equals(&bnd0, &bnd1));
+    unitTstResult("Bounds", "OK");
+
     ParStore *ps = ParStore_new();
     assert(ParStore_nFixed(ps) == 0);
     assert(ParStore_nFree(ps) == 0);
@@ -83,6 +95,8 @@ int main(int argc, char **argv) {
     ParStore *ps2 = ParStore_dup(ps);
     size_t offset = ((size_t) ps2) - ((size_t) ps);
     int    i;
+
+    assert(ParStore_equals(ps, ps2));
 
     assert(ParStore_nFree(ps2) == ParStore_nFree(ps));
     assert(ParStore_nFixed(ps2) == ParStore_nFixed(ps));

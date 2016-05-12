@@ -97,6 +97,26 @@ void        ParKeyVal_sanityCheck(ParKeyVal *self, const char *file, int line) {
 #endif
 }
 
+/// Return 1 if the two linked lists are equal; 0 if they differ.
+int         ParKeyVal_equals(ParKeyVal *lhs, ParKeyVal *rhs) {
+    if(lhs == NULL && rhs == NULL)
+        return 1;
+    if(lhs == NULL && rhs != NULL)
+            return 0;
+    if(lhs != NULL && rhs == NULL)
+            return 0;
+    assert(lhs != NULL && rhs != NULL);
+    if(0 != strcmp(lhs->key, rhs->key))
+        return 0;
+    if(lhs->valPtr == NULL && rhs->valPtr != NULL)
+        return 0;
+    if(lhs->valPtr != NULL && rhs->valPtr == NULL)
+        return 0;
+    if(lhs->valPtr != NULL && rhs->valPtr != NULL
+       && *lhs->valPtr != *rhs->valPtr)
+        return 0;
+    return ParKeyVal_equals(lhs->next, rhs->next);
+}
 
 /// Return nonzero if name is legal; zero otherwise
 int legalName(const char *name) {

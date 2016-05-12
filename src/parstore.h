@@ -30,7 +30,9 @@ double     *ParStore_findPtr(ParStore * self, const char *name);
 ParStore   *ParStore_dup(ParStore *old);
 void        ParStore_sanityCheck(ParStore *self, const char *file, int line);
 void        ParStore_print(ParStore *self, FILE *fp);
+int         ParStore_equals(ParStore *lhs, ParStore *rhs);
 
 void        Bounds_sanityCheck(Bounds *self, const char *file, int line);
+int         Bounds_equals(Bounds *lhs, Bounds *rhs);
 
 #endif
