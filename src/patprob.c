@@ -138,7 +138,10 @@ unsigned patprob(unsigned maxpat,
             prob[j] /= sum;
     }
 
-    *lblndx = taskarg[0]->lblndx;
+    {
+        LblNdx *p = GPTree_getLblNdxPtr(taskarg[0]->gptree);
+        *lblndx = *p;
+    }
 
     for(j = 0; j < nTasks; ++j)
         TaskArg_free(taskarg[j]);
