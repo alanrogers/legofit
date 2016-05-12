@@ -125,7 +125,7 @@ int GPTree_equals(GPTree *lhs, GPTree *rhs) {
         return 0;
     if(!ParStore_equals(lhs->parstore, rhs->parstore))
         return 0;
-    if(!LblNdx_equals(&lhs->lblndx, r&hs->ndx))
+    if(!LblNdx_equals(&lhs->lblndx, &rhs->lblndx))
         return 0;
     if(!SampNdx_equals(&lhs->sndx, &rhs->sndx))
         return 0;
@@ -203,6 +203,7 @@ int main(int argc, char **argv) {
 	};
     GPTree *g = GPTree_new(fname, bnd);
     GPTree *g2 = GPTree_dup(g);
+    assert(GPTree_equals(g, g2));
     GPTree_free(g);
     GPTree_free(g2);
 

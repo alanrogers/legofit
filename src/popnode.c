@@ -470,7 +470,18 @@ unsigned SampNdx_size(SampNdx * self) {
     return self->n;
 }
 
-
+/// This equality check doesn't do much, because the pointers
+/// in different SampNdx objects don't have to be (in fact shouldn't
+/// be) equal.
+int         SampNdx_equals(SampNdx *lhs, SampNdx *rhs){
+    if(lhs==NULL && rhs==NULL)
+        return 1;
+    if(lhs==NULL || rhs==NULL)
+        return 0;
+    if(lhs->n != rhs->n)
+        return 0;
+    return 1;
+}
 
 #ifdef TEST
 
@@ -597,6 +608,20 @@ int main(int argc, char **argv) {
     SampNdx_populateTree(&sndx);
     assert(3 == PopNode_nsamples(pnode));
     NodeStore_free(ns);
+
+    SampNdx     sndx2 = {.n = 3 };
+    SampNdx_init(&sndx2);
+	double twoN2 = 100.0;
+	double start2 = 20.0;
+    PopNode v2[nseg];
+    NodeStore *ns2 = NodeStore_new(nseg, v2);
+    CHECKMEM(ns);
+    pnode = PopNode_new(&twoN2, &start2, ns2);
+    SampNdx_addSamples(&sndx2, 1, pnode);
+    SampNdx_addSamples(&sndx2, 2, pnode);
+    SampNdx_populateTree(&sndx2);
+    NodeStore_free(ns2);
+    assert(SampNdx_equals(&sndx, &sndx2));
 
 	unitTstResult("SampNdx", "OK");
 

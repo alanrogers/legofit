@@ -15,7 +15,6 @@
 
 struct SampNdx {
     unsigned    n;              // number of samples
-    char        lbl[MAXSAMP][POPNAMESIZE];
     PopNode    *node[MAXSAMP];
 };
 
@@ -52,6 +51,7 @@ void        SampNdx_addSamples(SampNdx * self, unsigned nsamples,
 							   PopNode * pnode);
 void        SampNdx_populateTree(SampNdx * self);
 unsigned    SampNdx_size(SampNdx * self);
+int         SampNdx_equals(SampNdx *lhs, SampNdx *rhs);
 
 NodeStore  *NodeStore_new(int len, PopNode *v);
 void        NodeStore_free(NodeStore *self);

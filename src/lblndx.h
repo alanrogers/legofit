@@ -16,4 +16,6 @@ const char *LblNdx_lbl(LblNdx * self, unsigned i);
 unsigned    LblNdx_size(LblNdx * self);
 void        LblNdx_sanityCheck(LblNdx *self, const char *file, int line);
 
+int         LblNdx_equals(LblNdx *lhs, LblNdx *rhs);
+
 #endif

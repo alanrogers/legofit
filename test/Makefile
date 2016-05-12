@@ -107,7 +107,7 @@ xparkeyval : $(XPARKEYVAL)
 xlblndx.o : lblndx.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/lblndx.c
 
-XLBLNDX := xlblndx.o misc.o
+XLBLNDX := xlblndx.o misc.o parkeyval.o
 xlblndx : $(XLBLNDX)
 	$(CC) $(CFLAGS) -o $@ $(XLBLNDX) $(lib)
 

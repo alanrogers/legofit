@@ -54,6 +54,21 @@ void        LblNdx_sanityCheck(LblNdx *self, const char *file, int line) {
 #endif
 }
 
+int         LblNdx_equals(LblNdx *lhs, LblNdx *rhs) {
+    if(lhs == rhs)
+        return 1;
+    if(lhs==NULL || rhs==NULL)
+        return 0;
+    if(lhs->n != rhs->n)
+        return 0;
+
+    int i;
+    for(i=0; i < lhs->n; ++i)
+        if(0 != strcmp(lhs->lbl[i], rhs->lbl[i]))
+            return 0;
+    return 1;
+}
+
 #ifdef TEST
 
 #  include <string.h>
@@ -94,6 +109,13 @@ int main(int argc, char **argv) {
     for(i = 0; verbose && i < LblNdx_size(&lndx); ++i) {
         printf("%d %s\n", i, LblNdx_lbl(&lndx, i));
     }
+
+    LblNdx lndx2 = {.n = 3 };
+    LblNdx_init(&lndx2);
+    LblNdx_addSamples(&lndx2, 1, "A");
+    LblNdx_addSamples(&lndx2, 2, "B");
+
+    assert(LblNdx_equals(&lndx, &lndx2));
 
 	unitTstResult("LblNdx", "OK");
 
