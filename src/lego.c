@@ -204,9 +204,10 @@ int main(int argc, char **argv) {
             .hi_t = hi_t
     };
     GPTree *gptree = GPTree_new(fname, bnd);
+	LblNdx lblndx;
 
-    unsigned npat = patprob(maxpat, pat, prob, gptree, nTasks, reps, 0,
-                            fname, bnd);
+    unsigned npat = patprob(maxpat, pat, prob, gptree, &lblndx, nTasks,
+							reps, 0);
 
     // Determine order for printing lines of output
     tipId_t  *ptr[npat];

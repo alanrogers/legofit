@@ -42,7 +42,8 @@ test : $(tests)
 	@echo "ALL UNIT TESTS WERE COMPLETED."
 
 LEGO := lego.o patprob.o gptree.o binary.o jobqueue.o misc.o parse.o \
-  branchtab.o hashtab.o lblndx.o tokenizer.o parstore.o parkeyval.o
+  branchtab.o hashtab.o lblndx.o tokenizer.o parstore.o parkeyval.o \
+  popnode.o gene.o 
 lego : $(LEGO)
 	$(CC) $(CFLAGS) -o $@ $(LEGO) $(lib)
 

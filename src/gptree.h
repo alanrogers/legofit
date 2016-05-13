@@ -2,6 +2,7 @@
 #  define ARR_GPTREE_H
 
 #  include "typedefs.h"
+#  include <gsl/gsl_rng.h>
 
 GPTree     *GPTree_new(const char *fname, Bounds bnd);
 void        GPTree_free(GPTree *self);
