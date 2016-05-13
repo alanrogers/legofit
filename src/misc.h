@@ -1,6 +1,7 @@
 #ifndef GPTREE_MISC_H
 #  define GPTREE_MISC_H
 
+#  include "typedefs.h"
 #  include <stdio.h>
 #  include <math.h>
 #  include <float.h>
@@ -31,6 +32,8 @@ void        tellopt(const char *opt, const char *description);
 unsigned    Dbl_first_geq(double val, unsigned len, double v[len]);
 int         strCountSetChunks(const char *str, const char *sep);
 void       *memdup(const void *p, size_t n);
+char       *patLbl(size_t n, char buff[n], tipId_t tid, LblNdx * lblndx);
+void        orderpat(int n, unsigned order[n], tipId_t tid[n]);
 
 static inline double survival(double t, double twoN);
 

@@ -47,6 +47,12 @@ LEGO := lego.o patprob.o gptree.o binary.o jobqueue.o misc.o parse.o \
 lego : $(LEGO)
 	$(CC) $(CFLAGS) -o $@ $(LEGO) $(lib)
 
+LEGOFIT := legofit.o patprob.o gptree.o binary.o jobqueue.o misc.o \
+  parse.o branchtab.o hashtab.o lblndx.o tokenizer.o parstore.o \
+  parkeyval.o popnode.o gene.o 
+legofit : $(LEGOFIT)
+	$(CC) $(CFLAGS) -o $@ $(LEGOFIT) $(lib)
+
 zeroin.o : zeroin.h
 
 # Make dependencies file
