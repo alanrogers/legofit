@@ -498,6 +498,35 @@ int         SampNdx_equals(SampNdx *lhs, SampNdx *rhs){
     return 1;
 }
 
+void        SampNdx_sanityCheck(SampNdx *self, const char *file, int line) {
+#ifndef NDEBUG
+    REQUIRE(self != NULL, file, line);
+    REQUIRE(self->n < MAXSAMP, file, line);
+    int i;
+    for(i=0; i < self->n; ++i)
+        REQUIRE(NULL != self->node[i], file, line);
+#endif
+}
+
+/// Return 1 if all pointers in SampNdx are in [start,end); return 0
+/// otherwise.
+int SampNdx_ptrsLegal(SampNdx *self, PopNode *start, PopNode *end) {
+    int i;
+    assert(self);
+    for(i=0; i < self->n; ++i) {
+        if(self->node[i] < start || self->node[i] >= end)
+            return 0;
+    }
+    return 1;
+}
+
+void SampNdx_shiftPtrs(SampNdx *self, size_t dpop) {
+    int i;
+    for(i=0; i < self->n; ++i)
+        INCR_PTR(self->node[i], dpop);
+}
+
+
 #ifdef TEST
 
 #include <string.h>
@@ -588,9 +617,9 @@ int main(int argc, char **argv) {
     size_t startloc = (size_t) p1->start;
     size_t endloc = (size_t) p1->end;
     PopNode_shiftParamPtrs(p1, (size_t) 1u);
-    assert(twoNloc+1u == (size_t) p1->twoN);
-    assert(startloc+1u == (size_t) p1->start);
-    assert(endloc+1u == (size_t) p1->end);
+    assert(endloc==0u || twoNloc+1u == (size_t) p1->twoN);
+    assert(endloc==0u || startloc+1u == (size_t) p1->start);
+    assert(endloc==0u || endloc+1u == (size_t) p1->end);
 
     int i;
     size_t parent[2], child[2];
@@ -618,10 +647,12 @@ int main(int argc, char **argv) {
     PopNode    *pnode = PopNode_new(&twoN, &start, ns);
     SampNdx_addSamples(&sndx, 1, pnode);
     SampNdx_addSamples(&sndx, 2, pnode);
+    assert(SampNdx_ptrsLegal(&sndx, v, v+nseg));
 
     assert(3 == SampNdx_size(&sndx));
     SampNdx_populateTree(&sndx);
     assert(3 == PopNode_nsamples(pnode));
+    SampNdx_sanityCheck(&sndx, __FILE__, __LINE__);
     NodeStore_free(ns);
 
     SampNdx     sndx2 = {.n = 3 };
@@ -636,7 +667,9 @@ int main(int argc, char **argv) {
     SampNdx_addSamples(&sndx2, 2, pnode);
     SampNdx_populateTree(&sndx2);
     NodeStore_free(ns2);
+    SampNdx_sanityCheck(&sndx2, __FILE__, __LINE__);
     assert(SampNdx_equals(&sndx, &sndx2));
+    assert(SampNdx_ptrsLegal(&sndx2, v2, v2+nseg));
 
 	unitTstResult("SampNdx", "OK");
 

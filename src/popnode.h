@@ -56,6 +56,9 @@ void        SampNdx_addSamples(SampNdx * self, unsigned nsamples,
 void        SampNdx_populateTree(SampNdx * self);
 unsigned    SampNdx_size(SampNdx * self);
 int         SampNdx_equals(SampNdx *lhs, SampNdx *rhs);
+void        SampNdx_sanityCheck(SampNdx *self, const char *file, int line);
+int         SampNdx_ptrsLegal(SampNdx *self, PopNode *start, PopNode *end);
+void        SampNdx_shiftPtrs(SampNdx *self, size_t dpop);
 
 NodeStore  *NodeStore_new(int len, PopNode *v);
 void        NodeStore_free(NodeStore *self);

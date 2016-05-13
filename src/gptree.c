@@ -100,6 +100,8 @@ GPTree *GPTree_dup(const GPTree *old) {
     new->pnv      = memdup(old->pnv, old->nseg * sizeof(PopNode));
     assert(old->nseg == new->nseg);
 
+    new->sndx = old->sndx;
+
     /*
      * Adjust the pointers within each PopNode object so they refer to
      * the memory allocated in "new" rather than that in "old".
@@ -117,6 +119,8 @@ GPTree *GPTree_dup(const GPTree *old) {
         PopNode_shiftParamPtrs(&new->pnv[i], dpar);
         PopNode_shiftPopNodePtrs(&new->pnv[i], dpop);
     }
+    SampNdx_shiftPtrs(&new->sndx, dpop);
+    assert(SampNdx_ptrsLegal(&new->sndx, new->pnv, new->pnv + new->nseg));
 
     GPTree_sanityCheck(new, __FILE__, __LINE__);
     return new;
