@@ -26,6 +26,8 @@ void        ParStore_setFree(ParStore * self, int i, double value);
 double      ParStore_loFree(ParStore * self, int i);
 double      ParStore_hiFree(ParStore * self, int i);
 double     *ParStore_rawArray(ParStore * self);
+double     *ParStore_loBounds(ParStore * self);
+double     *ParStore_upBounds(ParStore * self);
 double     *ParStore_findPtr(ParStore * self, const char *name);
 ParStore   *ParStore_dup(const ParStore * old);
 void        ParStore_sanityCheck(ParStore *self, const char *file, int line);

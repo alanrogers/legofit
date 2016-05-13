@@ -34,6 +34,8 @@ int         strCountSetChunks(const char *str, const char *sep);
 void       *memdup(const void *p, size_t n);
 char       *patLbl(size_t n, char buff[n], tipId_t tid, LblNdx * lblndx);
 void        orderpat(int n, unsigned order[n], tipId_t tid[n]);
+double      KLdiverg(int n, const double o[n], const double e[n]);
+double      sum_double(int n, const double x[n]);
 
 static inline double survival(double t, double twoN);
 
@@ -60,10 +62,8 @@ static inline double survival(double t, double twoN);
    }\
 } while(0)
 
-/**
- * Return 1 if the relative difference between x and y is less than or
- * equal to DBL_EPSILON.
- */
+/// Return 1 if the relative difference between x and y is less than or
+/// equal to DBL_EPSILON.
 static inline int Dbl_near(double x, double y) {
     return fabs(x - y) <= fmax(fabs(x), fabs(y)) * DBL_EPSILON;
 }

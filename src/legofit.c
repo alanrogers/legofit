@@ -12,6 +12,7 @@
 #include "patprob.h"
 #include "parstore.h"
 #include "lblndx.h"
+#include "diffev.h"
 #include <assert.h>
 #include <getopt.h>
 #include <stdio.h>
@@ -58,6 +59,7 @@ int main(int argc, char **argv) {
 	double      F = 0.9;
 	double      CR = 0.8;
 	double      deTol = 1e-4;
+    int         deItr = 1000; // number of diffev iterations
 	int         nPts;
 	int         strategy = 1;
 	int         ptsPerDim = 10;
@@ -74,9 +76,9 @@ int main(int argc, char **argv) {
 
     fflush(stdout);
 
-    int         nTasks = 0;     // total number of tasks
+    int         nThreads = 0;     // total number of threads
     int         optndx;
-    unsigned long nreps = 100;
+    long        simreps = 100;
     char        fname[200] = { '\0' };
 
     // command line arguments
@@ -90,10 +92,10 @@ int main(int argc, char **argv) {
             usage();
             break;
         case 'i':
-            nreps = strtol(optarg, 0, 10);
+            simreps = strtol(optarg, 0, 10);
             break;
         case 't':
-            nTasks = strtol(optarg, NULL, 10);
+            nThreads = strtol(optarg, NULL, 10);
             break;
 		case 'F':
 			F = strtod(optarg, 0);
@@ -131,57 +133,14 @@ int main(int argc, char **argv) {
     }
     assert(fname[0] != '\0');
 
-    if(nTasks == 0)
-        nTasks = getNumCores();
+    if(nThreads == 0)
+        nThreads = getNumCores();
 
-    if(nTasks > nreps)
-        nTasks = nreps;
+    if(nThreads > simreps)
+        nThreads = simreps;
 
-    // parameters for Differential Evolution
-    DiffEvPar   dep = {
-        .dim = phdim,
-        .ptsPerDim = ptsPerDim,
-        .genmax = nItr,
-        .refresh = 3,  // how often to print a line of output
-        .strategy = strategy,
-        .nthreads = nthreads,
-        .verbose = verbose,
-        .seed = (unsigned long) time(NULL),
-        .F = F,
-        .CR = CR,
-        .deTol = deTol,
-        .loBound = loBnd,
-        .hiBound = hiBnd,
-		.jobData = &costPar,
-        .objfun = costFun,
-		.threadData = &tdata,
-		.ThreadState_new = ThreadState_new,
-		.ThreadState_free = ThreadState_free
-    };
-
-    // Divide repetitions among tasks.
-    long        reps[nTasks];
-    {
-        ldiv_t      qr = ldiv((long) nreps, (long) nTasks);
-        assert(qr.quot > 0);
-        for(j = 0; j < nTasks; ++j)
-            reps[j] = qr.quot;
-        assert(qr.rem < nTasks);
-        for(j=0; j < qr.rem; ++j)
-            reps[j] += 1;
-#ifndef NDEBUG
-        // make sure the total number of repetitions is nreps.
-        long        sumreps = 0;
-        for(j = 0; j < nTasks; ++j) {
-            assert(reps[j] > 0);
-            sumreps += reps[j];
-        }
-        assert(sumreps = nreps);
-#endif
-    }
-
-    printf("# nreps       : %lu\n", nreps);
-    printf("# nthreads    : %d\n", nTasks);
+    printf("# simreps     : %lu\n", simreps);
+    printf("# nthreads    : %d\n", nThreads);
     printf("# input file  : %s\n", fname);
 
     int maxpat = 10;
@@ -196,8 +155,30 @@ int main(int argc, char **argv) {
     GPTree *gptree = GPTree_new(fname, bnd);
 	LblNdx lblndx;
 
-    unsigned npat = patprob(maxpat, pat, prob, gptree, &lblndx, nTasks,
-							reps, 0);
+    // parameters for Differential Evolution
+    DiffEvPar   dep = {
+        .dim = GPTree_nFree(gptree),
+        .ptsPerDim = ptsPerDim,
+        .genmax = deItr,
+        .refresh = 3,  // how often to print a line of output
+        .strategy = strategy,
+        .nthreads = nThreads,
+        .verbose = 0,
+        .seed = (unsigned long) time(NULL),
+        .F = F,
+        .CR = CR,
+        .deTol = deTol,
+        .loBound = GPTree_loBounds(gptree),
+        .hiBound = GPTree_upBounds(gptree),
+		.jobData = &costPar,
+        .objfun = costFun,
+		.threadData = &tdata,
+		.ThreadState_new = ThreadState_new,
+		.ThreadState_free = ThreadState_free
+    };
+
+    unsigned npat = patprob(maxpat, pat, prob, gptree, &lblndx, nThreads,
+							simreps, 0);
 
     // Determine order for printing lines of output
     unsigned ord[npat];

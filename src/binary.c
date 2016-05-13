@@ -40,7 +40,7 @@ uint64_t rev64(uint64_t x) {
     return x;
 }
 
-/* assumes little endian */
+// assumes little endian 
 void printBits(size_t size, void const * const ptr, FILE *fp) {
     unsigned char const * const b = (unsigned char const * const) ptr;
     unsigned char byte;

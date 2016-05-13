@@ -22,6 +22,11 @@ struct GPTree {
     SampNdx sndx;
 };
 
+/// Return number of free parameters
+int GPTree_nFree(const GPTree *self) {
+    return ParStore_nFree(self->parstore);
+}
+
 void GPTree_simulate(GPTree *self, BranchTab *branchtab, gsl_rng *rng,
                      unsigned long nreps) {
     unsigned long rep;
@@ -165,6 +170,23 @@ int GPTree_equals(GPTree *lhs, GPTree *rhs) {
 LblNdx *GPTree_getLblNdxPtr(GPTree *self) {
     return &self->lblndx;
 }
+
+
+/// Return pointer to array of lower bounds of free parameters
+double     *GPTree_loBounds(GPTree *self) {
+    return ParStore_loBounds(self->parstore);
+}
+
+/// Return pointer to array of upper bounds of free parameters
+double     *GPTree_upBounds(GPTree *self) {
+    return ParStore_upBounds(self->parstore);
+}
+
+/// Return number of samples.
+unsigned    GPTree_nsamples(GPTree *self) {
+    return SampNdx_size(&self->sndx);
+}
+
 
 #ifdef TEST
 

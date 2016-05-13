@@ -187,6 +187,16 @@ double     *ParStore_rawArray(ParStore * self) {
     return &self->freeVal[0];
 }
 
+/// Return pointer to array of lower bounds of free parameters
+double     *ParStore_loBounds(ParStore * self) {
+    return &self->loFree[0];
+}
+
+/// Return pointer to array of upper bounds of free parameters
+double     *ParStore_upBounds(ParStore * self) {
+    return &self->hiFree[0];
+}
+
 /// Return pointer associated with parameter name.
 double     *ParStore_findPtr(ParStore * self, const char *name) {
     return ParKeyVal_get(self->head, name);

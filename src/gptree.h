@@ -12,4 +12,8 @@ int         GPTree_equals(GPTree *lhs, GPTree *rhs);
 LblNdx     *GPTree_getLblNdxPtr(GPTree *self);
 void        GPTree_simulate(GPTree *self, BranchTab *branchtab,
                             gsl_rng *rng, unsigned long nreps);
+int         GPTree_nFree(const GPTree *self);
+double     *GPTree_loBounds(GPTree *self);
+double     *GPTree_upBounds(GPTree *self);
+unsigned    GPTree_nsamples(GPTree *self);
 #endif

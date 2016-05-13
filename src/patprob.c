@@ -11,6 +11,7 @@
 #include "parstore.h"
 #include "jobqueue.h"
 #include "lblndx.h"
+#include "binary.h"
 #include "gptree.h"
 #include <stdlib.h>
 #include <string.h>
@@ -48,6 +49,18 @@ TaskArg    *TaskArg_new(unsigned rng_seed, GPTree *gptree, unsigned nreps) {
     a->gptree = GPTree_dup(gptree);
     a->branchtab = BranchTab_new();
 
+#if 0
+    // Make sure all site patterns are represented in table.
+    // This code iterates through all legal site patterns,
+    // adding a branch of zero length for each pattern.
+    tipId_t i;
+    for(i=1; i < (1<<GPTree_nsamples(gptree))-1; ++i) {
+        if(isPow2(i))
+            continue;
+        BranchTab_add(a->branchtab, i, 0.0);
+    }
+#endif
+
     return a;
 }
 
@@ -78,13 +91,13 @@ unsigned patprob(unsigned maxpat,
                  double prob[maxpat],
                  GPTree *gptree,
                  LblNdx *lblndx,
-                 int nTasks,
-                 long reps[nTasks],
+                 int nThreads,
+                 long nreps,
                  int pointNdx) {
     int j;
     unsigned long currtime = (unsigned long ) time(NULL);
 
-    TaskArg    *taskarg[nTasks];
+    TaskArg    *taskarg[nThreads];
     unsigned    pid = (unsigned) getpid();
 
     /*
@@ -104,24 +117,46 @@ unsigned patprob(unsigned maxpat,
         assert(1+strlen(s) < sizeof(s));
         lseed = strhash(s);
     }
-    for(j = 0; j < nTasks; ++j) {
+
+    // Divide repetitions among threads.
+    long reps[nThreads];
+    {
+        ldiv_t      qr = ldiv(nreps, (long) nThreads);
+        assert(qr.quot > 0);
+        for(j = 0; j < nThreads; ++j)
+            reps[j] = qr.quot;
+        assert(qr.rem < nThreads);
+        for(j=0; j < qr.rem; ++j)
+            reps[j] += 1;
+#ifndef NDEBUG
+        // make sure the total number of repetitions is nreps.
+        long        sumreps = 0;
+        for(j = 0; j < nThreads; ++j) {
+            assert(reps[j] > 0);
+            sumreps += reps[j];
+        }
+        assert(sumreps == nreps);
+#endif
+    }
+
+    for(j = 0; j < nThreads; ++j) {
         unsigned seed = (unsigned) ((lseed + j) % UINT_MAX);
         taskarg[j] = TaskArg_new(seed, gptree, reps[j]);
     }
 
     {
-        JobQueue   *jq = JobQueue_new(nTasks);
+        JobQueue   *jq = JobQueue_new(nThreads);
         if(jq == NULL)
             eprintf("s:%s:%d: Bad return from JobQueue_new",
                     __FILE__, __func__, __LINE__);
-        for(j = 0; j < nTasks; ++j)
+        for(j = 0; j < nThreads; ++j)
             JobQueue_addJob(jq, taskfun, taskarg[j]);
         JobQueue_waitOnJobs(jq);
         JobQueue_free(jq);
     }
 
     // Add all branchtabs into branchtab[0]
-    for(j = 1; j < nTasks; ++j)
+    for(j = 1; j < nThreads; ++j)
         BranchTab_plusEquals(taskarg[0]->branchtab, taskarg[j]->branchtab);
 
     // Put site patterns and branch lengths into arrays.
@@ -134,8 +169,10 @@ unsigned patprob(unsigned maxpat,
         double      sum = 0.0;
         for(j = 0; j < npat; ++j)
             sum += prob[j];
-        for(j = 0; j < npat; ++j)
-            prob[j] /= sum;
+        if(sum > 0.0) {
+            for(j = 0; j < npat; ++j)
+                prob[j] /= sum;
+        }
     }
 
     {
@@ -143,7 +180,7 @@ unsigned patprob(unsigned maxpat,
         *lblndx = *p;
     }
 
-    for(j = 0; j < nTasks; ++j)
+    for(j = 0; j < nThreads; ++j)
         TaskArg_free(taskarg[j]);
         
     return npat;

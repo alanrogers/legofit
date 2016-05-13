@@ -60,9 +60,9 @@ int main(int argc, char **argv) {
 
     fflush(stdout);
 
-    int         nTasks = 0;     // total number of tasks
+    int         nThreads = 0;   // number of parallel threads
     int         optndx;
-    unsigned long nreps = 100;
+    long        nreps = 100;
     char        fname[200] = { '\0' };
 
     // command line arguments
@@ -79,7 +79,7 @@ int main(int argc, char **argv) {
             nreps = strtol(optarg, 0, 10);
             break;
         case 't':
-            nTasks = strtol(optarg, NULL, 10);
+            nThreads = strtol(optarg, NULL, 10);
             break;
         case 'h':
         default:
@@ -102,35 +102,14 @@ int main(int argc, char **argv) {
     }
     assert(fname[0] != '\0');
 
-    if(nTasks == 0)
-        nTasks = getNumCores();
+    if(nThreads == 0)
+        nThreads = getNumCores();
 
-    if(nTasks > nreps)
-        nTasks = nreps;
-
-    // Divide repetitions among tasks.
-    long        reps[nTasks];
-    {
-        ldiv_t      qr = ldiv((long) nreps, (long) nTasks);
-        assert(qr.quot > 0);
-        for(j = 0; j < nTasks; ++j)
-            reps[j] = qr.quot;
-        assert(qr.rem < nTasks);
-        for(j=0; j < qr.rem; ++j)
-            reps[j] += 1;
-#ifndef NDEBUG
-        // make sure the total number of repetitions is nreps.
-        long        sumreps = 0;
-        for(j = 0; j < nTasks; ++j) {
-            assert(reps[j] > 0);
-            sumreps += reps[j];
-        }
-        assert(sumreps = nreps);
-#endif
-    }
+    if(nThreads > nreps)
+        nThreads = nreps;
 
     printf("# nreps       : %lu\n", nreps);
-    printf("# nthreads    : %d\n", nTasks);
+    printf("# nthreads    : %d\n", nThreads);
     printf("# input file  : %s\n", fname);
 
     int maxpat = 10;
@@ -145,8 +124,8 @@ int main(int argc, char **argv) {
     GPTree *gptree = GPTree_new(fname, bnd);
 	LblNdx lblndx;
 
-    unsigned npat = patprob(maxpat, pat, prob, gptree, &lblndx, nTasks,
-							reps, 0);
+    unsigned npat = patprob(maxpat, pat, prob, gptree, &lblndx, 
+							nThreads, nreps, 0);
 
     // Determine order for printing lines of output
     unsigned ord[npat];

@@ -443,3 +443,37 @@ void orderpat(int n, unsigned ord[n], tipId_t pat[n]) {
     for(i=0; i<n; ++i)
         ord[i] = ptr[i]-pat;
 }
+
+/// Return Kullback-Leibler divergence of o relative to e.
+double KLdiverg(int n, const double o[n], const double e[n]) {
+    int i;
+    double kl=0.0;
+    assert(Dbl_near(1.0, sum_double(n, o)));
+    assert(Dbl_near(1.0, sum_double(n, e)));
+    for(i = 0; i < n; ++i) {
+        if(o[i]==0.0 && e[i]==0.0)
+            continue;
+        double q = o[i];
+        double p = e[i];
+        kl += p*log(p/q);
+    }
+    return kl;
+}
+
+/// Sum an array of doubles. Unwrapped loop.
+double sum_double(int n, const double x[n]) {
+    register double rval;
+    register int i, m;
+
+    assert(n >= 0);
+
+    rval = 0.0;
+    m = n % 5;
+    for(i = 0; i < m; ++i)
+        rval += x[i];
+
+    for(i = m; i < n; i += 5)
+        rval += x[i] + x[i + 1] + x[i + 2] + x[i + 3] + x[i + 4];
+
+    return rval;
+}

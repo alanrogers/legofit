@@ -7,7 +7,7 @@ unsigned patprob(unsigned maxpat,
                  double prob[maxpat],
                  GPTree *gptree,
                  LblNdx *lblndx,
-                 int nTasks,
-                 long reps[nTasks],
+                 int nThreads,
+                 long nreps,
                  int pointNdx);
 #endif
