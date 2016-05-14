@@ -22,8 +22,10 @@
 void        usage(void);
 
 void usage(void) {
-    fprintf(stderr, "usage: legofit [options] input_file_name\n");
-    fprintf(stderr, "   where options may include:\n");
+    fprintf(stderr,"usage: legofit [options] input.lgo sitepat.txt\n");
+    fprintf(stderr,"   where file input.lgo describes population history,\n");
+    fprintf(stderr,"   file sitepat.txt contains site pattern frequencies,\n");
+    fprintf(stderr,"   and options may include:\n");
     tellopt("-i <x> or --nItr <x>", "number of iterations in simulation");
     tellopt("-t <x> or --threads <x>", "number of threads (default is auto)");
     tellopt("-h or --help", "print this message");
@@ -78,7 +80,8 @@ int main(int argc, char **argv) {
     int         nThreads = 0;     // total number of threads
     int         optndx;
     long        simreps = 100;
-    char        fname[200] = { '\0' };
+    char        lgofname[200] = { '\0' };
+    char        patfname[200] = { '\0' };
 
     // command line arguments
     for(;;) {
@@ -117,20 +120,16 @@ int main(int argc, char **argv) {
         }
     }
 
-    // remaining option gives file name 
-    switch (argc - optind) {
-    case 0:
-        fprintf(stderr, "Command line must specify input file\n");
-        usage();
-        break;
-    case 1:
-        snprintf(fname, sizeof(fname), "%s", argv[optind]);
-        break;
-    default:
-        fprintf(stderr, "Only one input file is allowed\n");
+    // remaining options gives file names
+    if(argc - optind != 2) {
+        fprintf(stderr, "Command line must specify 2 input files.\n");
         usage();
     }
-    assert(fname[0] != '\0');
+        
+    snprintf(lgofname, sizeof(lgofname), "%s", argv[optind]);
+    assert(lgofname[0] != '\0');
+    snprintf(patfname, sizeof(patfname), "%s", argv[optind+1));
+    assert(patfname[0] != '\0');
 
     if(nThreads == 0)
         nThreads = getNumCores();
@@ -138,9 +137,10 @@ int main(int argc, char **argv) {
     if(nThreads > simreps)
         nThreads = simreps;
 
-    printf("# simreps     : %lu\n", simreps);
-    printf("# nthreads    : %d\n", nThreads);
-    printf("# input file  : %s\n", fname);
+    printf("# simreps            : %lu\n", simreps);
+    printf("# nthreads           : %d\n", nThreads);
+    printf("# lgo input file     : %s\n", lgofname);
+    printf("# site pat input file: %s\n", patfname);
 
     int maxpat = 10;
     tipId_t pat[maxpat];
@@ -151,8 +151,11 @@ int main(int argc, char **argv) {
             .lo_t = lo_t,
             .hi_t = hi_t
     };
-    GPTree *gptree = GPTree_new(fname, bnd);
-	LblNdx lblndx;
+    GPTree *gptree = GPTree_new(lgofname, bnd);
+	const LblNdx *lblndx  = GPTree_getLblNdxPtr(gptree);
+
+    // Observed site pattern frequencies
+    BranchTab *obs = BranchTab_parse(patfname, lblndx);
 
     // parameters for Differential Evolution
     DiffEvPar   dep = {
@@ -176,22 +179,6 @@ int main(int argc, char **argv) {
 		.ThreadState_free = ThreadState_free
     };
 
-    unsigned npat = patprob(maxpat, pat, prob, gptree, &lblndx, nThreads,
-							simreps, 0);
-
-    // Determine order for printing lines of output
-    unsigned ord[npat];
-    orderpat(npat, ord, pat);
-
-    printf("#%14s %10s\n", "SitePat", "Prob");
-    char        buff[100];
-    for(j = 0; j < npat; ++j) {
-        char        buff2[100];
-        snprintf(buff2, sizeof(buff2), "%s",
-                 patLbl(sizeof(buff), buff, pat[ord[j]],
-                        GPTree_getLblNdxPtr(gptree)));
-        printf("%15s %10.7lf\n", buff2, prob[ord[j]]);
-    }
 
     GPTree_free(gptree);
 

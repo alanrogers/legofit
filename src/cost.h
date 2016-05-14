@@ -3,8 +3,7 @@
 
 /// Parameters of cost function--that which is minimized.
 typedef struct CostPar {
-    int         npat
-    double     *obs;
+    BranchTab  *obs;
     GPTree     *gptree;
 } CostPar;
 

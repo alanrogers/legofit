@@ -32,16 +32,16 @@ void LblNdx_addSamples(LblNdx * self, unsigned nsamples, const char *lbl) {
 }
 
 /// Return the label associated with index i.
-const char *LblNdx_lbl(LblNdx * self, unsigned i) {
+const char *LblNdx_lbl(const LblNdx * self, unsigned i) {
     assert(i < self->n);
     return self->lbl[i];
 }
 
-unsigned LblNdx_size(LblNdx * self) {
+unsigned LblNdx_size(const LblNdx * self) {
     return self->n;
 }
 
-void        LblNdx_sanityCheck(LblNdx *self, const char *file, int line) {
+void        LblNdx_sanityCheck(const LblNdx *self, const char *file, int line) {
 #ifndef NDEBUG
     REQUIRE(self, file, line);
     REQUIRE(self->n < MAXSAMP, file, line);
@@ -54,7 +54,7 @@ void        LblNdx_sanityCheck(LblNdx *self, const char *file, int line) {
 #endif
 }
 
-int         LblNdx_equals(LblNdx *lhs, LblNdx *rhs) {
+int         LblNdx_equals(const LblNdx *lhs, const LblNdx *rhs) {
     if(lhs == rhs)
         return 1;
     if(lhs==NULL || rhs==NULL)
@@ -86,6 +86,11 @@ tipId_t     LblNdx_getTipId(const LblNdx *self, const char *lbl) {
     return rval;
 }
 
+void LblNdx_print(const LblNdx *self, FILE *fp) {
+    unsigned i;
+    for(i=0; i < self->n; ++i)
+        fprintf(fp,"%3u %5s\n", i, self->lbl[i]);
+}
 
 #ifdef TEST
 
@@ -128,9 +133,8 @@ int main(int argc, char **argv) {
         assert((1u << i) == LblNdx_getTipId(&lndx, LblNdx_lbl(&lndx, i)));
     }
 
-    for(i = 0; verbose && i < LblNdx_size(&lndx); ++i) {
-        printf("%d %s\n", i, LblNdx_lbl(&lndx, i));
-    }
+    if(verbose)
+        LblNdx_print(&lndx, stdout);
 
     LblNdx lndx2 = {.n = 3 };
     LblNdx_init(&lndx2);

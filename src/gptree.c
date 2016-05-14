@@ -167,7 +167,7 @@ int GPTree_equals(GPTree *lhs, GPTree *rhs) {
     return 1;
 }
 
-LblNdx *GPTree_getLblNdxPtr(GPTree *self) {
+const LblNdx *GPTree_getLblNdxPtr(GPTree *self) {
     return &self->lblndx;
 }
 
@@ -236,14 +236,14 @@ const char *tstInput =
     "derive c  from abc\n";
 int main(int argc, char **argv) {
 
-    //    int verbose=0;
+    int verbose=0;
 
     if(argc > 1) {
         if(argc!=2 || 0!=strcmp(argv[1], "-v")) {
             fprintf(stderr,"usage: xgptree [-v]\n");
             exit(EXIT_FAILURE);
         }
-        //        verbose = 1;
+        verbose = 1;
     }
 
     const char *fname = "mktree-tmp.lgo";
@@ -260,6 +260,11 @@ int main(int argc, char **argv) {
     GPTree *g = GPTree_new(fname, bnd);
     GPTree *g2 = GPTree_dup(g);
     assert(GPTree_equals(g, g2));
+
+    const LblNdx *lblndx = GPTree_getLblNdxPtr(g);
+    if(verbose)
+        LblNdx_print(lblndx, stdout);
+
     GPTree_free(g);
     GPTree_free(g2);
 
