@@ -17,6 +17,15 @@
 }while(0);
 
 struct SampNdx {
+    // Array "node" contains an entry for each sample. That entry
+    // is a pointer to the node into which the sample should
+    // be placed. The sample gets a label of type tipIt_t. For sample
+    // i, the label equals 2^i (i.e. 1<<i). There is another class,
+    // called LblNdx, which maintains an array of labels. In that
+    // array, the i'th label refers to the i'th sample in SampNdx.
+    // I keep them separate, because LblNdx needs to be passed to
+    // functions that have no need to know about pointers to PopNode
+    // objects.
     unsigned    n;              // number of samples
     PopNode    *node[MAXSAMP];
 };

@@ -432,11 +432,9 @@ PopNode    *mktree(FILE * fp, SampNdx *sndx, LblNdx *lndx, ParStore *parstore,
         if(fgets(buff, sizeof(buff), fp) == NULL)
             break;
 
-        if(!strchr(buff, '\n') && !feof(fp)) {
-            fprintf(stderr, "ERR@%s:%d: input buffer overflow."
-                    " buff size: %zu\n", __FILE__, __LINE__, sizeof(buff));
-            exit(EXIT_FAILURE);
-        }
+        if(!strchr(buff, '\n') && !feof(fp)) 
+            eprintf("s:%s:%d: buffer overflow. buff size: %zu\n",
+                    __FILE__, __func__, __LINE__, sizeof(buff));
 
         // strip trailing comments
         char *comment = strchr(buff, '#');
@@ -640,6 +638,7 @@ int main(int argc, char **argv) {
                ParStore_nFree(parstore));
     }
 
+    PopNode_free(root);
     unitTstResult("mktree", "needs more testing");
 
 	ParStore_free(parstore);

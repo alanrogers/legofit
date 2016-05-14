@@ -11,6 +11,9 @@
  */
 #include "branchtab.h"
 #include "misc.h"
+#include "tokenizer.h"
+#include "lblndx.h"
+#include "parstore.h"
 #include <assert.h>
 #include <string.h>
 #include <math.h>
@@ -176,6 +179,39 @@ unsigned BranchTab_size(BranchTab * self) {
     return size;
 }
 
+/// Return sum of values in BranchTab.
+double BranchTab_sum(const BranchTab *self) {
+    unsigned i;
+    double s=0.0;
+
+    for(i = 0; i < BT_DIM; ++i) {
+        BTLink *el;
+        for(el = self->tab[i]; el; el = el->next)
+            s += el->value;
+    }
+
+    return s;
+}
+
+/// Divide all values by their sum. Return 0
+/// on success, or 1 on failure.
+int BranchTab_normalize(BranchTab *self) {
+    unsigned i;
+    double s = BranchTab_sum(self);
+
+    if(s==0) 
+        return 1;
+
+    // divide by sum
+    for(i = 0; i < BT_DIM; ++i) {
+        BTLink *el;
+        for(el = self->tab[i]; el; el = el->next)
+            el->value /= s;
+    }
+
+    return 0;
+}
+
 void BranchTab_print(BranchTab *self) {
     unsigned i;
     for(i=0; i < BT_DIM; ++i) {
@@ -211,19 +247,119 @@ void BranchTab_toArrays(BranchTab *self, unsigned n, tipId_t key[n],
     }
 }
 
+/// Construct by parsing an input file. Returns a pointer
+/// to a normalized BranchTab object.
+BranchTab *BranchTab_parse(const char *fname, const LblNdx *lblndx) {
+    FILE *fp = fopen(fname, "r");
+    BranchTab *self = BranchTab_new();
+    CHECKMEM(self);
+
+    int         i, ntokens;
+    char        buff[500];
+    char        lblbuff[100];
+    Tokenizer  *tkz = Tokenizer_new(50);
+    
+    while(1) {
+        if(fgets(buff, sizeof(buff), fp) == NULL)
+            break;
+
+        if(!strchr(buff, '\n') && !feof(fp))
+            eprintf("s:%s:%d: buffer overflow. buff size: %zu\n",
+                    __FILE__, __func__, __LINE__, sizeof(buff));
+
+        // strip trailing comments
+        char *comment = strchr(buff, '#');
+        if(comment)
+            *comment = '\0';
+
+        Tokenizer_split(tkz, buff, " \t"); // tokenize
+        ntokens = Tokenizer_strip(tkz, " \t\n");
+        if(ntokens == 0)
+            continue;
+
+        char *tok = Tokenizer_token(tkz, 1);
+        errno = 0;
+        double prob = strtod(tok, NULL);
+        if(errno) {
+            fprintf(stderr,"%s:%s:%d: Can't parse 2nd field as float.\n",
+                    __FILE__,__func__,__LINE__);
+            fprintf(stderr," input:");
+            Tokenizer_print(tkz, stderr);
+            exit(EXIT_FAILURE);
+        }
+
+        snprintf(lblbuff, sizeof(lblbuff), "%s", Tokenizer_token(tkz, 0));
+        Tokenizer_split(tkz, lblbuff, ":");
+        ntokens = Tokenizer_strip(tkz, " \t\n");
+        assert(ntokens > 0);
+        tipId_t key=0, id;
+
+        // Get tipId corresponding to label
+        for(i=0; i < ntokens; ++i) {
+            tok = Tokenizer_token(tkz, i);
+            id = LblNdx_getTipId(lblndx, tok);
+            if(id == 0)
+                eprintf("%s:%s:%d: unrecognized label, %s, in input.\n",
+                        __FILE__,__func__,__LINE__, tok);
+            key |= id;
+        }
+        BranchTab_add(self, key, prob);
+    }
+    BranchTab_normalize(self);
+    fclose(fp);
+    Tokenizer_free(tkz);
+    return self;
+}
+
 #ifdef TEST
 
 #include <string.h>
 #include <assert.h>
+#include <unistd.h>
 
 #ifdef NDEBUG
 #error "Unit tests must be compiled without -DNDEBUG flag"
 #endif
 
+//      a-------|
+//              |ab--|
+//      b--|bb--|    |
+//         |         |abc--
+//         |c--------|
+//
+//  t = 0  1    3    5.5     inf
+const char *tstInput =
+    " # this is a comment\n"
+    "time fixed  T0=0\n"
+    "time free   Tc=1\n"
+    "time free   Tab=3\n"
+    "time free   Tabc=5.5\n"
+    "twoN free   2Na=100\n"
+    "twoN fixed  2Nb=123\n"
+    "twoN free   2Nc=213.4\n"
+    "twoN fixed  2Nbb=32.1\n"
+    "twoN free   2Nab=222\n"
+    "twoN fixed  2Nabc=1.2e2\n"
+    "mixFrac free Mc=0.02\n"
+    "segment a   t=T0     twoN=2Na    samples=1\n"
+    "segment b   t=T0     twoN=2Nb    samples=1\n"
+    "segment c   t=Tc     twoN=2Nc    samples=1\n"
+    "segment bb  t=Tc     twoN=2Nbb\n"
+    "segment ab  t=Tab    twoN=2Nab\n"
+    "segment abc t=Tabc   twoN=2Nabc\n"
+    "mix    b  from bb + Mc * c\n"
+    "derive a  from ab\n"
+    "derive bb from ab\n"
+    "derive ab from abc\n"
+    "derive c  from abc\n";
+const char *tstPatProbInput = 
+    "#SitePat   obs\n"
+    "a:b        2.0\n"
+    "a:c        1.0\n"
+    "b:c        1.0\n";
+
 int main(int argc, char **argv) {
-
     int verbose=0;
-
     if(argc > 1) {
         if(argc!=2 || 0!=strcmp(argv[1], "-v")) {
             fprintf(stderr,"usage: xbranchtab [-v]\n");
@@ -231,6 +367,16 @@ int main(int argc, char **argv) {
         }
         verbose = 1;
     }
+
+    const char *tstFname = "mktree-tmp.lgo";
+    FILE       *fp = fopen(tstFname, "w");
+    fputs(tstInput, fp);
+    fclose(fp);
+
+    const char *tstPatProbFname = "patprob-tmp.txt";
+    fp = fopen(tstPatProbFname, "w");
+    fputs(tstPatProbInput, fp);
+    fclose(fp);
 
     BranchTab *bt = BranchTab_new();
     CHECKMEM(bt);
@@ -256,9 +402,30 @@ int main(int argc, char **argv) {
         assert(2*val[i] == BranchTab_get(bt, key[i]));
     }
 
+    assert(0 == BranchTab_normalize(bt));
+    assert(Dbl_near(1.0, BranchTab_sum(bt)));
+
     if(verbose)
         BranchTab_print(bt);
     BranchTab_free(bt);
+
+	Bounds   bnd = {
+		.lo_twoN = 0.0,
+		.hi_twoN = 1e7,
+		.lo_t = 0.0,
+		.hi_t = HUGE_VAL
+	};
+    GPTree *g = GPTree_new(tstFname, bnd);
+    const LblNdx *lblndx = GPTree_getLblNdxPtr(g);
+
+    bt = BranchTab_parse(tstPatProbFname, lblndx);
+
+    if(verbose)
+        BranchTab_print(bt);
+    BranchTab_free(bt);
+    GPTree_free(g);
 	unitTstResult("BranchTab", "OK");
+    unlink(tstFname);
+    unlink(tstPatProbFname);
 }
 #endif

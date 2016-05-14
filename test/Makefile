@@ -107,14 +107,15 @@ xparkeyval : $(XPARKEYVAL)
 xlblndx.o : lblndx.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/lblndx.c
 
-XLBLNDX := xlblndx.o misc.o parkeyval.o
+XLBLNDX := xlblndx.o misc.o parkeyval.o binary.o
 xlblndx : $(XLBLNDX)
 	$(CC) $(CFLAGS) -o $@ $(XLBLNDX) $(lib)
 
 xbranchtab.o : branchtab.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/branchtab.c
 
-XBRANCHTAB := xbranchtab.o gptree.o misc.o binary.o
+XBRANCHTAB := xbranchtab.o gptree.o misc.o binary.o parstore.o popnode.o gene.o \
+   lblndx.o parse.o parkeyval.o tokenizer.o hashtab.o
 xbranchtab : $(XBRANCHTAB)
 	$(CC) $(CFLAGS) -o $@ $(XBRANCHTAB) $(lib)
 

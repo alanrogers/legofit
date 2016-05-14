@@ -10,5 +10,9 @@ void          BranchTab_add(BranchTab * self, tipId_t key, double value);
 unsigned      BranchTab_size(BranchTab * self);
 void          BranchTab_print(BranchTab *self);
 void          BranchTab_plusEquals(BranchTab *lhs, BranchTab *rhs);
-void          BranchTab_toArrays(BranchTab *self, unsigned n, tipId_t key[n], double value[n]);
+void          BranchTab_toArrays(BranchTab *self, unsigned n, tipId_t key[n],
+                                 double value[n]);
+double        BranchTab_sum(const BranchTab *self);
+int           BranchTab_normalize(BranchTab *self);
+BranchTab    *BranchTab_parse(const char *fname, const LblNdx *lblndx);
 #endif

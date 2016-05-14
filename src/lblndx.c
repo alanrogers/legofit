@@ -69,6 +69,24 @@ int         LblNdx_equals(LblNdx *lhs, LblNdx *rhs) {
     return 1;
 }
 
+/// Reverse lookup. Return tipId_t value corresponding to
+/// label. If label is not present in LblNdx, return 0.
+tipId_t     LblNdx_getTipId(const LblNdx *self, const char *lbl) {
+    unsigned i;
+    tipId_t rval = 1;
+
+    for(i=0; i < self->n; ++i) {
+        if(0 == strcmp(lbl, self->lbl[i]))
+           break;
+    }
+    if(i == self->n)
+        return 0;
+
+    rval <<= i;
+    return rval;
+}
+
+
 #ifdef TEST
 
 #  include <string.h>
@@ -105,6 +123,10 @@ int main(int argc, char **argv) {
     assert(0 == strcmp("A", LblNdx_lbl(&lndx, 0)));
     assert(0 == strcmp("B.0", LblNdx_lbl(&lndx, 1)));
     assert(0 == strcmp("B.1", LblNdx_lbl(&lndx, 2)));
+
+    for(i=0; i < LblNdx_size(&lndx); ++i) {
+        assert((1u << i) == LblNdx_getTipId(&lndx, LblNdx_lbl(&lndx, i)));
+    }
 
     for(i = 0; verbose && i < LblNdx_size(&lndx); ++i) {
         printf("%d %s\n", i, LblNdx_lbl(&lndx, i));

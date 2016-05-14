@@ -30,9 +30,6 @@ void usage(void) {
     exit(1);
 }
 
-int readSitePatData(FILE *fp) {
-}
-
 int main(int argc, char **argv) {
 
     static struct option myopts[] = {

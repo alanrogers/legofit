@@ -415,9 +415,10 @@ char       *patLbl(size_t n, char buff[n], tipId_t tid, LblNdx * lblndx) {
     int         maxbits = 40;
     int         bit[maxbits];
     int         i, nbits;
+    char        lbl[100];
+
     nbits = getBits(tid, maxbits, bit);
     buff[0] = '\0';
-    char        lbl[100];
     for(i = 0; i < nbits; ++i) {
         snprintf(lbl, sizeof(lbl), "%s",
                  LblNdx_lbl(lblndx, (unsigned) bit[i]));
