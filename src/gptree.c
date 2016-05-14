@@ -22,6 +22,11 @@ struct GPTree {
     SampNdx sndx;
 };
 
+void GPTree_setParams(GPTree *self, int n, double x[n]) {
+    assert(n == ParStore_nFree(self->parstore));
+    ParStore_setFree(self->parstore, n, x);
+}
+
 /// Return number of free parameters
 int GPTree_nFree(const GPTree *self) {
     return ParStore_nFree(self->parstore);
@@ -167,10 +172,9 @@ int GPTree_equals(GPTree *lhs, GPTree *rhs) {
     return 1;
 }
 
-const LblNdx *GPTree_getLblNdxPtr(GPTree *self) {
-    return &self->lblndx;
+LblNdx GPTree_getLblNdx(GPTree *self) {
+    return self->lblndx;
 }
-
 
 /// Return pointer to array of lower bounds of free parameters
 double     *GPTree_loBounds(GPTree *self) {
@@ -261,9 +265,9 @@ int main(int argc, char **argv) {
     GPTree *g2 = GPTree_dup(g);
     assert(GPTree_equals(g, g2));
 
-    const LblNdx *lblndx = GPTree_getLblNdxPtr(g);
+    const LblNdx lblndx = GPTree_getLblNdx(g);
     if(verbose)
-        LblNdx_print(lblndx, stdout);
+        LblNdx_print(&lblndx, stdout);
 
     GPTree_free(g);
     GPTree_free(g2);

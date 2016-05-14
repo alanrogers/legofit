@@ -19,12 +19,39 @@ extern pthread_mutex_t outputLock;
 
 #include "cost.h"
 
-/// KL divergence of observed relative to expected site pattern frequencies relative
-///
-/// @param[in] obs vector of observed site pattern frequencies
+struct ThreadState {
+    gsl_rng *rng;
+};
+
+void       *ThreadState_new(void *vdat) {
+    ThreadData *td = (ThreadData *) vdat;
+    assert(vdat);
+
+    ThreadState *self = malloc(sizeof(ThreadState));
+    CHECKMEM(self);
+
+    self->rng = gsl_rng_alloc(gsl_rng_taus);
+    CHECKMEM(self->rng);
+
+    gsl_rng_set(self->rng, td->seed);
+
+    return (void *) self;
+}
+
+void ThreadState_free(void *v) {
+    ThreadState *self = (ThreadState *) v;
+
+    gsl_rng_free(self->rng);
+    free(self);
+}
+
+/// @param[in] x vector of parameter values.
 double costFun(int dim, double x[dim], void *jdata, void *notused) {
     const CostPar *cp = (CostPar *) jdata;
 
-    // Kullback-Leibler divergence
-    return KLdiverg(spdim, ofrq, efrq);
+    GPTree_setParams(cp->gptree, dim, x);
+    BranchTab *prob = patprob(cp->gptree, cp->nThreads, cp->nreps,
+                              cp->pointNdx);
+    BranchTab_normalize(prob);
+    return BranchTab_KLdiverg(prob, cp->obs);
 }

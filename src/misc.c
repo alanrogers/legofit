@@ -411,7 +411,7 @@ int comparePtrs(const void *void_x, const void *void_y) {
 
 /// Generate a label for site pattern tid. Label goes into
 /// buff. Function returns a pointer to buff;
-char       *patLbl(size_t n, char buff[n], tipId_t tid, LblNdx * lblndx) {
+char       *patLbl(size_t n, char buff[n], tipId_t tid, const LblNdx * lblndx) {
     int         maxbits = 40;
     int         bit[maxbits];
     int         i, nbits;

@@ -2,12 +2,5 @@
 #  define PATPROB_INCLUDED
 
 #include "typedefs.h"
-unsigned patprob(unsigned maxpat,
-                 tipId_t pat[maxpat],
-                 double prob[maxpat],
-                 GPTree *gptree,
-                 LblNdx *lblndx,
-                 int nThreads,
-                 long nreps,
-                 int pointNdx);
+BranchTab *patprob(GPTree *gptree, int nThreads, long nreps, int pointNdx);
 #endif

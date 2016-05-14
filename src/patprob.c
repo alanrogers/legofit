@@ -10,7 +10,6 @@
 #include "parse.h"
 #include "parstore.h"
 #include "jobqueue.h"
-#include "lblndx.h"
 #include "binary.h"
 #include "gptree.h"
 #include <stdlib.h>
@@ -35,6 +34,7 @@ struct TaskArg {
 TaskArg    *TaskArg_new(unsigned rng_seed, GPTree *gptree, unsigned nreps);
 void        TaskArg_free(TaskArg * targ);
 int         taskfun(void *varg);
+static unsigned hashString(const char *ss);
 
 /**
  * Construct a new TaskArg by copying a template, but then assign
@@ -82,18 +82,25 @@ int taskfun(void *varg) {
     return 0;
 }
 
+/// Hash a character string
+static unsigned hashString(const char *ss) {
+    unsigned long hashval;
+    int c;
+    const unsigned char *s = (const unsigned char *) ss;
+    // djb2
+    hashval = 5381;
+    while((c = *s++))
+        hashval = ((hashval << 5) + hashval) +  c;
+
+    return hashval;
+}
+
+
 /// Run simulations to estimate site pattern probabilities.
 /// On return, pat[i] identifies the i'th pattern, and prob[i]
 /// estimates its probability.  Function returns the number of
 /// patterns detected--the length of pat and prob.
-unsigned patprob(unsigned maxpat,
-                 tipId_t pat[maxpat],
-                 double prob[maxpat],
-                 GPTree *gptree,
-                 LblNdx *lblndx,
-                 int nThreads,
-                 long nreps,
-                 int pointNdx) {
+BranchTab *patprob(GPTree *gptree, int nThreads, long nreps, int pointNdx) {
     int j;
     unsigned long currtime = (unsigned long ) time(NULL);
 
@@ -115,7 +122,7 @@ unsigned patprob(unsigned maxpat,
         char s[50]; // strlen(s) should not exceed 40
         snprintf(s, sizeof(s), "%lu%u%u", currtime, pid, pointNdx);
         assert(1+strlen(s) < sizeof(s));
-        lseed = strhash(s);
+        lseed = hashString(s);
     }
 
     // Divide repetitions among threads.
@@ -159,29 +166,11 @@ unsigned patprob(unsigned maxpat,
     for(j = 1; j < nThreads; ++j)
         BranchTab_plusEquals(taskarg[0]->branchtab, taskarg[j]->branchtab);
 
-    // Put site patterns and branch lengths into arrays.
-    unsigned npat = BranchTab_size(taskarg[0]->branchtab);
-    assert(npat <= maxpat);
-    BranchTab_toArrays(taskarg[0]->branchtab, npat, pat, prob);
-
-    {
-        // Normalize so prob distribution sums to 1.
-        double      sum = 0.0;
-        for(j = 0; j < npat; ++j)
-            sum += prob[j];
-        if(sum > 0.0) {
-            for(j = 0; j < npat; ++j)
-                prob[j] /= sum;
-        }
-    }
-
-    {
-        LblNdx *p = GPTree_getLblNdxPtr(taskarg[0]->gptree);
-        *lblndx = *p;
-    }
+    BranchTab *rval = BranchTab_dup(taskarg[0]->branchtab);
 
     for(j = 0; j < nThreads; ++j)
         TaskArg_free(taskarg[j]);
         
-    return npat;
+    return rval;
 }
+

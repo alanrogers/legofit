@@ -33,6 +33,12 @@ struct ParStore {
     ParKeyVal  *head;           // linked list of name/ptr pairs
 };
 
+/// Set vector of free parameters.
+void ParStore_setFreeParams(ParStore *self, int n, double x[n]) {
+    assert(n == self->nFree);
+    memcpy(self->freeVal, x, n*sizeof(self->freeVal[0]));
+}
+
 void ParStore_print(ParStore *self, FILE *fp) {
     int i;
     fprintf(fp, "%5d fixed:\n", self->nFixed);
@@ -180,11 +186,6 @@ double ParStore_loFree(ParStore * self, int i) {
 double ParStore_hiFree(ParStore * self, int i) {
     assert(i < self->nFree);
     return self->hiFree[i];
-}
-
-/// Return pointer to array of free values
-double     *ParStore_rawArray(ParStore * self) {
-    return &self->freeVal[0];
 }
 
 /// Return pointer to array of lower bounds of free parameters

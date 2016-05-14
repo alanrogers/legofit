@@ -152,10 +152,7 @@ int main(int argc, char **argv) {
             .hi_t = hi_t
     };
     GPTree *gptree = GPTree_new(lgofname, bnd);
-	const LblNdx *lblndx  = GPTree_getLblNdxPtr(gptree);
-
-    // Observed site pattern frequencies
-    BranchTab *obs = BranchTab_parse(patfname, lblndx);
+	LblNdx lblndx  = GPTree_getLblNdx(gptree);
 
     // parameters for Differential Evolution
     DiffEvPar   dep = {
@@ -177,6 +174,18 @@ int main(int argc, char **argv) {
 		.threadData = &tdata,
 		.ThreadState_new = ThreadState_new,
 		.ThreadState_free = ThreadState_free
+    };
+
+    // Observed site pattern frequencies
+    BranchTab *obs = BranchTab_parse(patfname, &lblndx);
+    BranchTab_normalize(obs);
+
+    // parameters for cost function
+    CostPar costPar = {
+        .obs = obs,
+        .gptree = gptree,
+        .nThreads = nThreads,
+        .pointNdx=0
     };
 
 

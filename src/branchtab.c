@@ -45,6 +45,8 @@ double      BTLink_get(BTLink * self, tipId_t key);
 void        BTLink_free(BTLink * self);
 void        BTLink_printShallow(BTLink * self);
 void        BTLink_print(BTLink * self);
+BTLink     *BTLink_dup(const BTLink *self);
+int         BTLink_equals(const BTLink *lhs, const BTLink *rhs);
 
 #if TIPID_SIZE==32
 uint32_t    tipIdHash(uint32_t key);
@@ -90,6 +92,28 @@ BTLink         *BTLink_new(tipId_t key, double value) {
     new->value = value;
     return new;
 }
+
+/// Duplicate linked list.
+BTLink     *BTLink_dup(const BTLink *old) {
+    if(old == NULL)
+        return NULL;
+
+    BTLink *new = BTLink_new(old->key, old->value);
+    new->next = BTLink_dup(old->next);
+    return new;
+}
+
+/// Return 1 if the two linked lists are equal, or 0 otherwise.
+int  BTLink_equals(const BTLink *lhs, const BTLink *rhs) {
+    if(lhs==NULL && rhs==NULL)
+        return 1;
+    if(lhs==NULL || rhs==NULL)
+        return 0;
+    if(lhs->key!=rhs->key || lhs->value!=rhs->value)
+        return 0;
+    return BTLink_equals(lhs->next, rhs->next);
+}
+
 
 void BTLink_free(BTLink * self) {
     if(self == NULL)
@@ -140,6 +164,27 @@ BranchTab    *BranchTab_new(void) {
     CHECKMEM(new);
     memset(new, 0, sizeof(*new));
     return new;
+}
+
+BranchTab    *BranchTab_dup(const BranchTab *old) {
+    BranchTab *new = BranchTab_new();
+
+    int i;
+    for(i=0; i < BT_DIM; ++i)
+        new->tab[i] = BTLink_dup(old->tab[i]);
+
+    return new;
+}
+
+/// Return 1 if two BranchTab objects are equal; 0 otherwise.
+int BranchTab_equals(const BranchTab *lhs, const BranchTab *rhs) {
+    int i;
+
+    for(i=0; i < BT_DIM; ++i) {
+        if(!BTLink_equals(lhs->tab[i], rhs->tab[i]))
+            return 0;
+    }
+    return 1;
 }
 
 void BranchTab_free(BranchTab * self) {
@@ -311,6 +356,68 @@ BranchTab *BranchTab_parse(const char *fname, const LblNdx *lblndx) {
     return self;
 }
 
+/// Calculate KL divergence from two BranchTab objects, which
+/// should be normalized before entering this function. Use
+/// BranchTab_normalize to normalize. 
+double BranchTab_KLdiverg(const BranchTab *obs, const BranchTab *expt) {
+    assert(Dbl_near(1.0, BranchTab_sum(obs)));
+    assert(Dbl_near(1.0, BranchTab_sum(expt)));
+
+    int i;
+    double kl=0.0;
+    double p, q;
+    for(i=0; i < BT_DIM; ++i) {
+        BTLink *o, *e;
+        o = obs->tab[i];
+        e = expt->tab[i];
+        while(o && e) {
+            if(o->key < e->key) { // e->value is 0
+                p = 0.0;
+                q = o->value;
+                o = o->next;
+            }else if(o->key > e->key) { // o->value is 0
+                // If p==0, we're OK. The contribution to kl is 0.
+                // Otherwise, we have log(0/0).
+                p = e->value;
+                if(p == 0.0)
+                    continue;
+                else {
+                    fprintf(stderr,"%s:%s:%d: missing observed site pattern.\n",
+                            __FILE__,__func__,__LINE__);
+                    fprintf(stderr," tipId value: ");
+                    printBits(sizeof(e->key), &e->key, stderr);
+                    exit(EXIT_FAILURE);
+                }
+                e = e->next;
+            }else {
+                assert(o->key == e->key);
+                p = e->value;
+                q = o->value;
+                e = e->next;
+                o = o->next;
+            }
+            kl += p*log(p/q);
+        }
+        while(o) { // e->value is 0: add 0 to kl
+            kl += p*log(p/q);
+        }
+        while(e) { // o->value is 0
+            p = e->value;
+            if(p == 0.0)
+                continue;
+            else {
+                fprintf(stderr,"%s:%s:%d: missing observed site pattern.\n",
+                        __FILE__,__func__,__LINE__);
+                fprintf(stderr," tipId value: ");
+                printBits(sizeof(e->key), &e->key, stderr);
+                exit(EXIT_FAILURE);
+            }
+            e = e->next;
+        }
+    }
+    return kl;
+}
+
 #ifdef TEST
 
 #include <string.h>
@@ -416,9 +523,19 @@ int main(int argc, char **argv) {
 		.hi_t = HUGE_VAL
 	};
     GPTree *g = GPTree_new(tstFname, bnd);
-    const LblNdx *lblndx = GPTree_getLblNdxPtr(g);
+    LblNdx lblndx = GPTree_getLblNdx(g);
 
-    bt = BranchTab_parse(tstPatProbFname, lblndx);
+    bt = BranchTab_parse(tstPatProbFname, &lblndx);
+
+    BranchTab *bt2 = BranchTab_dup(bt);
+    assert(BranchTab_equals(bt, bt2));
+
+    BranchTab_normalize(bt);
+    BranchTab_normalize(bt2);
+    double kl =  BranchTab_KLdiverg(bt, bt2);
+    assert(kl == 0.0);
+    if(verbose)
+        printf("KL = %le\n", kl);
 
     if(verbose)
         BranchTab_print(bt);

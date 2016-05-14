@@ -11,6 +11,7 @@
 #include "patprob.h"
 #include "parstore.h"
 #include "lblndx.h"
+#include "branchtab.h"
 #include <assert.h>
 #include <getopt.h>
 #include <stdio.h>
@@ -112,9 +113,6 @@ int main(int argc, char **argv) {
     printf("# nthreads    : %d\n", nThreads);
     printf("# input file  : %s\n", fname);
 
-    int maxpat = 10;
-    tipId_t pat[maxpat];
-    double prob[maxpat];
     Bounds bnd = {
             .lo_twoN = lo_twoN,
             .hi_twoN = hi_twoN,
@@ -122,10 +120,16 @@ int main(int argc, char **argv) {
             .hi_t = hi_t
     };
     GPTree *gptree = GPTree_new(fname, bnd);
-	LblNdx lblndx;
+	LblNdx lblndx = GPTree_getLblNdx(gptree);
 
-    unsigned npat = patprob(maxpat, pat, prob, gptree, &lblndx, 
-							nThreads, nreps, 0);
+    BranchTab *bt = patprob(gptree, nThreads, nreps, 0);
+    BranchTab_normalize(bt);
+
+    // Put site patterns and branch lengths into arrays.
+    unsigned npat = BranchTab_size(bt);
+    tipId_t pat[npat];
+    double prob[npat];
+    BranchTab_toArrays(bt, npat, pat, prob);
 
     // Determine order for printing lines of output
     unsigned ord[npat];
@@ -136,8 +140,7 @@ int main(int argc, char **argv) {
     for(j = 0; j < npat; ++j) {
         char        buff2[100];
         snprintf(buff2, sizeof(buff2), "%s",
-                 patLbl(sizeof(buff), buff, pat[ord[j]],
-                        GPTree_getLblNdxPtr(gptree)));
+                 patLbl(sizeof(buff), buff, pat[ord[j]], &lblndx));
         printf("%15s %10.7lf\n", buff2, prob[ord[j]]);
     }
 

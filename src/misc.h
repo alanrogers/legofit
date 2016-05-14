@@ -34,7 +34,7 @@ void        tellopt(const char *opt, const char *description);
 unsigned    Dbl_first_geq(double val, unsigned len, double v[len]);
 int         strCountSetChunks(const char *str, const char *sep);
 void       *memdup(const void *p, size_t n);
-char       *patLbl(size_t n, char buff[n], tipId_t tid, LblNdx * lblndx);
+char       *patLbl(size_t n, char buff[n], tipId_t tid, const LblNdx * lblndx);
 void        orderpat(int n, unsigned order[n], tipId_t tid[n]);
 double      KLdiverg(int n, const double o[n], const double e[n]);
 double      sum_double(int n, const double x[n]);
