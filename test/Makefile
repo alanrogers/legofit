@@ -70,7 +70,7 @@ xparse.o : parse.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/parse.c
 
 XPARSE := xparse.o hashtab.o misc.o tokenizer.o gptree.o lblndx.o \
-       branchtab.o parstore.o parkeyval.o
+       branchtab.o parstore.o parkeyval.o popnode.o binary.o gene.o
 xparse : $(XPARSE)
 	$(CC) $(CFLAGS) -o $@ $(XPARSE) $(lib)
 
