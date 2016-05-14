@@ -541,6 +541,7 @@ int countSegments(FILE * fp) {
 
 #include <string.h>
 #include <assert.h>
+#include <unistd.h>
 
 #ifdef NDEBUG
 #error "Unit tests must be compiled without -DNDEBUG flag"
@@ -619,11 +620,12 @@ int main(int argc, char **argv) {
     rewind(fp);
 
     PopNode  nodeVec[nseg];
-    PopNode *root;
+    PopNode *root=NULL;
 
     {
         NodeStore *ns = NodeStore_new(nseg, nodeVec);
         root = mktree(fp, &sndx, &lndx, parstore, &bnd, ns);
+        assert(root != NULL);
         NodeStore_free(ns);
     }
 
@@ -638,11 +640,11 @@ int main(int argc, char **argv) {
                ParStore_nFree(parstore));
     }
 
-    PopNode_free(root);
     unitTstResult("mktree", "needs more testing");
 
 	ParStore_free(parstore);
     fclose(fp);
+    unlink(tstFname);
     return 0;
 }
 #endif
