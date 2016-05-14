@@ -2,6 +2,8 @@
 #  define GPTREE_MISC_H
 
 #  include "typedefs.h"
+#  include "binary.h"
+#  include "lblndx.h"
 #  include <stdio.h>
 #  include <math.h>
 #  include <float.h>

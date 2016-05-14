@@ -62,7 +62,8 @@ XBINARY := xbinary.o binary.o
 xbinary : $(XBINARY)
 	$(CC) $(CFLAGS) -o $@ $(XBINARY) $(lib)
 
-XHASHTAB := xhashtab.o hashtab.o misc.o gptree.o branchtab.o
+XHASHTAB := xhashtab.o hashtab.o misc.o gptree.o branchtab.o parstore.o \
+   parkeyval.o tokenizer.o binary.o lblndx.o popnode.o gene.o parse.o
 xhashtab : $(XHASHTAB)
 	$(CC) $(CFLAGS) -o $@ $(XHASHTAB) $(lib)
 
@@ -77,14 +78,15 @@ xparse : $(XPARSE)
 xgene.o : gene.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/gene.c
 
-XGENE := xgene.o branchtab.o misc.o binary.o
+XGENE := xgene.o branchtab.o misc.o binary.o tokenizer.o lblndx.o parkeyval.o
 xgene : $(XGENE)
 	$(CC) $(CFLAGS) -o $@ $(XGENE) $(lib)
 
 xpopnode.o : popnode.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/popnode.c
 
-XPOPNODE := xpopnode.o misc.o gene.o branchtab.o
+XPOPNODE := xpopnode.o misc.o gene.o branchtab.o binary.o lblndx.o tokenizer.o \
+   parkeyval.o
 xpopnode : $(XPOPNODE)
 	$(CC) $(CFLAGS) -o $@ $(XPOPNODE) $(lib)
 
@@ -92,15 +94,15 @@ xgptree.o : gptree.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/gptree.c
 
 XGPTREE := xgptree.o misc.o branchtab.o parstore.o parse.o lblndx.o \
-        parkeyval.o tokenizer.o hashtab.o gene.o popnode.o
+        parkeyval.o tokenizer.o hashtab.o gene.o popnode.o binary.o
 xgptree : $(XGPTREE)
 	$(CC) $(CFLAGS) -o $@ $(XGPTREE) $(lib)
 
-XPARSTORE := xparstore.o misc.o parstore.o parkeyval.o
+XPARSTORE := xparstore.o misc.o parstore.o parkeyval.o binary.o lblndx.o
 xparstore : $(XPARSTORE)
 	$(CC) $(CFLAGS) -o $@ $(XPARSTORE) $(lib)
 
-XPARKEYVAL := xparkeyval.o parkeyval.o misc.o
+XPARKEYVAL := xparkeyval.o parkeyval.o misc.o binary.o lblndx.o
 xparkeyval : $(XPARKEYVAL)
 	$(CC) $(CFLAGS) -o $@ $(XPARKEYVAL) $(lib)
 
@@ -119,7 +121,8 @@ XBRANCHTAB := xbranchtab.o gptree.o misc.o binary.o parstore.o popnode.o gene.o 
 xbranchtab : $(XBRANCHTAB)
 	$(CC) $(CFLAGS) -o $@ $(XBRANCHTAB) $(lib)
 
-Q := q.o misc.o gptree.o hashtab.o branchtab.o
+Q := q.o misc.o gptree.o hashtab.o branchtab.o binary.o lblndx.o parstore.o \
+   popnode.o parse.o gene.o tokenizer.o parkeyval.o
 q : $(Q)
 	$(CC) $(CFLAGS) -o $@ $(Q) $(lib)
 
