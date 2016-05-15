@@ -11,7 +11,6 @@ typedef struct CostPar {
     const GPTree *gptree;   // model of population history
     int         nThreads; // number of threads to use
     long        nreps;    // number of repetitions to simulate
-    int         pointNdx; // current point in differential evolution algorithm
 } CostPar;
 
 double      costFun(int dim, double x[dim], void *jdata, void *tdata);

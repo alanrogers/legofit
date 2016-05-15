@@ -34,12 +34,12 @@ struct TaskArg {
     BranchTab  *branchtab;
 };
 
-TaskArg    *TaskArg_new(GPTree *gptree, unsigned nreps);
+TaskArg    *TaskArg_new(const GPTree *gptree, unsigned nreps);
 void        TaskArg_free(TaskArg * targ);
-int         taskfun(void *varg);
+int         taskfun(void *, void *);
 
 /// function run by each thread
-int taskfun(void *varg) {
+int taskfun(void *varg, void *notUsed) {
     TaskArg    *targ = (TaskArg *) varg;
     gsl_rng    *rng = gsl_rng_alloc(gsl_rng_taus);
 
@@ -57,7 +57,7 @@ int taskfun(void *varg) {
 }
 
 /// Construct a new TaskArg by copying a template.
-TaskArg    *TaskArg_new(GPTree *gptree, unsigned nreps) {
+TaskArg    *TaskArg_new(const GPTree *gptree, unsigned nreps) {
     TaskArg    *a = malloc(sizeof(TaskArg));
     checkmem(a, __FILE__, __LINE__);
 
@@ -80,7 +80,7 @@ void TaskArg_free(TaskArg * self) {
 /// its probability.  Function returns a pointer to a newly-allocated
 /// object of type BranchTab, which contains all the observed site
 /// patterns and their summed branch lengths.
-BranchTab *patprob(GPTree *gptree, int nThreads, long nreps, int pointNdx) {
+BranchTab *patprob(GPTree *gptree, int nThreads, long nreps) {
     int j;
     TaskArg    *taskarg[nThreads];
     long reps[nThreads];
@@ -109,7 +109,7 @@ BranchTab *patprob(GPTree *gptree, int nThreads, long nreps, int pointNdx) {
         taskarg[j] = TaskArg_new(gptree, reps[j]);
 
     {
-        JobQueue   *jq = JobQueue_new(nThreads);
+        JobQueue   *jq = JobQueue_new(nThreads, NULL, NULL, NULL);
         if(jq == NULL)
             eprintf("s:%s:%d: Bad return from JobQueue_new",
                     __FILE__, __func__, __LINE__);

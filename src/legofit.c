@@ -158,6 +158,14 @@ int main(int argc, char **argv) {
     GPTree *gptree = GPTree_new(lgofname, bnd);
 	LblNdx lblndx  = GPTree_getLblNdx(gptree);
 
+    // parameters for cost function
+    CostPar costPar = {
+        .obs = obs,
+        .gptree = gptree,
+        .nThreads = nThreads,
+        .nreps = simreps
+    };
+
     // parameters for Differential Evolution
     DiffEvPar   dep = {
         .dim = GPTree_nFree(gptree),
@@ -165,9 +173,9 @@ int main(int argc, char **argv) {
         .genmax = deItr,
         .refresh = 3,  // how often to print a line of output
         .strategy = strategy,
-        .nthreads = nThreads,
+        .nthreads = 1,
         .verbose = 0,
-        .seed = (unsigned long) time(NULL),
+        .seed = ((unsigned long) time(NULL))-1ul,
         .F = F,
         .CR = CR,
         .deTol = deTol,
@@ -175,7 +183,7 @@ int main(int argc, char **argv) {
         .hiBound = GPTree_upBounds(gptree),
 		.jobData = &costPar,
         .objfun = costFun,
-		.threadData = &tdata,
+		.threadData = NULL,
 		.ThreadState_new = ThreadState_new,
 		.ThreadState_free = ThreadState_free
     };
@@ -183,15 +191,6 @@ int main(int argc, char **argv) {
     // Observed site pattern frequencies
     BranchTab *obs = BranchTab_parse(patfname, &lblndx);
     BranchTab_normalize(obs);
-
-    // parameters for cost function
-    CostPar costPar = {
-        .obs = obs,
-        .gptree = gptree,
-        .nThreads = nThreads,
-        .pointNdx=0
-    };
-
 
     GPTree_free(gptree);
 

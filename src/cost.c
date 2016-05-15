@@ -25,8 +25,7 @@ double costFun(int dim, double x[dim], void *jdata, void *tdata) {
     gsl_rng    *rng = (gsl_rng *) tdata;
 
     GPTree_setParams(cp->gptree, dim, x);
-    BranchTab  *prob = patprob(cp->gptree, cp->nThreads, cp->nreps,
-                               cp->pointNdx, rng);
+    BranchTab  *prob = patprob(cp->gptree, cp->nThreads, cp->nreps, rng);
     BranchTab_normalize(prob);
     return BranchTab_KLdiverg(cp->obs, prob);
 }

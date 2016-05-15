@@ -7,7 +7,7 @@ prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
 
 tests := xbinary xhashtab xparse xgene xgptree xbranchtab xparstore \
-  xparkeyval xlblndx xpopnode
+  xparkeyval xlblndx xpopnode xjobqueue
 
 CC := gcc
 
@@ -66,6 +66,10 @@ XHASHTAB := xhashtab.o hashtab.o misc.o gptree.o branchtab.o parstore.o \
    parkeyval.o tokenizer.o binary.o lblndx.o popnode.o gene.o parse.o
 xhashtab : $(XHASHTAB)
 	$(CC) $(CFLAGS) -o $@ $(XHASHTAB) $(lib)
+
+XJOBQUEUE := xjobqueue.o jobqueue.o
+xjobqueue : $(XJOBQUEUE)
+	$(CC) $(CFLAGS) -o $@ $(XJOBQUEUE) $(lib)
 
 xparse.o : parse.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/parse.c

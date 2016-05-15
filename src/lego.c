@@ -121,7 +121,7 @@ int main(int argc, char **argv) {
     GPTree *gptree = GPTree_new(fname, bnd);
 	LblNdx lblndx = GPTree_getLblNdx(gptree);
 
-    BranchTab *bt = patprob(gptree, nThreads, nreps, 0);
+    BranchTab *bt = patprob(gptree, nThreads, nreps);
     BranchTab_normalize(bt);
 
     // Put site patterns and branch lengths into arrays.
