@@ -28,5 +28,5 @@ double costFun(int dim, double x[dim], void *jdata, void *tdata) {
     BranchTab  *prob = patprob(cp->gptree, cp->nThreads, cp->nreps,
                                cp->pointNdx, rng);
     BranchTab_normalize(prob);
-    return BranchTab_KLdiverg(prob, cp->obs);
+    return BranchTab_KLdiverg(cp->obs, prob);
 }
