@@ -7,16 +7,14 @@
  * Systems Consortium License, which can be found in file "LICENSE".
  */
 
-#ifndef LDPSIZ_JOBQUEUE
-#define LDPSIZ_JOBQUEUE
+#ifndef ARR_JOBQUEUE
+#define ARR_JOBQUEUE
 
 typedef struct JobQueue JobQueue;
 
 JobQueue   *JobQueue_new(int nthreads);
 void        JobQueue_addJob(JobQueue * jq, int (*jobfun) (void *),
                             void *param);
-void        JobQueue_addTask(JobQueue * jq, int (*taskfun) (void *),
-                             void *param);
 void        JobQueue_waitOnJobs(JobQueue * jq);
 void        JobQueue_free(JobQueue * jq);
 #endif

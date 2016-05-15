@@ -19,39 +19,14 @@ extern pthread_mutex_t outputLock;
 
 #include "cost.h"
 
-struct ThreadState {
-    gsl_rng *rng;
-};
-
-void       *ThreadState_new(void *vdat) {
-    ThreadData *td = (ThreadData *) vdat;
-    assert(vdat);
-
-    ThreadState *self = malloc(sizeof(ThreadState));
-    CHECKMEM(self);
-
-    self->rng = gsl_rng_alloc(gsl_rng_taus);
-    CHECKMEM(self->rng);
-
-    gsl_rng_set(self->rng, td->seed);
-
-    return (void *) self;
-}
-
-void ThreadState_free(void *v) {
-    ThreadState *self = (ThreadState *) v;
-
-    gsl_rng_free(self->rng);
-    free(self);
-}
-
 /// @param[in] x vector of parameter values.
-double costFun(int dim, double x[dim], void *jdata, void *notused) {
+double costFun(int dim, double x[dim], void *jdata, void *tdata) {
     const CostPar *cp = (CostPar *) jdata;
+	gsl_rng *rng = (gsl_rng *) tdata;
 
     GPTree_setParams(cp->gptree, dim, x);
     BranchTab *prob = patprob(cp->gptree, cp->nThreads, cp->nreps,
-                              cp->pointNdx);
+                              cp->pointNdx, rng);
     BranchTab_normalize(prob);
     return BranchTab_KLdiverg(prob, cp->obs);
 }

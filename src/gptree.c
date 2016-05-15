@@ -24,7 +24,7 @@ struct GPTree {
 
 void GPTree_setParams(GPTree *self, int n, double x[n]) {
     assert(n == ParStore_nFree(self->parstore));
-    ParStore_setFree(self->parstore, n, x);
+    ParStore_setFreeParams(self->parstore, n, x);
 }
 
 /// Return number of free parameters

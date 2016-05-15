@@ -29,7 +29,6 @@ void usage(void) {
     exit(1);
 }
 
-
 int main(int argc, char **argv) {
 
     static struct option myopts[] = {

@@ -19,10 +19,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <time.h>
-#include <pthread.h>
-
-pthread_mutex_t seedLock = PTHREAD_MUTEX_INITIALIZER;
-unsigned long rngseed;
 
 void        usage(void);
 
