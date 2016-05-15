@@ -318,9 +318,11 @@ Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng) {
     double      t = *self->start;
 #ifndef NDEBUG
     if(t > end) {
-        PopNode_print(stdout, self, 0);
-		eprintf("%s:%s:%d: start=%lf > %lf=end\n",
+        fflush(stdout);
+		fprintf(stderr, "%s:%s:%d: start=%lf > %lf=end\n",
 				__FILE__,__func__,__LINE__, t, end);
+        PopNode_print(stderr, self, 0);
+        exit(1);
 	}
 #endif
 

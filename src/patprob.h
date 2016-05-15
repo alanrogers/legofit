@@ -2,5 +2,6 @@
 #  define PATPROB_INCLUDED
 
 #include "typedefs.h"
-BranchTab *patprob(GPTree *gptree, int nThreads, long nreps);
+BranchTab *patprob(int dim, double x[dim], const GPTree *gptree, int nThreads,
+                   long nreps);
 #endif

@@ -8,17 +8,22 @@
  * Systems Consortium License, which can be found in file "LICENSE".
  */
 
-#include "gptree.h"
-#include "patprob.h"
-#include "parstore.h"
-#include "lblndx.h"
+#include "branchtab.h"
+#include "cost.h"
 #include "diffev.h"
+#include "gptree.h"
+#include "lblndx.h"
+#include "parstore.h"
+#include "patprob.h"
 #include <assert.h>
 #include <getopt.h>
+#include <limits.h>
 #include <stdio.h>
 #include <sys/types.h>
-#include <unistd.h>
 #include <time.h>
+#include <unistd.h>
+
+extern unsigned long rngseed;
 
 void        usage(void);
 
@@ -52,22 +57,24 @@ int main(int argc, char **argv) {
            "########################################\n");
     putchar('\n');
 
-    int         i, j;
+    int         i;
     time_t      currtime = time(NULL);
 	unsigned long pid = (unsigned long) getpid();
     double      lo_twoN = 0.0, hi_twoN = 1e6;  // twoN bounds
     double      lo_t = 0.0, hi_t = 1e6;        // t bounds
+    int         nThreads = 0;     // total number of threads
+    int         optndx;
+    long        simreps = 100;
+    char        lgofname[200] = { '\0' };
+    char        patfname[200] = { '\0' };
 
 	// DiffEv parameters
 	double      F = 0.9;
 	double      CR = 0.8;
 	double      deTol = 1e-4;
     int         deItr = 1000; // number of diffev iterations
-	int         nPts;
 	int         strategy = 1;
 	int         ptsPerDim = 10;
-
-	rngseed = currtime^pid;
 
 #if defined(__DATE__) && defined(__TIME__)
     printf("# Program was compiled: %s %s\n", __DATE__, __TIME__);
@@ -78,14 +85,9 @@ int main(int argc, char **argv) {
     for(i = 0; i < argc; ++i)
         printf(" %s", argv[i]);
     putchar('\n');
-
     fflush(stdout);
 
-    int         nThreads = 0;     // total number of threads
-    int         optndx;
-    long        simreps = 100;
-    char        lgofname[200] = { '\0' };
-    char        patfname[200] = { '\0' };
+	rngseed = currtime^pid;
 
     // command line arguments
     for(;;) {
@@ -132,7 +134,7 @@ int main(int argc, char **argv) {
         
     snprintf(lgofname, sizeof(lgofname), "%s", argv[optind]);
     assert(lgofname[0] != '\0');
-    snprintf(patfname, sizeof(patfname), "%s", argv[optind+1));
+    snprintf(patfname, sizeof(patfname), "%s", argv[optind+1]);
     assert(patfname[0] != '\0');
 
     if(nThreads == 0)
@@ -146,9 +148,6 @@ int main(int argc, char **argv) {
     printf("# lgo input file     : %s\n", lgofname);
     printf("# site pat input file: %s\n", patfname);
 
-    int maxpat = 10;
-    tipId_t pat[maxpat];
-    double prob[maxpat];
     Bounds bnd = {
             .lo_twoN = lo_twoN,
             .hi_twoN = hi_twoN,
@@ -157,6 +156,10 @@ int main(int argc, char **argv) {
     };
     GPTree *gptree = GPTree_new(lgofname, bnd);
 	LblNdx lblndx  = GPTree_getLblNdx(gptree);
+
+    // Observed site pattern frequencies
+    BranchTab *obs = BranchTab_parse(patfname, &lblndx);
+    BranchTab_normalize(obs);
 
     // parameters for cost function
     CostPar costPar = {
@@ -167,8 +170,9 @@ int main(int argc, char **argv) {
     };
 
     // parameters for Differential Evolution
+    int dim = GPTree_nFree(gptree); // number of free parameters
     DiffEvPar   dep = {
-        .dim = GPTree_nFree(gptree),
+        .dim = dim,
         .ptsPerDim = ptsPerDim,
         .genmax = deItr,
         .refresh = 3,  // how often to print a line of output
@@ -184,14 +188,35 @@ int main(int argc, char **argv) {
 		.jobData = &costPar,
         .objfun = costFun,
 		.threadData = NULL,
-		.ThreadState_new = ThreadState_new,
-		.ThreadState_free = ThreadState_free
+		.ThreadState_new = NULL,
+		.ThreadState_free = NULL,
+        .randomizeData = gptree,
+        .randomize = GPTree_randomize
     };
 
-    // Observed site pattern frequencies
-    BranchTab *obs = BranchTab_parse(patfname, &lblndx);
-    BranchTab_normalize(obs);
+    double      estimate[dim];
+    double      cost, yspread;
+    gsl_rng    *rng = gsl_rng_alloc(gsl_rng_taus);
 
+    gsl_rng_set(rng, rngseed);
+	rngseed = (rngseed == ULONG_MAX ? 0 : rngseed+1);
+
+    int         status = diffev(dim, estimate, &cost, &yspread, dep, rng);
+    switch (status) {
+    case 0:
+        printf("DiffEv converged. cost=%0.5lg costSpread=%0.5lg\n",
+               cost, yspread);
+        printf("Fitted parameters:");
+        for(i = 0; i < dim; ++i)
+            printf(" %lf", estimate[i]);
+        putchar('\n');
+        break;
+    default:
+        printf("DiffEv FAILED\n");
+        break;
+    }
+
+    gsl_rng_free(rng);
     GPTree_free(gptree);
 
     return 0;

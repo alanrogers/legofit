@@ -1,6 +1,8 @@
 #ifndef LEGO_COST
 #define LEGO_COST
 
+#include "typedefs.h"
+
 struct ThreadData {
     unsigned    seed;
 };

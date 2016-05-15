@@ -10,6 +10,7 @@
 #include "parse.h"
 #include "parstore.h"
 #include <string.h>
+#include <gsl/gsl_rng.h>
 
 struct GPTree {
     int nseg; // number of segments in population tree.
@@ -22,9 +23,20 @@ struct GPTree {
     SampNdx sndx;
 };
 
+void GPTree_randomize(void *void_p, int n, double x[n], gsl_rng *rng) {
+    GPTree *self = (GPTree *) void_p;
+    ParStore_randomize(self->parstore, n, x, rng);
+}
+
+
 void GPTree_setParams(GPTree *self, int n, double x[n]) {
     assert(n == ParStore_nFree(self->parstore));
     ParStore_setFreeParams(self->parstore, n, x);
+}
+
+void GPTree_getParams(GPTree *self, int n, double x[n]) {
+    assert(n == ParStore_nFree(self->parstore));
+    ParStore_getFreeParams(self->parstore, n, x);
 }
 
 /// Return number of free parameters

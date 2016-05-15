@@ -7,7 +7,7 @@ prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
 
 tests := xbinary xhashtab xparse xgene xgptree xbranchtab xparstore \
-  xparkeyval xlblndx xpopnode xjobqueue
+  xparkeyval xlblndx xpopnode xjobqueue xdiffev
 
 CC := gcc
 
@@ -46,6 +46,7 @@ test : $(tests)
 	-./xparkeyval
 	-./xparstore
 	-./xlblndx
+	-./xdiffev
 #	-./xzeroin
 	@echo "ALL UNIT TESTS WERE COMPLETED."
 
@@ -70,6 +71,10 @@ xhashtab : $(XHASHTAB)
 XJOBQUEUE := xjobqueue.o jobqueue.o
 xjobqueue : $(XJOBQUEUE)
 	$(CC) $(CFLAGS) -o $@ $(XJOBQUEUE) $(lib)
+
+XDIFFEV := xdiffev.o diffev.o misc.o binary.o lblndx.o jobqueue.o parkeyval.o
+xdiffev : $(XDIFFEV)
+	$(CC) $(CFLAGS) -o $@ $(XDIFFEV) $(lib)
 
 xparse.o : parse.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/parse.c

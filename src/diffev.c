@@ -51,62 +51,96 @@
 #include <stdlib.h>
 
 struct TaskArg {
-    double cost;
-    int dim;
-    double *v;
-    double (*objfun)(int dim, double x[dim], void *jdat, void *tdat);
-    void *jobData;
+    double      cost;
+    int         dim;
+    double     *v;
+    double      (*objfun) (int dim, double x[dim], void *jdat, void *tdat);
+    void       *jobData;
 };
 
 static inline void assignd(int dim, double a[], double b[]);
-void        sample(int k, int rtn[k], int n, int array[n], const gsl_rng *rng);
+void        constrain(int n, double x[n], const double b[n],
+                      const double loBnd[n], const double hiBnd[n]);
+void        sample(int k, int rtn[k], int n, int array[n],
+                   const gsl_rng * rng);
 TaskArg    *TaskArg_new(int dim,
-                        double (*objfun)(int xdim, double x[xdim],
-										 void *jdat, void *tdat), 
+                        double (*objfun) (int xdim, double x[xdim],
+                                          void *jdat, void *tdat),
                         void *jobData);
-static inline void TaskArg_setArray(TaskArg *self, int dim, double v[dim]);
-void        TaskArg_free(TaskArg *self);
-void        TaskArg_print(TaskArg *self, FILE *fp);
+static inline void TaskArg_setArray(TaskArg * self, int dim, double v[dim]);
+void        TaskArg_free(TaskArg * self);
+void        TaskArg_print(TaskArg * self, FILE * fp);
 int         taskfun(void *voidPtr, void *tdat);
 
-static const char *stratLbl[] =       // strategy-indicator
-    { "", "DE/best/1/exp", "DE/rand/1/exp", "DE/rand-to-best/1/exp",
-      "DE/best/2/exp", "DE/rand/2/exp", "DE/best/1/bin",
-      "DE/rand/1/bin", "DE/rand-to-best/1/bin", "DE/best/2/bin",
-      "DE/rand/2/bin"
-    };
+static const char *stratLbl[] = // strategy-indicator
+{ "", "DE/best/1/exp", "DE/rand/1/exp", "DE/rand-to-best/1/exp",
+    "DE/best/2/exp", "DE/rand/2/exp", "DE/best/1/bin",
+    "DE/rand/1/bin", "DE/rand-to-best/1/bin", "DE/best/2/bin",
+    "DE/rand/2/bin"
+};
 
 /// Called by JobQueue
 int taskfun(void *voidPtr, void *tdat) {
-    TaskArg *targ = (TaskArg *) voidPtr;
+    TaskArg    *targ = (TaskArg *) voidPtr;
     targ->cost = targ->objfun(targ->dim, targ->v, targ->jobData, tdat);
     return 0;
 }
 
-void TaskArg_print(TaskArg *self, FILE *fp) {
-    int i;
+/// If x violates boundary constraints, move it back inside.
+/// This is done by shortening the vector (x - b), which represents
+/// the direction of change. If x is changed, the revised x will reach
+/// half way from b to the nearest boundary.
+void constrain(int n, double x[n], const double b[n], const double loBnd[n],
+               const double hiBnd[n]) {
+    double      r, s = 1.0;
+    int         i;
+
+    for(i = 0; i < n; ++i) {
+        assert(hiBnd[i] >= loBnd[i]);
+        assert(b[i] >= loBnd[i]);
+        assert(b[i] <= hiBnd[i]);
+
+        if(x[i] > hiBnd[i]) {
+            r = 0.5 * (hiBnd[i] - b[i]) / (x[i] - b[i]);
+            s = fmin(r, s);
+        } else if(x[i] < loBnd[i]) {
+            r = 0.5 * (loBnd[i] - b[i]) / (x[i] - b[i]);
+            s = fmin(r, s);
+        }
+        assert(r >= 0.0);
+    }
+    if(s < 1.0) {
+        for(i = 0; i < n; ++i)
+            x[i] = b[i] + s * (x[i] - b[i]);
+    }
+}
+
+void TaskArg_print(TaskArg * self, FILE * fp) {
+    int         i;
     fprintf(fp, "cost(");
-    for(i=0; i<self->dim; ++i) {
+    for(i = 0; i < self->dim; ++i) {
         fprintf(fp, "%lf", self->v[i]);
-        if(i+1 < self->dim)
+        if(i + 1 < self->dim)
             putc(',', fp);
         fprintf(fp, ")=%lf\n", self->cost);
     }
 }
 
 const char *diffEvStrategyLbl(int i) {
-    unsigned n = (unsigned) ((sizeof stratLbl)/(sizeof stratLbl[0]));
-    if(i < 1 || i >= n)
-        eprintf("%s:%s:%d: argument=%d; should be in [1, %u]\n",
-                __FILE__,__func__,__LINE__, n-1);
+    unsigned    n = (unsigned) ((sizeof stratLbl) / (sizeof stratLbl[0]));
+    if(i < 1 || i >= n) {
+        fprintf(stderr, "%s:%s:%d: argument=%d; should be in [1, %u]\n",
+                __FILE__, __func__, __LINE__, n, n-1u);
+        exit(1);
+    }
     return stratLbl[i];
 }
 
-TaskArg *TaskArg_new(int dim,
-                     double (*objfun)(int xdim, double x[xdim],
-									  void *jdat, void *tdat),
-                     void *jobData) {
-    TaskArg *self = malloc(sizeof(TaskArg));
+TaskArg    *TaskArg_new(int dim,
+                        double (*objfun) (int xdim, double x[xdim],
+                                          void *jdat, void *tdat),
+                        void *jobData) {
+    TaskArg    *self = malloc(sizeof(TaskArg));
     CHECKMEM(self);
 
     self->cost = -1.0;
@@ -119,7 +153,7 @@ TaskArg *TaskArg_new(int dim,
 }
 
 // Don't free self->jobData or self->objfun, which are not locally owned.
-void TaskArg_free(TaskArg *self) {
+void TaskArg_free(TaskArg * self) {
     free(self->v);
     free(self);
 }
@@ -133,67 +167,61 @@ void TaskArg_free(TaskArg *self) {
       putchar('\n'); \
     }while(0);
 
-static inline void TaskArg_setArray(TaskArg *self, int dim, double v[dim]) {
+static inline void TaskArg_setArray(TaskArg * self, int dim, double v[dim]) {
     assert(dim == self->dim);
-    memcpy(self->v, v, dim*sizeof(v[0]));
+    memcpy(self->v, v, dim * sizeof(v[0]));
     self->cost = -1.0;
 }
 
 /// Assigns dim-dimensional vector b to vector a.
 static inline void assignd(int dim, double a[dim], double b[dim]) {
-    memcpy(a, b, dim*sizeof(b[0]));
+    memcpy(a, b, dim * sizeof(b[0]));
 }
 
 int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
-		   DiffEvPar dep, gsl_rng *rng) {
+           DiffEvPar dep, gsl_rng * rng) {
 
-    int i, j, L, n;       // counting variables
-    int r[5];             // random indices
-    int imin;             // index to member with lowest energy
-    int gen;
-    const int genmax = dep.genmax;
-    const int refresh = dep.refresh;
-    const int strategy = dep.strategy;
+    int         i, j, L, n;     // counting variables
+    int         r[5];           // random indices
+    int         imin;           // index to member with lowest energy
+    int         gen;
+    const int   genmax = dep.genmax;
+    const int   refresh = dep.refresh;
+    const int   strategy = dep.strategy;
     const double F = dep.F;
     const double CR = dep.CR;
     const double deTol = dep.deTol;
-    const int nthreads = dep.nthreads;
-    const int verbose = dep.verbose;
+    const int   nthreads = dep.nthreads;
+    const int   verbose = dep.verbose;
 
-    int nPts = dep.dim * dep.ptsPerDim;
-    int status;
+    int         nPts = dep.dim * dep.ptsPerDim;
+    int         status;
 
-    double loBound[dim];
+    double      loBound[dim];
     memcpy(loBound, dep.loBound, dim * sizeof(loBound[0]));
 
-    double hiBound[dim];
+    double      hiBound[dim];
     memcpy(hiBound, dep.hiBound, dim * sizeof(hiBound[0]));
 
-    int ndx[nPts];
-	for(i=0; i < nPts; ++i)
-		ndx[i] = i;
+    int         ndx[nPts];
+    for(i = 0; i < nPts; ++i)
+        ndx[i] = i;
 
-    double c[nPts][dim], d[nPts][dim];
+    double      c[nPts][dim], d[nPts][dim];
 
     *yspread = *loCost = strtod("NaN", NULL);
 
-    double      tmp[dim], best[dim], bestit[dim];  // members
-    double      cost[nPts];       // obj. funct. values
-    double      cmin;             // help variables
+    double      tmp[dim], best[dim], bestit[dim];   // members
+    double      cost[nPts];     // obj. funct. values
+    double      cmin;           // help variables
 
-    JobQueue *jq = JobQueue_new(nthreads, dep.threadData,
-								dep.ThreadState_new,
-								dep.ThreadState_free);
+    JobQueue   *jq = JobQueue_new(nthreads, dep.threadData,
+                                  dep.ThreadState_new,
+                                  dep.ThreadState_free);
 
     TaskArg    *targ[nPts];
-    for(i=0; i < nPts; ++i) {
-        // Initialization generates j'th parameter at random within
-        // [loBound[j],hiBound[j]).
-        for(j = 0; j < dim; j++) {
-            c[i][j] = loBound[j]  
-                + gsl_rng_uniform(rng) * (hiBound[j] - loBound[j]);
-        }
-
+    for(i = 0; i < nPts; ++i) {
+        (*dep.randomize)(dep.randomizeData, dim, c[i], rng);
         targ[i] = TaskArg_new(dim, dep.objfun, dep.jobData);
 
         // calculate objective function values in parallel
@@ -204,7 +232,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     cmin = INFINITY;
     imin = INT_MAX;
     for(i = 0; i < nPts; i++) {
-        cost[i] = targ[i]->cost;  // objective function value
+        cost[i] = targ[i]->cost;    // objective function value
         if(cost[i] < cmin) {
             cmin = cost[i];
             imin = i;
@@ -212,17 +240,17 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     }
     assert(imin < INT_MAX);
     assert(cmin < INFINITY);
-    assignd(dim, best, c[imin]);   // save best member ever
-    assignd(dim, bestit, c[imin]); // save best member of generation
+    assignd(dim, best, c[imin]);    // save best member ever
+    assignd(dim, bestit, c[imin]);  // save best member of generation
 
-    double (*pold)[nPts][dim] = &c; // old population (generation G)
-    double (*pnew)[nPts][dim] = &d; // new population (generation G+1)
-    double *basevec = NULL;
+    double      (*pold)[nPts][dim] = &c;    // old population (generation G)
+    double      (*pnew)[nPts][dim] = &d;    // new population (generation G+1)
+    double     *basevec = NULL;
 
     // Iteration loop
-    for(gen=1; gen <= genmax; ++gen) {
+    for(gen = 1; gen <= genmax; ++gen) {
         imin = 0;
-        for(i = 0; i < nPts; i++) {   // Start of loop through ensemble
+        for(i = 0; i < nPts; i++) { // Start of loop through ensemble
 
             // r gets indices of 5 random points.
             sample(5, r, nPts, ndx, rng);
@@ -251,7 +279,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
             // 5)  When the DE/best... schemes fail DE/rand... usually
             //     works and vice versa
 
-            switch(strategy) {
+            switch (strategy) {
             case 1:
                 // DE/best/1/exp
                 // Our oldest strategy but still not bad. However, we have
@@ -263,7 +291,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
                 do {
                     tmp[n] =
                         bestit[n] + F * ((*pold)[r[1]][n] - (*pold)[r[2]][n]);
-                    if(++n==dim)
+                    if(++n == dim)
                         n = 0;
                     ++L;
                 } while((gsl_rng_uniform(rng) < CR) && (L < dim));
@@ -281,7 +309,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
                     tmp[n] =
                         (*pold)[r[0]][n] + F * ((*pold)[r[1]][n] -
                                                 (*pold)[r[2]][n]);
-                    if(++n==dim)
+                    if(++n == dim)
                         n = 0;
                     ++L;
                 } while((gsl_rng_uniform(rng) < CR) && (L < dim));
@@ -308,7 +336,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
             case 4:
                 // DE/best/2/exp is another powerful strategy worth trying
                 L = 0;
-                basevec = bestit;  // questionable choice
+                basevec = bestit;   // questionable choice
                 do {
                     tmp[n] = bestit[n] +
                         F * ((*pold)[r[0]][n] + (*pold)[r[1]][n]
@@ -322,7 +350,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
                 // DE/rand/2/exp seems to be a robust optimizer for many
                 // functions.
                 L = 0;
-                basevec = (*pold)[r[4]]; // questionable choice
+                basevec = (*pold)[r[4]];    // questionable choice
                 do {
                     tmp[n] = (*pold)[r[4]][n] +
                         F * ((*pold)[r[0]][n] + (*pold)[r[1]][n]
@@ -336,8 +364,8 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
                 // Remaining strategies have binomial crossover.
                 // DE/best/1/bin
                 basevec = bestit;
-                for(L = 0; L<dim; ++L) {  // perform dim binomial trials 
-                    if(L==0 || gsl_rng_uniform(rng) < CR) {
+                for(L = 0; L < dim; ++L) {  // perform dim binomial trials 
+                    if(L == 0 || gsl_rng_uniform(rng) < CR) {
                         tmp[n] = bestit[n] + F * ((*pold)[r[1]][n]
                                                   - (*pold)[r[2]][n]);
                     }
@@ -348,7 +376,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
             case 7:
                 // DE/rand/1/bin
                 basevec = (*pold)[r[0]];
-                for(L=0; L<dim; ++L) {    // perform dim binomial trials
+                for(L = 0; L < dim; ++L) {  // perform dim binomial trials
                     if(L == 0 || gsl_rng_uniform(rng) < CR) {
                         // change at least one parameter
                         tmp[n] =
@@ -362,7 +390,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
             case 8:
                 // DE/rand-to-best/1/bin
                 basevec = (*pold)[i];
-                for(L = 0; L < dim; ++L) {    // perform dim binomial trials
+                for(L = 0; L < dim; ++L) {  // perform dim binomial trials
                     if(L == 0 || gsl_rng_uniform(rng) < CR) {
                         // change at least one parameter
                         tmp[n] =
@@ -375,8 +403,8 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
                 break;
             case 9:
                 // DE/best/2/bin
-                basevec = bestit;  // questionable choice
-                for(L=0; L<dim; ++L) {    // perform dim binomial trials
+                basevec = bestit;   // questionable choice
+                for(L = 0; L < dim; ++L) {  // perform dim binomial trials
                     if(L == 0 || gsl_rng_uniform(rng) < CR) {
                         // change at least one parameter
                         tmp[n] = bestit[n]
@@ -389,8 +417,8 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
                 break;
             case 10:
                 // DE/rand/2/bin
-                basevec = (*pold)[r[4]]; // questionable choice
-                for(L=0; L<dim; ++L) {    // perform dim binomial trials
+                basevec = (*pold)[r[4]];    // questionable choice
+                for(L = 0; L < dim; ++L) {  // perform dim binomial trials
                     if(L == 0 || gsl_rng_uniform(rng) < CR) {
                         // change at least one parameter
                         tmp[n] = (*pold)[r[4]][n]
@@ -402,8 +430,9 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
                 }
                 break;
             default:
-                eprintf("%s:%d: illegal strategy: %d\n",
-                        __FILE__,__LINE__, strategy);
+                fprintf(stderr, "%s:%d: illegal strategy: %d\n",
+                        __FILE__, __LINE__, strategy);
+                exit(1);
             }
             constrain(dim, tmp, basevec, loBound, hiBound);
 
@@ -418,9 +447,9 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
         // 2nd pass thrrough ensemble is the "reduce" portion
         // of "map-reduce". It generates a new generation, based
         // on the old generation and all the trials.
-		double cmax = -INFINITY;
-        for(i=0; i<nPts; ++i) {
-            double trial_cost = targ[i]->cost;
+        double      cmax = -INFINITY;
+        for(i = 0; i < nPts; ++i) {
+            double      trial_cost = targ[i]->cost;
             if(trial_cost <= cost[i]) {
                 // accept mutation
                 cost[i] = trial_cost;
@@ -430,11 +459,11 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
                     imin = i;
                     assignd(dim, best, targ[i]->v);
                 }
-            }else{
+            } else {
                 // reject mutation: keep old value
-                assignd(dim, (*pnew)[i], (*pold)[i]); 
+                assignd(dim, (*pnew)[i], (*pold)[i]);
             }
-			cmax = fmax(cmax, cost[i]);
+            cmax = fmax(cmax, cost[i]);
         }
 
         // Best member of current generation
@@ -442,38 +471,38 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 
         // swap population arrays. New generation becomes old one
         {
-            double (*pswap)[nPts][dim] = pold;
+            double      (*pswap)[nPts][dim] = pold;
             pold = pnew;
             pnew = pswap;
         }
 
         // Difference between best and worst cost values
-		*yspread = cmax - cmin;
+        *yspread = cmax - cmin;
 
         // Output part
         if(verbose && gen % refresh == 1) {
             // display after every refresh generations
             fprintf(stderr, "Generation=%d Objfun=%-15.10lg yspread=%lf\n",
                     gen, cmin, *yspread);
-            fprintf(stderr,"   Best params:");
+            fprintf(stderr, "   Best params:");
             for(j = 0; j < dim; j++) {
-                fprintf(stderr," %0.10lg", best[j]);
-                if(j != dim-1)
+                fprintf(stderr, " %0.10lg", best[j]);
+                if(j != dim - 1)
                     putc(',', stderr);
             }
             putc('\n', stderr);
         }
-		if(*yspread <= deTol)
-			break;
+        if(*yspread <= deTol)
+            break;
     }
     // End iterations
 
     JobQueue_noMoreJobs(jq);
-	if(*yspread > deTol) {
+    if(*yspread > deTol) {
         status = 1;
         if(verbose)
             fputs("No convergence\n", stdout);
-    }else{
+    } else {
         status = 0;
         if(verbose)
             fputs("Converged\n", stdout);
@@ -481,10 +510,10 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 
     // Return estimates
     *loCost = cmin;
-    memcpy(estimate, best, dim*sizeof(estimate[0]));
+    memcpy(estimate, best, dim * sizeof(estimate[0]));
 
     // Free memory
-    for(i=0; i<nPts; ++i)
+    for(i = 0; i < nPts; ++i)
         TaskArg_free(targ[i]);
     JobQueue_free(jq);
 
@@ -495,19 +524,18 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 /// result in "rtn". Function re-orders the entries of "array", but
 /// leaves it otherwise unchanged. The function can therefore be
 /// called repeatedly without re-initializing "array".
-void sample(int k, int rtn[k], int n, int array[n], const gsl_rng *rng) {
+void sample(int k, int rtn[k], int n, int array[n], const gsl_rng * rng) {
     assert(k <= n);
-    int j;
+    int         j;
 
-    for(j=0; j < k; ++j) {
-        int i = gsl_rng_uniform_int(rng, (unsigned long) n);
+    for(j = 0; j < k; ++j) {
+        int         i = gsl_rng_uniform_int(rng, (unsigned long) n);
         rtn[j] = array[i];
-        if(i != n-1) {
-            int swap = array[i];
-            array[i] = array[n-1];
-            array[n-1] = swap;
+        if(i != n - 1) {
+            int         swap = array[i];
+            array[i] = array[n - 1];
+            array[n - 1] = swap;
         }
         --n;
     }
 }
-

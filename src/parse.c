@@ -107,7 +107,8 @@ enum ParamType { TwoN, Time, MixFrac };
 int         getDbl(double *x, Tokenizer * tkz, int i);
 int         getULong(unsigned long *x, Tokenizer * tkz, int i);
 void		parseParam(Tokenizer *tkz, enum ParamType type,
-					   ParStore *parstore, Bounds *bnd);
+					   ParStore *parstore, Bounds *bnd,
+                       bool isTimeParam);
 void        parseSegment(Tokenizer *tkz, HashTab *poptbl, SampNdx *sndx,
 						 LblNdx *lndx, ParStore *parstore,
                          NodeStore *ns);
@@ -137,7 +138,8 @@ int getULong(unsigned long *x, Tokenizer * tkz, int i) {
 // time    fixed|free name=100
 // mixFrac fixed|free name=100
 void		parseParam(Tokenizer *tkz, enum ParamType type,
-					   ParStore *parstore, Bounds *bnd) {
+					   ParStore *parstore, Bounds *bnd,
+                       bool isTimeParam) {
 	int curr=1, ntokens = Tokenizer_ntokens(tkz);
 	int isfixed=0;
 
@@ -205,7 +207,7 @@ void		parseParam(Tokenizer *tkz, enum ParamType type,
             eprintf("%s:%s:%d: This shouldn't happen\n",
                     __FILE__,__func__,__LINE__);
         }
-		ParStore_addFreePar(parstore, value, lo, hi, name);
+		ParStore_addFreePar(parstore, value, lo, hi, name, isTimeParam);
     }
 }
 
@@ -448,11 +450,11 @@ PopNode    *mktree(FILE * fp, SampNdx *sndx, LblNdx *lndx, ParStore *parstore,
 
         char *tok = Tokenizer_token(tkz, 0);
 		if(0 == strcmp(tok, "twoN"))
-			parseParam(tkz, TwoN, parstore, bnd);
+			parseParam(tkz, TwoN, parstore, bnd, false);
 		else if(0 == strcmp(tok, "time"))
-			parseParam(tkz, Time, parstore, bnd);
+			parseParam(tkz, Time, parstore, bnd, true);
 		else if(0 == strcmp(tok, "mixFrac"))
-			parseParam(tkz, MixFrac, parstore, bnd);
+			parseParam(tkz, MixFrac, parstore, bnd, false);
         else if(0 == strcmp(tok, "segment"))
             parseSegment(tkz, poptbl, sndx, lndx, parstore, ns);
         else if(0 == strcmp(tok, "mix"))

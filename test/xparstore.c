@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
+#include <time.h>
 
 #ifdef NDEBUG
 #  error "Unit tests must be compiled without -DNDEBUG flag"
@@ -47,7 +48,7 @@ int main(int argc, char **argv) {
     assert(ParStore_nFixed(ps) == 0);
     assert(ParStore_nFree(ps) == 0);
 
-    double val, *ptr, *vec;
+    double val, *ptr;
 
     val = 12.3;
     ParStore_addFixedPar(ps, val, "x");
@@ -58,7 +59,7 @@ int main(int argc, char **argv) {
     assert(ParStore_getFixed(ps, 0) == val);
 
     val = 23.4;
-    ParStore_addFreePar(ps, val, 10.0, 30.0, "y");
+    ParStore_addFreePar(ps, val, 10.0, 30.0, "y", true);
     ptr = ParStore_findPtr(ps, "y");
     assert(*ptr == val);
     assert(ParStore_nFixed(ps) == 1);
@@ -66,8 +67,6 @@ int main(int argc, char **argv) {
     assert(ParStore_getFree(ps, 0) == val);
     assert(ParStore_loFree(ps, 0) == 10.0);
     assert(ParStore_hiFree(ps, 0) == 30.0);
-    vec = ParStore_rawArray(ps);
-    assert(vec[0] == val);
 
     val = 88.3;
     ParStore_addFixedPar(ps, val, "w");
@@ -78,7 +77,7 @@ int main(int argc, char **argv) {
     assert(ParStore_getFixed(ps, 1) == val);
 
     val = -23.8;
-    ParStore_addFreePar(ps, val, -100.0, 0.0, "z");
+    ParStore_addFreePar(ps, val, -100.0, 0.0, "z", true);
     ptr = ParStore_findPtr(ps, "z");
     assert(*ptr == val);
     assert(ParStore_nFixed(ps) == 2);
@@ -86,8 +85,16 @@ int main(int argc, char **argv) {
     assert(ParStore_getFree(ps, 1) == val);
     assert(ParStore_loFree(ps, 1) == -100.0);
     assert(ParStore_hiFree(ps, 1) == 0.0);
-    vec = ParStore_rawArray(ps);
-    assert(vec[1] == val);
+
+    val = 0.8;
+    ParStore_addFreePar(ps, val, 0.0, 1.0, "a", true);
+    ptr = ParStore_findPtr(ps, "a");
+    assert(*ptr == val);
+    assert(ParStore_nFixed(ps) == 2);
+    assert(ParStore_nFree(ps) == 3);
+    assert(ParStore_getFree(ps, 2) == val);
+    assert(ParStore_loFree(ps, 2) == 0.0);
+    assert(ParStore_hiFree(ps, 2) == 1.0);
 
     if(verbose)
         ParStore_print(ps, stdout);
@@ -125,8 +132,17 @@ int main(int argc, char **argv) {
     if(verbose)
         ParStore_print(ps2, stdout);
 
+    int n = ParStore_nFree(ps);
+    double x[n];
+
+    gsl_rng *rng = gsl_rng_alloc(gsl_rng_taus);
+    gsl_rng_set(rng, (unsigned long) time(NULL));
+
+    ParStore_randomize(ps, n, x, rng);
+
     ParStore_free(ps);
     ParStore_free(ps2);
+    gsl_rng_free(rng);
 
     unitTstResult("ParStore", "OK");
 

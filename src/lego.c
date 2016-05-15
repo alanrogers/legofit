@@ -16,7 +16,10 @@
 #include <getopt.h>
 #include <stdio.h>
 #include <sys/types.h>
+#include <unistd.h>
 #include <time.h>
+
+extern unsigned long rngseed;
 
 void        usage(void);
 
@@ -46,8 +49,13 @@ int main(int argc, char **argv) {
 
     int         i, j;
     time_t      currtime = time(NULL);
+	unsigned long pid = (unsigned long) getpid();
     double      lo_twoN = 0.0, hi_twoN = 1e6;  // twoN bounds
     double      lo_t = 0.0, hi_t = 1e6;        // t bounds
+    int         nThreads = 0;   // number of parallel threads
+    int         optndx;
+    long        nreps = 100;
+    char        fname[200] = { '\0' };
 #if defined(__DATE__) && defined(__TIME__)
     printf("# Program was compiled: %s %s\n", __DATE__, __TIME__);
 #endif
@@ -58,12 +66,7 @@ int main(int argc, char **argv) {
         printf(" %s", argv[i]);
     putchar('\n');
 
-    fflush(stdout);
-
-    int         nThreads = 0;   // number of parallel threads
-    int         optndx;
-    long        nreps = 100;
-    char        fname[200] = { '\0' };
+	rngseed = currtime^pid;
 
     // command line arguments
     for(;;) {
@@ -121,7 +124,11 @@ int main(int argc, char **argv) {
     GPTree *gptree = GPTree_new(fname, bnd);
 	LblNdx lblndx = GPTree_getLblNdx(gptree);
 
-    BranchTab *bt = patprob(gptree, nThreads, nreps);
+    int dim = GPTree_nFree(gptree);
+    double x[dim];
+    GPTree_getParams(gptree, dim, x);
+
+    BranchTab *bt = patprob(dim, x, gptree, nThreads, nreps);
     BranchTab_normalize(bt);
 
     // Put site patterns and branch lengths into arrays.

@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 struct ParStore {
     int         nFixed, nFree;  // number of parameters
@@ -28,15 +29,85 @@ struct ParStore {
     double      freeVal[MAXPAR];    // parameter values
     double      loFree[MAXPAR]; // lower bounds
     double      hiFree[MAXPAR]; // upper bounds
+    bool        time[MAXPAR];   // =true for time parameters
     char       *nameFixed[MAXPAR];  // Parameter names
     char       *nameFree[MAXPAR];   // Parameter names
     ParKeyVal  *head;           // linked list of name/ptr pairs
 };
 
+static int compareDblPtrs(const void *void_x, const void *void_y);
+static int compareDbls(const void *void_x, const void *void_y);
+
+/// Return <0, 0, or >0, as x is <, ==, or > y.
+static int compareDblPtrs(const void *void_x, const void *void_y) {
+    double * const * x = (double * const *) void_x;
+    double * const * y = (double * const *) void_y;
+    return **x - **y;
+}
+
+/// Return <0, 0, or >0, as x is <, ==, or > y.
+static int compareDbls(const void *void_x, const void *void_y) {
+    const double * x = (const double *) void_x;
+    const double * y = (const double *) void_y;
+    return *x - *y;
+}
+
+/// Generate a random vector of free parameter values
+void ParStore_randomize(ParStore *self, int n, double x[n], gsl_rng *rng) {
+    assert(n == self->nFree);
+    int i, j, nt=0;
+    double t0[MAXPAR], t1[MAXPAR];
+
+    // For non-time parameters, put random values into x.
+    // For time parameters, put random values into t1 and
+    // original ones into t0.
+    for(i=j=0; i < self->nFree; ++i) {
+        if(self->time[i]) {
+            t0[nt] = self->freeVal[i];
+            t1[nt++] = self->loFree[i]
+                + gsl_rng_uniform(rng)*(self->hiFree[i] - self->loFree[i]);
+        }else
+            x[i] = self->loFree[i]
+                + gsl_rng_uniform(rng)*(self->hiFree[i] - self->loFree[i]);
+    }
+
+    double  *ptr[nt];
+    for(i=0; i < nt; ++i)
+        ptr[i] = t0 + i;
+
+    // Sort array of pointers
+    qsort(ptr, (size_t) nt, sizeof(ptr[0]), compareDblPtrs);
+
+    // ord[0] is the index of the smallest value in t0, ord[1] is
+    // that of the next smallest, and so on.
+    int ord[nt];
+    for(i=0; i < nt; ++i)
+        ord[i] = ptr[i] - t0;
+
+    // Sort array of random times
+    qsort(t1, (size_t) nt, sizeof(t1[0]), compareDbls);
+
+    double t2[nt];
+    for(i=0; i < nt; ++i)
+        t2[ord[i]] = t1[i];
+
+    for(i=j=0; i < self->nFree; ++i)
+        if(self->time[i])
+            x[i] = t2[j++];
+
+    return nt;
+}
+
 /// Set vector of free parameters.
 void ParStore_setFreeParams(ParStore *self, int n, double x[n]) {
     assert(n == self->nFree);
-    memcpy(self->freeVal, x, n*sizeof(self->freeVal[0]));
+    memcpy(self->freeVal, x, n*sizeof(double));
+}
+
+/// Get vector of free parameters.
+void ParStore_getFreeParams(ParStore *self, int n, double x[n]) {
+    assert(n == self->nFree);
+    memcpy(x, self->freeVal, n*sizeof(double));
 }
 
 void ParStore_print(ParStore *self, FILE *fp) {
@@ -95,22 +166,28 @@ void ParStore_free(ParStore * self) {
 
 /// Add free parameter to ParStore.
 void ParStore_addFreePar(ParStore * self, double value,
-                         double lo, double hi, const char *name) {
+                         double lo, double hi, const char *name,
+                         bool isTimeParameter) {
     int         i = self->nFree;
 
-    if(++self->nFree >= MAXPAR)
-        eprintf("%s:%s:%d: buffer overflow."
+    if(++self->nFree >= MAXPAR) {
+        fprintf(stderr, "%s:%s:%d: buffer overflow."
                 " nFree=%d. MAXPAR=%d."
                 " Increase MAXPAR and recompile.\n",
                 __FILE__, __func__, __LINE__, self->nFree, MAXPAR);
+        exit(1);
+    }
 
-    if(value < lo || value > hi)
-        eprintf("%s:%s:%d: value (%lf) not in range [%lf,%lf]\n",
+    if(value < lo || value > hi) {
+        fprintf(stderr,"%s:%s:%d: value (%lf) not in range [%lf,%lf]\n",
                 __FILE__, __func__, __LINE__, value, lo, hi);
+        exit(1);
+    }
 
     self->freeVal[i] = value;
     self->loFree[i] = lo;
     self->hiFree[i] = hi;
+    self->time[i] = isTimeParameter;
     self->nameFree[i] = strdup(name);
     CHECKMEM(self->nameFree[i]);
 

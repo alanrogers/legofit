@@ -1,11 +1,11 @@
 #ifndef ARR_DIFFEV_H
-#define ARR_DIFFEV_H
-#define MAXPOP  500
-#define MAXDIM  35
+#  define ARR_DIFFEV_H
+#  define MAXPOP  500
+#  define MAXDIM  35
 
-#include <assert.h>
-#include <stdbool.h>
-#include <gsl/gsl_rng.h>
+#  include <assert.h>
+#  include <stdbool.h>
+#  include <gsl/gsl_rng.h>
 
 typedef struct TaskArg TaskArg;
 typedef struct DiffEv DiffEv;
@@ -27,6 +27,8 @@ struct DiffEvPar {
     void       *threadData;
     void       *(*ThreadState_new) (void *);
     void        (*ThreadState_free) (void *);
+    void       *randomizeData;
+    void        (*randomize)(void *, int, double *, gsl_rng *rng);
 };
 
 int         diffev(int dim, double estimate[dim], double *loCost,

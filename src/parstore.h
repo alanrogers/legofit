@@ -4,6 +4,8 @@
 #  include "typedefs.h"
 #  include "misc.h"
 #  include <assert.h>
+#  include <gsl/gsl_rng.h>
+#  include <stdbool.h>
 #  define MAXPAR 50
 
 struct Bounds {
@@ -13,7 +15,8 @@ struct Bounds {
 ParStore   *ParStore_new(void);
 void        ParStore_free(ParStore * self);
 void        ParStore_addFreePar(ParStore * self, double value,
-                                double lo, double hi, const char *name);
+                                double lo, double hi, const char *name,
+                                bool isTimeParameter);
 void        ParStore_addFixedPar(ParStore * self, double value,
                                  const char *name);
 int         ParStore_nFixed(ParStore * self);
@@ -33,6 +36,8 @@ void        ParStore_sanityCheck(ParStore *self, const char *file, int line);
 void        ParStore_print(ParStore *self, FILE *fp);
 int         ParStore_equals(ParStore *lhs, ParStore *rhs);
 void        ParStore_setFreeParams(ParStore *self, int n, double x[n]);
+void        ParStore_getFreeParams(ParStore *self, int n, double x[n]);
+void        ParStore_randomize(ParStore *self, int n, double x[n], gsl_rng *rng);
 
 void        Bounds_sanityCheck(Bounds *self, const char *file, int line);
 int         Bounds_equals(Bounds *lhs, Bounds *rhs);

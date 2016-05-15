@@ -23,10 +23,10 @@
 pthread_mutex_t seedLock = PTHREAD_MUTEX_INITIALIZER;
 unsigned long rngseed;
 
-typedef struct TaskArg TaskArg;
+typedef struct SimArg SimArg;
 
 /** Data structure used by each thread */
-struct TaskArg {
+struct SimArg {
     unsigned long nreps;
     GPTree     *gptree;
 
@@ -34,13 +34,14 @@ struct TaskArg {
     BranchTab  *branchtab;
 };
 
-TaskArg    *TaskArg_new(const GPTree *gptree, unsigned nreps);
-void        TaskArg_free(TaskArg * targ);
-int         taskfun(void *, void *);
+SimArg    *SimArg_new(int dim, double x[dim], const GPTree *gptree,
+                        unsigned nreps);
+void        SimArg_free(SimArg * targ);
+int         simfun(void *, void *);
 
 /// function run by each thread
-int taskfun(void *varg, void *notUsed) {
-    TaskArg    *targ = (TaskArg *) varg;
+int simfun(void *varg, void *notUsed) {
+    SimArg    *targ = (SimArg *) varg;
     gsl_rng    *rng = gsl_rng_alloc(gsl_rng_taus);
 
 	// Lock seed, initialize random number generator, increment seed,
@@ -56,20 +57,22 @@ int taskfun(void *varg, void *notUsed) {
     return 0;
 }
 
-/// Construct a new TaskArg by copying a template.
-TaskArg    *TaskArg_new(const GPTree *gptree, unsigned nreps) {
-    TaskArg    *a = malloc(sizeof(TaskArg));
+/// Construct a new SimArg by copying a template.
+SimArg    *SimArg_new(int dim, double x[dim], const GPTree *gptree,
+                        unsigned nreps) {
+    SimArg    *a = malloc(sizeof(SimArg));
     checkmem(a, __FILE__, __LINE__);
 
     a->nreps = nreps;
     a->gptree = GPTree_dup(gptree);
+    GPTree_setParams(a->gptree, dim, x);
     a->branchtab = BranchTab_new();
 
     return a;
 }
 
-/// TaskArg destructor
-void TaskArg_free(TaskArg * self) {
+/// SimArg destructor
+void SimArg_free(SimArg * self) {
     BranchTab_free(self->branchtab);
     GPTree_free(self->gptree);
     free(self);
@@ -80,9 +83,10 @@ void TaskArg_free(TaskArg * self) {
 /// its probability.  Function returns a pointer to a newly-allocated
 /// object of type BranchTab, which contains all the observed site
 /// patterns and their summed branch lengths.
-BranchTab *patprob(GPTree *gptree, int nThreads, long nreps) {
+BranchTab *patprob(int dim, double x[dim], const GPTree *gptree, int nThreads,
+                   long nreps) {
     int j;
-    TaskArg    *taskarg[nThreads];
+    SimArg    *simarg[nThreads];
     long reps[nThreads];
 
     // Divide repetitions among threads.
@@ -106,7 +110,7 @@ BranchTab *patprob(GPTree *gptree, int nThreads, long nreps) {
     }
 
     for(j = 0; j < nThreads; ++j)
-        taskarg[j] = TaskArg_new(gptree, reps[j]);
+        simarg[j] = SimArg_new(dim, x, gptree, reps[j]);
 
     {
         JobQueue   *jq = JobQueue_new(nThreads, NULL, NULL, NULL);
@@ -114,19 +118,19 @@ BranchTab *patprob(GPTree *gptree, int nThreads, long nreps) {
             eprintf("s:%s:%d: Bad return from JobQueue_new",
                     __FILE__, __func__, __LINE__);
         for(j = 0; j < nThreads; ++j)
-            JobQueue_addJob(jq, taskfun, taskarg[j]);
+            JobQueue_addJob(jq, simfun, simarg[j]);
         JobQueue_waitOnJobs(jq);
         JobQueue_free(jq);
     }
 
     // Add all branchtabs into branchtab[0]
     for(j = 1; j < nThreads; ++j)
-        BranchTab_plusEquals(taskarg[0]->branchtab, taskarg[j]->branchtab);
+        BranchTab_plusEquals(simarg[0]->branchtab, simarg[j]->branchtab);
 
-    BranchTab *rval = BranchTab_dup(taskarg[0]->branchtab);
+    BranchTab *rval = BranchTab_dup(simarg[0]->branchtab);
 
     for(j = 0; j < nThreads; ++j)
-        TaskArg_free(taskarg[j]);
+        SimArg_free(simarg[j]);
         
     return rval;
 }

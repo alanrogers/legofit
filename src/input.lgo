@@ -1,10 +1,10 @@
 time fixed  T0=0
-time free   Tc=1
+time fixed  Tc=1
 time free   Tab=3
-time free   Tabc=5.5
-twoN free   2Na=100
+time fixed  Tabc=5.5
+twoN fixed  2Na=100
 twoN fixed  2Nb=123
-twoN free   2Nc=213.4
+twoN fixed  2Nc=213.4
 twoN fixed  2Nbb=32.1
 twoN free   2Nab=222 
 twoN fixed  2Nabc=1.2e2
