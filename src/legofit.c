@@ -17,7 +17,12 @@
 #include <getopt.h>
 #include <stdio.h>
 #include <sys/types.h>
+#include <unistd.h>
 #include <time.h>
+#include <pthread.h>
+
+pthread_mutex_t seedLock = PTHREAD_MUTEX_INITIALIZER;
+unsigned long rngseed;
 
 void        usage(void);
 
@@ -53,6 +58,7 @@ int main(int argc, char **argv) {
 
     int         i, j;
     time_t      currtime = time(NULL);
+	unsigned long pid = (unsigned long) getpid();
     double      lo_twoN = 0.0, hi_twoN = 1e6;  // twoN bounds
     double      lo_t = 0.0, hi_t = 1e6;        // t bounds
 
@@ -64,6 +70,8 @@ int main(int argc, char **argv) {
 	int         nPts;
 	int         strategy = 1;
 	int         ptsPerDim = 10;
+
+	rngseed = currtime^pid;
 
 #if defined(__DATE__) && defined(__TIME__)
     printf("# Program was compiled: %s %s\n", __DATE__, __TIME__);
