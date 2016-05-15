@@ -147,6 +147,7 @@ int main(int argc, char **argv) {
     printf("# nthreads           : %d\n", nThreads);
     printf("# lgo input file     : %s\n", lgofname);
     printf("# site pat input file: %s\n", patfname);
+    printf("# DE strategy        : %d\n", strategy);
 
     Bounds bnd = {
             .lo_twoN = lo_twoN,
