@@ -158,6 +158,8 @@ int main(int argc, char **argv) {
     GPTree *gptree = GPTree_new(lgofname, bnd);
 	LblNdx lblndx  = GPTree_getLblNdx(gptree);
 
+	GPTree_printParStore(gptree, stdout);
+
     // Observed site pattern frequencies
     BranchTab *obs = BranchTab_parse(patfname, &lblndx);
     BranchTab_normalize(obs);

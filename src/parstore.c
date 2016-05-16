@@ -71,6 +71,7 @@ void ParStore_randomize(ParStore *self, int n, double x[n], gsl_rng *rng) {
                 + gsl_rng_uniform(rng)*(self->hiFree[i] - self->loFree[i]);
     }
 
+	printf("%s:%d: nt=%d\n", __FILE__,__LINE__,nt);
     double  *ptr[nt];
     for(i=0; i < nt; ++i)
         ptr[i] = t0 + i;
@@ -81,8 +82,10 @@ void ParStore_randomize(ParStore *self, int n, double x[n], gsl_rng *rng) {
     // ord[0] is the index of the smallest value in t0, ord[1] is
     // that of the next smallest, and so on.
     int ord[nt];
-    for(i=0; i < nt; ++i)
+    for(i=0; i < nt; ++i) {
         ord[i] = ptr[i] - t0;
+		printf("ord[%2d]=%d\n", i, ord[i]);
+	}
 
     // Sort array of random times
     qsort(t1, (size_t) nt, sizeof(t1[0]), compareDbls);
@@ -94,8 +97,6 @@ void ParStore_randomize(ParStore *self, int n, double x[n], gsl_rng *rng) {
     for(i=j=0; i < self->nFree; ++i)
         if(self->time[i])
             x[i] = t2[j++];
-
-    return nt;
 }
 
 /// Set vector of free parameters.

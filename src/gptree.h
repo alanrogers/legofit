@@ -2,6 +2,7 @@
 #  define ARR_GPTREE_H
 
 #  include "typedefs.h"
+#  include <stdio.h>
 #  include <gsl/gsl_rng.h>
 
 GPTree     *GPTree_new(const char *fname, Bounds bnd);
@@ -19,6 +20,6 @@ unsigned    GPTree_nsamples(GPTree *self);
 void        GPTree_setParams(GPTree *self, int n, double x[n]);
 void        GPTree_getParams(GPTree *self, int n, double x[n]);
 void        GPTree_randomize(void *void_p, int n, double x[n], gsl_rng *rng);
-
+void        GPTree_printParStore(GPTree *self, FILE *fp);
 
 #endif
