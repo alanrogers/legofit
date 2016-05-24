@@ -38,12 +38,15 @@ struct PopNode {
     struct PopNode *parent[2];
     struct PopNode *child[2];
     Gene       *sample[MAXSAMP];
+    bool        twoNfree, startFree; // true => parameter varies
+    bool        touched;   // true => node has been visited during traversal
 };
 
-PopNode    *PopNode_new(double *twoN, double *start, NodeStore *ns);
+PopNode    *PopNode_new(double *twoN, bool twoNfree, double *start,
+                        bool startFree, NodeStore *ns);
 void        PopNode_addChild(PopNode * parent, PopNode * child);
-void        PopNode_mix(PopNode * child, double *mPtr, PopNode * introgressor,
-                        PopNode * native);
+void        PopNode_mix(PopNode * child, double *mPtr, bool mixFree,
+                        PopNode * introgressor, PopNode * native);
 void        PopNode_newGene(PopNode * self, unsigned ndx);
 void        PopNode_addSample(PopNode * self, Gene * gene);
 Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng);
@@ -58,6 +61,7 @@ void        PopNode_sanityFromLeaf(PopNode * self, const char *file,
 int         PopNode_nsamples(PopNode * self);
 void        PopNode_shiftParamPtrs(PopNode *self, size_t dp);
 void        PopNode_shiftPopNodePtrs(PopNode *self, size_t dp);
+void        PopNode_untouch(PopNode * self);
 
 void        SampNdx_init(SampNdx * self);
 void        SampNdx_addSamples(SampNdx * self, unsigned nsamples,

@@ -9,6 +9,7 @@
 #include "gene.h"
 #include "misc.h"
 #include <string.h>
+#include <stdbool.h>
 #include <gsl/gsl_randist.h>
 
 struct NodeStore {
@@ -95,7 +96,7 @@ PopNode    *PopNode_root(PopNode * self) {
     return NULL;
 }
 
-/** Remove all references to samples from tree of populations */
+/// Remove all references to samples from tree of populations
 void PopNode_clear(PopNode * self) {
     int         i;
     for(i = 0; i < self->nchildren; ++i)
@@ -104,6 +105,15 @@ void PopNode_clear(PopNode * self) {
     self->nsamples = 0;
     memset(self->sample, 0, sizeof(self->sample));
     PopNode_sanityCheck(self, __FILE__, __LINE__);
+}
+
+/// Set all "touched" values to "false".
+void PopNode_untouch(PopNode * self) {
+    int         i;
+    for(i = 0; i < self->nchildren; ++i)
+        PopNode_untouch(self->child[i]);
+
+    self->touched = false;
 }
 
 /// Return 1 if PopNode tree is empty of samples
@@ -176,14 +186,18 @@ int PopNode_nsamples(PopNode * self) {
     return self->nsamples;
 }
 
-PopNode    *PopNode_new(double *twoN, double *start, NodeStore *ns) {
+PopNode    *PopNode_new(double *twoN, bool twoNfree, double *start,
+                        bool startFree, NodeStore *ns) {
     PopNode    *new = NodeStore_alloc(ns);
     checkmem(new, __FILE__, __LINE__);
 
     new->nparents = new->nchildren = new->nsamples = 0;
     new->twoN = twoN;
+    new->twoNfree = twoNfree;
     new->mix = NULL;
     new->start = start;
+    new->startFree = startFree;
+    new->mixFree = false;
     new->end = NULL;
 
     memset(new->sample, 0, sizeof(new->sample));
@@ -247,8 +261,8 @@ void PopNode_addSample(PopNode * self, Gene * gene) {
     PopNode_sanityCheck(self, __FILE__, __LINE__);
 }
 
-void PopNode_mix(PopNode * child, double *mPtr, PopNode * introgressor,
-                 PopNode * native) {
+void PopNode_mix(PopNode * child, double *mPtr, bool mixFree,
+                 PopNode * introgressor, PopNode * native) {
     if(introgressor->nchildren > 1)
         eprintf("%s:%s:%d:"
 				" Can't add child because introgressor already has %d.\n",
@@ -284,6 +298,7 @@ void PopNode_mix(PopNode * child, double *mPtr, PopNode * introgressor,
     child->parent[1] = introgressor;
     child->nparents = 2;
     child->mix = mPtr;
+    child->mixFree = mixFree;
     introgressor->child[introgressor->nchildren] = child;
     ++introgressor->nchildren;
     native->child[native->nchildren] = child;

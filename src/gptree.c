@@ -218,6 +218,7 @@ unsigned    GPTree_nsamples(GPTree *self) {
 #endif
 
 #include <assert.h>
+#include <unistd.h>
 
 #ifdef NDEBUG
 #error "Unit tests must be compiled without -DNDEBUG flag"
@@ -288,6 +289,7 @@ int main(int argc, char **argv) {
     GPTree_free(g);
     GPTree_free(g2);
 
+    unlink(fname);
     unitTstResult("GPTree", "untested");
     return 0;
 }
