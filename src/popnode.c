@@ -195,9 +195,9 @@ PopNode    *PopNode_new(double *twoN, bool twoNfree, double *start,
     new->twoN = twoN;
     new->twoNfree = twoNfree;
     new->mix = NULL;
+    new->mixFree = false;
     new->start = start;
     new->startFree = startFree;
-    new->mixFree = false;
     new->end = NULL;
 
     memset(new->sample, 0, sizeof(new->sample));

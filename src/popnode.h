@@ -39,7 +39,7 @@ struct PopNode {
     struct PopNode *parent[2];
     struct PopNode *child[2];
     Gene       *sample[MAXSAMP];
-    bool        twoNfree, startFree; // true => parameter varies
+    bool        twoNfree, startFree, mixFree; // true => parameter varies
     bool        touched;   // true => node has been visited during traversal
 };
 
