@@ -109,6 +109,8 @@ void PopNode_clear(PopNode * self) {
 
 /// Set all "touched" values to "false".
 void PopNode_untouch(PopNode * self) {
+    if(self == NULL)
+        return;
     int         i;
     for(i = 0; i < self->nchildren; ++i)
         PopNode_untouch(self->child[i]);
@@ -118,7 +120,7 @@ void PopNode_untouch(PopNode * self) {
 
 /// Return 1 if PopNode tree is empty of samples
 int PopNode_isClear(const PopNode *self) {
-    if(self==0)
+    if(self == NULL)
         return 1;
     if(self->nsamples > 0)
         return 0;
@@ -199,6 +201,7 @@ PopNode    *PopNode_new(double *twoN, bool twoNfree, double *start,
     new->start = start;
     new->startFree = startFree;
     new->end = NULL;
+    new->touched = false;
 
     memset(new->sample, 0, sizeof(new->sample));
     memset(new->parent, 0, sizeof(new->parent));
