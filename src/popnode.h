@@ -2,6 +2,7 @@
 #  define ARR_POPNODE_H
 
 #  include "typedefs.h"
+#  include <stdbool.h>
 #  include <gsl/gsl_rng.h>
 
 #  define POPNAMESIZE 30
