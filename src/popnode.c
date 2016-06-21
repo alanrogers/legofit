@@ -587,7 +587,10 @@ int main(int argc, char **argv) {
     CHECKMEM(ns);
 
     double twoN0 = 1.0, start0= 0.0;
-    PopNode *p0 = PopNode_new(&twoN0, &start0, ns);
+    bool twoNfree = true;
+    bool startFree = false;
+    PopNode *p0 = PopNode_new(&twoN0, twoNfree,
+                              &start0, startFree, ns);
     assert(p0->twoN == &twoN0);
     assert(p0->start == &start0);
     assert(p0->end == NULL);
@@ -603,7 +606,7 @@ int main(int argc, char **argv) {
 		PopNode_printShallow(p0, stdout);
 
     double twoN1 = 100.0, start1= 123.0;
-    PopNode *p1 = PopNode_new(&twoN1, &start1, ns);
+    PopNode *p1 = PopNode_new(&twoN1, twoNfree, &start1, startFree, ns);
     assert(p1->twoN == &twoN1);
     assert(p1->start == &start1);
     assert(p1->end == NULL);
@@ -661,7 +664,7 @@ int main(int argc, char **argv) {
 
 	double twoN = 100.0;
 	double start = 20.0;
-    PopNode    *pnode = PopNode_new(&twoN, &start, ns);
+    PopNode    *pnode = PopNode_new(&twoN, twoNfree, &start, startFree, ns);
     SampNdx_addSamples(&sndx, 1, pnode);
     SampNdx_addSamples(&sndx, 2, pnode);
     assert(SampNdx_ptrsLegal(&sndx, v, v+nseg));
@@ -679,7 +682,7 @@ int main(int argc, char **argv) {
     PopNode v2[nseg];
     NodeStore *ns2 = NodeStore_new(nseg, v2);
     CHECKMEM(ns);
-    pnode = PopNode_new(&twoN2, &start2, ns2);
+    pnode = PopNode_new(&twoN2, twoNfree, &start2, startFree, ns2);
     SampNdx_addSamples(&sndx2, 1, pnode);
     SampNdx_addSamples(&sndx2, 2, pnode);
     SampNdx_populateTree(&sndx2);
