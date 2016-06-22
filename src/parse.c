@@ -292,7 +292,7 @@ void parseSegment(Tokenizer *tkz, HashTab *poptbl, SampNdx *sndx,
     PopNode *thisNode = (PopNode *) El_get(e);
     if(thisNode == NULL) {
 		// Create new node, with pointers to the relevant parameters
-        thisNode = PopNode_new(twoNptr, tPtr, ns);
+        thisNode = PopNode_new(twoNptr, twoNfree, tPtr, startFree, ns);
         El_set(e, thisNode);
     }else
         eprintf("%s:%s:%d: duplicate \"segment %s\"\n",

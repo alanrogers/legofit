@@ -36,34 +36,39 @@ int main(int argc, char* argv[]){
 	double x=1.0, y=2.0, z=3.0;
 	double xx=1.0, yy=2.0, zz=3.0;
 	ParKeyVal *pkv = NULL;
+	bool isfree;
 
-	pkv = ParKeyVal_add(pkv, "y", &y);
-	pkv = ParKeyVal_add(pkv, "x", &x);
-	pkv = ParKeyVal_add(pkv, "z", &z);
+	pkv = ParKeyVal_add(pkv, "y", &y, true);
+	pkv = ParKeyVal_add(pkv, "x", &x, false);
+	pkv = ParKeyVal_add(pkv, "z", &z, true);
 
 	double *ptr;
-	ptr = ParKeyVal_get(pkv, "x");
+	ptr = ParKeyVal_get(pkv, &isfree, "x");
 	assert(ptr == &x);
+	assert(isfree == false);
 	assert(*ptr == 1.0);
 
-	ptr = ParKeyVal_get(pkv, "y");
+	ptr = ParKeyVal_get(pkv, &isfree, "y");
 	assert(ptr == &y);
+	assert(isfree == true);
 	assert(*ptr == 2.0);
 		   
-	ptr = ParKeyVal_get(pkv, "z");
+	ptr = ParKeyVal_get(pkv, &isfree, "z");
 	assert(ptr == &z);
+	assert(isfree == true);
 	assert(*ptr == 3.0);
 
-	assert(NULL == ParKeyVal_get(pkv, "nonexistent"));
+	assert(NULL == ParKeyVal_get(pkv, &isfree, "nonexistent"));
+	assert(isfree == true);
 
 	if(verbose)
 		ParKeyVal_print(pkv, stdout);
 
     ParKeyVal *pkv2 = NULL;
 
-	pkv2 = ParKeyVal_add(pkv2, "x", &xx);
-	pkv2 = ParKeyVal_add(pkv2, "z", &zz);
-	pkv2 = ParKeyVal_add(pkv2, "y", &yy);
+	pkv2 = ParKeyVal_add(pkv2, "x", &xx, false);
+	pkv2 = ParKeyVal_add(pkv2, "z", &zz, true);
+	pkv2 = ParKeyVal_add(pkv2, "y", &yy, true);
 
     assert(ParKeyVal_equals(pkv, pkv2));
 
