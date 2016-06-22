@@ -419,7 +419,8 @@ void parseMix(Tokenizer *tkz, HashTab *poptbl, ParStore *parstore) {
         eprintf("%s:%s:%d: parent segment \"%s\" undefined\n",
                  __FILE__,__func__,__LINE__, parName[1]);
 
-    PopNode_mix(childNode, mPtr, parNode1, parNode0);
+    // This won't compile, because mixFree is undefined.
+    PopNode_mix(childNode, mPtr, mixFree, parNode1, parNode0);
 }
 
 PopNode    *mktree(FILE * fp, SampNdx *sndx, LblNdx *lndx, ParStore *parstore,
