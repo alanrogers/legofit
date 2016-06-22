@@ -69,11 +69,9 @@ int main(int argc, char* argv[]){
 	pkv2 = ParKeyVal_add(pkv2, "x", &xx, false);
 	pkv2 = ParKeyVal_add(pkv2, "z", &zz, true);
 	pkv2 = ParKeyVal_add(pkv2, "y", &yy, true);
-
     assert(ParKeyVal_equals(pkv, pkv2));
-
-	ParKeyVal_free(pkv);
 	ParKeyVal_free(pkv2);
+	ParKeyVal_free(pkv);
 
 	unitTstResult("ParKeyVal", "OK");
     return 0;

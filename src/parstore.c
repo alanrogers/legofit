@@ -52,53 +52,6 @@ static int compareDbls(const void *void_x, const void *void_y) {
     return *x - *y;
 }
 
-/// Generate a random vector of free parameter values
-void ParStore_randomize(ParStore *self, int n, double x[n], gsl_rng *rng) {
-    assert(n == self->nFree);
-    int i, j, nt=0;
-    double t0[MAXPAR], t1[MAXPAR];
-
-    // For non-time parameters, put random values into x.
-    // For time parameters, put random values into t1 and
-    // original ones into t0.
-    for(i=j=0; i < self->nFree; ++i) {
-        if(self->time[i]) {
-            t0[nt] = self->freeVal[i];
-            t1[nt++] = self->loFree[i]
-                + gsl_rng_uniform(rng)*(self->hiFree[i] - self->loFree[i]);
-        }else
-            x[i] = self->loFree[i]
-                + gsl_rng_uniform(rng)*(self->hiFree[i] - self->loFree[i]);
-    }
-
-	printf("%s:%d: nt=%d\n", __FILE__,__LINE__,nt);
-    double  *ptr[nt];
-    for(i=0; i < nt; ++i)
-        ptr[i] = t0 + i;
-
-    // Sort array of pointers
-    qsort(ptr, (size_t) nt, sizeof(ptr[0]), compareDblPtrs);
-
-    // ord[0] is the index of the smallest value in t0, ord[1] is
-    // that of the next smallest, and so on.
-    int ord[nt];
-    for(i=0; i < nt; ++i) {
-        ord[i] = ptr[i] - t0;
-		printf("ord[%2d]=%d\n", i, ord[i]);
-	}
-
-    // Sort array of random times
-    qsort(t1, (size_t) nt, sizeof(t1[0]), compareDbls);
-
-    double t2[nt];
-    for(i=0; i < nt; ++i)
-        t2[ord[i]] = t1[i];
-
-    for(i=j=0; i < self->nFree; ++i)
-        if(self->time[i])
-            x[i] = t2[j++];
-}
-
 /// Set vector of free parameters.
 void ParStore_setFreeParams(ParStore *self, int n, double x[n]) {
     assert(n == self->nFree);
@@ -139,13 +92,13 @@ ParStore   *ParStore_dup(const ParStore * old) {
     for(i = 0; i < new->nFree; ++i) {
         new->nameFree[i] = strdup(old->nameFree[i]);
         new->head = ParKeyVal_add(new->head, new->nameFree[i],
-                                  new->freeVal + i);
+                                  new->freeVal + i, true);
     }
 
     for(i = 0; i < new->nFixed; ++i) {
         new->nameFixed[i] = strdup(old->nameFixed[i]);
         new->head = ParKeyVal_add(new->head, new->nameFixed[i],
-                                  new->fixedVal + i);
+                                  new->fixedVal + i, false);
     }
     ParStore_sanityCheck(new, __FILE__, __LINE__);
     return new;
@@ -193,7 +146,8 @@ void ParStore_addFreePar(ParStore * self, double value,
     CHECKMEM(self->nameFree[i]);
 
     // Linked list associates pointer with parameter name.
-    self->head = ParKeyVal_add(self->head, name, self->freeVal + i);
+    self->head = ParKeyVal_add(self->head, name, self->freeVal + i,
+							   true);
 }
 
 /// Add fixed parameter to ParStore.
@@ -211,7 +165,8 @@ void ParStore_addFixedPar(ParStore * self, double value, const char *name) {
     CHECKMEM(self->nameFixed[i]);
 
     // Linked list associates pointer with parameter name.
-    self->head = ParKeyVal_add(self->head, name, self->fixedVal + i);
+    self->head = ParKeyVal_add(self->head, name, self->fixedVal + i,
+		false);
 }
 
 /// Return the number of fixed parameters
@@ -277,8 +232,9 @@ double     *ParStore_upBounds(ParStore * self) {
 }
 
 /// Return pointer associated with parameter name.
-double     *ParStore_findPtr(ParStore * self, const char *name) {
-    return ParKeyVal_get(self->head, name);
+double     *ParStore_findPtr(ParStore * self, bool *isfree,
+							 const char *name) {
+    return ParKeyVal_get(self->head, isfree, name);
 }
 
 void ParStore_sanityCheck(ParStore *self, const char *file, int line) {

@@ -18,7 +18,7 @@
 
 struct ParKeyVal {
     char        key[MAX_PARAM_NAME];
-    double     *valPtr;
+    double     *valPtr; // not locally owned
 	bool       isfree;
     ParKeyVal  *next;
 };

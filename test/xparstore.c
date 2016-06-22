@@ -49,19 +49,22 @@ int main(int argc, char **argv) {
     assert(ParStore_nFree(ps) == 0);
 
     double val, *ptr;
+	bool isfree, isfree2;
 
     val = 12.3;
     ParStore_addFixedPar(ps, val, "x");
-    ptr = ParStore_findPtr(ps, "x");
+    ptr = ParStore_findPtr(ps, &isfree, "x");
     assert(*ptr == val);
+	assert(isfree == false);
     assert(ParStore_nFixed(ps) == 1);
     assert(ParStore_nFree(ps) == 0);
     assert(ParStore_getFixed(ps, 0) == val);
 
     val = 23.4;
     ParStore_addFreePar(ps, val, 10.0, 30.0, "y", true);
-    ptr = ParStore_findPtr(ps, "y");
+    ptr = ParStore_findPtr(ps, &isfree, "y");
     assert(*ptr == val);
+	assert(isfree == true);
     assert(ParStore_nFixed(ps) == 1);
     assert(ParStore_nFree(ps) == 1);
     assert(ParStore_getFree(ps, 0) == val);
@@ -70,16 +73,18 @@ int main(int argc, char **argv) {
 
     val = 88.3;
     ParStore_addFixedPar(ps, val, "w");
-    ptr = ParStore_findPtr(ps, "w");
+    ptr = ParStore_findPtr(ps, &isfree, "w");
     assert(*ptr == val);
+	assert(isfree == false);
     assert(ParStore_nFixed(ps) == 2);
     assert(ParStore_nFree(ps) == 1);
     assert(ParStore_getFixed(ps, 1) == val);
 
     val = -23.8;
     ParStore_addFreePar(ps, val, -100.0, 0.0, "z", true);
-    ptr = ParStore_findPtr(ps, "z");
+    ptr = ParStore_findPtr(ps, &isfree, "z");
     assert(*ptr == val);
+	assert(isfree == true);
     assert(ParStore_nFixed(ps) == 2);
     assert(ParStore_nFree(ps) == 2);
     assert(ParStore_getFree(ps, 1) == val);
@@ -88,8 +93,9 @@ int main(int argc, char **argv) {
 
     val = 0.8;
     ParStore_addFreePar(ps, val, 0.0, 1.0, "a", true);
-    ptr = ParStore_findPtr(ps, "a");
+    ptr = ParStore_findPtr(ps, &isfree, "a");
     assert(*ptr == val);
+	assert(isfree == true);
     assert(ParStore_nFixed(ps) == 2);
     assert(ParStore_nFree(ps) == 3);
     assert(ParStore_getFree(ps, 2) == val);
@@ -113,8 +119,8 @@ int main(int argc, char **argv) {
         const char *name1 = ParStore_getNameFixed(ps, i);
         const char *name2 = ParStore_getNameFixed(ps2, i);
         assert(0 == strcmp(name1, name2));
-        size_t position1 = (size_t) ParStore_findPtr(ps, name1);
-        size_t position2 = (size_t) ParStore_findPtr(ps2, name1);
+        size_t position1 = (size_t) ParStore_findPtr(ps, &isfree, name1);
+        size_t position2 = (size_t) ParStore_findPtr(ps2,&isfree2, name1);
         assert(offset == position2 - position1);
     }
 
@@ -125,25 +131,15 @@ int main(int argc, char **argv) {
         const char *name1 = ParStore_getNameFree(ps, i);
         const char *name2 = ParStore_getNameFree(ps2, i);
         assert(0 == strcmp(name1, name2));
-        size_t position1 = (size_t) ParStore_findPtr(ps, name1);
-        size_t position2 = (size_t) ParStore_findPtr(ps2, name1);
+        size_t position1 = (size_t) ParStore_findPtr(ps, &isfree,name1);
+        size_t position2 = (size_t) ParStore_findPtr(ps2,&isfree2,name1);
         assert(offset == position2 - position1);
     }
     if(verbose)
         ParStore_print(ps2, stdout);
 
-    int n = ParStore_nFree(ps);
-    double x[n];
-
-    gsl_rng *rng = gsl_rng_alloc(gsl_rng_taus);
-    gsl_rng_set(rng, (unsigned long) time(NULL));
-
-    ParStore_randomize(ps, n, x, rng);
-
     ParStore_free(ps);
     ParStore_free(ps2);
-    gsl_rng_free(rng);
-
     unitTstResult("ParStore", "OK");
 
     return 0;
