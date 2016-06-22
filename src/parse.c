@@ -1,4 +1,3 @@
-#include "gptree.h"
 #include "hashtab.h"
 #include "misc.h"
 #include "parse.h"
@@ -216,6 +215,7 @@ void parseSegment(Tokenizer *tkz, HashTab *poptbl, SampNdx *sndx,
 				  LblNdx *lndx, ParStore *parstore, NodeStore *ns) {
     char *popName, *tok;
     double *tPtr, *twoNptr;
+	bool tfree, twoNfree;
     unsigned long nsamples=0;
     int curr=1,  ntokens = Tokenizer_ntokens(tkz);
 
@@ -233,7 +233,7 @@ void parseSegment(Tokenizer *tkz, HashTab *poptbl, SampNdx *sndx,
     }
     CHECK_INDEX(curr, ntokens);
     tok = Tokenizer_token(tkz, curr++);
-    tPtr = ParStore_findPtr(parstore, tok);
+    tPtr = ParStore_findPtr(parstore, &tfree, tok);
 	if(NULL == tPtr) {
 		fprintf(stderr,"%s:%s:%d: Parameter \"%s\" is undefined\n",
 				__FILE__,__func__,__LINE__,tok);
@@ -255,7 +255,7 @@ void parseSegment(Tokenizer *tkz, HashTab *poptbl, SampNdx *sndx,
     }
     CHECK_INDEX(curr, ntokens);
     tok = Tokenizer_token(tkz, curr++);
-    twoNptr = ParStore_findPtr(parstore, tok);
+    twoNptr = ParStore_findPtr(parstore, &twoNfree, tok);
 	if(NULL == twoNptr) {
 		fprintf(stderr,"%s:%s:%dParameter \"%s\" is undefined\n",
 				__FILE__,__func__,__LINE__, tok);
@@ -292,7 +292,7 @@ void parseSegment(Tokenizer *tkz, HashTab *poptbl, SampNdx *sndx,
     PopNode *thisNode = (PopNode *) El_get(e);
     if(thisNode == NULL) {
 		// Create new node, with pointers to the relevant parameters
-        thisNode = PopNode_new(twoNptr, twoNfree, tPtr, startFree, ns);
+        thisNode = PopNode_new(twoNptr, twoNfree, tPtr, tfree, ns);
         El_set(e, thisNode);
     }else
         eprintf("%s:%s:%d: duplicate \"segment %s\"\n",
@@ -349,6 +349,7 @@ void parseDerive(Tokenizer *tkz, HashTab *poptbl) {
 void parseMix(Tokenizer *tkz, HashTab *poptbl, ParStore *parstore) {
     char *childName, *parName[2], *tok;
     double *mPtr;
+	bool mfree;
     int curr=1,  ntokens = Tokenizer_ntokens(tkz);
 
     // Read name of child
@@ -375,7 +376,7 @@ void parseMix(Tokenizer *tkz, HashTab *poptbl, ParStore *parstore) {
     CHECK_INDEX(curr, ntokens);
     CHECK_INDEX(curr, ntokens);
     tok = Tokenizer_token(tkz, curr++);
-    mPtr = ParStore_findPtr(parstore, tok);
+    mPtr = ParStore_findPtr(parstore, &mfree, tok);
 	if(NULL == mPtr) {
 		fprintf(stderr,"%s:%s:%d: Parameter \"%s\" is undefined\n",
 				__FILE__,__func__,__LINE__, tok);
@@ -420,7 +421,7 @@ void parseMix(Tokenizer *tkz, HashTab *poptbl, ParStore *parstore) {
                  __FILE__,__func__,__LINE__, parName[1]);
 
     // This won't compile, because mixFree is undefined.
-    PopNode_mix(childNode, mPtr, mixFree, parNode1, parNode0);
+    PopNode_mix(childNode, mPtr, mfree, parNode1, parNode0);
 }
 
 PopNode    *mktree(FILE * fp, SampNdx *sndx, LblNdx *lndx, ParStore *parstore,
