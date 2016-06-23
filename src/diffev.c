@@ -231,7 +231,10 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
         TaskArg_setArray(targ[i], dim, c[i]);
         JobQueue_addJob(jq, taskfun, targ[i]);
     }
+    printf("%s:%d initializing DE. nPts=%d nthreads=%d\n",__FILE__,__LINE__,
+           nPts, nthreads); fflush(stdout);
     JobQueue_waitOnJobs(jq);
+    printf("%s:%d done initializing DE\n",__FILE__,__LINE__); fflush(stdout);
     cmin = INFINITY;
     imin = INT_MAX;
     for(i = 0; i < nPts; i++) {
@@ -252,6 +255,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 
     // Iteration loop
     for(gen = 1; gen <= genmax; ++gen) {
+        printf("%s:%d: top of loop\n",__FILE__,__LINE__); fflush(stdout);
         imin = 0;
         for(i = 0; i < nPts; i++) { // Start of loop through ensemble
 
@@ -445,7 +449,9 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 
         }                       // End loop ensemble
 
+        printf("%s:%d\n",__FILE__,__LINE__); fflush(stdout);
         JobQueue_waitOnJobs(jq);
+        printf("%s:%d\n",__FILE__,__LINE__); fflush(stdout);
 
         // 2nd pass thrrough ensemble is the "reduce" portion
         // of "map-reduce". It generates a new generation, based
@@ -495,9 +501,11 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
             }
             putc('\n', stderr);
         }
+        printf("%s:%d bottom of loop\n",__FILE__,__LINE__); fflush(stdout);
         if(*yspread <= deTol)
             break;
     }
+    printf("%s:%d\n",__FILE__,__LINE__); fflush(stdout);
     // End iterations
 
     JobQueue_noMoreJobs(jq);

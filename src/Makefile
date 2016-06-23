@@ -1,12 +1,12 @@
 destination := $(HOME)/bin
-#opt := -DNDEBUG -O3  -finline-functions  # For full optimization
+opt := -DNDEBUG -O3  -finline-functions  # For full optimization
 #opt := -O3  -finline-functions  # Optimization + debugging
-opt :=  -O0 -fno-inline-functions -DDEBUG     # For debugging
+#opt :=  -O0 -fno-inline-functions -DDEBUG     # For debugging
 #prof := -pg -rdynamic                    # For profiling
 prof :=
 incl := -I/usr/local/include -I/opt/local/include
 
-target := lego
+targets := lego legofit
 tests := xzeroin xbinary
 
 CC := gcc
@@ -34,7 +34,7 @@ lib := -L/usr/local/lib -lgsl -lgslcblas -lpthread -lm
 .c.o:
 	$(CC) $(CFLAGS) $(incl) -c -o ${@F}  $<
 
-all : $(target)
+all : $(targets)
 
 test : $(tests)
 	-./xbinary
@@ -63,9 +63,9 @@ depend : *.c *.h
 clean :
 	rm -f *.a *.o *~ gmon.out *.tmp $(targets) $(tests) core.* vgcore.*
 
-install : $(target)
+install : $(targets)
 	cp diverg.py $(destination)
-	cp $(target) $(destination)
+	cp $(targets) $(destination)
 
 include depend
 

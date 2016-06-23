@@ -34,6 +34,7 @@ void usage(void) {
     fprintf(stderr,"   and options may include:\n");
     tellopt("-i <x> or --deItr <x>", "number of DE iterations");
     tellopt("-r <x> or --simreps <x>", "number of reps in each function eval");
+    tellopt("-a <x> or --deTol <x>", "tolerance: smaller means less accurate");
     tellopt("-t <x> or --threads <x>", "number of threads (default is auto)");
     tellopt("-v or --verbose", "verbose output");
     tellopt("-h or --help", "print this message");
@@ -50,7 +51,7 @@ int main(int argc, char **argv) {
 		{"scaleFactor", required_argument, 0, 'F'},
 		{"simreps", required_argument, 0, 'r'},
         {"strategy", required_argument, 0, 's'},
-        {"deTol", required_argument, 0, 'V'},
+        {"deTol", required_argument, 0, 'a'},
         {"help", no_argument, 0, 'h'},
         {"verbose", no_argument, 0, 'v'},
         {NULL, 0, NULL, 0}
@@ -96,7 +97,7 @@ int main(int argc, char **argv) {
 
     // command line arguments
     for(;;) {
-        i = getopt_long(argc, argv, "i:t:F:p:r:s:V:vx:h", myopts, &optndx);
+        i = getopt_long(argc, argv, "i:t:F:p:r:s:a:vx:h", myopts, &optndx);
         if(i == -1)
             break;
         switch (i) {
@@ -125,7 +126,7 @@ int main(int argc, char **argv) {
         case 'v':
             verbose = 1;
             break;
-        case 'V':
+        case 'a':
             deTol = strtod(optarg, 0);
             break;
 		case 'x':
@@ -133,6 +134,7 @@ int main(int argc, char **argv) {
 			break;
         case 'h':
         default:
+            fprintf(stderr,"Can't parse option %c\n", i);
             usage();
         }
     }
@@ -154,11 +156,15 @@ int main(int argc, char **argv) {
     if(nThreads > simreps)
         nThreads = simreps;
 
+    printf("# DE strategy        : %d\n", strategy);
+    printf("#    deItr           : %d\n", deItr);
+    printf("#    deTol           : %lf\n", deTol);
+    printf("#    F               : %lf\n", F);
+    printf("#    CR              : %lf\n", CR);
     printf("# simreps            : %lu\n", simreps);
     printf("# nthreads           : %d\n", nThreads);
     printf("# lgo input file     : %s\n", lgofname);
     printf("# site pat input file: %s\n", patfname);
-    printf("# DE strategy        : %d\n", strategy);
 
     Bounds bnd = {
             .lo_twoN = lo_twoN,
@@ -189,7 +195,7 @@ int main(int argc, char **argv) {
         .dim = dim,
         .ptsPerDim = ptsPerDim,
         .genmax = deItr,
-        .refresh = 3,  // how often to print a line of output
+        .refresh = 1,  // how often to print a line of output
         .strategy = strategy,
         .nthreads = 1,
         .verbose = verbose,
