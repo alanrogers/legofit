@@ -231,9 +231,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
         TaskArg_setArray(targ[i], dim, c[i]);
         JobQueue_addJob(jq, taskfun, targ[i]);
     }
-    printf("%s:%d\n",__FILE__,__LINE__); fflush(stdout);
     JobQueue_waitOnJobs(jq);
-    printf("%s:%d\n",__FILE__,__LINE__); fflush(stdout);
     cmin = INFINITY;
     imin = INT_MAX;
     for(i = 0; i < nPts; i++) {
@@ -252,7 +250,6 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     double      (*pnew)[nPts][dim] = &d;    // new population (generation G+1)
     double     *basevec = NULL;
 
-    printf("%s:%d\n",__FILE__,__LINE__); fflush(stdout);
     // Iteration loop
     for(gen = 1; gen <= genmax; ++gen) {
         imin = 0;

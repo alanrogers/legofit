@@ -19,7 +19,7 @@ double     *GPTree_upBounds(GPTree *self);
 unsigned    GPTree_nsamples(GPTree *self);
 void        GPTree_setParams(GPTree *self, int n, double x[n]);
 void        GPTree_getParams(GPTree *self, int n, double x[n]);
-void        GPTree_randomize(void *void_p, gsl_rng *rng);
+void        GPTree_randomize(void *void_p, int n, double x[n], gsl_rng *rng);
 void        GPTree_printParStore(GPTree *self, FILE *fp);
 
 #endif

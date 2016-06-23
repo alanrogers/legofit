@@ -32,8 +32,10 @@ void usage(void) {
     fprintf(stderr,"   where file input.lgo describes population history,\n");
     fprintf(stderr,"   file sitepat.txt contains site pattern frequencies,\n");
     fprintf(stderr,"   and options may include:\n");
-    tellopt("-i <x> or --nItr <x>", "number of iterations in simulation");
+    tellopt("-i <x> or --deItr <x>", "number of DE iterations");
+    tellopt("-r <x> or --simreps <x>", "number of reps in each function eval");
     tellopt("-t <x> or --threads <x>", "number of threads (default is auto)");
+    tellopt("-v or --verbose", "verbose output");
     tellopt("-h or --help", "print this message");
     exit(1);
 }
@@ -42,13 +44,15 @@ int main(int argc, char **argv) {
 
     static struct option myopts[] = {
         /* {char *name, int has_arg, int *flag, int val} */
-        {"nItr", required_argument, 0, 'i'},
+        {"deItr", required_argument, 0, 'i'},
         {"threads", required_argument, 0, 't'},
 		{"crossover", required_argument, 0, 'x'},
 		{"scaleFactor", required_argument, 0, 'F'},
+		{"simreps", required_argument, 0, 'r'},
         {"strategy", required_argument, 0, 's'},
         {"deTol", required_argument, 0, 'V'},
         {"help", no_argument, 0, 'h'},
+        {"verbose", no_argument, 0, 'v'},
         {NULL, 0, NULL, 0}
     };
 
@@ -71,10 +75,11 @@ int main(int argc, char **argv) {
 	// DiffEv parameters
 	double      F = 0.9;
 	double      CR = 0.8;
-	double      deTol = 1e-4;
+	double      deTol = 1e-3;
     int         deItr = 1000; // number of diffev iterations
 	int         strategy = 1;
 	int         ptsPerDim = 10;
+    int         verbose = 0;
 
 #if defined(__DATE__) && defined(__TIME__)
     printf("# Program was compiled: %s %s\n", __DATE__, __TIME__);
@@ -91,7 +96,7 @@ int main(int argc, char **argv) {
 
     // command line arguments
     for(;;) {
-        i = getopt_long(argc, argv, "i:t:F:p:s:V:x:h", myopts, &optndx);
+        i = getopt_long(argc, argv, "i:t:F:p:r:s:V:vx:h", myopts, &optndx);
         if(i == -1)
             break;
         switch (i) {
@@ -99,8 +104,11 @@ int main(int argc, char **argv) {
         case '?':
             usage();
             break;
-        case 'i':
+        case 'r':
             simreps = strtol(optarg, 0, 10);
+            break;
+        case 'i':
+            deItr = strtol(optarg, 0, 10);
             break;
         case 't':
             nThreads = strtol(optarg, NULL, 10);
@@ -113,6 +121,9 @@ int main(int argc, char **argv) {
             break;
 		case 's':
 			strategy = strtol(optarg, NULL, 10);
+            break;
+        case 'v':
+            verbose = 1;
             break;
         case 'V':
             deTol = strtod(optarg, 0);
@@ -181,7 +192,7 @@ int main(int argc, char **argv) {
         .refresh = 3,  // how often to print a line of output
         .strategy = strategy,
         .nthreads = 1,
-        .verbose = 0,
+        .verbose = verbose,
         .seed = ((unsigned long) time(NULL))-1ul,
         .F = F,
         .CR = CR,

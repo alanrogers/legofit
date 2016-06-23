@@ -27,11 +27,11 @@ void GPTree_printParStore(GPTree *self, FILE *fp) {
 	ParStore_print(self->parstore, fp);
 }
 
-void GPTree_randomize(void *void_p, gsl_rng *rng) {
+void        GPTree_randomize(void *void_p, int n, double x[n], gsl_rng *rng) {
     GPTree *self = (GPTree *) void_p;
 	PopNode_randomize(self->rootPop, self->bnd, rng);
+    ParStore_getFreeParams(self->parstore, n, x);
 }
-
 
 void GPTree_setParams(GPTree *self, int n, double x[n]) {
     assert(n == ParStore_nFree(self->parstore));
