@@ -360,6 +360,7 @@ BranchTab *BranchTab_parse(const char *fname, const LblNdx *lblndx) {
 /// should be normalized before entering this function. Use
 /// BranchTab_normalize to normalize. 
 double BranchTab_KLdiverg(const BranchTab *obs, const BranchTab *expt) {
+    printf("%s:%s:%d: entry\n",__FILE__,__func__,__LINE__);fflush(stdout);
     assert(Dbl_near(1.0, BranchTab_sum(obs)));
     assert(Dbl_near(1.0, BranchTab_sum(expt)));
 
@@ -371,6 +372,7 @@ double BranchTab_KLdiverg(const BranchTab *obs, const BranchTab *expt) {
         o = obs->tab[i];
         e = expt->tab[i];
         while(o && e) {
+            printf("%s:%s:%d\n",__FILE__,__func__,__LINE__);fflush(stdout);
             if(o->key < e->key) { // e->value is 0
                 p = 0.0;
                 q = o->value;
@@ -399,9 +401,11 @@ double BranchTab_KLdiverg(const BranchTab *obs, const BranchTab *expt) {
             kl += p*log(p/q);
         }
         while(o) { // e->value is 0: add 0 to kl
+            printf("%s:%s:%d\n",__FILE__,__func__,__LINE__);fflush(stdout);
             kl += p*log(p/q);
         }
         while(e) { // o->value is 0
+            printf("%s:%s:%d\n",__FILE__,__func__,__LINE__);fflush(stdout);
             p = e->value;
             if(p == 0.0)
                 continue;
@@ -415,6 +419,7 @@ double BranchTab_KLdiverg(const BranchTab *obs, const BranchTab *expt) {
             e = e->next;
         }
     }
+    printf("%s:%s:%d: exit\n",__FILE__,__func__,__LINE__);fflush(stdout);
     return kl;
 }
 

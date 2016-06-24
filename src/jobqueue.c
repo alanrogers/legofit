@@ -15,6 +15,7 @@
  */
 
 #include "jobqueue.h"
+#include "misc.h"
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -25,7 +26,7 @@
 #undef DPRINTF_ON
 #include "dprintf.h"
 #ifdef DPRINTF_ON
-pthread_mutex_t outputLock = PTHREAD_MUTEX_INITIALIZER;
+extern pthread_mutex_t outputLock;
 #endif
 
 #undef ERR
@@ -159,7 +160,8 @@ void JobQueue_addJob(JobQueue * jq, int (*jobfun) (void *, void *),
     pthread_t   id;
 
     if(jq->valid != JOBQUEUE_VALID) {
-        fprintf(stderr, "%s:%d: JobQueue not initialized", __func__, __LINE__);
+        fprintf(stderr, "%s:%s:%d: JobQueue not initialized",
+                __FILE__,__func__, __LINE__);
         exit(1);
     }
 
@@ -182,7 +184,7 @@ void JobQueue_addJob(JobQueue * jq, int (*jobfun) (void *, void *),
     jq->todo = job;
 
 #ifdef DPRINTF_ON
-    printf("%s:%d:queue:", __func__, __LINE__);
+    printf("%s:%s:%d:queue:", __FILE__,__func__, __LINE__);
     Job_print(jq->todo);
 #endif
 
@@ -196,11 +198,11 @@ void JobQueue_addJob(JobQueue * jq, int (*jobfun) (void *, void *),
     } else if(jq->nThreads < jq->maxThreads) {
 
         // launch a new thread
-        DPRINTF(("%s:%d launching thread\n", __func__, __LINE__));
+        DPRINTF(("%s:%s:%d launching thread\n", __FILE__,__func__, __LINE__));
         status = pthread_create(&id, &jq->attr, threadfun, (void *) jq);
         if(status) {
-            fprintf(stderr, "%s:%d: pthread_create returned %d (%s)\n",
-                    __func__, __LINE__, status, strerror(status));
+            fprintf(stderr, "%s:%s:%d: pthread_create returned %d (%s)\n",
+                    __FILE__,__func__, __LINE__, status, strerror(status));
             exit(1);
         }
         ++jq->nThreads;
@@ -220,7 +222,8 @@ void JobQueue_addJob(JobQueue * jq, int (*jobfun) (void *, void *),
  * main thread sets acceptingJobs=0.
  */
 void       *threadfun(void *arg) {
-    DPRINTF(("%s %lu entry\n", __func__, (unsigned long) pthread_self()));
+    DPRINTF(("%s:%d: %s %lu entry\n", __FILE__,__LINE__,
+             __func__, (unsigned long) pthread_self()));
 
     //    struct timespec timeout;
     JobQueue   *jq = (JobQueue *) arg;
@@ -244,8 +247,8 @@ void       *threadfun(void *arg) {
 
         // Wait while the queue is empty and accepting jobs
         while(NULL == jq->todo && jq->acceptingJobs) {
-            DPRINTF(("%s:%d:  awaiting work. todo=%p\n",
-                     __func__, __LINE__, jq->todo));
+            DPRINTF(("%s:%s:%d:  awaiting work. todo=%p\n",
+                     __FILE__, __func__, __LINE__, jq->todo));
 
             ++jq->idle;
             if(jq->idle == jq->nThreads) {
@@ -275,8 +278,8 @@ void       *threadfun(void *arg) {
             assert(!jq->acceptingJobs);
             break;
         } else {                // do job
-            DPRINTF(("%s %lu got work\n", __func__,
-                     (unsigned long) pthread_self()));
+            DPRINTF(("%s:%d: %s %lu got work\n", __FILE__,__LINE__,
+                     __func__, (unsigned long) pthread_self()));
 
             // remove job from queue
             assert(NULL != jq->todo);
@@ -284,7 +287,7 @@ void       *threadfun(void *arg) {
             jq->todo = jq->todo->next;
 
 #ifdef DPRINTF_ON
-            printf("%s:%d:queue:", __func__, __LINE__);
+            printf("%s:%s:%d:queue:", __FILE__,__func__, __LINE__);
             Job_print(jq->todo);
 #endif
 
@@ -295,11 +298,11 @@ void       *threadfun(void *arg) {
                 DPRINTF(("%s:%s:%d: unlocked\n", __FILE__, __func__,
                          __LINE__));
 
-            DPRINTF(("%s %lu calling jobfun\n", __func__,
-                     (unsigned long) pthread_self()));
+            DPRINTF(("%s:%d: %s %lu calling jobfun\n", __FILE__,__LINE__,
+                     __func__, (unsigned long) pthread_self()));
             job->jobfun(job->param, threadState);
-            DPRINTF(("%s %lu back fr jobfun\n", __func__,
-                     (unsigned long) pthread_self()));
+            DPRINTF(("%s:%d: %s %lu back fr jobfun\n", __FILE__, __LINE__,
+                     __func__, (unsigned long) pthread_self()));
             free(job);
         }
     }
@@ -319,7 +322,8 @@ void       *threadfun(void *arg) {
     if(threadState)
         jq->ThreadState_free(threadState);
 
-    DPRINTF(("%s %lu exit\n", __func__, (unsigned long) pthread_self()));
+    DPRINTF(("%s:%d: %s %lu exit\n", __FILE__,__LINE__,
+             __func__, (unsigned long) pthread_self()));
     return NULL;
 }
 
@@ -327,10 +331,11 @@ void       *threadfun(void *arg) {
 void JobQueue_noMoreJobs(JobQueue * jq) {
     int         status;
 
-    DPRINTF(("%s:%d: entry\n", __func__, __LINE__));
+    DPRINTF(("%s:%s:%d: entry\n", __FILE__,__func__, __LINE__));
 
     if(jq->valid != JOBQUEUE_VALID) {
-        fprintf(stderr, "%s:%d: JobQueue not initialized", __func__, __LINE__);
+        fprintf(stderr, "%s:%s:%d: JobQueue not initialized",
+                __FILE__, __func__, __LINE__);
         exit(1);
     }
 
@@ -344,7 +349,8 @@ void JobQueue_noMoreJobs(JobQueue * jq) {
 
     if(jq->idle > 0) {
         // Wake workers so they can quit
-        DPRINTF(("%s:%d: telling workers to quit\n", __func__, __LINE__));
+        DPRINTF(("%s:%s:%d: telling workers to quit\n",
+                 __FILE__,__func__, __LINE__));
         status = pthread_cond_broadcast(&jq->wakeWorker);
         if(status)
             ERR(status, "broadcast wakeWorker");
@@ -356,17 +362,20 @@ void JobQueue_noMoreJobs(JobQueue * jq) {
     else
         DPRINTF(("%s:%s:%d: unlocked\n", __FILE__, __func__, __LINE__));
 
-    DPRINTF(("%s:%d: exit\n", __func__, __LINE__));
+    DPRINTF(("%s:%s:%d: exit\n", __FILE__,__func__, __LINE__));
 }
 
 /// Wait until all threads are idle
 void JobQueue_waitOnJobs(JobQueue * jq) {
     int         status;
 
-    DPRINTF(("%s:%d: entry\n", __func__, __LINE__));
+    printf("%s:%s:%d: [%lu] entry\n",
+           __FILE__,__func__, __LINE__, pthread_self());
+    fflush(stdout);
 
     if(jq->valid != JOBQUEUE_VALID) {
-        fprintf(stderr, "%s:%d: JobQueue not initialized", __func__, __LINE__);
+        fprintf(stderr, "%s:%s:%d: JobQueue not initialized",
+                __FILE__, __func__, __LINE__);
         exit(1);
     }
 
@@ -378,8 +387,9 @@ void JobQueue_waitOnJobs(JobQueue * jq) {
 
     // Wait until jobs are finished.
     while(jq->todo != NULL || jq->idle < jq->nThreads) {
-        DPRINTF(("%s:%d: waiting; idle=%d/%d\n",
-                 __func__, __LINE__, jq->idle, jq->nThreads));
+        printf("%s:%s:%d: [%lu] waiting; idle=%d/%d\n",
+               __FILE__, __func__, __LINE__,
+               pthread_self(), jq->idle, jq->nThreads);
 
         // If any workers are idle, wake one
         if(jq->idle > 0) {
@@ -391,15 +401,18 @@ void JobQueue_waitOnJobs(JobQueue * jq) {
         status = pthread_cond_wait(&jq->wakeMain, &jq->lock);
         if(status)
             ERR(status, "wait wakeMain");
+        printf("%s:%s:%d: [%lu] end wait loop\n",
+               __FILE__, __func__, __LINE__, pthread_self());
     }
 
     assert(jq->todo == NULL && jq->idle == jq->nThreads);
-    DPRINTF(("%s:%d: queue is empty and all threads are idle\n",
-             __func__, __LINE__));
+    DPRINTF(("%s:%s:%d: queue is empty and all threads are idle\n",
+             __FILE__, __func__, __LINE__));
 
     if(!jq->acceptingJobs) {
         // We're done: wake all workers so they can quit
-        DPRINTF(("%s:%d: telling workers to quit\n", __func__, __LINE__));
+        DPRINTF(("%s:%s:%d: telling workers to quit\n",
+                 __FILE__, __func__, __LINE__));
         status = pthread_cond_broadcast(&jq->wakeWorker);
         if(status)
             ERR(status, "broadcast wakeWorker");
@@ -411,7 +424,9 @@ void JobQueue_waitOnJobs(JobQueue * jq) {
     else
         DPRINTF(("%s:%s:%d: unlocked\n", __FILE__, __func__, __LINE__));
 
-    DPRINTF(("%s:%d: exit\n", __func__, __LINE__));
+    printf("%s:%s:%d: [%lu] exit\n",
+           __FILE__,__func__, __LINE__, pthread_self());
+    fflush(stdout);
 }
 
 void Job_free(Job * job) {
@@ -422,10 +437,14 @@ void Job_free(Job * job) {
 }
 
 void JobQueue_free(JobQueue * jq) {
+    printf("%s:%s:%d: entry\n",__FILE__,__func__,__LINE__);
+    dostacktrace(__FILE__,__LINE__,stdout);
+    fflush(stdout);
     assert(jq);
 
     if(jq->valid != JOBQUEUE_VALID) {
-        fprintf(stderr, "%s:%d: JobQueue not initialized", __func__, __LINE__);
+        fprintf(stderr, "%s:%s:%d: JobQueue not initialized",
+                __FILE__,__func__, __LINE__);
         exit(1);
     }
 
@@ -461,4 +480,5 @@ void JobQueue_free(JobQueue * jq) {
 
     Job_free(jq->todo);
     free(jq);
+    printf("%s:%s:%d: exit\n",__FILE__,__func__,__LINE__);fflush(stdout);
 }

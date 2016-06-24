@@ -27,6 +27,10 @@ double costFun(int dim, double x[dim], void *jdata, void *notUsed) {
     const CostPar *cp = (CostPar *) jdata;
 
     BranchTab  *prob = patprob(dim, x, cp->gptree, cp->nThreads, cp->nreps);
+    printf("%s:%s:%d\n",__FILE__,__func__,__LINE__); fflush(stdout);
     BranchTab_normalize(prob);
-    return BranchTab_KLdiverg(cp->obs, prob);
+    printf("%s:%s:%d\n",__FILE__,__func__,__LINE__); fflush(stdout);
+    double rval = BranchTab_KLdiverg(cp->obs, prob);
+    printf("%s:%s:%d\n",__FILE__,__func__,__LINE__); fflush(stdout);
+    return rval;
 }

@@ -1,7 +1,7 @@
 destination := $(HOME)/bin
-opt := -DNDEBUG -O3  -finline-functions  # For full optimization
+#opt := -DNDEBUG -O3  -finline-functions  # For full optimization
 #opt := -O3  -finline-functions  # Optimization + debugging
-#opt :=  -O0 -fno-inline-functions -DDEBUG     # For debugging
+opt :=  -O0 -fno-inline-functions -rdynamic -DDEBUG     # For debugging
 #prof := -pg -rdynamic                    # For profiling
 prof :=
 incl := -I/usr/local/include -I/opt/local/include
@@ -43,13 +43,13 @@ test : $(tests)
 
 LEGO := lego.o patprob.o gptree.o binary.o jobqueue.o misc.o parse.o \
   branchtab.o hashtab.o lblndx.o tokenizer.o parstore.o parkeyval.o \
-  popnode.o gene.o 
+  popnode.o gene.o dprintf.o
 lego : $(LEGO)
 	$(CC) $(CFLAGS) -o $@ $(LEGO) $(lib)
 
 LEGOFIT := legofit.o patprob.o gptree.o binary.o jobqueue.o misc.o \
   parse.o branchtab.o hashtab.o lblndx.o tokenizer.o parstore.o \
-  parkeyval.o popnode.o gene.o cost.o diffev.o
+  parkeyval.o popnode.o gene.o cost.o diffev.o dprintf.o
 legofit : $(LEGOFIT)
 	$(CC) $(CFLAGS) -o $@ $(LEGOFIT) $(lib)
 

@@ -41,7 +41,9 @@
 
 #include "diffev.h"
 #include "misc.h"
+#if 0
 #include "jobqueue.h"
+#endif
 #include <gsl/gsl_rng.h>
 #include <limits.h>
 #include <float.h>
@@ -49,6 +51,12 @@
 #include <memory.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#define DPRINTF_ON
+#include "dprintf.h"
+#ifdef DPRINTF_ON
+extern pthread_mutex_t outputLock;
+#endif
 
 struct TaskArg {
     double      cost;
@@ -191,7 +199,9 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     const double F = dep.F;
     const double CR = dep.CR;
     const double deTol = dep.deTol;
+#if 0
     const int   nthreads = dep.nthreads;
+#endif
     const int   verbose = dep.verbose;
 
     printf("%s:%d: diffev strategy=%d\n",__FILE__,__LINE__, strategy);
@@ -218,23 +228,35 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     double      cost[nPts];     // obj. funct. values
     double      cmin;           // help variables
 
+#if 0
     JobQueue   *jq = JobQueue_new(nthreads, dep.threadData,
                                   dep.ThreadState_new,
                                   dep.ThreadState_free);
+#endif
 
     TaskArg    *targ[nPts];
+    printf("%s:%d initializing DE. nPts=%d\n",__FILE__,__LINE__,
+           nPts); fflush(stdout);
     for(i = 0; i < nPts; ++i) {
+        printf("%s:%d\n",__FILE__,__LINE__); fflush(stdout);
         (*dep.randomize)(dep.randomizeData, dim, c[i], rng);
         targ[i] = TaskArg_new(dim, dep.objfun, dep.jobData);
 
         // calculate objective function values in parallel
         TaskArg_setArray(targ[i], dim, c[i]);
+#if 0
         JobQueue_addJob(jq, taskfun, targ[i]);
+#else
+        printf("%s:%d\n",__FILE__,__LINE__); fflush(stdout);
+        taskfun(targ[i], NULL);
+#endif
+        printf("%s:%d\n",__FILE__,__LINE__); fflush(stdout);
     }
-    printf("%s:%d initializing DE. nPts=%d nthreads=%d\n",__FILE__,__LINE__,
-           nPts, nthreads); fflush(stdout);
+#if 0
     JobQueue_waitOnJobs(jq);
-    printf("%s:%d done initializing DE\n",__FILE__,__LINE__); fflush(stdout);
+#endif
+    printf("%s:%d done initializing DE\n",__FILE__,__LINE__);
+    fflush(stdout);
     cmin = INFINITY;
     imin = INT_MAX;
     for(i = 0; i < nPts; i++) {
@@ -445,13 +467,17 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 
             // Trial mutation now in tmp[]. Calculate cost.
             TaskArg_setArray(targ[i], dim, tmp);
+#if 0
             JobQueue_addJob(jq, taskfun, targ[i]);
-
+#else
+            taskfun(targ[i], NULL);
+            
+#endif
         }                       // End loop ensemble
 
-        printf("%s:%d\n",__FILE__,__LINE__); fflush(stdout);
+#if 0
         JobQueue_waitOnJobs(jq);
-        printf("%s:%d\n",__FILE__,__LINE__); fflush(stdout);
+#endif
 
         // 2nd pass thrrough ensemble is the "reduce" portion
         // of "map-reduce". It generates a new generation, based
@@ -508,7 +534,9 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     printf("%s:%d\n",__FILE__,__LINE__); fflush(stdout);
     // End iterations
 
+#if 0
     JobQueue_noMoreJobs(jq);
+#endif
     if(*yspread > deTol) {
         status = 1;
         if(verbose)
@@ -526,7 +554,9 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     // Free memory
     for(i = 0; i < nPts; ++i)
         TaskArg_free(targ[i]);
+#if 0
     JobQueue_free(jq);
+#endif
 
     return status;
 }
