@@ -474,7 +474,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
         JobQueue_waitOnJobs(jq);
 #endif
 
-        // 2nd pass thrrough ensemble is the "reduce" portion
+        // 2nd pass through ensemble is the "reduce" portion
         // of "map-reduce". It generates a new generation, based
         // on the old generation and all the trials.
         double      cmax = -INFINITY;
