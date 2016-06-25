@@ -204,9 +204,6 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 #endif
     const int   verbose = dep.verbose;
 
-    printf("%s:%d: diffev strategy=%d\n",__FILE__,__LINE__, strategy);
-    fflush(stdout);
-
     int         nPts = dep.dim * dep.ptsPerDim;
     int         status;
 
@@ -238,7 +235,6 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     printf("%s:%d initializing DE. nPts=%d\n",__FILE__,__LINE__,
            nPts); fflush(stdout);
     for(i = 0; i < nPts; ++i) {
-        printf("%s:%d\n",__FILE__,__LINE__); fflush(stdout);
         (*dep.randomize)(dep.randomizeData, dim, c[i], rng);
         targ[i] = TaskArg_new(dim, dep.objfun, dep.jobData);
 
@@ -247,10 +243,8 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 #if 0
         JobQueue_addJob(jq, taskfun, targ[i]);
 #else
-        printf("%s:%d\n",__FILE__,__LINE__); fflush(stdout);
         taskfun(targ[i], NULL);
 #endif
-        printf("%s:%d\n",__FILE__,__LINE__); fflush(stdout);
     }
 #if 0
     JobQueue_waitOnJobs(jq);
@@ -470,8 +464,9 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 #if 0
             JobQueue_addJob(jq, taskfun, targ[i]);
 #else
+            printf("%s:%d: calling taskfun\n",__FILE__,__LINE__); fflush(stdout);
             taskfun(targ[i], NULL);
-            
+            printf("%s:%d: back from taskfun\n",__FILE__,__LINE__); fflush(stdout);
 #endif
         }                       // End loop ensemble
 
@@ -531,7 +526,6 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
         if(*yspread <= deTol)
             break;
     }
-    printf("%s:%d\n",__FILE__,__LINE__); fflush(stdout);
     // End iterations
 
 #if 0

@@ -348,7 +348,7 @@ Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng) {
 #ifndef NDEBUG
     if(t > end) {
         fflush(stdout);
-		fprintf(stderr, "%s:%s:%d: start=%lf > %lf=end\n",
+		fprintf(stderr, "ERROR:%s:%s:%d: start=%lf > %lf=end\n",
 				__FILE__,__func__,__LINE__, t, end);
         PopNode_print(stderr, self, 0);
         exit(1);
@@ -449,8 +449,10 @@ void PopNode_free(PopNode * self) {
 /// inequality constraints.
 void PopNode_randomize(PopNode *self, Bounds bnd, gsl_rng *rng) {
     // perturb self->twoN
-    if(self->twoNfree)
-        *self->twoN = gsl_ran_flat(rng, bnd.lo_twoN, bnd.hi_twoN);
+    if(self->twoNfree) {
+        *self->twoN += gsl_ran_gaussian(rng, 10000.0);
+        *self->twoN = reflect(*self->twoN, bnd.lo_twoN, bnd.hi_twoN);
+    }
 
     // perturb self->start
     bool dostart = self->startFree;
@@ -460,6 +462,7 @@ void PopNode_randomize(PopNode *self, Bounds bnd, gsl_rng *rng) {
         double hi_t = bnd.hi_t;
         switch(self->nparents) {
         case 0:
+            hi_t = fmin(hi_t, *self->start + gsl_ran_exponential(rng, 10000.0));
             break;
         case 1:
             if(!self->parent[0]->touched)

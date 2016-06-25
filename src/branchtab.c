@@ -361,7 +361,6 @@ BranchTab *BranchTab_parse(const char *fname, const LblNdx *lblndx) {
 /// BranchTab_normalize to normalize. Function returns HUGE_VAL if there
 /// are observed values without corresponding values in expt.
 double BranchTab_KLdiverg(const BranchTab *obs, const BranchTab *expt) {
-    printf("%s:%s:%d: entry\n",__FILE__,__func__,__LINE__);fflush(stdout);
     assert(Dbl_near(1.0, BranchTab_sum(obs)));
     assert(Dbl_near(1.0, BranchTab_sum(expt)));
 
@@ -373,24 +372,19 @@ double BranchTab_KLdiverg(const BranchTab *obs, const BranchTab *expt) {
         BTLink *o, *e;
         o = obs->tab[i];
         e = expt->tab[i];
-        printf("%s:%s:%d: o[%d]=",__FILE__,__func__,__LINE__, i);
-        BTLink_print(o);
-        putchar('\n');
-        printf("%s:%s:%d: e[%d]=",__FILE__,__func__,__LINE__, i);
-        BTLink_print(e);
-        putchar('\n');
-        fflush(stdout);
         while(o && e) {
-            printf("%s:%s:%d\n",__FILE__,__func__,__LINE__);fflush(stdout);
             if(o->key < e->key) {
                 // e->value is q=0. This case blows up unless p==0.
                 p = o->value;
                 if(p != 0.0) {
                     kl = HUGE_VAL;
+#if 0
                     fprintf(stderr,"%s:%s:%d: missing expt for ",
                             __FILE__,__func__,__LINE__);
                     printBits(sizeof(o->key), &o->key, stderr);
                     exit(EXIT_FAILURE);
+#endif
+                    o = o->next;
                 } else {
                     o = o->next;
                     continue;
@@ -412,14 +406,16 @@ double BranchTab_KLdiverg(const BranchTab *obs, const BranchTab *expt) {
             }
         }
         while(o) { // e->value is q=0: fail unless p=0
-            printf("%s:%s:%d\n",__FILE__,__func__,__LINE__);fflush(stdout);
             p = o->value;
             if(p != 0.0) {
                 kl = HUGE_VAL;
+#if 0
                 fprintf(stderr,"%s:%s:%d: missing expt for ",
                         __FILE__,__func__,__LINE__);
                 printBits(sizeof(o->key), &o->key, stderr);
                 exit(EXIT_FAILURE);
+#endif
+                o = o->next;
             } else {
                 o = o->next;
                 continue;
@@ -427,7 +423,6 @@ double BranchTab_KLdiverg(const BranchTab *obs, const BranchTab *expt) {
         }
         // Any remaining cases have p=0, so contribution to kl is 0.
     }
-    printf("%s:%s:%d: exit\n",__FILE__,__func__,__LINE__);fflush(stdout);
     return kl;
 }
 

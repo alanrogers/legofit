@@ -481,10 +481,6 @@ PopNode    *mktree(FILE * fp, SampNdx *sndx, LblNdx *lndx, ParStore *parstore,
         while(el != NULL) {
             PopNode    *node = El_get(el);
             assert(node != NULL);
-#if 0
-            El_printShallow(el);
-            PopNode_printShallow(node, stdout);
-#endif
 
             PopNode_sanityFromLeaf(node, __FILE__, __LINE__);
             node = PopNode_root(node);

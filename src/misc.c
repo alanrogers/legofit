@@ -478,3 +478,26 @@ double sum_double(int n, const double x[n]) {
 
     return rval;
 }
+
+/**
+ * Fold x back and forth across the boundaries "lo" and "hi" to obtain a value
+ * y such that lo <= y <= hi.
+ */
+double reflect(double x, double lo, double hi) {
+    assert(hi > lo);
+    x -= lo;
+    hi -= lo;
+
+    double      z = fabs(fmod(x, 2.0 * hi));
+
+    /*    printf("initially z=%lg\n", z); */
+
+    if(z > hi)
+        z = 2.0 * hi - z;
+
+    z += lo;
+
+    assert(z >= lo && z <= hi + lo);
+
+    return z;
+}

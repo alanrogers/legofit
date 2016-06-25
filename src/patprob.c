@@ -47,8 +47,6 @@ int         simfun(void *, void *);
 
 /// function run by each thread
 int simfun(void *varg, void *notUsed) {
-    printf("%s:%s:%d: entry\n", __FILE__,__func__,__LINE__);
-    fflush(stdout);
     SimArg    *targ = (SimArg *) varg;
     gsl_rng    *rng = gsl_rng_alloc(gsl_rng_taus);
 
@@ -62,8 +60,6 @@ int simfun(void *varg, void *notUsed) {
     GPTree_simulate(targ->gptree, targ->branchtab, rng, targ->nreps);
     gsl_rng_free(rng);
 
-    printf("%s:%s:%d: exit\n", __FILE__,__func__,__LINE__);
-    fflush(stdout);
     return 0;
 }
 
@@ -129,16 +125,9 @@ BranchTab *patprob(int dim, double x[dim], const GPTree *gptree, int nThreads,
                     __FILE__, __func__, __LINE__);
         for(j = 0; j < nThreads; ++j)
             JobQueue_addJob(jq, simfun, simarg[j]);
-        printf("%s:%s:%d: waiting\n", __FILE__,__func__, __LINE__);
-        fflush(stdout);
         JobQueue_waitOnJobs(jq);
-        printf("%s:%s:%d: done waiting\n", __FILE__,__func__, __LINE__);
-        fflush(stdout);
         JobQueue_free(jq);
     }
-
-    printf("%s:%s:%d\n",__FILE__,__func__,__LINE__);
-    fflush(stdout);
 
     // Add all branchtabs into branchtab[0]
     for(j = 1; j < nThreads; ++j)
@@ -149,7 +138,5 @@ BranchTab *patprob(int dim, double x[dim], const GPTree *gptree, int nThreads,
     for(j = 0; j < nThreads; ++j)
         SimArg_free(simarg[j]);
         
-    printf("%s:%s:%d\n",__FILE__,__func__,__LINE__);
-    fflush(stdout);
     return rval;
 }
