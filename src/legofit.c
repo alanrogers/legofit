@@ -34,8 +34,10 @@ void usage(void) {
     fprintf(stderr,"   and options may include:\n");
     tellopt("-i <x> or --deItr <x>", "number of DE iterations");
     tellopt("-r <x> or --simreps <x>", "number of reps in each function eval");
-    tellopt("-a <x> or --deTol <x>", "tolerance: smaller means less accurate");
+    tellopt("-a <x> or --deTol <x>", "DE tolerance: smaller means less accurate");
     tellopt("-t <x> or --threads <x>", "number of threads (default is auto)");
+    tellopt("-F <x> or --scaleFactor <x>", "set DE scale factor");
+    tellopt("-x <x> or --crossover <x>", "set DE crossover probability");
     tellopt("-v or --verbose", "verbose output");
     tellopt("-h or --help", "print this message");
     exit(1);
