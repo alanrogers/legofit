@@ -358,7 +358,8 @@ BranchTab *BranchTab_parse(const char *fname, const LblNdx *lblndx) {
 
 /// Calculate KL divergence from two BranchTab objects, which
 /// should be normalized before entering this function. Use
-/// BranchTab_normalize to normalize. 
+/// BranchTab_normalize to normalize. Function returns HUGE_VAL if there
+/// are observed values without corresponding values in expt.
 double BranchTab_KLdiverg(const BranchTab *obs, const BranchTab *expt) {
     printf("%s:%s:%d: entry\n",__FILE__,__func__,__LINE__);fflush(stdout);
     assert(Dbl_near(1.0, BranchTab_sum(obs)));
@@ -366,58 +367,65 @@ double BranchTab_KLdiverg(const BranchTab *obs, const BranchTab *expt) {
 
     int i;
     double kl=0.0;
-    double p, q;
+    double p;  // observed frequency
+    double q;  // frequency under model
     for(i=0; i < BT_DIM; ++i) {
         BTLink *o, *e;
         o = obs->tab[i];
         e = expt->tab[i];
+        printf("%s:%s:%d: o[%d]=",__FILE__,__func__,__LINE__, i);
+        BTLink_print(o);
+        putchar('\n');
+        printf("%s:%s:%d: e[%d]=",__FILE__,__func__,__LINE__, i);
+        BTLink_print(e);
+        putchar('\n');
+        fflush(stdout);
         while(o && e) {
             printf("%s:%s:%d\n",__FILE__,__func__,__LINE__);fflush(stdout);
-            if(o->key < e->key) { // e->value is 0
-                p = 0.0;
-                q = o->value;
-                o = o->next;
-            }else if(o->key > e->key) { // o->value is 0
-                // If p==0, we're OK. The contribution to kl is 0.
-                // Otherwise, we have log(0/0).
-                p = e->value;
-                if(p == 0.0)
-                    continue;
-                else {
-                    fprintf(stderr,"%s:%s:%d: missing observed site pattern.\n",
+            if(o->key < e->key) {
+                // e->value is q=0. This case blows up unless p==0.
+                p = o->value;
+                if(p != 0.0) {
+                    kl = HUGE_VAL;
+                    fprintf(stderr,"%s:%s:%d: missing expt for ",
                             __FILE__,__func__,__LINE__);
-                    fprintf(stderr," tipId value: ");
-                    printBits(sizeof(e->key), &e->key, stderr);
+                    printBits(sizeof(o->key), &o->key, stderr);
                     exit(EXIT_FAILURE);
+                } else {
+                    o = o->next;
+                    continue;
                 }
+            }else if(o->key > e->key) {
+                // o->value is p=0. For this case, note that
+                // p*log(p/q) is the log of (p^p / q^p), which -> 1 as
+                // p->0.  The log of 1 is 0, so 0 is the contribution
+                // to kl.
                 e = e->next;
+                continue;
             }else {
                 assert(o->key == e->key);
-                p = e->value;
-                q = o->value;
+                p = o->value;
+                q = e->value;
                 e = e->next;
                 o = o->next;
+                kl += p*log(p/q);
             }
-            kl += p*log(p/q);
         }
-        while(o) { // e->value is 0: add 0 to kl
+        while(o) { // e->value is q=0: fail unless p=0
             printf("%s:%s:%d\n",__FILE__,__func__,__LINE__);fflush(stdout);
-            kl += p*log(p/q);
-        }
-        while(e) { // o->value is 0
-            printf("%s:%s:%d\n",__FILE__,__func__,__LINE__);fflush(stdout);
-            p = e->value;
-            if(p == 0.0)
-                continue;
-            else {
-                fprintf(stderr,"%s:%s:%d: missing observed site pattern.\n",
+            p = o->value;
+            if(p != 0.0) {
+                kl = HUGE_VAL;
+                fprintf(stderr,"%s:%s:%d: missing expt for ",
                         __FILE__,__func__,__LINE__);
-                fprintf(stderr," tipId value: ");
-                printBits(sizeof(e->key), &e->key, stderr);
+                printBits(sizeof(o->key), &o->key, stderr);
                 exit(EXIT_FAILURE);
+            } else {
+                o = o->next;
+                continue;
             }
-            e = e->next;
         }
+        // Any remaining cases have p=0, so contribution to kl is 0.
     }
     printf("%s:%s:%d: exit\n",__FILE__,__func__,__LINE__);fflush(stdout);
     return kl;
