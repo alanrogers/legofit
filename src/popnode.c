@@ -453,6 +453,8 @@ void PopNode_randomize(PopNode *self, Bounds bnd, gsl_rng *rng) {
 	PopNode_randomize_r(self, bnd, rng);
 }
 
+/// Recurse through the tree perturbing free parameters. Must call
+/// PopNode_untouch before calling this function.
 static void PopNode_randomize_r(PopNode *self, Bounds bnd, gsl_rng *rng) {
     // perturb self->twoN
     if(self->twoNfree) {
@@ -518,6 +520,53 @@ static void PopNode_randomize_r(PopNode *self, Bounds bnd, gsl_rng *rng) {
     int i;
     for(i=0; i < self->nchildren; ++i)
         PopNode_randomize(self->child[i], bnd, rng);
+}
+
+/// Return 1 if parameters satisfy inequality constraints, or 0 otherwise.
+int PopNode_feasible(const PopNode *self, Bounds bnd) {
+	if( *self->twoN < bnd.lo_twoN || *self->twoN > bnd.hi_twoN)
+		return 0;
+
+	if( *self->start > bnd.hi_t || *self->start < bnd.lo_t)
+		return 0;
+
+	switch(self->nparents) {
+	case 2:
+		if(*self->start > *self->parent[1]->start)
+			return 0;
+		// fall through
+	case 1:
+		if(*self->start > *self->parent[0]->start)
+			return 0;
+		break;
+	default:
+		break;
+	}
+
+	switch(self->nchildren) {
+	case 2:
+		if(*self->start < *self->child[1]->start)
+			return 0;
+		// fall through
+	case 1:
+		if(*self->start < *self->child[0]->start)
+			return 0;
+		break;
+	default:
+		break;
+	}
+    
+    if(self->mix != NULL) {
+		if(*self->mix < 0.0 || *self->mix > 1.0)
+			return 0;
+    }
+
+    int i;
+    for(i=0; i < self->nchildren; ++i) {
+        if(0==PopNode_feasible(self->child[i], bnd))
+		   return 0;
+	}
+	return 1;
 }
 
 /// Add dp to each parameter pointer, using ordinary (not pointer)

@@ -21,10 +21,14 @@ extern pthread_mutex_t outputLock;
 #include "gptree.h"
 #include "branchtab.h"
 #include "patprob.h"
+#include <math.h>
 
 /// @param[in] x vector of parameter values.
 double costFun(int dim, double x[dim], void *jdata, void *notUsed) {
     const CostPar *cp = (CostPar *) jdata;
+
+	if(!GPTree_feasible(cp->gptree))
+		return HUGE_VAL;
 
     BranchTab  *prob = patprob(dim, x, cp->gptree, cp->nThreads, cp->nreps);
     BranchTab_normalize(prob);

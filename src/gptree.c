@@ -207,6 +207,11 @@ unsigned    GPTree_nsamples(GPTree *self) {
     return SampNdx_size(&self->sndx);
 }
 
+/// Are parameters within the feasible region?
+int GPTree_feasible(const GPTree *self) {
+	return PopNode_feasible(self->rootPop, self->bnd);
+}
+
 
 #ifdef TEST
 
