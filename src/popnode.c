@@ -20,6 +20,7 @@ struct NodeStore {
 };
 
 static void PopNode_sanityCheck(PopNode * self, const char *file, int lineno);
+static void PopNode_randomize_r(PopNode *self, Bounds bnd, gsl_rng *rng);
 
 void PopNode_sanityFromLeaf(PopNode * self, const char *file, int line) {
 #ifndef NDEBUG
@@ -448,6 +449,11 @@ void PopNode_free(PopNode * self) {
 /// Randomly perturb all free parameters in tree while maintaining
 /// inequality constraints.
 void PopNode_randomize(PopNode *self, Bounds bnd, gsl_rng *rng) {
+	PopNode_untouch(self);
+	PopNode_randomize_r(self, bnd, rng);
+}
+
+static void PopNode_randomize_r(PopNode *self, Bounds bnd, gsl_rng *rng) {
     // perturb self->twoN
     if(self->twoNfree) {
         *self->twoN += gsl_ran_gaussian(rng, 10000.0);
