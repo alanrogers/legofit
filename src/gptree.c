@@ -113,6 +113,7 @@ void GPTree_free(GPTree *self) {
 
 /// Duplicate a GPTree object
 GPTree *GPTree_dup(const GPTree *old) {
+	assert(GPTree_feasible(old));
     if(old->rootGene != NULL)
         eprintf("%s:%s:%d: old->rootGene must be NULL on entry\n",
                 __FILE__,__func__,__LINE__);
@@ -149,6 +150,7 @@ GPTree *GPTree_dup(const GPTree *old) {
     assert(SampNdx_ptrsLegal(&new->sndx, new->pnv, new->pnv + new->nseg));
 
     GPTree_sanityCheck(new, __FILE__, __LINE__);
+	assert(GPTree_feasible(new));
     return new;
 }
 

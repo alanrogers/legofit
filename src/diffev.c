@@ -251,17 +251,19 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 #endif
     printf("%s:%d done initializing DE\n",__FILE__,__LINE__);
     fflush(stdout);
-    cmin = INFINITY;
+    cmin = HUGE_VAL;
     imin = INT_MAX;
     for(i = 0; i < nPts; i++) {
         cost[i] = targ[i]->cost;    // objective function value
+		printf("%s:%d:cost[%d]=%lf\n",
+			   __FILE__,__LINE__,i, cost[i]); fflush(stdout);
         if(cost[i] < cmin) {
             cmin = cost[i];
             imin = i;
         }
     }
     assert(imin < INT_MAX);
-    assert(cmin < INFINITY);
+    assert(cmin < HUGE_VAL);
     assignd(dim, best, c[imin]);    // save best member ever
     assignd(dim, bestit, c[imin]);  // save best member of generation
 

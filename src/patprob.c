@@ -47,6 +47,7 @@ int         simfun(void *, void *);
 
 /// function run by each thread
 int simfun(void *varg, void *notUsed) {
+	printf("%s:%s:%d\n",__FILE__,__func__,__LINE__); fflush(stdout);
     SimArg    *targ = (SimArg *) varg;
     gsl_rng    *rng = gsl_rng_alloc(gsl_rng_taus);
 
@@ -57,9 +58,11 @@ int simfun(void *varg, void *notUsed) {
 	rngseed = (rngseed == ULONG_MAX ? 0 : rngseed+1);
 	pthread_mutex_unlock(&seedLock);
 
+	assert(GPTree_feasible(targ->gptree));
     GPTree_simulate(targ->gptree, targ->branchtab, rng, targ->nreps);
     gsl_rng_free(rng);
 
+	printf("%s:%s:%d\n",__FILE__,__func__,__LINE__); fflush(stdout);
     return 0;
 }
 
@@ -91,6 +94,9 @@ void SimArg_free(SimArg * self) {
 /// patterns and their summed branch lengths.
 BranchTab *patprob(int dim, double x[dim], const GPTree *gptree, int nThreads,
                    long nreps) {
+	printf("%s:%s:%d\n",__FILE__,__func__,__LINE__); fflush(stdout);
+	assert(GPTree_feasible(gptree));
+	
     int j;
     SimArg    *simarg[nThreads];
     long reps[nThreads];
@@ -138,5 +144,6 @@ BranchTab *patprob(int dim, double x[dim], const GPTree *gptree, int nThreads,
     for(j = 0; j < nThreads; ++j)
         SimArg_free(simarg[j]);
         
+	printf("%s:%s:%d\n",__FILE__,__func__,__LINE__); fflush(stdout);
     return rval;
 }
