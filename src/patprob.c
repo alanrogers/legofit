@@ -40,14 +40,12 @@ struct SimArg {
     BranchTab  *branchtab;
 };
 
-SimArg    *SimArg_new(int dim, double x[dim], const GPTree *gptree,
-                        unsigned nreps);
+SimArg     *SimArg_new(const GPTree *gptree, unsigned nreps);
 void        SimArg_free(SimArg * targ);
 int         simfun(void *, void *);
 
 /// function run by each thread
 int simfun(void *varg, void *notUsed) {
-	printf("%s:%s:%d\n",__FILE__,__func__,__LINE__); fflush(stdout);
     SimArg    *targ = (SimArg *) varg;
     gsl_rng    *rng = gsl_rng_alloc(gsl_rng_taus);
 
@@ -62,19 +60,17 @@ int simfun(void *varg, void *notUsed) {
     GPTree_simulate(targ->gptree, targ->branchtab, rng, targ->nreps);
     gsl_rng_free(rng);
 
-	printf("%s:%s:%d\n",__FILE__,__func__,__LINE__); fflush(stdout);
     return 0;
 }
 
 /// Construct a new SimArg by copying a template.
-SimArg    *SimArg_new(int dim, double x[dim], const GPTree *gptree,
-                        unsigned nreps) {
+SimArg    *SimArg_new(const GPTree *gptree, unsigned nreps) {
     SimArg    *a = malloc(sizeof(SimArg));
     checkmem(a, __FILE__, __LINE__);
 
     a->nreps = nreps;
     a->gptree = GPTree_dup(gptree);
-    GPTree_setParams(a->gptree, dim, x);
+	assert(GPTree_feasible(a->gptree));
     a->branchtab = BranchTab_new();
 
     return a;
@@ -92,9 +88,7 @@ void SimArg_free(SimArg * self) {
 /// its probability.  Function returns a pointer to a newly-allocated
 /// object of type BranchTab, which contains all the observed site
 /// patterns and their summed branch lengths.
-BranchTab *patprob(int dim, double x[dim], const GPTree *gptree, int nThreads,
-                   long nreps) {
-	printf("%s:%s:%d\n",__FILE__,__func__,__LINE__); fflush(stdout);
+BranchTab *patprob(const GPTree *gptree, int nThreads, long nreps) {
 	assert(GPTree_feasible(gptree));
 	
     int j;
@@ -121,8 +115,9 @@ BranchTab *patprob(int dim, double x[dim], const GPTree *gptree, int nThreads,
 #endif
     }
 
+	assert(GPTree_feasible(gptree));
     for(j = 0; j < nThreads; ++j)
-        simarg[j] = SimArg_new(dim, x, gptree, reps[j]);
+        simarg[j] = SimArg_new(gptree, reps[j]);
 
     {
         JobQueue   *jq = JobQueue_new(nThreads, NULL, NULL, NULL);
@@ -144,6 +139,5 @@ BranchTab *patprob(int dim, double x[dim], const GPTree *gptree, int nThreads,
     for(j = 0; j < nThreads; ++j)
         SimArg_free(simarg[j]);
         
-	printf("%s:%s:%d\n",__FILE__,__func__,__LINE__); fflush(stdout);
     return rval;
 }

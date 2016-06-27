@@ -43,7 +43,7 @@ double      reflect(double x, double lo, double hi);
 static inline double survival(double t, double twoN);
 
 #  define ERR(code, msg) do{\
-    fprintf(stderr,"%s:%s:%d: %s %d (%s)\n",\
+    fprintf(stderr,"%s:%s:%d: %s: %d (%s)\n",\
             __FILE__,__func__,__LINE__,\
             (msg), (code), strerror((code)));   \
     exit(1);\
@@ -68,7 +68,7 @@ static inline double survival(double t, double twoN);
 /// Return 1 if the relative difference between x and y is less than or
 /// equal to DBL_EPSILON.
 static inline int Dbl_near(double x, double y) {
-    return fabs(x - y) <= fmax(fabs(x), fabs(y)) * DBL_EPSILON;
+    return fabs(x - y) <= fmax(fabs(x), 4.0 * fabs(y)) * DBL_EPSILON;
 }
 
 /// survival fuction

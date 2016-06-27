@@ -43,8 +43,8 @@ BTLink     *BTLink_new(tipId_t key, double value);
 BTLink     *BTLink_add(BTLink * self, tipId_t key, double value);
 double      BTLink_get(BTLink * self, tipId_t key);
 void        BTLink_free(BTLink * self);
-void        BTLink_printShallow(BTLink * self);
-void        BTLink_print(BTLink * self);
+void        BTLink_printShallow(const BTLink * self);
+void        BTLink_print(const BTLink * self);
 BTLink     *BTLink_dup(const BTLink *self);
 int         BTLink_equals(const BTLink *lhs, const BTLink *rhs);
 
@@ -146,13 +146,13 @@ double BTLink_get(BTLink * self, tipId_t key) {
     return self->value;
 }
 
-void BTLink_printShallow(BTLink * self) {
+void BTLink_printShallow(const BTLink * self) {
     if(self == NULL)
         return;
     printf(" [%lu, %lf]", (unsigned long) self->key, self->value);
 }
 
-void BTLink_print(BTLink * self) {
+void BTLink_print(const BTLink * self) {
     if(self == NULL)
         return;
     BTLink_printShallow(self);
@@ -257,7 +257,7 @@ int BranchTab_normalize(BranchTab *self) {
     return 0;
 }
 
-void BranchTab_print(BranchTab *self) {
+void BranchTab_print(const BranchTab *self) {
     unsigned i;
     for(i=0; i < BT_DIM; ++i) {
         printf("%2u:", i);
@@ -362,6 +362,15 @@ BranchTab *BranchTab_parse(const char *fname, const LblNdx *lblndx) {
 /// are observed values without corresponding values in expt.
 double BranchTab_KLdiverg(const BranchTab *obs, const BranchTab *expt) {
     assert(Dbl_near(1.0, BranchTab_sum(obs)));
+	if(!Dbl_near(1.0, BranchTab_sum(expt))) {
+		double s = BranchTab_sum(expt);
+		double e = s-1.0;
+		printf("%s:%s:%d: bad BranchTab sum=%lf err=%le\n",
+			   __FILE__,__func__,__LINE__,
+			   s, e);
+		BranchTab_print(expt);
+		fflush(stdout);
+	}
     assert(Dbl_near(1.0, BranchTab_sum(expt)));
 
     int i;

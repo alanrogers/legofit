@@ -128,7 +128,7 @@ int main(int argc, char **argv) {
     double x[dim];
     GPTree_getParams(gptree, dim, x);
 
-    BranchTab *bt = patprob(dim, x, gptree, nThreads, nreps);
+    BranchTab *bt = patprob(gptree, nThreads, nreps);
     BranchTab_normalize(bt);
 
     // Put site patterns and branch lengths into arrays.

@@ -232,8 +232,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 #endif
 
     TaskArg    *targ[nPts];
-    printf("%s:%d initializing DE. nPts=%d\n",__FILE__,__LINE__,
-           nPts); fflush(stdout);
+
     for(i = 0; i < nPts; ++i) {
         (*dep.randomize)(dep.randomizeData, dim, c[i], rng);
         targ[i] = TaskArg_new(dim, dep.objfun, dep.jobData);
@@ -249,14 +248,10 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 #if 0
     JobQueue_waitOnJobs(jq);
 #endif
-    printf("%s:%d done initializing DE\n",__FILE__,__LINE__);
-    fflush(stdout);
     cmin = HUGE_VAL;
     imin = INT_MAX;
     for(i = 0; i < nPts; i++) {
         cost[i] = targ[i]->cost;    // objective function value
-		printf("%s:%d:cost[%d]=%lf\n",
-			   __FILE__,__LINE__,i, cost[i]); fflush(stdout);
         if(cost[i] < cmin) {
             cmin = cost[i];
             imin = i;
@@ -273,7 +268,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 
     // Iteration loop
     for(gen = 1; gen <= genmax; ++gen) {
-        printf("%s:%d: top of loop\n",__FILE__,__LINE__); fflush(stdout);
+		printf("%s:%d: DE loop %d/%d\n",__FILE__,__LINE__,gen, genmax);
         imin = 0;
         for(i = 0; i < nPts; i++) { // Start of loop through ensemble
 
@@ -466,9 +461,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 #if 0
             JobQueue_addJob(jq, taskfun, targ[i]);
 #else
-            printf("%s:%d: calling taskfun\n",__FILE__,__LINE__); fflush(stdout);
             taskfun(targ[i], NULL);
-            printf("%s:%d: back from taskfun\n",__FILE__,__LINE__); fflush(stdout);
 #endif
         }                       // End loop ensemble
 
@@ -524,7 +517,6 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
             }
             putc('\n', stderr);
         }
-        printf("%s:%d bottom of loop\n",__FILE__,__LINE__); fflush(stdout);
         if(*yspread <= deTol)
             break;
     }

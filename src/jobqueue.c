@@ -440,7 +440,7 @@ void JobQueue_free(JobQueue * jq) {
     // sleep to give threads time to release mutex
     struct timespec t = {
         .tv_sec = 0,
-        .tv_nsec = 10000000L    // 1/100 of a second
+        .tv_nsec = 50000000L    // 1/20 of a second
     };
     status = nanosleep(&t, NULL);
     if(status)
@@ -451,8 +451,10 @@ void JobQueue_free(JobQueue * jq) {
         ERR(status, "destroy attr");
 
     status = pthread_mutex_destroy(&jq->lock);
-    if(status)
+    if(status) {
+		dostacktrace(__FILE__,__LINE__, stdout);
         ERR(status, "destroy lock");
+	}
 
     status = pthread_cond_destroy(&jq->wakeWorker);
     if(status)
