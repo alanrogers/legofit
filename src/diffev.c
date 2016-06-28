@@ -505,7 +505,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
         *yspread = cmax - cmin;
 
         // Output part
-        if(verbose && gen % refresh == 1) {
+        if(verbose && gen % refresh == 0) {
             // display after every refresh generations
             fprintf(stderr, "Generation=%d Objfun=%-15.10lg yspread=%lf\n",
                     gen, cmin, *yspread);
