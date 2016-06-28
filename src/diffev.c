@@ -234,7 +234,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     TaskArg    *targ[nPts];
 
     for(i = 0; i < nPts; ++i) {
-        (*dep.randomize)(i, dep.randomizeData, dim, c[i], rng);
+        (*dep.initialize)(i, dep.initData, dim, c[i], rng);
         targ[i] = TaskArg_new(dim, dep.objfun, dep.jobData);
 
         // calculate objective function values in parallel
@@ -268,7 +268,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 
     // Iteration loop
     for(gen = 1; gen <= genmax; ++gen) {
-		printf("%s:%d: DE loop %d/%d\n",__FILE__,__LINE__,gen, genmax);
+		fprintf(stderr, "DE loop %d/%d\n", gen, genmax);
         imin = 0;
         for(i = 0; i < nPts; i++) { // Start of loop through ensemble
 

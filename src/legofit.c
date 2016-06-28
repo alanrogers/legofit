@@ -46,7 +46,11 @@ void usage(void) {
 }
 
 /// Initialize vector x. If ndx==0, simply copy the parameter vector
-/// from the GPTree object. Otherwise, randomize the GPTree first
+/// from the GPTree object. Otherwise, randomize the GPTree first.
+/// This ensures that differential evolution starts with a set of
+/// points, one of which is the same as the values in the input
+/// file. This allows you to improve on existing estimates without
+/// starting from scratch each time.
 void initStateVec(int ndx, void *void_p, int n, double x[n], gsl_rng *rng){
     GPTree *gpt = (GPTree *) void_p;
     if(gpt == 0)
@@ -80,7 +84,7 @@ int main(int argc, char **argv) {
            "########################################\n");
     putchar('\n');
 
-    int         i;
+    int         i, j;
     time_t      currtime = time(NULL);
 	unsigned long pid = (unsigned long) getpid();
     double      lo_twoN = 0.0, hi_twoN = 1e6;  // twoN bounds
@@ -193,6 +197,7 @@ int main(int argc, char **argv) {
     GPTree *gptree = GPTree_new(lgofname, bnd);
 	LblNdx lblndx  = GPTree_getLblNdx(gptree);
 
+    printf("Initial parameter values\n");
 	GPTree_printParStore(gptree, stdout);
 
     // Observed site pattern frequencies
@@ -213,7 +218,7 @@ int main(int argc, char **argv) {
         .dim = dim,
         .ptsPerDim = ptsPerDim,
         .genmax = deItr,
-        .refresh = 1,  // how often to print a line of output
+        .refresh = 5,  // how often to print a line of output
         .strategy = strategy,
         .nthreads = 1,
         .verbose = verbose,
@@ -228,8 +233,8 @@ int main(int argc, char **argv) {
 		.threadData = NULL,
 		.ThreadState_new = NULL,
 		.ThreadState_free = NULL,
-        .randomizeData = gptree,
-        .randomize = initStateVec
+        .initData = gptree,
+        .initialize = initStateVec
     };
 
     double      estimate[dim];
@@ -242,7 +247,7 @@ int main(int argc, char **argv) {
     int         status = diffev(dim, estimate, &cost, &yspread, dep, rng);
     switch (status) {
     case 0:
-        printf("DiffEv converged. cost=%0.5lg costSpread=%0.5lg\n",
+        printf("DiffEv converged. KL=%0.5lg KLspread=%0.5lg\n",
                cost, yspread);
         printf("Fitted parameters:");
         for(i = 0; i < dim; ++i)
@@ -254,6 +259,34 @@ int main(int argc, char **argv) {
         break;
     }
 
+    // Get site pattern frequencies
+    GPTree_setParams(gptree, dim, estimate);
+    BranchTab *bt = patprob(gptree, nThreads, simreps);
+    BranchTab_normalize(bt);
+    
+    printf("Fitted parameter values\n");
+	GPTree_printParStoreFree(gptree, stdout);
+
+    // Put site patterns and branch lengths into arrays.
+    unsigned npat = BranchTab_size(bt);
+    tipId_t pat[npat];
+    double prob[npat];
+    BranchTab_toArrays(bt, npat, pat, prob);
+
+    // Determine order for printing lines of output
+    unsigned ord[npat];
+    orderpat(npat, ord, pat);
+
+    printf("#%14s %10s\n", "SitePat", "Prob");
+    char        buff[100];
+    for(j = 0; j < npat; ++j) {
+        char        buff2[100];
+        snprintf(buff2, sizeof(buff2), "%s",
+                 patLbl(sizeof(buff), buff, pat[ord[j]], &lblndx));
+        printf("%15s %10.7lf\n", buff2, prob[ord[j]]);
+    }
+
+    BranchTab_free(bt);
     gsl_rng_free(rng);
     GPTree_free(gptree);
 

@@ -35,6 +35,7 @@ double     *ParStore_findPtr(ParStore * self, bool *isfree,
 ParStore   *ParStore_dup(const ParStore * old);
 void        ParStore_sanityCheck(ParStore *self, const char *file, int line);
 void        ParStore_print(ParStore *self, FILE *fp);
+void        ParStore_printFree(ParStore *self, FILE *fp);
 int         ParStore_equals(ParStore *lhs, ParStore *rhs);
 void        ParStore_setFreeParams(ParStore *self, int n, double x[n]);
 void        ParStore_getFreeParams(ParStore *self, int n, double x[n]);

@@ -27,8 +27,8 @@ struct DiffEvPar {
     void       *threadData;
     void       *(*ThreadState_new) (void *);
     void        (*ThreadState_free) (void *);
-    void       *randomizeData;
-    void        (*randomize)(int, void *, int, double *, gsl_rng *rng);
+    void       *initData;
+    void        (*initialize)(int, void *, int, double *, gsl_rng *rng);
 };
 
 int         diffev(int dim, double estimate[dim], double *loCost,
