@@ -234,7 +234,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     TaskArg    *targ[nPts];
 
     for(i = 0; i < nPts; ++i) {
-        (*dep.randomize)(dep.randomizeData, dim, c[i], rng);
+        (*dep.randomize)(i, dep.randomizeData, dim, c[i], rng);
         targ[i] = TaskArg_new(dim, dep.objfun, dep.jobData);
 
         // calculate objective function values in parallel
