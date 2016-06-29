@@ -250,7 +250,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 #endif
     cmin = HUGE_VAL;
     imin = INT_MAX;
-    for(i = 0; i < nPts; i++) {
+    for(i = 0; i < nPts; ++i) {
         cost[i] = targ[i]->cost;    // objective function value
         if(cost[i] < cmin) {
             cmin = cost[i];
