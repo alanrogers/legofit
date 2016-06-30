@@ -184,10 +184,6 @@ static inline void TaskArg_setArray(TaskArg * self, int dim, double v[dim]) {
 /// Assigns dim-dimensional vector b to vector a.
 static inline void assignd(int dim, double a[dim], double b[dim]) {
     memcpy(a, b, dim * sizeof(b[0]));
-	int i;
-	for(i=0; i<dim; ++i)
-		printf("%s:%s:%d %d: a=%lf b=%lf\n",
-			   __FILE__,__func__,__LINE__,i, a[i], b[i]);
 }
 
 int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
@@ -265,14 +261,6 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     assert(cmin < HUGE_VAL);
     assignd(dim, best, c[imin]);    // save best member ever
     assignd(dim, bestit, c[imin]);  // save best member of generation
-
-	// Echo points
-	for(i=0; i < nPts; ++i) {
-		printf("pt[%d]:", i);
-		for(j = 0; j < dim; ++j)
-			printf(" %lf", c[i][j]);
-		putchar('\n');
-	}
 
     double      (*pold)[nPts][dim] = &c;    // old population (generation G)
     double      (*pnew)[nPts][dim] = &d;    // new population (generation G+1)
@@ -516,13 +504,6 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
         // Difference between best and worst cost values
         *yspread = cmax - cmin;
 
-		// Echo points
-		for(i=0; i < nPts; ++i) {
-			printf("pt[%d,%d]:", gen, i);
-			for(j = 0; j < dim; ++j)
-				printf(" %lf", (*pold)[i][j]);
-			putchar('\n');
-		}
         // Output part
         if(verbose && gen % refresh == 0) {
             // display after every refresh generations

@@ -52,7 +52,6 @@ void usage(void) {
 /// file. This allows you to improve on existing estimates without
 /// starting from scratch each time.
 void initStateVec(int ndx, void *void_p, int n, double x[n], gsl_rng *rng){
-	printf("%s:%s:%d: n=%d\n",__FILE__,__func__,__LINE__, n);
     GPTree *gpt = (GPTree *) void_p;
     if(gpt == 0)
         GPTree_getParams(gpt, n, x);

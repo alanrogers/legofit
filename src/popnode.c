@@ -533,13 +533,9 @@ static void PopNode_randomize_r(PopNode *self, Bounds bnd, gsl_rng *rng) {
 		*self->start = gsl_ran_flat(rng, lo_t, hi_t);
     }
 
-	printf("%s:%s:%d: self->mixFree=%d\n",__FILE__,__func__,__LINE__,
-		   self->mixFree); fflush(stdout);
     if(self->mixFree) {
         assert(self->mix);
         *self->mix = gsl_ran_beta(rng, 1.0, 5.0);
-		printf("%s:%s:%d: self->mix=%lf\n",__FILE__,__func__,__LINE__,
-			   *self->mix); fflush(stdout);
     }
 
 	self->touched = true;
@@ -602,6 +598,7 @@ void PopNode_shiftParamPtrs(PopNode *self, size_t dp) {
     INCR_PTR(self->twoN, dp);
     INCR_PTR(self->start, dp);
     INCR_PTR(self->end, dp);
+    INCR_PTR(self->mix, dp);
 }
 
 /// Add dp to each PopNode pointer, using ordinary (not pointer)
