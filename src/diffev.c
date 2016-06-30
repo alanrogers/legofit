@@ -184,6 +184,10 @@ static inline void TaskArg_setArray(TaskArg * self, int dim, double v[dim]) {
 /// Assigns dim-dimensional vector b to vector a.
 static inline void assignd(int dim, double a[dim], double b[dim]) {
     memcpy(a, b, dim * sizeof(b[0]));
+	int i;
+	for(i=0; i<dim; ++i)
+		printf("%s:%s:%d %d: a=%lf b=%lf\n",
+			   __FILE__,__func__,__LINE__,i, a[i], b[i]);
 }
 
 int diffev(int dim, double estimate[dim], double *loCost, double *yspread,

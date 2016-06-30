@@ -62,6 +62,13 @@ void ParStore_setFreeParams(ParStore *self, int n, double x[n]) {
 void ParStore_getFreeParams(ParStore *self, int n, double x[n]) {
     assert(n == self->nFree);
     memcpy(x, self->freeVal, n*sizeof(double));
+
+	printf("%s:%s:%d returning", __FILE__,__func__,__LINE__);
+	int i;
+	for(i=0; i<n; ++i)
+		printf(" %lf", x[i]);
+	putchar('\n');
+	ParStore_printFree(self, stdout);
 }
 
 void ParStore_print(ParStore *self, FILE *fp) {
