@@ -277,6 +277,7 @@ void PopNode_addSample(PopNode * self, Gene * gene) {
 
 void PopNode_mix(PopNode * child, double *mPtr, bool mixFree,
                  PopNode * introgressor, PopNode * native) {
+
     if(introgressor->nchildren > 1)
         eprintf("%s:%s:%d:"
 				" Can't add child because introgressor already has %d.\n",
@@ -456,6 +457,32 @@ void PopNode_randomize(PopNode *self, Bounds bnd, gsl_rng *rng) {
 /// Recurse through the tree perturbing free parameters. Must call
 /// PopNode_untouch before calling this function.
 static void PopNode_randomize_r(PopNode *self, Bounds bnd, gsl_rng *rng) {
+
+	// If parents have been touched, then randomize this
+	// node. Otherwise, postpone.
+	bool postpone = false;
+	switch(self->nparents) {
+	case 0:
+		postpone = false;
+		break;
+	case 2:
+		if(!self->parent[1]->touched) {
+			postpone = true;
+			break;
+		}
+		// fall through
+	case 1:
+		assert(self->parent[0]->touched);
+		break;
+	default:
+            fprintf(stderr,"%s:%s:%d: bad value of nparents: %d\n",
+                    __FILE__,__func__,__LINE__, self->nparents);
+            exit(EXIT_FAILURE);
+	}			
+
+	if(postpone)
+		return;
+
     // perturb self->twoN
     if(self->twoNfree) {
         *self->twoN += gsl_ran_gaussian(rng, 10000.0);
@@ -463,26 +490,23 @@ static void PopNode_randomize_r(PopNode *self, Bounds bnd, gsl_rng *rng) {
     }
 
     // perturb self->start
-    bool dostart = self->startFree;
-    if(dostart) {
+    if(self->startFree) {
 
         // hi_t is the minimum age of parents or bnd.hi_t
         double hi_t = bnd.hi_t;
         switch(self->nparents) {
         case 0:
-            hi_t = fmin(hi_t, *self->start + gsl_ran_exponential(rng, 10000.0));
+            hi_t = fmin(hi_t, *self->start
+						+ gsl_ran_exponential(rng, 10000.0));
             break;
         case 1:
-            if(!self->parent[0]->touched)
-                dostart = false;
-            else
-                hi_t = *self->parent[0]->start;
+			assert(self->parent[0]->touched);
+			hi_t = *self->parent[0]->start;
             break;
         case 2:
-            if(!self->parent[0]->touched || !self->parent[1]->touched)
-                dostart = false;
-            else
-                hi_t = fmin(*self->parent[0]->start, *self->parent[1]->start);
+			assert(self->parent[0]->touched);
+			assert(self->parent[1]->touched);
+			hi_t = fmin(*self->parent[0]->start, *self->parent[1]->start);
             break;
         default:
             fprintf(stderr,"%s:%s:%d: bad value of nparents: %d\n",
@@ -506,16 +530,19 @@ static void PopNode_randomize_r(PopNode *self, Bounds bnd, gsl_rng *rng) {
                     __FILE__,__func__,__LINE__, self->nchildren);
             exit(EXIT_FAILURE);
         }
-        if(dostart) {
-            *self->start = gsl_ran_flat(rng, lo_t, hi_t);
-            self->touched = true;
-        }
+		*self->start = gsl_ran_flat(rng, lo_t, hi_t);
     }
-    
+
+	printf("%s:%s:%d: self->mixFree=%d\n",__FILE__,__func__,__LINE__,
+		   self->mixFree); fflush(stdout);
     if(self->mixFree) {
         assert(self->mix);
-        *self->mix = gsl_ran_flat(rng, 0.0, 1.0);
+        *self->mix = gsl_ran_beta(rng, 1.0, 5.0);
+		printf("%s:%s:%d: self->mix=%lf\n",__FILE__,__func__,__LINE__,
+			   *self->mix); fflush(stdout);
     }
+
+	self->touched = true;
 
     int i;
     for(i=0; i < self->nchildren; ++i)

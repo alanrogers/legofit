@@ -262,6 +262,14 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     assignd(dim, best, c[imin]);    // save best member ever
     assignd(dim, bestit, c[imin]);  // save best member of generation
 
+	// Echo points
+	for(i=0; i < nPts; ++i) {
+		printf("pt[%d]:", i);
+		for(j = 0; j < dim; ++j)
+			printf(" %lf", c[i][j]);
+		putchar('\n');
+	}
+
     double      (*pold)[nPts][dim] = &c;    // old population (generation G)
     double      (*pnew)[nPts][dim] = &d;    // new population (generation G+1)
     double     *basevec = NULL;
@@ -504,6 +512,13 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
         // Difference between best and worst cost values
         *yspread = cmax - cmin;
 
+		// Echo points
+		for(i=0; i < nPts; ++i) {
+			printf("pt[%d,%d]:", gen, i);
+			for(j = 0; j < dim; ++j)
+				printf(" %lf", (*pold)[i][j]);
+			putchar('\n');
+		}
         // Output part
         if(verbose && gen % refresh == 0) {
             // display after every refresh generations
