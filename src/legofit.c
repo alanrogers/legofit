@@ -53,7 +53,7 @@ void usage(void) {
 /// starting from scratch each time.
 void initStateVec(int ndx, void *void_p, int n, double x[n], gsl_rng *rng){
     GPTree *gpt = (GPTree *) void_p;
-    if(gpt == 0)
+    if(ndx == 0)
         GPTree_getParams(gpt, n, x);
     else {
         GPTree *g2 = GPTree_dup(gpt);

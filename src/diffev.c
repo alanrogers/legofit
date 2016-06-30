@@ -79,6 +79,8 @@ static inline void TaskArg_setArray(TaskArg * self, int dim, double v[dim]);
 void        TaskArg_free(TaskArg * self);
 void        TaskArg_print(TaskArg * self, FILE * fp);
 int         taskfun(void *voidPtr, void *tdat);
+void        printState(int nPts, int nPar, double par[nPts][nPar],
+                       double cost[nPts], int imin, FILE *fp);
 
 static const char *stratLbl[] = // strategy-indicator
 { "", "DE/best/1/exp", "DE/rand/1/exp", "DE/rand-to-best/1/exp",
@@ -181,6 +183,20 @@ static inline void TaskArg_setArray(TaskArg * self, int dim, double v[dim]) {
     self->cost = -1.0;
 }
 
+void printState(int nPts, int nPar, double par[nPts][nPar],
+                double cost[nPts], int imin, FILE *fp) {
+    int i, j;
+    fprintf(fp,"%10s %s...\n", "cost", "param values");
+    for(i=0; i < nPts; ++i) {
+        fprintf(fp, "%10.6lf", cost[i]);
+        for(j=0; j < nPar; ++j)
+            fprintf(fp, " %lf", par[i][j]);
+        if(i == imin)
+            fprintf(fp, " <- best");
+        putchar('\n');
+    }
+}
+
 /// Assigns dim-dimensional vector b to vector a.
 static inline void assignd(int dim, double a[dim], double b[dim]) {
     memcpy(a, b, dim * sizeof(b[0]));
@@ -266,10 +282,15 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     double      (*pnew)[nPts][dim] = &d;    // new population (generation G+1)
     double     *basevec = NULL;
 
+#if 0
+    fprintf(stdout, "Initial State:\n");
+    printState(nPts, dim, *pold, cost, imin, stdout);
+    fflush(stdout);
+#endif
+
     // Iteration loop
     for(gen = 1; gen <= genmax; ++gen) {
 		fprintf(stderr, "DE loop %d/%d\n", gen, genmax);
-        imin = 0;
         for(i = 0; i < nPts; i++) { // Start of loop through ensemble
 
             // r gets indices of 5 random points.
@@ -516,6 +537,10 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
                     putc(',', stderr);
             }
             putc('\n', stderr);
+#if 0
+            printState(nPts, dim, *pold, cost, imin, stdout);
+#endif
+            fflush(stdout);
         }
         if(*yspread <= deTol)
             break;
