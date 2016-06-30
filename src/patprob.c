@@ -90,9 +90,6 @@ void SimArg_free(SimArg * self) {
 /// patterns and their summed branch lengths.
 BranchTab *patprob(const GPTree *gptree, int nThreads, long nreps) {
 
-    printf("%s:%s:%d: nThreads=%d\n",
-           __FILE__,__func__,__LINE__, nThreads);fflush(stdout);
-
 	assert(GPTree_feasible(gptree));
 	
     int j;
