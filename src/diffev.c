@@ -290,7 +290,6 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 
     // Iteration loop
     for(gen = 1; gen <= genmax; ++gen) {
-		fprintf(stderr, "DE loop %d/%d\n", gen, genmax);
         for(i = 0; i < nPts; i++) { // Start of loop through ensemble
 
             // r gets indices of 5 random points.
