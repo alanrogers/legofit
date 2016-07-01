@@ -218,7 +218,7 @@ int main(int argc, char **argv) {
         .dim = dim,
         .ptsPerDim = ptsPerDim,
         .genmax = deItr,
-        .refresh = 5,  // how often to print a line of output
+        .refresh = 2,  // how often to print a line of output
         .strategy = strategy,
         .nthreads = 1,
         .verbose = verbose,
