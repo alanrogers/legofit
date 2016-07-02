@@ -244,6 +244,10 @@ int main(int argc, char **argv) {
     gsl_rng_set(rng, rngseed);
 	rngseed = (rngseed == ULONG_MAX ? 0 : rngseed+1);
 
+    // Flush just before diffev so output file will be as complete as
+    // possible while diffev is running.
+    fflush(stdout);
+
     int         status = diffev(dim, estimate, &cost, &yspread, dep, rng);
     switch (status) {
     case 0:
