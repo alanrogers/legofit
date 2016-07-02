@@ -162,7 +162,6 @@ int main(int argc, char **argv) {
     }
 
     // remaining options gives file names
-    fprintf(stderr, "number of file args: %d\n", argc-optind);
     if(argc - optind != 2) {
         fprintf(stderr, "Command line must specify 2 input files.\n");
         usage();
