@@ -214,6 +214,11 @@ int main(int argc, char **argv) {
 
     // parameters for Differential Evolution
     int dim = GPTree_nFree(gptree); // number of free parameters
+    if(dim == 0) {
+        fprintf(stderr,"Error@%s:%d: no free parameters\n",
+                __FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
     DiffEvPar   dep = {
         .dim = dim,
         .ptsPerDim = ptsPerDim,
