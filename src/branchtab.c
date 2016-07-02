@@ -296,6 +296,10 @@ void BranchTab_toArrays(BranchTab *self, unsigned n, tipId_t key[n],
 /// to a normalized BranchTab object.
 BranchTab *BranchTab_parse(const char *fname, const LblNdx *lblndx) {
     FILE *fp = fopen(fname, "r");
+    if(fp == NULL)
+        eprintf("%s:%d: Can't read file \"%s\".\n",
+                __FILE__, __LINE__, fname);
+
     BranchTab *self = BranchTab_new();
     CHECKMEM(self);
 
