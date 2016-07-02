@@ -293,6 +293,7 @@ int main(int argc, char **argv) {
     BranchTab_free(bt);
     gsl_rng_free(rng);
     GPTree_free(gptree);
+    fprintf(stderr,"legofit is finished\n");
 
     return 0;
 }
