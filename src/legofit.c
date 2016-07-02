@@ -253,10 +253,6 @@ int main(int argc, char **argv) {
     case 0:
         printf("DiffEv converged. KL=%0.5lg KLspread=%0.5lg\n",
                cost, yspread);
-        printf("Fitted parameters:");
-        for(i = 0; i < dim; ++i)
-            printf(" %lf", estimate[i]);
-        putchar('\n');
         break;
     default:
         printf("DiffEv FAILED\n");
