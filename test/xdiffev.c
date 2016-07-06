@@ -8,14 +8,20 @@
 #include <stdlib.h>
 #include <memory.h>
 #include <gsl/gsl_rng.h>
+#include <gsl/gsl_randist.h>
 
 void        usage(void);
 double      objFunc(int dim, double x[dim], void *jdat, void *tdat);
+void        initStateVec(int ndx, void *void_p, int n, double x[n],
+                         gsl_rng *rng);
 
 #define RUGGED
 
 /// Local minima wherever all entries of v are integers. Global
 /// minimum at v=0.
+///
+/// For constrained optimization, have objFunc return HUGE_VAL when
+/// constraints are violated.
 double objFunc(int dim, double x[dim], void *jdat /* NOTUSED */ ,
                void *tdat /* NOTUSED */ ) {
     int         i;
@@ -41,6 +47,22 @@ double objFunc(int dim, double x[dim], void *jdat /* NOTUSED */ ,
     cost *= 1.0 + sf;
 #endif
     return cost;
+}
+
+/// Initialize vector x. If ndx==0, simply copy the parameter vector
+/// from the argument. Otherwise, generate a random vector.
+///
+/// For constrained optimization, make all initial vectors obey constraints. 
+void initStateVec(int ndx, void *void_p, int n, double x[n], gsl_rng *rng){
+	assert(void_p != NULL);
+    double *v = (double *) void_p; // pointer to n-vector
+    if(ndx == 0)
+		memcpy(x, v, n*sizeof(x[0]));
+    else {
+		int i;
+		for(i=0; i < n; ++i)
+			x[i] = gsl_ran_gaussian(rng, 5.0);
+    }
 }
 
 #undef RUGGED
@@ -147,12 +169,10 @@ int main(int argc, char *argv[]) {
     if(argc > optind)
         usage();
 
-    // lower and upper bounds on each parameter
-    double      loBound[dim], hiBound[dim];
-    for(i = 0; i < dim; ++i) {
-        loBound[i] = -10.0;
-        hiBound[i] = 10.0;
-    }
+    
+	double      initVec[dim]; // initial state of point 0
+    for(i = 0; i < dim; ++i)
+		initVec[i] = i;
 
     nPts = ptsPerDim * dim;
 
@@ -177,11 +197,6 @@ int main(int argc, char *argv[]) {
     if(genmax <= 0)
         eprintf("%s:%d:Err genmax=%d, should be > 0\n",
                 __FILE__, __LINE__, genmax);
-    for(i = 0; i < dim; ++i) {
-        if(loBound[i] > hiBound[i])
-            eprintf("%s:%d:Err loBound[%d]=%lf > hiBound[%d]=%lf\n",
-                    __FILE__, __LINE__, i, loBound[i], i, hiBound[i]);
-    }
 
     printf("Strategy: %s\n", diffEvStrategyLbl(strategy));
     printf("nPts=%d F=%-4.2lg CR=%-4.2lg\n", nPts, F, CR);
@@ -199,13 +214,13 @@ int main(int argc, char *argv[]) {
         .F = F,
         .CR = CR,
         .deTol = deTol,
-        .loBound = loBound,
-        .hiBound = hiBound,
         .jobData = NULL,
         .objfun = objFunc,
         .threadData = NULL,
         .ThreadState_new = NULL,
-        .ThreadState_free = NULL
+        .ThreadState_free = NULL,
+		.initData = initVec,
+		.initialize = initStateVec
     };
 
     double      estimate[dim];

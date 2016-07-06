@@ -15,7 +15,6 @@ struct DiffEvPar {
     int         dim, ptsPerDim, genmax, refresh, strategy, nthreads, verbose;
     unsigned long seed;
     double      F, CR, deTol;
-    double     *loBound, *hiBound;
     void       *jobData;
     double      (*objfun) (int dim, double x[dim], void *, void *);
 

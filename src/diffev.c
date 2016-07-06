@@ -67,8 +67,6 @@ struct TaskArg {
 };
 
 static inline void assignd(int dim, double a[], double b[]);
-void        constrain(int n, double x[n], const double b[n],
-                      const double loBnd[n], const double hiBnd[n]);
 void        sample(int k, int rtn[k], int n, int array[n],
                    const gsl_rng * rng);
 TaskArg    *TaskArg_new(int dim,
@@ -94,35 +92,6 @@ int taskfun(void *voidPtr, void *tdat) {
     TaskArg    *targ = (TaskArg *) voidPtr;
     targ->cost = targ->objfun(targ->dim, targ->v, targ->jobData, tdat);
     return 0;
-}
-
-/// If x violates boundary constraints, move it back inside.
-/// This is done by shortening the vector (x - b), which represents
-/// the direction of change. If x is changed, the revised x will reach
-/// half way from b to the nearest boundary.
-void constrain(int n, double x[n], const double b[n], const double loBnd[n],
-               const double hiBnd[n]) {
-    double      r, s = 1.0;
-    int         i;
-
-    for(i = 0; i < n; ++i) {
-        assert(hiBnd[i] >= loBnd[i]);
-        assert(b[i] >= loBnd[i]);
-        assert(b[i] <= hiBnd[i]);
-
-        if(x[i] > hiBnd[i]) {
-            r = 0.5 * (hiBnd[i] - b[i]) / (x[i] - b[i]);
-            s = fmin(r, s);
-        } else if(x[i] < loBnd[i]) {
-            r = 0.5 * (loBnd[i] - b[i]) / (x[i] - b[i]);
-            s = fmin(r, s);
-        }
-        assert(r >= 0.0);
-    }
-    if(s < 1.0) {
-        for(i = 0; i < n; ++i)
-            x[i] = b[i] + s * (x[i] - b[i]);
-    }
 }
 
 void TaskArg_print(TaskArg * self, FILE * fp) {
@@ -223,12 +192,6 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     int         nPts = dep.dim * dep.ptsPerDim;
     int         status;
 
-    double      loBound[dim];
-    memcpy(loBound, dep.loBound, dim * sizeof(loBound[0]));
-
-    double      hiBound[dim];
-    memcpy(hiBound, dep.hiBound, dim * sizeof(hiBound[0]));
-
     int         ndx[nPts];
     for(i = 0; i < nPts; ++i)
         ndx[i] = i;
@@ -280,7 +243,6 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 
     double      (*pold)[nPts][dim] = &c;    // old population (generation G)
     double      (*pnew)[nPts][dim] = &d;    // new population (generation G+1)
-    double     *basevec = NULL;
 
 #if 0
     fprintf(stdout, "Initial State:\n");
@@ -327,7 +289,6 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
                 // occurs.
                 // strategy DE0 (not in our paper)
                 L = 0;
-                basevec = bestit;
                 do {
                     tmp[n] =
                         bestit[n] + F * ((*pold)[r[1]][n] - (*pold)[r[2]][n]);
@@ -344,7 +305,6 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
                 // guess. 
                 // strategy DE1 in the techreport
                 L = 0;
-                basevec = (*pold)[r[0]];
                 do {
                     tmp[n] =
                         (*pold)[r[0]][n] + F * ((*pold)[r[1]][n] -
@@ -363,7 +323,6 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
                 // variables. 
                 // similiar to DE2 but generally better
                 L = 0;
-                basevec = (*pold)[i];
                 do {
                     tmp[n] =
                         tmp[n] + F * (bestit[n] - tmp[n]) +
@@ -376,7 +335,6 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
             case 4:
                 // DE/best/2/exp is another powerful strategy worth trying
                 L = 0;
-                basevec = bestit;   // questionable choice
                 do {
                     tmp[n] = bestit[n] +
                         F * ((*pold)[r[0]][n] + (*pold)[r[1]][n]
@@ -390,7 +348,6 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
                 // DE/rand/2/exp seems to be a robust optimizer for many
                 // functions.
                 L = 0;
-                basevec = (*pold)[r[4]];    // questionable choice
                 do {
                     tmp[n] = (*pold)[r[4]][n] +
                         F * ((*pold)[r[0]][n] + (*pold)[r[1]][n]
@@ -403,7 +360,6 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
             case 6:
                 // Remaining strategies have binomial crossover.
                 // DE/best/1/bin
-                basevec = bestit;
                 for(L = 0; L < dim; ++L) {  // perform dim binomial trials 
                     if(L == 0 || gsl_rng_uniform(rng) < CR) {
                         tmp[n] = bestit[n] + F * ((*pold)[r[1]][n]
@@ -415,7 +371,6 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
                 break;
             case 7:
                 // DE/rand/1/bin
-                basevec = (*pold)[r[0]];
                 for(L = 0; L < dim; ++L) {  // perform dim binomial trials
                     if(L == 0 || gsl_rng_uniform(rng) < CR) {
                         // change at least one parameter
@@ -429,7 +384,6 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
                 break;
             case 8:
                 // DE/rand-to-best/1/bin
-                basevec = (*pold)[i];
                 for(L = 0; L < dim; ++L) {  // perform dim binomial trials
                     if(L == 0 || gsl_rng_uniform(rng) < CR) {
                         // change at least one parameter
@@ -443,7 +397,6 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
                 break;
             case 9:
                 // DE/best/2/bin
-                basevec = bestit;   // questionable choice
                 for(L = 0; L < dim; ++L) {  // perform dim binomial trials
                     if(L == 0 || gsl_rng_uniform(rng) < CR) {
                         // change at least one parameter
@@ -457,7 +410,6 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
                 break;
             case 10:
                 // DE/rand/2/bin
-                basevec = (*pold)[r[4]];    // questionable choice
                 for(L = 0; L < dim; ++L) {  // perform dim binomial trials
                     if(L == 0 || gsl_rng_uniform(rng) < CR) {
                         // change at least one parameter
@@ -474,7 +426,6 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
                         __FILE__, __LINE__, strategy);
                 exit(1);
             }
-            constrain(dim, tmp, basevec, loBound, hiBound);
 
             // Trial mutation now in tmp[]. Calculate cost.
             TaskArg_setArray(targ[i], dim, tmp);
@@ -570,6 +521,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     JobQueue_free(jq);
 #endif
 
+	printf("%s:%s:%d\n", __FILE__,__func__,__LINE__);fflush(stdout);
     return status;
 }
 

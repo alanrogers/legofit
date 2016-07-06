@@ -231,8 +231,6 @@ int main(int argc, char **argv) {
         .F = F,
         .CR = CR,
         .deTol = deTol,
-        .loBound = GPTree_loBounds(gptree),
-        .hiBound = GPTree_upBounds(gptree),
 		.jobData = &costPar,
         .objfun = costFun,
 		.threadData = NULL,
