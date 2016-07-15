@@ -39,6 +39,7 @@ void        orderpat(int n, unsigned order[n], tipId_t tid[n]);
 double      KLdiverg(int n, const double o[n], const double e[n]);
 double      sum_double(int n, const double x[n]);
 double      reflect(double x, double lo, double hi);
+char       *strlowercase(char *s);
 
 static inline double survival(double t, double twoN);
 

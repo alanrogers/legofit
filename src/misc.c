@@ -501,3 +501,12 @@ double reflect(double x, double lo, double hi) {
 
     return z;
 }
+
+/// Convert NULL-terminated string to lower case
+char       *strlowercase(char *s) {
+    char *p;
+
+    for(p = s; *p != '\0'; ++p)
+        *p = tolower(*p);
+    return s;
+}
