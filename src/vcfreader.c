@@ -3,6 +3,7 @@
 #include "misc.h"
 #include <string.h>
 #include <limits.h>
+#include <ctype.h>
 
 #define VCF_MAXFIELDS 200
 
@@ -41,7 +42,7 @@ void VCFReader_parseHdr(VCFReader *self) {
 
         if(fgets(self->buff, sizeof(self->buff), self->fp) == NULL)
             break;
-        if(strcmp(self->buff, "##reference") == 0){
+        if(0 == strncasecmp(self->buff, "##reference", 11)){
             Tokenizer_split(self->tkz, self->buff, "=");
             Tokenizer_strip(self->tkz, " \t\n");
             assert(Tokenizer_ntokens(self->tkz) == 2);
@@ -100,10 +101,6 @@ int VCFReader_next(VCFReader *self) {
                 ntokens = Tokenizer_strip(self->tkz, " \t\n");
             }while( ntokens == 0 );
 
-            if(ntokens < 10) {
-                printf("%s:%d: ntokens=%d\n",__FILE__,__LINE__,ntokens);
-                Tokenizer_print(self->tkz, stdout);
-            }
             assert(ntokens >= 10);
             strcpy(alleles, Tokenizer_token(self->tkz,3)); // reference allele
             strcat(alleles, Tokenizer_token(self->tkz, 4)); // alternate alleles
@@ -119,7 +116,7 @@ int VCFReader_next(VCFReader *self) {
         alleleCount = -1.0;
 
         // From here on, we're only concerned with the info field
-        info = Tokenizer_token(self->tkz, 8);
+        info = Tokenizer_token(self->tkz, 7);
         ntokens = Tokenizer_split(self->tkz, info, ";");
         for(i=0; i < ntokens; ++i) {
             char *value, key[30];
@@ -128,18 +125,18 @@ int VCFReader_next(VCFReader *self) {
             strsep(&value, "=");
             if(0 == strcmp(key, "AA")) {
                 // ancestral allele
-                self->ancestAllele = aa = value[0];
+                aa = tolower(value[0]);
                 char *aptr = strchr(alleles, aa);
                 if(NULL == aptr) {
-                    aa = -1;
+                    self->ancestAllele = aa = -1;
                     break;
                 }else { // convert to index into alleles
-                    aa = aptr - alleles;
+                    self->ancestAllele = aa = aptr - alleles;
                     assert(alleles[aa] == *aptr);
                 }
-            }else if(strcmp(key, "AN")) { // sample size
+            }else if(0 == strcmp(key, "AN")) { // sample size
                 self->nHapSmp = strtoul(value, NULL, 10);
-            }else if(strcmp(key, "AC")) { // allele counts
+            }else if(0 == strcmp(key, "AC")) { // allele counts
 
                 // Shouldn't be any commas, because we've excluded
                 // loci that aren't bi-allelic.
@@ -210,6 +207,6 @@ void VCFReader_print(VCFReader *r, FILE *fp) {
     fprintf(fp,"  %25s: %u\n", "chromosome", r->chr);
     fprintf(fp,"  %25s: %lu\n", "nucpos", r->nucpos);
     fprintf(fp,"  %25s: %u\n", "haploid sample size", r->nHapSmp);
-    fprintf(fp,"  %25s: %c\n", "ancestral allele", r->ancestAllele);
+    fprintf(fp,"  %25s: %d\n", "ancestral allele", r->ancestAllele);
     fprintf(fp,"  %25s: %lf\n", "ancestral allele freq", r->p);
 }

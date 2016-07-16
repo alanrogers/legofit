@@ -18,7 +18,7 @@ struct VCFReader {
     unsigned    chr;            // chromosome
     unsigned long nucpos;       // nucleotide position from vcf file
     unsigned    nHapSmp;        // haploid sample size at current locus
-    char        ancestAllele;   // ancestral allele
+    int         ancestAllele;   // ancestral allele
     double      p;              // frequency of ancestral allele
 };
 

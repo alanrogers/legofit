@@ -43,6 +43,13 @@ int main(int argc, char **argv) {
     putchar('\n');
     VCFReader_next(r);
     VCFReader_print(r, stdout);
+
+    VCFReader_next(r);
+    VCFReader_print(r, stdout);
+
+    VCFReader_next(r);
+    VCFReader_print(r, stdout);
+
     VCFReader_free(r);
 
     unitTstResult("VCFReader", "untested");
