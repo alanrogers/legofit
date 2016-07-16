@@ -2,24 +2,9 @@
 #include "tokenizer.h"
 #include "misc.h"
 #include <string.h>
+#include <limits.h>
 
 #define VCF_MAXFIELDS 200
-#define VCF_MAXLINE 500
-
-struct VCFReader {
-    FILE *fp;
-    char buff[VCF_MAXLINE];
-    char *reference;
-    Tokenizer *tkz;
-
-    // properties of current snp
-    unsigned long snpid;  // 0-based index of current snp
-    unsigned chr;         // chromosome
-    unsigned long nucpos; // nucleotide position from vcf file
-    unsigned nHapSmp;     // haploid sample size at current locus
-    char ancestAllele;    // ancestral allele
-    double p;             // frequency of ancestral allele
-};
 
 int stripCommas(char *s);
 
@@ -31,6 +16,7 @@ VCFReader *VCFReader_new(const char *fname) {
     }
     VCFReader *self = malloc(sizeof(*self));
     CHECKMEM(self);
+    memset(self, 0, sizeof(VCFReader));
     self->fname = strdup(fname);
     CHECKMEM(self->fname);
     self->fp = fopen(self->fname);
@@ -47,7 +33,8 @@ VCFReader *VCFReader_new(const char *fname) {
 void VCFReader_free(VCFReader *self) {
     fclose(self->fp);
     free(self->fname);
-    free(self->reference);
+    if(self->reference != NULL)
+        free(self->reference);
     Tokenizer_free(self->tkz);
 }
 
@@ -106,12 +93,12 @@ int VCFReader_next(VCFReader *self) {
 
     // find SNP with known ancestral allele
     do{
-        // Find a bi-allelic SNP
+        // Exclude SNPs with >2 alleles
         do{
             // Find a non-empty line of data
             do{
                 if(fgets(self->buff, sizeof(self->buff), self->fp) == NULL)
-                    break;
+                    return EOF;
     
                 Tokenizer_split(self->tkz, self->buff, "\t");
                 ntokens = Tokenizer_strip(self->tkz, " \t\n");
@@ -123,7 +110,7 @@ int VCFReader_next(VCFReader *self) {
             nalleles = stripCommas(alleles);
             strlowercase(alleles);
             printf("%s:%d: %d alleles: %s\n", nalleles, alleles);
-        }while(nalleles != 2);
+        }while(nalleles > 2);
 
         self.chr = strtol(Tokenizer_token(self->tkz, 0), NULL, 10);
         self.nucpos = strtol(Tokenizer_token(self->tkz, 1), NULL, 10);
@@ -140,7 +127,7 @@ int VCFReader_next(VCFReader *self) {
             strsep(&value, "=");
             if(0 == strcmp(key, "AA")) {
                 // ancestral allele
-                aa = value[0];
+                self->ancestAllele = aa = value[0];
                 char *aptr = strchr(alleles, aa);
                 if(NULL == aptr) {
                     aa = -1;
@@ -161,6 +148,8 @@ int VCFReader_next(VCFReader *self) {
         }
     }while(aa == -1);
 
+    ++self->snpid;
+
     switch(aa) {
     case 0:
         // reference allele is ancestral
@@ -175,4 +164,36 @@ int VCFReader_next(VCFReader *self) {
                 __FILE__,__func__,__LINE__);
         exit(EXIT_FAILURE);
     }
+    return 0;
+}
+
+
+
+/// Advance an array of VCFReaders to the next shared position.
+/// Return 0 on success or EOF on end of file.
+int VCFReader_multiNext(int n, VCFReader *r[n]) {
+    int i;
+    unsigned long max=0, min=ULONG_MAX;
+
+    for(i=0; i<n; ++i) {
+        if(EOF == VCFReader_next(r[i]))
+            return EOF;
+        max = fmax(max, r[i].nucpos);
+        min = fmin(min, r[i].nucpos);
+    }
+
+    while(min != max) {
+        for(i=0; i<n; ++i) {
+            while(r[i].nucpos < max) {
+                if(EOF == VCFReader_next(r[i]))
+                    return EOF;
+            }
+        }
+        max=min=r[0].nucpos;
+        for(i=1; i<n; ++i) {
+            max = fmax(max, r[i].nucpos);
+            min = fmin(min, r[i].nucpos);
+        }
+    }
+    return 0;
 }
