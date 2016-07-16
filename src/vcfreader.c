@@ -9,17 +9,12 @@
 int stripCommas(char *s);
 
 VCFReader *VCFReader_new(const char *fname) {
-    if(fp == NULL) {
-        fprintf(stderr,"%s:%s:%d: input stream is NULL\n",
-                __FILE__,__func__,__LINE__);
-        exit(EXIT_FAILURE);
-    }
     VCFReader *self = malloc(sizeof(*self));
     CHECKMEM(self);
     memset(self, 0, sizeof(VCFReader));
     self->fname = strdup(fname);
     CHECKMEM(self->fname);
-    self->fp = fopen(self->fname);
+    self->fp = fopen(self->fname, "r");
     if(self->fp == NULL) {
         fprintf(stderr,"%s:%s:%d: can't open \"%s\" for input.\n",
                 __FILE__,__func__,__LINE__, self->fname);
@@ -46,15 +41,15 @@ void VCFReader_parseHdr(VCFReader *self) {
 
         if(fgets(self->buff, sizeof(self->buff), self->fp) == NULL)
             break;
-        if(strcmp(buff, "##reference") == 0){
+        if(strcmp(self->buff, "##reference") == 0){
             Tokenizer_split(self->tkz, self->buff, "=");
             Tokenizer_strip(self->tkz, " \t\n");
             assert(Tokenizer_ntokens(self->tkz) == 2);
             self->reference = strdup(Tokenizer_token(self->tkz,1));
             CHECKMEM(self->reference);
-        }else if(buff[0] == '#')
+        }else if(self->buff[0] == '#')
             continue;
-        else if(NULL != strchr(',', self->buff))
+        else if(NULL != strchr(self->buff, ','))
             continue;
         else {  // Just read a snp, which means we're done with the
                 // header. Back up to before the current line and quit.
@@ -87,9 +82,10 @@ int stripCommas(char *s) {
 int VCFReader_next(VCFReader *self) {
     int ntokens;
     char *info;
-    int nalleles;
+    int i, nalleles;
     char alleles[7] = {'\0'};
     int aa = -1; // ancestral allele
+    double alleleCount;
 
     // find SNP with known ancestral allele
     do{
@@ -104,18 +100,23 @@ int VCFReader_next(VCFReader *self) {
                 ntokens = Tokenizer_strip(self->tkz, " \t\n");
             }while( ntokens == 0 );
 
+            if(ntokens < 10) {
+                printf("%s:%d: ntokens=%d\n",__FILE__,__LINE__,ntokens);
+                Tokenizer_print(self->tkz, stdout);
+            }
             assert(ntokens >= 10);
             strcpy(alleles, Tokenizer_token(self->tkz,3)); // reference allele
             strcat(alleles, Tokenizer_token(self->tkz, 4)); // alternate alleles
             nalleles = stripCommas(alleles);
             strlowercase(alleles);
-            printf("%s:%d: %d alleles: %s\n", nalleles, alleles);
+            printf("%s:%d: %d alleles: %s\n", __FILE__,__LINE__,
+                   nalleles, alleles);
         }while(nalleles > 2);
 
-        self.chr = strtol(Tokenizer_token(self->tkz, 0), NULL, 10);
-        self.nucpos = strtol(Tokenizer_token(self->tkz, 1), NULL, 10);
+        self->chr = strtol(Tokenizer_token(self->tkz, 0), NULL, 10);
+        self->nucpos = strtol(Tokenizer_token(self->tkz, 1), NULL, 10);
 
-        double alleleCount = -1.0;
+        alleleCount = -1.0;
 
         // From here on, we're only concerned with the info field
         info = Tokenizer_token(self->tkz, 8);
@@ -148,6 +149,8 @@ int VCFReader_next(VCFReader *self) {
         }
     }while(aa == -1);
 
+    assert(alleleCount > 0.0);
+
     ++self->snpid;
 
     switch(aa) {
@@ -160,7 +163,7 @@ int VCFReader_next(VCFReader *self) {
         self->p = alleleCount/self->nHapSmp;
         break;
     default:
-        fprintf("%s:%s:%d: this shouldn't happen\n",
+        fprintf(stderr, "%s:%s:%d: this shouldn't happen\n",
                 __FILE__,__func__,__LINE__);
         exit(EXIT_FAILURE);
     }
@@ -178,22 +181,35 @@ int VCFReader_multiNext(int n, VCFReader *r[n]) {
     for(i=0; i<n; ++i) {
         if(EOF == VCFReader_next(r[i]))
             return EOF;
-        max = fmax(max, r[i].nucpos);
-        min = fmin(min, r[i].nucpos);
+        max = fmax(max, r[i]->nucpos);
+        min = fmin(min, r[i]->nucpos);
     }
 
     while(min != max) {
         for(i=0; i<n; ++i) {
-            while(r[i].nucpos < max) {
+            while(r[i]->nucpos < max) {
                 if(EOF == VCFReader_next(r[i]))
                     return EOF;
             }
         }
-        max=min=r[0].nucpos;
+        max=min=r[0]->nucpos;
         for(i=1; i<n; ++i) {
-            max = fmax(max, r[i].nucpos);
-            min = fmin(min, r[i].nucpos);
+            max = fmax(max, r[i]->nucpos);
+            min = fmin(min, r[i]->nucpos);
         }
     }
     return 0;
+}
+
+void VCFReader_print(VCFReader *r, FILE *fp) {
+    assert(r->fname);
+    fprintf(fp,"VCFReader(%s):\n", r->fname);
+    fprintf(fp,"  %25s: %s\n", "reference",
+            (r->reference ? r->reference : "NULL"));
+    fprintf(fp,"  %25s: %ld\n", "snpid", r->snpid);
+    fprintf(fp,"  %25s: %u\n", "chromosome", r->chr);
+    fprintf(fp,"  %25s: %lu\n", "nucpos", r->nucpos);
+    fprintf(fp,"  %25s: %u\n", "haploid sample size", r->nHapSmp);
+    fprintf(fp,"  %25s: %c\n", "ancestral allele", r->ancestAllele);
+    fprintf(fp,"  %25s: %lf\n", "ancestral allele freq", r->p);
 }

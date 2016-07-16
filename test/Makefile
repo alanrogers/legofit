@@ -7,7 +7,7 @@ prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
 
 tests := xbinary xhashtab xparse xgene xgptree xbranchtab xparstore \
-  xparkeyval xlblndx xpopnode xjobqueue xdiffev
+  xparkeyval xlblndx xpopnode xjobqueue xdiffev xvcfreader
 
 CC := gcc
 
@@ -75,6 +75,11 @@ xjobqueue : $(XJOBQUEUE)
 XDIFFEV := xdiffev.o diffev.o misc.o binary.o lblndx.o jobqueue.o parkeyval.o
 xdiffev : $(XDIFFEV)
 	$(CC) $(CFLAGS) -o $@ $(XDIFFEV) $(lib)
+
+XVCFREADER := xvcfreader.o vcfreader.o misc.o lblndx.o tokenizer.o binary.o \
+   parkeyval.o
+xvcfreader : $(XVCFREADER)
+	$(CC) $(CFLAGS) -o $@ $(XVCFREADER) $(lib)
 
 xparse.o : parse.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/parse.c

@@ -119,11 +119,12 @@ int main(int argc, char **argv) {
         LblNdx_addSamples(&lndx, 1, poplbl[i]);
     }
 
+    printf("Population labels:\n");
     for(i=0; i<n; ++i)
         printf("%4s = %s\n", poplbl[i], fname[i]);
 
     unsigned long npat = (1UL<<n) - n - 2; // number of site patterns
-    printf("npat=%lu\n", npat);fflush(stdout);
+    printf("Number of site patterns: %lu\n", npat);fflush(stdout);
     tipId_t pat[npat];
 
     {
