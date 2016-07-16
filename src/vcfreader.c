@@ -21,6 +21,8 @@ struct VCFReader {
     double p;             // frequency of ancestral allele
 };
 
+int stripCommas(char *s);
+
 VCFReader *VCFReader_new(const char *fname) {
     if(fp == NULL) {
         fprintf(stderr,"%s:%s:%d: input stream is NULL\n",

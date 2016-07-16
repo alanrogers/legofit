@@ -11,6 +11,7 @@
 #  include <gsl/gsl_rng.h>
 
 static inline int Dbl_near(double x, double y);
+int         compare_tipId(const void *void_x, const void *void_y);
 int         getNumCores(void);
 void        dostacktrace(const char *file, int line, FILE * ofp);
 double      perturb_ratio_w(double x, double w, gsl_rng * rng);

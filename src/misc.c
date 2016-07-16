@@ -1,13 +1,14 @@
 #include "misc.h"
 #include "binary.h"
 #include "lblndx.h"
-#include <stdio.h>
-#include <math.h>
-#include <string.h>
-#include <stdarg.h>
 #include <assert.h>
-#include <gsl/gsl_rng.h>
+#include <ctype.h>
 #include <gsl/gsl_randist.h>
+#include <gsl/gsl_rng.h>
+#include <math.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <string.h>
 #ifdef _WIN32
 #include <windows.h>
 #elif defined(MACOS)
@@ -405,6 +406,33 @@ int comparePtrs(const void *void_x, const void *void_y) {
     // data.
     unsigned rx = reverseBits(**x);
     unsigned ry = reverseBits(**y);
+
+    return ry - rx;
+}
+
+/// Compare pointers to two tipId_t values.
+///
+/// @param void_x,void_y pointers to tipId_t values
+/// @returns <0, 0, or >0 depending on whether the first arg is <,
+/// ==, or > the second.
+int compare_tipId(const void *void_x, const void *void_y) {
+    tipId_t const * x = (tipId_t const *) void_x;
+    tipId_t const * y = (tipId_t const *) void_y;
+
+    // Major sort is on the number of samples
+    // represented in the site pattern. Patterns with
+    // fewer samples come first.
+    int diff1bits = num1bits(*x) - num1bits(*y);
+    if(diff1bits)
+        return diff1bits;
+
+    // Reverse order of bits so that low-order bit
+    // is most significant. This ensures that the
+    // sort order of samples corresponds to the
+    // order in which they were listed in the input
+    // data.
+    unsigned rx = reverseBits(*x);
+    unsigned ry = reverseBits(*y);
 
     return ry - rx;
 }
