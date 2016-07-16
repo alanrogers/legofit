@@ -24,15 +24,21 @@ void Stack_push(Stack *self, tipId_t x);
 void generatePatterns(int bit,  int npops, Stack *stk, tipId_t pat);
 
 const char *useMsg =
-    "Usage: tabpat <x>=<in1.vcf> <y>=<in2.vcf> ...\n"
+    "\nUsage: tabpat <x>=<in1> <y>=<in2> ...\n"
     "   where <x> and <y> are arbitrary labels, and <in1> and <in2> are\n"
-    "   the names of input files in vcf format. Writes to standard output.\n";
+    "   the names of input files in vcf format. Writes to standard output.\n"
+    "   Labels may not include the character \":\".\n";
 
 void usage(void) {
     fputs(useMsg, stderr);
+    fprintf(stderr,"   Maximum number of input files: %lu.\n",
+            8*sizeof(tipId_t));
     exit(1);
 }
 
+/// This stack is local to this file. It provides a bounds-controlled
+/// interface to an external array, which is passed as an argument, buff,
+/// to Stack_new.
 Stack *Stack_new(int dim, tipId_t buff[dim]) {
     Stack *self = malloc(sizeof(Stack));
     CHECKMEM(self);
@@ -42,10 +48,12 @@ Stack *Stack_new(int dim, tipId_t buff[dim]) {
     return self;
 }
 
+/// Frees the stack but not the underlying buffer.
 void Stack_free(Stack *stk) {
     free(stk);
 }
 
+/// Add an entry to the stack, checking for buffer overflow.
 void Stack_push(Stack *self, tipId_t x) {
     if(self->nused == self->dim) {
         fprintf(stderr,"%s:%s:%d buffer overflow\n",
@@ -55,17 +63,15 @@ void Stack_push(Stack *self, tipId_t x) {
     self->buff[self->nused++] = x;
 }
 
-
 /// Call as generatePatterns(0, npops, stk, 0UL);
+/// Recursive function, which generates all legal site patterns
+/// and pushes them onto a stack.
 void generatePatterns(int bit,  int npops, Stack *stk, tipId_t pat) {
+    assert(sizeof(tipId_t) < sizeof (unsigned long long));
     if(bit == npops) {
         // Exclude patterns with 1 bit on, all bits on, or all bits off.
-        if(pat==0UL || isPow2(pat))
-            return;
-        unsigned long long allBitsOn = (1ULL << npops) -1;
-        if(pat == allBitsOn)
-            return;
-        Stack_push(stk, pat);
+        if(pat!=0 && !isPow2(pat) && pat != (1ULL << npops) -1ULL)
+            Stack_push(stk, pat);
         return;
     }
     tipId_t on = 1UL << bit;
@@ -85,15 +91,26 @@ int main(int argc, char **argv) {
     if(n == 0)
         usage();
 
+    // Number of inputs can't exceed number of bits in an object of
+    // type tipId_t.
+    if(n > 8*sizeof(tipId_t)) {
+        fprintf(stderr,"Error: %d input files. Max is %lu.\n",
+                n, 8*sizeof(tipId_t));
+        usage();
+    }
+
     // Parse arguments, each of which should be of form
     // x=foo, where x is an arbitrary label and foo is the
     // name of an input file.
     for(i=0; i<n; ++i) {
         fname[i] = poplbl[i] = argv[i+1];
         (void) strsep(fname+i, "=");
-        if(fname[i] == NULL || strlen(fname[i])==0)
+        if(fname[i] == NULL
+           || poplbl[i] == NULL
+           || strlen(poplbl[i])==0
+           || strlen(fname[i])==0
+           || strchr(poplbl[i], ':') != NULL)
             usage();
-        printf("%4s = %s\n", poplbl[i], fname[i]);
         in[i] = fopen(fname[i], "r");
         if(in[i] == NULL) {
             fprintf(stderr,"Couldn't open \"%s\"\n", fname[i]);
@@ -102,25 +119,39 @@ int main(int argc, char **argv) {
         LblNdx_addSamples(&lndx, 1, poplbl[i]);
     }
 
+    for(i=0; i<n; ++i)
+        printf("%4s = %s\n", poplbl[i], fname[i]);
+
     unsigned long npat = (1UL<<n) - n - 2; // number of site patterns
     printf("npat=%lu\n", npat);fflush(stdout);
     tipId_t pat[npat];
 
-    Stack *stk = Stack_new(npat, pat);
-    generatePatterns(0, n, stk, 0);
+    {
+        // Stack is a interface to array "pat".
+        Stack *stk = Stack_new(npat, pat);
 
+        // Put site patterns into array "pat".
+        generatePatterns(0, n, stk, 0);
+
+        Stack_free(stk);
+    }
+
+    // Sort site patterns. Major sort is by number of "on" bits,
+    // so that doubleton patterns come first, then tripletons, ets.
+    // Secondary sort is by order in which labels are listed
+    // on the command line.
     qsort(pat, (size_t) npat, sizeof(pat[0]), compare_tipId);
 
+    // print labels and binary representation of site patterns
     for(i=0; i<npat; ++i) {
         int lblsize = 100;
         char lblbuff[lblsize];
-        printf("%-12s: ", patLbl(lblsize, lblbuff,  pat[i], &lndx));
+        printf("%15s ", patLbl(lblsize, lblbuff,  pat[i], &lndx));
         printBits(sizeof(tipId_t), pat+i, stdout);
     }
 
     for(i=0; i<n; ++i)
         fclose(in[i]);
-    Stack_free(stk);
     return 0;
 }
 
