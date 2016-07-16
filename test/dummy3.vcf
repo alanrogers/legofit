@@ -1,0 +1,30 @@
+##fileformat=VCFv4.0
+##INFO=<ID=DP,Number=1,Type=Integer,Description="Total Depth">
+##INFO=<ID=HM2,Number=0,Type=Flag,Description="HapMap2 membership">
+##INFO=<ID=HM3,Number=0,Type=Flag,Description="HapMap3 membership">
+##INFO=<ID=AA,Number=1,Type=String,Description="Ancestral Allele, ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/pilot_data/technical/reference/ancestral_alignments/README">
+##reference=human_b36_both.fasta
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">
+##FORMAT=<ID=CB,Number=1,Type=String,Description="Called by S(Sanger), M(UMich), B(BI)">
+##rsIDs=dbSNP b129 mapped to NCBI 36.3, August 10, 2009
+##INFO=<ID=AC,Number=.,Type=Integer,Description="Allele count in genotypes">
+##INFO=<ID=AN,Number=1,Type=Integer,Description="Total number of alleles in called genotypes">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	NA18526	NA18532
+1	469	.	C	G	.	PASS	AA=.;AC=18;AN=120;DP=239	GT:DP:CB	0|0:2:MSB	0|0:0:MSB
+1	492	rs55998931	C	T	.	PASS	AA=.;AC=21;AN=120;DP=205	GT:DP:CB	0|0:3:M	0|0:1:MB
+1	519	rs62636508	G	C	.	PASS	AA=.;AC=8;AN=120;DP=145	GT:DP:CB	0|0:1:MSB	0|0:0:MSB
+1	45162	rs10399749	C	T	.	PASS	AA=c;AC=33;AN=120;DP=155;HM2	GT:DP:CB	1|1:3:MB	0|0:0:MSB
+1	48677	.	G	A	.	PASS	AA=G;AC=2;AN=120;DP=237	GT:DP:CB	0|0:9:SB	0|0:0:SB
+1	53534	.	G	A	.	PASS	AA=G;AC=2;AN=120;DP=226	GT:DP:CB	0|0:7:S	0|0:0:S
+1	76194	.	A	G	.	PASS	AA=.;AC=10;AN=120;DP=159	GT:DP:CB	0|0:7:MS	0|0:0:MS
+1	77053	rs1524602	G	A	.	PASS	AA=.;AC=11;AN=120;DP=143	GT:DP:CB	1|1:4:M	0|0:0:MSB
+1	78201	rs55700207	G	A	.	PASS	AA=.;AC=2;AN=120;DP=205	GT:DP:CB	0|0:5:SB	0|0:3:SB
+1	223336	.	C	G	.	PASS	AA=.;AC=11;AN=120;DP=157	GT:DP:CB	0|0:4:MSB	0|0:0:MS
+1	592472	.	C	A	.	PASS	AA=.;AC=5;AN=120;DP=208	GT:DP:CB	0|0:2:MSB	0|0:0:MS
+1	608326	.	G	A	.	PASS	AA=.;AC=16;AN=120;DP=162	GT:DP:CB	0|0:0:SB	0|0:0:SB
+1	703840	.	C	T	.	PASS	AA=.;AC=22;AN=120;DP=204	GT:DP:CB	0|0:3:MSB	0|0:1:MSB
+1	703842	.	C	G	.	PASS	AA=.;AC=1;AN=120;DP=199	GT:DP:CB	0|0:3:MS	0|0:0:MS
+1	703882	.	A	G	.	PASS	AA=.;AC=1;AN=120;DP=177	GT:DP:CB	0|0:4:MS	0|0:1:MS
+1	704485	.	G	C	.	PASS	AA=.;AC=12;AN=120;DP=151	GT:DP:CB	0|0:0:S	0|0:1:S
+1	710244	.	G	T	.	PASS	AA=.;AC=12;AN=120;DP=158	GT:DP:CB	0|0:4:MSB	0|0:1:MSB

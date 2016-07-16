@@ -1,0 +1,30 @@
+##fileformat=VCFv4.0
+##INFO=<ID=DP,Number=1,Type=Integer,Description="Total Depth">
+##INFO=<ID=HM2,Number=0,Type=Flag,Description="HapMap2 membership">
+##INFO=<ID=HM3,Number=0,Type=Flag,Description="HapMap3 membership">
+##INFO=<ID=AA,Number=1,Type=String,Description="Ancestral Allele, ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/pilot_data/technical/reference/ancestral_alignments/README">
+##reference=human_b36_both.fasta
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">
+##FORMAT=<ID=CB,Number=1,Type=String,Description="Called by S(Sanger), M(UMich), B(BI)">
+##rsIDs=dbSNP b129 mapped to NCBI 36.3, August 10, 2009
+##INFO=<ID=AC,Number=.,Type=Integer,Description="Allele count in genotypes">
+##INFO=<ID=AN,Number=1,Type=Integer,Description="Total number of alleles in called genotypes">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	NA18486	NA18489
+1	45027	rs3091274	C	A	.	PASS	AA=A;AC=48;AN=118;DP=119	GT:DP:CB	1|1:0:S	1|1:0:S
+1	45162	rs10399749	C	T	.	PASS	AA=c;AC=63;AN=118;DP=210;HM2	GT:DP:CB	1|0:0:MB	1|0:4:SM
+1	48677	.	G	A	.	PASS	AA=G;AC=16;AN=118;DP=299	GT:DP:CB	0|0:2:SB	0|1:6:MB
+1	51325	rs56992750	T	A	.	PASS	AA=T;AC=12;AN=118;DP=145	GT:DP:CB	0|0:0:SB	0|0:5:SB
+1	52066	rs28402963	T	C	.	PASS	AA=C;AC=9;AN=118;DP=244	GT:DP:CB	0|0:0:SMB	0|0:14:SMB
+1	53534	.	G	A	.	PASS	AA=G;AC=44;AN=118;DP=356	GT:DP:CB	0|0:0:SM	0|1:6:SB
+1	57044	.	A	G	.	PASS	AA=A;AC=6;AN=118;DP=262	GT:DP:CB	0|0:0:SB	0|0:5:S
+1	76166	rs2949417	G	T	.	PASS	AA=.;AC=4;AN=118;DP=207	GT:DP:CB	0|0:0:SMB	0|0:4:SMB
+1	76194	.	A	G	.	PASS	AA=.;AC=11;AN=118;DP=245	GT:DP:CB	0|0:0:SMB	0|0:2:SMB
+1	78201	rs55700207	G	A	.	PASS	AA=.;AC=12;AN=118;DP=284	GT:DP:CB	0|0:0:SB	0|0:8:SB
+1	81335	rs6680825	C	T	.	PASS	AA=.;AC=4;AN=118;DP=337	GT:DP:CB	0|0:2:SMB	0|0:7:SMB
+1	223336	.	C	G	.	PASS	AA=.;AC=60;AN=118;DP=242	GT:DP:CB	0|1:0:SMB	1|1:2:SMB
+1	250061	.	T	C	.	PASS	AA=.;AC=1;AN=118;DP=206	GT:DP:CB	0|0:0:SB	0|0:2:SB
+1	523033	.	G	T	.	PASS	AA=.;AC=9;AN=118;DP=171	GT:DP:CB	0|0:0:SMB	0|0:3:MB
+1	554323	.	C	G	.	PASS	AA=.;AC=14;AN=118;DP=132	GT:DP:CB	0|1:1:S	1|0:1:SB
+1	555327	rs6594030	T	C	.	PASS	AA=.;AC=4;AN=118;DP=180	GT:DP:CB	0|0:0:SMB	1|0:3:SM
+1	564014	.	A	T	.	PASS	AA=.;AC=37;AN=118;DP=101	GT:DP:CB	1|1:0:S	0|0:0:SM
