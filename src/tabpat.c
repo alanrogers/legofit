@@ -175,7 +175,7 @@ int main(int argc, char **argv) {
 		++nsnps;
 	}
 
-	printf("Tabulated %lu SNPs\n", nsnps);
+	printf("Tabulated %lu SNPs\n", nsnps); fflush(stdout);
     // print labels and binary representation of site patterns
 	printf("# %13s %20s\n", "SitePat", "E[count]");
     for(i=0; i<npat; ++i) {
