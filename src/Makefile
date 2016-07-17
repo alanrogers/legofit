@@ -6,7 +6,7 @@ opt :=  -O0 -fno-inline-functions -rdynamic -DDEBUG     # For debugging
 prof :=
 incl := -I/usr/local/include -I/opt/local/include
 
-targets := lego legofit
+targets := lego legofit tabpat
 tests := xzeroin xbinary
 
 CC := gcc
