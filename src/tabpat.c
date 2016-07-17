@@ -116,12 +116,12 @@ int main(int argc, char **argv) {
 		r[i] = VCFReader_new(fname[i]);
     }
 
-    printf("Population labels:\n");
+    printf("# Population labels:\n");
     for(i=0; i<n; ++i)
-        printf("%4s = %s\n", poplbl[i], fname[i]);
+        printf("# %4s = %s\n", poplbl[i], fname[i]);
 
     unsigned long npat = (1UL<<n) - n - 2; // number of site patterns
-    printf("Number of site patterns: %lu\n", npat);
+    printf("# Number of site patterns: %lu\n", npat);
     tipId_t pat[npat];
 	double  patCount[npat];
 	memset(patCount, 0, sizeof(patCount));
@@ -175,7 +175,7 @@ int main(int argc, char **argv) {
 		++nsnps;
 	}
 
-	printf("Tabulated %lu SNPs\n", nsnps); fflush(stdout);
+	printf("# Tabulated %lu SNPs\n", nsnps); fflush(stdout);
     // print labels and binary representation of site patterns
 	printf("# %13s %20s\n", "SitePat", "E[count]");
     for(i=0; i<npat; ++i) {
