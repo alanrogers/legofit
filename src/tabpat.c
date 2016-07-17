@@ -142,6 +142,7 @@ int main(int argc, char **argv) {
     // on the command line.
     qsort(pat, (size_t) npat, sizeof(pat[0]), compare_tipId);
 
+	fflush(stdout);
 	unsigned long nsnps = 0;
 	// Iterate through vcf files
 	while(EOF != VCFReader_multiNext(n, r)) {
