@@ -120,6 +120,14 @@ int main(int argc, char **argv) {
     for(i=0; i<n; ++i)
         printf("# %4s = %s\n", poplbl[i], fname[i]);
 
+	for(i=1; i<n; ++i)
+		for(j=0; j<i; ++j)
+			if(0 == strcmp(poplbl[i], poplbl[j])) {
+				fprintf(stderr,"Error: duplicate labels on command line.\n");
+				fprintf(stderr,"       duplicated label: %s\n", poplbl[i]);
+				exit(EXIT_FAILURE);
+			}
+
     unsigned long npat = (1UL<<n) - n - 2; // number of site patterns
     printf("# Number of site patterns: %lu\n", npat);
     tipId_t pat[npat];
