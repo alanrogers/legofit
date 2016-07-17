@@ -106,10 +106,9 @@ int VCFReader_next(VCFReader *self) {
             strcat(alleles, Tokenizer_token(self->tkz, 4)); // alternate alleles
             nalleles = stripCommas(alleles);
             strlowercase(alleles);
-            printf("%s:%d: %d alleles: %s\n", __FILE__,__LINE__,
-                   nalleles, alleles);
         }while(nalleles > 2);
 
+		strcpy(self->alleles, alleles);
         self->chr = strtol(Tokenizer_token(self->tkz, 0), NULL, 10);
         self->nucpos = strtol(Tokenizer_token(self->tkz, 1), NULL, 10);
 
@@ -167,32 +166,64 @@ int VCFReader_next(VCFReader *self) {
     return 0;
 }
 
-
+#define MAX(X,Y) ((X) > (Y) ? (X) : (Y))
+#define MIN(X,Y) ((X) > (Y) ? (Y) : (X))
 
 /// Advance an array of VCFReaders to the next shared position.
 /// Return 0 on success or EOF on end of file.
 int VCFReader_multiNext(int n, VCFReader *r[n]) {
     int i;
-    unsigned long max=0, min=ULONG_MAX;
+    unsigned long maxnuc=0, minnuc=ULONG_MAX;
+	unsigned maxchr=0, minchr = UINT_MAX;
 
+	// Find initial min and max position and chromosome.
     for(i=0; i<n; ++i) {
         if(EOF == VCFReader_next(r[i]))
             return EOF;
-        max = fmax(max, r[i]->nucpos);
-        min = fmin(min, r[i]->nucpos);
+        maxnuc = MAX(maxnuc, r[i]->nucpos);
+        minnuc = MIN(minnuc, r[i]->nucpos);
+		maxchr = MAX(maxchr, r[i]->chr);
+		minchr = MIN(minchr, r[i]->chr);
     }
 
-    while(min != max) {
+	// Loop until both chr and position are homogeneous.
+    while(minchr!=maxchr || minnuc!=maxnuc) {
+
+		// get them all on the same chromosome
+		while(minchr!=maxchr) {
+			for(i=0; i<n; ++i) {
+				while(r[i]->chr < maxchr) {
+					if(EOF == VCFReader_next(r[i]))
+						return EOF;
+				}
+			}
+			maxchr=minchr=r[0]->chr;
+			for(i=1; i<n; ++i) {
+				maxchr = MAX(maxchr, r[i]->chr);
+				minchr = MIN(minchr, r[i]->chr);
+			}
+		}
+
+		// Now get them all on the same position. Have
+		// to keep checking chr in case one file moves
+		// to another chromosome.
         for(i=0; i<n; ++i) {
-            while(r[i]->nucpos < max) {
+			// Increment each reader so long as we're all on the same
+			// chromosome and the reader's nucpos is low.
+            while(r[i]->chr==maxchr && r[i]->nucpos < maxnuc) {
                 if(EOF == VCFReader_next(r[i]))
                     return EOF;
             }
         }
-        max=min=r[0]->nucpos;
+
+		// Recalculate all max and min values.
+        maxnuc=minnuc=r[0]->nucpos;
+		maxchr=minchr=r[0]->chr;
         for(i=1; i<n; ++i) {
-            max = fmax(max, r[i]->nucpos);
-            min = fmin(min, r[i]->nucpos);
+            maxnuc = MAX(maxnuc, r[i]->nucpos);
+            minnuc = MIN(minnuc, r[i]->nucpos);
+			maxchr = MAX(maxchr, r[i]->chr);
+			minchr = MIN(minchr, r[i]->chr);
         }
     }
     return 0;
@@ -206,6 +237,7 @@ void VCFReader_print(VCFReader *r, FILE *fp) {
     fprintf(fp,"  %25s: %ld\n", "snpid", r->snpid);
     fprintf(fp,"  %25s: %u\n", "chromosome", r->chr);
     fprintf(fp,"  %25s: %lu\n", "nucpos", r->nucpos);
+    fprintf(fp,"  %25s: %s\n", "alleles", r->alleles);
     fprintf(fp,"  %25s: %u\n", "haploid sample size", r->nHapSmp);
     fprintf(fp,"  %25s: %d\n", "ancestral allele", r->ancestAllele);
     fprintf(fp,"  %25s: %lf\n", "ancestral allele freq", r->p);

@@ -15,6 +15,7 @@ struct VCFReader {
 
     // properties of current snp
     long        snpid;          // 0-based index of current snp
+	char        alleles[5];
     unsigned    chr;            // chromosome
     unsigned long nucpos;       // nucleotide position from vcf file
     unsigned    nHapSmp;        // haploid sample size at current locus

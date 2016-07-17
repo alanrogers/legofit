@@ -20,7 +20,7 @@
 
 int main(int argc, char **argv) {
 
-    int         verbose = 0;
+    int         i, verbose = 0;
 
     switch (argc) {
     case 1:
@@ -37,20 +37,25 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    VCFReader *r = VCFReader_new("dummy.vcf");
-    VCFReader_print(r, stdout);
+    VCFReader *r[3];
+	r[0] = VCFReader_new("dummy.vcf");
+	while(EOF != VCFReader_next(r[0])) {
+		if(verbose)
+			VCFReader_print(r[0], stdout);
+	}
+    VCFReader_free(r[0]);
 
-    putchar('\n');
-    VCFReader_next(r);
-    VCFReader_print(r, stdout);
+	r[0] = VCFReader_new("dummy.vcf");
+	r[1] = VCFReader_new("dummy2.vcf");
+	r[2] = VCFReader_new("dummy3.vcf");
 
-    VCFReader_next(r);
-    VCFReader_print(r, stdout);
-
-    VCFReader_next(r);
-    VCFReader_print(r, stdout);
-
-    VCFReader_free(r);
+	while(EOF != VCFReader_multiNext(3, r)) {
+		if(verbose) {
+			fputs("#################\n", stdout);
+			for(i=0; i<3; ++i)
+				VCFReader_print(r[i], stdout);
+		}
+	}
 
     unitTstResult("VCFReader", "untested");
     return 0;
