@@ -151,7 +151,7 @@ int main(int argc, char **argv) {
 	// Iterate through vcf files
 	while(EOF != VCFReader_multiNext(n, r)) {
 		fputs("#################\n", stdout);
-		for(i=0; i<3; ++i)
+		for(i=0; i<n; ++i)
 			VCFReader_print(r[i], stdout);
 	}
 
