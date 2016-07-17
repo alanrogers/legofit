@@ -6,6 +6,7 @@
 #include "typedefs.h"
 #include "misc.h"
 #include "binary.h"
+#include "vcfreader.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -82,11 +83,11 @@ void generatePatterns(int bit,  int npops, Stack *stk, tipId_t pat) {
 int main(int argc, char **argv) {
     int i;
     int n = argc-1; // number of inputs
-    FILE *in[n];
     char *poplbl[n];
     char *fname[n];
     LblNdx lndx;
     LblNdx_init(&lndx);
+	VCFReader *r[n];
 
     if(n == 0)
         usage();
@@ -111,12 +112,8 @@ int main(int argc, char **argv) {
            || strlen(fname[i])==0
            || strchr(poplbl[i], ':') != NULL)
             usage();
-        in[i] = fopen(fname[i], "r");
-        if(in[i] == NULL) {
-            fprintf(stderr,"Couldn't open \"%s\"\n", fname[i]);
-            exit(1);
-        }
         LblNdx_addSamples(&lndx, 1, poplbl[i]);
+		r[i] = VCFReader_new(fname[i]);
     }
 
     printf("Population labels:\n");
@@ -151,8 +148,15 @@ int main(int argc, char **argv) {
         printBits(sizeof(tipId_t), pat+i, stdout);
     }
 
+	// Iterate through vcf files
+	while(EOF != VCFReader_multiNext(n, r)) {
+		fputs("#################\n", stdout);
+		for(i=0; i<3; ++i)
+			VCFReader_print(r[i], stdout);
+	}
+
     for(i=0; i<n; ++i)
-        fclose(in[i]);
+		VCFReader_free(r[i]);
     return 0;
 }
 
