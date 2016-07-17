@@ -173,7 +173,6 @@ int main(int argc, char **argv) {
 			patCount[i] += z;
 		}
 		++nsnps;
-		fprintf(stderr,"Finished SNP %lu\n", nsnps);
 	}
 
 	printf("Tabulated %lu SNPs\n", nsnps);
