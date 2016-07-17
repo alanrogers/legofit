@@ -101,6 +101,12 @@ int VCFReader_next(VCFReader *self) {
                 ntokens = Tokenizer_strip(self->tkz, " \t\n");
             }while( ntokens == 0 );
 
+			if(ntokens < 10) {
+				fprintf(stderr,"%s:%s:%d: ERR ntokens=%d < 10\n",
+						__FILE__,__func__,__LINE__, ntokens);
+				Tokenizer_print(self->tkz, stderr);
+				exit(1);
+			}
             assert(ntokens >= 10);
             strcpy(alleles, Tokenizer_token(self->tkz,3)); // reference allele
             strcat(alleles, Tokenizer_token(self->tkz, 4)); // alternate alleles
