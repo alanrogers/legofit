@@ -96,7 +96,7 @@ int VCFReader_next(VCFReader *self) {
 
     // find SNP with known ancestral allele
     do{
-        // Exclude SNPs with >2 alleles
+        // Exclude everything but biallelic SNPs.
         do{
             // Find a non-empty line of data
             do{
@@ -120,9 +120,12 @@ int VCFReader_next(VCFReader *self) {
 			}
             assert(ntokens >= 10);
             strcpy(alleles, Tokenizer_token(self->tkz,3)); // reference allele
-            strcat(alleles, Tokenizer_token(self->tkz, 4)); // alternate alleles
-            nalleles = stripCommas(alleles);
+            strcat(alleles, Tokenizer_token(self->tkz,4)); // alternate alleles
+            nalleles = strlen(alleles);
             strlowercase(alleles);
+			// nalleles is the length of the concatenated REF and ALT
+			// strings. It will equal 2 for a bi-allelic SNP but will
+			// exceed 2 in all other cases.
         }while(nalleles > 2);
 
 		strcpy(self->alleles, alleles);
