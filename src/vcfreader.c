@@ -42,6 +42,11 @@ void VCFReader_parseHdr(VCFReader *self) {
 
         if(fgets(self->buff, sizeof(self->buff), self->fp) == NULL)
             break;
+		if(NULL == strchr(self->buff, '\n')) {
+			fprintf(stderr, "%s:%d: Buffer overflow. size=%zu\n",
+					__FILE__,__LINE__, sizeof(self->buff));
+			exit(EXIT_FAILURE);
+		}
         if(0 == strncasecmp(self->buff, "##reference", 11)){
             Tokenizer_split(self->tkz, self->buff, "=");
             Tokenizer_strip(self->tkz, " \t\n");
@@ -96,6 +101,11 @@ int VCFReader_next(VCFReader *self) {
             do{
                 if(fgets(self->buff, sizeof(self->buff), self->fp) == NULL)
                     return EOF;
+				if(NULL == strchr(self->buff, '\n')) {
+					fprintf(stderr, "%s:%d: Buffer overflow. size=%zu\n",
+							__FILE__,__LINE__, sizeof(self->buff));
+					exit(EXIT_FAILURE);
+				}
     
                 Tokenizer_split(self->tkz, self->buff, "\t");
                 ntokens = Tokenizer_strip(self->tkz, " \t\n");
