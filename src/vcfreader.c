@@ -162,8 +162,6 @@ int VCFReader_next(VCFReader *self) {
         }
     }while(aa == -1);
 
-    assert(alleleCount > 0.0);
-
     ++self->snpid;
 
     switch(aa) {
