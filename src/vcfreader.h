@@ -4,7 +4,7 @@
 #include "typedefs.h"
 #include <stdio.h>
 
-#define VCF_MAXLINE 500
+#define VCF_MAXLINE 1000
 
 struct VCFReader {
     char       *fname;
