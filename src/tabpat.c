@@ -81,7 +81,7 @@ void generatePatterns(int bit,  int npops, Stack *stk, tipId_t pat) {
 }
 
 int main(int argc, char **argv) {
-    int i;
+    int i, j;
     int n = argc-1; // number of inputs
     char *poplbl[n];
     char *fname[n];
@@ -121,8 +121,10 @@ int main(int argc, char **argv) {
         printf("%4s = %s\n", poplbl[i], fname[i]);
 
     unsigned long npat = (1UL<<n) - n - 2; // number of site patterns
-    printf("Number of site patterns: %lu\n", npat);fflush(stdout);
+    printf("Number of site patterns: %lu\n", npat);
     tipId_t pat[npat];
+	double  patCount[npat];
+	memset(patCount, 0, sizeof(patCount));
 
     {
         // Stack is a interface to array "pat".
@@ -140,20 +142,49 @@ int main(int argc, char **argv) {
     // on the command line.
     qsort(pat, (size_t) npat, sizeof(pat[0]), compare_tipId);
 
+	unsigned long nsnps = 0;
+	// Iterate through vcf files
+	while(EOF != VCFReader_multiNext(n, r)) {
+		// p and q are frequencies of ancestral and derived alleles
+		double p[n], q[n];
+		for(i=0; i < n; ++i) {
+			p[i] = VCFReader_aaFreq(r[i]);  // ancestral allele freq
+			q[i] = 1-p[i];
+		}
+
+		// Contribution of current snp to each site pattern.  Inner
+		// loop considers each bit in current pattern.  If that bit is
+		// on, multiply z by the ancestral allele frequency, p. If
+		// that bit is off, multiply by q=1-p. In the end, z is Prod
+		// p[j]^bit[j] * q[j]^(1-bit[j]) where bit[j] is the value (0
+		// or 1) of the j'th bit.
+		for(i=0; i < npat; ++i) {
+			tipId_t pattern = pat[i];
+			double z = 1.0;
+			for(j=0; j < n; ++j) {
+				if(pattern & 1u)
+					z *= p[i];
+				else
+					z *= q[i];
+				pattern >>= 1u;
+			}
+			assert( 0 == (pattern&1) );
+			patCount[i] += z;
+		}
+		++nsnps;
+		fprintf(stderr,"Finished SNP %lu\n", nsnps);
+	}
+
+	printf("Tabulated %lu SNPs\n", nsnps);
     // print labels and binary representation of site patterns
+	printf("# %13s %20s\n", "SitePat", "E[count]");
     for(i=0; i<npat; ++i) {
         int lblsize = 100;
         char lblbuff[lblsize];
-        printf("%15s ", patLbl(lblsize, lblbuff,  pat[i], &lndx));
-        printBits(sizeof(tipId_t), pat+i, stdout);
+        printf("%15s %20.7lf\n",
+			   patLbl(lblsize, lblbuff,  pat[i], &lndx),
+			   patCount[i]);
     }
-
-	// Iterate through vcf files
-	while(EOF != VCFReader_multiNext(n, r)) {
-		fputs("#################\n", stdout);
-		for(i=0; i<n; ++i)
-			VCFReader_print(r[i], stdout);
-	}
 
     for(i=0; i<n; ++i)
 		VCFReader_free(r[i]);

@@ -29,5 +29,7 @@ void        VCFReader_parseHdr(VCFReader * self);
 int         VCFReader_next(VCFReader * self);
 int         VCFReader_multiNext(int n, VCFReader * r[n]);
 void        VCFReader_print(VCFReader *r, FILE *fp);
+double      VCFReader_aaFreq(VCFReader *r);
+
 
 #endif

@@ -22,6 +22,7 @@ VCFReader *VCFReader_new(const char *fname) {
         exit(EXIT_FAILURE);
     }
     self->tkz = Tokenizer_new(VCF_MAXFIELDS);
+	self->p = strtod("NaN", NULL);
     VCFReader_parseHdr(self);
     return self;
 }
@@ -257,4 +258,9 @@ void VCFReader_print(VCFReader *r, FILE *fp) {
     fprintf(fp,"  %25s: %u\n", "haploid sample size", r->nHapSmp);
     fprintf(fp,"  %25s: %d\n", "ancestral allele", r->ancestAllele);
     fprintf(fp,"  %25s: %lf\n", "ancestral allele freq", r->p);
+}
+
+double      VCFReader_aaFreq(VCFReader *r) {
+	assert(r->p >= 0.0 && r->p <= 1.0);
+	return r->p;
 }
