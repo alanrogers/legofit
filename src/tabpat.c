@@ -54,7 +54,7 @@ void Stack_free(Stack *stk) {
     free(stk);
 }
 
-/// Add an entry to the stack, checking for buffer overflow.
+/// Add an entry to the stack, checking bounds.
 void Stack_push(Stack *self, tipId_t x) {
     if(self->nused == self->dim) {
         fprintf(stderr,"%s:%s:%d buffer overflow\n",
@@ -64,14 +64,17 @@ void Stack_push(Stack *self, tipId_t x) {
     self->buff[self->nused++] = x;
 }
 
-/// Call as generatePatterns(0, npops, stk, 0UL);
+/// Call as generatePatterns(0, npops, stk, 0);
 /// Recursive function, which generates all legal site patterns
 /// and pushes them onto a stack.
 void generatePatterns(int bit,  int npops, Stack *stk, tipId_t pat) {
     assert(sizeof(tipId_t) < sizeof (unsigned long long));
     if(bit == npops) {
         // Exclude patterns with 1 bit on, all bits on, or all bits off.
-        if(pat!=0 && !isPow2(pat) && pat != (1ULL << npops) -1ULL)
+        if(pat!=0                            // not all bits off
+		   && !isPow2(pat)                   // not 1 bit on
+		   && pat != (1ULL << npops) -1ULL   // not all bits on
+			)
             Stack_push(stk, pat);
         return;
     }
@@ -120,6 +123,7 @@ int main(int argc, char **argv) {
     for(i=0; i<n; ++i)
         printf("# %4s = %s\n", poplbl[i], fname[i]);
 
+	// make sure labels are all different
 	for(i=1; i<n; ++i)
 		for(j=0; j<i; ++j)
 			if(0 == strcmp(poplbl[i], poplbl[j])) {
@@ -182,8 +186,8 @@ int main(int argc, char **argv) {
 		}
 		++nsnps;
 	}
+	printf("# Tabulated %lu SNPs\n", nsnps);
 
-	printf("# Tabulated %lu SNPs\n", nsnps); fflush(stdout);
     // print labels and binary representation of site patterns
 	printf("# %13s %20s\n", "SitePat", "E[count]");
     for(i=0; i<npat; ++i) {
