@@ -67,13 +67,13 @@ void Stack_push(Stack *self, tipId_t x) {
 /// Call as generatePatterns(0, npops, stk, 0);
 /// Recursive function, which generates all legal site patterns
 /// and pushes them onto a stack.
-void generatePatterns(int bit,  int npops, Stack *stk, tipId_t pat) {
+void generatePatterns(int bit, int npops, Stack *stk, tipId_t pat) {
     assert(sizeof(tipId_t) < sizeof (unsigned long long));
     if(bit == npops) {
         // Exclude patterns with 1 bit on, all bits on, or all bits off.
-        if(pat!=0                            // not all bits off
-		   && !isPow2(pat)                   // not 1 bit on
-		   && pat != (1ULL << npops) -1ULL   // not all bits on
+        if(pat!=0                          // exclude if all bits off
+		   && !isPow2(pat)                 // exclude if only 1 bit on
+		   && pat != (1ULL << npops) -1ULL // exclude if all bits on
 			)
             Stack_push(stk, pat);
         return;
