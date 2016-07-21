@@ -8,6 +8,7 @@
 #define VCF_MAXFIELDS 200
 
 int stripCommas(char *s);
+int singleNucleotide(const char *s);
 
 VCFReader *VCFReader_new(const char *fname) {
     VCFReader *self = malloc(sizeof(*self));
@@ -68,6 +69,16 @@ void VCFReader_parseHdr(VCFReader *self) {
     self->snpid = -1; // -1 means we haven't yet read a snp.
 }
 
+// Return 1 if the character string contains a single nucleotide;
+// 0 otherwise.
+int singleNucleotide(const char *s) {
+	if(NULL == strchr("atgcATGC", *s))
+		return 0;
+	if(*++s != '\0')
+		return 0;
+	return 1;
+}
+
 /// Remove commas from string s. Return length of string
 int stripCommas(char *s) {
     char *p, *q;
@@ -88,11 +99,12 @@ int stripCommas(char *s) {
 // Read the next snp. Return 0 on success; EOF on end of file.
 int VCFReader_next(VCFReader *self) {
     int ntokens;
-    char *info;
+    char *info, *ref, *alt;
     int i, nalleles;
     char alleles[7] = {'\0'};
     int aa = -1; // ancestral allele
     double alleleCount;
+	int reject;  // boolean
 
     // find SNP with known ancestral allele
     do{
@@ -112,6 +124,8 @@ int VCFReader_next(VCFReader *self) {
                 ntokens = Tokenizer_strip(self->tkz, " \t\n");
             }while( ntokens == 0 );
 
+			reject = 0;
+
 			if(ntokens < 10) {
 				fprintf(stderr,"%s:%s:%d: ERR ntokens=%d < 10\n",
 						__FILE__,__func__,__LINE__, ntokens);
@@ -119,14 +133,26 @@ int VCFReader_next(VCFReader *self) {
 				exit(1);
 			}
             assert(ntokens >= 10);
-            strcpy(alleles, Tokenizer_token(self->tkz,3)); // reference allele
-            strcat(alleles, Tokenizer_token(self->tkz,4)); // alternate alleles
+			ref = Tokenizer_token(self->tkz,3); // reference allele
+			if(!singleNucleotide(ref)) {
+				// Reference is not a single nucleotide: reject
+				reject = 1;
+				continue;
+			}
+			alt = Tokenizer_token(self->tkz,4); // alternate alleles
+			if(!singleNucleotide(alt)) {
+				// Alt is not a single nucleotide: reject
+				reject = 1;
+				continue;
+			}
+            strcpy(alleles, ref);
+            strcat(alleles, alt);
             nalleles = strlen(alleles);
             strlowercase(alleles);
-			// nalleles is the length of the concatenated REF and ALT
-			// strings. It will equal 2 for a bi-allelic SNP but will
-			// exceed 2 in all other cases.
-        }while(nalleles > 2);
+			assert(strlen(ref) == 1);
+			assert(strlen(alt) == 1);
+			assert(nalleles == 2);
+        }while(reject);
 
 		strcpy(self->alleles, alleles);
         self->chr = strtol(Tokenizer_token(self->tkz, 0), NULL, 10);
