@@ -1,4 +1,5 @@
 destination := $(HOME)/bin
+global_destination := /usr/local/bin
 #opt := -DNDEBUG -O3  -finline-functions  # For full optimization
 #opt := -O3  -finline-functions  # Optimization + debugging
 opt :=  -O0 -fno-inline-functions -rdynamic -DDEBUG     # For debugging
@@ -71,6 +72,10 @@ clean :
 install : $(targets)
 	cp diverg.py $(destination)
 	cp $(targets) $(destination)
+
+ginstall : $(targets)
+	cp diverg.py $(global_destination)
+	cp $(targets) $(global_destination)
 
 include depend
 
