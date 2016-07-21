@@ -216,24 +216,6 @@ int GPTree_feasible(const GPTree *self) {
 	return PopNode_feasible(self->rootPop, self->bnd);
 }
 
-/// Initialize vector x. If ndx==0, simply copy the parameter vector
-/// from the GPTree object. Otherwise, randomize the GPTree first.
-/// This ensures that differential evolution starts with a set of
-/// points, one of which is the same as the values in the input
-/// file. This allows you to improve on existing estimates without
-/// starting from scratch each time.
-void initStateVec(int ndx, void *void_p, int n, double x[n], gsl_rng *rng){
-    GPTree *gpt = (GPTree *) void_p;
-    if(ndx == 0)
-        GPTree_getParams(gpt, n, x);
-    else {
-        GPTree *g2 = GPTree_dup(gpt);
-        GPTree_randomize(g2, rng);
-        GPTree_getParams(g2, n, x);
-        GPTree_free(g2);
-    }
-}
-
 
 #ifdef TEST
 

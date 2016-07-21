@@ -23,7 +23,5 @@ void        GPTree_randomize(GPTree *self, gsl_rng *rng);
 void        GPTree_printParStore(GPTree *self, FILE *fp);
 void        GPTree_printParStoreFree(GPTree *self, FILE *fp);
 int         GPTree_feasible(const GPTree *self);
-void        initStateVec(int ndx, void *void_p, int n, double x[n],
-                         gsl_rng *rng);
 
 #endif
