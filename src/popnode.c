@@ -705,6 +705,110 @@ void SampNdx_shiftPtrs(SampNdx *self, size_t dpop) {
         INCR_PTR(self->node[i], dpop);
 }
 
+// Return the number of PopNode objects that have self as a "direct"
+// ancestor. A direct ancestor follows parent[0] but not parent[1].
+int PopNode_treeSize(PopNode *self) {
+	if(self==NULL)
+		return 0;
+	int rval = 1;
+	if(self->child[0] && self->child[0]->parent[0]==self)
+		rval += PopNode_treeSize(self->child[0]);
+	if(self->child[1] && self->child[1]->parent[0]==self)
+		rval += PopNode_treeSize(self->child[1]);
+	return rval;
+}
+
+typedef struct FourPopPar FourPopPar;
+
+struct FourPopPar {
+	double *twoNX;
+	double *twoNY
+	double *twoNXY;
+	double *twoNN;
+	double *twoND;
+	double *twoNND;
+	double *twoN0;
+	double *mN;
+	double *mD;
+	double *alpha;
+	double *delta;
+	double *kappa;
+	double *zeta;
+	double *lambda;
+};
+
+// 
+int PopNode_fourPop(PopNode *root, FourPopPar *p) {
+	int n0 = PopNode_treeSize(root->child[0]);
+	int n1 = PopNode_treeSize(root->child[1]);
+	int xyndx; // 0 or 1, to indicate which child has XY tree.
+	if(n0==5 && n1==3)
+		xyndx = 0;
+	else if(n0==3 && n1==5)
+		xyndx = 1;
+	else
+		return 0;
+
+	p->twoN0 = root->twoN;
+	p->lambda = root->start;
+	assert(root->nparents == 0);
+	assert(root->end == NULL);
+	assert(root->mix == NULL);
+
+	PopNode *nd = root->child[1 - xyndx];
+	n0 = PopNode_treeSize(nd->child[0]);
+	n1 = PopNode_treeSize(nd->child[1]);
+	if(n0!=1 || n1 != 1)
+		return 0;
+	int nndx; // 0 or 1, to indicate which child has N tree.
+	if(*nd->child[0]->start < *nd->child[1]->start)
+		nndx = 1;
+	else
+		nndx = 0;
+
+	if(nd->nparents != 0 || nd->mix != NULL)
+		return 0;
+	p->twoNND = nd->twoN;
+	p->kappa = nd->start;
+
+	PopNode *n = nd->child[nndx];
+	if(n->nchildren != 1)
+		return 0;
+	if(n->child[0]->parent[1] != n)
+		return 0;
+	
+	
+
+	PopNode *xy = root->child[xyndx];
+	n0 = PopNode_treeSize(xy->child[0]);
+	n1 = PopNode_treeSize(xy->child[1]);
+	int xndx;  // 0 or 1, to indicate which child has X tree.
+	if(n0==1 && n1==3)
+		xndx = 0;
+	else if(n0==3 && n1==1)
+		xndx = 1;
+	else
+		return 0;
+
+	if(xy->nparents != 1)
+		return 0
+	if(xy->mix != NULL)
+		return 0;
+
+	p->twoNXY = xy->twoN;
+	p->lambda = xy->start;
+
+	if(xy->child[xndx]->nparents != 1
+	   || xy->child[xndx]->mix != NULL)
+		return 0;
+
+	PopNode *y = xy->child[1-xndx];
+	if(y->nparents != 1 || y->mix != NULL)
+		return 0;
+	p->delta = y->start;
+	
+	
+}
 
 #ifdef TEST
 
@@ -771,6 +875,7 @@ int main(int argc, char **argv) {
     assert(p0->child[1] == NULL);
     assert(p0->parent[0] == NULL);
     assert(p0->parent[1] == NULL);
+	assert(PopNode_treeSize(p0) == 1);
 
     double twoN1 = 100.0, start1= 123.0;
     PopNode *p1 = PopNode_new(&twoN1, twoNfree, &start1, startFree, ns);
@@ -784,6 +889,7 @@ int main(int argc, char **argv) {
     assert(p1->child[1] == NULL);
     assert(p1->parent[0] == NULL);
     assert(p1->parent[1] == NULL);
+	assert(PopNode_treeSize(p1) == 1);
 
     Gene *g1 = Gene_new(id1);
     Gene *g2 = Gene_new(id2);
@@ -796,6 +902,8 @@ int main(int argc, char **argv) {
     assert(p0->nparents == 1);
     assert(p1->child[0] == p0);
     assert(p0->parent[0] == p1);
+	assert(PopNode_treeSize(p0) == 1);
+	assert(PopNode_treeSize(p1) == 2);
 
 	if(verbose) {
         printf("Before randomization\n");

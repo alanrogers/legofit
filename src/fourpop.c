@@ -1,7 +1,9 @@
 /**
- * @file legofit.c
- * @brief Estimate parameters describing population sizes, the times of separations
- * and of episodes of gene flow, and levels of gene flow.
+ * @file fourpop.c @brief Estimate parameters describing population
+ * sizes, the times of separations and of episodes of gene flow, and
+ * levels of gene flow. Model assumes four populations related as
+ * (((X,Y),(N,D)),outgroup), with gene flow from N into Y and from D
+ * into Y.
  *
  * @copyright Copyright (c) 2016, Alan R. Rogers 
  * <rogers@anthro.utah.edu>. This file is released under the Internet
@@ -28,12 +30,12 @@ extern unsigned long rngseed;
 void        usage(void);
 
 void usage(void) {
-    fprintf(stderr,"usage: legofit [options] input.lgo sitepat.txt\n");
-    fprintf(stderr,"   where file input.lgo describes population history,\n");
+    fprintf(stderr,"usage: fourpop [options] --fit <freepar> sitepat.txt\n");
+    fprintf(stderr,"   where <freepar> is a comma-separated list"
+			" of free parameter labels (see below),\n");
     fprintf(stderr,"   file sitepat.txt contains site pattern frequencies,\n");
     fprintf(stderr,"   and options may include:\n");
     tellopt("-i <x> or --deItr <x>", "number of DE iterations");
-    tellopt("-r <x> or --simreps <x>", "number of reps in each function eval");
     tellopt("-a <x> or --deTol <x>", "DE tolerance: smaller means less accurate");
     tellopt("-t <x> or --threads <x>", "number of threads (default is auto)");
     tellopt("-F <x> or --scaleFactor <x>", "set DE scale factor");
@@ -50,8 +52,8 @@ int main(int argc, char **argv) {
         {"deItr", required_argument, 0, 'i'},
         {"threads", required_argument, 0, 't'},
 		{"crossover", required_argument, 0, 'x'},
+		{"fit", required_argument, 0, 'f'},
 		{"scaleFactor", required_argument, 0, 'F'},
-		{"simreps", required_argument, 0, 'r'},
         {"strategy", required_argument, 0, 's'},
         {"deTol", required_argument, 0, 'a'},
         {"help", no_argument, 0, 'h'},
@@ -72,7 +74,6 @@ int main(int argc, char **argv) {
     int         nThreads = 0;     // total number of threads
     int         optndx;
     long        simreps = 100;
-    char        lgofname[200] = { '\0' };
     char        patfname[200] = { '\0' };
 
 	// DiffEv parameters
@@ -83,6 +84,9 @@ int main(int argc, char **argv) {
 	int         strategy = 1;
 	int         ptsPerDim = 10;
     int         verbose = 0;
+	int         npar = 17;
+	int         nfree;
+	const char *freepar[npar];
 
 #if defined(__DATE__) && defined(__TIME__)
     printf("# Program was compiled: %s %s\n", __DATE__, __TIME__);
@@ -99,7 +103,7 @@ int main(int argc, char **argv) {
 
     // command line arguments
     for(;;) {
-        i = getopt_long(argc, argv, "i:t:F:p:r:s:a:vx:h", myopts, &optndx);
+        i = getopt_long(argc, argv, "i:t:F:p:f:s:a:vx:h", myopts, &optndx);
         if(i == -1)
             break;
         switch (i) {
@@ -107,15 +111,21 @@ int main(int argc, char **argv) {
         case '?':
             usage();
             break;
-        case 'r':
-            simreps = strtol(optarg, 0, 10);
-            break;
         case 'i':
             deItr = strtol(optarg, 0, 10);
             break;
         case 't':
             nThreads = strtol(optarg, NULL, 10);
             break;
+		case 'f':
+			// Parse comma-separated list of free parameters
+			char *token, *rest = optarg;
+			while(rest != NULL){
+				token = strsep(&rest, ",");
+				if(strlen(token) > 0)
+					freepar[nfree++] = strdup(token);
+			}
+			break;
 		case 'F':
 			F = strtod(optarg, 0);
 			break;
@@ -141,15 +151,13 @@ int main(int argc, char **argv) {
         }
     }
 
-    // remaining options gives file names
-    if(argc - optind != 2) {
-        fprintf(stderr, "Command line must specify 2 input files.\n");
+    // remaining options gives file name
+    if(argc - optind != 1) {
+        fprintf(stderr, "Command line must specify 1 input file.\n");
         usage();
     }
         
-    snprintf(lgofname, sizeof(lgofname), "%s", argv[optind]);
-    assert(lgofname[0] != '\0');
-    snprintf(patfname, sizeof(patfname), "%s", argv[optind+1]);
+    snprintf(patfname, sizeof(patfname), "%s", argv[optind]);
     assert(patfname[0] != '\0');
 
     if(nThreads == 0)
@@ -165,7 +173,6 @@ int main(int argc, char **argv) {
     printf("#    CR              : %lf\n", CR);
     printf("# simreps            : %lu\n", simreps);
     printf("# nthreads           : %d\n", nThreads);
-    printf("# lgo input file     : %s\n", lgofname);
     printf("# site pat input file: %s\n", patfname);
 
     Bounds bnd = {
@@ -273,6 +280,8 @@ int main(int argc, char **argv) {
     gsl_rng_free(rng);
     GPTree_free(gptree);
     fprintf(stderr,"legofit is finished\n");
+	for(i=0; i<nfree; ++i)
+		free(freepar[i]);
 
     return 0;
 }
