@@ -17,6 +17,10 @@ void        initStateVec(int ndx, void *void_p, int n, double x[n],
 
 #define RUGGED
 
+#ifdef NDEBUG
+#error "Unit tests must be compiled without -DNDEBUG flag"
+#endif
+
 /// Local minima wherever all entries of v are integers. Global
 /// minimum at v=0.
 ///
