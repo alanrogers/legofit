@@ -24,7 +24,7 @@
 
 import sys
 
-print "#%3s %10s %2s %2s %13s" % ("chr", "pos", "aa", "da", "daf")
+print "#%3s %10s %2s %2s %20s" % ("chr", "pos", "aa", "da", "daf")
 for line in sys.stdin:
     line = line.strip().lower().split()
     chr = line[0]
@@ -64,4 +64,4 @@ for line in sys.stdin:
     p = float(x)/float(n)
 
 #    print line
-    print "%4s %10s %2s %2s %13.10f" % (chr, pos, aa, alleles[1-aai], p)
+    print "%4s %10s %2s %2s %20.18f" % (chr, pos, aa, alleles[1-aai], p)
