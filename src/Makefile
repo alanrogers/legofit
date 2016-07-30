@@ -8,6 +8,7 @@ prof :=
 incl := -I/usr/local/include -I/opt/local/include
 
 targets := lego legofit tabpat
+pytargets := diverg.py daf.py
 tests := xzeroin xbinary
 
 CC := gcc
@@ -69,12 +70,12 @@ depend : *.c *.h
 clean :
 	rm -f *.a *.o *~ gmon.out *.tmp $(targets) $(tests) core.* vgcore.*
 
-install : $(targets)
-	cp diverg.py $(destination)
+install : $(targets) $(pytargets)
+	cp --preserve=mode $(pytargets) $(destination)
 	cp $(targets) $(destination)
 
-ginstall : $(targets)
-	cp diverg.py $(global_destination)
+ginstall : $(targets) $(pytargets)
+	cp --preserve=mode $(pytargets) $(global_destination)
 	cp $(targets) $(global_destination)
 
 include depend
