@@ -26,7 +26,7 @@ import sys
 
 print "#%3s %10s %2s %2s %13s" % ("chr", "pos", "aa", "da", "daf")
 for line in sys.stdin:
-    line = line.strip().split()
+    line = line.strip().lower().split()
     chr = line[0]
     pos = line[1]
     ref = line[2]
@@ -45,8 +45,19 @@ for line in sys.stdin:
     x = 0
     n = 0
     for gtype in line[5:]:
-        n += 2
-        x += int(gtype[0]) + int(gtype[2])
+        g = gtype[0]
+        if g=='0' or g=='1':
+            n += 1
+            x += int(g)
+
+        g = gtype[2]
+        if g=='0' or g=='1':
+            n += 1
+            x += int(g)
+
+    if n == 0:
+        continue
+
     if aai == 0:
         x = n-x
     p = float(x)/float(n)

@@ -70,7 +70,7 @@ int Tokenizer_split(Tokenizer * t, char *buff, const char *sep) {
     t->n = 0;
     while(t->n < t->maxTokens && (token = strsep(&ptr, sep)) != NULL) {
         if(*token == '\0')
-            continue;           /* skip empty tokens */
+            continue;           // skip empty tokens
         t->tokptr[t->n] = token;
         ++(t->n);
     }
@@ -173,7 +173,8 @@ int Tokenizer_find(Tokenizer * t, const char *s) {
 void Tokenizer_printSummary(const Tokenizer * tkz, FILE * ofp) {
     assert(tkz);
     assert(ofp);
-    fprintf(ofp, "Tokenizer: n=%8d (number of tokens)\n"
+    fprintf(ofp,
+            "Tokenizer:         n=%8d (number of tokens)\n"
             "           maxTokens=%8d\n", tkz->n, tkz->maxTokens);
 }
 

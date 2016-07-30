@@ -55,7 +55,7 @@ LEGOFIT := legofit.o patprob.o gptree.o binary.o jobqueue.o misc.o \
 legofit : $(LEGOFIT)
 	$(CC) $(CFLAGS) -o $@ $(LEGOFIT) $(lib)
 
-TABPAT := tabpat.o misc.o binary.o lblndx.o parkeyval.o vcfreader.o \
+TABPAT := tabpat.o misc.o binary.o lblndx.o parkeyval.o dafreader.o \
   tokenizer.o
 tabpat : $(TABPAT)
 	$(CC) $(CFLAGS) -o $@ $(TABPAT) $(lib)

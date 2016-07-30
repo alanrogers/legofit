@@ -17,7 +17,7 @@ typedef struct ParStore ParStore;
 typedef struct PopNode PopNode;
 typedef struct SampNdx SampNdx;
 typedef struct Tokenizer Tokenizer;
-typedef struct VCFReader VCFReader;
+typedef struct DAFReader DAFReader;
 
 #if 1
 #  define TIPID_SIZE 32

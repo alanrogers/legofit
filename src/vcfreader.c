@@ -34,6 +34,7 @@ void VCFReader_free(VCFReader *self) {
     if(self->reference != NULL)
         free(self->reference);
     Tokenizer_free(self->tkz);
+    free(self);
 }
 
 void VCFReader_parseHdr(VCFReader *self) {
