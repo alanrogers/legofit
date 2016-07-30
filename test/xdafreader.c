@@ -38,16 +38,16 @@ int main(int argc, char **argv) {
     }
 
     DAFReader *r[3];
-	r[0] = DAFReader_new("dummy.daf");
+	r[0] = DAFReader_new("altai.daf");
 	while(EOF != DAFReader_next(r[0])) {
 		if(verbose)
 			DAFReader_print(r[0], stdout);
 	}
     DAFReader_free(r[0]);
 
-	r[0] = DAFReader_new("dummy.daf");
-	r[1] = DAFReader_new("dummy2.daf");
-	r[2] = DAFReader_new("dummy3.daf");
+	r[0] = DAFReader_new("altai.daf");
+	r[1] = DAFReader_new("denisova.daf");
+	r[2] = DAFReader_new("Mgenomes3.daf");
 
     long match=0, mismatch=0;
 	while(EOF != DAFReader_multiNext(3, r)) {

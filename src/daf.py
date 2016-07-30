@@ -45,6 +45,7 @@ for line in sys.stdin:
     x = 0
     n = 0
     for gtype in line[5:]:
+        # gtype is a string like "0|1" or "0/1".
         g = gtype[0]
         if g=='0' or g=='1':
             n += 1
@@ -58,7 +59,7 @@ for line in sys.stdin:
     if n == 0:
         continue
 
-    if aai == 0:
+    if aai == 1:
         x = n-x
     p = float(x)/float(n)
 

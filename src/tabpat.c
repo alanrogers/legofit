@@ -6,7 +6,7 @@
 #include "typedefs.h"
 #include "misc.h"
 #include "binary.h"
-#include "vcfreader.h"
+#include "dafreader.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -27,7 +27,7 @@ void generatePatterns(int bit,  int npops, Stack *stk, tipId_t pat);
 const char *useMsg =
     "\nUsage: tabpat <x>=<in1> <y>=<in2> ...\n"
     "   where <x> and <y> are arbitrary labels, and <in1> and <in2> are\n"
-    "   the names of input files in vcf format. Writes to standard output.\n"
+    "   the names of input files in daf format. Writes to standard output.\n"
     "   Labels may not include the character \":\".\n";
 
 void usage(void) {
@@ -90,7 +90,7 @@ int main(int argc, char **argv) {
     char *fname[n];
     LblNdx lndx;
     LblNdx_init(&lndx);
-	VCFReader *r[n];
+	DAFReader *r[n];
 
     if(n == 0)
         usage();
@@ -116,7 +116,7 @@ int main(int argc, char **argv) {
            || strchr(poplbl[i], ':') != NULL)
             usage();
         LblNdx_addSamples(&lndx, 1, poplbl[i]);
-		r[i] = VCFReader_new(fname[i]);
+		r[i] = DAFReader_new(fname[i]);
     }
 
     printf("# Population labels:\n");
@@ -136,6 +136,8 @@ int main(int argc, char **argv) {
     printf("# Number of site patterns: %lu\n", npat);
     tipId_t pat[npat];
 	double  patCount[npat];
+    int lblsize = 100;
+    char lblbuff[lblsize];
 	memset(patCount, 0, sizeof(patCount));
 
     {
@@ -156,18 +158,24 @@ int main(int argc, char **argv) {
 
 	fflush(stdout);
 	unsigned long nsnps = 0;
-	// Iterate through vcf files
-	while(EOF != VCFReader_multiNext(n, r)) {
-		// p and q are frequencies of ancestral and derived alleles
+	// Iterate through daf files
+	while(EOF != DAFReader_multiNext(n, r)) {
+
+        // Skip loci at which data sets disagree about which allele
+        // is derived and which ancestral.
+        if(!DAFReader_allelesMatch(n, r))
+            continue;
+
+		// p and q are frequencies of derived and ancestral alleles
 		double p[n], q[n];
 		for(i=0; i < n; ++i) {
-			p[i] = VCFReader_aaFreq(r[i]);  // ancestral allele freq
+			p[i] = DAFReader_daf(r[i]);  // derived allele freq
 			q[i] = 1-p[i];
 		}
 
 		// Contribution of current snp to each site pattern.  Inner
 		// loop considers each bit in current pattern.  If that bit is
-		// on, multiply z by the ancestral allele frequency, p. If
+		// on, multiply z by the derived allele frequency, p. If
 		// that bit is off, multiply by q=1-p. In the end, z is Prod
 		// p[j]^bit[j] * q[j]^(1-bit[j]) where bit[j] is the value (0
 		// or 1) of the j'th bit.
@@ -176,9 +184,9 @@ int main(int argc, char **argv) {
 			double z = 1.0;
 			for(j=0; j < n; ++j) {
 				if(pattern & 1u)
-					z *= p[i];
+					z *= p[j];
 				else
-					z *= q[i];
+					z *= q[j];
 				pattern >>= 1u;
 			}
 			assert( 0 == (pattern&1) );
@@ -191,15 +199,13 @@ int main(int argc, char **argv) {
     // print labels and binary representation of site patterns
 	printf("# %13s %20s\n", "SitePat", "E[count]");
     for(i=0; i<npat; ++i) {
-        int lblsize = 100;
-        char lblbuff[lblsize];
         printf("%15s %20.7lf\n",
 			   patLbl(lblsize, lblbuff,  pat[i], &lndx),
 			   patCount[i]);
     }
 
     for(i=0; i<n; ++i)
-		VCFReader_free(r[i]);
+		DAFReader_free(r[i]);
     return 0;
 }
 
