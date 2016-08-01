@@ -168,9 +168,9 @@ int main(int argc, char **argv) {
 
 		// p and q are frequencies of derived and ancestral alleles
 		double p[n], q[n];
-		for(i=0; i < n; ++i) {
-			p[i] = DAFReader_daf(r[i]);  // derived allele freq
-			q[i] = 1-p[i];
+		for(j=0; j < n; ++j) {
+			p[j] = DAFReader_daf(r[j]);  // derived allele freq
+			q[j] = 1-p[j];
 		}
 
 		// Contribution of current snp to each site pattern.  Inner

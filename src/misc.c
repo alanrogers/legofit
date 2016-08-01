@@ -538,3 +538,17 @@ char       *strlowercase(char *s) {
         *p = tolower(*p);
     return s;
 }
+
+/// Hash a character string
+unsigned strhash(const char *ss) {
+    unsigned long hashval;
+    int c;
+    const unsigned char *s = (const unsigned char *) ss;
+
+    // djb2
+    hashval = 5381;
+    while((c = *s++))
+        hashval = ((hashval << 5) + hashval) +  c;
+
+    return hashval;
+}

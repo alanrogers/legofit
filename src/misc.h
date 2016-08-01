@@ -41,6 +41,7 @@ double      KLdiverg(int n, const double o[n], const double e[n]);
 double      sum_double(int n, const double x[n]);
 double      reflect(double x, double lo, double hi);
 char       *strlowercase(char *s);
+unsigned    strhash(const char *ss);
 
 static inline double survival(double t, double twoN);
 
