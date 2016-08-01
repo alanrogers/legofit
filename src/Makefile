@@ -71,11 +71,11 @@ clean :
 	rm -f *.a *.o *~ gmon.out *.tmp $(targets) $(tests) core.* vgcore.*
 
 install : $(targets) $(pytargets)
-	cp --preserve=mode $(pytargets) $(destination)
+	cp -p $(pytargets) $(destination)
 	cp $(targets) $(destination)
 
 ginstall : $(targets) $(pytargets)
-	cp --preserve=mode $(pytargets) $(global_destination)
+	cp -p $(pytargets) $(global_destination)
 	cp $(targets) $(global_destination)
 
 include depend
