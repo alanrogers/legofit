@@ -7,6 +7,7 @@
 #include "misc.h"
 #include "binary.h"
 #include "dafreader.h"
+#include "strndx.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -157,9 +158,10 @@ int main(int argc, char **argv) {
     qsort(pat, (size_t) npat, sizeof(pat[0]), compare_tipId);
 
 	fflush(stdout);
+    StrNdx *strndx = StrNdx_new();
 	unsigned long nsnps = 0;
 	// Iterate through daf files
-	while(EOF != DAFReader_multiNext(n, r)) {
+	while(EOF != DAFReader_multiNext(n, r, strndx)) {
 
         // Skip loci at which data sets disagree about which allele
         // is derived and which ancestral.
@@ -206,6 +208,7 @@ int main(int argc, char **argv) {
 
     for(i=0; i<n; ++i)
 		DAFReader_free(r[i]);
+    StrNdx_free(strndx);
     return 0;
 }
 

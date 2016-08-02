@@ -1,6 +1,7 @@
 #include "dafreader.h"
 #include "tokenizer.h"
 #include "misc.h"
+#include "strndx.h"
 #include <string.h>
 #include <stdlib.h>
 #include <limits.h>
@@ -81,7 +82,7 @@ int DAFReader_next(DAFReader *self) {
     ++self->snpid;
 
     // Chromosome
-    self->chr = strtoul(Tokenizer_token(self->tkz, 0), NULL, 10);
+    snprintf(self->chr, sizeof self->chr, "%s", Tokenizer_token(self->tkz, 0));
 
     // Nucleotide position
     self->nucpos = strtoul(Tokenizer_token(self->tkz, 1), NULL, 10);
@@ -115,19 +116,21 @@ int DAFReader_next(DAFReader *self) {
 
 /// Advance an array of DAFReaders to the next shared position.
 /// Return 0 on success or EOF on end of file.
-int DAFReader_multiNext(int n, DAFReader *r[n]) {
+int DAFReader_multiNext(int n, DAFReader *r[n], StrNdx *strndx) {
     int i;
     unsigned long maxnuc=0, minnuc=ULONG_MAX;
-	unsigned maxchr=0, minchr = UINT_MAX;
+	int chrndx, maxchr=0, minchr = INT_MAX;
+    int cndx[n];
 
 	// Find initial min and max position and chromosome.
     for(i=0; i<n; ++i) {
         if(EOF == DAFReader_next(r[i]))
             return EOF;
+        cndx[i] = StrNdx_getNdx(strndx, r[i]->chr);
         maxnuc = MAX(maxnuc, r[i]->nucpos);
         minnuc = MIN(minnuc, r[i]->nucpos);
-		maxchr = MAX(maxchr, r[i]->chr);
-		minchr = MIN(minchr, r[i]->chr);
+		maxchr = MAX(maxchr, cndx[i]);
+		minchr = MIN(minchr, cndx[i]);
     }
 
 	// Loop until both chr and position are homogeneous.
@@ -136,15 +139,16 @@ int DAFReader_multiNext(int n, DAFReader *r[n]) {
 		// get them all on the same chromosome
 		while(minchr!=maxchr) {
 			for(i=0; i<n; ++i) {
-				while(r[i]->chr < maxchr) {
+				while(cndx[i] < maxchr) {
 					if(EOF == DAFReader_next(r[i]))
 						return EOF;
+                    cndx[i] = StrNdx_getNdx(strndx, r[i]->chr);
 				}
 			}
-			maxchr=minchr=r[0]->chr;
+			maxchr=minchr=cndx[0];
 			for(i=1; i<n; ++i) {
-				maxchr = MAX(maxchr, r[i]->chr);
-				minchr = MIN(minchr, r[i]->chr);
+				maxchr = MAX(maxchr, cndx[i]);
+				minchr = MIN(minchr, cndx[i]);
 			}
 		}
 
@@ -154,20 +158,21 @@ int DAFReader_multiNext(int n, DAFReader *r[n]) {
         for(i=0; i<n; ++i) {
 			// Increment each reader so long as we're all on the same
 			// chromosome and the reader's nucpos is low.
-            while(r[i]->chr==maxchr && r[i]->nucpos < maxnuc) {
+            while(cndx[i]==maxchr && r[i]->nucpos < maxnuc) {
                 if(EOF == DAFReader_next(r[i]))
                     return EOF;
+                cndx[i] = StrNdx_getNdx(strndx, r[i]->chr);
             }
         }
 
 		// Recalculate all max and min values.
         maxnuc=minnuc=r[0]->nucpos;
-		maxchr=minchr=r[0]->chr;
+		maxchr=minchr=cndx[0];
         for(i=1; i<n; ++i) {
             maxnuc = MAX(maxnuc, r[i]->nucpos);
             minnuc = MIN(minnuc, r[i]->nucpos);
-			maxchr = MAX(maxchr, r[i]->chr);
-			minchr = MIN(minchr, r[i]->chr);
+			maxchr = MAX(maxchr, cndx[i]);
+			minchr = MIN(minchr, cndx[i]);
         }
     }
 

@@ -7,7 +7,7 @@ prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
 
 tests := xbinary xhashtab xparse xgene xgptree xbranchtab xparstore \
-  xparkeyval xlblndx xpopnode xjobqueue xdiffev xdafreader xstrtab
+  xparkeyval xlblndx xpopnode xjobqueue xdiffev xdafreader xstrndx
 
 CC := gcc
 
@@ -45,6 +45,7 @@ test : $(tests)
 	-./xgptree
 	-./xparkeyval
 	-./xparstore
+	-./xstrndx
 	-./xlblndx
 	-./xdiffev
 #	-./xzeroin
@@ -135,12 +136,12 @@ XBRANCHTAB := xbranchtab.o gptree.o misc.o binary.o parstore.o popnode.o gene.o 
 xbranchtab : $(XBRANCHTAB)
 	$(CC) $(CFLAGS) -o $@ $(XBRANCHTAB) $(lib)
 
-xstrtab.o : strtab.c
-	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/strtab.c
+xstrndx.o : strndx.c
+	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/strndx.c
 
-XSTRTAB := xstrtab.o misc.o binary.o lblndx.o parkeyval.o
-xstrtab : $(XSTRTAB)
-	$(CC) $(CFLAGS) -o $@ $(XSTRTAB) $(lib)
+XSTRNDX := xstrndx.o misc.o binary.o lblndx.o parkeyval.o
+xstrndx : $(XSTRNDX)
+	$(CC) $(CFLAGS) -o $@ $(XSTRNDX) $(lib)
 
 Q := q.o misc.o gptree.o hashtab.o branchtab.o binary.o lblndx.o parstore.o \
    popnode.o parse.o gene.o tokenizer.o parkeyval.o
