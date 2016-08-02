@@ -50,6 +50,7 @@ int iscomment(const char *s) {
 int DAFReader_next(DAFReader *self) {
     int ntokens1;
     int ntokens;
+    int status;
     char buff[100];
 
     // Find a line of input
@@ -82,13 +83,20 @@ int DAFReader_next(DAFReader *self) {
     ++self->snpid;
 
     // Chromosome
-    snprintf(self->chr, sizeof self->chr, "%s", Tokenizer_token(self->tkz, 0));
+    status = snprintf(self->chr, sizeof self->chr, "%s",
+                      Tokenizer_token(self->tkz, 0));
+    if(status >= sizeof self->chr) {
+        fprintf(stderr,"%s:%d: chromosome name too long: %s\n",
+                __FILE__, __LINE__, Tokenizer_token(self->tkz, 0));
+        exit(EXIT_FAILURE);
+    }
 
     // Nucleotide position
     self->nucpos = strtoul(Tokenizer_token(self->tkz, 1), NULL, 10);
 
     // Ancestral allele
-    snprintf(self->aa, sizeof(self->aa), "%s", Tokenizer_token(self->tkz, 2));
+    status = snprintf(self->aa, sizeof(self->aa), "%s",
+                      Tokenizer_token(self->tkz, 2));
     strlowercase(self->aa);
     if(strlen(self->aa) != 1 || strchr("atgc", *self->aa) == NULL) {
         fprintf(stderr,"%s:%d: Ancestral allele must be a single nucleotide."
@@ -119,7 +127,7 @@ int DAFReader_next(DAFReader *self) {
 int DAFReader_multiNext(int n, DAFReader *r[n], StrNdx *strndx) {
     int i;
     unsigned long maxnuc=0, minnuc=ULONG_MAX;
-	int chrndx, maxchr=0, minchr = INT_MAX;
+	int maxchr=0, minchr = INT_MAX;
     int cndx[n];
 
 	// Find initial min and max position and chromosome.
@@ -192,13 +200,13 @@ int DAFReader_allelesMatch(int n, DAFReader *r[n]) {
 }
 
 void DAFReader_printHdr(FILE *fp) {
-    fprintf(fp, "%20s %3s %10s %2s %2s %8s\n",
+    fprintf(fp, "%20s %5s %10s %2s %2s %8s\n",
             "file", "chr", "pos", "aa", "da", "daf");
 }
 
 void DAFReader_print(DAFReader *r, FILE *fp) {
     assert(r->fname);
-    fprintf(fp,"%20s %3d %10lu %2s %2s %8.6lf\n",
+    fprintf(fp,"%20s %5s %10lu %2s %2s %8.6lf\n",
             r->fname, r->chr, r->nucpos, r->aa, r->da, r->p);
 }
 

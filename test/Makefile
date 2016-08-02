@@ -78,7 +78,7 @@ xdiffev : $(XDIFFEV)
 	$(CC) $(CFLAGS) -o $@ $(XDIFFEV) $(lib)
 
 XDAFREADER := xdafreader.o dafreader.o misc.o lblndx.o tokenizer.o binary.o \
-   parkeyval.o
+   parkeyval.o strndx.o
 xdafreader : $(XDAFREADER)
 	$(CC) $(CFLAGS) -o $@ $(XDAFREADER) $(lib)
 
