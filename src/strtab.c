@@ -33,20 +33,20 @@ typedef struct STLink {
 } STLink;
 
 struct StrTab {
+    int        nextValue;
     STLink     *tab[ST_DIM];
 };
 
-STLink     *STLink_new(char *key, int value);
-STLink     *STLink_add(STLink * self, char *key, int value);
-int         STLink_get(STLink * self, char *key);
+STLink     *STLink_new(char *key, int value, STLink *next);
+int         STLink_get(STLink * self, char *key, int *nextValue);
 void        STLink_free(STLink * self);
 void        STLink_print(const STLink * self);
 
-STLink     *STLink_new(char *key, int value) {
+STLink     *STLink_new(char *key, int value, STLink *next) {
     STLink     *new = malloc(sizeof(*new));
     CHECKMEM(new);
 
-    new->next = NULL;
+    new->next = next;
     int status = snprintf(new->key, sizeof new->key, "%s", key);
     if(status >= MAXKEY) {
         fprintf(stderr,"%s:%s:%d: Buffer overflow. MAXKEY=%d, key=%s\n",
@@ -67,45 +67,30 @@ void STLink_free(STLink * self) {
     free(self);
 }
 
-STLink     *STLink_add(STLink * self, char *key, int value) {
-    if(self == NULL) {
-        STLink     *new = STLink_new(key, value);
-        new->next = self;
-        return new;
+/// Map key to value.
+/// Result is placed in variable pointed to by argument valptr.
+/// Function returns
+Return value corresponding to key. If key is missing
+/// from list, create a new link with value *nextValue,
+/// and increment *nextValue.
+STLink *STLink_get(STLink * self, char *key, int *valptr, int *nextValue) {
+    if(self==NULL) {
+        *valptr = *nextValue++;
+        return STLink_new(key, *valptr, self);
     }
 
     int diff = strcmp(key, self->key);
     if(diff < 0) {
-        STLink     *new = STLink_new(key, value);
-        new->next = self;
-        return new;
-    } else if(diff > 0) {
-        self->next = STLink_add(self->next, key, value);
+        *valptr = *nextValue++;
+        return STLink_new(key, *valptr, self);
+    }
+    if(diff > 0) {
+        self->next = STLink_get(self->next, key, valptr, nextValue);
         return self;
     }
-#ifndef NDEBUG
-    assert(diff == 0);
-    assert(value == self->value);
-    fprintf(stderr, "%s:%s:%d: Warning: ignoring duplicate key: %s\n",
-            __FILE__,__func__,__LINE__, key);
-#endif
+    assert(self == 0);
+    *valptr = self->value;
     return self;
-}
-
-/// Return value corresponding to key
-int STLink_get(STLink * self, char *key) {
-    assert(self != NULL);
-
-    int diff = strcmp(key, self->key);
-    if(diff < 0) {
-        fprintf(stderr,"%s:%s:%d: Key %s not in table\n",
-                __FILE__,__func__,__LINE__, key);
-        exit(EXIT_FAILURE);
-    }
-    if(diff > 0)
-        return STLink_get(self->next, key);
-    assert(diff == 0);
-    return self->value;
 }
 
 void STLink_print(const STLink * self) {
@@ -134,15 +119,7 @@ int StrTab_get(StrTab * self, char *key) {
     unsigned    h = strhash(key) & (ST_DIM-1u);
     assert(h < ST_DIM);
     assert(self);
-    return STLink_get(self->tab[h], key);
-}
-
-/// Add a value to table.
-void StrTab_add(StrTab * self, char *key, int value) {
-    unsigned    h = strhash(key) & (ST_DIM-1u);
-    assert(h < ST_DIM);
-    assert(self);
-    self->tab[h] = STLink_add(self->tab[h], key, value);
+    return STLink_get(self->tab[h], key, &self->nextValue);
 }
 
 /// Return the number of elements in the StrTab.
