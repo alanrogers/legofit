@@ -18,7 +18,6 @@
 // ST_DIM must be a power of 2
 #define ST_DIM 32u
 
-// Make sure ST_DIM is a power of 2
 #if (ST_DIM==0u || (ST_DIM & (ST_DIM-1u)))
 #  error ST_DIM must be a power of 2
 #endif
@@ -28,34 +27,33 @@
 // A single element
 typedef struct STLink {
     struct STLink *next;
-    char       key[MAXKEY];
+    char        key[MAXKEY];
     int         value;
 } STLink;
 
 struct StrTab {
-    int        nextValue;
+    int         nextValue;
     STLink     *tab[ST_DIM];
 };
 
-STLink     *STLink_new(char *key, int value, STLink *next);
+STLink     *STLink_new(char *key, int value, STLink * next);
 int         STLink_get(STLink * self, char *key, int *nextValue);
 void        STLink_free(STLink * self);
 void        STLink_print(const STLink * self);
 
-STLink     *STLink_new(char *key, int value, STLink *next) {
+STLink     *STLink_new(char *key, int value, STLink * next) {
     STLink     *new = malloc(sizeof(*new));
     CHECKMEM(new);
 
     new->next = next;
-    int status = snprintf(new->key, sizeof new->key, "%s", key);
+    int         status = snprintf(new->key, sizeof new->key, "%s", key);
     if(status >= MAXKEY) {
-        fprintf(stderr,"%s:%s:%d: Buffer overflow. MAXKEY=%d, key=%s\n",
-                __FILE__,__func__,__LINE__,
-                MAXKEY, key);
+        fprintf(stderr, "%s:%s:%d: Buffer overflow. MAXKEY=%d, key=%s\n",
+                __FILE__, __func__, __LINE__, MAXKEY, key);
         free(new);
         exit(EXIT_FAILURE);
     }
-    
+
     new->value = value;
     return new;
 }
@@ -70,16 +68,28 @@ void STLink_free(STLink * self) {
 /// Map key to value.
 /// Result is placed in variable pointed to by argument valptr.
 /// Function returns
-Return value corresponding to key. If key is missing
+Return value corresponding to key.If key is missing
 /// from list, create a new link with value *nextValue,
 /// and increment *nextValue.
-STLink *STLink_get(STLink * self, char *key, int *valptr, int *nextValue) {
-    if(self==NULL) {
+ 
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    STLink * STLink_get(STLink * self, char *key, int *valptr,
+                        int *nextValue) {
+    if(self == NULL) {
         *valptr = *nextValue++;
         return STLink_new(key, *valptr, self);
     }
 
-    int diff = strcmp(key, self->key);
+    int         diff = strcmp(key, self->key);
     if(diff < 0) {
         *valptr = *nextValue++;
         return STLink_new(key, *valptr, self);
@@ -116,7 +126,7 @@ void StrTab_free(StrTab * self) {
 
 /// Return value corresponding to key; abort on failure
 int StrTab_get(StrTab * self, char *key) {
-    unsigned    h = strhash(key) & (ST_DIM-1u);
+    unsigned    h = strhash(key) & (ST_DIM - 1u);
     assert(h < ST_DIM);
     assert(self);
     return STLink_get(self->tab[h], key, &self->nextValue);
@@ -168,8 +178,8 @@ int main(int argc, char **argv) {
     CHECKMEM(st);
     assert(0 == StrTab_size(st));
 
-    char       key[20];
-    int        val;
+    char        key[20];
+    int         val;
 
     int         i;
     for(i = 0; i < 25; ++i) {
