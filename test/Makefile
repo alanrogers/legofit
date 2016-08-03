@@ -7,7 +7,8 @@ prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
 
 tests := xbinary xhashtab xparse xgene xgptree xbranchtab xparstore \
-  xparkeyval xlblndx xpopnode xjobqueue xdiffev xdafreader xstrndx
+  xparkeyval xlblndx xpopnode xjobqueue xdiffev xdafreader xstrndx \
+  xboot
 
 CC := gcc
 
@@ -38,6 +39,7 @@ all : $(tests)
 
 test : $(tests)
 	-./xbinary
+	-./xboot
 	-./xhashtab
 	-./xgene
 	-./xparse
@@ -96,6 +98,10 @@ xgene.o : gene.c
 XGENE := xgene.o branchtab.o misc.o binary.o tokenizer.o lblndx.o parkeyval.o
 xgene : $(XGENE)
 	$(CC) $(CFLAGS) -o $@ $(XGENE) $(lib)
+
+XBOOT := xboot.o misc.o
+xboot : $(XBOOT)
+	$(CC) $(CFLAGS) -o $@ $(XBOOT) $(lib)
 
 xpopnode.o : popnode.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/popnode.c

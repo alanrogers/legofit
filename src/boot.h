@@ -7,46 +7,41 @@
  * Systems Consortium License, which can be found in file "LICENSE".
  */
 #ifndef LEGO_BOOT_H
-#define LEGO_BOOT_H
+#  define LEGO_BOOT_H
 
-#include "typedefs.h"
-#include <gsl/gsl_rng.h>
-void        confidenceBounds(double *lowBnd, double *highBnd,
-                             double confidence, double *v, long len);
-double      interpolate(double p, double *v, long len);
-Boot       *Boot_new(long nSNPs, long nReps, unsigned twoNsmp,
-                     int folded, long blockLength,
-                     double windowcm, int nBins, gsl_rng * rng);
+#  include "typedefs.h"
+#  include <gsl/gsl_rng.h>
 
-// Add contribution z to i'th site pattern
-void        Boot_add(Boot * boot, int i, double z);
+BootChr       *BootChr_new(long nsnp, long nrep, long blockLength,
+                           gsl_rng * rng);
 
-void        Boot_free(Boot * boot);
-int         Boot_equals(const Boot * x, const Boot * y);
-Boot       *Boot_dup(const Boot * old);
-long        Boot_nReps(const Boot * boot);
-int         Boot_nBins(const Boot * boot);
-long        Boot_nBlocks(const Boot * boot);
-long        Boot_nSNPs(const Boot * boot);
-void        Boot_plus_equals(Boot * x, const Boot * y);
-#ifndef NDEBUG
-void        Boot_sanityCheck(const Boot * boot, const char *file, int line);
-#endif
-long        Boot_multiplicity(const Boot * boot, long ndx, long rep);
-void        Boot_get_rep(Boot * boot, DblArray *sigdsq, DblArray *rsq,
-                         DblArray *cm, ULIntArray *nobs,
-                         ULIntArray *spectrum, int rep);
-long unsigned Boot_rawCounts(const Boot * boot, int rep, int bin,
-                             double *numerator, double *denominator,
-                             double *sumRsq, double *sep_cm);
-long        Boot_purge(Boot * boot);
-void        Boot_print(const Boot * boot, FILE * ofp);
+#  ifndef NDEBUG
+void        BootChr_sanityCheck(const BootChr *boot, const char *file, int line);
+#  endif
+long        BootChr_multiplicity(const BootChr * boot, long ndx, long rep);
+void        BootChr_add(BootChr * self, long snp, int pat, double z);
+long        BootChr_nrep(const BootChr * boot);
+int         BootChr_nbin(const BootChr * boot);
+long        BootChr_nblock(const BootChr * boot);
+long        BootChr_nsnp(const BootChr * boot);
+void        BootChr_free(BootChr * boot);
+void        BootChr_get_rep(BootChr * self, int npat, double count[npat],
+                            int rep);
+#if 0
+int         BootChr_equals(const BootChr * x, const BootChr * y);
+BootChr    *BootChr_dup(const BootChr * old);
+void        BootChr_plus_equals(BootChr * x, const BootChr * y);
+long unsigned BootChr_rawCounts(const BootChr * boot, int rep, int bin,
+                                double *numerator, double *denominator,
+                                double *sumRsq, double *sep_cm);
+long        BootChr_purge(BootChr * boot);
+void        BootChr_print(const BootChr * boot, FILE * ofp);
 
-#ifndef NDEBUG
-unsigned Boot_multiplicity_slow(Boot * boot, long snp, long rep);
-#endif
+#  ifndef NDEBUG
+unsigned    BootChr_multiplicity_slow(BootChr * boot, long snp, long rep);
+#  endif
 
-BootConf   *BootConf_new(Boot * boot, double confidence);
+BootConf   *BootConf_new(BootChr * boot, double confidence);
 void        BootConf_printHdr(const BootConf * bc, FILE * ofp);
 double      BootConf_lowBound(const BootConf * bc, long bin);
 double      BootConf_highBound(const BootConf * bc, long bin);
@@ -55,4 +50,8 @@ double      BootConf_hiSpecBound(const BootConf * bc, long k);
 void        BootConf_print(const BootConf * bc, FILE * ofp);
 void        BootConf_free(BootConf * bc);
 
+void        confidenceBounds(double *lowBnd, double *highBnd,
+                             double confidence, double *v, long len);
+double      interpolate(double p, double *v, long len);
+#endif
 #endif

@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 
+typedef struct BootChr BootChr;
 typedef struct Bounds Bounds;
 typedef struct BranchTab BranchTab;
 typedef struct El El;

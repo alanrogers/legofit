@@ -347,6 +347,74 @@ unsigned Dbl_first_geq(double val, unsigned len, double v[len]) {
     return hi;
 }
 
+/*
+ * Vector v must be sorted in ascending order before this function is
+ * called.  Function returns index of first element in sorted array
+ * that is >= val.  The function assumes without checking that the
+ * input is sorted. If val > vec[len-1], the function returns len.
+ */
+long long_first_geq(long val, long *v, long len) {
+    register long lo, mid, hi;
+
+    assert(len > 0);
+    lo = 0;
+    hi = len - 1;
+    if(val > v[hi])
+        return len;
+    while(lo < hi) {
+        mid = lo + (hi - lo) / 2;
+        if(mid == lo)
+            break;
+        if(v[mid] < val)
+            lo = mid;
+        else
+            hi = mid;
+    }
+    if(v[lo] >= val)
+        hi = lo;
+
+    assert(hi >= 0);
+    assert(hi < len);
+    assert(v[hi] >= val);
+    assert(hi == 0 || v[hi - 1] < val);
+
+    return hi;
+}
+
+/*
+ * Vector v must be sorted in ascending order before this function is
+ * called.  Function returns index of last element in sorted array
+ * that is <= val.  The function assumes without checking that the
+ * input is sorted. If val < vec[0], the function returns -1.
+ */
+long long_last_leq(long val, long *v, long len) {
+    register long lo, mid, hi;
+
+    assert(len > 0);
+    lo = 0;
+    hi = len - 1;
+    if(val < v[0])
+        return -1;
+    while(lo < hi) {
+        mid = hi - (hi - lo) / 2;
+        if(mid == hi)
+            break;
+        if(v[mid] > val)
+            hi = mid;
+        else
+            lo = mid;
+    }
+    if(v[hi] <= val)
+        lo = hi;
+
+    assert(lo >= 0);
+    assert(lo < len);
+    assert(v[lo] <= val);
+    assert(lo == len - 1 || v[lo + 1] > val);
+
+    return lo;
+}
+
 void unitTstResult(const char *facility, const char *result) {
     printf("%-26s %s\n", facility, result);
 }
@@ -435,6 +503,23 @@ int compare_tipId(const void *void_x, const void *void_y) {
     unsigned ry = reverseBits(*y);
 
     return ry - rx;
+}
+
+/**
+ * Compare two long ints.
+ *
+ * Function interprets its arguments as pointers to long ints.
+ *
+ * @param void_x,void_y Pointers to the two integers, cast as pointers
+ * to voids.
+ * @returns -1, 0, or 1 depending on whether the first arg is <,
+ * ==, or > the second.
+ */
+int compareLongs(const void *void_x, const void *void_y) {
+    const long *x = (const long *) void_x;
+    const long *y = (const long *) void_y;
+
+    return (*x < *y) ? -1 : (*x > *y) ? 1 : 0;
 }
 
 /// Generate a label for site pattern tid. Label goes into
@@ -552,3 +637,4 @@ unsigned strhash(const char *ss) {
 
     return hashval;
 }
+
