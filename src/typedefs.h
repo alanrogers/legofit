@@ -17,7 +17,7 @@ typedef struct ParKeyVal ParKeyVal;
 typedef struct ParStore ParStore;
 typedef struct PopNode PopNode;
 typedef struct SampNdx SampNdx;
-typedef struct StrNdx StrNdx;
+typedef struct StrInt StrInt;
 typedef struct Tokenizer Tokenizer;
 typedef struct DAFReader DAFReader;
 

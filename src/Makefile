@@ -56,7 +56,7 @@ legofit : $(LEGOFIT)
 	$(CC) $(CFLAGS) -o $@ $(LEGOFIT) $(lib)
 
 TABPAT := tabpat.o misc.o binary.o lblndx.o parkeyval.o dafreader.o \
-  tokenizer.o strndx.o
+  tokenizer.o strint.o
 tabpat : $(TABPAT)
 	$(CC) $(CFLAGS) -o $@ $(TABPAT) $(lib)
 

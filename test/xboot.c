@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <string.h>
 #include <gsl/gsl_rng.h>
 
 #ifdef NDEBUG
@@ -23,17 +24,13 @@
 int main(int argc, char **argv) {
     long        nSNPs = 8;
     long        nReps = 10;
-    unsigned    twoNsmp = 120;
     long        blockLength = 3;
-    int         nBins = 4;
-    double      windowcm = 0.3, sep;
     int         verbose = 0;
-    const int   folded = true;
 
     long        i;
     time_t      currtime = time(NULL);
     gsl_rng    *rng = gsl_rng_alloc(gsl_rng_taus);
-    Boot       *boot;
+    BootChr       *bootchr;
 
     switch (argc) {
     case 1:
@@ -57,17 +54,16 @@ int main(int argc, char **argv) {
     assert(Dbl_near(interpolate(0.5, v, 5), 2.0));
     unitTstResult("interpolate", "OK");
 
-    boot = Boot_new(nSNPs, nReps, twoNsmp, folded, blockLength, windowcm,
-                    nBins, rng);
+    bootchr = BootChr_new(nSNPs, nReps, blockLength, rng);
     if(verbose)
-        Boot_print(boot, stdout);
+        BootChr_print(bootchr, stdout);
 
     long        isnp, irep;
 
     for(isnp = 0; isnp < nSNPs; ++isnp) {
         for(irep = 0; irep < nReps; ++irep) {
-            long        m1 = Boot_multiplicity_slow(boot, isnp, irep);
-            long        m2 = Boot_multiplicity(boot, isnp, irep);
+            long        m1 = Boot_multiplicity_slow(bootchr, isnp, irep);
+            long        m2 = Boot_multiplicity(bootchr, isnp, irep);
 
             assert(m1 == m2);
         }
@@ -91,6 +87,7 @@ int main(int argc, char **argv) {
     }
     unitTstResult("Boot_multiplicity", "OK");
 
+#if 0
     double      s;
     long        ndx1, ndx2;
     int         polymorphic = 0;
@@ -203,6 +200,6 @@ int main(int argc, char **argv) {
     SNP_free(snp2);
 
     unitTstResult("Boot", "OK");
-
+#endif
     return 0;
 }

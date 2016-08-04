@@ -9,7 +9,7 @@
 
 #include "dafreader.h"
 #include "misc.h"
-#include "strndx.h"
+#include "strint.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -50,9 +50,14 @@ int main(int argc, char **argv) {
 	r[1] = DAFReader_new("denisova.daf");
 	r[2] = DAFReader_new("Mgenomes3.daf");
 
-    StrNdx *strndx = StrNdx_new();
+    StrInt *strint = StrInt_new();
+    for(i=0; i < 22; ++i) {
+        char foo[10];
+        snprintf(foo, sizeof foo, "%d", i+1);
+        StrInt_insert(strint, foo, i);
+    }
     long match=0, mismatch=0;
-	while(EOF != DAFReader_multiNext(3, r, strndx)) {
+	while(EOF != DAFReader_multiNext(3, r, strint)) {
 		if(verbose) {
 			fputs("#################\n", stdout);
 			for(i=0; i<3; ++i)
@@ -69,11 +74,12 @@ int main(int argc, char **argv) {
             ++mismatch;
         }
 	}
-    printf("%ld/%ld (%lf%%) of SNPs have ancestral/derived alleles that don't match.\n",
+    printf("%ld/%ld (%lf%%) of SNPs have ancestral/derived"
+           " alleles that don't match.\n",
            mismatch, match+mismatch,
            100* mismatch / ((double) (match+mismatch)));
 
-    StrNdx_free(strndx);
+    StrInt_free(strint);
 
     unitTstResult("DAFReader", "untested");
     return 0;

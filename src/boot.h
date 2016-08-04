@@ -12,7 +12,7 @@
 #  include "typedefs.h"
 #  include <gsl/gsl_rng.h>
 
-BootChr       *BootChr_new(long nsnp, long nrep, long blockLength,
+BootChr    *BootChr_new(long nsnp, long nrep, long blockLength,
                            gsl_rng * rng);
 
 #  ifndef NDEBUG
@@ -27,6 +27,16 @@ long        BootChr_nsnp(const BootChr * boot);
 void        BootChr_free(BootChr * boot);
 void        BootChr_get_rep(BootChr * self, int npat, double count[npat],
                             int rep);
+void        BootChr_print(const BootChr * boot, FILE * ofp);
+
+double      interpolate(double p, double *v, long len);
+void        confidenceBounds(double *lowBnd, double *highBnd,
+                             double confidence, double *v, long len);
+
+#  ifndef NDEBUG
+unsigned    BootChr_multiplicity_slow(BootChr * boot, long snp, long rep);
+#  endif
+
 #if 0
 int         BootChr_equals(const BootChr * x, const BootChr * y);
 BootChr    *BootChr_dup(const BootChr * old);
@@ -35,11 +45,6 @@ long unsigned BootChr_rawCounts(const BootChr * boot, int rep, int bin,
                                 double *numerator, double *denominator,
                                 double *sumRsq, double *sep_cm);
 long        BootChr_purge(BootChr * boot);
-void        BootChr_print(const BootChr * boot, FILE * ofp);
-
-#  ifndef NDEBUG
-unsigned    BootChr_multiplicity_slow(BootChr * boot, long snp, long rep);
-#  endif
 
 BootConf   *BootConf_new(BootChr * boot, double confidence);
 void        BootConf_printHdr(const BootConf * bc, FILE * ofp);
@@ -50,8 +55,5 @@ double      BootConf_hiSpecBound(const BootConf * bc, long k);
 void        BootConf_print(const BootConf * bc, FILE * ofp);
 void        BootConf_free(BootConf * bc);
 
-void        confidenceBounds(double *lowBnd, double *highBnd,
-                             double confidence, double *v, long len);
-double      interpolate(double p, double *v, long len);
 #endif
 #endif

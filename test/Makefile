@@ -7,7 +7,7 @@ prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
 
 tests := xbinary xhashtab xparse xgene xgptree xbranchtab xparstore \
-  xparkeyval xlblndx xpopnode xjobqueue xdiffev xdafreader xstrndx \
+  xparkeyval xlblndx xpopnode xjobqueue xdiffev xdafreader xstrint \
   xboot
 
 CC := gcc
@@ -47,7 +47,7 @@ test : $(tests)
 	-./xgptree
 	-./xparkeyval
 	-./xparstore
-	-./xstrndx
+	-./xstrint
 	-./xlblndx
 	-./xdiffev
 #	-./xzeroin
@@ -80,7 +80,7 @@ xdiffev : $(XDIFFEV)
 	$(CC) $(CFLAGS) -o $@ $(XDIFFEV) $(lib)
 
 XDAFREADER := xdafreader.o dafreader.o misc.o lblndx.o tokenizer.o binary.o \
-   parkeyval.o strndx.o
+   parkeyval.o strint.o
 xdafreader : $(XDAFREADER)
 	$(CC) $(CFLAGS) -o $@ $(XDAFREADER) $(lib)
 
@@ -142,12 +142,12 @@ XBRANCHTAB := xbranchtab.o gptree.o misc.o binary.o parstore.o popnode.o gene.o 
 xbranchtab : $(XBRANCHTAB)
 	$(CC) $(CFLAGS) -o $@ $(XBRANCHTAB) $(lib)
 
-xstrndx.o : strndx.c
-	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/strndx.c
+xstrint.o : strint.c
+	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/strint.c
 
-XSTRNDX := xstrndx.o misc.o binary.o lblndx.o parkeyval.o
-xstrndx : $(XSTRNDX)
-	$(CC) $(CFLAGS) -o $@ $(XSTRNDX) $(lib)
+XSTRINT := xstrint.o misc.o binary.o lblndx.o parkeyval.o
+xstrint : $(XSTRINT)
+	$(CC) $(CFLAGS) -o $@ $(XSTRINT) $(lib)
 
 Q := q.o misc.o gptree.o hashtab.o branchtab.o binary.o lblndx.o parstore.o \
    popnode.o parse.o gene.o tokenizer.o parkeyval.o

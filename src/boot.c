@@ -237,6 +237,100 @@ void BootChr_get_rep(BootChr * self, int npat, double count[npat], int rep) {
     memcpy(count, self->count, npat*sizeof(count[0]));
 }
 
+/// Interpolate in order to approximate the value v[p*(len-1)].
+/// Return NaN if len==0.
+double interpolate(double p, double *v, long len) {
+    if(len == 0)
+        return strtod("NAN", 0);
+    long        i, j;
+    double      w;
+    double      goal = p * (len - 1);
+
+    i = floor(goal);
+    j = ceil(goal);
+
+    assert(i >= 0);
+    assert(j < len);
+
+    if(i == j)                  /* no interpolation needed */
+        return v[i];
+    w = goal - i;
+    return (1.0 - w) * v[i] + w * v[j];
+}
+
+/**
+ * Calculate confidence bounds from a vector of values representing
+ * samples drawn from the sampling distribution of some estimator.
+ *
+ * To calculate the lower bound (*lowBnd), the function calculates the
+ * total probability mass in the tails (1 - confidence) and divides
+ * this into two equal parts to find p, the probability mass in each
+ * tail. It then estimates a value L such that a fraction p of the data
+ * values are less than or equal to L. To find this value, the
+ * function uses linear interpolation between the sorted list of data
+ * values.
+ *
+ * The upper bound (*highBnd) is calculated in an analogous fashion.
+ *
+ * @param[out] lowBnd,highBnd Calculated results will be written into
+ * these memory locations.
+ * @param[in] confidence Fraction of sampling distribution that lies
+ * inside the confidence bounds.
+ * @param[in] v The vector of values.
+ * @param[in] len The number of values inf v.
+ * @sideeffect The function sorts the vector v.
+ */
+void confidenceBounds(double *lowBnd, double *highBnd, double confidence,
+                      double *v, long len) {
+    double      tailProb = (1.0 - confidence) / 2.0;
+
+    qsort(v, (size_t) len, sizeof(v[0]), compareDoubles);
+    *lowBnd = interpolate(tailProb, v, len);
+    *highBnd = interpolate(1.0 - tailProb, v, len);
+}
+
+/// Print a BootChr object
+void BootChr_print(const BootChr * self, FILE * ofp) {
+    long        rep, j;
+
+    fprintf(ofp,
+            "BootChr_print: nsnp=%ld nrep=%ld blockLength=%ld nblock=%ld\n",
+            self->nsnp, self->nrep, self->blockLength, self->nblock);
+
+    fprintf(ofp, "Block starts:\n");
+    for(rep = 0; rep < self->nrep; ++rep) {
+        fprintf(ofp, "  rep %ld:", rep);
+        for(j = 0; j < self->nj; ++j)
+            fprintf(ofp, " %ld", self->start[rep][j]);
+        putc('\n', ofp);
+    }
+
+    fprintf(ofp, "Site pattern counts:\n");
+    for(rep = 0; rep < self->nrep; ++rep) {
+        fprintf(ofp, "  rep %ld:", rep);
+        for(j = 0; j < self->nj; ++j)
+            fprintf(ofp, " %ld", self->count[rep][j]);
+        putc('\n', ofp);
+    }
+}
+
+#ifndef NDEBUG
+/* For debugging BootChr_multiplicity */
+unsigned BootChr_multiplicity_slow(BootChr * self, long snp, long rep) {
+    unsigned    i, n = 0;
+
+    for(i = 0; i < self->nblock; ++i) {
+        long        distance = snp - self->start[rep][i];
+
+        if(distance < 0)
+            break;
+        if(distance < self->blockLength)
+            ++n;
+    }
+    return n;
+}
+#endif
+
 #if 0
 /*
  * Allocate and initialize a duplicate of a BootChr structure. Deallocate
@@ -271,29 +365,6 @@ BootChr       *BootChr_dup(const BootChr * old) {
     BootChr_sanityCheck(new, __FILE__, __LINE__);
 #endif
     return new;
-}
-
-/**
- * Interpolate in order to approximate the value v[p*(len-1)].
- * Return NaN if len==0.
- */
-double interpolate(double p, double *v, long len) {
-    if(len == 0)
-        return strtod("NAN", 0);
-    long        i, j;
-    double      w;
-    double      goal = p * (len - 1);
-
-    i = floor(goal);
-    j = ceil(goal);
-
-    assert(i >= 0);
-    assert(j < len);
-
-    if(i == j)                  /* no interpolation needed */
-        return v[i];
-    w = goal - i;
-    return (1.0 - w) * v[i] + w * v[j];
 }
 
 /* Return 1 if the two BootChr structs are idential; zero otherwise */
@@ -442,42 +513,6 @@ long BootChr_purge(BootChr * self) {
     return self->nrep;
 }
 
-/** Print a BootChr object */
-void BootChr_print(const BootChr * self, FILE * ofp) {
-    long        rep, block;
-
-    fprintf(ofp,
-            "BootChr_print: nsnp=%ld nrep=%ld blockLength=%ld nblock=%ld\n",
-            self->nsnp, self->nrep, self->blockLength, self->nblock);
-
-    fprintf(ofp, "Block starts:\n");
-    for(rep = 0; rep < self->nrep; ++rep) {
-        fprintf(ofp, "  rep %ld:", rep);
-        for(block = 0; block < self->nblock; ++block)
-            fprintf(ofp, " %ld", self->start[rep][block]);
-        putc('\n', ofp);
-        // Tabulation_print(self->tab[rep], ofp);
-        // Spectab_print(self->spectab[rep], ofp);
-    }
-}
-
-#ifndef NDEBUG
-/* For debugging BootChr_multiplicity */
-unsigned BootChr_multiplicity_slow(BootChr * self, long snp, long rep) {
-    unsigned    i, n = 0;
-
-    for(i = 0; i < self->nblock; ++i) {
-        long        distance = snp - self->start[rep][i];
-
-        if(distance < 0)
-            break;
-        if(distance < self->blockLength)
-            ++n;
-    }
-    return n;
-}
-#endif
-
 BootConf   *BootConf_new(BootChr * boot, double confidence) {
     BootConf   *bc = malloc(sizeof(BootConf));
 
@@ -553,37 +588,6 @@ BootConf   *BootConf_new(BootChr * boot, double confidence) {
     }
 
     return bc;
-}
-
-/**
- * Calculate confidence bounds from a vector of values representing
- * samples drawn from the sampling distribution of some estimator.
- *
- * To calculate the lower bound (*lowBnd), the function calculates the
- * total probability mass in the tails (1 - confidence) and divides
- * this into two equal parts to find p, the probability mass in each
- * tail. It then estimates a value L such that a fraction p of the data
- * values are less than or equal to L. To find this value, the
- * function uses linear interpolation between the sorted list of data
- * values.
- *
- * The upper bound (*highBnd) is calculated in an analogous fashion.
- *
- * @param[out] lowBnd,highBnd Calculated results will be written into
- * these memory locations.
- * @param[in] confidence Fraction of sampling distribution that lies
- * inside the confidence bounds.
- * @param[in] v The vector of values.
- * @param[in] len The number of values inf v.
- * @sideeffect The function sorts the vector v.
- */
-void confidenceBounds(double *lowBnd, double *highBnd, double confidence,
-                      double *v, long len) {
-    double      tailProb = (1.0 - confidence) / 2.0;
-
-    qsort(v, (size_t) len, sizeof(v[0]), compareDoubles);
-    *lowBnd = interpolate(tailProb, v, len);
-    *highBnd = interpolate(1.0 - tailProb, v, len);
 }
 
 void BootConf_printHdr(const BootConf * self, FILE * ofp) {

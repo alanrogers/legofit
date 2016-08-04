@@ -1,7 +1,7 @@
 #include "dafreader.h"
 #include "tokenizer.h"
 #include "misc.h"
-#include "strndx.h"
+#include "strint.h"
 #include <string.h>
 #include <stdlib.h>
 #include <limits.h>
@@ -124,7 +124,7 @@ int DAFReader_next(DAFReader *self) {
 
 /// Advance an array of DAFReaders to the next shared position.
 /// Return 0 on success or EOF on end of file.
-int DAFReader_multiNext(int n, DAFReader *r[n], StrNdx *strndx) {
+int DAFReader_multiNext(int n, DAFReader *r[n], StrInt *strint) {
     int i;
     unsigned long maxnuc=0, minnuc=ULONG_MAX;
 	int maxchr=0, minchr = INT_MAX;
@@ -134,7 +134,7 @@ int DAFReader_multiNext(int n, DAFReader *r[n], StrNdx *strndx) {
     for(i=0; i<n; ++i) {
         if(EOF == DAFReader_next(r[i]))
             return EOF;
-        cndx[i] = StrNdx_getNdx(strndx, r[i]->chr);
+        cndx[i] = StrInt_get(strint, r[i]->chr);
         maxnuc = MAX(maxnuc, r[i]->nucpos);
         minnuc = MIN(minnuc, r[i]->nucpos);
 		maxchr = MAX(maxchr, cndx[i]);
@@ -150,7 +150,7 @@ int DAFReader_multiNext(int n, DAFReader *r[n], StrNdx *strndx) {
 				while(cndx[i] < maxchr) {
 					if(EOF == DAFReader_next(r[i]))
 						return EOF;
-                    cndx[i] = StrNdx_getNdx(strndx, r[i]->chr);
+                    cndx[i] = StrInt_get(strint, r[i]->chr);
 				}
 			}
 			maxchr=minchr=cndx[0];
@@ -169,7 +169,7 @@ int DAFReader_multiNext(int n, DAFReader *r[n], StrNdx *strndx) {
             while(cndx[i]==maxchr && r[i]->nucpos < maxnuc) {
                 if(EOF == DAFReader_next(r[i]))
                     return EOF;
-                cndx[i] = StrNdx_getNdx(strndx, r[i]->chr);
+                cndx[i] = StrInt_get(strint, r[i]->chr);
             }
         }
 
