@@ -28,6 +28,11 @@ struct BootChr {
     long      **start;          // start[i][j] = start of j'th block in i'th rep
 };
 
+struct Boot {
+    int nchr;                   // number of chromosomes
+    BootChr **bc;               // bc[i]: bootstrap for i'th chromosome
+};
+
 /** Contains the data for a bootstrap confidence interval. */
 struct BootConf {
     long        nrep;           // repetitions
@@ -151,46 +156,46 @@ void BootChr_sanityCheck(const BootChr * self, const char *file, int line) {
 #endif
 
 /// How many copies of snp are present in a given repetition (rep)?
-long BootChr_multiplicity(const BootChr * self, long snp, long rep) {
+long BootChr_multiplicity(const BootChr * self, long snpndx, long rep) {
     long        lndx, hndx, lowtarget;
 
-    assert(snp < self->nsnp);
+    assert(snpndx < self->nsnp);
 
     // lndx is index of first block containing snp
-    lowtarget = snp - self->blockLength + 1;
+    lowtarget = snpndx - self->blockLength + 1;
     lndx = long_first_geq(lowtarget, self->start[rep], self->nblock);
-    if(lndx == self->nblock || self->start[rep][lndx] > snp)
+    if(lndx == self->nblock || self->start[rep][lndx] > snpndx)
         return 0;
 
-    assert(snp >= self->start[rep][lndx]);
-    assert(snp - self->start[rep][lndx] < self->blockLength);
+    assert(snpndx >= self->start[rep][lndx]);
+    assert(snpndx - self->start[rep][lndx] < self->blockLength);
 
     // hndx is index of first block not containing snp
-    hndx = long_first_geq(snp + 1, self->start[rep] + lndx,
+    hndx = long_first_geq(snpndx + 1, self->start[rep] + lndx,
                           self->nblock - lndx);
     hndx += lndx;
 
     assert(hndx == 0
-             || self->start[rep][hndx - 1] - snp < self->blockLength);
+             || self->start[rep][hndx - 1] - snpndx < self->blockLength);
 
     return hndx - lndx;
 }
 
 /*
  * Add one site pattern contribution to a BootChr structure. On entry,
- * self points to the BootChr structure, snp is the index of the
+ * self points to the BootChr structure, snpndx is the index of the
  * current snp, pat is that of the current site pattern, and z is the
  * contribution of the snp to the site pattern.
  */
-void BootChr_add(BootChr * self, long snp, int pat, double z) {
+void BootChr_add(BootChr * self, long snpndx, int pat, double z) {
     assert(pat < self->npat);
-    assert(snp < self->nsnp);
+    assert(snpndx < self->nsnp);
     assert(z > 0.0);
     for(register int rep = 0; rep < self->nrep; ++rep) {
 
         // w is the number times the current snp is represented
         // in the current bootstrap replicate.
-        register long w = BootChr_multiplicity(self, snp, rep);
+        register long w = BootChr_multiplicity(self, snpndx, rep);
 
         self->count[rep][pat] += w*z;
     }
@@ -200,6 +205,12 @@ void BootChr_add(BootChr * self, long snp, int pat, double z) {
 long BootChr_nrep(const BootChr * self) {
     assert(self);
     return self->nrep;
+}
+
+/// Return number of bootstrap repetitions
+long BootChr_npat(const BootChr * self) {
+    assert(self);
+    return self->npat;
 }
 
 /// Return number of blocks
@@ -229,13 +240,50 @@ void BootChr_free(BootChr * self) {
     free(self);
 }
 
-/// Fill array "count" with values for bootstrap repetition "rep".
-void BootChr_get_rep(BootChr * self, int npat, double count[npat], int rep) {
+/// Add to array "count" the values for bootstrap repetition "rep".
+void BootChr_aggregate(BootChr * self, int rep, int npat, double count[npat]) {
     assert(self);
-    assert(rep < self->nrep);
-    assert(rep >= 0);
     assert(npat == self->npat);
-    memcpy(count, self->count, npat*sizeof(count[0]));
+    int j;
+    for(j=0; j < self->npat; ++j)
+        count[j] += self->count[rep][j];
+}
+
+Boot * Boot_new(int nchr, long nsnp[nchr], long nrep, int npat,
+                long blockLength, gsl_rng *rng) {
+    Boot *self = malloc(sizeof(Boot));
+    CHECKMEM(self);
+    self->nchr = nchr;
+    self->bc = malloc(nchr * sizeof(BootChr));
+    CHECKMEM(self->bc);
+
+    for(int i=0; i < nchr; ++i) {
+        self->bc[i] = BootChr_new(nsnp[i], nrep, npat, blockLength, rng);
+        CHECKMEM(self->bc[i]);
+    }
+    return self;
+}
+
+void Boot_free(Boot *self) {
+    for(int i=0; i < self->nchr; ++i)
+        free(self->bc[i]);
+    free(self->bc);
+    free(self);
+}
+
+void Boot_add(Boot *self, int chr, long snpndx, int pat, double z) {
+    BootChr_add(self->bc[chr], snpndx, pat, z);
+}
+
+void Boot_aggregate(Boot * self, int rep, int npat,
+                    double count[npat]) {
+    for(int i=0; i < self->nchr; ++i)
+        BootChr_aggregate(self->bc[i], rep, npat, count);
+}
+
+void Boot_sanityCheck(const Boot * self, const char *file, int line) {
+    for(int i=0; i < self->nchr; ++i)
+        BootChr_sanityCheck(self->bc[i], file, line);
 }
 
 /// Interpolate in order to approximate the value v[p*(len-1)].

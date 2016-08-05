@@ -13,6 +13,7 @@
 #include <assert.h>
 #include <string.h>
 #include <gsl/gsl_rng.h>
+#include <gsl/gsl_randist.h>
 
 #ifdef NDEBUG
 #error "Unit tests must be compiled without -DNDEBUG flag"
@@ -22,16 +23,21 @@
 #include <time.h>
 
 int main(int argc, char **argv) {
-    long        nSNPs = 8;
+    int         nchr = 3;
+    long        nsnp[nchr];
     long        nReps = 10;
     int         npat = 10;
     long        blockLength = 3;
     int         verbose = 0;
 
-    long        i;
+    long        i, j;
     time_t      currtime = time(NULL);
     gsl_rng    *rng = gsl_rng_alloc(gsl_rng_taus);
     BootChr       *bootchr;
+
+    nsnp[0] = 8;
+    nsnp[1] = 10;
+    nsnp[2] = 15;
 
     switch (argc) {
     case 1:
@@ -55,13 +61,19 @@ int main(int argc, char **argv) {
     assert(Dbl_near(interpolate(0.5, v, 5), 2.0));
     unitTstResult("interpolate", "OK");
 
-    bootchr = BootChr_new(nSNPs, nReps, npat, blockLength, rng);
+    bootchr = BootChr_new(nsnp[0], nReps, npat, blockLength, rng);
     if(verbose)
         BootChr_print(bootchr, stdout);
 
+    assert(nsnp[0] == BootChr_nsnp(bootchr));
+    assert(nReps == BootChr_nrep(bootchr));
+    assert(npat == BootChr_npat(bootchr));
+    assert(BootChr_nblock(bootchr) ==
+           floor(0.5+(nsnp[0]/((double) blockLength))));
+
     long        isnp, irep;
 
-    for(isnp = 0; isnp < nSNPs; ++isnp) {
+    for(isnp = 0; isnp < nsnp[0]; ++isnp) {
         for(irep = 0; irep < nReps; ++irep) {
             long        m1 = BootChr_multiplicity_slow(bootchr, isnp, irep);
             long        m2 = BootChr_multiplicity(bootchr, isnp, irep);
@@ -71,6 +83,23 @@ int main(int argc, char **argv) {
     }
     unitTstResult("BootChr_new", "OK");
 
+    for(i=0; i < npat; ++i) {
+        long snp = gsl_rng_uniform_int(rng, nsnp[0]);
+        BootChr_add(bootchr, snp, i, 1.0);
+    }
+
+    for(i=0; i < nReps; ++i) {
+        double count[npat];
+        memset(count, 0, sizeof count);
+        BootChr_aggregate(bootchr, i, npat, count);
+        if(verbose) {
+            printf("rep %2ld:", i);
+            for(j=0; j < npat; ++j)
+                printf(" %6.2lf", count[j]);
+            putchar('\n');
+        }
+    }
+
     if(verbose && nReps <= 5 && BootChr_nblock(bootchr) <= 50)
         BootChr_print(bootchr, stdout);
 
@@ -78,7 +107,7 @@ int main(int argc, char **argv) {
 
     for(i = 0; i < 100; ++i) {
         rep = gsl_rng_uniform_int(rng, nReps);
-        snp = gsl_rng_uniform_int(rng, nSNPs);
+        snp = gsl_rng_uniform_int(rng, nsnp[0]);
         m = BootChr_multiplicity(bootchr, snp, rep);
         slow = BootChr_multiplicity_slow(bootchr, snp, rep);
         if(m != slow)
@@ -86,115 +115,36 @@ int main(int argc, char **argv) {
                     "rep=%ld snp=%ld m=%ld != slow=%ld\n",
                     __FILE__, __LINE__, rep, snp, m, slow);
     }
-    unitTstResult("BootChr_multiplicity", "OK");
 
-#if 0
-    double      s;
-    long        ndx1, ndx2;
-    int         polymorphic = 0;
-    unsigned    gtypeSize = 10;
-    SNP        *snp1 = SNP_new(gtypeSize, BootChr_nReps(boot));
-    SNP        *snp2 = SNP_new(gtypeSize, BootChr_nReps(boot));
-    unsigned char gtype[gtypeSize];
-    int         nGtype;
+    BootChr_free(bootchr);
 
-    for(i = 0; i < 100; ++i) {
-        ndx1 = gsl_rng_uniform_int(rng, nSNPs);
-        ndx2 = gsl_rng_uniform_int(rng, nSNPs);
-        nGtype = encodeHaploid(gtype, sizeof(gtype), "0101010101");
-        assert(nGtype == 10);
-        polymorphic = SNP_set(snp1, ndx1, 0.0345, gtype, bootchr, 1);
-        assert(polymorphic);
-        nGtype = encodeHaploid(gtype, sizeof(gtype), "0101010101");
-        assert(nGtype == 10);
-        polymorphic = SNP_set(snp2, ndx2, 0.0456, gtype, bootchr, 1);
-        assert(polymorphic);
-        s = gsl_rng_uniform(rng) * windowcm;
+    unitTstResult("BootChr", "OK");
+
+    Boot *boot = Boot_new(nchr, nsnp, nReps, npat, blockLength, rng);
+
+    for(i=0; i < nchr; ++i) {
+        for(j=0; j < npat; ++j) {
+            snp = gsl_rng_uniform_int(rng, nsnp[i]);
+            Boot_add(boot, i, snp, j, 1.0);
+        }
     }
-    BootChr_free(boot);
 
-    nSNPs = 100000;
-    nReps = 100;
-    blockLength = 300;
-    nBins = 20;
-    windowcm = 0.3;
-    boot = BootChr_new(nSNPs, nReps, npat, blockLength,
-                    windowcm, nBins, rng);
-    SNP_free(snp1);
-    SNP_free(snp2);
-    snp1 = SNP_new(10, BootChr_nReps(boot));
-    snp2 = SNP_new(10, BootChr_nReps(boot));
-
-    /* extreme cases */
-    encodeHaploid(gtype, sizeof(gtype), "0101010101");
-    SNP_set(snp1, 123, 0.0345, gtype, bootchr, 1);
-    encodeHaploid(gtype, sizeof(gtype), "0101010101");
-    SNP_set(snp2, 234, 0.0456, gtype, bootchr, 1);
-    sep = windowcm - DBL_EPSILON;
-    assert(sep < windowcm);
-
-    encodeHaploid(gtype, sizeof(gtype), "0101010101");
-    SNP_set(snp1, 0, 0.0345, gtype, bootchr, 1);
-
-    encodeHaploid(gtype, sizeof(gtype), "0101010101");
-    SNP_set(snp1, Boot_nSNPs(boot) - 1, 0.0345, gtype, bootchr, 1);
-    Boot_addLD(bootchr, 1.0, 1.0, s, snp1, snp2);  /*ndx1=max */
-    unitTstResult("Boot_addLD", "OK");
-
-    BootConf   *bc = BootConf_new(bootchr, 0.9);
-
-    assert(bc);
-
-    Boot       *boot2 = Boot_dup(boot);
-
-    assert(Boot_equals(bootchr, boot2));
-    BootConf   *bc2 = BootConf_new(boot2, 0.9);
-
-    assert(bc2);
-
-    Boot_free(boot2);
-    boot2 = NULL;
-
-    FILE       *dumpfile;
-
-    /* test dump and restore */
-    const char *fname = "xboot.txt";
-
-    dumpfile = fopen(fname, "w");
-    assert(dumpfile);
-    Boot_dump(bootchr, dumpfile);
-    fclose(dumpfile);
-    dumpfile = fopen(fname, "r");
-    assert(dumpfile);
-    boot2 = Boot_restore(dumpfile);
-    assert(Boot_equals(bootchr, boot2));
-    fclose(dumpfile);
-    dumpfile = NULL;
-    remove(fname);
-
-    if(verbose) {
-        printf("\nthis was dumped using Boot_dump:\n");
-        Boot_print(bootchr, stdout);
-        BootConf_print(bc, stdout);
-
-        printf("\nthis was restored using Boot_restore:\n");
-        Boot_print(boot2, stdout);
-        BootConf_print(bc2, stdout);
+    for(i=0; i < nReps; ++i) {
+        double count[npat];
+        memset(count, 0, sizeof count);
+        Boot_aggregate(boot, i, npat, count);
+        if(verbose) {
+            printf("rep %2ld:", i);
+            for(j=0; j < npat; ++j)
+                printf(" %6.2lf", count[j]);
+            putchar('\n');
+        }
     }
-    unitTstResult("Boot_dump", "OK");
-    unitTstResult("Boot_restore", "OK");
-
-    Boot_free(boot2);
-    boot2 = NULL;
-
     Boot_free(boot);
-    BootConf_free(bc);
-    BootConf_free(bc2);
-    gsl_rng_free(rng);
-    SNP_free(snp1);
-    SNP_free(snp2);
 
     unitTstResult("Boot", "OK");
-#endif
+
+    gsl_rng_free(rng);
+
     return 0;
 }

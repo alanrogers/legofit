@@ -9,5 +9,5 @@ void        StrInt_free(StrInt * self);
 void        StrInt_insert(StrInt *self, const char *key, int value);
 int         StrInt_get(StrInt * self, const char *key);
 void        StrInt_print(const StrInt * self, FILE *fp);
-int         StrInt_size(StrInt * self);
+unsigned    StrInt_size(const StrInt *self);
 #endif

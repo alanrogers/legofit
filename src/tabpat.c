@@ -8,10 +8,15 @@
 #include "binary.h"
 #include "dafreader.h"
 #include "strint.h"
+#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <time.h>
+#include <gsl/gsl_rng.h>
+
+#define MAXCHR 24  // maximum number of chromosomes
 
 typedef struct Stack Stack;
 
@@ -155,15 +160,75 @@ static void parseChromosomeLbls(const char *arg, StrInt *strint) {
 
 int main(int argc, char **argv) {
     int i, j;
-    int n = argc-2; // number of input files
+    long bootreps = 0;
+    long blocksize = 300;
+    int  nthreads = 1;
+    StrInt *strint = StrInt_new();
+
+    static struct option myopts[] = {
+        // {char *name, int has_arg, int *flag, int val}
+        {"blocksize", required_argument, 0, 'b'},
+        {"chr", required_argument, 0, 'c'},
+        {"help", no_argument, 0, 'h'},
+        {"bootreps", required_argument, 0, 'r'},
+        {"threads", required_argument, 0, 't'},
+        {"verbose", no_argument, 0, 'v'},
+        {NULL, 0, NULL, 0}
+    };
+
+    // command line arguments
+    for(;;) {
+        i = getopt_long(argc, argv, "b:c:hr:t:v", myopts, &optndx);
+        if(i == -1)
+            break;
+        switch (i) {
+        case ':':
+        case '?':
+            usage();
+            break;
+        case 'b':
+            blocksize = strtod(optarg, NULL);
+			if(blocksize <= 0) {
+				fprintf(stderr,
+						"%s:%d: bad argument to -b or --blocksize: \"%s\"\n",
+						__FILE__,__LINE__,optarg);
+				usage();
+			}
+            break;
+        case 'c':
+            parseChromosomeLbls(optarg, strint);
+            break;
+        case 'h':
+            usage();
+            break;
+        case 'r':
+            bootreps = strtol(optarg, NULL, 10);
+            break;
+        case 't':
+            nthreads = strtol(optarg, NULL, 10);
+            break;
+        case 'v':
+            verbose = 1;
+            break;
+        default:
+            usage();
+        }
+    }
+
+    // If chromosome labels not given on command line, use default
+    if(0 == StrInt_size(strint))
+        parseChromosomeLbls("1-22", strint);
+
+    // remaining options: input files
+    int n = argc-optind; // number of input files
+    if(n == 0)
+        usage();
+
     char *poplbl[n];
     char *fname[n];
     LblNdx lndx;
     LblNdx_init(&lndx);
 	DAFReader *r[n];
-
-    if(n == 0)
-        usage();
 
     // Number of inputs can't exceed number of bits in an object of
     // type tipId_t.
@@ -173,15 +238,11 @@ int main(int argc, char **argv) {
         usage();
     }
 
-    // 1st argument is comma-separated list of chromosome labels
-    StrInt *strint = StrInt_new();
-    parseChromosomeLbls(argv[1], strint);
-
     // Parse remaining arguments, each of which should be of form
     // x=foo, where x is an arbitrary label and foo is the name of an
     // input file.
     for(i=0; i<n; ++i) {
-        fname[i] = poplbl[i] = argv[i+2];
+        fname[i] = poplbl[i] = argv[i+optind];
         (void) strsep(fname+i, "=");
         if(fname[i] == NULL
            || poplbl[i] == NULL
@@ -229,9 +290,68 @@ int main(int argc, char **argv) {
     // Secondary sort is by order in which labels are listed
     // on the command line.
     qsort(pat, (size_t) npat, sizeof(pat[0]), compare_tipId);
-
 	fflush(stdout);
+
+
+    // Used by bootstrap
+    Boot *boot = NULL;
+    int nchr=0;
+    long nsnp[MAXCHR];
+    int currChr;
+
+    // Read the data to get dimensions: number of chromosomes and
+    // number of snps per chromosome. Then use these dimensions to
+    // allocate a bootstrap object. I don't rely on the index returned
+    // by StrInt_get, because that index depends on the number of
+    // chromosomes listed on the command line. If the user lists more
+    // than are really there, we'd have a problem. So I generate an index
+    // for chromosomes internally from the data.
+    if(bootreps > 0) {
+        fprintf(stderr,"Doing 1st pass through data to get dimensions...\n");
+
+        currChr = INT_MAX;
+        // First pass through data sets values of
+        // nchr
+        // nsnp[i] {i=0..nchr-1}
+        while(EOF != DAFReader_multiNext(n, r, strint)) {
+
+            // Skip loci at which data sets disagree about which allele
+            // is derived and which ancestral.
+            if(!DAFReader_allelesMatch(n, r))
+                continue;
+
+            int chr = DAFReader_chrNdx(r[0], strint);
+            if(chr != currChr) {
+                ++nchr;
+                if(nchr > MAXCHR) {
+                    fprintf(stderr,"%s:%d: too many chromosomes.\n",
+                            __FILE__,__LINE__);
+                    fprintf(stderr," Read %d, MAXCHR is %d\n",
+                            nchr, MAXCHR);
+                    exit(EXIT_FAILURE);
+                }
+                currChr = chr;
+                nsnp[nchr-1] = 1;
+            }else
+                ++nsnp[nchr-1];
+        }
+
+        for(i=0; i<n; ++i)
+            DAFReader_rewind(r[i]);
+
+        // Allocate Boot structure
+        gsl_rng *rng = gsl_rng_alloc(gsl_rng_taus);
+        gsl_rng_set(rng, (unsigned long) time(NULL));
+        boot = Boot_new(nchr, nsnp, bootreps, npat, blocksize, rng);
+        gsl_rng_free(rng);
+        MEMCHECK(boot);
+    }
+
 	unsigned long nsnps = 0;
+    currChr = INT_MAX;
+    int cndx = -1;
+    long snpndx = -1;
+
 	// Iterate through daf files
 	while(EOF != DAFReader_multiNext(n, r, strint)) {
 
@@ -239,6 +359,22 @@ int main(int argc, char **argv) {
         // is derived and which ancestral.
         if(!DAFReader_allelesMatch(n, r))
             continue;
+
+        // chr is index of current chromosome, as provided by
+        // StrInt_get. cndx is the index of current chromosome
+        // within bootstrap arrays. As explained above, the two
+        // may differ if the user lists more chromosome labels on
+        // the command line than are really there in the data.
+        int chr = DAFReader_chrNdx(r[0], strint);
+        if(chr != currChr) {
+            ++cndx;
+            currChr = chr;
+            snpndx = 0;
+        }else
+            ++snpndx;
+
+        assert(snpndx >= 0);
+        assert(snpndx < nsnp[cndx]);
 
 		// p and q are frequencies of derived and ancestral alleles
 		double p[n], q[n];
@@ -265,17 +401,31 @@ int main(int argc, char **argv) {
 			}
 			assert( 0 == (pattern&1) );
 			patCount[i] += z;
+            if(bootreps > 0)
+                Boot_add(boot, chr, snpndx, i, z);
 		}
 		++nsnps;
 	}
 	printf("# Tabulated %lu SNPs\n", nsnps);
 
+    // boottab[i][j] is the count of the j'th site pattern
+    // in the i'th bootstrap replicate.
+    double boottab[bootreps][npat];
+    for(i=0; i<bootreps; ++i)
+        Boot_aggregate(boot, i, npat, boottab[i]);
+
     // print labels and binary representation of site patterns
-	printf("# %13s %20s\n", "SitePat", "E[count]");
+	printf("# %13s %20s", "SitePat", "E[count]");
+    for(j=0; j < bootreps; ++j)
+        printf("             boot%04d", j);
+    putchar('\n');
     for(i=0; i<npat; ++i) {
-        printf("%15s %20.7lf\n",
+        printf("%15s %20.7lf",
 			   patLbl(lblsize, lblbuff,  pat[i], &lndx),
 			   patCount[i]);
+        for(j=0; j < bootreps; ++j)
+            printf(" %20.7lf", boottab[j][i]);
+        putchar('\n');
     }
 
     for(i=0; i<n; ++i)

@@ -119,6 +119,15 @@ int DAFReader_next(DAFReader *self) {
     return 0;
 }
 
+void DAFReader_rewind(DAFReader *self) {
+    rewind(self->fp);
+}
+
+int DAFReader_chrNdx(DAFReader *self, StrInt *strint) {
+    return StrInt_get(strint, self->chr);
+}
+
+
 #define MAX(X,Y) ((X) > (Y) ? (X) : (Y))
 #define MIN(X,Y) ((X) > (Y) ? (Y) : (X))
 

@@ -40,6 +40,7 @@ void        SILink_free(SILink * self);
 SILink     *SILink_insert(SILink * self, const char *key, int value);
 int         SILink_get(SILink * self, const char *key);
 void        SILink_print(const SILink * self, FILE *fp);
+unsigned    SILink_size(SILink *self);
 
 SILink     *SILink_new(const char *key, int value, SILink * next) {
     SILink     *new = malloc(sizeof(*new));
@@ -56,6 +57,13 @@ SILink     *SILink_new(const char *key, int value, SILink * next) {
     }
 
     return new;
+}
+
+// Return number of links in list
+unsigned SILink_size(SILink *self) {
+    if(self == NULL)
+        return 0u;
+    return 1u + SILink_size(self->next);
 }
 
 void SILink_free(SILink * self) {
@@ -149,6 +157,15 @@ void StrInt_print(const StrInt * self, FILE *fp) {
     }
 }
 
+// Number of items stored in hash table.
+unsigned StrInt_size(const StrInt *self) {
+    unsigned i, n=0;
+
+    for(i=0; i < STRINT_DIM; ++i)
+        n += SILink_size(self->tab[i]);
+    return n;
+}
+
 #ifdef TEST
 
 #  include <string.h>
@@ -171,22 +188,24 @@ int main(int argc, char **argv) {
 
     int         i;
     char        key[20];
-    StrInt     *sn = StrInt_new();
-    CHECKMEM(sn);
+    StrInt     *si = StrInt_new();
+    CHECKMEM(si);
+    assert(0 == StrInt_size(si));
 
     for(i = 0; i < 100; ++i) {
         snprintf(key, sizeof key, "%d", i);
-        StrInt_insert(sn, key, i);
+        StrInt_insert(si, key, i);
     }
+    assert(100 == StrInt_size(si));
     for(i = 0; i < 100; ++i) {
         snprintf(key, sizeof key, "%d", i);
-        assert(i == StrInt_get(sn, key));
+        assert(i == StrInt_get(si, key));
     }
 
     if(verbose)
-        StrInt_print(sn, stdout);
+        StrInt_print(si, stdout);
 
-    StrInt_free(sn);
+    StrInt_free(si);
 
     unitTstResult("StrInt", "OK");
 }
