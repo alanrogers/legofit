@@ -99,7 +99,7 @@ XGENE := xgene.o branchtab.o misc.o binary.o tokenizer.o lblndx.o parkeyval.o
 xgene : $(XGENE)
 	$(CC) $(CFLAGS) -o $@ $(XGENE) $(lib)
 
-XBOOT := xboot.o misc.o
+XBOOT := xboot.o misc.o boot.o binary.o
 xboot : $(XBOOT)
 	$(CC) $(CFLAGS) -o $@ $(XBOOT) $(lib)
 

@@ -13,6 +13,7 @@
 static inline int Dbl_near(double x, double y);
 int         compare_tipId(const void *void_x, const void *void_y);
 int         compareLongs(const void *void_x, const void *void_y);
+int         compareDoubles(const void *void_x, const void *void_y);
 int         getNumCores(void);
 void        dostacktrace(const char *file, int line, FILE * ofp);
 double      perturb_ratio_w(double x, double w, gsl_rng * rng);
@@ -38,7 +39,6 @@ long        long_first_geq(long val, long *v, long len);
 long        long_last_leq(long val, long *v, long len);
 int         strCountSetChunks(const char *str, const char *sep);
 void       *memdup(const void *p, size_t n);
-char       *patLbl(size_t n, char buff[n], tipId_t tid, const LblNdx * lblndx);
 void        orderpat(int n, unsigned order[n], tipId_t tid[n]);
 double      KLdiverg(int n, const double o[n], const double e[n]);
 double      sum_double(int n, const double x[n]);

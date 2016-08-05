@@ -49,7 +49,7 @@ long LInt_div_round(long num, long denom) {
 }
 
 /// Constructor for class BootChr.
-BootChr       *BootChr_new(long nsnp, long nrep, long blockLength,
+BootChr       *BootChr_new(long nsnp, long nrep, int npat, long blockLength,
                            gsl_rng * rng) {
     long i, j;
     assert(blockLength > 0);
@@ -76,6 +76,7 @@ BootChr       *BootChr_new(long nsnp, long nrep, long blockLength,
     self->nsnp = nsnp;
     self->nrep = nrep;
     self->blockLength = blockLength;
+    self->npat = npat;
     self->nblock = LInt_div_round(nsnp, blockLength);
 
     BootChr_allocArrays(self);
@@ -143,7 +144,7 @@ void BootChr_sanityCheck(const BootChr * self, const char *file, int line) {
                 REQUIRE(self->start[i][j] >= prev, file, line);
             prev = self->start[i][j];
         }
-        for(j = 0; j < self->npat; ++i)
+        for(j = 0; j < self->npat; ++j)
             REQUIRE(self->count[i][j] >= 0.0, file, line);
     }
 }
@@ -300,7 +301,7 @@ void BootChr_print(const BootChr * self, FILE * ofp) {
     fprintf(ofp, "Block starts:\n");
     for(rep = 0; rep < self->nrep; ++rep) {
         fprintf(ofp, "  rep %ld:", rep);
-        for(j = 0; j < self->nj; ++j)
+        for(j = 0; j < self->nblock; ++j)
             fprintf(ofp, " %ld", self->start[rep][j]);
         putc('\n', ofp);
     }
@@ -308,8 +309,8 @@ void BootChr_print(const BootChr * self, FILE * ofp) {
     fprintf(ofp, "Site pattern counts:\n");
     for(rep = 0; rep < self->nrep; ++rep) {
         fprintf(ofp, "  rep %ld:", rep);
-        for(j = 0; j < self->nj; ++j)
-            fprintf(ofp, " %ld", self->count[rep][j]);
+        for(j = 0; j < self->npat; ++j)
+            fprintf(ofp, " %lf", self->count[rep][j]);
         putc('\n', ofp);
     }
 }

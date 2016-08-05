@@ -522,27 +522,21 @@ int compareLongs(const void *void_x, const void *void_y) {
     return (*x < *y) ? -1 : (*x > *y) ? 1 : 0;
 }
 
-/// Generate a label for site pattern tid. Label goes into
-/// buff. Function returns a pointer to buff;
-char       *patLbl(size_t n, char buff[n], tipId_t tid, const LblNdx * lblndx) {
-    int         maxbits = 40;
-    int         bit[maxbits];
-    int         i, nbits;
-    char        lbl[100];
+/**
+ * Compare two doubles.
+ *
+ * Function interprets its arguments as pointers to doubles.
+ *
+ * @param void_x,void_y Pointers to the two doubles, cast as pointers
+ * to voids.
+ * @returns -1, 0, or 1 depending on whether the first arg is <,
+ * ==, or > the second.
+ */
+int compareDoubles(const void *void_x, const void *void_y) {
+    const double *x = (const double *) void_x;
+    const double *y = (const double *) void_y;
 
-    nbits = getBits(tid, maxbits, bit);
-    buff[0] = '\0';
-    for(i = 0; i < nbits; ++i) {
-        snprintf(lbl, sizeof(lbl), "%s",
-                 LblNdx_lbl(lblndx, (unsigned) bit[i]));
-        if(strlen(buff) + strlen(lbl) >= n)
-            eprintf("%s:%s:%d: buffer overflow\n", __FILE__, __func__,
-                    __LINE__);
-        strcat(buff, lbl);
-        if(i + 1 < nbits && 1 + strlen(buff) < n)
-            strcat(buff, ":");
-    }
-    return buff;
+    return (*x < *y) ? -1 : (*x > *y) ? 1 : 0;
 }
 
 /// On entry, pat is an array of n tipId_t values. On return,

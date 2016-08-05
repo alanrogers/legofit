@@ -24,6 +24,7 @@
 int main(int argc, char **argv) {
     long        nSNPs = 8;
     long        nReps = 10;
+    int         npat = 10;
     long        blockLength = 3;
     int         verbose = 0;
 
@@ -54,7 +55,7 @@ int main(int argc, char **argv) {
     assert(Dbl_near(interpolate(0.5, v, 5), 2.0));
     unitTstResult("interpolate", "OK");
 
-    bootchr = BootChr_new(nSNPs, nReps, blockLength, rng);
+    bootchr = BootChr_new(nSNPs, nReps, npat, blockLength, rng);
     if(verbose)
         BootChr_print(bootchr, stdout);
 
@@ -62,38 +63,38 @@ int main(int argc, char **argv) {
 
     for(isnp = 0; isnp < nSNPs; ++isnp) {
         for(irep = 0; irep < nReps; ++irep) {
-            long        m1 = Boot_multiplicity_slow(bootchr, isnp, irep);
-            long        m2 = Boot_multiplicity(bootchr, isnp, irep);
+            long        m1 = BootChr_multiplicity_slow(bootchr, isnp, irep);
+            long        m2 = BootChr_multiplicity(bootchr, isnp, irep);
 
             assert(m1 == m2);
         }
     }
-    unitTstResult("Boot_new", "OK");
+    unitTstResult("BootChr_new", "OK");
 
-    if(verbose && nReps <= 5 && Boot_nBlocks(boot) <= 50)
-        Boot_print(boot, stdout);
+    if(verbose && nReps <= 5 && BootChr_nblock(bootchr) <= 50)
+        BootChr_print(bootchr, stdout);
 
     long        snp, rep, m, slow;
 
     for(i = 0; i < 100; ++i) {
         rep = gsl_rng_uniform_int(rng, nReps);
         snp = gsl_rng_uniform_int(rng, nSNPs);
-        m = Boot_multiplicity(boot, snp, rep);
-        slow = Boot_multiplicity_slow(boot, snp, rep);
+        m = BootChr_multiplicity(bootchr, snp, rep);
+        slow = BootChr_multiplicity_slow(bootchr, snp, rep);
         if(m != slow)
             eprintf("Boot_multiplicity FAILED@$s:%d:"
                     "rep=%ld snp=%ld m=%ld != slow=%ld\n",
                     __FILE__, __LINE__, rep, snp, m, slow);
     }
-    unitTstResult("Boot_multiplicity", "OK");
+    unitTstResult("BootChr_multiplicity", "OK");
 
 #if 0
     double      s;
     long        ndx1, ndx2;
     int         polymorphic = 0;
     unsigned    gtypeSize = 10;
-    SNP        *snp1 = SNP_new(gtypeSize, Boot_nReps(boot));
-    SNP        *snp2 = SNP_new(gtypeSize, Boot_nReps(boot));
+    SNP        *snp1 = SNP_new(gtypeSize, BootChr_nReps(boot));
+    SNP        *snp2 = SNP_new(gtypeSize, BootChr_nReps(boot));
     unsigned char gtype[gtypeSize];
     int         nGtype;
 
@@ -102,57 +103,51 @@ int main(int argc, char **argv) {
         ndx2 = gsl_rng_uniform_int(rng, nSNPs);
         nGtype = encodeHaploid(gtype, sizeof(gtype), "0101010101");
         assert(nGtype == 10);
-        polymorphic = SNP_set(snp1, ndx1, 0.0345, gtype, boot, 1);
+        polymorphic = SNP_set(snp1, ndx1, 0.0345, gtype, bootchr, 1);
         assert(polymorphic);
         nGtype = encodeHaploid(gtype, sizeof(gtype), "0101010101");
         assert(nGtype == 10);
-        polymorphic = SNP_set(snp2, ndx2, 0.0456, gtype, boot, 1);
+        polymorphic = SNP_set(snp2, ndx2, 0.0456, gtype, bootchr, 1);
         assert(polymorphic);
         s = gsl_rng_uniform(rng) * windowcm;
-        Boot_addLD(boot, 1.0, 1.0, s, snp1, snp2);
     }
-    Boot_free(boot);
+    BootChr_free(boot);
 
     nSNPs = 100000;
     nReps = 100;
     blockLength = 300;
     nBins = 20;
     windowcm = 0.3;
-    boot = Boot_new(nSNPs, nReps, twoNsmp, folded, blockLength,
+    boot = BootChr_new(nSNPs, nReps, npat, blockLength,
                     windowcm, nBins, rng);
     SNP_free(snp1);
     SNP_free(snp2);
-    snp1 = SNP_new(10, Boot_nReps(boot));
-    snp2 = SNP_new(10, Boot_nReps(boot));
+    snp1 = SNP_new(10, BootChr_nReps(boot));
+    snp2 = SNP_new(10, BootChr_nReps(boot));
 
     /* extreme cases */
     encodeHaploid(gtype, sizeof(gtype), "0101010101");
-    SNP_set(snp1, 123, 0.0345, gtype, boot, 1);
+    SNP_set(snp1, 123, 0.0345, gtype, bootchr, 1);
     encodeHaploid(gtype, sizeof(gtype), "0101010101");
-    SNP_set(snp2, 234, 0.0456, gtype, boot, 1);
+    SNP_set(snp2, 234, 0.0456, gtype, bootchr, 1);
     sep = windowcm - DBL_EPSILON;
     assert(sep < windowcm);
-    Boot_addLD(boot, 1.0, 1.0, sep, snp1, snp2);    /*sep=windowcm - epsilon */
-    Boot_addLD(boot, 1.0, 1.0, s, snp1, snp1);  /*ndx1=ndx2 */
 
     encodeHaploid(gtype, sizeof(gtype), "0101010101");
-    SNP_set(snp1, 0, 0.0345, gtype, boot, 1);
-    Boot_addLD(boot, 1.0, 1.0, s, snp1, snp2);  /*ndx1=0 */
-    Boot_addLD(boot, 1.0, 1.0, s, snp2, snp1);  /*ndx2=0 */
-    Boot_addLD(boot, 1.0, 1.0, s, snp1, snp1);  /*ndx1=ndx2=0 */
+    SNP_set(snp1, 0, 0.0345, gtype, bootchr, 1);
 
     encodeHaploid(gtype, sizeof(gtype), "0101010101");
-    SNP_set(snp1, Boot_nSNPs(boot) - 1, 0.0345, gtype, boot, 1);
-    Boot_addLD(boot, 1.0, 1.0, s, snp1, snp2);  /*ndx1=max */
+    SNP_set(snp1, Boot_nSNPs(boot) - 1, 0.0345, gtype, bootchr, 1);
+    Boot_addLD(bootchr, 1.0, 1.0, s, snp1, snp2);  /*ndx1=max */
     unitTstResult("Boot_addLD", "OK");
 
-    BootConf   *bc = BootConf_new(boot, 0.9);
+    BootConf   *bc = BootConf_new(bootchr, 0.9);
 
     assert(bc);
 
     Boot       *boot2 = Boot_dup(boot);
 
-    assert(Boot_equals(boot, boot2));
+    assert(Boot_equals(bootchr, boot2));
     BootConf   *bc2 = BootConf_new(boot2, 0.9);
 
     assert(bc2);
@@ -167,19 +162,19 @@ int main(int argc, char **argv) {
 
     dumpfile = fopen(fname, "w");
     assert(dumpfile);
-    Boot_dump(boot, dumpfile);
+    Boot_dump(bootchr, dumpfile);
     fclose(dumpfile);
     dumpfile = fopen(fname, "r");
     assert(dumpfile);
     boot2 = Boot_restore(dumpfile);
-    assert(Boot_equals(boot, boot2));
+    assert(Boot_equals(bootchr, boot2));
     fclose(dumpfile);
     dumpfile = NULL;
     remove(fname);
 
     if(verbose) {
         printf("\nthis was dumped using Boot_dump:\n");
-        Boot_print(boot, stdout);
+        Boot_print(bootchr, stdout);
         BootConf_print(bc, stdout);
 
         printf("\nthis was restored using Boot_restore:\n");

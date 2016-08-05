@@ -12,7 +12,7 @@
 #  include "typedefs.h"
 #  include <gsl/gsl_rng.h>
 
-BootChr    *BootChr_new(long nsnp, long nrep, long blockLength,
+BootChr    *BootChr_new(long nsnp, long nrep, int npat, long blockLength,
                            gsl_rng * rng);
 
 #  ifndef NDEBUG
