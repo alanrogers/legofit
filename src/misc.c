@@ -347,6 +347,74 @@ unsigned Dbl_first_geq(double val, unsigned len, double v[len]) {
     return hi;
 }
 
+/*
+ * Vector v must be sorted in ascending order before this function is
+ * called.  Function returns index of first element in sorted array
+ * that is >= val.  The function assumes without checking that the
+ * input is sorted. If val > vec[len-1], the function returns len.
+ */
+long long_first_geq(long val, long *v, long len) {
+    register long lo, mid, hi;
+
+    assert(len > 0);
+    lo = 0;
+    hi = len - 1;
+    if(val > v[hi])
+        return len;
+    while(lo < hi) {
+        mid = lo + (hi - lo) / 2;
+        if(mid == lo)
+            break;
+        if(v[mid] < val)
+            lo = mid;
+        else
+            hi = mid;
+    }
+    if(v[lo] >= val)
+        hi = lo;
+
+    assert(hi >= 0);
+    assert(hi < len);
+    assert(v[hi] >= val);
+    assert(hi == 0 || v[hi - 1] < val);
+
+    return hi;
+}
+
+/*
+ * Vector v must be sorted in ascending order before this function is
+ * called.  Function returns index of last element in sorted array
+ * that is <= val.  The function assumes without checking that the
+ * input is sorted. If val < vec[0], the function returns -1.
+ */
+long long_last_leq(long val, long *v, long len) {
+    register long lo, mid, hi;
+
+    assert(len > 0);
+    lo = 0;
+    hi = len - 1;
+    if(val < v[0])
+        return -1;
+    while(lo < hi) {
+        mid = hi - (hi - lo) / 2;
+        if(mid == hi)
+            break;
+        if(v[mid] > val)
+            hi = mid;
+        else
+            lo = mid;
+    }
+    if(v[hi] <= val)
+        lo = hi;
+
+    assert(lo >= 0);
+    assert(lo < len);
+    assert(v[lo] <= val);
+    assert(lo == len - 1 || v[lo + 1] > val);
+
+    return lo;
+}
+
 void unitTstResult(const char *facility, const char *result) {
     printf("%-26s %s\n", facility, result);
 }
@@ -437,27 +505,38 @@ int compare_tipId(const void *void_x, const void *void_y) {
     return ry - rx;
 }
 
-/// Generate a label for site pattern tid. Label goes into
-/// buff. Function returns a pointer to buff;
-char       *patLbl(size_t n, char buff[n], tipId_t tid, const LblNdx * lblndx) {
-    int         maxbits = 40;
-    int         bit[maxbits];
-    int         i, nbits;
-    char        lbl[100];
+/**
+ * Compare two long ints.
+ *
+ * Function interprets its arguments as pointers to long ints.
+ *
+ * @param void_x,void_y Pointers to the two integers, cast as pointers
+ * to voids.
+ * @returns -1, 0, or 1 depending on whether the first arg is <,
+ * ==, or > the second.
+ */
+int compareLongs(const void *void_x, const void *void_y) {
+    const long *x = (const long *) void_x;
+    const long *y = (const long *) void_y;
 
-    nbits = getBits(tid, maxbits, bit);
-    buff[0] = '\0';
-    for(i = 0; i < nbits; ++i) {
-        snprintf(lbl, sizeof(lbl), "%s",
-                 LblNdx_lbl(lblndx, (unsigned) bit[i]));
-        if(strlen(buff) + strlen(lbl) >= n)
-            eprintf("%s:%s:%d: buffer overflow\n", __FILE__, __func__,
-                    __LINE__);
-        strcat(buff, lbl);
-        if(i + 1 < nbits && 1 + strlen(buff) < n)
-            strcat(buff, ":");
-    }
-    return buff;
+    return (*x < *y) ? -1 : (*x > *y) ? 1 : 0;
+}
+
+/**
+ * Compare two doubles.
+ *
+ * Function interprets its arguments as pointers to doubles.
+ *
+ * @param void_x,void_y Pointers to the two doubles, cast as pointers
+ * to voids.
+ * @returns -1, 0, or 1 depending on whether the first arg is <,
+ * ==, or > the second.
+ */
+int compareDoubles(const void *void_x, const void *void_y) {
+    const double *x = (const double *) void_x;
+    const double *y = (const double *) void_y;
+
+    return (*x < *y) ? -1 : (*x > *y) ? 1 : 0;
 }
 
 /// On entry, pat is an array of n tipId_t values. On return,
@@ -538,3 +617,18 @@ char       *strlowercase(char *s) {
         *p = tolower(*p);
     return s;
 }
+
+/// Hash a character string
+unsigned strhash(const char *ss) {
+    unsigned long hashval;
+    int c;
+    const unsigned char *s = (const unsigned char *) ss;
+
+    // djb2
+    hashval = 5381;
+    while((c = *s++))
+        hashval = ((hashval << 5) + hashval) +  c;
+
+    return hashval;
+}
+

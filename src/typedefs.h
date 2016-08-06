@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+typedef struct Boot Boot;
+typedef struct BootChr BootChr;
 typedef struct Bounds Bounds;
 typedef struct BranchTab BranchTab;
 typedef struct El El;
@@ -16,6 +18,7 @@ typedef struct ParKeyVal ParKeyVal;
 typedef struct ParStore ParStore;
 typedef struct PopNode PopNode;
 typedef struct SampNdx SampNdx;
+typedef struct StrInt StrInt;
 typedef struct Tokenizer Tokenizer;
 typedef struct DAFReader DAFReader;
 

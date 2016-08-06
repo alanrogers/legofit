@@ -92,6 +92,29 @@ void LblNdx_print(const LblNdx *self, FILE *fp) {
         fprintf(fp,"%3u %5s\n", i, self->lbl[i]);
 }
 
+/// Generate a label for site pattern tid. Label goes into
+/// buff. Function returns a pointer to buff;
+char       *patLbl(size_t n, char buff[n], tipId_t tid, const LblNdx * lblndx) {
+    int         maxbits = 40;
+    int         bit[maxbits];
+    int         i, nbits;
+    char        lbl[100];
+
+    nbits = getBits(tid, maxbits, bit);
+    buff[0] = '\0';
+    for(i = 0; i < nbits; ++i) {
+        snprintf(lbl, sizeof(lbl), "%s",
+                 LblNdx_lbl(lblndx, (unsigned) bit[i]));
+        if(strlen(buff) + strlen(lbl) >= n)
+            eprintf("%s:%s:%d: buffer overflow\n", __FILE__, __func__,
+                    __LINE__);
+        strcat(buff, lbl);
+        if(i + 1 < nbits && 1 + strlen(buff) < n)
+            strcat(buff, ":");
+    }
+    return buff;
+}
+
 #ifdef TEST
 
 #  include <string.h>

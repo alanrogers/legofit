@@ -1,6 +1,7 @@
 #include "dafreader.h"
 #include "tokenizer.h"
 #include "misc.h"
+#include "strint.h"
 #include <string.h>
 #include <stdlib.h>
 #include <limits.h>
@@ -49,6 +50,7 @@ int iscomment(const char *s) {
 int DAFReader_next(DAFReader *self) {
     int ntokens1;
     int ntokens;
+    int status;
     char buff[100];
 
     // Find a line of input
@@ -81,13 +83,20 @@ int DAFReader_next(DAFReader *self) {
     ++self->snpid;
 
     // Chromosome
-    self->chr = strtoul(Tokenizer_token(self->tkz, 0), NULL, 10);
+    status = snprintf(self->chr, sizeof self->chr, "%s",
+                      Tokenizer_token(self->tkz, 0));
+    if(status >= sizeof self->chr) {
+        fprintf(stderr,"%s:%d: chromosome name too long: %s\n",
+                __FILE__, __LINE__, Tokenizer_token(self->tkz, 0));
+        exit(EXIT_FAILURE);
+    }
 
     // Nucleotide position
     self->nucpos = strtoul(Tokenizer_token(self->tkz, 1), NULL, 10);
 
     // Ancestral allele
-    snprintf(self->aa, sizeof(self->aa), "%s", Tokenizer_token(self->tkz, 2));
+    status = snprintf(self->aa, sizeof(self->aa), "%s",
+                      Tokenizer_token(self->tkz, 2));
     strlowercase(self->aa);
     if(strlen(self->aa) != 1 || strchr("atgc", *self->aa) == NULL) {
         fprintf(stderr,"%s:%d: Ancestral allele must be a single nucleotide."
@@ -110,24 +119,35 @@ int DAFReader_next(DAFReader *self) {
     return 0;
 }
 
+void DAFReader_rewind(DAFReader *self) {
+    rewind(self->fp);
+}
+
+int DAFReader_chrNdx(DAFReader *self, StrInt *strint) {
+    return StrInt_get(strint, self->chr);
+}
+
+
 #define MAX(X,Y) ((X) > (Y) ? (X) : (Y))
 #define MIN(X,Y) ((X) > (Y) ? (Y) : (X))
 
 /// Advance an array of DAFReaders to the next shared position.
 /// Return 0 on success or EOF on end of file.
-int DAFReader_multiNext(int n, DAFReader *r[n]) {
+int DAFReader_multiNext(int n, DAFReader *r[n], StrInt *strint) {
     int i;
     unsigned long maxnuc=0, minnuc=ULONG_MAX;
-	unsigned maxchr=0, minchr = UINT_MAX;
+	int maxchr=0, minchr = INT_MAX;
+    int cndx[n];
 
 	// Find initial min and max position and chromosome.
     for(i=0; i<n; ++i) {
         if(EOF == DAFReader_next(r[i]))
             return EOF;
+        cndx[i] = StrInt_get(strint, r[i]->chr);
         maxnuc = MAX(maxnuc, r[i]->nucpos);
         minnuc = MIN(minnuc, r[i]->nucpos);
-		maxchr = MAX(maxchr, r[i]->chr);
-		minchr = MIN(minchr, r[i]->chr);
+		maxchr = MAX(maxchr, cndx[i]);
+		minchr = MIN(minchr, cndx[i]);
     }
 
 	// Loop until both chr and position are homogeneous.
@@ -136,15 +156,16 @@ int DAFReader_multiNext(int n, DAFReader *r[n]) {
 		// get them all on the same chromosome
 		while(minchr!=maxchr) {
 			for(i=0; i<n; ++i) {
-				while(r[i]->chr < maxchr) {
+				while(cndx[i] < maxchr) {
 					if(EOF == DAFReader_next(r[i]))
 						return EOF;
+                    cndx[i] = StrInt_get(strint, r[i]->chr);
 				}
 			}
-			maxchr=minchr=r[0]->chr;
+			maxchr=minchr=cndx[0];
 			for(i=1; i<n; ++i) {
-				maxchr = MAX(maxchr, r[i]->chr);
-				minchr = MIN(minchr, r[i]->chr);
+				maxchr = MAX(maxchr, cndx[i]);
+				minchr = MIN(minchr, cndx[i]);
 			}
 		}
 
@@ -154,20 +175,21 @@ int DAFReader_multiNext(int n, DAFReader *r[n]) {
         for(i=0; i<n; ++i) {
 			// Increment each reader so long as we're all on the same
 			// chromosome and the reader's nucpos is low.
-            while(r[i]->chr==maxchr && r[i]->nucpos < maxnuc) {
+            while(cndx[i]==maxchr && r[i]->nucpos < maxnuc) {
                 if(EOF == DAFReader_next(r[i]))
                     return EOF;
+                cndx[i] = StrInt_get(strint, r[i]->chr);
             }
         }
 
 		// Recalculate all max and min values.
         maxnuc=minnuc=r[0]->nucpos;
-		maxchr=minchr=r[0]->chr;
+		maxchr=minchr=cndx[0];
         for(i=1; i<n; ++i) {
             maxnuc = MAX(maxnuc, r[i]->nucpos);
             minnuc = MIN(minnuc, r[i]->nucpos);
-			maxchr = MAX(maxchr, r[i]->chr);
-			minchr = MIN(minchr, r[i]->chr);
+			maxchr = MAX(maxchr, cndx[i]);
+			minchr = MIN(minchr, cndx[i]);
         }
     }
 
@@ -187,13 +209,13 @@ int DAFReader_allelesMatch(int n, DAFReader *r[n]) {
 }
 
 void DAFReader_printHdr(FILE *fp) {
-    fprintf(fp, "%20s %3s %10s %2s %2s %8s\n",
+    fprintf(fp, "%20s %5s %10s %2s %2s %8s\n",
             "file", "chr", "pos", "aa", "da", "daf");
 }
 
 void DAFReader_print(DAFReader *r, FILE *fp) {
     assert(r->fname);
-    fprintf(fp,"%20s %3d %10lu %2s %2s %8.6lf\n",
+    fprintf(fp,"%20s %5s %10lu %2s %2s %8.6lf\n",
             r->fname, r->chr, r->nucpos, r->aa, r->da, r->p);
 }
 

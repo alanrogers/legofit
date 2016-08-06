@@ -7,7 +7,8 @@ prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
 
 tests := xbinary xhashtab xparse xgene xgptree xbranchtab xparstore \
-  xparkeyval xlblndx xpopnode xjobqueue xdiffev xdafreader
+  xparkeyval xlblndx xpopnode xjobqueue xdiffev xdafreader xstrint \
+  xboot
 
 CC := gcc
 
@@ -38,6 +39,7 @@ all : $(tests)
 
 test : $(tests)
 	-./xbinary
+	-./xboot
 	-./xhashtab
 	-./xgene
 	-./xparse
@@ -45,6 +47,7 @@ test : $(tests)
 	-./xgptree
 	-./xparkeyval
 	-./xparstore
+	-./xstrint
 	-./xlblndx
 	-./xdiffev
 #	-./xzeroin
@@ -77,7 +80,7 @@ xdiffev : $(XDIFFEV)
 	$(CC) $(CFLAGS) -o $@ $(XDIFFEV) $(lib)
 
 XDAFREADER := xdafreader.o dafreader.o misc.o lblndx.o tokenizer.o binary.o \
-   parkeyval.o
+   parkeyval.o strint.o
 xdafreader : $(XDAFREADER)
 	$(CC) $(CFLAGS) -o $@ $(XDAFREADER) $(lib)
 
@@ -95,6 +98,10 @@ xgene.o : gene.c
 XGENE := xgene.o branchtab.o misc.o binary.o tokenizer.o lblndx.o parkeyval.o
 xgene : $(XGENE)
 	$(CC) $(CFLAGS) -o $@ $(XGENE) $(lib)
+
+XBOOT := xboot.o misc.o boot.o binary.o
+xboot : $(XBOOT)
+	$(CC) $(CFLAGS) -o $@ $(XBOOT) $(lib)
 
 xpopnode.o : popnode.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/popnode.c
@@ -134,6 +141,13 @@ XBRANCHTAB := xbranchtab.o gptree.o misc.o binary.o parstore.o popnode.o gene.o 
    lblndx.o parse.o parkeyval.o tokenizer.o hashtab.o
 xbranchtab : $(XBRANCHTAB)
 	$(CC) $(CFLAGS) -o $@ $(XBRANCHTAB) $(lib)
+
+xstrint.o : strint.c
+	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/strint.c
+
+XSTRINT := xstrint.o misc.o binary.o lblndx.o parkeyval.o
+xstrint : $(XSTRINT)
+	$(CC) $(CFLAGS) -o $@ $(XSTRINT) $(lib)
 
 Q := q.o misc.o gptree.o hashtab.o branchtab.o binary.o lblndx.o parstore.o \
    popnode.o parse.o gene.o tokenizer.o parkeyval.o
