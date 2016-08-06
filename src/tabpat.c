@@ -1,20 +1,25 @@
 /**
  * @file tabpat.c
- * @brief Tabulate site pattern frequencies from vcf files.
+ * @brief Tabulate site pattern frequencies from .daf files.
+ * @copyright Copyright (c) 2016 Alan R. Rogers
+ * <rogers@anthro.utah.edu>. This file is released under the Internet
+ * Systems Consortium License, which can be found in file "LICENSE".
  */
 
-#include "typedefs.h"
-#include "misc.h"
 #include "binary.h"
+#include "boot.h"
 #include "dafreader.h"
+#include "misc.h"
 #include "strint.h"
+#include "typedefs.h"
+#include <ctype.h>
 #include <getopt.h>
+#include <gsl/gsl_rng.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
 #include <time.h>
-#include <gsl/gsl_rng.h>
 
 #define MAXCHR 24  // maximum number of chromosomes
 
@@ -33,16 +38,28 @@ static void generatePatterns(int bit,  int npops, Stack *stk, tipId_t pat);
 static void parseChromosomeLbls(const char *arg, StrInt *strint);
 
 const char *useMsg =
-    "\nUsage: tabpat <chromosomes> <x>=<in1> <y>=<in2> ...\n"
-    "   where <chromosomes> is an ordered, comma-separated list\n"
-    "   of chromosome labels, <x> and <y> are arbitrary labels, and\n"
-    "   <in1> and <in2> are input files in daf format. Writes to standard\n"
-    "   output. Labels may not include the character \":\".\n";
+    "\nUsage: tabpat [options] <x>=<in1> <y>=<in2> ...\n"
+    "   where <x> and <y> are arbitrary labels, and <in1> and <in2> are input\n"
+	"   files in daf format. Writes to standard output."
+	" Labels may not include\n"
+	"   the character \":\".";
 
 static void usage(void) {
     fputs(useMsg, stderr);
-    fprintf(stderr,"   Maximum number of input files: %lu.\n",
+    fprintf(stderr," Maximum number of input files: %lu.\n",
             8*sizeof(tipId_t));
+	fputs("\nOptions may include:\n", stderr);
+	tellopt("-f <name> or --bootfile <name>",
+			"Bootstrap output file. Def: tabpat.boot.");
+	tellopt("-r <x> or --bootreps <x>",
+			"# of bootstrap replicates. Def: 0");
+	tellopt("-b <x> or --blocksize <x>",
+			"# of SNPs per block in moving-blocks bootstrap. Def: 0.");
+	tellopt("-c <list> or --chr <list>",
+			"comma-separated list of chromosomes, such as 1-4,8,x."
+			" Def: 1-22");
+    tellopt("-h or --help", "Print this message");
+	tellopt("-v or --verbose", "More output");
     exit(1);
 }
 
@@ -159,26 +176,29 @@ static void parseChromosomeLbls(const char *arg, StrInt *strint) {
 }
 
 int main(int argc, char **argv) {
-    int i, j;
+    int i, j, status, optndx;
     long bootreps = 0;
     long blocksize = 300;
-    int  nthreads = 1;
+//    int  nthreads = 1;
+//	int  verbose = 0;
     StrInt *strint = StrInt_new();
+    char bootfname[FILENAMESIZE] = { '\0' };
 
     static struct option myopts[] = {
         // {char *name, int has_arg, int *flag, int val}
+        {"bootfile", required_argument, 0, 'f'},
+        {"bootreps", required_argument, 0, 'r'},
         {"blocksize", required_argument, 0, 'b'},
         {"chr", required_argument, 0, 'c'},
         {"help", no_argument, 0, 'h'},
-        {"bootreps", required_argument, 0, 'r'},
-        {"threads", required_argument, 0, 't'},
-        {"verbose", no_argument, 0, 'v'},
+//        {"threads", required_argument, 0, 't'},
+//        {"verbose", no_argument, 0, 'v'},
         {NULL, 0, NULL, 0}
     };
 
     // command line arguments
     for(;;) {
-        i = getopt_long(argc, argv, "b:c:hr:t:v", myopts, &optndx);
+        i = getopt_long(argc, argv, "b:c:f:hr:t:v", myopts, &optndx);
         if(i == -1)
             break;
         switch (i) {
@@ -198,18 +218,28 @@ int main(int argc, char **argv) {
         case 'c':
             parseChromosomeLbls(optarg, strint);
             break;
+		case 'f':
+			status = snprintf(bootfname, sizeof bootfname, "%s", optarg);
+			if(status >= sizeof bootfname) {
+				fprintf(stderr,"%s:%d: Filename %s is too large."
+						" Max: %zu\n",
+						__FILE__,__LINE__, optarg,
+						sizeof(bootfname)-1);
+				exit(EXIT_FAILURE);
+			}
+			break;
         case 'h':
             usage();
             break;
         case 'r':
             bootreps = strtol(optarg, NULL, 10);
             break;
-        case 't':
-            nthreads = strtol(optarg, NULL, 10);
-            break;
-        case 'v':
-            verbose = 1;
-            break;
+//        case 't':
+//            nthreads = strtol(optarg, NULL, 10);
+//            break;
+//        case 'v':
+//            verbose = 1;
+//            break;
         default:
             usage();
         }
@@ -254,6 +284,19 @@ int main(int argc, char **argv) {
 		r[i] = DAFReader_new(fname[i]);
     }
 
+	// Default boot file name
+    if(bootfname[0] == '\0') {
+		const char *defName = "tabpat.boot";
+		status = snprintf(bootfname, sizeof bootfname, "%s", defName);
+		if(status >= sizeof bootfname) {
+			fprintf(stderr,"%s:%d: Filename %s is too large."
+					" Max: %zu\n",
+					__FILE__,__LINE__, defName,
+					sizeof(bootfname)-1);
+			exit(EXIT_FAILURE);
+		}
+	}
+
     printf("# Population labels:\n");
     for(i=0; i<n; ++i)
         printf("# %4s = %s\n", poplbl[i], fname[i]);
@@ -295,9 +338,10 @@ int main(int argc, char **argv) {
 
     // Used by bootstrap
     Boot *boot = NULL;
+    int currChr;
     int nchr=0;
     long nsnp[MAXCHR];
-    int currChr;
+	memset(nsnp, 0, sizeof nsnp);
 
     // Read the data to get dimensions: number of chromosomes and
     // number of snps per chromosome. Then use these dimensions to
@@ -336,15 +380,23 @@ int main(int argc, char **argv) {
                 ++nsnp[nchr-1];
         }
 
-        for(i=0; i<n; ++i)
-            DAFReader_rewind(r[i]);
+        for(i=0; i<n; ++i) {
+            status = DAFReader_rewind(r[i]);
+			if(status) {
+				fprintf(stderr,"%s:%d: Can't rewind input stream.\n",
+						__FILE__,__LINE__);
+				fprintf(stderr,"  If --bootreps > 0, inputs must be"
+						" files, not pipes.\n");
+				exit(EXIT_FAILURE);
+			}
+		}
 
         // Allocate Boot structure
         gsl_rng *rng = gsl_rng_alloc(gsl_rng_taus);
         gsl_rng_set(rng, (unsigned long) time(NULL));
         boot = Boot_new(nchr, nsnp, bootreps, npat, blocksize, rng);
         gsl_rng_free(rng);
-        MEMCHECK(boot);
+        CHECKMEM(boot);
     }
 
 	unsigned long nsnps = 0;
@@ -373,8 +425,10 @@ int main(int argc, char **argv) {
         }else
             ++snpndx;
 
-        assert(snpndx >= 0);
-        assert(snpndx < nsnp[cndx]);
+#ifndef NDEBUG
+		if(bootreps > 0)
+			assert(snpndx < nsnp[cndx]);
+#endif
 
 		// p and q are frequencies of derived and ancestral alleles
 		double p[n], q[n];
@@ -415,18 +469,30 @@ int main(int argc, char **argv) {
         Boot_aggregate(boot, i, npat, boottab[i]);
 
     // print labels and binary representation of site patterns
-	printf("# %13s %20s", "SitePat", "E[count]");
-    for(j=0; j < bootreps; ++j)
-        printf("             boot%04d", j);
-    putchar('\n');
+	printf("# %13s %20s\n", "SitePat", "E[count]");
     for(i=0; i<npat; ++i) {
         printf("%15s %20.7lf",
 			   patLbl(lblsize, lblbuff,  pat[i], &lndx),
 			   patCount[i]);
-        for(j=0; j < bootreps; ++j)
-            printf(" %20.7lf", boottab[j][i]);
         putchar('\n');
     }
+
+	if(bootreps > 0) {
+		printf("# %-35s = %s\n", "bootstrap output file", bootfname);
+		FILE *fp = fopen(bootfname, "w");
+		fprintf(fp, "# %13s", "SitePat");
+		for(j=0; j < bootreps; ++j)
+			fprintf(fp, "             boot%04d", j);
+		putc('\n', fp);
+		for(i=0; i<npat; ++i) {
+			fprintf(fp, "%15s",
+				   patLbl(lblsize, lblbuff,  pat[i], &lndx));
+			for(j=0; j < bootreps; ++j)
+				fprintf(fp, " %20.7lf", boottab[j][i]);
+			putc('\n', fp);
+		}
+		fclose(fp);
+	}
 
     for(i=0; i<n; ++i)
 		DAFReader_free(r[i]);

@@ -24,7 +24,7 @@ double      DAFReader_daf(DAFReader *r);
 int         DAFReader_allelesMatch(int n, DAFReader *r[n]);
 void        DAFReader_printHdr(FILE *fp);
 void        DAFReader_print(DAFReader *r, FILE *fp);
-void        DAFReader_rewind(DAFReader *self);
+int         DAFReader_rewind(DAFReader *self);
 int         DAFReader_multiNext(int n, DAFReader *r[n], StrInt *strint);
 int         DAFReader_chrNdx(DAFReader *self, StrInt *strint);
 

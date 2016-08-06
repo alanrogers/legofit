@@ -119,8 +119,9 @@ int DAFReader_next(DAFReader *self) {
     return 0;
 }
 
-void DAFReader_rewind(DAFReader *self) {
-    rewind(self->fp);
+// Returns 0 on success, -1 on failure
+int DAFReader_rewind(DAFReader *self) {
+    return fseek(self->fp, 0L, SEEK_SET);
 }
 
 int DAFReader_chrNdx(DAFReader *self, StrInt *strint) {
