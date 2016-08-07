@@ -84,7 +84,7 @@ static void Stack_free(Stack *stk) {
 /// Add an entry to the stack, checking bounds.
 static void Stack_push(Stack *self, tipId_t x) {
     if(self->nused == self->dim) {
-        fprintf(stderr,"%s:%s:%d buffer overflow\n",
+        fprintf(stderr,"%s:%s:%d ERR: buffer overflow\n",
                 __FILE__,__func__,__LINE__);
         exit(EXIT_FAILURE);
     }
@@ -171,7 +171,7 @@ static void parseChromosomeLbls(const char *arg, StrInt *strint) {
 				errno = 0;
                 StrInt_insert(strint, curr, i++);
 				if(errno) {
-					fprintf(stderr,"\n%s:%d: Duplicate chromosome label: %s\n",
+					fprintf(stderr,"\n%s:%d: ERR: Duplicate chromosome label: %s\n",
 							__FILE__,__LINE__, curr);
 					exit(EXIT_FAILURE);
 				}
@@ -181,7 +181,7 @@ static void parseChromosomeLbls(const char *arg, StrInt *strint) {
 			errno = 0;
             StrInt_insert(strint, token, i++);
 			if(errno) {
-				fprintf(stderr,"\n%s:%d: Duplicate chromosome label: %s\n",
+				fprintf(stderr,"\n%s:%d: ERR: Duplicate chromosome label: %s\n",
 						__FILE__,__LINE__, token);
 				exit(EXIT_FAILURE);
 			}
@@ -236,7 +236,7 @@ int main(int argc, char **argv) {
 		case 'f':
 			status = snprintf(bootfname, sizeof bootfname, "%s", optarg);
 			if(status >= sizeof bootfname) {
-				fprintf(stderr,"%s:%d: Filename %s is too large."
+				fprintf(stderr,"%s:%d: ERR: Filename %s is too large."
 						" Max: %zu\n",
 						__FILE__,__LINE__, optarg,
 						sizeof(bootfname)-1);
@@ -304,7 +304,7 @@ int main(int argc, char **argv) {
 		const char *defName = "tabpat.boot";
 		status = snprintf(bootfname, sizeof bootfname, "%s", defName);
 		if(status >= sizeof bootfname) {
-			fprintf(stderr,"%s:%d: Filename %s is too large."
+			fprintf(stderr,"%s:%d: ERR: Filename %s is too large."
 					" Max: %zu\n",
 					__FILE__,__LINE__, defName,
 					sizeof(bootfname)-1);
@@ -320,8 +320,8 @@ int main(int argc, char **argv) {
 	for(i=1; i<n; ++i)
 		for(j=0; j<i; ++j)
 			if(0 == strcmp(poplbl[i], poplbl[j])) {
-				fprintf(stderr,"Error: duplicate labels on command line.\n");
-				fprintf(stderr,"       duplicated label: %s\n", poplbl[i]);
+				fprintf(stderr,"ERR: duplicate labels on command line.\n");
+				fprintf(stderr,"     duplicated label: %s\n", poplbl[i]);
 				exit(EXIT_FAILURE);
 			}
 
@@ -376,7 +376,8 @@ int main(int argc, char **argv) {
 			errno = 0;
             int chr = DAFReader_chrNdx(r[0], strint);
 			if(errno) {
-				fprintf(stderr,"%s:%d: data contain an unexpected chromosome: %s\n",
+				fprintf(stderr,"%s:%d: ERR:"
+						" data contain an unexpected chromosome: %s\n",
 						__FILE__,__LINE__, DAFReader_chr(r[0]));
 				exit(EXIT_FAILURE);
 			}
@@ -390,7 +391,7 @@ int main(int argc, char **argv) {
 		// Make sure all the chromosomes in strint really appear in the data.
 		for(i=0; i < nchr; ++i) {
 			if(nsnp[i] == 0) {
-				fprintf(stderr,"%s:%d: at least one chromosome"
+				fprintf(stderr,"%s:%d: ERR: at least one chromosome"
 						" is missing from data.\n",
 						__FILE__,__LINE__);
 				exit(EXIT_FAILURE);
@@ -400,7 +401,7 @@ int main(int argc, char **argv) {
         for(i=0; i<n; ++i) {
             status = DAFReader_rewind(r[i]);
 			if(status) {
-				fprintf(stderr,"%s:%d: Can't rewind input stream.\n",
+				fprintf(stderr,"%s:%d: ERR: can't rewind input stream.\n",
 						__FILE__,__LINE__);
 				fprintf(stderr,"  If --bootreps > 0, inputs must be"
 						" files, not pipes.\n");
@@ -435,7 +436,7 @@ int main(int argc, char **argv) {
 		errno = 0;
         int chr = DAFReader_chrNdx(r[0], strint);
 		if(errno) {
-			fprintf(stderr,"%s:%d: data contain an unexpected chromosome: %s\n",
+			fprintf(stderr,"%s:%d: ERR: data contain an unexpected chromosome: %s\n",
 					__FILE__,__LINE__, DAFReader_chr(r[0]));
 			exit(EXIT_FAILURE);
 		}
@@ -494,7 +495,7 @@ int main(int argc, char **argv) {
 	case 0:  // okay
 		break;
 	case EDOM:
-		fprintf(stderr,"%s:%d: data contain an unexpected chromosome.\n",
+		fprintf(stderr,"%s:%d: ERR: data contain an unexpected chromosome.\n",
 				__FILE__,__LINE__);
 		exit(EXIT_FAILURE);
 	default:
