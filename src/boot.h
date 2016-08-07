@@ -41,6 +41,7 @@ void        Boot_sanityCheck(const Boot * self, const char *file, int line);
 double      interpolate(double p, double *v, long len);
 void        confidenceBounds(double *lowBnd, double *highBnd,
                              double confidence, double *v, long len);
+long        adjustBlockLength(long lengthWanted, int nsnp);
 
 #  ifndef NDEBUG
 unsigned    BootChr_multiplicity_slow(BootChr * self, long snp, long rep);

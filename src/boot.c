@@ -52,6 +52,13 @@ long LInt_div_round(long num, long denom) {
         return quotrem.quot;
 }
 
+// Return a blockLength that is as close as possible to lengthWanted
+// while still making length*nblock close to nsnp.
+long adjustBlockLength(long lengthWanted, int nsnp) {
+	long nblock = LInt_div_round(nsnp, lengthWanted);
+	return LInt_div_round(nsnp, nblock);
+}
+
 /// Constructor for class BootChr.
 BootChr       *BootChr_new(long nsnp, long nrep, int npat, long blockLength,
                            gsl_rng * rng) {
@@ -79,7 +86,9 @@ BootChr       *BootChr_new(long nsnp, long nrep, int npat, long blockLength,
 
     self->nsnp = nsnp;
     self->nrep = nrep;
-    self->blockLength = blockLength;
+	self->blockLength = adjustBlockLength(blockLength, nsnp);
+	fprintf(stderr,"%s:%d: blockLength %ld -> %ld\n",
+			__FILE__,__LINE__, blockLength, self->blockLength);
     self->npat = npat;
     self->nblock = LInt_div_round(nsnp, blockLength);
 
@@ -189,7 +198,9 @@ long BootChr_multiplicity(const BootChr * self, long snpndx, long rep) {
 void BootChr_add(BootChr * self, long snpndx, int pat, double z) {
     assert(pat < self->npat);
     assert(snpndx < self->nsnp);
-    assert(z > 0.0);
+	if(!(z >= 0))
+		fprintf(stderr,"%s:%s:%d: z=%lf\n", __FILE__,__func__,__LINE__,z);
+    assert(z >= 0.0);
     for(register int rep = 0; rep < self->nrep; ++rep) {
 
         // w is the number times the current snp is represented

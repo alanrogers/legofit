@@ -335,7 +335,6 @@ int main(int argc, char **argv) {
     qsort(pat, (size_t) npat, sizeof(pat[0]), compare_tipId);
 	fflush(stdout);
 
-
     // Used by bootstrap
     Boot *boot = NULL;
     int currChr;
@@ -453,6 +452,14 @@ int main(int argc, char **argv) {
 					z *= q[j];
 				pattern >>= 1u;
 			}
+			if(!isfinite(z)) {
+				fprintf(stderr,"%s:%d nonfinite z=%lf\n",
+						__FILE__,__LINE__,z);
+				fprintf(stderr,"   pattern=%d\n", pat[i]);
+				for(j=0; j < n; ++j)
+					fprintf(stderr,"   %d: p=%lf q=%lf\n",
+							j, p[j], q[j]);
+			}
 			assert( 0 == (pattern&1) );
 			patCount[i] += z;
             if(bootreps > 0)
@@ -462,11 +469,27 @@ int main(int argc, char **argv) {
 	}
 	printf("# Tabulated %lu SNPs\n", nsnps);
 
-    // boottab[i][j] is the count of the j'th site pattern
-    // in the i'th bootstrap replicate.
-    double boottab[bootreps][npat];
-    for(i=0; i<bootreps; ++i)
-        Boot_aggregate(boot, i, npat, boottab[i]);
+	if(bootreps > 0) {
+		printf("# %s = %s\n", "bootstrap output file", bootfname);
+		// boottab[i][j] is the count of the j'th site pattern
+		// in the i'th bootstrap replicate.
+		double boottab[bootreps][npat];
+		for(i=0; i<bootreps; ++i)
+			Boot_aggregate(boot, i, npat, boottab[i]);
+		FILE *fp = fopen(bootfname, "w");
+		fprintf(fp, "# %13s", "SitePat");
+		for(j=0; j < bootreps; ++j)
+			fprintf(fp, " boot%03d", j);
+		putc('\n', fp);
+		for(i=0; i<npat; ++i) {
+			fprintf(fp, "%15s",
+				   patLbl(lblsize, lblbuff,  pat[i], &lndx));
+			for(j=0; j < bootreps; ++j)
+				fprintf(fp, " %0.9lf", boottab[j][i]);
+			putc('\n', fp);
+		}
+		fclose(fp);
+	}
 
     // print labels and binary representation of site patterns
 	printf("# %13s %20s\n", "SitePat", "E[count]");
@@ -476,23 +499,6 @@ int main(int argc, char **argv) {
 			   patCount[i]);
         putchar('\n');
     }
-
-	if(bootreps > 0) {
-		printf("# %-35s = %s\n", "bootstrap output file", bootfname);
-		FILE *fp = fopen(bootfname, "w");
-		fprintf(fp, "# %13s", "SitePat");
-		for(j=0; j < bootreps; ++j)
-			fprintf(fp, "             boot%04d", j);
-		putc('\n', fp);
-		for(i=0; i<npat; ++i) {
-			fprintf(fp, "%15s",
-				   patLbl(lblsize, lblbuff,  pat[i], &lndx));
-			for(j=0; j < bootreps; ++j)
-				fprintf(fp, " %20.7lf", boottab[j][i]);
-			putc('\n', fp);
-		}
-		fclose(fp);
-	}
 
     for(i=0; i<n; ++i)
 		DAFReader_free(r[i]);
