@@ -510,8 +510,10 @@ int main(int argc, char **argv) {
 		// boottab[i][j] is the count of the j'th site pattern
 		// in the i'th bootstrap replicate.
 		double boottab[bootreps][npat];
+		memset(boottab, 0, sizeof boottab);
 		for(i=0; i<bootreps; ++i)
 			Boot_aggregate(boot, i, npat, boottab[i]);
+
 		FILE *fp = fopen(bootfname, "w");
 		fprintf(fp, "# %s", "SitePat");
 		for(j=0; j < bootreps; ++j)

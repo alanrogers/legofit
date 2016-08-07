@@ -18,7 +18,7 @@
 /// Contains the all data involved in a moving blocks bootstrap of
 /// a single chromosome.
 struct BootChr {
-    long        blockLength;    // number of SNPs per block
+    long        blocksize;      // number of SNPs per block
     long        nrep;           // number of bootstrap replicates 
     long        nsnp;           // number of snps
     long        nblock;         // number of blocks
@@ -35,7 +35,7 @@ struct Boot {
 /** Contains the data for a bootstrap confidence interval. */
 struct BootConf {
     long        nrep;           // repetitions
-    long        blockLength;    // nucleotide positions per block
+    long        blocksize;    // nucleotide positions per block
     double      confidence;     // size of confidence region
     double     *low, *high;     // confidence bounds
 };
@@ -52,7 +52,7 @@ long LInt_div_round(long num, long denom) {
         return quotrem.quot;
 }
 
-// Return a blockLength that is as close as possible to lengthWanted
+// Return a blocksize that is as close as possible to lengthWanted
 // while still making length*nblock close to nsnp.
 long adjustBlockLength(long lengthWanted, int nsnp) {
 	long nblock = LInt_div_round(nsnp, lengthWanted);
@@ -60,20 +60,20 @@ long adjustBlockLength(long lengthWanted, int nsnp) {
 }
 
 /// Constructor for class BootChr.
-BootChr       *BootChr_new(long nsnp, long nrep, int npat, long blockLength,
+BootChr       *BootChr_new(long nsnp, long nrep, int npat, long blocksize,
                            gsl_rng * rng) {
     long i, j;
-    assert(blockLength > 0);
+    assert(blocksize > 0);
     if(nrep == 0)
         return NULL;
 
-    if(blockLength > nsnp) {
+    if(blocksize > nsnp) {
         fprintf(stderr,
-                "ERR@%s:%d: in BootChr_new, nsnp must be >blockLength.\n"
-                " Instead, nsnp=%ld, blockLength=%ld.\n",
-                __FILE__, __LINE__, nsnp, blockLength);
+                "ERR@%s:%d: in BootChr_new, nsnp must be >blocksize.\n"
+                " Instead, nsnp=%ld, blocksize=%ld.\n",
+                __FILE__, __LINE__, nsnp, blocksize);
         fprintf(stderr, " Use --blocksize argument"
-                " to reduce blockLength.\n");
+                " to reduce blocksize.\n");
         exit(1);
     }
 
@@ -82,15 +82,15 @@ BootChr       *BootChr_new(long nsnp, long nrep, int npat, long blockLength,
 
     self->nsnp = nsnp;
     self->nrep = nrep;
-	self->blockLength = adjustBlockLength(blockLength, nsnp);
-	fprintf(stderr,"%s:%d: blockLength %ld -> %ld\n",
-			__FILE__,__LINE__, blockLength, self->blockLength);
+	self->blocksize = adjustBlockLength(blocksize, nsnp);
+	fprintf(stderr,"%s:%d: blocksize %ld -> %ld\n",
+			__FILE__,__LINE__, blocksize, self->blocksize);
     self->npat = npat;
-    self->nblock = LInt_div_round(nsnp, blockLength);
+    self->nblock = LInt_div_round(nsnp, blocksize);
 
-    // Block positions are uniform on [0, nsnp-blockLength+1).
+    // Block positions are uniform on [0, nsnp-blocksize+1).
     unsigned long endpos;
-    endpos = nsnp - self->blockLength + 1;
+    endpos = nsnp - self->blocksize + 1;
 
     BootChr_allocArrays(self);
 
@@ -133,8 +133,8 @@ static void BootChr_allocArrays(BootChr * self) {
 #ifndef NDEBUG
 void BootChr_sanityCheck(const BootChr * self, const char *file, int line) {
     long        i, j;
-    REQUIRE(self->blockLength > 0, file, line);
-    REQUIRE(self->blockLength < 100000, file, line);
+    REQUIRE(self->blocksize > 0, file, line);
+    REQUIRE(self->blocksize < 100000, file, line);
     REQUIRE(self != NULL, file, line);
     REQUIRE(self->nrep > 0, file, line);
     REQUIRE(self->nsnp > 0, file, line);
@@ -144,7 +144,7 @@ void BootChr_sanityCheck(const BootChr * self, const char *file, int line) {
     REQUIRE(self->count != NULL, file, line);
     REQUIRE(self->start != NULL, file, line);
 
-    unsigned long endpos = self->nsnp - self->blockLength + 1;
+    unsigned long endpos = self->nsnp - self->blocksize + 1;
     long        prev;
 
     for(i = 0; i < self->nrep; ++i) {
@@ -170,13 +170,13 @@ long BootChr_multiplicity(const BootChr * self, long snpndx, long rep) {
     assert(snpndx < self->nsnp);
 
     // lndx is index of first block containing snp
-    lowtarget = snpndx - self->blockLength + 1;
+    lowtarget = snpndx - self->blocksize + 1;
     lndx = long_first_geq(lowtarget, self->start[rep], self->nblock);
     if(lndx == self->nblock || self->start[rep][lndx] > snpndx)
         return 0;
 
     assert(snpndx >= self->start[rep][lndx]);
-    assert(snpndx - self->start[rep][lndx] < self->blockLength);
+    assert(snpndx - self->start[rep][lndx] < self->blocksize);
 
     // hndx is index of first block not containing snp
     hndx = long_first_geq(snpndx + 1, self->start[rep] + lndx,
@@ -184,7 +184,7 @@ long BootChr_multiplicity(const BootChr * self, long snpndx, long rep) {
     hndx += lndx;
 
     assert(hndx == 0
-             || self->start[rep][hndx - 1] - snpndx < self->blockLength);
+             || self->start[rep][hndx - 1] - snpndx < self->blocksize);
 
     return hndx - lndx;
 }
@@ -260,7 +260,7 @@ void BootChr_aggregate(BootChr * self, int rep, int npat, double count[npat]) {
 }
 
 Boot * Boot_new(int nchr, long nsnp[nchr], long nrep, int npat,
-                long blockLength, gsl_rng *rng) {
+                long blocksize, gsl_rng *rng) {
     Boot *self = malloc(sizeof(Boot));
     CHECKMEM(self);
     self->nchr = nchr;
@@ -268,7 +268,7 @@ Boot * Boot_new(int nchr, long nsnp[nchr], long nrep, int npat,
     CHECKMEM(self->bc);
 
     for(int i=0; i < nchr; ++i) {
-        self->bc[i] = BootChr_new(nsnp[i], nrep, npat, blockLength, rng);
+        self->bc[i] = BootChr_new(nsnp[i], nrep, npat, blocksize, rng);
         CHECKMEM(self->bc[i]);
     }
     return self;
@@ -287,7 +287,16 @@ void Boot_add(Boot *self, int chr, long snpndx, int pat, double z) {
 
 void Boot_aggregate(Boot * self, int rep, int npat,
                     double count[npat]) {
-    for(int i=0; i < self->nchr; ++i)
+	int i;
+#ifndef NDEBUG
+	for(i=0; i<npat; ++i)
+		if(!(count[i] == 0.0)) {
+			fprintf(stderr,"%s:%d: count argument not initialized in %s.\n",
+					__FILE__,__LINE__, __func__);
+			exit(EXIT_FAILURE);
+		}
+#endif
+    for(i=0; i < self->nchr; ++i)
         BootChr_aggregate(self->bc[i], rep, npat, count);
 }
 
@@ -353,8 +362,8 @@ void BootChr_print(const BootChr * self, FILE * ofp) {
     long        rep, j;
 
     fprintf(ofp,
-            "BootChr_print: nsnp=%ld nrep=%ld blockLength=%ld nblock=%ld\n",
-            self->nsnp, self->nrep, self->blockLength, self->nblock);
+            "BootChr_print: nsnp=%ld nrep=%ld blocksize=%ld nblock=%ld\n",
+            self->nsnp, self->nrep, self->blocksize, self->nblock);
 
     fprintf(ofp, "Block starts:\n");
     for(rep = 0; rep < self->nrep; ++rep) {
@@ -383,7 +392,7 @@ unsigned BootChr_multiplicity_slow(BootChr * self, long snp, long rep) {
 
         if(distance < 0)
             break;
-        if(distance < self->blockLength)
+        if(distance < self->blocksize)
             ++n;
     }
     return n;
@@ -434,7 +443,7 @@ int BootChr_equals(const BootChr * x, const BootChr * y) {
         return false;
     if(x->nrep != y->nrep)
         return false;
-    if(x->blockLength != y->blockLength)
+    if(x->blocksize != y->blocksize)
         return false;
     if(x->nBins != y->nBins)
         return false;
@@ -474,7 +483,7 @@ void BootChr_plus_equals(BootChr * x, const BootChr * y) {
 
     if(x->nsnp != y->nsnp
        || x->nrep != y->nrep
-       || x->blockLength != y->blockLength
+       || x->blocksize != y->blocksize
        || x->nblock != y->nblock || x->nBins != y->nBins)
         die("BootChr_plus_equals: unconformable arguments", __FILE__, __LINE__);
 
@@ -579,7 +588,7 @@ BootConf   *BootConf_new(BootChr * boot, double confidence) {
 
     bc->confidence = confidence;
     bc->nrep = boot->nrep;
-    bc->blockLength = boot->blockLength;
+    bc->blocksize = boot->blocksize;
     bc->nBins = boot->nBins;
 
     bc->low = malloc(bc->nBins * sizeof(bc->low[0]));
@@ -653,8 +662,8 @@ void BootConf_printHdr(const BootConf * self, FILE * ofp) {
     fprintf(ofp, "#%12s: %lg%% confidence bounds"
             " based on moving blocks bootstrap\n",
             "loLD, hiLD", 100.0 * self->confidence);
-    fprintf(ofp, "#%12s: nrep=%ld blockLength=%ld nBins=%d\n",
-            "Bootstrap parameters", self->nrep, self->blockLength, self->nBins);
+    fprintf(ofp, "#%12s: nrep=%ld blocksize=%ld nBins=%d\n",
+            "Bootstrap parameters", self->nrep, self->blocksize, self->nBins);
 }
 
 double BootConf_lowBound(const BootConf * self, long bin) {
