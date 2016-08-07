@@ -387,6 +387,16 @@ int main(int argc, char **argv) {
                 ++nsnp[chr];
         }
 
+		// Make sure all the chromosomes in strint really appear in the data.
+		for(i=0; i < nchr; ++i) {
+			if(nsnp[i] == 0) {
+				fprintf(stderr,"%s:%d: at least one chromosome"
+						" is missing from data.\n",
+						__FILE__,__LINE__);
+				exit(EXIT_FAILURE);
+			}
+		}
+
         for(i=0; i<n; ++i) {
             status = DAFReader_rewind(r[i]);
 			if(status) {
@@ -476,6 +486,7 @@ int main(int argc, char **argv) {
             if(bootreps > 0)
                 Boot_add(boot, chr, snpndx, i, z);
 		}
+		Boot_sanityCheck(boot,__FILE__,__LINE__);
 		++nsnps;
 		errno = 0;
 	}
@@ -495,6 +506,7 @@ int main(int argc, char **argv) {
 
 	if(bootreps > 0) {
 		printf("# %s = %s\n", "bootstrap output file", bootfname);
+		Boot_sanityCheck(boot,__FILE__,__LINE__);
 		// boottab[i][j] is the count of the j'th site pattern
 		// in the i'th bootstrap replicate.
 		double boottab[bootreps][npat];
