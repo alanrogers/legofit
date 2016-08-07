@@ -13,6 +13,7 @@
 #include "strint.h"
 #include "typedefs.h"
 #include <ctype.h>
+#include <errno.h>
 #include <getopt.h>
 #include <gsl/gsl_rng.h>
 #include <limits.h>
@@ -56,7 +57,7 @@ static void usage(void) {
 	tellopt("-b <x> or --blocksize <x>",
 			"# of SNPs per block in moving-blocks bootstrap. Def: 0.");
 	tellopt("-c <list> or --chr <list>",
-			"comma-separated list of chromosomes, such as 1-4,8,x."
+			"comma-separated list of chromosomes, such as 1-4,8,x,22-20."
 			" Def: 1-22");
     tellopt("-h or --help", "Print this message");
 	tellopt("-v or --verbose", "More output");
@@ -161,15 +162,29 @@ static void parseChromosomeLbls(const char *arg, StrInt *strint) {
             *dash = '\0';
             int from = strtol(token, NULL, 10);
             int to = strtol(dash+1, NULL, 10);
-            for(j=from; j <= to; ++j) {
+			int inc = (to < from ? -1 : 1);
+			to += inc; // 1 past final position
+            for(j=from; j != to; j += inc) {
                 char curr[10];
                 snprintf(curr, sizeof curr, "%d", j);
                 fprintf(stderr, " %s", curr);
+				errno = 0;
                 StrInt_insert(strint, curr, i++);
+				if(errno) {
+					fprintf(stderr,"\n%s:%d: Duplicate chromosome label: %s\n",
+							__FILE__,__LINE__, curr);
+					exit(EXIT_FAILURE);
+				}
             }
         }else{                  // token isn't a range
             fprintf(stderr, " %s", token);
+			errno = 0;
             StrInt_insert(strint, token, i++);
+			if(errno) {
+				fprintf(stderr,"\n%s:%d: Duplicate chromosome label: %s\n",
+						__FILE__,__LINE__, token);
+				exit(EXIT_FAILURE);
+			}
         }
     }
     putc('\n', stderr);
@@ -337,22 +352,17 @@ int main(int argc, char **argv) {
 
     // Used by bootstrap
     Boot *boot = NULL;
-    int currChr;
-    int nchr=0;
-    long nsnp[MAXCHR];
+	int currChr = INT_MAX;
+	int nchr = StrInt_size(strint);
+    long nsnp[nchr];
 	memset(nsnp, 0, sizeof nsnp);
 
     // Read the data to get dimensions: number of chromosomes and
     // number of snps per chromosome. Then use these dimensions to
-    // allocate a bootstrap object. I don't rely on the index returned
-    // by StrInt_get, because that index depends on the number of
-    // chromosomes listed on the command line. If the user lists more
-    // than are really there, we'd have a problem. So I generate an index
-    // for chromosomes internally from the data.
+    // allocate a bootstrap object. 
     if(bootreps > 0) {
         fprintf(stderr,"Doing 1st pass through data to get dimensions...\n");
 
-        currChr = INT_MAX;
         // First pass through data sets values of
         // nchr
         // nsnp[i] {i=0..nchr-1}
@@ -363,20 +373,18 @@ int main(int argc, char **argv) {
             if(!DAFReader_allelesMatch(n, r))
                 continue;
 
+			errno = 0;
             int chr = DAFReader_chrNdx(r[0], strint);
+			if(errno) {
+				fprintf(stderr,"%s:%d: data contain an unexpected chromosome: %s\n",
+						__FILE__,__LINE__, DAFReader_chr(r[0]));
+				exit(EXIT_FAILURE);
+			}
             if(chr != currChr) {
-                ++nchr;
-                if(nchr > MAXCHR) {
-                    fprintf(stderr,"%s:%d: too many chromosomes.\n",
-                            __FILE__,__LINE__);
-                    fprintf(stderr," Read %d, MAXCHR is %d\n",
-                            nchr, MAXCHR);
-                    exit(EXIT_FAILURE);
-                }
-                currChr = chr;
-                nsnp[nchr-1] = 1;
+				currChr = chr;
+                nsnp[chr] = 1;
             }else
-                ++nsnp[nchr-1];
+                ++nsnp[chr];
         }
 
         for(i=0; i<n; ++i) {
@@ -400,10 +408,11 @@ int main(int argc, char **argv) {
 
 	unsigned long nsnps = 0;
     currChr = INT_MAX;
-    int cndx = -1;
     long snpndx = -1;
 
 	// Iterate through daf files
+	currChr = INT_MAX;
+	errno = 0;
 	while(EOF != DAFReader_multiNext(n, r, strint)) {
 
         // Skip loci at which data sets disagree about which allele
@@ -412,13 +421,15 @@ int main(int argc, char **argv) {
             continue;
 
         // chr is index of current chromosome, as provided by
-        // StrInt_get. cndx is the index of current chromosome
-        // within bootstrap arrays. As explained above, the two
-        // may differ if the user lists more chromosome labels on
-        // the command line than are really there in the data.
+        // StrInt_get.
+		errno = 0;
         int chr = DAFReader_chrNdx(r[0], strint);
+		if(errno) {
+			fprintf(stderr,"%s:%d: data contain an unexpected chromosome: %s\n",
+					__FILE__,__LINE__, DAFReader_chr(r[0]));
+			exit(EXIT_FAILURE);
+		}
         if(chr != currChr) {
-            ++cndx;
             currChr = chr;
             snpndx = 0;
         }else
@@ -426,7 +437,7 @@ int main(int argc, char **argv) {
 
 #ifndef NDEBUG
 		if(bootreps > 0)
-			assert(snpndx < nsnp[cndx]);
+			assert(snpndx < nsnp[chr]);
 #endif
 
 		// p and q are frequencies of derived and ancestral alleles
@@ -466,6 +477,19 @@ int main(int argc, char **argv) {
                 Boot_add(boot, chr, snpndx, i, z);
 		}
 		++nsnps;
+		errno = 0;
+	}
+	switch(errno) {
+	case 0:  // okay
+		break;
+	case EDOM:
+		fprintf(stderr,"%s:%d: data contain an unexpected chromosome.\n",
+				__FILE__,__LINE__);
+		exit(EXIT_FAILURE);
+	default:
+		fprintf(stderr,"%s:%d: unknown error.\n",
+				__FILE__,__LINE__);
+		exit(EXIT_FAILURE);
 	}
 	printf("# Tabulated %lu SNPs\n", nsnps);
 
@@ -477,12 +501,12 @@ int main(int argc, char **argv) {
 		for(i=0; i<bootreps; ++i)
 			Boot_aggregate(boot, i, npat, boottab[i]);
 		FILE *fp = fopen(bootfname, "w");
-		fprintf(fp, "# %13s", "SitePat");
+		fprintf(fp, "# %s", "SitePat");
 		for(j=0; j < bootreps; ++j)
 			fprintf(fp, " boot%03d", j);
 		putc('\n', fp);
 		for(i=0; i<npat; ++i) {
-			fprintf(fp, "%15s",
+			fprintf(fp, "%s",
 				   patLbl(lblsize, lblbuff,  pat[i], &lndx));
 			for(j=0; j < bootreps; ++j)
 				fprintf(fp, " %0.9lf", boottab[j][i]);

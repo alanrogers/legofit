@@ -26,6 +26,7 @@ void        DAFReader_printHdr(FILE *fp);
 void        DAFReader_print(DAFReader *r, FILE *fp);
 int         DAFReader_rewind(DAFReader *self);
 int         DAFReader_multiNext(int n, DAFReader *r[n], StrInt *strint);
+const char *DAFReader_chr(DAFReader *self);
 int         DAFReader_chrNdx(DAFReader *self, StrInt *strint);
 
 #endif
