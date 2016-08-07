@@ -344,12 +344,12 @@ double interpolate(double p, double *v, long len) {
  * these memory locations.
  * @param[in] confidence Fraction of sampling distribution that lies
  * inside the confidence bounds.
- * @param[in] v The vector of values.
  * @param[in] len The number of values inf v.
+ * @param[in] v The vector of values.
  * @sideeffect The function sorts the vector v.
  */
 void confidenceBounds(double *lowBnd, double *highBnd, double confidence,
-                      double *v, long len) {
+                      long len, double v[len]) {
     double      tailProb = (1.0 - confidence) / 2.0;
 
     qsort(v, (size_t) len, sizeof(v[0]), compareDoubles);

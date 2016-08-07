@@ -39,8 +39,8 @@ void        Boot_aggregate(Boot * self, int rep, int npat,
 void        Boot_sanityCheck(const Boot * self, const char *file, int line);
 
 double      interpolate(double p, double *v, long len);
-void        confidenceBounds(double *lowBnd, double *highBnd,
-                             double confidence, double *v, long len);
+void        confidenceBounds(double *lowBnd, double *highBnd, double confidence,
+							 long len, double v[len]);
 long        adjustBlockLength(long lengthWanted, int nsnp);
 
 #  ifndef NDEBUG

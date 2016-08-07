@@ -505,13 +505,15 @@ int main(int argc, char **argv) {
 	}
 	printf("# Tabulated %lu SNPs\n", nsnps);
 
+	// boottab[i][j] is the count of the j'th site pattern
+	// in the i'th bootstrap replicate.
+	double bootvals[bootreps];
+	double boottab[bootreps][npat];
+	memset(boottab, 0, sizeof boottab);
+
 	if(bootreps > 0) {
 		printf("# %s = %s\n", "bootstrap output file", bootfname);
 		Boot_sanityCheck(boot,__FILE__,__LINE__);
-		// boottab[i][j] is the count of the j'th site pattern
-		// in the i'th bootstrap replicate.
-		double boottab[bootreps][npat];
-		memset(boottab, 0, sizeof boottab);
 		for(i=0; i<bootreps; ++i)
 			Boot_aggregate(boot, i, npat, boottab[i]);
 
@@ -531,16 +533,28 @@ int main(int argc, char **argv) {
 	}
 
     // print labels and binary representation of site patterns
-	printf("# %13s %20s\n", "SitePat", "E[count]");
+	printf("# %13s %20s", "SitePat", "E[count]");
+	if(bootreps > 0)
+		printf(" %12s %12s", "loBnd", "hiBnd");
+	putchar('\n');
     for(i=0; i<npat; ++i) {
         printf("%15s %20.7lf",
 			   patLbl(lblsize, lblbuff,  pat[i], &lndx),
 			   patCount[i]);
+		if(bootreps > 0) {
+			double lowBnd, highBnd;
+			for(j=0; j < bootreps; ++j)
+				bootvals[j] = boottab[j][i];
+			confidenceBounds(&lowBnd, &highBnd, 0.95, bootreps, bootvals);
+			printf(" %12.7lf %12.7lf", lowBnd, highBnd);
+		}
         putchar('\n');
     }
 
     for(i=0; i<n; ++i)
 		DAFReader_free(r[i]);
+	if(bootreps > 0)
+		Boot_free(boot);
     StrInt_free(strint);
     return 0;
 }
