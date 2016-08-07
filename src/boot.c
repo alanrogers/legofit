@@ -77,10 +77,6 @@ BootChr       *BootChr_new(long nsnp, long nrep, int npat, long blockLength,
         exit(1);
     }
 
-    // Block positions are uniform on [0, nsnp-blockLength+1).
-    unsigned long endpos;
-    endpos = nsnp - blockLength + 1;
-
     BootChr       *self = malloc(sizeof(BootChr));
     CHECKMEM(self);
 
@@ -91,6 +87,10 @@ BootChr       *BootChr_new(long nsnp, long nrep, int npat, long blockLength,
 			__FILE__,__LINE__, blockLength, self->blockLength);
     self->npat = npat;
     self->nblock = LInt_div_round(nsnp, blockLength);
+
+    // Block positions are uniform on [0, nsnp-blockLength+1).
+    unsigned long endpos;
+    endpos = nsnp - self->blockLength + 1;
 
     BootChr_allocArrays(self);
 
