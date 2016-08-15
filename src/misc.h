@@ -11,7 +11,6 @@
 #  include <gsl/gsl_rng.h>
 
 static inline int Dbl_near(double x, double y);
-int         compare_tipId(const void *void_x, const void *void_y);
 int         compareLongs(const void *void_x, const void *void_y);
 int         compareDoubles(const void *void_x, const void *void_y);
 int         getNumCores(void);
@@ -39,12 +38,12 @@ long        long_first_geq(long val, long *v, long len);
 long        long_last_leq(long val, long *v, long len);
 int         strCountSetChunks(const char *str, const char *sep);
 void       *memdup(const void *p, size_t n);
-void        orderpat(int n, unsigned order[n], tipId_t tid[n]);
 double      KLdiverg(int n, const double o[n], const double e[n]);
 double      sum_double(int n, const double x[n]);
 double      reflect(double x, double lo, double hi);
 char       *strlowercase(char *s);
 unsigned    strhash(const char *ss);
+int         stripchr(char *s, int c);
 
 static inline double survival(double t, double twoN);
 

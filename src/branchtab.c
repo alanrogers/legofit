@@ -47,6 +47,7 @@ void        BTLink_printShallow(const BTLink * self);
 void        BTLink_print(const BTLink * self);
 BTLink     *BTLink_dup(const BTLink *self);
 int         BTLink_equals(const BTLink *lhs, const BTLink *rhs);
+int         comparePtrs(const void *void_x, const void *void_y);
 
 #if TIPID_SIZE==32
 uint32_t    tipIdHash(uint32_t key);
@@ -437,6 +438,73 @@ double BranchTab_KLdiverg(const BranchTab *obs, const BranchTab *expt) {
         // Any remaining cases have p=0, so contribution to kl is 0.
     }
     return kl;
+}
+
+/// Compare pointers to pointers to two tipId_t values.
+///
+/// @param void_x,void_y pointers to pointers to tipId_t values
+/// @returns <0, 0, or >0 depending on whether the first arg is <,
+/// ==, or > the second.
+int comparePtrs(const void *void_x, const void *void_y) {
+    tipId_t * const * x = (tipId_t * const *) void_x;
+    tipId_t * const * y = (tipId_t * const *) void_y;
+
+    // Major sort is on the number of samples
+    // represented in the site pattern. Patterns with
+    // fewer samples come first.
+    int diff1bits = num1bits(**x) - num1bits(**y);
+    if(diff1bits)
+        return diff1bits;
+
+    // Reverse order of bits so that low-order bit
+    // is most significant. This ensures that the
+    // sort order of samples corresponds to the
+    // order in which they were listed in the input
+    // data.
+    unsigned rx = reverseBits(**x);
+    unsigned ry = reverseBits(**y);
+
+    return ry - rx;
+}
+
+/// Compare pointers to two tipId_t values.
+///
+/// @param void_x,void_y pointers to tipId_t values
+/// @returns <0, 0, or >0 depending on whether the first arg is <,
+/// ==, or > the second.
+int compare_tipId(const void *void_x, const void *void_y) {
+    tipId_t const * x = (tipId_t const *) void_x;
+    tipId_t const * y = (tipId_t const *) void_y;
+
+    // Major sort is on the number of samples
+    // represented in the site pattern. Patterns with
+    // fewer samples come first.
+    int diff1bits = num1bits(*x) - num1bits(*y);
+    if(diff1bits)
+        return diff1bits;
+
+    // Reverse order of bits so that low-order bit
+    // is most significant. This ensures that the
+    // sort order of samples corresponds to the
+    // order in which they were listed in the input
+    // data.
+    unsigned rx = reverseBits(*x);
+    unsigned ry = reverseBits(*y);
+
+    return ry - rx;
+}
+
+/// On entry, pat is an array of n tipId_t values. On return,
+/// ord[0] is the index of the first value, ord[1] is that of the 2nd,
+/// and so on.
+void orderpat(int n, unsigned ord[n], tipId_t pat[n]) {
+    tipId_t  *ptr[n];
+    int i;
+    for(i=0; i < n; ++i)
+        ptr[i] = pat+i;
+    qsort(ptr, (size_t) n, sizeof(ptr[0]), comparePtrs);
+    for(i=0; i<n; ++i)
+        ord[i] = ptr[i]-pat;
 }
 
 #ifdef TEST

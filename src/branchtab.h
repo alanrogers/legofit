@@ -18,4 +18,7 @@ BranchTab    *BranchTab_parse(const char *fname, const LblNdx *lblndx);
 BranchTab    *BranchTab_dup(const BranchTab *old);
 int           BranchTab_equals(const BranchTab *lhs, const BranchTab *rhs);
 double        BranchTab_KLdiverg(const BranchTab *obs, const BranchTab *expt);
+
+void          orderpat(int n, unsigned order[n], tipId_t tid[n]);
+int           compare_tipId(const void *void_x, const void *void_y);
 #endif

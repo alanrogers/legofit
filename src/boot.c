@@ -35,7 +35,7 @@ struct Boot {
 /** Contains the data for a bootstrap confidence interval. */
 struct BootConf {
     long        nrep;           // repetitions
-    long        blocksize;    // nucleotide positions per block
+    long        blocksize;      // nucleotide positions per block
     double      confidence;     // size of confidence region
     double     *low, *high;     // confidence bounds
 };
