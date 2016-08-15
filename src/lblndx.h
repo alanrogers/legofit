@@ -20,5 +20,7 @@ tipId_t     LblNdx_getTipId(const LblNdx *self, const char *lbl);
 void        LblNdx_print(const LblNdx *self, FILE *fp);
 
 char       *patLbl(size_t n, char buff[n], tipId_t tid, const LblNdx * lblndx);
+void        orderpat(int n, unsigned order[n], tipId_t tid[n]);
+int         compare_tipId(const void *void_x, const void *void_y);
 
 #endif
