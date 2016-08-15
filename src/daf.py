@@ -2,7 +2,7 @@
 
 # Calculate derived allele frequency, daf.
 #
-# Input file should consist of white-space separated columns:
+# Input file should consist of comma-separated columns:
 # Col 1: chromosome
 # Col 2: position
 # Col 3: reference allele
@@ -30,7 +30,7 @@ import sys
 
 print "#%3s %10s %2s %2s %20s" % ("chr", "pos", "aa", "da", "daf")
 for line in sys.stdin:
-    line = line.strip().lower().split("\t")
+    line = line.strip().lower().split(",")
     chr = line[0]
     pos = line[1]
     ref = line[2]
