@@ -3,6 +3,7 @@
 try.c
 core
 depend
+xboot
 xhashtab
 xgene
 xgptree

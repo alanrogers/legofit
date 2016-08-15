@@ -2,6 +2,7 @@
 #include "tokenizer.h"
 #include "misc.h"
 #include "strint.h"
+#include <errno.h>
 #include <string.h>
 #include <stdlib.h>
 #include <limits.h>
@@ -46,7 +47,7 @@ int iscomment(const char *s) {
     return rval;
 }
 
-// Read the next snp. Return 0 on success; EOF on end of file.
+// Read the next snp. Return 0 on success; EOF on end of file or failure.
 int DAFReader_next(DAFReader *self) {
     int ntokens1;
     int ntokens;
@@ -119,20 +120,27 @@ int DAFReader_next(DAFReader *self) {
     return 0;
 }
 
-void DAFReader_rewind(DAFReader *self) {
-    rewind(self->fp);
+// Returns 0 on success, -1 on failure
+int DAFReader_rewind(DAFReader *self) {
+    return fseek(self->fp, 0L, SEEK_SET);
 }
 
+const char *DAFReader_chr(DAFReader *self) {
+	return self->chr;
+}
+
+// If self->chr is not in table strint, return -1 and set errno =
+// EDOM.  
 int DAFReader_chrNdx(DAFReader *self, StrInt *strint) {
     return StrInt_get(strint, self->chr);
 }
-
 
 #define MAX(X,Y) ((X) > (Y) ? (X) : (Y))
 #define MIN(X,Y) ((X) > (Y) ? (Y) : (X))
 
 /// Advance an array of DAFReaders to the next shared position.
-/// Return 0 on success or EOF on end of file.
+/// Return 0 on success or EOF on end of file. If chromosome is not
+/// in hash table strint, return EOF and set errno=EDOM.
 int DAFReader_multiNext(int n, DAFReader *r[n], StrInt *strint) {
     int i;
     unsigned long maxnuc=0, minnuc=ULONG_MAX;
@@ -143,7 +151,10 @@ int DAFReader_multiNext(int n, DAFReader *r[n], StrInt *strint) {
     for(i=0; i<n; ++i) {
         if(EOF == DAFReader_next(r[i]))
             return EOF;
+		errno = 0;
         cndx[i] = StrInt_get(strint, r[i]->chr);
+		if(errno)
+			return EOF;
         maxnuc = MAX(maxnuc, r[i]->nucpos);
         minnuc = MIN(minnuc, r[i]->nucpos);
 		maxchr = MAX(maxchr, cndx[i]);
@@ -159,7 +170,10 @@ int DAFReader_multiNext(int n, DAFReader *r[n], StrInt *strint) {
 				while(cndx[i] < maxchr) {
 					if(EOF == DAFReader_next(r[i]))
 						return EOF;
+					errno = 0;
                     cndx[i] = StrInt_get(strint, r[i]->chr);
+					if(errno)
+						return EOF;
 				}
 			}
 			maxchr=minchr=cndx[0];
@@ -178,7 +192,10 @@ int DAFReader_multiNext(int n, DAFReader *r[n], StrInt *strint) {
             while(cndx[i]==maxchr && r[i]->nucpos < maxnuc) {
                 if(EOF == DAFReader_next(r[i]))
                     return EOF;
+				errno = 0;
                 cndx[i] = StrInt_get(strint, r[i]->chr);
+				if(errno)
+					return EOF;
             }
         }
 

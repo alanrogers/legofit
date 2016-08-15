@@ -13,6 +13,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <errno.h>
 
 // STRINT_DIM must be a power of 2
 #define STRINT_DIM 64u
@@ -73,16 +74,15 @@ void SILink_free(SILink * self) {
     free(self);
 }
 
-/// Insert a new key-value pair. Abort if the pair already exists.
+/// Insert a new key-value pair. Set errno=EDOM if key already exists.
 SILink     *SILink_insert(SILink * self, const char *key, int value) {
     if(self == NULL)
         return SILink_new(key, value, self);
 
     int         diff = strcmp(key, self->key);
     if(diff == 0) {
-        fprintf(stderr,"%s:%s:%d: ERR: duplicate key: %s.\n",
-                __FILE__,__func__,__LINE__, key);
-        exit(EXIT_FAILURE);
+		errno = EDOM;
+		return self;
     }else if(diff > 0) {
         self->next = SILink_insert(self->next, key, value);
         return self;
@@ -90,24 +90,27 @@ SILink     *SILink_insert(SILink * self, const char *key, int value) {
         return SILink_new(key, value, self);
 }
 
-/// Get index corresponding to key. If key is not in table, abort.
+/// Get index corresponding to key. If key is not in table, return -1 and
+/// set errno = EDOM.
 int SILink_get(SILink * self, const char *key) {
     if(self == NULL) {
+		errno = EDOM;
         fprintf(stderr,"%s:%s:%d: unknown chromosome: %s\n",
                 __FILE__,__func__,__LINE__, key);
-        exit(EXIT_FAILURE);
+		return -1;
     }
 
-    int         diff = strcmp(key, self->key);
+    int diff = strcmp(key, self->key);
     if(diff == 0)
         return self->value;
     else if(diff > 0)
         return SILink_get(self->next, key);
     else{
         assert(diff < 0);
+		errno = EDOM;
         fprintf(stderr,"%s:%s:%d: unknown chromosome: %s\n",
                 __FILE__,__func__,__LINE__, key);
-        exit(EXIT_FAILURE);
+        return -1;
     }
 }
 
@@ -132,7 +135,8 @@ void StrInt_free(StrInt * self) {
     free(self);
 }
 
-// Insert a key-value pair into the hash table.
+// Insert a key-value pair into the hash table. Set errno=EDOM if
+// pair already exists.
 void StrInt_insert(StrInt *self, const char *key, int value) {
     unsigned    h = strhash(key) & (STRINT_DIM - 1u);
     assert(h < STRINT_DIM);
@@ -140,7 +144,8 @@ void StrInt_insert(StrInt *self, const char *key, int value) {
     self->tab[h] = SILink_insert(self->tab[h], key, value);
 }
 
-/// Return value corresponding to key; abort on failure
+/// Return value corresponding to key. If key is not in table, return
+/// -1 and set errno = EDOM.
 int StrInt_get(StrInt * self, const char *key) {
     unsigned    h = strhash(key) & (STRINT_DIM - 1u);
     assert(h < STRINT_DIM);
@@ -197,10 +202,16 @@ int main(int argc, char **argv) {
         StrInt_insert(si, key, i);
     }
     assert(100 == StrInt_size(si));
+	errno = 0;
+	StrInt_insert(si, "1", 1);
+	assert(errno == EDOM);
     for(i = 0; i < 100; ++i) {
         snprintf(key, sizeof key, "%d", i);
         assert(i == StrInt_get(si, key));
     }
+	errno = 0;
+	assert(-1 == StrInt_get(si, "notthere"));
+	assert(errno == EDOM);
 
     if(verbose)
         StrInt_print(si, stdout);

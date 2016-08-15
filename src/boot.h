@@ -12,7 +12,7 @@
 #  include "typedefs.h"
 #  include <gsl/gsl_rng.h>
 
-BootChr    *BootChr_new(long nsnp, long nrep, int npat, long blockLength,
+BootChr    *BootChr_new(long nsnp, long nrep, int npat, long blocksize,
                         gsl_rng * rng);
 
 #  ifndef NDEBUG
@@ -31,7 +31,7 @@ void        BootChr_aggregate(BootChr * self, int rep, int npat,
                               double count[npat]);
 
 Boot       *Boot_new(int nchr, long nsnp[nchr], long nrep, int npat,
-                     long blockLength, gsl_rng * rng);
+                     long blocksize, gsl_rng * rng);
 void        Boot_free(Boot * self);
 void        Boot_add(Boot *self, int chr, long snpndx, int pat, double z);
 void        Boot_aggregate(Boot * self, int rep, int npat,
@@ -39,8 +39,9 @@ void        Boot_aggregate(Boot * self, int rep, int npat,
 void        Boot_sanityCheck(const Boot * self, const char *file, int line);
 
 double      interpolate(double p, double *v, long len);
-void        confidenceBounds(double *lowBnd, double *highBnd,
-                             double confidence, double *v, long len);
+void        confidenceBounds(double *lowBnd, double *highBnd, double confidence,
+							 long len, double v[len]);
+long        adjustBlockLength(long lengthWanted, int nsnp);
 
 #  ifndef NDEBUG
 unsigned    BootChr_multiplicity_slow(BootChr * self, long snp, long rep);

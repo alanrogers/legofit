@@ -2,6 +2,7 @@
 #  define HAVE_TYPEDEFS
 
 #include <stdint.h>
+#define FILENAMESIZE 200
 
 typedef struct Boot Boot;
 typedef struct BootChr BootChr;
