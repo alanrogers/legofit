@@ -12,6 +12,10 @@
 #           a copy of the reference allele and 1 a copy of the derived
 #           allele.
 #
+# With 1000-genomes data, this input can be generated from a vcf or
+# bcf file as follows:
+#    bcftools query -f '%CHROM,%POS,%REF,%ALT,%INFO/AA[,%GT]\n' fname.bcf
+#
 # Output is in 3 columns, separated by a space character:
 # Col 1: chromosome
 # Col 2: position of the nucleotide
@@ -26,7 +30,7 @@ import sys
 
 print "#%3s %10s %2s %2s %20s" % ("chr", "pos", "aa", "da", "daf")
 for line in sys.stdin:
-    line = line.strip().lower().split()
+    line = line.strip().lower().split("\t")
     chr = line[0]
     pos = line[1]
     ref = line[2]

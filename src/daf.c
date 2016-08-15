@@ -9,6 +9,9 @@
 // Cols 6..: genotypes in format "0/1" or "0|1", where 0 represents
 //           a copy of the reference allele and 1 a copy of the derived
 //           allele.
+// With 1000-genomes data, this input can be generated from a vcf or
+// bcf file as follows:
+// bcftools query -f '%CHROM,%POS,%REF,%ALT,%INFO/AA[,%GT]\n' fname.bcf//
 //
 // Output is in 3 columns, separated by a space character:
 // Col 1: chromosome
@@ -36,16 +39,21 @@ int main(int argc, char **argv) {
             break;
         char *chr, *pos, *ref, *alt, *aa, *gtype, *next = buff;
 
-        chr = strsep(&next, " "); // field 0
-        pos = strsep(&next, " "); // field 1
-        ref = strsep(&next, " "); // field 2
-        alt = strsep(&next, " "); // field 3
-        aa = strsep(&next, " ");  // field 4
+        chr = strsep(&next, "\t"); // field 0
+        pos = strsep(&next, "\t"); // field 1
+        ref = strsep(&next, "\t"); // field 2
+        alt = strsep(&next, "\t"); // field 3
+        aa = strsep(&next, "\t");  // field 4
 
         if(aa==NULL) {
             fprintf(stderr,"%s:%d: Bad input line\n",__FILE__,__LINE__);
             exit(EXIT_FAILURE);
         }
+
+        // lowercase alleles
+        strlowercase(ref);
+        strlowercase(alt);
+        strlowercase(aa);
 
 		// strip extraneous characters
 		(void) stripchr(chr, ' ');
@@ -83,7 +91,7 @@ int main(int argc, char **argv) {
         assert(aai==0 || aai==1);
 
         int x = 0, n = 0;
-        gtype = strsep(&next, " ");  // field 5
+        gtype = strsep(&next, "\t");  // field 5
 
         while(gtype != NULL) {
             //# gtype is a string like "0|1" or "0/1".
@@ -118,7 +126,7 @@ int main(int argc, char **argv) {
 						__FILE__,__LINE__, gtype);
 				exit(EXIT_FAILURE);
 			}
-			gtype = strsep(&next, " ");  // additional fields
+			gtype = strsep(&next, "\t");  // additional fields
 		}
 
 		if(n == 0)
