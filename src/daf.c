@@ -30,17 +30,17 @@ int main(int argc, char **argv) {
     const int buffsize = 4096;
     char buff[buffsize];
 
-    printf("#%3s %10s %2s %2s %20s", "chr", "pos", "aa", "da", "daf");
+    printf("#%3s %10s %2s %2s %20s\n", "chr", "pos", "aa", "da", "daf");
     while(1) {
         if(NULL==fgets(buff, buffsize, stdin))
             break;
         char *chr, *pos, *ref, *alt, *aa, *gtype, *next = buff;
 
-        chr = strsep(&next, "\t"); // field 0
-        pos = strsep(&next, "\t"); // field 1
-        ref = strsep(&next, "\t"); // field 2
-        alt = strsep(&next, "\t"); // field 3
-        aa = strsep(&next, "\t");  // field 4
+        chr = strsep(&next, " "); // field 0
+        pos = strsep(&next, " "); // field 1
+        ref = strsep(&next, " "); // field 2
+        alt = strsep(&next, " "); // field 3
+        aa = strsep(&next, " ");  // field 4
 
         if(aa==NULL) {
             fprintf(stderr,"%s:%d: Bad input line\n",__FILE__,__LINE__);
@@ -57,6 +57,17 @@ int main(int argc, char **argv) {
         if(nref != 1 || nalt != 1 || naa != 1)
             continue;
 
+		if(aa[0] == '.')
+			continue;
+
+#if 0
+		printf("chr=%s\n", chr?chr:"NULL");
+		printf("pos=%s\n", pos?pos:"NULL");
+		printf("ref=%s\n", ref?ref:"NULL");
+		printf("alt=%s\n", alt?alt:"NULL");
+		printf("aa=%s\n", aa?aa:"NULL");
+#endif
+
         char alleles[10];
         strcpy(alleles, ref);
         strcat(alleles, alt);
@@ -72,11 +83,13 @@ int main(int argc, char **argv) {
         assert(aai==0 || aai==1);
 
         int x = 0, n = 0;
-        gtype = strsep(&next, "\t");  // field 5
+        gtype = strsep(&next, " ");  // field 5
 
         while(gtype != NULL) {
             //# gtype is a string like "0|1" or "0/1".
 			switch(gtype[0]) {
+			case '.':
+				break;
 			case '0':
 				++n;
 				break;
@@ -91,6 +104,8 @@ int main(int argc, char **argv) {
 			}
 
 			switch(gtype[2]) {
+			case '.':
+				break;
 			case '0':
 				++n;
 				break;
@@ -103,7 +118,7 @@ int main(int argc, char **argv) {
 						__FILE__,__LINE__, gtype);
 				exit(EXIT_FAILURE);
 			}
-			gtype = strsep(&next, "\t");  // additional fields
+			gtype = strsep(&next, " ");  // additional fields
 		}
 
 		if(n == 0)
@@ -112,7 +127,7 @@ int main(int argc, char **argv) {
 		if( aai == 1 )
 			x = n-x;
 		double p = x/((double) n);
-		printf("%4s %10s %2s %2c %20.18f",
+		printf("%4s %10s %2s %2c %20.18f\n",
 			   chr, pos, aa, alleles[1-aai], p);
 	}
 	return 0;
