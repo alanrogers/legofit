@@ -521,7 +521,6 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     JobQueue_free(jq);
 #endif
 
-	printf("%s:%s:%d\n", __FILE__,__func__,__LINE__);fflush(stdout);
     return status;
 }
 
