@@ -487,7 +487,9 @@ int main(int argc, char **argv) {
             if(bootreps > 0)
                 Boot_add(boot, chr, snpndx, i, z);
 		}
+#ifndef NDEBUG
 		Boot_sanityCheck(boot,__FILE__,__LINE__);
+#endif
 		++nsnps;
 		errno = 0;
 	}
@@ -513,7 +515,9 @@ int main(int argc, char **argv) {
 
 	if(bootreps > 0) {
 		printf("# %s = %s\n", "bootstrap output file", bootfname);
+#ifndef NDEBUG
 		Boot_sanityCheck(boot,__FILE__,__LINE__);
+#endif
 		for(i=0; i<bootreps; ++i)
 			Boot_aggregate(boot, i, npat, boottab[i]);
 

@@ -36,7 +36,9 @@ void        Boot_free(Boot * self);
 void        Boot_add(Boot *self, int chr, long snpndx, int pat, double z);
 void        Boot_aggregate(Boot * self, int rep, int npat,
                            double count[npat]);
+#ifndef NDEBUG
 void        Boot_sanityCheck(const Boot * self, const char *file, int line);
+#endif
 
 double      interpolate(double p, double *v, long len);
 void        confidenceBounds(double *lowBnd, double *highBnd, double confidence,

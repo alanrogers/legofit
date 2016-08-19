@@ -300,10 +300,12 @@ void Boot_aggregate(Boot * self, int rep, int npat,
         BootChr_aggregate(self->bc[i], rep, npat, count);
 }
 
+#ifndef NDEBUG
 void Boot_sanityCheck(const Boot * self, const char *file, int line) {
     for(int i=0; i < self->nchr; ++i)
         BootChr_sanityCheck(self->bc[i], file, line);
 }
+#endif
 
 /// Interpolate in order to approximate the value v[p*(len-1)].
 /// Return NaN if len==0.
