@@ -2,7 +2,7 @@
 
 # Calculate derived allele frequency, daf.
 #
-# Input file should consist of comma-separated columns:
+# Input file should consist of tab-separated columns:
 # Col 1: chromosome
 # Col 2: position
 # Col 3: reference allele
@@ -14,7 +14,7 @@
 #
 # With 1000-genomes data, this input can be generated from a vcf or
 # bcf file as follows:
-#    bcftools query -f '%CHROM,%POS,%REF,%ALT,%INFO/AA[,%GT]\n' fname.bcf
+#    bcftools query -f '%CHROM\t%POS\t%REF\t%ALT\t%INFO/AA[\t%GT]\n' fname.bcf
 #
 # Output is in 3 columns, separated by a space character:
 # Col 1: chromosome
@@ -30,7 +30,7 @@ import sys
 
 print "#%3s %10s %2s %2s %20s" % ("chr", "pos", "aa", "da", "daf")
 for line in sys.stdin:
-    line = line.strip().lower().split(",")
+    line = line.strip().lower().split("\t")
     chr = line[0]
     pos = line[1]
     ref = line[2]
