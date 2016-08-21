@@ -65,15 +65,13 @@ int main(int argc, char **argv) {
         if(nref != 1 || nalt != 1 || naa != 1)
             continue;
 
-		if(aa[0] == '.')
+		if(aa[0] == '.' || aa[0] == '-')
 			continue;
 
 #if 0
-		printf("chr=%s\n", chr?chr:"NULL");
-		printf("pos=%s\n", pos?pos:"NULL");
-		printf("ref=%s\n", ref?ref:"NULL");
-		printf("alt=%s\n", alt?alt:"NULL");
-		printf("aa=%s\n", aa?aa:"NULL");
+        fprintf(stderr,"  chr=%s pos=%s ref=%s alt=%s aa=%s\n",
+                chr?chr:"NULL", pos?pos:"NULL", ref?ref:"NULL",
+                alt?alt:"NULL", aa?aa:"NULL");
 #endif
 
         char alleles[10];
@@ -108,6 +106,9 @@ int main(int argc, char **argv) {
 			default:
 				fprintf(stderr,"%s:%d: Bad genotype: %s\n",
 						__FILE__,__LINE__, gtype);
+                fprintf(stderr,"  chr=%s pos=%s ref=%s alt=%s aa=%s gtype=%s\n",
+                        chr?chr:"NULL", pos?pos:"NULL", ref?ref:"NULL",
+                        alt?alt:"NULL", aa?aa:"NULL", gtype?gtype:"NULL");
 				exit(EXIT_FAILURE);
 			}
 
