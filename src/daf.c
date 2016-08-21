@@ -125,6 +125,9 @@ int main(int argc, char **argv) {
 			default:
 				fprintf(stderr,"%s:%d: Bad genotype: %s\n",
 						__FILE__,__LINE__, gtype);
+                fprintf(stderr,"  chr=%s pos=%s ref=%s alt=%s aa=%s gtype=%s\n",
+                        chr?chr:"NULL", pos?pos:"NULL", ref?ref:"NULL",
+                        alt?alt:"NULL", aa?aa:"NULL", gtype?gtype:"NULL");
 				exit(EXIT_FAILURE);
 			}
 			gtype = strsep(&next, ",");  // additional fields
