@@ -39,13 +39,11 @@ int main(int argc, char **argv) {
     
     const int buffsize = 4096;
     char buff[buffsize];
-    char buff2[buffsize];  // debug
 
     printf("#%3s %10s %2s %2s %20s\n", "chr", "pos", "aa", "da", "daf");
     while(1) {
         if(NULL==fgets(buff, buffsize, stdin))
             break;
-        strcpy(buff2, buff); // debug
         char *chr, *pos, *ref, *alt, *aa, *gtype, *next = buff;
 
         chr = strsep(&next, "\t"); // field 0
@@ -118,7 +116,6 @@ int main(int argc, char **argv) {
                 fprintf(stderr,"  chr=%s pos=%s ref=%s alt=%s aa=%s gtype=%s\n",
                         chr?chr:"NULL", pos?pos:"NULL", ref?ref:"NULL",
                         alt?alt:"NULL", aa?aa:"NULL", gtype?gtype:"NULL");
-                fprintf(stderr,"Input: %s\n", buff2);
 				exit(EXIT_FAILURE);
 			}
 
@@ -138,7 +135,6 @@ int main(int argc, char **argv) {
                 fprintf(stderr,"  chr=%s pos=%s ref=%s alt=%s aa=%s gtype=%s\n",
                         chr?chr:"NULL", pos?pos:"NULL", ref?ref:"NULL",
                         alt?alt:"NULL", aa?aa:"NULL", gtype?gtype:"NULL");
-                fprintf(stderr,"Input: %s\n", buff2);
 				exit(EXIT_FAILURE);
 			}
 			gtype = strsep(&next, "\t");  // additional fields
