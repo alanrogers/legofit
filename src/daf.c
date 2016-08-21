@@ -29,6 +29,13 @@
 #include <assert.h>
 
 int main(int argc, char **argv) {
+
+	if(argc != 1) {
+		fprintf(stderr,"Usage: daf\n");
+		fprintf(stderr,"       Reads standard input;"
+				" writes to standard output.\n");
+		exit(EXIT_FAILURE);
+	}
     
     const int buffsize = 4096;
     char buff[buffsize];
