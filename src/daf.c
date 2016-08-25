@@ -44,6 +44,11 @@ int main(int argc, char **argv) {
     while(1) {
         if(NULL==fgets(buff, buffsize, stdin))
             break;
+        if(NULL == strchr(buff, '\n') && !feof(stdin)) {
+            fprintf(stderr, "%s:%d: Buffer overflow. size=%zu\n",
+                    __FILE__,__LINE__, sizeof(buff));
+            exit(EXIT_FAILURE);
+        }
         char *chr, *pos, *ref, *alt, *aa, *gtype, *next = buff;
 
         chr = strsep(&next, "\t"); // field 0

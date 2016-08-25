@@ -45,7 +45,7 @@ void VCFReader_parseHdr(VCFReader *self) {
 
         if(fgets(self->buff, sizeof(self->buff), self->fp) == NULL)
             break;
-		if(NULL == strchr(self->buff, '\n')) {
+		if(NULL == strchr(self->buff, '\n') && !feof(self->fp)) {
 			fprintf(stderr, "%s:%d: Buffer overflow. size=%zu\n",
 					__FILE__,__LINE__, sizeof(self->buff));
 			exit(EXIT_FAILURE);
@@ -115,7 +115,7 @@ int VCFReader_next(VCFReader *self) {
             do{
                 if(fgets(self->buff, sizeof(self->buff), self->fp) == NULL)
                     return EOF;
-				if(NULL == strchr(self->buff, '\n')) {
+				if(NULL == strchr(self->buff, '\n') && !feof(self->fp)) {
 					fprintf(stderr, "%s:%d: Buffer overflow. size=%zu\n",
 							__FILE__,__LINE__, sizeof(self->buff));
 					exit(EXIT_FAILURE);

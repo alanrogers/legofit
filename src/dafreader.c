@@ -58,7 +58,7 @@ int DAFReader_next(DAFReader *self) {
     while(1){
         if(fgets(buff, sizeof(buff), self->fp) == NULL)
             return EOF;
-        if(NULL == strchr(buff, '\n')) {
+        if(NULL == strchr(buff, '\n') && !feof(self->fp)) {
             fprintf(stderr, "%s:%d: Buffer overflow. size=%zu\n",
                     __FILE__,__LINE__, sizeof(buff));
             exit(EXIT_FAILURE);
