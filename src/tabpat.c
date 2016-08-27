@@ -56,11 +56,7 @@ static void usage(void) {
 			"# of bootstrap replicates. Def: 0");
 	tellopt("-b <x> or --blocksize <x>",
 			"# of SNPs per block in moving-blocks bootstrap. Def: 0.");
-	tellopt("-c <list> or --chr <list>",
-			"comma-separated list of chromosomes, such as 1-4,8,x,22-20."
-			" Def: 1-22");
     tellopt("-h or --help", "Print this message");
-	tellopt("-v or --verbose", "More output");
     exit(1);
 }
 
@@ -171,7 +167,8 @@ static void parseChromosomeLbls(const char *arg, StrInt *strint) {
 				errno = 0;
                 StrInt_insert(strint, curr, i++);
 				if(errno) {
-					fprintf(stderr,"\n%s:%d: ERR: Duplicate chromosome label: %s\n",
+					fprintf(stderr,"\n%s:%d: ERR:"
+                            " Duplicate chromosome label: %s\n",
 							__FILE__,__LINE__, curr);
 					exit(EXIT_FAILURE);
 				}
@@ -195,7 +192,6 @@ int main(int argc, char **argv) {
     long bootreps = 0;
     long blocksize = 300;
 //    int  nthreads = 1;
-//	int  verbose = 0;
     StrInt *strint = StrInt_new();
     char bootfname[FILENAMESIZE] = { '\0' };
 
@@ -204,10 +200,8 @@ int main(int argc, char **argv) {
         {"bootfile", required_argument, 0, 'f'},
         {"bootreps", required_argument, 0, 'r'},
         {"blocksize", required_argument, 0, 'b'},
-        {"chr", required_argument, 0, 'c'},
         {"help", no_argument, 0, 'h'},
 //        {"threads", required_argument, 0, 't'},
-//        {"verbose", no_argument, 0, 'v'},
         {NULL, 0, NULL, 0}
     };
 
@@ -230,9 +224,6 @@ int main(int argc, char **argv) {
 				usage();
 			}
             break;
-        case 'c':
-            parseChromosomeLbls(optarg, strint);
-            break;
 		case 'f':
 			status = snprintf(bootfname, sizeof bootfname, "%s", optarg);
 			if(status >= sizeof bootfname) {
@@ -252,17 +243,10 @@ int main(int argc, char **argv) {
 //        case 't':
 //            nthreads = strtol(optarg, NULL, 10);
 //            break;
-//        case 'v':
-//            verbose = 1;
-//            break;
         default:
             usage();
         }
     }
-
-    // If chromosome labels not given on command line, use default
-    if(0 == StrInt_size(strint))
-        parseChromosomeLbls("1-22", strint);
 
     // remaining options: input files
     int n = argc-optind; // number of input files
@@ -352,9 +336,9 @@ int main(int argc, char **argv) {
 
     // Used by bootstrap
     Boot *boot = NULL;
-	int currChr = INT_MAX;
-	int nchr = StrInt_size(strint);
-    long nsnp[nchr];
+	int nchr=0;
+    char prev[DAFSTRSIZE], chr[DAFSTRSIZE] = {'\0'};
+    long nsnp[MAXCHR];
 	memset(nsnp, 0, sizeof nsnp);
 
     // Read the data to get dimensions: number of chromosomes and
@@ -366,37 +350,24 @@ int main(int argc, char **argv) {
         // First pass through data sets values of
         // nchr
         // nsnp[i] {i=0..nchr-1}
-        while(EOF != DAFReader_multiNext(n, r, strint)) {
+        while(EOF != DAFReader_multiNext(n, r)) {
 
             // Skip loci at which data sets disagree about which allele
             // is derived and which ancestral.
             if(!DAFReader_allelesMatch(n, r))
                 continue;
 
-			errno = 0;
-            int chr = DAFReader_chrNdx(r[0], strint);
-			if(errno) {
-				fprintf(stderr,"%s:%d: ERR:"
-						" data contain an unexpected chromosome: %s\n",
-						__FILE__,__LINE__, DAFReader_chr(r[0]));
-				exit(EXIT_FAILURE);
-			}
-            if(chr != currChr) {
-				currChr = chr;
-                nsnp[chr] = 1;
+            assert(strlen(DAFReader_chr(r[0])) < sizeof prev);
+            strcpy(prev, chr);
+            strcpy(chr, DAFReader_chr(r[0]));
+            int diff = strcmp(prev, chr);
+            if(diff != 0) {
+                StrInt_insert(strint, chr, nchr);
+                nsnp[nchr] = 1;
+                ++nchr;
             }else
-                ++nsnp[chr];
+                ++nsnp[nchr-1];
         }
-
-		// Make sure all the chromosomes in strint really appear in the data.
-		for(i=0; i < nchr; ++i) {
-			if(nsnp[i] == 0) {
-				fprintf(stderr,"%s:%d: ERR: at least one chromosome"
-						" is missing from data.\n",
-						__FILE__,__LINE__);
-				exit(EXIT_FAILURE);
-			}
-		}
 
         for(i=0; i<n; ++i) {
             status = DAFReader_rewind(r[i]);
@@ -418,38 +389,36 @@ int main(int argc, char **argv) {
     }
 
 	unsigned long nsnps = 0;
-    currChr = INT_MAX;
     long snpndx = -1;
 
 	// Iterate through daf files
-	currChr = INT_MAX;
-	errno = 0;
-	while(EOF != DAFReader_multiNext(n, r, strint)) {
+    int chrndx=-1, currChr = INT_MAX;
+	while(EOF != DAFReader_multiNext(n, r)) {
 
         // Skip loci at which data sets disagree about which allele
         // is derived and which ancestral.
         if(!DAFReader_allelesMatch(n, r))
             continue;
 
-        // chr is index of current chromosome, as provided by
-        // StrInt_get.
-		errno = 0;
-        int chr = DAFReader_chrNdx(r[0], strint);
-		if(errno) {
-			fprintf(stderr,"%s:%d: ERR: data contain an unexpected chromosome: %s\n",
-					__FILE__,__LINE__, DAFReader_chr(r[0]));
-			exit(EXIT_FAILURE);
-		}
-        if(chr != currChr) {
-            currChr = chr;
-            snpndx = 0;
-        }else
-            ++snpndx;
+        if(bootreps > 0) {
+            // chrndx is index of current chromosome
+            errno = 0;
+            chrndx = StrInt_get(strint, DAFReader_chr(r[0]));
+            if(errno) {
+                fprintf(stderr,"%s:%d: ERR: missing index for chromosome: %s\n",
+                        __FILE__,__LINE__, DAFReader_chr(r[0]));
+                exit(EXIT_FAILURE);
+            }
+            if(chrndx != currChr) {
+                currChr = chrndx;
+                snpndx = 0;
+            }else
+                ++snpndx;
 
 #ifndef NDEBUG
-		if(bootreps > 0)
-			assert(snpndx < nsnp[chr]);
+			assert(snpndx < nsnp[chrndx]);
 #endif
+        }
 
 		// p and q are frequencies of derived and ancestral alleles
 		double p[n], q[n];
@@ -484,26 +453,18 @@ int main(int argc, char **argv) {
 			}
 			assert( 0 == (pattern&1) );
 			patCount[i] += z;
-            if(bootreps > 0)
-                Boot_add(boot, chr, snpndx, i, z);
+            if(bootreps > 0) {
+                assert(snpndx >= 0);
+                assert(chrndx >= 0);
+                Boot_add(boot, chrndx, snpndx, i, z);
+            }
 		}
 #ifndef NDEBUG
-		Boot_sanityCheck(boot,__FILE__,__LINE__);
+        if(bootreps > 0)
+            Boot_sanityCheck(boot,__FILE__,__LINE__);
 #endif
 		++nsnps;
 		errno = 0;
-	}
-	switch(errno) {
-	case 0:  // okay
-		break;
-	case EDOM:
-		fprintf(stderr,"%s:%d: ERR: data contain an unexpected chromosome.\n",
-				__FILE__,__LINE__);
-		exit(EXIT_FAILURE);
-	default:
-		fprintf(stderr,"%s:%d: unknown error.\n",
-				__FILE__,__LINE__);
-		exit(EXIT_FAILURE);
 	}
 	printf("# Tabulated %lu SNPs\n", nsnps);
 

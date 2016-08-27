@@ -1,7 +1,6 @@
 #include "dafreader.h"
 #include "tokenizer.h"
 #include "misc.h"
-#include "strint.h"
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
@@ -47,7 +46,8 @@ int iscomment(const char *s) {
     return rval;
 }
 
-// Read the next snp. Return 0 on success; EOF on end of file or failure.
+// Read the next snp. Return 0 on success; EOF on end of file.
+// Aborts with message if other errors occur.
 int DAFReader_next(DAFReader *self) {
     int ntokens1;
     int ntokens;
@@ -84,11 +84,22 @@ int DAFReader_next(DAFReader *self) {
     ++self->snpid;
 
     // Chromosome
+    char prev[DAFSTRSIZE];
+    assert(sizeof prev == sizeof self->chr);
+    memcpy(prev, self->chr, sizeof prev);
     status = snprintf(self->chr, sizeof self->chr, "%s",
                       Tokenizer_token(self->tkz, 0));
     if(status >= sizeof self->chr) {
         fprintf(stderr,"%s:%d: chromosome name too long: %s\n",
                 __FILE__, __LINE__, Tokenizer_token(self->tkz, 0));
+        exit(EXIT_FAILURE);
+    }
+    int diff = strcmp(prev, self->chr);
+    if(diff > 0) {
+        fprintf(stderr,"%s:%s:%d: Chromosomes missorted in input.\n",
+                __FILE__,__func__,__LINE__);
+        fprintf(stderr,"          \"%s\" precedes \"%s\".\n",
+                prev, self->chr);
         exit(EXIT_FAILURE);
     }
 
@@ -129,84 +140,85 @@ const char *DAFReader_chr(DAFReader *self) {
 	return self->chr;
 }
 
-// If self->chr is not in table strint, return -1 and set errno =
-// EDOM.  
-int DAFReader_chrNdx(DAFReader *self, StrInt *strint) {
-    return StrInt_get(strint, self->chr);
-}
-
 #define MAX(X,Y) ((X) > (Y) ? (X) : (Y))
 #define MIN(X,Y) ((X) > (Y) ? (Y) : (X))
 
 /// Advance an array of DAFReaders to the next shared position.
-/// Return 0 on success or EOF on end of file. If chromosome is not
-/// in hash table strint, return EOF and set errno=EDOM.
-int DAFReader_multiNext(int n, DAFReader *r[n], StrInt *strint) {
+/// Return 0 on success or EOF on end of file.
+int DAFReader_multiNext(int n, DAFReader *r[n]) {
     int i;
     unsigned long maxnuc=0, minnuc=ULONG_MAX;
-	int maxchr=0, minchr = INT_MAX;
-    int cndx[n];
+	int maxchr;       // index of reader with maximum chromosome position
+    int onSameChr=1;  // indicates whether all readers are on same chromosome.
+    int diff;
 
 	// Find initial min and max position and chromosome.
-    for(i=0; i<n; ++i) {
+    if(EOF == DAFReader_next(r[0]))
+        return EOF;
+    maxchr = 0;
+    maxnuc = minnuc = r[0]->nucpos;
+    for(i=1; i<n; ++i) {
         if(EOF == DAFReader_next(r[i]))
             return EOF;
-		errno = 0;
-        cndx[i] = StrInt_get(strint, r[i]->chr);
-		if(errno)
-			return EOF;
         maxnuc = MAX(maxnuc, r[i]->nucpos);
         minnuc = MIN(minnuc, r[i]->nucpos);
-		maxchr = MAX(maxchr, cndx[i]);
-		minchr = MIN(minchr, cndx[i]);
+
+        diff = strcmp(r[i]->chr, r[maxchr]->chr);
+        if(diff > 0) {
+            onSameChr = 0;
+            maxchr=i;
+        }else if(diff < 0)
+            onSameChr = 0;
     }
 
 	// Loop until both chr and position are homogeneous.
-    while(minchr!=maxchr || minnuc!=maxnuc) {
+    while(!onSameChr || minnuc!=maxnuc) {
 
 		// get them all on the same chromosome
-		while(minchr!=maxchr) {
+		while(!onSameChr) {
+            onSameChr=1;
 			for(i=0; i<n; ++i) {
-				while(cndx[i] < maxchr) {
+                if(i==maxchr)
+                    continue;
+				while((diff=strcmp(r[i]->chr, r[maxchr]->chr)) < 0) {
 					if(EOF == DAFReader_next(r[i]))
 						return EOF;
-					errno = 0;
-                    cndx[i] = StrInt_get(strint, r[i]->chr);
-					if(errno)
-						return EOF;
+                }
+                if(diff > 0) {
+                    maxchr = i;
+                    onSameChr=0;
 				}
 			}
-			maxchr=minchr=cndx[0];
-			for(i=1; i<n; ++i) {
-				maxchr = MAX(maxchr, cndx[i]);
-				minchr = MIN(minchr, cndx[i]);
-			}
 		}
+
+        assert(onSameChr);
 
 		// Now get them all on the same position. Have
 		// to keep checking chr in case one file moves
 		// to another chromosome.
-        for(i=0; i<n; ++i) {
+        for(i=0; onSameChr && i<n; ++i) {
 			// Increment each reader so long as we're all on the same
 			// chromosome and the reader's nucpos is low.
-            while(cndx[i]==maxchr && r[i]->nucpos < maxnuc) {
+            while(onSameChr && r[i]->nucpos < maxnuc) {
                 if(EOF == DAFReader_next(r[i]))
                     return EOF;
-				errno = 0;
-                cndx[i] = StrInt_get(strint, r[i]->chr);
-				if(errno)
-					return EOF;
+                diff = strcmp(r[i]->chr, r[maxchr]->chr);
+                if(diff > 0) {
+                    onSameChr = 0;
+                    maxchr=i;
+                }else if(diff < 0)
+                    onSameChr = 0;
             }
         }
 
-		// Recalculate all max and min values.
-        maxnuc=minnuc=r[0]->nucpos;
-		maxchr=minchr=cndx[0];
+        if(!onSameChr)
+            continue;
+
+		// Recalculate maxnuc and minnuc
+        maxnuc = minnuc = r[0]->nucpos;
         for(i=1; i<n; ++i) {
             maxnuc = MAX(maxnuc, r[i]->nucpos);
             minnuc = MIN(minnuc, r[i]->nucpos);
-			maxchr = MAX(maxchr, cndx[i]);
-			minchr = MIN(minchr, cndx[i]);
         }
     }
 

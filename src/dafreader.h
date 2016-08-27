@@ -4,6 +4,8 @@
 #include "typedefs.h"
 #include <stdio.h>
 
+#define DAFSTRSIZE 10
+
 struct DAFReader {
     char       *fname;
     FILE       *fp;
@@ -11,8 +13,9 @@ struct DAFReader {
 
     // properties of current snp
     long        snpid;          // 0-based index of current snp
-    char aa[10], da[10];        // ancestral and derived alleles
-    char chr[10];               // chromosome
+    char aa[DAFSTRSIZE];        // ancestral alleles
+    char da[DAFSTRSIZE];        // derived alleles
+    char chr[DAFSTRSIZE];       // chromosome
     unsigned long nucpos;       // nucleotide position from daf file
     double      p;              // frequency of ancestral allele
 };
@@ -25,8 +28,7 @@ int         DAFReader_allelesMatch(int n, DAFReader *r[n]);
 void        DAFReader_printHdr(FILE *fp);
 void        DAFReader_print(DAFReader *r, FILE *fp);
 int         DAFReader_rewind(DAFReader *self);
-int         DAFReader_multiNext(int n, DAFReader *r[n], StrInt *strint);
+int         DAFReader_multiNext(int n, DAFReader *r[n]);
 const char *DAFReader_chr(DAFReader *self);
-int         DAFReader_chrNdx(DAFReader *self, StrInt *strint);
 
 #endif
