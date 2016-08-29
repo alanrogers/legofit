@@ -138,10 +138,10 @@ int comparePtrs(const void *void_x, const void *void_y) {
     // sort order of samples corresponds to the
     // order in which they were listed in the input
     // data.
-    unsigned rx = reverseBits(**x);
-    unsigned ry = reverseBits(**y);
+    long rx = reverseBits(**x);
+    long ry = reverseBits(**y);
 
-    return ry - rx;
+    return (ry - rx);
 }
 
 /// Compare pointers to two tipId_t values.
@@ -165,10 +165,10 @@ int compare_tipId(const void *void_x, const void *void_y) {
     // sort order of samples corresponds to the
     // order in which they were listed in the input
     // data.
-    unsigned rx = reverseBits(*x);
-    unsigned ry = reverseBits(*y);
+    long rx = reverseBits(*x);
+    long ry = reverseBits(*y);
 
-    return ry - rx;
+    return (ry - rx);
 }
 
 /// On entry, pat is an array of n tipId_t values. On return,
