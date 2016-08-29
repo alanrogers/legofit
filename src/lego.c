@@ -123,7 +123,6 @@ int main(int argc, char **argv) {
     };
     GPTree *gptree = GPTree_new(fname, bnd);
 	LblNdx lblndx = GPTree_getLblNdx(gptree);
-    LblNdx_print(&lblndx, stdout);
 
     int dim = GPTree_nFree(gptree);
     double x[dim];
