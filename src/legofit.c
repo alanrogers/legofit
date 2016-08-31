@@ -40,6 +40,7 @@ void usage(void) {
     tellopt("-t <x> or --threads <x>", "number of threads (default is auto)");
     tellopt("-F <x> or --scaleFactor <x>", "set DE scale factor");
     tellopt("-x <x> or --crossover <x>", "set DE crossover probability");
+    tellopt("-p <x> or --ptsPerDim <x>", "number of DE points per free var");
     tellopt("-v or --verbose", "verbose output");
     tellopt("-h or --help", "print this message");
     exit(1);
@@ -74,6 +75,7 @@ int main(int argc, char **argv) {
 		{"simreps", required_argument, 0, 'r'},
         {"strategy", required_argument, 0, 's'},
         {"deTol", required_argument, 0, 'a'},
+        {"ptsPerDim", required_argument, 0, 'p'},
         {"help", no_argument, 0, 'h'},
         {"verbose", no_argument, 0, 'v'},
         {NULL, 0, NULL, 0}
