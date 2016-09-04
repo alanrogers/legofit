@@ -51,7 +51,7 @@ int GPTree_nFree(const GPTree *self) {
 }
 
 void GPTree_simulate(GPTree *self, BranchTab *branchtab, gsl_rng *rng,
-                     unsigned long nreps) {
+                     unsigned long nreps, int doSing) {
     unsigned long rep;
     for(rep = 0; rep < nreps; ++rep) {
         PopNode_clear(self->rootPop); // remove old samples 
@@ -64,7 +64,7 @@ void GPTree_simulate(GPTree *self, BranchTab *branchtab, gsl_rng *rng,
 
         // Traverse gene tree, accumulating branch lengths in bins
         // that correspond to site patterns.
-        Gene_tabulate(self->rootGene, branchtab);
+        Gene_tabulate(self->rootGene, branchtab, doSing);
 
         // Free gene genealogy but not population tree.
         Gene_free(self->rootGene);

@@ -12,7 +12,8 @@ void        GPTree_sanityCheck(GPTree *self, const char *file, int line);
 int         GPTree_equals(GPTree *lhs, GPTree *rhs);
 LblNdx      GPTree_getLblNdx(GPTree *self);
 void        GPTree_simulate(GPTree *self, BranchTab *branchtab,
-                            gsl_rng *rng, unsigned long nreps);
+                            gsl_rng *rng, unsigned long nreps,
+                            int doSing);
 int         GPTree_nFree(const GPTree *self);
 double     *GPTree_loBounds(GPTree *self);
 double     *GPTree_upBounds(GPTree *self);

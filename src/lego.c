@@ -28,6 +28,7 @@ void usage(void) {
     fprintf(stderr, "   where options may include:\n");
     tellopt("-i <x> or --nItr <x>", "number of iterations in simulation");
     tellopt("-t <x> or --threads <x>", "number of threads (default is auto)");
+	tellopt("-1 or --singletons", "Use singleton site patterns");
     tellopt("-h or --help", "print this message");
     exit(1);
 }
@@ -38,6 +39,7 @@ int main(int argc, char **argv) {
         /* {char *name, int has_arg, int *flag, int val} */
         {"nItr", required_argument, 0, 'i'},
         {"threads", required_argument, 0, 't'},
+        {"singletons", no_argument, 0, '1'},
         {"help", no_argument, 0, 'h'},
         {NULL, 0, NULL, 0}
     };
@@ -48,6 +50,7 @@ int main(int argc, char **argv) {
     putchar('\n');
 
     int         i, j;
+    int         doSing=0;  // nonzero means use singleton site patterns
     time_t      currtime = time(NULL);
 	unsigned long pid = (unsigned long) getpid();
     double      lo_twoN = 0.0, hi_twoN = 1e6;  // twoN bounds
@@ -70,7 +73,7 @@ int main(int argc, char **argv) {
 
     // command line arguments
     for(;;) {
-        i = getopt_long(argc, argv, "i:t:h", myopts, &optndx);
+        i = getopt_long(argc, argv, "i:t:1h", myopts, &optndx);
         if(i == -1)
             break;
         switch (i) {
@@ -83,6 +86,9 @@ int main(int argc, char **argv) {
             break;
         case 't':
             nThreads = strtol(optarg, NULL, 10);
+            break;
+        case '1':
+            doSing=1;
             break;
         case 'h':
         default:
@@ -128,7 +134,7 @@ int main(int argc, char **argv) {
     double x[dim];
     GPTree_getParams(gptree, dim, x);
 
-    BranchTab *bt = patprob(gptree, nThreads, nreps);
+    BranchTab *bt = patprob(gptree, nThreads, nreps, doSing);
     BranchTab_normalize(bt);
 
     // Put site patterns and branch lengths into arrays.

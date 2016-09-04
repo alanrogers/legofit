@@ -31,7 +31,8 @@ double costFun(int dim, double x[dim], void *jdata, void *notUsed) {
 	if(!GPTree_feasible(cp->gptree)) 
 		return HUGE_VAL;
 
-    BranchTab  *prob = patprob(cp->gptree, cp->nThreads, cp->nreps);
+    BranchTab  *prob = patprob(cp->gptree, cp->nThreads, cp->nreps,
+                               cp->doSing);
     BranchTab_normalize(prob);
     double kl = BranchTab_KLdiverg(cp->obs, prob);
     

@@ -42,6 +42,7 @@ void usage(void) {
     tellopt("-x <x> or --crossover <x>", "set DE crossover probability");
     tellopt("-s <x> or --strategy <x>", "set DE strategy");
     tellopt("-p <x> or --ptsPerDim <x>", "number of DE points per free var");
+	tellopt("-1 or --singletons", "Use singleton site patterns");
     tellopt("-v or --verbose", "verbose output");
     tellopt("-h or --help", "print this message");
     exit(1);
@@ -77,6 +78,7 @@ int main(int argc, char **argv) {
         {"strategy", required_argument, 0, 's'},
         {"deTol", required_argument, 0, 'a'},
         {"ptsPerDim", required_argument, 0, 'p'},
+        {"singletons", no_argument, 0, '1'},
         {"help", no_argument, 0, 'h'},
         {"verbose", no_argument, 0, 'v'},
         {NULL, 0, NULL, 0}
@@ -93,6 +95,7 @@ int main(int argc, char **argv) {
     double      lo_twoN = 0.0, hi_twoN = 1e6;  // twoN bounds
     double      lo_t = 0.0, hi_t = 1e6;        // t bounds
     int         nThreads = 0;     // total number of threads
+    int         doSing=0;  // nonzero means use singleton site patterns
     int         optndx;
     long        simreps = 100;
     char        lgofname[200] = { '\0' };
@@ -122,7 +125,7 @@ int main(int argc, char **argv) {
 
     // command line arguments
     for(;;) {
-        i = getopt_long(argc, argv, "i:t:F:p:r:s:a:vx:h", myopts, &optndx);
+        i = getopt_long(argc, argv, "i:t:F:p:r:s:a:vx:1h", myopts, &optndx);
         if(i == -1)
             break;
         switch (i) {
@@ -157,6 +160,9 @@ int main(int argc, char **argv) {
 		case 'x':
 			CR = strtod(optarg, 0);
 			break;
+        case '1':
+            doSing=1;
+            break;
         case 'h':
         default:
             fprintf(stderr,"Can't parse option %c\n", i);
@@ -214,7 +220,8 @@ int main(int argc, char **argv) {
         .obs = obs,
         .gptree = gptree,
         .nThreads = nThreads,
-        .nreps = simreps
+        .nreps = simreps,
+        .doSing = doSing
     };
 
     // parameters for Differential Evolution
@@ -269,7 +276,7 @@ int main(int argc, char **argv) {
 
     // Get site pattern frequencies
     GPTree_setParams(gptree, dim, estimate);
-    BranchTab *bt = patprob(gptree, nThreads, simreps);
+    BranchTab *bt = patprob(gptree, nThreads, simreps, doSing);
     BranchTab_normalize(bt);
     
     printf("Fitted parameter values\n");

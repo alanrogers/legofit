@@ -34,19 +34,20 @@ typedef struct SimArg SimArg;
 /** Data structure used by each thread */
 struct SimArg {
     unsigned long nreps;
+    int         doSing; // nonzero => tabulate singletons
     GPTree     *gptree;
 
     // Returned value
     BranchTab  *branchtab;
 };
 
-SimArg     *SimArg_new(const GPTree *gptree, unsigned nreps);
+SimArg     *SimArg_new(const GPTree *gptree, unsigned nreps, int doSing);
 void        SimArg_free(SimArg * targ);
 int         simfun(void *, void *);
 
 /// function run by each thread
 int simfun(void *varg, void *notUsed) {
-    SimArg    *targ = (SimArg *) varg;
+    SimArg    *arg = (SimArg *) varg;
     gsl_rng    *rng = gsl_rng_alloc(gsl_rng_taus);
 
 	// Lock seed, initialize random number generator, increment seed,
@@ -56,19 +57,21 @@ int simfun(void *varg, void *notUsed) {
 	rngseed = (rngseed == ULONG_MAX ? 0 : rngseed+1);
 	pthread_mutex_unlock(&seedLock);
 
-	assert(GPTree_feasible(targ->gptree));
-    GPTree_simulate(targ->gptree, targ->branchtab, rng, targ->nreps);
+	assert(GPTree_feasible(arg->gptree));
+    GPTree_simulate(arg->gptree, arg->branchtab, rng, arg->nreps,
+                    arg->doSing);
     gsl_rng_free(rng);
 
     return 0;
 }
 
 /// Construct a new SimArg by copying a template.
-SimArg    *SimArg_new(const GPTree *gptree, unsigned nreps) {
+SimArg    *SimArg_new(const GPTree *gptree, unsigned nreps, int doSing) {
     SimArg    *a = malloc(sizeof(SimArg));
     checkmem(a, __FILE__, __LINE__);
 
     a->nreps = nreps;
+    a->doSing = doSing;
     a->gptree = GPTree_dup(gptree);
 	assert(GPTree_feasible(a->gptree));
     a->branchtab = BranchTab_new();
@@ -88,7 +91,8 @@ void SimArg_free(SimArg * self) {
 /// its probability.  Function returns a pointer to a newly-allocated
 /// object of type BranchTab, which contains all the observed site
 /// patterns and their summed branch lengths.
-BranchTab *patprob(const GPTree *gptree, int nThreads, long nreps) {
+BranchTab *patprob(const GPTree *gptree, int nThreads, long nreps,
+                   int doSing) {
 
 	assert(GPTree_feasible(gptree));
 	
@@ -118,7 +122,7 @@ BranchTab *patprob(const GPTree *gptree, int nThreads, long nreps) {
 
 	assert(GPTree_feasible(gptree));
     for(j = 0; j < nThreads; ++j)
-        simarg[j] = SimArg_new(gptree, reps[j]);
+        simarg[j] = SimArg_new(gptree, reps[j], doSing);
 
     {
         JobQueue   *jq = JobQueue_new(nThreads, NULL, NULL, NULL);

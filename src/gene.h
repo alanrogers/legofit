@@ -12,7 +12,7 @@ struct Gene {
 
 Gene       *Gene_join(Gene * lchild, Gene * rchild);
 Gene       *Gene_new(tipId_t tipId);
-void        Gene_tabulate(Gene * self, BranchTab * bt);
+void        Gene_tabulate(Gene * self, BranchTab * bt, int doSing);
 void        Gene_free(Gene * gene);
 
 static inline void Gene_addToBranch(Gene * gene, double x);

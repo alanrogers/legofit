@@ -32,15 +32,15 @@ Gene *Gene_new(tipId_t tipId) {
  * 
  * Tabulate everything else.
  */
-void Gene_tabulate(Gene * self, BranchTab * bt) {
+void Gene_tabulate(Gene * self, BranchTab * bt, int doSing) {
     if(self == NULL)
         return;
 
-    if(self->parent && !isPow2(self->tipId))
+    if(self->parent && (doSing || !isPow2(self->tipId)))
         BranchTab_add(bt, self->tipId, self->branch);
 
-    Gene_tabulate(self->lchild, bt);
-    Gene_tabulate(self->rchild, bt);
+    Gene_tabulate(self->lchild, bt, doSing);
+    Gene_tabulate(self->rchild, bt, doSing);
 }
 
 Gene *Gene_join(Gene * lchild, Gene * rchild) {
@@ -130,7 +130,7 @@ int main(int argc, char **argv) {
     assert(g5->branch == 0.0);
 
     BranchTab *bt = BranchTab_new();
-    Gene_tabulate(g5, bt);
+    Gene_tabulate(g5, bt, 0);
 
     assert(BranchTab_size(bt) == 1);
     assert(2.0 == BranchTab_get(bt, (id1|id2)));
