@@ -120,6 +120,8 @@ int main(int argc, char **argv) {
     printf("# nreps       : %lu\n", nreps);
     printf("# nthreads    : %d\n", nThreads);
     printf("# input file  : %s\n", fname);
+    printf("# %s singleton site patterns.\n",
+           (doSing ? "Including" : "Excluding"));
 
     Bounds bnd = {
             .lo_twoN = lo_twoN,

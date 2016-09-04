@@ -197,7 +197,8 @@ int main(int argc, char **argv) {
     printf("# lgo input file     : %s\n", lgofname);
     printf("# site pat input file: %s\n", patfname);
     printf("# pts/dimension      : %d\n", ptsPerDim);
-    
+    printf("# %s singleton site patterns.\n",
+           (doSing ? "Including" : "Excluding"));
 
     Bounds bnd = {
             .lo_twoN = lo_twoN,
