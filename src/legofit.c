@@ -214,6 +214,24 @@ int main(int argc, char **argv) {
 
     // Observed site pattern frequencies
     BranchTab *obs = BranchTab_parse(patfname, &lblndx);
+    if(doSing) {
+        if(!BranchTab_hasSingletons(obs)) {
+            fprintf(stderr,"%s:%d: Command line includes singletons "
+                    "(-1 or --singletons)\n"
+                    "    but none are present in \"%s\".\n",
+                    __FILE__,__LINE__, patfname);
+            exit(EXIT_FAILURE);
+        }
+    }else{
+        if(BranchTab_hasSingletons(obs)) {
+            fprintf(stderr,"%s:%d: Command line excludes singletons "
+                    "(neither -1 nor --singletons)\n"
+                    "    but singletons are present in \"%s\".\n",
+                    __FILE__,__LINE__, patfname);
+            exit(EXIT_FAILURE);
+        }
+    }
+
     BranchTab_normalize(obs);
 
     // parameters for cost function

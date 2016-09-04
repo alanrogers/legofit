@@ -42,6 +42,7 @@ struct BranchTab {
 BTLink     *BTLink_new(tipId_t key, double value);
 BTLink     *BTLink_add(BTLink * self, tipId_t key, double value);
 double      BTLink_get(BTLink * self, tipId_t key);
+int         BTLink_hasSingletons(BTLink * self);
 void        BTLink_free(BTLink * self);
 void        BTLink_printShallow(const BTLink * self);
 void        BTLink_print(const BTLink * self);
@@ -146,6 +147,16 @@ double BTLink_get(BTLink * self, tipId_t key) {
     return self->value;
 }
 
+/// Return 1 if linked list contains keys for singletone site patterns.
+int BTLink_hasSingletons(BTLink * self) {
+    if(self == NULL)
+        return 0;
+    if(isPow2(self->key))
+        return 1;
+    return BTLink_hasSingletons(self->next);
+}
+
+
 void BTLink_printShallow(const BTLink * self) {
     if(self == NULL)
         return;
@@ -192,6 +203,16 @@ void BranchTab_free(BranchTab * self) {
     for(i=0; i < BT_DIM; ++i)
         BTLink_free(self->tab[i]);
     free(self);
+}
+
+/// Return 1 if BranchTab includes singleton site patterns
+int BranchTab_hasSingletons(BranchTab * self) {
+    int i;
+    for(i=0; i < BT_DIM; ++i) {
+        if(BTLink_hasSingletons(self->tab[i]))
+            return 1;
+    }
+    return 0;
 }
 
 /// Return value corresponding to key, or nan if no value is found.
