@@ -28,11 +28,12 @@ double costFun(int dim, double x[dim], void *jdata, void *notUsed) {
     CostPar *cp = (CostPar *) jdata;
 
 	GPTree_setParams(cp->gptree, dim, x);
-	if(!GPTree_feasible(cp->gptree))
+	if(!GPTree_feasible(cp->gptree)) 
 		return HUGE_VAL;
 
     BranchTab  *prob = patprob(cp->gptree, cp->nThreads, cp->nreps);
     BranchTab_normalize(prob);
     double kl = BranchTab_KLdiverg(cp->obs, prob);
+    
     return kl;
 }

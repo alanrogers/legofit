@@ -40,6 +40,7 @@ void usage(void) {
     tellopt("-t <x> or --threads <x>", "number of threads (default is auto)");
     tellopt("-F <x> or --scaleFactor <x>", "set DE scale factor");
     tellopt("-x <x> or --crossover <x>", "set DE crossover probability");
+    tellopt("-s <x> or --strategy <x>", "set DE strategy");
     tellopt("-p <x> or --ptsPerDim <x>", "number of DE points per free var");
     tellopt("-v or --verbose", "verbose output");
     tellopt("-h or --help", "print this message");

@@ -236,6 +236,11 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
             imin = i;
         }
     }
+    if(!isfinite(cmin)) {
+        fprintf(stderr,"%s:%d: No initial points have finite values.\n",
+                __FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
     assert(imin < INT_MAX);
     assert(cmin < HUGE_VAL);
     assignd(dim, best, c[imin]);    // save best member ever

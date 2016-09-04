@@ -395,7 +395,7 @@ double BranchTab_KLdiverg(const BranchTab *obs, const BranchTab *expt) {
                     fprintf(stderr,"%s:%s:%d: missing expt for ",
                             __FILE__,__func__,__LINE__);
                     printBits(sizeof(o->key), &o->key, stderr);
-                    exit(EXIT_FAILURE);
+                    //exit(EXIT_FAILURE);
 #endif
                     o = o->next;
                 } else {

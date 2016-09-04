@@ -99,6 +99,11 @@ GPTree *GPTree_new(const char *fname, Bounds bnd) {
     fclose(fp);
     NodeStore_free(ns);
     GPTree_sanityCheck(self, __FILE__, __LINE__);
+    if(!GPTree_feasible(self)) {
+        fprintf(stderr,"%s:%s:%d: file \"%s\" describes an infeasible tree.\n",
+                __FILE__,__func__,__LINE__,fname);
+        exit(EXIT_FAILURE);
+    }
     return self;
 }
 
