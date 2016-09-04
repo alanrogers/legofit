@@ -285,11 +285,12 @@ int main(int argc, char **argv) {
     int         status = diffev(dim, estimate, &cost, &yspread, dep, rng);
     switch (status) {
     case 0:
-        printf("DiffEv converged. KL=%0.5lg KLspread=%0.5lg\n",
-               cost, yspread);
+        printf("DiffEv Converged. KL=%0.5lg KLspread=%0.5lg\n",
+           cost, yspread);
         break;
     default:
-        printf("DiffEv FAILED\n");
+        printf("DiffEv FAILED. KL=%0.5lg KLspread=%0.5lg > %0.5lg = deTOL\n",
+               cost, yspread, deTol);
         break;
     }
 
