@@ -35,7 +35,8 @@ static void usage(void);
 static Stack *Stack_new(int dim, tipId_t buff[dim]);
 static void Stack_free(Stack *stk);
 static void Stack_push(Stack *self, tipId_t x);
-static void generatePatterns(int bit,  int npops, Stack *stk, tipId_t pat);
+static void generatePatterns(int bit,  int npops, Stack *stk, tipId_t pat,
+                             int doSing);
 static void parseChromosomeLbls(const char *arg, StrInt *strint);
 
 const char *useMsg =
@@ -56,6 +57,7 @@ static void usage(void) {
 			"# of bootstrap replicates. Def: 0");
 	tellopt("-b <x> or --blocksize <x>",
 			"# of SNPs per block in moving-blocks bootstrap. Def: 0.");
+	tellopt("-1 or --singletons", "Use singleton site patterns");
     tellopt("-h or --help", "Print this message");
     exit(1);
 }
@@ -90,20 +92,25 @@ static void Stack_push(Stack *self, tipId_t x) {
 /// Call as generatePatterns(0, npops, stk, 0);
 /// Recursive function, which generates all legal site patterns
 /// and pushes them onto a stack.
-static void generatePatterns(int bit, int npops, Stack *stk, tipId_t pat) {
+static void generatePatterns(int bit, int npops, Stack *stk, tipId_t pat,
+                             int doSing) {
     assert(sizeof(tipId_t) < sizeof (unsigned long long));
     if(bit == npops) {
-        // Exclude patterns with 1 bit on, all bits on, or all bits off.
-        if(pat!=0                          // exclude if all bits off
-		   && !isPow2(pat)                 // exclude if only 1 bit on
-		   && pat != (1ULL << npops) -1ULL // exclude if all bits on
-			)
-            Stack_push(stk, pat);
+        // Recursion stops here. If current pattern is
+        // legal, then push it onto the stack. Then return.
+        
+        // Exclude patterns with all bits on, or all bits off.
+        if(pat==0 || pat == (1ULL << npops) -1ULL)
+            return;
+        // Exclude singleton patterns unless "doSing" is true.
+        if(!doSing && isPow2(pat))
+            return;
+        Stack_push(stk, pat);
         return;
     }
     tipId_t on = 1UL << bit;
-    generatePatterns(bit+1, npops, stk, pat|on); // curr bit on
-    generatePatterns(bit+1, npops, stk, pat);    // curr bit off
+    generatePatterns(bit+1, npops, stk, pat|on, doSing); // curr bit on
+    generatePatterns(bit+1, npops, stk, pat, doSing);    // curr bit off
 }
 
 /// On input, "arg" is a comma-separated list of chromosome labels.
@@ -189,9 +196,9 @@ static void parseChromosomeLbls(const char *arg, StrInt *strint) {
 
 int main(int argc, char **argv) {
     int i, j, status, optndx;
+    int doSing=0;       // nonzero means use singleton site patterns
     long bootreps = 0;
     long blocksize = 300;
-//    int  nthreads = 1;
     StrInt *strint = StrInt_new();
     char bootfname[FILENAMESIZE] = { '\0' };
 
@@ -200,6 +207,7 @@ int main(int argc, char **argv) {
         {"bootfile", required_argument, 0, 'f'},
         {"bootreps", required_argument, 0, 'r'},
         {"blocksize", required_argument, 0, 'b'},
+        {"singletons", no_argument, 0, '1'},
         {"help", no_argument, 0, 'h'},
 //        {"threads", required_argument, 0, 't'},
         {NULL, 0, NULL, 0}
@@ -207,7 +215,7 @@ int main(int argc, char **argv) {
 
     // command line arguments
     for(;;) {
-        i = getopt_long(argc, argv, "b:c:f:hr:t:v", myopts, &optndx);
+        i = getopt_long(argc, argv, "b:c:f:hr:t:v1", myopts, &optndx);
         if(i == -1)
             break;
         switch (i) {
@@ -240,9 +248,9 @@ int main(int argc, char **argv) {
         case 'r':
             bootreps = strtol(optarg, NULL, 10);
             break;
-//        case 't':
-//            nthreads = strtol(optarg, NULL, 10);
-//            break;
+        case '1':
+            doSing=1;
+            break;
         default:
             usage();
         }
@@ -309,7 +317,11 @@ int main(int argc, char **argv) {
 				exit(EXIT_FAILURE);
 			}
 
-    unsigned long npat = (1UL<<n) - n - 2; // number of site patterns
+    unsigned long npat = (1UL<<n) - 2; // number of site patterns
+    if(!doSing)
+        npat -= n;
+    printf("# %s singleton site patterns.\n",
+           (doSing ? "Including" : "Excluding"));
     printf("# Number of site patterns: %lu\n", npat);
     tipId_t pat[npat];
 	double  patCount[npat];
@@ -322,7 +334,7 @@ int main(int argc, char **argv) {
         Stack *stk = Stack_new(npat, pat);
 
         // Put site patterns into array "pat".
-        generatePatterns(0, n, stk, 0);
+        generatePatterns(0, n, stk, 0, doSing);
 
         Stack_free(stk);
     }
