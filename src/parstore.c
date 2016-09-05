@@ -68,7 +68,7 @@ void ParStore_print(ParStore *self, FILE *fp) {
     int i;
     fprintf(fp, "%5d fixed:\n", self->nFixed);
     for(i=0; i < self->nFixed; ++i)
-        fprintf(fp, "   %6s = %lf\n", self->nameFixed[i], self->fixedVal[i]);
+        fprintf(fp, "   %8s = %lf\n", self->nameFixed[i], self->fixedVal[i]);
     ParStore_printFree(self, fp);
 }
 
@@ -76,7 +76,7 @@ void ParStore_printFree(ParStore *self, FILE *fp) {
     int i;
     fprintf(fp, "%5d free :\n", self->nFree);
     for(i=0; i < self->nFree; ++i)
-        fprintf(fp, "   %6s = %lf\n", self->nameFree[i], self->freeVal[i]);
+        fprintf(fp, "   %8s = %lf\n", self->nameFree[i], self->freeVal[i]);
 }
 
 /// Constructor
