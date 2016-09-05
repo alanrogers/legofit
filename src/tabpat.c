@@ -433,11 +433,17 @@ int main(int argc, char **argv) {
         }
 
 		// p and q are frequencies of derived and ancestral alleles
-		double p[n], q[n];
+		double p[n], q[n], minp, maxp;
+        minp=1.0;
+        maxp=0.0;
 		for(j=0; j < n; ++j) {
 			p[j] = DAFReader_daf(r[j]);  // derived allele freq
 			q[j] = 1-p[j];
+            minp = fmin(minp, p[j]);
+            maxp = fmax(maxp, p[j]);
 		}
+        if(maxp==0.0 || minp==1.0)
+            continue;
 
 		// Contribution of current snp to each site pattern.  Inner
 		// loop considers each bit in current pattern.  If that bit is
