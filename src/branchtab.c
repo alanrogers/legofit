@@ -278,6 +278,20 @@ int BranchTab_normalize(BranchTab *self) {
     return 0;
 }
 
+/// Divide all values by denom. Return 0 on success, or 1 on failure.
+int BranchTab_divideBy(BranchTab *self, double denom) {
+    unsigned i;
+
+    // divide by denom
+    for(i = 0; i < BT_DIM; ++i) {
+        BTLink *el;
+        for(el = self->tab[i]; el; el = el->next)
+            el->value /= denom;
+    }
+
+    return 0;
+}
+
 void BranchTab_print(const BranchTab *self) {
     unsigned i;
     for(i=0; i < BT_DIM; ++i) {
