@@ -20,5 +20,6 @@ BranchTab    *BranchTab_parse(const char *fname, const LblNdx *lblndx);
 BranchTab    *BranchTab_dup(const BranchTab *old);
 int           BranchTab_equals(const BranchTab *lhs, const BranchTab *rhs);
 double        BranchTab_KLdiverg(const BranchTab *obs, const BranchTab *expt);
+double        BranchTab_cost(const BranchTab *obs, const BranchTab *expt, double U);
 
 #endif

@@ -30,7 +30,7 @@ void        initStateVec(int ndx, void *void_p, int n, double x[n],
                          gsl_rng *rng);
 
 void usage(void) {
-    fprintf(stderr,"usage: legofit [options] input.lgo sitepat.txt\n");
+    fprintf(stderr,"usage: legofit [options] -U <mut_rate/seq> input.lgo sitepat.txt\n");
     fprintf(stderr,"   where file input.lgo describes population history,\n");
     fprintf(stderr,"   file sitepat.txt contains site pattern frequencies,\n");
     fprintf(stderr,"   and options may include:\n");
@@ -78,6 +78,7 @@ int main(int argc, char **argv) {
         {"strategy", required_argument, 0, 's'},
         {"deTol", required_argument, 0, 'a'},
         {"ptsPerDim", required_argument, 0, 'p'},
+        {"MutRatePerGenomeGeneration", required_argument, 0, 'U'},
         {"singletons", no_argument, 0, '1'},
         {"help", no_argument, 0, 'h'},
         {"verbose", no_argument, 0, 'v'},
@@ -105,6 +106,7 @@ int main(int argc, char **argv) {
 	double      F = 0.9;
 	double      CR = 0.8;
 	double      deTol = 1e-3;
+    double      U = 0.0;      // mutation rate per haploid genome per generation
     int         deItr = 1000; // number of diffev iterations
 	int         strategy = 1;
 	int         ptsPerDim = 10;
@@ -125,7 +127,7 @@ int main(int argc, char **argv) {
 
     // command line arguments
     for(;;) {
-        i = getopt_long(argc, argv, "i:t:F:p:r:s:a:vx:1h", myopts, &optndx);
+        i = getopt_long(argc, argv, "i:t:F:p:r:s:a:vx:U:1h", myopts, &optndx);
         if(i == -1)
             break;
         switch (i) {
@@ -160,6 +162,9 @@ int main(int argc, char **argv) {
 		case 'x':
 			CR = strtod(optarg, 0);
 			break;
+        case 'U':
+            U = strtod(optarg, 0);
+            break;
         case '1':
             doSing=1;
             break;
@@ -173,6 +178,12 @@ int main(int argc, char **argv) {
     // remaining options gives file names
     if(argc - optind != 2) {
         fprintf(stderr, "Command line must specify 2 input files.\n");
+        usage();
+    }
+
+    if(U==0.0) {
+        fprintf(stderr,"Use -U to specify mutation rate per"
+                " haploid genome per generation.\n");
         usage();
     }
         
@@ -197,6 +208,7 @@ int main(int argc, char **argv) {
     printf("# lgo input file     : %s\n", lgofname);
     printf("# site pat input file: %s\n", patfname);
     printf("# pts/dimension      : %d\n", ptsPerDim);
+    printf("# aggregate mut rate : %lg\n", U);
     printf("# %s singleton site patterns.\n",
            (doSing ? "Including" : "Excluding"));
 
@@ -232,15 +244,14 @@ int main(int argc, char **argv) {
         }
     }
 
-    BranchTab_normalize(obs);
-
     // parameters for cost function
     CostPar costPar = {
         .obs = obs,
         .gptree = gptree,
         .nThreads = nThreads,
         .nreps = simreps,
-        .doSing = doSing
+        .doSing = doSing,
+        .U = U
     };
 
     // parameters for Differential Evolution
@@ -285,19 +296,19 @@ int main(int argc, char **argv) {
     int         status = diffev(dim, estimate, &cost, &yspread, dep, rng);
     switch (status) {
     case 0:
-        printf("DiffEv Converged. KL=%0.5lg KLspread=%0.5lg\n",
+        printf("DiffEv Converged. cost=%0.5lg spread=%0.5lg\n",
            cost, yspread);
         break;
     default:
-        printf("DiffEv FAILED. KL=%0.5lg KLspread=%0.5lg > %0.5lg = deTOL\n",
+        printf("DiffEv FAILED. cost=%0.5lg spread=%0.5lg > %0.5lg = deTOL\n",
                cost, yspread, deTol);
         break;
     }
 
-    // Get site pattern frequencies
+    // Get mean site pattern branch lengths
     GPTree_setParams(gptree, dim, estimate);
     BranchTab *bt = patprob(gptree, nThreads, simreps, doSing);
-    BranchTab_normalize(bt);
+    BranchTab_divideBy(bt, simreps);
     
     printf("Fitted parameter values\n");
 	GPTree_printParStoreFree(gptree, stdout);
@@ -305,20 +316,20 @@ int main(int argc, char **argv) {
     // Put site patterns and branch lengths into arrays.
     unsigned npat = BranchTab_size(bt);
     tipId_t pat[npat];
-    double prob[npat];
-    BranchTab_toArrays(bt, npat, pat, prob);
+    double brlen[npat];
+    BranchTab_toArrays(bt, npat, pat, brlen);
 
     // Determine order for printing lines of output
     unsigned ord[npat];
     orderpat(npat, ord, pat);
 
-    printf("#%14s %10s\n", "SitePat", "Prob");
+    printf("#%14s %10s\n", "SitePat", "BranchLen");
     char        buff[100];
     for(j = 0; j < npat; ++j) {
         char        buff2[100];
         snprintf(buff2, sizeof(buff2), "%s",
                  patLbl(sizeof(buff), buff, pat[ord[j]], &lblndx));
-        printf("%15s %10.7lf\n", buff2, prob[ord[j]]);
+        printf("%15s %10.7lf\n", buff2, brlen[ord[j]]);
     }
 
     BranchTab_free(bt);

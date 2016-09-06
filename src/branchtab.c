@@ -389,7 +389,6 @@ BranchTab *BranchTab_parse(const char *fname, const LblNdx *lblndx) {
         }
         BranchTab_add(self, key, prob);
     }
-    BranchTab_normalize(self);
     fclose(fp);
     Tokenizer_free(tkz);
     return self;
@@ -473,6 +472,55 @@ double BranchTab_KLdiverg(const BranchTab *obs, const BranchTab *expt) {
     }
     return kl;
 }
+
+/// Sum of squared differences between observed and expected.
+double        BranchTab_cost(const BranchTab *obs, const BranchTab *expt, double U) {
+    int i;
+    double cost=0.0, diff;
+    double obval;  // observed mutations
+    double exval;  // mutations expected under model
+    for(i=0; i < BT_DIM; ++i) {
+        BTLink *o = obs->tab[i];
+        BTLink *e = expt->tab[i];
+        while(o && e) {
+            if(o->key < e->key) {
+                // e link missing, so exval=0.
+                obval = o->value;
+                exval = 0.0;
+                o = o->next;
+            }else if(o->key > e->key) {
+                // o link missing, so obval=0.
+                obval = 0.0;
+                exval = e->value * U;
+                e = e->next;
+            }else {
+                assert(o->key == e->key);
+                obval = o->value;
+                exval = e->value * U;
+                e = e->next;
+                o = o->next;
+            }
+            diff = obval-exval;
+            cost += diff*diff;
+        }
+        exval = 0.0;
+        while(o) { // e link missing, so exval=0
+            obval = o->value;
+            diff = obval-exval;
+            cost += diff*diff;
+            o = o->next;
+        }
+        obval=0.0;
+        while(e) { // o link missing, so obval=0
+            exval = e->value * U;
+            diff = obval-exval;
+            cost += diff*diff;
+            e = e->next;
+        }
+    }
+    return cost;
+}
+
 
 #ifdef TEST
 
