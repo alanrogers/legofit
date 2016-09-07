@@ -474,7 +474,8 @@ double BranchTab_KLdiverg(const BranchTab *obs, const BranchTab *expt) {
 }
 
 /// Sum of squared differences between observed and expected.
-double        BranchTab_cost(const BranchTab *obs, const BranchTab *expt, double U) {
+double        BranchTab_cost(const BranchTab *obs, const BranchTab *expt,
+                             double U) {
     int i;
     double cost=0.0, diff;
     double obval;  // observed mutations
@@ -501,20 +502,20 @@ double        BranchTab_cost(const BranchTab *obs, const BranchTab *expt, double
                 o = o->next;
             }
             diff = obval-exval;
-            cost += diff*diff;
+            cost += diff*diff/exval;
         }
         exval = 0.0;
         while(o) { // e link missing, so exval=0
             obval = o->value;
             diff = obval-exval;
-            cost += diff*diff;
+            cost += diff*diff/exval;
             o = o->next;
         }
         obval=0.0;
         while(e) { // o link missing, so obval=0
             exval = e->value * U;
             diff = obval-exval;
-            cost += diff*diff;
+            cost += diff*diff/exval;
             e = e->next;
         }
     }
