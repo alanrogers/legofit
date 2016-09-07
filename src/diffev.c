@@ -184,6 +184,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     const double F = dep.F;
     const double CR = dep.CR;
     const double deTol = dep.deTol;
+    const double costGoal = dep.costGoal;
 #if 0
     const int   nthreads = dep.nthreads;
 #endif
@@ -497,7 +498,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 #endif
             fflush(stdout);
         }
-        if(*yspread <= deTol)
+        if(cmin <= costGoal)
             break;
     }
     // End iterations
@@ -505,7 +506,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 #if 0
     JobQueue_noMoreJobs(jq);
 #endif
-    if(*yspread > deTol) {
+    if(cmin > costGoal) {
         status = 1;
         if(verbose)
             fputs("No convergence\n", stdout);

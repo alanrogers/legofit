@@ -22,12 +22,15 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
+#include <float.h>
+#include <gsl/gsl_sf_gamma.h>
 
 extern unsigned long rngseed;
 
 void        usage(void);
 void        initStateVec(int ndx, void *void_p, int n, double x[n],
                          gsl_rng *rng);
+double      getChiSqGoal(double df, double upTailProb);
 
 void usage(void) {
     fprintf(stderr,"usage: legofit [options] -U <mut_rate/seq> input.lgo sitepat.txt\n");
@@ -36,7 +39,7 @@ void usage(void) {
     fprintf(stderr,"   and options may include:\n");
     tellopt("-i <x> or --deItr <x>", "number of DE iterations");
     tellopt("-r <x> or --simreps <x>", "number of reps in each function eval");
-    tellopt("-a <x> or --deTol <x>", "DE tolerance: smaller means less accurate");
+    tellopt("-g <x> or --upTailProbGoal <x>", "termination criterion");
     tellopt("-t <x> or --threads <x>", "number of threads (default is auto)");
     tellopt("-F <x> or --scaleFactor <x>", "set DE scale factor");
     tellopt("-x <x> or --crossover <x>", "set DE crossover probability");
@@ -66,6 +69,39 @@ void initStateVec(int ndx, void *void_p, int n, double x[n], gsl_rng *rng){
     }
 }
 
+/// Bisect to find Chi-squared statistic that implies given value of
+/// upper tail probability.
+double getChiSqGoal(double df, double upTailProb) {
+    double lo = 0.0, mid, hi = 3.0*df;
+    double Qlo = gsl_sf_gamma_inc_Q(0.5*df, 0.5*lo);
+    double Qhi;
+
+    do{
+        hi += 2.0*df;
+        Qhi = gsl_sf_gamma_inc_Q(0.5*df, 0.5*hi);
+    }while(Qhi > upTailProb);
+
+    // Check input
+    if( upTailProb > Qlo || upTailProb < Qhi ) {
+        fprintf(stderr,"%s:%s:%d: initial interval doesn't enclose goal.\n",
+                __FILE__,__func__,__LINE__);
+        fprintf(stderr,"  lo=%lg Qlo=%lg hi=%lg Qhi=%lg goal=%lg\n",
+                lo, Qlo, hi, Qhi, upTailProb);
+        exit(EXIT_FAILURE);
+    }
+
+    // Bisect
+    while(hi-lo > DBL_EPSILON*hi) {
+        mid = lo + 0.5*(hi-lo);
+        double Q = gsl_sf_gamma_inc_Q(0.5*df, 0.5*mid);
+        if(Q < upTailProb)
+            hi = mid;
+        else
+            lo = mid;
+    }
+    return hi;
+}
+
 int main(int argc, char **argv) {
 
     static struct option myopts[] = {
@@ -76,7 +112,7 @@ int main(int argc, char **argv) {
 		{"scaleFactor", required_argument, 0, 'F'},
 		{"simreps", required_argument, 0, 'r'},
         {"strategy", required_argument, 0, 's'},
-        {"deTol", required_argument, 0, 'a'},
+        {"upTailProbGoal", required_argument, 0, 'g'},
         {"ptsPerDim", required_argument, 0, 'p'},
         {"MutRatePerGenomeGeneration", required_argument, 0, 'U'},
         {"singletons", no_argument, 0, '1'},
@@ -95,6 +131,7 @@ int main(int argc, char **argv) {
 	unsigned long pid = (unsigned long) getpid();
     double      lo_twoN = 0.0, hi_twoN = 1e6;  // twoN bounds
     double      lo_t = 0.0, hi_t = 1e6;        // t bounds
+    double      df;                            // degrees of freedom
     int         nThreads = 0;     // total number of threads
     int         doSing=0;  // nonzero means use singleton site patterns
     int         optndx;
@@ -105,7 +142,9 @@ int main(int argc, char **argv) {
 	// DiffEv parameters
 	double      F = 0.9;
 	double      CR = 0.8;
-	double      deTol = 1e-3;
+	double      tailProbGoal = 0.05; // termination criterion
+    double      deTol = 0.05;
+    double      chiSqGoal;
     double      U = 0.0;      // mutation rate per haploid genome per generation
     int         deItr = 1000; // number of diffev iterations
 	int         strategy = 1;
@@ -127,7 +166,7 @@ int main(int argc, char **argv) {
 
     // command line arguments
     for(;;) {
-        i = getopt_long(argc, argv, "i:t:F:p:r:s:a:vx:U:1h", myopts, &optndx);
+        i = getopt_long(argc, argv, "i:t:F:p:r:s:g:vx:U:1h", myopts, &optndx);
         if(i == -1)
             break;
         switch (i) {
@@ -156,8 +195,8 @@ int main(int argc, char **argv) {
         case 'v':
             verbose = 1;
             break;
-        case 'a':
-            deTol = strtod(optarg, 0);
+        case 'g':
+            tailProbGoal = strtod(optarg, 0);
             break;
 		case 'x':
 			CR = strtod(optarg, 0);
@@ -200,7 +239,7 @@ int main(int argc, char **argv) {
 
     printf("# DE strategy        : %d\n", strategy);
     printf("#    deItr           : %d\n", deItr);
-    printf("#    deTol           : %lf\n", deTol);
+    printf("#    tailProbGoal    : %lf\n", tailProbGoal);
     printf("#    F               : %lf\n", F);
     printf("#    CR              : %lf\n", CR);
     printf("# simreps            : %lu\n", simreps);
@@ -221,8 +260,17 @@ int main(int argc, char **argv) {
     GPTree *gptree = GPTree_new(lgofname, bnd);
 	LblNdx lblndx  = GPTree_getLblNdx(gptree);
 
-    printf("Initial parameter values\n");
-	GPTree_printParStore(gptree, stdout);
+    // degrees of freedom: number of site patterns minus number of
+    // fitted parameters.
+    double nsamp = GPTree_nsamples(gptree);
+    df = pow(2.0, nsamp) - 2.0;
+    if(!doSing)
+        df -= nsamp;
+    df -= GPTree_nFree(gptree);
+    printf("# degrees of freedom : %lf\n", df);
+
+    chiSqGoal = getChiSqGoal(df, tailProbGoal);
+    printf("# ChiSq goal         : %lf\n", chiSqGoal);
 
     // Observed site pattern frequencies
     BranchTab *obs = BranchTab_parse(patfname, &lblndx);
@@ -273,6 +321,7 @@ int main(int argc, char **argv) {
         .F = F,
         .CR = CR,
         .deTol = deTol,
+        .costGoal = chiSqGoal,
 		.jobData = &costPar,
         .objfun = costFun,
 		.threadData = NULL,
@@ -289,6 +338,9 @@ int main(int argc, char **argv) {
     gsl_rng_set(rng, rngseed);
 	rngseed = (rngseed == ULONG_MAX ? 0 : rngseed+1);
 
+    printf("Initial parameter values\n");
+	GPTree_printParStore(gptree, stdout);
+
     // Flush just before diffev so output file will be as complete as
     // possible while diffev is running.
     fflush(stdout);
@@ -300,8 +352,8 @@ int main(int argc, char **argv) {
            cost, yspread);
         break;
     default:
-        printf("DiffEv FAILED. cost=%0.5lg spread=%0.5lg > %0.5lg = deTOL\n",
-               cost, yspread, deTol);
+        printf("DiffEv FAILED. cost=%0.5lg > %lg = goal; spread=%0.5lg\n",
+               cost, chiSqGoal, yspread);
         break;
     }
 
