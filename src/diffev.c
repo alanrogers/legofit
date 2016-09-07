@@ -183,7 +183,6 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     const int   strategy = dep.strategy;
     const double F = dep.F;
     const double CR = dep.CR;
-    const double deTol = dep.deTol;
     const double costGoal = dep.costGoal;
 #if 0
     const int   nthreads = dep.nthreads;

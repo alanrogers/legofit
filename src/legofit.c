@@ -143,7 +143,6 @@ int main(int argc, char **argv) {
 	double      F = 0.9;
 	double      CR = 0.8;
 	double      tailProbGoal = 0.05; // termination criterion
-    double      deTol = 0.05;
     double      chiSqGoal;
     double      U = 0.0;      // mutation rate per haploid genome per generation
     int         deItr = 1000; // number of diffev iterations
@@ -320,7 +319,6 @@ int main(int argc, char **argv) {
         .seed = ((unsigned long) time(NULL))-1ul,
         .F = F,
         .CR = CR,
-        .deTol = deTol,
         .costGoal = chiSqGoal,
 		.jobData = &costPar,
         .objfun = costFun,
