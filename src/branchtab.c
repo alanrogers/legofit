@@ -415,6 +415,7 @@ double        BranchTab_cost(const BranchTab *obs, const BranchTab *expt,
                 obval = o->value;
                 exval = 0.0;
                 o = o->next;
+                v = 0.0;
             }else if(o->key > e->key) {
                 // o link missing, so obval=0.
                 obval = 0.0;
@@ -438,10 +439,6 @@ double        BranchTab_cost(const BranchTab *obs, const BranchTab *expt,
 #endif
             cost += diff*diff/(exval+v);
         }
-        if(o) { // e link missing, so exval=0
-            cost = HUGE_VAL;
-            break;
-        }
         obval=0.0;
         while(e) { // o link missing, so obval=0
             exval = e->value * U;
@@ -454,6 +451,10 @@ double        BranchTab_cost(const BranchTab *obs, const BranchTab *expt,
 #endif
             cost += diff*diff/(exval+v);
             e = e->next;
+        }
+        if(o) { // e link missing, so exval=0
+            cost = HUGE_VAL;
+            break;
         }
     }
     return cost;
