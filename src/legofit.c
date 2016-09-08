@@ -329,7 +329,7 @@ int main(int argc, char **argv) {
         .genmax = deItr,
         .refresh = 2,  // how often to print a line of output
         .strategy = strategy,
-        .nthreads = 1,
+        .nthreads = nThreads,
         .verbose = verbose,
         .seed = ((unsigned long) time(NULL))-1ul,
         .F = F,

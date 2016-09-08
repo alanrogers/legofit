@@ -9,7 +9,6 @@
 #include "hashtab.h"
 #include "parse.h"
 #include "parstore.h"
-#include "jobqueue.h"
 #include "binary.h"
 #include "gptree.h"
 #include <stdlib.h>
@@ -22,12 +21,6 @@
 
 pthread_mutex_t seedLock = PTHREAD_MUTEX_INITIALIZER;
 unsigned long rngseed;
-
-#undef DPRINTF_ON
-#include "dprintf.h"
-#ifdef DPRINTF_ON
-extern pthread_mutex_t outputLock;
-#endif
 
 typedef struct SimArg SimArg;
 
@@ -95,54 +88,14 @@ BranchTab *patprob(const GPTree *gptree, int nThreads, long nreps,
                    int doSing) {
 
 	assert(GPTree_feasible(gptree));
-	
-    int j;
-    SimArg    *simarg[nThreads];
-    long reps[nThreads];
 
-    // Divide repetitions among threads.
-    {
-        ldiv_t      qr = ldiv(nreps, (long) nThreads);
-        assert(qr.quot > 0);
-        for(j = 0; j < nThreads; ++j)
-            reps[j] = qr.quot;
-        assert(qr.rem < nThreads);
-        for(j=0; j < qr.rem; ++j)
-            reps[j] += 1;
-#ifndef NDEBUG
-        // make sure the total number of repetitions is nreps.
-        long        sumreps = 0;
-        for(j = 0; j < nThreads; ++j) {
-            assert(reps[j] > 0);
-            sumreps += reps[j];
-        }
-        assert(sumreps == nreps);
-#endif
-    }
+    SimArg    *simarg;
 
 	assert(GPTree_feasible(gptree));
-    for(j = 0; j < nThreads; ++j)
-        simarg[j] = SimArg_new(gptree, reps[j], doSing);
+    simarg = SimArg_new(gptree, nreps, doSing);
+    simfun(simarg, NULL);
 
-    {
-        JobQueue   *jq = JobQueue_new(nThreads, NULL, NULL, NULL);
-        if(jq == NULL)
-            eprintf("s:%s:%d: Bad return from JobQueue_new",
-                    __FILE__, __func__, __LINE__);
-        for(j = 0; j < nThreads; ++j)
-            JobQueue_addJob(jq, simfun, simarg[j]);
-        JobQueue_waitOnJobs(jq);
-        JobQueue_free(jq);
-    }
+    BranchTab *rval = BranchTab_dup(simarg->branchtab);
 
-    // Add all branchtabs into branchtab[0]
-    for(j = 1; j < nThreads; ++j)
-        BranchTab_plusEquals(simarg[0]->branchtab, simarg[j]->branchtab);
-
-    BranchTab *rval = BranchTab_dup(simarg[0]->branchtab);
-
-    for(j = 0; j < nThreads; ++j)
-        SimArg_free(simarg[j]);
-        
     return rval;
 }

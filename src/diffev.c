@@ -41,7 +41,7 @@
 
 #include "diffev.h"
 #include "misc.h"
-#if 0
+#if 1
 #include "jobqueue.h"
 #endif
 #include <gsl/gsl_rng.h>
@@ -184,8 +184,9 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     const double F = dep.F;
     const double CR = dep.CR;
     const double costGoal = dep.costGoal;
-#if 0
+#if 1
     const int   nthreads = dep.nthreads;
+    fprintf(stderr,"%s: nthreads=%d\n", __func__, nthreads);
 #endif
     const int   verbose = dep.verbose;
 
@@ -204,7 +205,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     double      cost[nPts];     // obj. funct. values
     double      cmin;           // help variables
 
-#if 0
+#if 1
     JobQueue   *jq = JobQueue_new(nthreads, dep.threadData,
                                   dep.ThreadState_new,
                                   dep.ThreadState_free);
@@ -218,13 +219,13 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 
         // calculate objective function values in parallel
         TaskArg_setArray(targ[i], dim, c[i]);
-#if 0
+#if 1
         JobQueue_addJob(jq, taskfun, targ[i]);
 #else
         taskfun(targ[i], NULL);
 #endif
     }
-#if 0
+#if 1
     JobQueue_waitOnJobs(jq);
 #endif
     cmin = HUGE_VAL;
@@ -434,14 +435,14 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 
             // Trial mutation now in tmp[]. Calculate cost.
             TaskArg_setArray(targ[i], dim, tmp);
-#if 0
+#if 1
             JobQueue_addJob(jq, taskfun, targ[i]);
 #else
             taskfun(targ[i], NULL);
 #endif
         }                       // End loop ensemble
 
-#if 0
+#if 1
         JobQueue_waitOnJobs(jq);
 #endif
 
@@ -502,7 +503,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     }
     // End iterations
 
-#if 0
+#if 1
     JobQueue_noMoreJobs(jq);
 #endif
     if(cmin > costGoal) {
@@ -522,7 +523,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     // Free memory
     for(i = 0; i < nPts; ++i)
         TaskArg_free(targ[i]);
-#if 0
+#if 1
     JobQueue_free(jq);
 #endif
 
