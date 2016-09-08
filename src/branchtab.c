@@ -33,9 +33,13 @@ typedef struct BTLink {
     struct BTLink  *next;
     tipId_t         key;
     double          value;
+    double          sqr;   // squares
 } BTLink;
 
 struct BranchTab {
+#ifndef NDEBUG
+    int frozen;   // nonzero => no further changes allowed
+#endif    
     BTLink         *tab[BT_DIM];
 };
 
@@ -91,6 +95,7 @@ BTLink         *BTLink_new(tipId_t key, double value) {
     new->next = NULL;
     new->key = key;
     new->value = value;
+    new->sqr = value*value;
     return new;
 }
 
@@ -99,7 +104,11 @@ BTLink     *BTLink_dup(const BTLink *old) {
     if(old == NULL)
         return NULL;
 
-    BTLink *new = BTLink_new(old->key, old->value);
+    BTLink *new = malloc(sizeof(*new));
+    CHECKMEM(new);
+    new->key = old->key;
+    new->value = old->value;
+    new->sqr = old->sqr;
     new->next = BTLink_dup(old->next);
     return new;
 }
@@ -110,7 +119,9 @@ int  BTLink_equals(const BTLink *lhs, const BTLink *rhs) {
         return 1;
     if(lhs==NULL || rhs==NULL)
         return 0;
-    if(lhs->key!=rhs->key || lhs->value!=rhs->value)
+    if(lhs->key!=rhs->key
+       || lhs->value!=rhs->value
+       || lhs->sqr != rhs->sqr)
         return 0;
     return BTLink_equals(lhs->next, rhs->next);
 }
@@ -134,6 +145,7 @@ BTLink *BTLink_add(BTLink * self, tipId_t key, double value) {
     }
     assert(key == self->key);
     self->value += value;
+    self->sqr += value*value;
     return self;
 }
 
@@ -156,11 +168,11 @@ int BTLink_hasSingletons(BTLink * self) {
     return BTLink_hasSingletons(self->next);
 }
 
-
 void BTLink_printShallow(const BTLink * self) {
     if(self == NULL)
         return;
-    printf(" [%lu, %lf]", (unsigned long) self->key, self->value);
+    printf(" [%lu, %lf, %lf]",
+           (unsigned long) self->key, self->value, self->sqr);
 }
 
 void BTLink_print(const BTLink * self) {
@@ -180,6 +192,10 @@ BranchTab    *BranchTab_new(void) {
 BranchTab    *BranchTab_dup(const BranchTab *old) {
     BranchTab *new = BranchTab_new();
 
+#ifndef NDEBUG
+    new->frozen = old->frozen;
+#endif    
+
     int i;
     for(i=0; i < BT_DIM; ++i)
         new->tab[i] = BTLink_dup(old->tab[i]);
@@ -195,6 +211,10 @@ int BranchTab_equals(const BranchTab *lhs, const BranchTab *rhs) {
         if(!BTLink_equals(lhs->tab[i], rhs->tab[i]))
             return 0;
     }
+#ifndef NDEBUG
+    if(lhs->frozen != rhs->frozen)
+        return 0;
+#endif
     return 1;
 }
 
@@ -226,6 +246,7 @@ double BranchTab_get(BranchTab * self, tipId_t key) {
 /// Add a value to table. If key already exists, new value is added to
 /// old one.  
 void BranchTab_add(BranchTab * self, tipId_t key, double value) {
+    assert(!self->frozen);
     unsigned h = tipIdHash(key);
     assert(h < BT_DIM);
     assert(self);
@@ -245,48 +266,21 @@ unsigned BranchTab_size(BranchTab * self) {
     return size;
 }
 
-/// Return sum of values in BranchTab.
-double BranchTab_sum(const BranchTab *self) {
-    unsigned i;
-    double s=0.0;
-
-    for(i = 0; i < BT_DIM; ++i) {
-        BTLink *el;
-        for(el = self->tab[i]; el; el = el->next)
-            s += el->value;
-    }
-
-    return s;
-}
-
-/// Divide all values by their sum. Return 0
-/// on success, or 1 on failure.
-int BranchTab_normalize(BranchTab *self) {
-    unsigned i;
-    double s = BranchTab_sum(self);
-
-    if(s==0) 
-        return 1;
-
-    // divide by sum
-    for(i = 0; i < BT_DIM; ++i) {
-        BTLink *el;
-        for(el = self->tab[i]; el; el = el->next)
-            el->value /= s;
-    }
-
-    return 0;
-}
-
 /// Divide all values by denom. Return 0 on success, or 1 on failure.
 int BranchTab_divideBy(BranchTab *self, double denom) {
-    unsigned i;
+#ifndef NDEBUG
+    assert(!self->frozen);
+    self->frozen = 1;  // you can only call this function once
+#endif    
 
     // divide by denom
+    unsigned i;
     for(i = 0; i < BT_DIM; ++i) {
         BTLink *el;
-        for(el = self->tab[i]; el; el = el->next)
+        for(el = self->tab[i]; el; el = el->next) {
             el->value /= denom;
+            el->sqr /= denom;
+        }
     }
 
     return 0;
@@ -303,6 +297,7 @@ void BranchTab_print(const BranchTab *self) {
 
 /// Add each entry in table rhs to table lhs
 void BranchTab_plusEquals(BranchTab *lhs, BranchTab *rhs) {
+    assert(!lhs->frozen && !rhs->frozen);
     int i;
     for(i=0; i<BT_DIM; ++i) {
         BTLink *link;
@@ -312,7 +307,7 @@ void BranchTab_plusEquals(BranchTab *lhs, BranchTab *rhs) {
 }
 
 void BranchTab_toArrays(BranchTab *self, unsigned n, tipId_t key[n],
-						double value[n]) {
+						double value[n], double sqr[n]) {
     int i, j=0;
     for(i=0; i<BT_DIM; ++i) {
         BTLink *link;
@@ -322,6 +317,7 @@ void BranchTab_toArrays(BranchTab *self, unsigned n, tipId_t key[n],
 						__FILE__,__func__,__LINE__);
             key[j] = link->key;
             value[j] = link->value;
+            sqr[j] = link->sqr;
             ++j;
         }
     }
@@ -394,90 +390,20 @@ BranchTab *BranchTab_parse(const char *fname, const LblNdx *lblndx) {
     return self;
 }
 
-/// Calculate KL divergence from two BranchTab objects, which
-/// should be normalized before entering this function. Use
-/// BranchTab_normalize to normalize. Function returns HUGE_VAL if there
-/// are observed values without corresponding values in expt.
-double BranchTab_KLdiverg(const BranchTab *obs, const BranchTab *expt) {
-    assert(Dbl_near(1.0, BranchTab_sum(obs)));
-	if(!Dbl_near(1.0, BranchTab_sum(expt))) {
-		double s = BranchTab_sum(expt);
-		double e = s-1.0;
-		printf("%s:%s:%d: bad BranchTab sum=%lf err=%le\n",
-			   __FILE__,__func__,__LINE__,
-			   s, e);
-		BranchTab_print(expt);
-		fflush(stdout);
-	}
-    assert(Dbl_near(1.0, BranchTab_sum(expt)));
-
-    int i;
-    double kl=0.0;
-    double p;  // observed frequency
-    double q;  // frequency under model
-    for(i=0; i < BT_DIM; ++i) {
-        BTLink *o, *e;
-        o = obs->tab[i];
-        e = expt->tab[i];
-        while(o && e) {
-            if(o->key < e->key) {
-                // e->value is q=0. This case blows up unless p==0.
-                p = o->value;
-                if(p != 0.0) {
-                    kl = HUGE_VAL;
-#if 0
-                    fprintf(stderr,"%s:%s:%d: missing expt for ",
-                            __FILE__,__func__,__LINE__);
-                    printBits(sizeof(o->key), &o->key, stderr);
-                    //exit(EXIT_FAILURE);
-#endif
-                    o = o->next;
-                } else {
-                    o = o->next;
-                    continue;
-                }
-            }else if(o->key > e->key) {
-                // o->value is p=0. For this case, note that
-                // p*log(p/q) is the log of (p^p / q^p), which -> 1 as
-                // p->0.  The log of 1 is 0, so 0 is the contribution
-                // to kl.
-                e = e->next;
-                continue;
-            }else {
-                assert(o->key == e->key);
-                p = o->value;
-                q = e->value;
-                e = e->next;
-                o = o->next;
-                kl += p*log(p/q);
-            }
-        }
-        while(o) { // e->value is q=0: fail unless p=0
-            p = o->value;
-            if(p != 0.0) {
-                kl = HUGE_VAL;
-#if 0
-                fprintf(stderr,"%s:%s:%d: missing expt for ",
-                        __FILE__,__func__,__LINE__);
-                printBits(sizeof(o->key), &o->key, stderr);
-                exit(EXIT_FAILURE);
-#endif
-                o = o->next;
-            } else {
-                o = o->next;
-                continue;
-            }
-        }
-        // Any remaining cases have p=0, so contribution to kl is 0.
-    }
-    return kl;
-}
-
-/// Sum of squared differences between observed and expected.
+/// Chi-squared difference between observed and expected.  The
+/// Chi-squared statistic is (obs - expected)^2/variance. To estimate
+/// the variance, note that the expected number of mutations is
+/// u*nnuc*Poisson(B), where B is a random variable, the branch length per
+/// nucleotide site contributing to a given site pattern. This is u*nnuc
+/// times a mixture of Poisson distributions. It's mean is u*nnuc*Mean(B),
+/// and its variance is u*nnuc*Mean(B) + nnuc*u*u*Var(B).
 double        BranchTab_cost(const BranchTab *obs, const BranchTab *expt,
-                             double U) {
+                             double u, long nnuc, double n) {
+    assert(expt->frozen);
     int i;
+    double U = u*nnuc;
     double cost=0.0, diff;
+    double v;     // U*U*Var(B), the variance of branch length
     double obval;  // observed mutations
     double exval;  // mutations expected under model
     for(i=0; i < BT_DIM; ++i) {
@@ -493,35 +419,45 @@ double        BranchTab_cost(const BranchTab *obs, const BranchTab *expt,
                 // o link missing, so obval=0.
                 obval = 0.0;
                 exval = e->value * U;
+                v = e->sqr - e->value * e->value;
+                v *= u*U*n/(n-1.0);
                 e = e->next;
             }else {
                 assert(o->key == e->key);
                 obval = o->value;
                 exval = e->value * U;
+                v = e->sqr - e->value * e->value;
+                v *= u*U*n/(n-1.0);
                 e = e->next;
                 o = o->next;
             }
             diff = obval-exval;
-            cost += diff*diff/exval;
+#if 0
+            printf("o=%lg e=%lg v=%lg chisq=%lg\n",
+                   obval, exval, v, diff*diff/(exval+v));
+#endif
+            cost += diff*diff/(exval+v);
         }
-        exval = 0.0;
-        while(o) { // e link missing, so exval=0
-            obval = o->value;
-            diff = obval-exval;
-            cost += diff*diff/exval;
-            o = o->next;
+        if(o) { // e link missing, so exval=0
+            cost = HUGE_VAL;
+            break;
         }
         obval=0.0;
         while(e) { // o link missing, so obval=0
             exval = e->value * U;
+            v = e->sqr - e->value * e->value;
+            v *= u*U*n/(n-1.0);
             diff = obval-exval;
-            cost += diff*diff/exval;
+#if 0
+            printf("o=%lg e=%lg v=%lg chisq=%lg\n",
+                   obval, exval, v, diff*diff/(exval+v));
+#endif
+            cost += diff*diff/(exval+v);
             e = e->next;
         }
     }
     return cost;
 }
-
 
 #ifdef TEST
 
@@ -614,9 +550,6 @@ int main(int argc, char **argv) {
         assert(2*val[i] == BranchTab_get(bt, key[i]));
     }
 
-    assert(0 == BranchTab_normalize(bt));
-    assert(Dbl_near(1.0, BranchTab_sum(bt)));
-
     if(verbose)
         BranchTab_print(bt);
     BranchTab_free(bt);
@@ -634,13 +567,6 @@ int main(int argc, char **argv) {
 
     BranchTab *bt2 = BranchTab_dup(bt);
     assert(BranchTab_equals(bt, bt2));
-
-    BranchTab_normalize(bt);
-    BranchTab_normalize(bt2);
-    double kl =  BranchTab_KLdiverg(bt, bt2);
-    assert(kl == 0.0);
-    if(verbose)
-        printf("KL = %le\n", kl);
 
     if(verbose)
         BranchTab_print(bt);

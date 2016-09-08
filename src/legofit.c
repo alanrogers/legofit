@@ -33,10 +33,14 @@ void        initStateVec(int ndx, void *void_p, int n, double x[n],
 double      getChiSqGoal(double df, double upTailProb);
 
 void usage(void) {
-    fprintf(stderr,"usage: legofit [options] -U <mut_rate/seq> input.lgo sitepat.txt\n");
-    fprintf(stderr,"   where file input.lgo describes population history,\n");
-    fprintf(stderr,"   file sitepat.txt contains site pattern frequencies,\n");
-    fprintf(stderr,"   and options may include:\n");
+    fprintf(stderr,"usage: legofit [options] -u <mut_rate>"
+            " -n <genome_size> input.lgo sitepat.txt\n");
+    fprintf(stderr,"   where <mut_rate> is the mutation rate per nucleotide\n"
+            "   site per generation, <genome_size> is the number of\n"
+            "   nucleotides per haploid genome, file input.lgo describes\n"
+            "   population history, and file sitepat.txt contains site\n"
+            "   pattern frequencies.\n");
+    fprintf(stderr,"Options may include:\n");
     tellopt("-i <x> or --deItr <x>", "number of DE iterations");
     tellopt("-r <x> or --simreps <x>", "number of reps in each function eval");
     tellopt("-g <x> or --upTailProbGoal <x>", "termination criterion");
@@ -114,7 +118,8 @@ int main(int argc, char **argv) {
         {"strategy", required_argument, 0, 's'},
         {"upTailProbGoal", required_argument, 0, 'g'},
         {"ptsPerDim", required_argument, 0, 'p'},
-        {"MutRatePerGenomeGeneration", required_argument, 0, 'U'},
+        {"mutRate", required_argument, 0, 'u'},
+        {"genomeSize", required_argument, 0, 'n'},
         {"singletons", no_argument, 0, '1'},
         {"help", no_argument, 0, 'h'},
         {"verbose", no_argument, 0, 'v'},
@@ -144,7 +149,8 @@ int main(int argc, char **argv) {
 	double      CR = 0.8;
 	double      tailProbGoal = 0.05; // termination criterion
     double      chiSqGoal;
-    double      U = 0.0;      // mutation rate per haploid genome per generation
+    double      u = 0.0;      // mutation rate per site per generation
+    long        nnuc = 0;     // number of nucleotides per haploid genome
     int         deItr = 1000; // number of diffev iterations
 	int         strategy = 1;
 	int         ptsPerDim = 10;
@@ -165,7 +171,7 @@ int main(int argc, char **argv) {
 
     // command line arguments
     for(;;) {
-        i = getopt_long(argc, argv, "i:t:F:p:r:s:g:vx:U:1h", myopts, &optndx);
+        i = getopt_long(argc, argv, "i:t:F:p:r:s:g:vx:u:n:1h", myopts, &optndx);
         if(i == -1)
             break;
         switch (i) {
@@ -200,8 +206,11 @@ int main(int argc, char **argv) {
 		case 'x':
 			CR = strtod(optarg, 0);
 			break;
-        case 'U':
-            U = strtod(optarg, 0);
+        case 'u':
+            u = strtod(optarg, 0);
+            break;
+        case 'n':
+            nnuc = strtol(optarg, NULL, 10);
             break;
         case '1':
             doSing=1;
@@ -219,9 +228,13 @@ int main(int argc, char **argv) {
         usage();
     }
 
-    if(U==0.0) {
-        fprintf(stderr,"Use -U to specify mutation rate per"
-                " haploid genome per generation.\n");
+    if(u==0.0) {
+        fprintf(stderr,"Use -u to set mutation rate per generation.\n");
+        usage();
+    }
+
+    if(nnuc==0) {
+        fprintf(stderr,"Use -n to set # of nucleotides per haploid genome.\n");
         usage();
     }
         
@@ -246,7 +259,7 @@ int main(int argc, char **argv) {
     printf("# lgo input file     : %s\n", lgofname);
     printf("# site pat input file: %s\n", patfname);
     printf("# pts/dimension      : %d\n", ptsPerDim);
-    printf("# aggregate mut rate : %lg\n", U);
+    printf("# mut_rate/generation: %lg\n", u);
     printf("# %s singleton site patterns.\n",
            (doSing ? "Including" : "Excluding"));
 
@@ -298,7 +311,8 @@ int main(int argc, char **argv) {
         .nThreads = nThreads,
         .nreps = simreps,
         .doSing = doSing,
-        .U = U
+        .u = u,
+        .nnuc = nnuc
     };
 
     // parameters for Differential Evolution
@@ -367,7 +381,8 @@ int main(int argc, char **argv) {
     unsigned npat = BranchTab_size(bt);
     tipId_t pat[npat];
     double brlen[npat];
-    BranchTab_toArrays(bt, npat, pat, brlen);
+    double sqr[npat];
+    BranchTab_toArrays(bt, npat, pat, brlen, sqr);
 
     // Determine order for printing lines of output
     unsigned ord[npat];

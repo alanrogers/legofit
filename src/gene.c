@@ -27,8 +27,8 @@ Gene *Gene_new(tipId_t tipId) {
  * Ignore root (which has null parent) because mutations
  * there don't contribute to genetic variation.
  * 
- * Ignore nodes with only one descendant, which are recognizable because 
- * their tipIds are powers of 2.
+ * If doSing==0, then also ignore nodes with only one descendant.
+ * These are recognizable because their tipIds are powers of 2.
  * 
  * Tabulate everything else.
  */

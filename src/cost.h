@@ -14,7 +14,8 @@ typedef struct CostPar {
     int         nThreads; // number of threads to use
     long        nreps;    // number of repetitions to simulate
     int         doSing;   // nonzero => use singleton site patterns
-    double      U;        // mut rate per haploid genome per generation
+    double      u;        // mutation rate per generation
+    long        nnuc;     // number of nucleotide sites in genome
 } CostPar;
 
 double      costFun(int dim, double x[dim], void *jdata, void *tdata);

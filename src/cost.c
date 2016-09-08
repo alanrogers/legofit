@@ -34,7 +34,7 @@ double costFun(int dim, double x[dim], void *jdata, void *notUsed) {
     BranchTab  *prob = patprob(cp->gptree, cp->nThreads, cp->nreps,
                                cp->doSing);
     BranchTab_divideBy(prob, cp->nreps);
-    double cost = BranchTab_cost(cp->obs, prob, cp->U);
+    double cost = BranchTab_cost(cp->obs, prob, cp->u, cp->nnuc, cp->nreps);
     
     return cost;
 }

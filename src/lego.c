@@ -26,8 +26,6 @@ void        usage(void);
 void usage(void) {
     fprintf(stderr, "usage: lego [options] input_file_name\n");
     fprintf(stderr, "   where options may include:\n");
-    tellopt("-b or --branchLength",
-            "Report average branch length per SNP");
     tellopt("-i <x> or --nItr <x>", "number of iterations in simulation");
     tellopt("-t <x> or --threads <x>", "number of threads (default is auto)");
 	tellopt("-1 or --singletons", "Use singleton site patterns");
@@ -42,7 +40,6 @@ int main(int argc, char **argv) {
         {"nItr", required_argument, 0, 'i'},
         {"threads", required_argument, 0, 't'},
         {"singletons", no_argument, 0, '1'},
-        {"branchLength", no_argument, 0, 'b'},
         {"help", no_argument, 0, 'h'},
         {NULL, 0, NULL, 0}
     };
@@ -54,7 +51,6 @@ int main(int argc, char **argv) {
 
     int         i, j;
     int         doSing=0;  // nonzero => use singleton site patterns
-    int         doBranchLength=0; // nonzero=>report av br length
     time_t      currtime = time(NULL);
 	unsigned long pid = (unsigned long) getpid();
     double      lo_twoN = 0.0, hi_twoN = 1e6;  // twoN bounds
@@ -77,7 +73,7 @@ int main(int argc, char **argv) {
 
     // command line arguments
     for(;;) {
-        i = getopt_long(argc, argv, "i:t:1bh", myopts, &optndx);
+        i = getopt_long(argc, argv, "i:t:1h", myopts, &optndx);
         if(i == -1)
             break;
         switch (i) {
@@ -93,9 +89,6 @@ int main(int argc, char **argv) {
             break;
         case '1':
             doSing=1;
-            break;
-        case 'b':
-            doBranchLength=1;
             break;
         case 'h':
         default:
@@ -144,16 +137,14 @@ int main(int argc, char **argv) {
     GPTree_getParams(gptree, dim, x);
 
     BranchTab *bt = patprob(gptree, nThreads, nreps, doSing);
-    if(doBranchLength)
-        BranchTab_divideBy(bt, (double) nreps);
-    else
-        BranchTab_normalize(bt);
+    BranchTab_divideBy(bt, (double) nreps);
 
     // Put site patterns and branch lengths into arrays.
     unsigned npat = BranchTab_size(bt);
     tipId_t pat[npat];
     double prob[npat];
-    BranchTab_toArrays(bt, npat, pat, prob);
+    double sqr[npat];
+    BranchTab_toArrays(bt, npat, pat, prob, sqr);
 
     // Determine order for printing lines of output
     unsigned ord[npat];
