@@ -186,7 +186,6 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     const double costGoal = dep.costGoal;
 #if 1
     const int   nthreads = dep.nthreads;
-    fprintf(stderr,"%s: nthreads=%d\n", __func__, nthreads);
 #endif
     const int   verbose = dep.verbose;
 

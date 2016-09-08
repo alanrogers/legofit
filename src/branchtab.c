@@ -437,6 +437,7 @@ double        BranchTab_cost(const BranchTab *obs, const BranchTab *expt,
             printf("o=%lg e=%lg v=%lg chisq=%lg\n",
                    obval, exval, v, diff*diff/(exval+v));
 #endif
+            assert(v>=0.0);
             cost += diff*diff/(exval+v);
         }
         obval=0.0;
@@ -449,6 +450,7 @@ double        BranchTab_cost(const BranchTab *obs, const BranchTab *expt,
             printf("o=%lg e=%lg v=%lg chisq=%lg\n",
                    obval, exval, v, diff*diff/(exval+v));
 #endif
+            assert(v>=0.0);
             cost += diff*diff/(exval+v);
             e = e->next;
         }
@@ -457,6 +459,7 @@ double        BranchTab_cost(const BranchTab *obs, const BranchTab *expt,
             break;
         }
     }
+    assert(cost >= 0.0);
     return cost;
 }
 
