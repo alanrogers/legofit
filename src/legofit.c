@@ -260,6 +260,7 @@ int main(int argc, char **argv) {
     printf("# site pat input file: %s\n", patfname);
     printf("# pts/dimension      : %d\n", ptsPerDim);
     printf("# mut_rate/generation: %lg\n", u);
+    printf("# nucleotides/genome : %ld\n", nnuc);
     printf("# %s singleton site patterns.\n",
            (doSing ? "Including" : "Excluding"));
 
