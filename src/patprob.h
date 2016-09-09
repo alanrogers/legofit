@@ -2,6 +2,8 @@
 #  define PATPROB_INCLUDED
 
 #include "typedefs.h"
+#include <gsl/gsl_rng.h>
+
 BranchTab *patprob(const GPTree *gptree, int nThreads, long nreps,
-                   int doSing);
+                   int doSing, gsl_rng *rng);
 #endif

@@ -17,10 +17,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <limits.h>
-#include <pthread.h>
-
-pthread_mutex_t seedLock = PTHREAD_MUTEX_INITIALIZER;
-unsigned long rngseed;
+#include <gsl/gsl_rng.h>
 
 typedef struct SimArg SimArg;
 
@@ -39,21 +36,13 @@ void        SimArg_free(SimArg * targ);
 int         simfun(void *, void *);
 
 /// function run by each thread
-int simfun(void *varg, void *notUsed) {
+int simfun(void *varg, void *tdata) {
     SimArg    *arg = (SimArg *) varg;
-    gsl_rng    *rng = gsl_rng_alloc(gsl_rng_taus);
-
-	// Lock seed, initialize random number generator, increment seed,
-	// and unlock.
-	pthread_mutex_lock(&seedLock);
-    gsl_rng_set(rng, rngseed);
-	rngseed = (rngseed == ULONG_MAX ? 0 : rngseed+1);
-	pthread_mutex_unlock(&seedLock);
+    gsl_rng   *rng = (gsl_rng *) tdata;
 
 	assert(GPTree_feasible(arg->gptree));
     GPTree_simulate(arg->gptree, arg->branchtab, rng, arg->nreps,
                     arg->doSing);
-    gsl_rng_free(rng);
 
     return 0;
 }
@@ -85,12 +74,12 @@ void SimArg_free(SimArg * self) {
 /// object of type BranchTab, which contains all the observed site
 /// patterns and their summed branch lengths.
 BranchTab *patprob(const GPTree *gptree, int nThreads, long nreps,
-                   int doSing) {
+                   int doSing, gsl_rng *rng) {
 
     SimArg    *simarg;
 
     simarg = SimArg_new(gptree, nreps, doSing);
-    simfun(simarg, NULL);
+    simfun(simarg, rng);
 
     BranchTab *rval = BranchTab_dup(simarg->branchtab);
 

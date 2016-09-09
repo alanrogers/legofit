@@ -18,7 +18,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <time.h>
+#include <limits.h>
 
+extern pthread_mutex_t seedLock;
 extern unsigned long rngseed;
 
 void        usage(void);
@@ -68,8 +70,6 @@ int main(int argc, char **argv) {
     for(i = 0; i < argc; ++i)
         printf(" %s", argv[i]);
     putchar('\n');
-
-	rngseed = currtime^pid;
 
     // command line arguments
     for(;;) {
@@ -136,7 +136,13 @@ int main(int argc, char **argv) {
     double x[dim];
     GPTree_getParams(gptree, dim, x);
 
-    BranchTab *bt = patprob(gptree, nThreads, nreps, doSing);
+    // No need to lock rngseed, because only 1 thread is running.
+	rngseed = currtime^pid;
+    gsl_rng  *rng = gsl_rng_alloc(gsl_rng_taus);
+    gsl_rng_set(rng, rngseed);
+	rngseed = (rngseed == ULONG_MAX ? 0 : rngseed+1);
+
+    BranchTab *bt = patprob(gptree, nThreads, nreps, doSing, rng);
     BranchTab_divideBy(bt, (double) nreps);
 
     // Put site patterns and branch lengths into arrays.

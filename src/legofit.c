@@ -23,14 +23,35 @@
 #include <time.h>
 #include <unistd.h>
 #include <float.h>
+#include <pthread.h>
 #include <gsl/gsl_sf_gamma.h>
 
+extern pthread_mutex_t seedLock;
 extern unsigned long rngseed;
 
 void        usage(void);
 void        initStateVec(int ndx, void *void_p, int n, double x[n],
                          gsl_rng *rng);
 double      getChiSqGoal(double df, double upTailProb);
+void       *ThreadState_new(void *notused);
+void        ThreadState_free(void *rng);
+
+void *ThreadState_new(void *notused) {
+	// Lock seed, initialize random number generator, increment seed,
+	// and unlock.
+    gsl_rng    *rng = gsl_rng_alloc(gsl_rng_taus);
+
+	pthread_mutex_lock(&seedLock);
+    gsl_rng_set(rng, rngseed);
+	rngseed = (rngseed == ULONG_MAX ? 0 : rngseed+1);
+	pthread_mutex_unlock(&seedLock);
+
+    return rng;
+}
+
+void ThreadState_free(void *rng) {
+    gsl_rng_free( (gsl_rng *) rng );
+}
 
 void usage(void) {
     fprintf(stderr,"usage: legofit [options] -u <mut_rate>"
@@ -338,16 +359,16 @@ int main(int argc, char **argv) {
 		.jobData = &costPar,
         .objfun = costFun,
 		.threadData = NULL,
-		.ThreadState_new = NULL,
-		.ThreadState_free = NULL,
+		.ThreadState_new = ThreadState_new,
+		.ThreadState_free = ThreadState_free,
         .initData = gptree,
         .initialize = initStateVec
     };
 
     double      estimate[dim];
     double      cost, yspread;
-    gsl_rng    *rng = gsl_rng_alloc(gsl_rng_taus);
 
+    gsl_rng    *rng = gsl_rng_alloc(gsl_rng_taus);
     gsl_rng_set(rng, rngseed);
 	rngseed = (rngseed == ULONG_MAX ? 0 : rngseed+1);
 
@@ -373,7 +394,7 @@ int main(int argc, char **argv) {
     // Get mean site pattern branch lengths
     GPTree_setParams(gptree, dim, estimate);
     fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
-    BranchTab *bt = patprob(gptree, nThreads, simreps, doSing);
+    BranchTab *bt = patprob(gptree, nThreads, simreps, doSing, rng);
     BranchTab_divideBy(bt, simreps);
     
     printf("Fitted parameter values\n");
