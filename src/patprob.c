@@ -87,15 +87,14 @@ void SimArg_free(SimArg * self) {
 BranchTab *patprob(const GPTree *gptree, int nThreads, long nreps,
                    int doSing) {
 
-	assert(GPTree_feasible(gptree));
-
     SimArg    *simarg;
 
-	assert(GPTree_feasible(gptree));
     simarg = SimArg_new(gptree, nreps, doSing);
     simfun(simarg, NULL);
 
     BranchTab *rval = BranchTab_dup(simarg->branchtab);
+
+    SimArg_free(simarg);
 
     return rval;
 }

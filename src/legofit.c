@@ -372,6 +372,7 @@ int main(int argc, char **argv) {
 
     // Get mean site pattern branch lengths
     GPTree_setParams(gptree, dim, estimate);
+    fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
     BranchTab *bt = patprob(gptree, nThreads, simreps, doSing);
     BranchTab_divideBy(bt, simreps);
     

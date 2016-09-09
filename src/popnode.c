@@ -547,7 +547,10 @@ static void PopNode_randomize_r(PopNode *self, Bounds bnd, gsl_rng *rng) {
 
 /// Return 1 if parameters satisfy inequality constraints, or 0 otherwise.
 int PopNode_feasible(const PopNode *self, Bounds bnd) {
-	if( *self->twoN < bnd.lo_twoN || *self->twoN > bnd.hi_twoN)
+	if( *self->twoN < bnd.lo_twoN)
+		return 0;
+
+	if( *self->twoN > bnd.hi_twoN)
 		return 0;
 
 	if( *self->start > bnd.hi_t || *self->start < bnd.lo_t)
