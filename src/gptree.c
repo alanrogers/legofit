@@ -157,6 +157,12 @@ GPTree *GPTree_dup(const GPTree *old) {
     assert(SampNdx_ptrsLegal(&new->sndx, new->pnv, new->pnv + new->nseg));
 
     GPTree_sanityCheck(new, __FILE__, __LINE__);
+    if(!GPTree_feasible(new)) {
+        fflush(stdout);
+        dostacktrace(__FILE__,__LINE__,stderr);
+        fprintf(stderr,"%s:%d: tree isn't feasible\n",__FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
 	assert(GPTree_feasible(new));
     return new;
 }
