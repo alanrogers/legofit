@@ -403,7 +403,7 @@ double        BranchTab_cost(const BranchTab *obs, const BranchTab *expt,
     int i;
     double U = u*nnuc;
     double cost=0.0, diff;
-    double v;     // U*U*Var(B), the variance of branch length
+    double v;     // nnuc*u*u*Var(B), the variance of branch length
     double obval;  // observed mutations
     double exval;  // mutations expected under model
     for(i=0; i < BT_DIM; ++i) {
@@ -421,6 +421,7 @@ double        BranchTab_cost(const BranchTab *obs, const BranchTab *expt,
                 obval = 0.0;
                 exval = e->value * U;
                 v = e->sqr - e->value * e->value;
+                assert(v>=0.0);
                 v *= u*U*n/(n-1.0);
                 e = e->next;
             }else {
@@ -428,6 +429,7 @@ double        BranchTab_cost(const BranchTab *obs, const BranchTab *expt,
                 obval = o->value;
                 exval = e->value * U;
                 v = e->sqr - e->value * e->value;
+                assert(v>=0.0);
                 v *= u*U*n/(n-1.0);
                 e = e->next;
                 o = o->next;
@@ -437,13 +439,17 @@ double        BranchTab_cost(const BranchTab *obs, const BranchTab *expt,
             printf("o=%lg e=%lg v=%lg chisq=%lg\n",
                    obval, exval, v, diff*diff/(exval+v));
 #endif
-            assert(v>=0.0);
             cost += diff*diff/(exval+v);
+        }
+        if(o) { // e link missing, so exval=0
+            cost = HUGE_VAL;
+            break;
         }
         obval=0.0;
         while(e) { // o link missing, so obval=0
             exval = e->value * U;
             v = e->sqr - e->value * e->value;
+            assert(v>=0.0);
             v *= u*U*n/(n-1.0);
             diff = obval-exval;
 #if 0
@@ -453,10 +459,6 @@ double        BranchTab_cost(const BranchTab *obs, const BranchTab *expt,
             assert(v>=0.0);
             cost += diff*diff/(exval+v);
             e = e->next;
-        }
-        if(o) { // e link missing, so exval=0
-            cost = HUGE_VAL;
-            break;
         }
     }
     assert(cost >= 0.0);
