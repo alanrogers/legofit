@@ -120,6 +120,12 @@ void GPTree_free(GPTree *self) {
 
 /// Duplicate a GPTree object
 GPTree *GPTree_dup(const GPTree *old) {
+    if(!GPTree_feasible(old)) {
+        fflush(stdout);
+        dostacktrace(__FILE__,__LINE__,stderr);
+        fprintf(stderr,"%s:%d: old tree isn't feasible\n",__FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
 	assert(GPTree_feasible(old));
     if(old->rootGene != NULL)
         eprintf("%s:%s:%d: old->rootGene must be NULL on entry\n",
@@ -160,7 +166,7 @@ GPTree *GPTree_dup(const GPTree *old) {
     if(!GPTree_feasible(new)) {
         fflush(stdout);
         dostacktrace(__FILE__,__LINE__,stderr);
-        fprintf(stderr,"%s:%d: tree isn't feasible\n",__FILE__,__LINE__);
+        fprintf(stderr,"%s:%d: new tree isn't feasible\n",__FILE__,__LINE__);
         exit(EXIT_FAILURE);
     }
 	assert(GPTree_feasible(new));

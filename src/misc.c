@@ -25,7 +25,7 @@ void dostacktrace(const char *file, int line, FILE * ofp) {
     void       *callstack[CALLSTACK_SIZE];
     int         nsymbols = backtrace(callstack, CALLSTACK_SIZE);
 
-    fprintf(ofp, "backtrace returned %d\n", nsymbols);
+    fprintf(ofp, "backtrace depth: %d\n", nsymbols);
     fprintf(ofp, "dostacktrace called from %s:%d:\n", file, line);
     backtrace_symbols_fd(callstack, nsymbols, fileno(ofp));
 }
