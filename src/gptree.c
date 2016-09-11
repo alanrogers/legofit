@@ -12,6 +12,9 @@
 #include <string.h>
 #include <gsl/gsl_rng.h>
 
+#include <pthread.h>
+extern pthread_mutex_t outputLock;
+
 struct GPTree {
     int nseg; // number of segments in population tree.
     PopNode *pnv; // array of length nseg
@@ -121,9 +124,19 @@ void GPTree_free(GPTree *self) {
 /// Duplicate a GPTree object
 GPTree *GPTree_dup(const GPTree *old) {
     if(!GPTree_feasible(old)) {
+        pthread_mutex_lock(&outputLock);
         fflush(stdout);
         dostacktrace(__FILE__,__LINE__,stderr);
         fprintf(stderr,"%s:%d: old tree isn't feasible\n",__FILE__,__LINE__);
+        pthread_mutex_unlock(&outputLock);
+        exit(EXIT_FAILURE);
+    }
+    if(!GPTree_feasible(old)) {
+        pthread_mutex_lock(&outputLock);
+        fflush(stdout);
+        dostacktrace(__FILE__,__LINE__,stderr);
+        fprintf(stderr,"%s:%d: old tree isn't feasible\n",__FILE__,__LINE__);
+        pthread_mutex_unlock(&outputLock);
         exit(EXIT_FAILURE);
     }
 	assert(GPTree_feasible(old));
@@ -164,9 +177,11 @@ GPTree *GPTree_dup(const GPTree *old) {
 
     GPTree_sanityCheck(new, __FILE__, __LINE__);
     if(!GPTree_feasible(new)) {
+        pthread_mutex_lock(&outputLock);
         fflush(stdout);
         dostacktrace(__FILE__,__LINE__,stderr);
         fprintf(stderr,"%s:%d: new tree isn't feasible\n",__FILE__,__LINE__);
+        pthread_mutex_unlock(&outputLock);
         exit(EXIT_FAILURE);
     }
 	assert(GPTree_feasible(new));

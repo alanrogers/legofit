@@ -21,6 +21,7 @@ extern pthread_mutex_t outputLock;
 #include "gptree.h"
 #include "branchtab.h"
 #include "patprob.h"
+#include "misc.h"
 #include <math.h>
 #include <gsl/gsl_rng.h>
 
@@ -39,4 +40,22 @@ double costFun(int dim, double x[dim], void *jdata, void *tdata) {
     double cost = BranchTab_cost(cp->obs, prob, cp->u, cp->nnuc, cp->nreps);
     
     return cost;
+}
+
+void * CostPar_dup(const void * arg) {
+    const CostPar *old = (const CostPar *) arg;
+    if(arg==NULL)
+        return NULL;
+    CostPar *new = memdup(old, sizeof CostPar);
+    CHECKMEM(new);
+    new->obs = BranchTab_dup(old->obs);
+    CHECKMEM(new->obs);
+    new->gptree = GPTree_dup(old->gptree);
+    CHECKMEM(new->gptree);
+    return new;
+}
+
+void CostPar_free(void *arg) {
+    if(arg)
+        free(arg);
 }

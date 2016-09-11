@@ -357,6 +357,8 @@ int main(int argc, char **argv) {
         .CR = CR,
         .costGoal = chiSqGoal,
 		.jobData = &costPar,
+        .JobData_dup = CostPar_dup,
+        .JobData_free = CostPar_free,
         .objfun = costFun,
 		.threadData = NULL,
 		.ThreadState_new = ThreadState_new,

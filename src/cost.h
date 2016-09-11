@@ -19,5 +19,7 @@ typedef struct CostPar {
 } CostPar;
 
 double      costFun(int dim, double x[dim], void *jdata, void *tdata);
+void       *CostPar_dup(const void * arg);
+void        CostPar_free(void *arg);
 
 #endif

@@ -211,10 +211,16 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 #endif
 
     TaskArg    *targ[nPts];
+    void       *jobData[nPts];
 
     for(i = 0; i < nPts; ++i) {
         (*dep.initialize)(i, dep.initData, dim, c[i], rng);
-        targ[i] = TaskArg_new(dim, dep.objfun, dep.jobData);
+        if(dep.jobData)
+            jobData[i] = (*dep.JobData_dup)(dep.jobData);
+        else
+            jobData[i] = NULL;
+        CHECKMEM(jobData[i]);
+        targ[i] = TaskArg_new(dim, dep.objfun, jobData);
 
         // calculate objective function values in parallel
         TaskArg_setArray(targ[i], dim, c[i]);
@@ -445,8 +451,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
         JobQueue_waitOnJobs(jq);
 #endif
 
-        // 2nd pass through ensemble is the "reduce" portion
-        // of "map-reduce". It generates a new generation, based
+        // 2nd pass through ensemble generates a new generation, based
         // on the old generation and all the trials.
         double      cmax = -INFINITY;
         for(i = 0; i < nPts; ++i) {
@@ -455,8 +460,8 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
                 // accept mutation
                 cost[i] = trial_cost;
                 assignd(dim, (*pnew)[i], targ[i]->v);
-                if(trial_cost < cmin) { // Was this a new minimum? If so...
-                    cmin = trial_cost;  // reset cmin to new low...
+                if(trial_cost < cmin) { // Was this a new minimum? If so,
+                    cmin = trial_cost;  // reset cmin to new low.
                     imin = i;
                     assignd(dim, best, targ[i]->v);
                 }
@@ -470,7 +475,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
         // Best member of current generation
         assignd(dim, bestit, best);
 
-        // swap population arrays. New generation becomes old one
+        // swap population arrays. New becomes old.
         {
             double      (*pswap)[nPts][dim] = pold;
             pold = pnew;
@@ -520,8 +525,11 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     memcpy(estimate, best, dim * sizeof(estimate[0]));
 
     // Free memory
-    for(i = 0; i < nPts; ++i)
+    for(i = 0; i < nPts; ++i) {
+        if(jobData[i])
+            (*JobData_free)(jobData[i]);
         TaskArg_free(targ[i]);
+    }
 #if 1
     JobQueue_free(jq);
 #endif

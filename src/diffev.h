@@ -16,6 +16,8 @@ struct DiffEvPar {
     unsigned long seed;
     double      F, CR, costGoal;
     void       *jobData;
+    void       *(*JobData_dup) (const void *);
+    void        (*JobData_free) (void *);
     double      (*objfun) (int dim, double x[dim], void *, void *);
 
     // Set these equal to NULL unless you want each thread to maintain
