@@ -381,7 +381,9 @@ int main(int argc, char **argv) {
     // possible while diffev is running.
     fflush(stdout);
 
+    fprintf(stderr,"%s:%s:%d\n",__FILE__,__func__,__LINE__);
     int         status = diffev(dim, estimate, &cost, &yspread, dep, rng);
+    fprintf(stderr,"%s:%s:%d\n",__FILE__,__func__,__LINE__);
     switch (status) {
     case 0:
         printf("DiffEv Converged. cost=%0.5lg spread=%0.5lg\n",

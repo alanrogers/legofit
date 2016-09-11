@@ -174,6 +174,7 @@ static inline void assignd(int dim, double a[dim], double b[dim]) {
 int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
            DiffEvPar dep, gsl_rng * rng) {
 
+    fprintf(stderr,"%s:%s:%d\n",__FILE__,__func__,__LINE__);
     int         i, j, L, n;     // counting variables
     int         r[5];           // random indices
     int         imin;           // index to member with lowest energy
@@ -196,6 +197,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     for(i = 0; i < nPts; ++i)
         ndx[i] = i;
 
+    fprintf(stderr,"%s:%s:%d\n",__FILE__,__func__,__LINE__);
     double      c[nPts][dim], d[nPts][dim];
 
     *yspread = *loCost = strtod("NaN", NULL);
@@ -204,6 +206,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     double      cost[nPts];     // obj. funct. values
     double      cmin;           // help variables
 
+    fprintf(stderr,"%s:%s:%d\n",__FILE__,__func__,__LINE__);
 #if 1
     JobQueue   *jq = JobQueue_new(nthreads, dep.threadData,
                                   dep.ThreadState_new,
@@ -213,15 +216,20 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     TaskArg    *targ[nPts];
     void       *jobData[nPts];
 
+    fprintf(stderr,"%s:%s:%d\n",__FILE__,__func__,__LINE__);
     for(i = 0; i < nPts; ++i) {
+        fprintf(stderr,"%s:%s:%d\n",__FILE__,__func__,__LINE__);
         (*dep.initialize)(i, dep.initData, dim, c[i], rng);
+        fprintf(stderr,"%s:%s:%d\n",__FILE__,__func__,__LINE__);
         if(dep.jobData)
             jobData[i] = (*dep.JobData_dup)(dep.jobData);
         else
             jobData[i] = NULL;
+        fprintf(stderr,"%s:%s:%d\n",__FILE__,__func__,__LINE__);
         CHECKMEM(jobData[i]);
         targ[i] = TaskArg_new(dim, dep.objfun, jobData);
 
+        fprintf(stderr,"%s:%s:%d\n",__FILE__,__func__,__LINE__);
         // calculate objective function values in parallel
         TaskArg_setArray(targ[i], dim, c[i]);
 #if 1
@@ -229,7 +237,9 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 #else
         taskfun(targ[i], NULL);
 #endif
+        fprintf(stderr,"%s:%s:%d\n",__FILE__,__func__,__LINE__);
     }
+    fprintf(stderr,"%s:%s:%d\n",__FILE__,__func__,__LINE__);
 #if 1
     JobQueue_waitOnJobs(jq);
 #endif
@@ -527,7 +537,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     // Free memory
     for(i = 0; i < nPts; ++i) {
         if(jobData[i])
-            (*JobData_free)(jobData[i]);
+            (*dep.JobData_free)(jobData[i]);
         TaskArg_free(targ[i]);
     }
 #if 1
