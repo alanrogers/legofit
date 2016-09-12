@@ -90,6 +90,7 @@ ParStore   *ParStore_new(void) {
 
 /// Duplicate a ParStore
 ParStore   *ParStore_dup(const ParStore * old) {
+    assert(old);
     ParStore   *new = memdup(old, sizeof(ParStore));
     new->head = NULL;
 
@@ -176,11 +177,13 @@ void ParStore_addFixedPar(ParStore * self, double value, const char *name) {
 
 /// Return the number of fixed parameters
 int ParStore_nFixed(ParStore * self) {
+    assert(self);
     return self->nFixed;
 }
 
 /// Return the number of free parameters
 int ParStore_nFree(ParStore * self) {
+    assert(self);
     return self->nFree;
 }
 
@@ -267,7 +270,7 @@ void ParStore_sanityCheck(ParStore *self, const char *file, int line) {
 #endif    
 }
 
-int         ParStore_equals(ParStore *lhs, ParStore *rhs) {
+int         ParStore_equals(const ParStore *lhs, const ParStore *rhs) {
     if(lhs == rhs)
         return 1;
     if(lhs->nFixed != rhs->nFixed)
@@ -306,7 +309,7 @@ void Bounds_sanityCheck(Bounds * self, const char *file, int line) {
 #endif
 }
 
-int         Bounds_equals(Bounds *lhs, Bounds *rhs) {
+int         Bounds_equals(const Bounds *lhs, const Bounds *rhs) {
     if(lhs == rhs)
         return 1;
     return lhs->lo_twoN == rhs->lo_twoN

@@ -123,22 +123,7 @@ void GPTree_free(GPTree *self) {
 
 /// Duplicate a GPTree object
 GPTree *GPTree_dup(const GPTree *old) {
-    if(!GPTree_feasible(old)) {
-        pthread_mutex_lock(&outputLock);
-        fflush(stdout);
-        dostacktrace(__FILE__,__LINE__,stderr);
-        fprintf(stderr,"%s:%d: old tree isn't feasible\n",__FILE__,__LINE__);
-        pthread_mutex_unlock(&outputLock);
-        exit(EXIT_FAILURE);
-    }
-    if(!GPTree_feasible(old)) {
-        pthread_mutex_lock(&outputLock);
-        fflush(stdout);
-        dostacktrace(__FILE__,__LINE__,stderr);
-        fprintf(stderr,"%s:%d: old tree isn't feasible\n",__FILE__,__LINE__);
-        pthread_mutex_unlock(&outputLock);
-        exit(EXIT_FAILURE);
-    }
+    assert(old);
 	assert(GPTree_feasible(old));
     if(old->rootGene != NULL)
         eprintf("%s:%s:%d: old->rootGene must be NULL on entry\n",
@@ -176,6 +161,7 @@ GPTree *GPTree_dup(const GPTree *old) {
     assert(SampNdx_ptrsLegal(&new->sndx, new->pnv, new->pnv + new->nseg));
 
     GPTree_sanityCheck(new, __FILE__, __LINE__);
+    assert(GPTree_equals(old, new));
     if(!GPTree_feasible(new)) {
         pthread_mutex_lock(&outputLock);
         fflush(stdout);
@@ -204,7 +190,7 @@ void GPTree_sanityCheck(GPTree *self, const char *file, int line) {
 /// with an error if the GPTree pointers are different but one or more
 /// of the internal pointers is the same.  Does not access rootPop or
 /// rootGene.
-int GPTree_equals(GPTree *lhs, GPTree *rhs) {
+int GPTree_equals(const GPTree *lhs, const GPTree *rhs) {
     if(lhs == rhs)
         return 0;
     if(lhs->pnv == rhs->pnv)

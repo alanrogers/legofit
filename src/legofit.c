@@ -381,9 +381,7 @@ int main(int argc, char **argv) {
     // possible while diffev is running.
     fflush(stdout);
 
-    fprintf(stderr,"%s:%s:%d\n",__FILE__,__func__,__LINE__);
     int         status = diffev(dim, estimate, &cost, &yspread, dep, rng);
-    fprintf(stderr,"%s:%s:%d\n",__FILE__,__func__,__LINE__);
     switch (status) {
     case 0:
         printf("DiffEv Converged. cost=%0.5lg spread=%0.5lg\n",
@@ -397,7 +395,6 @@ int main(int argc, char **argv) {
 
     // Get mean site pattern branch lengths
     GPTree_setParams(gptree, dim, estimate);
-    fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
     BranchTab *bt = patprob(gptree, nThreads, simreps, doSing, rng);
     BranchTab_divideBy(bt, simreps);
     

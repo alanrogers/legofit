@@ -670,7 +670,7 @@ unsigned SampNdx_size(SampNdx * self) {
 /// This equality check doesn't do much, because the pointers in
 /// different SampNdx objects don't have to be (in fact shouldn't be)
 /// equal.
-int         SampNdx_equals(SampNdx *lhs, SampNdx *rhs){
+int         SampNdx_equals(const SampNdx *lhs, const SampNdx *rhs){
     if(lhs==NULL && rhs==NULL)
         return 1;
     if(lhs==NULL || rhs==NULL)

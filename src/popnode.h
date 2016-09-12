@@ -71,7 +71,7 @@ void        SampNdx_addSamples(SampNdx * self, unsigned nsamples,
 							   PopNode * pnode);
 void        SampNdx_populateTree(SampNdx * self);
 unsigned    SampNdx_size(SampNdx * self);
-int         SampNdx_equals(SampNdx *lhs, SampNdx *rhs);
+int         SampNdx_equals(const SampNdx *lhs, const SampNdx *rhs);
 void        SampNdx_sanityCheck(SampNdx *self, const char *file, int line);
 int         SampNdx_ptrsLegal(SampNdx *self, PopNode *start, PopNode *end);
 void        SampNdx_shiftPtrs(SampNdx *self, size_t dpop);

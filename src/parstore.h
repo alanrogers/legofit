@@ -36,11 +36,11 @@ ParStore   *ParStore_dup(const ParStore * old);
 void        ParStore_sanityCheck(ParStore *self, const char *file, int line);
 void        ParStore_print(ParStore *self, FILE *fp);
 void        ParStore_printFree(ParStore *self, FILE *fp);
-int         ParStore_equals(ParStore *lhs, ParStore *rhs);
+int         ParStore_equals(const ParStore *lhs, const ParStore *rhs);
 void        ParStore_setFreeParams(ParStore *self, int n, double x[n]);
 void        ParStore_getFreeParams(ParStore *self, int n, double x[n]);
 
 void        Bounds_sanityCheck(Bounds *self, const char *file, int line);
-int         Bounds_equals(Bounds *lhs, Bounds *rhs);
+int         Bounds_equals(const Bounds *lhs, const Bounds *rhs);
 
 #endif
