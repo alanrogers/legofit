@@ -183,7 +183,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     const int   strategy = dep.strategy;
     const double F = dep.F;
     const double CR = dep.CR;
-    const double costGoal = dep.costGoal;
+    const double DEtol = dep.DEtol;
 #if 1
     const int   nthreads = dep.nthreads;
 #endif
@@ -483,6 +483,8 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 
         // Difference between best and worst cost values
         *yspread = cmax - cmin;
+        if(cmin > 1.0)
+            *yspread /= cmin;
 
         // Output part
         if(verbose && gen % refresh == 0) {
@@ -501,7 +503,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 #endif
             fflush(stdout);
         }
-        if(cmin <= costGoal)
+        if(*yspread <= DEtol)
             break;
     }
     // End iterations
@@ -509,7 +511,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 #if 1
     JobQueue_noMoreJobs(jq);
 #endif
-    if(cmin > costGoal) {
+    if(*yspread > DEtol) {
         status = 1;
         if(verbose)
             fputs("No convergence\n", stdout);
