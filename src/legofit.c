@@ -135,7 +135,7 @@ int main(int argc, char **argv) {
 	// DiffEv parameters
 	double      F = 0.9;
 	double      CR = 0.8;
-	double      DEtol = 0.005; // termination criterion
+	double      DEtol = 0.05; // termination criterion
     double      u = 0.0;      // mutation rate per site per generation
     long        nnuc = 0;     // number of nucleotides per haploid genome
     int         deItr = 1000; // number of diffev iterations
@@ -347,12 +347,12 @@ int main(int argc, char **argv) {
     int         status = diffev(dim, estimate, &cost, &yspread, dep, rng);
     switch (status) {
     case 0:
-        printf("DiffEv Converged. cost=%0.5lg spread=%0.5lg\n",
-           cost, yspread);
+        printf("DiffEv Converged. cost=%0.5lg; spread=%0.5lg < %lg = deTol\n",
+               cost, yspread, DEtol);
         break;
     default:
-        printf("DiffEv FAILED. cost=%0.5lg > %lg = deTol; spread=%0.5lg\n",
-               cost, DEtol, yspread);
+        printf("DiffEv FAILED. cost=%0.5lg; spread=%0.5lg > %lg = deTol\n",
+               cost, yspread, DEtol);
         break;
     }
 
