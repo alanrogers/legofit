@@ -248,6 +248,13 @@ int main(int argc, char **argv) {
     printf("# nucleotides/genome : %ld\n", nnuc);
     printf("# %s singleton site patterns.\n",
            (doSing ? "Including" : "Excluding"));
+#if COST==KL_COST
+    printf("# cost function      : %s\n", "KL");
+#elif COST==CHISQR_COST
+    printf("# cost function      : %s\n", "ChiSqr");
+#else
+# error "Unknown cost function"
+#endif
 
     Bounds bnd = {
             .lo_twoN = lo_twoN,
@@ -277,6 +284,9 @@ int main(int argc, char **argv) {
             exit(EXIT_FAILURE);
         }
     }
+#if COST==KL_COST
+    BranchTab_normalize(obs);
+#endif
 
     // parameters for cost function
     CostPar costPar = {

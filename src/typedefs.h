@@ -31,4 +31,8 @@ typedef uint32_t tipId_t;
 typedef uint64_t tipId_t;
 #endif
 
+#define KL_COST 1
+#define CHISQR_COST 2
+#define COST KL_COST
+
 #endif
