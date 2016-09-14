@@ -1,3 +1,5 @@
+double      getChiSqGoal(double df, double upTailProb);
+
 /// Bisect to find Chi-squared statistic that implies given value of
 /// upper tail probability.
 double getChiSqGoal(double df, double upTailProb) {
@@ -29,4 +31,18 @@ double getChiSqGoal(double df, double upTailProb) {
             lo = mid;
     }
     return hi;
+}
+
+int main() {
+    double      df;                            // degrees of freedom
+
+    // degrees of freedom: number of site patterns minus number of
+    // fitted parameters.
+    double nsamp = GPTree_nsamples(gptree);
+    df = pow(2.0, nsamp) - 2.0;
+    if(!doSing)
+        df -= nsamp;
+    df -= GPTree_nFree(gptree);
+    printf("# degrees of freedom : %lf\n", df);
+
 }

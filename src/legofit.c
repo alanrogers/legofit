@@ -32,7 +32,6 @@ extern unsigned long rngseed;
 void        usage(void);
 void        initStateVec(int ndx, void *void_p, int n, double x[n],
                          gsl_rng *rng);
-double      getChiSqGoal(double df, double upTailProb);
 void       *ThreadState_new(void *notused);
 void        ThreadState_free(void *rng);
 
@@ -124,7 +123,6 @@ int main(int argc, char **argv) {
 	unsigned long pid = (unsigned long) getpid();
     double      lo_twoN = 0.0, hi_twoN = 1e6;  // twoN bounds
     double      lo_t = 0.0, hi_t = 1e6;        // t bounds
-    double      df;                            // degrees of freedom
     int         nThreads = 0;     // total number of threads
     int         doSing=0;  // nonzero means use singleton site patterns
     int         optndx;
@@ -259,15 +257,6 @@ int main(int argc, char **argv) {
     };
     GPTree *gptree = GPTree_new(lgofname, bnd);
 	LblNdx lblndx  = GPTree_getLblNdx(gptree);
-
-    // degrees of freedom: number of site patterns minus number of
-    // fitted parameters.
-    double nsamp = GPTree_nsamples(gptree);
-    df = pow(2.0, nsamp) - 2.0;
-    if(!doSing)
-        df -= nsamp;
-    df -= GPTree_nFree(gptree);
-    printf("# degrees of freedom : %lf\n", df);
 
     // Observed site pattern frequencies
     BranchTab *obs = BranchTab_parse(patfname, &lblndx);
