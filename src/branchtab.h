@@ -17,10 +17,13 @@ int           BranchTab_divideBy(BranchTab *self, double denom);
 BranchTab    *BranchTab_parse(const char *fname, const LblNdx *lblndx);
 BranchTab    *BranchTab_dup(const BranchTab *old);
 int           BranchTab_equals(const BranchTab *lhs, const BranchTab *rhs);
-double        BranchTab_cost(const BranchTab *obs, const BranchTab *expt,
-                             double u, long nnuc, double n);
 double        BranchTab_sum(const BranchTab *self);
 int           BranchTab_normalize(BranchTab *self);
+double        BranchTab_chiSqCost(const BranchTab *obs, const BranchTab *expt,
+                             double u, long nnuc, double n);
+double        BranchTab_smplChiSqCost(const BranchTab *obs,
+                                      const BranchTab *expt,
+                                      double u, long nnuc, double n);
 double        BranchTab_KLdiverg(const BranchTab *obs, const BranchTab *expt);
 double        BranchTab_poissonCost(const BranchTab *obs, const BranchTab *expt,
                                     double u, long nnuc, double n);

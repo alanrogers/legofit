@@ -252,6 +252,8 @@ int main(int argc, char **argv) {
     printf("# cost function      : %s\n", "KL");
 #elif COST==CHISQR_COST
     printf("# cost function      : %s\n", "ChiSqr");
+#elif COST==SMPLCHISQR_COST
+    printf("# cost function      : %s\n", "SmplChiSqr");
 #elif COST==POISSON_COST
     printf("# cost function      : %s\n", "Poisson");
 #else
