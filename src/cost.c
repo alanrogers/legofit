@@ -43,7 +43,12 @@ double costFun(int dim, double x[dim], void *jdata, void *tdata) {
     double cost = BranchTab_KLdiverg(cp->obs, prob);
 #elif COST==CHISQR_COST   
 # warning CHISQR_COST
-    double cost = BranchTab_cost(cp->obs, prob, cp->u, cp->nnuc, cp->nreps);
+    double cost = BranchTab_chiSqCost(cp->obs, prob, cp->u, cp->nnuc,
+                                      cp->nreps);
+#elif COST==SMPLCHISQR_COST   
+# warning CHISQR_COST
+    double cost = BranchTab_smplChiSqCost(cp->obs, prob, cp->u, cp->nnuc,
+                                      cp->nreps);
 #elif COST==POISSON_COST   
 # warning POISSON_COST
     double cost = BranchTab_poissonCost(cp->obs, prob, cp->u, cp->nnuc,

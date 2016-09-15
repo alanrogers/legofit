@@ -417,7 +417,7 @@ BranchTab *BranchTab_parse(const char *fname, const LblNdx *lblndx) {
 /// nucleotide site contributing to a given site pattern. This is u*nnuc
 /// times a mixture of Poisson distributions. It's mean is u*nnuc*Mean(B),
 /// and its variance is u*nnuc*Mean(B) + nnuc*u*u*Var(B).
-double        BranchTab_cost(const BranchTab *obs, const BranchTab *expt,
+double        BranchTab_chiSqCost(const BranchTab *obs, const BranchTab *expt,
                              double u, long nnuc, double n) {
     assert(expt->frozen);
     int i;
@@ -478,6 +478,67 @@ double        BranchTab_cost(const BranchTab *obs, const BranchTab *expt,
 #endif
             assert(v>=0.0);
             cost += diff*diff/(exval+v);
+            e = e->next;
+        }
+    }
+    assert(cost >= 0.0);
+    return cost;
+}
+#endif
+
+#if COST==SMPLCHISQR_COST
+/// Chi-squared difference between observed and expected.  The
+/// Chi-squared statistic is (obs - expected)^2/expected.
+double        BranchTab_smplChiSqCost(const BranchTab *obs,
+                                      const BranchTab *expt,
+                                      double u, long nnuc, double n) {
+    assert(expt->frozen);
+    int i;
+    double U = u*nnuc;
+    double cost=0.0, diff;
+    double obval;  // observed mutations
+    double exval;  // mutations expected under model
+    for(i=0; i < BT_DIM; ++i) {
+        BTLink *o = obs->tab[i];
+        BTLink *e = expt->tab[i];
+        while(o && e) {
+            if(o->key < e->key) {
+                // e link missing, so exval=0.
+                obval = o->value;
+                exval = 0.0;
+                o = o->next;
+            }else if(o->key > e->key) {
+                // o link missing, so obval=0.
+                obval = 0.0;
+                exval = e->value * U;
+                e = e->next;
+            }else {
+                assert(o->key == e->key);
+                obval = o->value;
+                exval = e->value * U;
+                e = e->next;
+                o = o->next;
+            }
+            diff = obval-exval;
+#if 0
+            printf("o=%lg e=%lg chisq=%lg\n",
+                   obval, exval, diff*diff/exval);
+#endif
+            cost += diff*diff/exval;
+        }
+        if(o) { // e link missing, so exval=0
+            cost = HUGE_VAL;
+            break;
+        }
+        obval=0.0;
+        while(e) { // o link missing, so obval=0
+            exval = e->value * U;
+            diff = obval-exval;
+#if 0
+            printf("o=%lg e=%lg chisq=%lg\n",
+                   obval, exval, diff*diff/exval);
+#endif
+            cost += diff*diff/exval;
             e = e->next;
         }
     }
