@@ -486,6 +486,55 @@ double        BranchTab_cost(const BranchTab *obs, const BranchTab *expt,
 }
 #endif
 
+#if COST==POISSON_COST
+/// Use Poisson model to calculate negative log likelihood. 
+double BranchTab_poissonCost(const BranchTab *obs, const BranchTab *expt,
+                             double u, long nnuc, double n) {
+    assert(expt->frozen);
+    int i;
+    double U = u*nnuc;
+    double cost=0.0;
+    double obval;  // observed mutations
+    double exval;  // mutations expected under model
+    for(i=0; i < BT_DIM; ++i) {
+        BTLink *o = obs->tab[i];
+        BTLink *e = expt->tab[i];
+        while(o && e) {
+            if(o->key < e->key) {
+                // e link missing, so exval=0.
+                obval = o->value;
+                exval = 0.0;
+                o = o->next;
+            }else if(o->key > e->key) {
+                // o link missing, so obval=0.
+                obval = 0.0;
+                exval = e->value * U;
+                e = e->next;
+            }else {
+                assert(o->key == e->key);
+                obval = o->value;
+                exval = e->value * U;
+                e = e->next;
+                o = o->next;
+            }
+            cost += -obval*log(exval) + exval + lgamma(obval+1.0);
+        }
+        if(o) { // e link missing, so exval=0
+            cost = HUGE_VAL;
+            break;
+        }
+        obval=0.0;
+        while(e) { // o link missing, so obval=0
+            exval = e->value * U;
+            cost += -obval*log(exval) + exval + lgamma(obval+1.0);
+            e = e->next;
+        }
+    }
+    assert(cost >= 0.0);
+    return cost;
+}
+#endif
+
 /// Return sum of values in BranchTab.
 double BranchTab_sum(const BranchTab *self) {
     unsigned i;
@@ -525,15 +574,6 @@ int BranchTab_normalize(BranchTab *self) {
 /// are observed values without corresponding values in expt.
 double BranchTab_KLdiverg(const BranchTab *obs, const BranchTab *expt) {
     assert(Dbl_near(1.0, BranchTab_sum(obs)));
-	if(!Dbl_near(1.0, BranchTab_sum(expt))) {
-		double s = BranchTab_sum(expt);
-		double e = s-1.0;
-		printf("%s:%s:%d: bad BranchTab sum=%lf err=%le\n",
-			   __FILE__,__func__,__LINE__,
-			   s, e);
-		BranchTab_print(expt);
-		fflush(stdout);
-	}
     assert(Dbl_near(1.0, BranchTab_sum(expt)));
 
     int i;

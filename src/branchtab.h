@@ -22,5 +22,6 @@ double        BranchTab_cost(const BranchTab *obs, const BranchTab *expt,
 double        BranchTab_sum(const BranchTab *self);
 int           BranchTab_normalize(BranchTab *self);
 double        BranchTab_KLdiverg(const BranchTab *obs, const BranchTab *expt);
-
+double        BranchTab_poissonCost(const BranchTab *obs, const BranchTab *expt,
+                                    double u, long nnuc, double n);
 #endif
