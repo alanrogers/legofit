@@ -33,7 +33,9 @@ typedef struct BTLink {
     struct BTLink  *next;
     tipId_t         key;
     double          value;
+#if COST==CHISQR_COST
     double          sqr;   // squares
+#endif
 } BTLink;
 
 struct BranchTab {
@@ -95,7 +97,9 @@ BTLink         *BTLink_new(tipId_t key, double value) {
     new->next = NULL;
     new->key = key;
     new->value = value;
+#if COST==CHISQR_COST
     new->sqr = value*value;
+#endif
     return new;
 }
 
@@ -108,7 +112,9 @@ BTLink     *BTLink_dup(const BTLink *old) {
     CHECKMEM(new);
     new->key = old->key;
     new->value = old->value;
+#if COST==CHISQR_COST
     new->sqr = old->sqr;
+#endif
     new->next = BTLink_dup(old->next);
     return new;
 }
@@ -120,9 +126,12 @@ int  BTLink_equals(const BTLink *lhs, const BTLink *rhs) {
     if(lhs==NULL || rhs==NULL)
         return 0;
     if(lhs->key!=rhs->key
-       || lhs->value!=rhs->value
-       || lhs->sqr != rhs->sqr)
+       || lhs->value!=rhs->value)
         return 0;
+#if COST==CHISQR_COST
+    if(lhs->sqr != rhs->sqr)
+        return 0;
+#endif
     return BTLink_equals(lhs->next, rhs->next);
 }
 
@@ -145,7 +154,9 @@ BTLink *BTLink_add(BTLink * self, tipId_t key, double value) {
     }
     assert(key == self->key);
     self->value += value;
+#if COST==CHISQR_COST
     self->sqr += value*value;
+#endif
     return self;
 }
 
@@ -171,8 +182,12 @@ int BTLink_hasSingletons(BTLink * self) {
 void BTLink_printShallow(const BTLink * self) {
     if(self == NULL)
         return;
+#if COST==CHISQR_COST
     printf(" [%lu, %lf, %lf]",
            (unsigned long) self->key, self->value, self->sqr);
+#else
+    printf(" [%lu, %lf]", (unsigned long) self->key, self->value);
+#endif
 }
 
 void BTLink_print(const BTLink * self) {
@@ -279,7 +294,9 @@ int BranchTab_divideBy(BranchTab *self, double denom) {
         BTLink *el;
         for(el = self->tab[i]; el; el = el->next) {
             el->value /= denom;
+#if COST==CHISQR_COST
             el->sqr /= denom;
+#endif
         }
     }
 
@@ -317,7 +334,9 @@ void BranchTab_toArrays(BranchTab *self, unsigned n, tipId_t key[n],
 						__FILE__,__func__,__LINE__);
             key[j] = link->key;
             value[j] = link->value;
+#if COST==CHISQR_COST
             sqr[j] = link->sqr;
+#endif
             ++j;
         }
     }
@@ -390,6 +409,7 @@ BranchTab *BranchTab_parse(const char *fname, const LblNdx *lblndx) {
     return self;
 }
 
+#if COST==CHISQR_COST
 /// Chi-squared difference between observed and expected.  The
 /// Chi-squared statistic is (obs - expected)^2/variance. To estimate
 /// the variance, note that the expected number of mutations is
@@ -464,6 +484,7 @@ double        BranchTab_cost(const BranchTab *obs, const BranchTab *expt,
     assert(cost >= 0.0);
     return cost;
 }
+#endif
 
 /// Return sum of values in BranchTab.
 double BranchTab_sum(const BranchTab *self) {
