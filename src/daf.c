@@ -77,7 +77,10 @@ int main(int argc, char **argv) {
         if(nref != 1 || nalt != 1 || naa != 1)
             continue;
 
-		if(aa[0] == '.' || aa[0] == '-')
+        // Skip if ref, alt, or aa are missing.
+		if(aa[0] == '.' || aa[0] == '-'
+           || ref[0] == '.' || ref[0] == '-'
+           || alt[0] == '.' || alt[0] == '-')
 			continue;
 
 #if 0
