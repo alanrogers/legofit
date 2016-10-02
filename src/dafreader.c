@@ -174,24 +174,34 @@ int DAFReader_multiNext(int n, DAFReader *r[n]) {
 	// Loop until both chr and position are homogeneous.
     while(!onSameChr || minnuc!=maxnuc) {
 
-		// get them all on the same chromosome
-		while(!onSameChr) {
-            onSameChr=1;
-			for(i=0; i<n; ++i) {
-                if(i==maxchr)
-                    continue;
-				while((diff=strcmp(r[i]->chr, r[maxchr]->chr)) < 0) {
-					if(EOF == DAFReader_next(r[i]))
-						return EOF;
+        // get them all on the same chromosome
+        if(!onSameChr) {
+            while(!onSameChr) {
+                onSameChr=1;
+                for(i=0; i<n; ++i) {
+                    if(i==maxchr)
+                        continue;
+                    while((diff=strcmp(r[i]->chr, r[maxchr]->chr)) < 0) {
+                        fprintf(stderr,"%s:%d: %d:%s < %d:%s..reading\n",__FILE__,__LINE__,
+                                i,r[i]->chr, maxchr,r[maxchr]->chr);
+                        if(EOF == DAFReader_next(r[i]))
+                            return EOF;
+                    }
+                    assert(diff >= 0);
+                    if(diff > 0) {
+                        maxchr = i;
+                        onSameChr=0;
+                    }
                 }
-                if(diff > 0) {
-                    maxchr = i;
-                    onSameChr=0;
-				}
-			}
-		}
+            }
 
-        assert(onSameChr);
+            assert(onSameChr);
+            maxnuc = minnuc = r[0]->nucpos;
+            for(i=1; i<n; ++i) {
+                maxnuc = MAX(maxnuc, r[i]->nucpos);
+                minnuc = MIN(minnuc, r[i]->nucpos);
+            }
+        }
 
 		// Now get them all on the same position. Have
 		// to keep checking chr in case one file moves
