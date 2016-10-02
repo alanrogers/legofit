@@ -58,6 +58,8 @@ static void usage(void) {
 	tellopt("-b <x> or --blocksize <x>",
 			"# of SNPs per block in moving-blocks bootstrap. Def: 0.");
 	tellopt("-1 or --singletons", "Use singleton site patterns");
+    tellopt("-m or --logMismatch", "log AA/DA mismatches to tabpat.log");
+    tellopt("-F or --logFixed", "log fixed sites to tabpat.log");
     tellopt("-h or --help", "Print this message");
     exit(1);
 }
@@ -201,6 +203,9 @@ int main(int argc, char **argv) {
     long blocksize = 300;
     StrInt *strint = StrInt_new();
     char bootfname[FILENAMESIZE] = { '\0' };
+    const char *logfname = "tabpat.log";
+    int logMismatch=0, logFixed=0;
+    FILE *logfile = NULL;
 
     static struct option myopts[] = {
         // {char *name, int has_arg, int *flag, int val}
@@ -208,6 +213,8 @@ int main(int argc, char **argv) {
         {"bootreps", required_argument, 0, 'r'},
         {"blocksize", required_argument, 0, 'b'},
         {"singletons", no_argument, 0, '1'},
+        {"logMismatch", no_argument, 0, 'm'},
+        {"logFixed", no_argument, 0, 'F'},
         {"help", no_argument, 0, 'h'},
 //        {"threads", required_argument, 0, 't'},
         {NULL, 0, NULL, 0}
@@ -215,7 +222,7 @@ int main(int argc, char **argv) {
 
     // command line arguments
     for(;;) {
-        i = getopt_long(argc, argv, "b:c:f:hr:t:v1", myopts, &optndx);
+        i = getopt_long(argc, argv, "b:c:f:hr:t:mFv1", myopts, &optndx);
         if(i == -1)
             break;
         switch (i) {
@@ -250,6 +257,12 @@ int main(int argc, char **argv) {
             break;
         case '1':
             doSing=1;
+            break;
+        case 'm':
+            logMismatch=1;
+            break;
+        case 'F':
+            logFixed=1;
             break;
         default:
             usage();
@@ -289,6 +302,14 @@ int main(int argc, char **argv) {
             usage();
         LblNdx_addSamples(&lndx, 1, poplbl[i]);
 		r[i] = DAFReader_new(fname[i]);
+    }
+
+    if(logMismatch || logFixed) {
+        logfile = fopen(logfname, "w");
+        if(logfile==NULL) {
+            fprintf(stderr,"Can't write to file \"%s\".\n",logfname);
+            exit(EXIT_FAILURE);
+        }
     }
 
 	// Default boot file name
@@ -409,8 +430,16 @@ int main(int argc, char **argv) {
 
         // Skip loci at which data sets disagree about which allele
         // is derived and which ancestral.
-        if(!DAFReader_allelesMatch(n, r))
+        if(!DAFReader_allelesMatch(n, r)) {
+            if(logMismatch) {
+                assert(logfile);
+                fprintf(logfile, "Mismatch\n");
+                DAFReader_printHdr(logfile);
+                for(i=0; i<n; ++i)
+                    DAFReader_print(r[i], logfile);
+            }
             continue;
+        }
 
         if(bootreps > 0) {
             // chrndx is index of current chromosome
@@ -442,8 +471,16 @@ int main(int argc, char **argv) {
             minp = fmin(minp, p[j]);
             maxp = fmax(maxp, p[j]);
 		}
-        if(maxp==0.0 || minp==1.0)
+        if(maxp==0.0 || minp==1.0) {
+            if(logFixed) {
+                assert(logfile);
+                fprintf(logfile, "All p=%lf\n", maxp==0.0?0.0:1.0);
+                DAFReader_printHdr(logfile);
+                for(i=0; i<n; ++i)
+                    DAFReader_print(r[i], logfile);
+            }
             continue;
+        }
 
 		// Contribution of current snp to each site pattern.  Inner
 		// loop considers each bit in current pattern.  If that bit is
@@ -539,6 +576,8 @@ int main(int argc, char **argv) {
 	if(bootreps > 0)
 		Boot_free(boot);
     StrInt_free(strint);
+    if(logfile)
+        fclose(logfile);
     return 0;
 }
 

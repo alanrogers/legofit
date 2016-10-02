@@ -238,13 +238,13 @@ int DAFReader_allelesMatch(int n, DAFReader *r[n]) {
 }
 
 void DAFReader_printHdr(FILE *fp) {
-    fprintf(fp, "%20s %5s %10s %2s %2s %8s\n",
+    fprintf(fp, "%22s %5s %10s %2s %2s %8s\n",
             "file", "chr", "pos", "aa", "da", "daf");
 }
 
 void DAFReader_print(DAFReader *r, FILE *fp) {
     assert(r->fname);
-    fprintf(fp,"%20s %5s %10lu %2s %2s %8.6lf\n",
+    fprintf(fp,"%22s %5s %10lu %2s %2s %8.6lf\n",
             r->fname, r->chr, r->nucpos, r->aa, r->da, r->p);
 }
 
