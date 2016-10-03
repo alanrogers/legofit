@@ -482,8 +482,8 @@ int main(int argc, char **argv) {
             continue;
         }
 
-        fprintf(stderr,"OK\n");
-        DAFReader_print(r[0], stderr);
+        //fprintf(stderr,"OK\n");
+        //DAFReader_print(r[0], stderr);
 
 		// Contribution of current snp to each site pattern.  Inner
 		// loop considers each bit in current pattern.  If that bit is
