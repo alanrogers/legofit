@@ -143,25 +143,31 @@ const char *DAFReader_chr(DAFReader *self) {
 #define MAX(X,Y) ((X) > (Y) ? (X) : (Y))
 #define MIN(X,Y) ((X) > (Y) ? (Y) : (X))
 
+#define PRCHR do{ \
+  fprintf(stderr,"%s:%d:chr:",__FILE__,__LINE__); \
+  for(i=0; i<n; ++i) \
+      fprintf(stderr," %s%s", i==maxchr ? "*" : "", r[i]->chr);\
+  putc('\n', stderr);\
+}while(0)
+
+
 /// Advance an array of DAFReaders to the next shared position.
 /// Return 0 on success or EOF on end of file.
 int DAFReader_multiNext(int n, DAFReader *r[n]) {
     int i;
     unsigned long maxnuc=0, minnuc=ULONG_MAX;
 	int maxchr;       // index of reader with maximum chromosome position
-    int onSameChr=1;  // indicates whether all readers are on same chromosome.
+    int onSameChr;    // indicates whether all readers are on same chromosome.
     int diff;
 
 	// Find initial min and max position and chromosome.
     if(EOF == DAFReader_next(r[0]))
         return EOF;
     maxchr = 0;
-    maxnuc = minnuc = r[0]->nucpos;
+    onSameChr=1;
     for(i=1; i<n; ++i) {
         if(EOF == DAFReader_next(r[i]))
             return EOF;
-        maxnuc = MAX(maxnuc, r[i]->nucpos);
-        minnuc = MIN(minnuc, r[i]->nucpos);
 
         diff = strcmp(r[i]->chr, r[maxchr]->chr);
         if(diff > 0) {
@@ -172,35 +178,34 @@ int DAFReader_multiNext(int n, DAFReader *r[n]) {
     }
 
 	// Loop until both chr and position are homogeneous.
-    while(!onSameChr || minnuc!=maxnuc) {
-
-        // get them all on the same chromosome
-        if(!onSameChr) {
-            while(!onSameChr) {
-                onSameChr=1;
-                for(i=0; i<n; ++i) {
-                    if(i==maxchr)
-                        continue;
-                    while((diff=strcmp(r[i]->chr, r[maxchr]->chr)) < 0) {
-                        fprintf(stderr,"%s:%d: %d:%s < %d:%s..reading\n",__FILE__,__LINE__,
-                                i,r[i]->chr, maxchr,r[maxchr]->chr);
-                        if(EOF == DAFReader_next(r[i]))
-                            return EOF;
-                    }
-                    assert(diff >= 0);
-                    if(diff > 0) {
-                        maxchr = i;
-                        onSameChr=0;
-                    }
+    do {
+        while(!onSameChr) { // get them all on the same chromosome
+            onSameChr=1;
+            for(i=0; i<n; ++i) {
+                if(i==maxchr)
+                    continue;
+                while((diff=strcmp(r[i]->chr, r[maxchr]->chr)) < 0) {
+                    fprintf(stderr,"%s:%d: %d:%s < %d:%s..reading\n",
+                            __FILE__,__LINE__,
+                            i,r[i]->chr, maxchr,r[maxchr]->chr);
+                    if(EOF == DAFReader_next(r[i]))
+                        return EOF;
+                }
+                assert(diff >= 0);
+                if(diff > 0) {
+                    maxchr = i;
+                    onSameChr=0;
                 }
             }
+        }
 
-            assert(onSameChr);
-            maxnuc = minnuc = r[0]->nucpos;
-            for(i=1; i<n; ++i) {
-                maxnuc = MAX(maxnuc, r[i]->nucpos);
-                minnuc = MIN(minnuc, r[i]->nucpos);
-            }
+        PRCHR;
+
+        assert(onSameChr);
+        maxnuc = minnuc = r[0]->nucpos;
+        for(i=1; i<n; ++i) {
+            maxnuc = MAX(maxnuc, r[i]->nucpos);
+            minnuc = MIN(minnuc, r[i]->nucpos);
         }
 
 		// Now get them all on the same position. Have
@@ -221,6 +226,7 @@ int DAFReader_multiNext(int n, DAFReader *r[n]) {
             }
         }
 
+        PRCHR;
         if(!onSameChr)
             continue;
 
@@ -230,7 +236,7 @@ int DAFReader_multiNext(int n, DAFReader *r[n]) {
             maxnuc = MAX(maxnuc, r[i]->nucpos);
             minnuc = MIN(minnuc, r[i]->nucpos);
         }
-    }
+    }while(!onSameChr || minnuc!=maxnuc);
 
     return 0;
 }
