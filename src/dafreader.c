@@ -143,34 +143,27 @@ const char *DAFReader_chr(DAFReader *self) {
 #define MAX(X,Y) ((X) > (Y) ? (X) : (Y))
 #define MIN(X,Y) ((X) > (Y) ? (Y) : (X))
 
-#define PRCHR do{                                                       \
-        int k;                                                          \
-        for(k=0; k<n; ++k)                                              \
-            fprintf(stderr," %s%s", k==imaxchr ? "*" : "", r[k]->chr);   \
-        putc('\n', stderr);                                             \
-}while(0)
-
-
 /// Advance an array of DAFReaders to the next shared position.
 /// Return 0 on success or EOF on end of file.
 int DAFReader_multiNext(int n, DAFReader *r[n]) {
-    int i;
+    int i, status;
     unsigned long maxnuc=0, minnuc=ULONG_MAX;
 	int imaxchr;       // index of reader with maximum chromosome position
-    int onSameChr;    // indicates whether all readers are on same chromosome.
+    int onSameChr;     // indicates whether all readers are on same chromosome.
     int diff;
-    char old[3][20] = {{'\0'},{'\0'},{'\0'}};
+    char currchr[20] = {'\0'}; // current chromosome
 
-	// Find initial min and max position and chromosome.
+	// Set index, imaxchr, of reader with maximum
+    // chromosome values in lexical sort order, and
+    // set boolean flag, onSameChr, which indicates
+    // whether all readers are on same chromosome.
     if(EOF == DAFReader_next(r[0]))
         return EOF;
-    strcpy(old[0], r[0]->chr);
     imaxchr = 0;
     onSameChr=1;
     for(i=1; i<n; ++i) {
         if(EOF == DAFReader_next(r[i]))
             return EOF;
-        strcpy(old[i], r[i]->chr);
 
         diff = strcmp(r[i]->chr, r[imaxchr]->chr);
         if(diff > 0) {
@@ -191,12 +184,6 @@ int DAFReader_multiNext(int n, DAFReader *r[n]) {
                 while((diff=strcmp(r[i]->chr, r[imaxchr]->chr)) < 0) {
                     if(EOF == DAFReader_next(r[i]))
                         return EOF;
-                    if(0 != strcmp(old[i], r[i]->chr)) {
-                        fprintf(stderr,"%d: old[%d]=%s chr=%s imax=%d max=%s\n",
-                                __LINE__, i, old[i], r[i]->chr, imaxchr, r[imaxchr]->chr);
-                        strcpy(old[i], r[i]->chr);
-                        PRCHR;
-                    }
                 }
                 assert(diff >= 0);
                 if(diff > 0) {
@@ -206,8 +193,6 @@ int DAFReader_multiNext(int n, DAFReader *r[n]) {
             }
         }
 
-        //PRCHR;
-
         assert(onSameChr);
         maxnuc = minnuc = r[0]->nucpos;
         for(i=1; i<n; ++i) {
@@ -215,36 +200,37 @@ int DAFReader_multiNext(int n, DAFReader *r[n]) {
             minnuc = MIN(minnuc, r[i]->nucpos);
         }
 
-		// Now get them all on the same position. Have
-		// to keep checking chr in case one file moves
-		// to another chromosome.
+        // currchr records current chromosome
+        status = snprintf(currchr, sizeof currchr, "%s", r[0]->chr);
+        if(status >= sizeof currchr) {
+            fprintf(stderr,"%s:%d: buffer overflow\n",__FILE__,__LINE__);
+            exit(EXIT_FAILURE);
+        }
+
+		// Now get them all on the same position. Have to keep
+		// checking chr in case one file moves to another chromosome.
         for(i=0; onSameChr && i<n; ++i) {
 			// Increment each reader so long as we're all on the same
 			// chromosome and the reader's nucpos is low.
             while(onSameChr && r[i]->nucpos < maxnuc) {
                 if(EOF == DAFReader_next(r[i]))
                     return EOF;
-                if(0 != strcmp(old[i], r[i]->chr)) {
-                    fprintf(stderr,"%d: old[%d]=%s chr=%s imax=%d max=%s\n",
-                            __LINE__, i, old[i], r[i]->chr, imaxchr, r[imaxchr]->chr);
-                    strcpy(old[i], r[i]->chr);
-                    PRCHR;
-                }
-                diff = strcmp(r[i]->chr, r[imaxchr]->chr);
-                if(diff > 0) {
+                diff = strcmp(r[i]->chr, currchr);
+                if(diff != 0)
                     onSameChr = 0;
-                    fprintf(stderr,"%d: imaxchr=%d\n",__LINE__,imaxchr);
-                    imaxchr=i;
-                }else if(diff < 0)
-                    onSameChr = 0;
-            }
-            if(!onSameChr) {
-                fprintf(stderr,"Switched chr[%d]: %s; imaxchr=%d\n", i, r[i]->chr, imaxchr);
-                PRCHR;
             }
         }
 
-        //PRCHR;
+        // Reset imaxchr, index of maximum chromosome
+        if(!onSameChr) {
+            imaxchr = 0;
+            for(i=1; i<n; ++i) {
+                diff = strcmp(r[i]->chr, r[imaxchr]->chr);
+                if(diff > 0)
+                    imaxchr=i;
+            }
+        }
+
     }while(!onSameChr || minnuc!=maxnuc);
 
     return 0;
