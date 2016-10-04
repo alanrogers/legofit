@@ -151,7 +151,7 @@ int DAFReader_multiNext(int n, DAFReader *r[n]) {
 	int imaxchr;       // index of reader with maximum chromosome position
     int onSameChr;     // indicates whether all readers are on same chromosome.
     int diff;
-    char currchr[20] = {'\0'}; // current chromosome
+    char currchr[DAFSTRSIZE] = {'\0'}; // current chromosome
 
 	// Set index, imaxchr, of reader with maximum
     // chromosome values in lexical sort order, and
@@ -216,21 +216,15 @@ int DAFReader_multiNext(int n, DAFReader *r[n]) {
                 if(EOF == DAFReader_next(r[i]))
                     return EOF;
                 diff = strcmp(r[i]->chr, currchr);
-                if(diff != 0)
+                if(diff != 0) {
+                    // Assertion should succeed because DAFReader_next
+                    // guarantees that chromosomes are in sort order.
+                    assert(diff>0);
                     onSameChr = 0;
-            }
-        }
-
-        // Reset imaxchr, index of maximum chromosome
-        if(!onSameChr) {
-            imaxchr = 0;
-            for(i=1; i<n; ++i) {
-                diff = strcmp(r[i]->chr, r[imaxchr]->chr);
-                if(diff > 0)
                     imaxchr=i;
+                }
             }
         }
-
     }while(!onSameChr || minnuc!=maxnuc);
 
     return 0;
