@@ -59,7 +59,7 @@
 extern pthread_mutex_t outputLock;
 #endif
 
-extern volatile sig_atomic_t interrupt;
+extern volatile sig_atomic_t sigstat;
 
 struct TaskArg {
     double      cost;
@@ -506,7 +506,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 #endif
             fflush(stdout);
         }
-        if(interrupt==SIGINT || *yspread <= DEtol)
+        if(sigstat==SIGINT || *yspread <= DEtol)
             break;
     }
     // End iterations

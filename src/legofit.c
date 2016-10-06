@@ -30,7 +30,7 @@
 extern pthread_mutex_t seedLock;
 extern unsigned long rngseed;
 
-volatile sig_atomic_t interrupt=0;
+volatile sig_atomic_t sigstat=0;
 
 void        usage(void);
 void        initStateVec(int ndx, void *void_p, int n, double x[n],
@@ -41,7 +41,7 @@ static void sighandle(int signo);
 
 /// Signal handler.
 static void sighandle(int signo) {
-    interrupt = signo;
+    sigstat = signo;
 }
 
 void *ThreadState_new(void *notused) {
@@ -104,8 +104,7 @@ void initStateVec(int ndx, void *void_p, int n, double x[n], gsl_rng *rng){
 
 int main(int argc, char **argv) {
 
-    // Install handler for keyboard interrupts. sighandle
-    // is defined in diffev.c.
+    // Install handler for keyboard interrupts.
     signal(SIGINT, sighandle);
 
     static struct option myopts[] = {
