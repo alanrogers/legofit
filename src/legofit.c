@@ -25,15 +25,24 @@
 #include <float.h>
 #include <pthread.h>
 #include <gsl/gsl_sf_gamma.h>
+#include <signal.h>
 
 extern pthread_mutex_t seedLock;
 extern unsigned long rngseed;
+
+volatile sig_atomic_t interrupt=0;
 
 void        usage(void);
 void        initStateVec(int ndx, void *void_p, int n, double x[n],
                          gsl_rng *rng);
 void       *ThreadState_new(void *notused);
 void        ThreadState_free(void *rng);
+static void sighandle(int signo);
+
+/// Signal handler.
+static void sighandle(int signo) {
+    interrupt = signo;
+}
 
 void *ThreadState_new(void *notused) {
 	// Lock seed, initialize random number generator, increment seed,
@@ -94,6 +103,10 @@ void initStateVec(int ndx, void *void_p, int n, double x[n], gsl_rng *rng){
 }
 
 int main(int argc, char **argv) {
+
+    // Install handler for keyboard interrupts. sighandle
+    // is defined in diffev.c.
+    signal(SIGINT, sighandle);
 
     static struct option myopts[] = {
         /* {char *name, int has_arg, int *flag, int val} */

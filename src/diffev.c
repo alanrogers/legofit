@@ -51,12 +51,15 @@
 #include <memory.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <signal.h>
 
 #define DPRINTF_ON
 #include "dprintf.h"
 #ifdef DPRINTF_ON
 extern pthread_mutex_t outputLock;
 #endif
+
+extern volatile sig_atomic_t interrupt;
 
 struct TaskArg {
     double      cost;
@@ -503,7 +506,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 #endif
             fflush(stdout);
         }
-        if(*yspread <= DEtol)
+        if(interrupt==SIGINT || *yspread <= DEtol)
             break;
     }
     // End iterations
