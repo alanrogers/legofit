@@ -59,7 +59,7 @@
 extern pthread_mutex_t outputLock;
 #endif
 
-extern volatile sig_atomic_t sigstat;
+volatile sig_atomic_t sigstat=0;
 
 struct TaskArg {
     double      cost;
@@ -89,6 +89,11 @@ static const char *stratLbl[] = // strategy-indicator
     "DE/rand/1/bin", "DE/rand-to-best/1/bin", "DE/best/2/bin",
     "DE/rand/2/bin"
 };
+
+/// Signal handler.
+void sighandle(int signo) {
+    sigstat = signo;
+}
 
 /// Called by JobQueue
 int taskfun(void *voidPtr, void *tdat) {

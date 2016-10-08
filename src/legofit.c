@@ -29,20 +29,13 @@
 
 extern pthread_mutex_t seedLock;
 extern unsigned long rngseed;
-
-volatile sig_atomic_t sigstat=0;
+extern volatile sig_atomic_t sigstat;
 
 void        usage(void);
 void        initStateVec(int ndx, void *void_p, int n, double x[n],
                          gsl_rng *rng);
 void       *ThreadState_new(void *notused);
 void        ThreadState_free(void *rng);
-static void sighandle(int signo);
-
-/// Signal handler.
-static void sighandle(int signo) {
-    sigstat = signo;
-}
 
 void *ThreadState_new(void *notused) {
 	// Lock seed, initialize random number generator, increment seed,

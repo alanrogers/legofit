@@ -74,7 +74,7 @@ void ParStore_print(ParStore *self, FILE *fp) {
 
 void ParStore_printFree(ParStore *self, FILE *fp) {
     int i;
-    fprintf(fp, "%5d free :\n", self->nFree);
+    fprintf(fp, "%5d free:\n", self->nFree);
     for(i=0; i < self->nFree; ++i)
         fprintf(fp, "   %8s = %lf\n", self->nameFree[i], self->freeVal[i]);
 }

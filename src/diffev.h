@@ -35,5 +35,6 @@ struct DiffEvPar {
 int         diffev(int dim, double estimate[dim], double *loCost,
                    double *yspread, DiffEvPar dep, gsl_rng * rng);
 const char *diffEvStrategyLbl(int i);
+void        sighandle(int signo);
 
 #endif
