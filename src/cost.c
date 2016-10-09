@@ -34,8 +34,7 @@ double costFun(int dim, double x[dim], void *jdata, void *tdata) {
 	if(!GPTree_feasible(cp->gptree)) 
 		return HUGE_VAL;
 
-    BranchTab  *prob = patprob(cp->gptree, cp->nThreads, cp->nreps,
-                               cp->doSing, rng);
+    BranchTab  *prob = patprob(cp->gptree, cp->nreps, cp->doSing, rng);
     BranchTab_divideBy(prob, cp->nreps);
 #if COST==KL_COST
     BranchTab_normalize(prob);

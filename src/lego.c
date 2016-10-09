@@ -142,7 +142,7 @@ int main(int argc, char **argv) {
     gsl_rng_set(rng, rngseed);
 	rngseed = (rngseed == ULONG_MAX ? 0 : rngseed+1);
 
-    BranchTab *bt = patprob(gptree, nThreads, nreps, doSing, rng);
+    BranchTab *bt = patprob(gptree, nreps, doSing, rng);
     BranchTab_divideBy(bt, (double) nreps);
 
     // Put site patterns and branch lengths into arrays.

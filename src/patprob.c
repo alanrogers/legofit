@@ -73,7 +73,7 @@ void SimArg_free(SimArg * self) {
 /// its probability.  Function returns a pointer to a newly-allocated
 /// object of type BranchTab, which contains all the observed site
 /// patterns and their summed branch lengths.
-BranchTab *patprob(const GPTree *gptree, int nThreads, long nreps,
+BranchTab *patprob(const GPTree *gptree, long nreps,
                    int doSing, gsl_rng *rng) {
 
     SimArg    *simarg;
