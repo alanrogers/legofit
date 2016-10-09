@@ -19,6 +19,8 @@
 #include <unistd.h>
 #include <time.h>
 #include <limits.h>
+#include <gsl/gsl_rng.h>
+#include <gsl/gsl_randist.h>
 
 extern pthread_mutex_t seedLock;
 extern unsigned long rngseed;
@@ -29,8 +31,8 @@ void usage(void) {
     fprintf(stderr, "usage: lego [options] input_file_name\n");
     fprintf(stderr, "   where options may include:\n");
     tellopt("-i <x> or --nItr <x>", "number of iterations in simulation");
-    tellopt("-t <x> or --threads <x>", "number of threads (default is auto)");
 	tellopt("-1 or --singletons", "Use singleton site patterns");
+    tellopt("-U", "Mutations per generation per haploid genome.");
     tellopt("-h or --help", "print this message");
     exit(1);
 }
@@ -40,7 +42,7 @@ int main(int argc, char **argv) {
     static struct option myopts[] = {
         /* {char *name, int has_arg, int *flag, int val} */
         {"nItr", required_argument, 0, 'i'},
-        {"threads", required_argument, 0, 't'},
+        {"mutations", required_argument, 0, 'U'},
         {"singletons", no_argument, 0, '1'},
         {"help", no_argument, 0, 'h'},
         {NULL, 0, NULL, 0}
@@ -57,7 +59,7 @@ int main(int argc, char **argv) {
 	unsigned long pid = (unsigned long) getpid();
     double      lo_twoN = 0.0, hi_twoN = 1e6;  // twoN bounds
     double      lo_t = 0.0, hi_t = 1e6;        // t bounds
-    int         nThreads = 0;   // number of parallel threads
+    double      U=0.0;          // mutations pre gen per haploid genome
     int         optndx;
     long        nreps = 100;
     char        fname[200] = { '\0' };
@@ -73,7 +75,7 @@ int main(int argc, char **argv) {
 
     // command line arguments
     for(;;) {
-        i = getopt_long(argc, argv, "i:t:1h", myopts, &optndx);
+        i = getopt_long(argc, argv, "i:t:U:1h", myopts, &optndx);
         if(i == -1)
             break;
         switch (i) {
@@ -84,8 +86,8 @@ int main(int argc, char **argv) {
         case 'i':
             nreps = strtol(optarg, 0, 10);
             break;
-        case 't':
-            nThreads = strtol(optarg, NULL, 10);
+        case 'U':
+            U = strtod(optarg,NULL);
             break;
         case '1':
             doSing=1;
@@ -111,17 +113,15 @@ int main(int argc, char **argv) {
     }
     assert(fname[0] != '\0');
 
-    if(nThreads == 0)
-        nThreads = getNumCores();
-
-    if(nThreads > nreps)
-        nThreads = nreps;
-
-    printf("# nreps       : %lu\n", nreps);
-    printf("# nthreads    : %d\n", nThreads);
-    printf("# input file  : %s\n", fname);
+    printf("# nreps                       : %lu\n", nreps);
+    printf("# input file                  : %s\n", fname);
+    if(U)
+        printf("# mutations per haploid genome: %lf\n", U);
+    else
+        printf("# not simulating mutations\n");
+    
     printf("# %s singleton site patterns.\n",
-           (doSing ? "Including" : "Excluding"));
+           (doSing ? "including" : "excluding"));
 
     Bounds bnd = {
             .lo_twoN = lo_twoN,
@@ -156,13 +156,21 @@ int main(int argc, char **argv) {
     unsigned ord[npat];
     orderpat(npat, ord, pat);
 
-    printf("#%14s %10s\n", "SitePat", "Prob");
+    if(U)
+        printf("#%14s %15s\n", "SitePat", "Count");
+    else
+        printf("#%14s %15s\n", "SitePat", "E[BranchLength]");
     char        buff[100];
     for(j = 0; j < npat; ++j) {
         char        buff2[100];
         snprintf(buff2, sizeof(buff2), "%s",
                  patLbl(sizeof(buff), buff, pat[ord[j]], &lblndx));
-        printf("%15s %10.7lf\n", buff2, prob[ord[j]]);
+        if(U) {
+            unsigned mutations;
+            mutations = gsl_ran_poisson(rng, U*prob[ord[j]]);
+            printf("%15s %15u\n", buff2, mutations);
+        }else
+            printf("%15s %15.7lf\n", buff2, prob[ord[j]]);
     }
 
     GPTree_free(gptree);
