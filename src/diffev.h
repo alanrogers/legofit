@@ -14,7 +14,8 @@ typedef struct DiffEvPar DiffEvPar;
 struct DiffEvPar {
     int         dim, ptsPerDim, genmax, refresh, strategy, nthreads, verbose;
     unsigned long seed;
-    double      F, CR, DEtol;
+    double      F, CR;
+    int         maxFlat;
     void       *jobData;
     void       *(*JobData_dup) (const void *);
     void        (*JobData_free) (void *);

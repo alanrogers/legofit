@@ -65,7 +65,7 @@ void usage(void) {
     fprintf(stderr,"Options may include:\n");
     tellopt("-i <x> or --deItr <x>", "number of DE iterations");
     tellopt("-r <x> or --simreps <x>", "number of reps in each function eval");
-    tellopt("-a <x> or --DEtolerance <x>", "termination criterion");
+    tellopt("-M <x> or --maxFlat <x>", "termination criterion");
     tellopt("-t <x> or --threads <x>", "number of threads (default is auto)");
     tellopt("-F <x> or --scaleFactor <x>", "set DE scale factor");
     tellopt("-x <x> or --crossover <x>", "set DE crossover probability");
@@ -108,7 +108,7 @@ int main(int argc, char **argv) {
 		{"scaleFactor", required_argument, 0, 'F'},
 		{"simreps", required_argument, 0, 'r'},
         {"strategy", required_argument, 0, 's'},
-        {"DEtolerance", required_argument, 0, 'a'},
+        {"maxFlat", required_argument, 0, 'M'},
         {"ptsPerDim", required_argument, 0, 'p'},
         {"mutRate", required_argument, 0, 'u'},
         {"genomeSize", required_argument, 0, 'n'},
@@ -138,10 +138,10 @@ int main(int argc, char **argv) {
 	// DiffEv parameters
 	double      F = 0.9;
 	double      CR = 0.8;
-	double      DEtol = 0.05; // termination criterion
-    double      u = 0.0;      // mutation rate per site per generation
-    long        nnuc = 0;     // number of nucleotides per haploid genome
-    int         deItr = 1000; // number of diffev iterations
+	int         maxFlat = 300; // termination criterion
+    double      u = 0.0;       // mutation rate per site per generation
+    long        nnuc = 0;      // number of nucleotides per haploid genome
+    int         deItr = 1000;  // number of diffev iterations
 	int         strategy = 1;
 	int         ptsPerDim = 10;
     int         verbose = 0;
@@ -190,8 +190,8 @@ int main(int argc, char **argv) {
         case 'v':
             verbose = 1;
             break;
-        case 'a':
-            DEtol = strtod(optarg, 0);
+        case 'M':
+            maxFlat = strtol(optarg, NULL, 10);
             break;
 		case 'x':
 			CR = strtod(optarg, 0);
@@ -241,7 +241,7 @@ int main(int argc, char **argv) {
 
     printf("# DE strategy        : %d\n", strategy);
     printf("#    deItr           : %d\n", deItr);
-    printf("#    deTol           : %lf\n", DEtol);
+    printf("#    maxFlat         : %d\n", maxFlat);
     printf("#    F               : %lf\n", F);
     printf("#    CR              : %lf\n", CR);
     printf("# simreps            : %lu\n", simreps);
@@ -326,7 +326,7 @@ int main(int argc, char **argv) {
         .seed = ((unsigned long) time(NULL))-1ul,
         .F = F,
         .CR = CR,
-        .DEtol = DEtol,
+        .maxFlat = maxFlat,
 		.jobData = &costPar,
         .JobData_dup = CostPar_dup,
         .JobData_free = CostPar_free,
@@ -353,16 +353,9 @@ int main(int argc, char **argv) {
     fflush(stdout);
 
     int         status = diffev(dim, estimate, &cost, &yspread, dep, rng);
-    switch (status) {
-    case 0:
-        printf("DiffEv Converged. cost=%0.5lg; spread=%0.5lg < %lg = deTol\n",
-               cost, yspread, DEtol);
-        break;
-    default:
-        printf("DiffEv FAILED. cost=%0.5lg; spread=%0.5lg > %lg = deTol\n",
-               cost, yspread, DEtol);
-        break;
-    }
+    
+    printf("DiffEv %s. cost=%0.5lg; spread=%0.5lg\n",
+           status==0 ? "converged" : "FAILED", cost, yspread);
 
     // Get mean site pattern branch lengths
     GPTree_setParams(gptree, dim, estimate);

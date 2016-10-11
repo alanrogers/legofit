@@ -191,7 +191,6 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     const int   strategy = dep.strategy;
     const double F = dep.F;
     const double CR = dep.CR;
-    const double DEtol = dep.DEtol;
 #if 1
     const int   nthreads = dep.nthreads;
 #endif
@@ -267,6 +266,11 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     printState(nPts, dim, *pold, cost, imin, stdout);
     fflush(stdout);
 #endif
+
+    int         flat = 0;     // iterations since last improvement
+    double      bestSpread = HUGE_VAL;
+
+    FILE *flatlog = fopen("flat.log", "w");
 
     // Iteration loop
     for(gen = 1; gen <= genmax; ++gen) {
@@ -458,6 +462,8 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
         JobQueue_waitOnJobs(jq);
 #endif
 
+        int improveCost=0, improveSpread=0;
+        
         // 2nd pass through ensemble generates a new generation, based
         // on the old generation and all the trials.
         double      cmax = -INFINITY;
@@ -471,6 +477,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
                     cmin = trial_cost;  // reset cmin to new low.
                     imin = i;
                     assignd(dim, best, targ[i]->v);
+                    improveCost = 1;
                 }
             } else {
                 // reject mutation: keep old value
@@ -494,11 +501,27 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
         if(cmin > 1.0)
             *yspread /= cmin;
 
+        // Count iterations since last improvement in yspread
+        if(*yspread < bestSpread) {
+            improveSpread = 1;
+            bestSpread = *yspread;
+        }
+
+        if(improveCost || improveSpread)
+            flat=0;
+        else
+            ++flat;
+
         // Output part
         if(verbose && gen % refresh == 0) {
             // display after every refresh generations
-            fprintf(stderr, "Generation=%d Objfun=%-15.10lg yspread=%lf\n",
-                    gen, cmin, *yspread);
+            fprintf(flatlog, "%5d cost=%1.10lg spread=%lf"
+                    " flat=%d\n",
+                    gen, cmin, *yspread, flat);
+            fflush(flatlog);
+            fprintf(stderr,
+                    "%5d cost=%1.10lg yspread=%lf flat=%d\n",
+                    gen, cmin, *yspread, flat);
             fprintf(stderr, "   Best params:");
             for(j = 0; j < dim; j++) {
                 fprintf(stderr, " %0.10lg", best[j]);
@@ -511,15 +534,16 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 #endif
             fflush(stdout);
         }
-        if(sigstat==SIGINT || *yspread <= DEtol)
+        if(sigstat==SIGINT || flat==dep.maxFlat)
             break;
     }
     // End iterations
+    fclose(flatlog);
 
 #if 1
     JobQueue_noMoreJobs(jq);
 #endif
-    if(*yspread > DEtol) {
+    if(flat < dep.maxFlat) {
         status = 1;
         if(verbose)
             fputs("No convergence\n", stdout);
