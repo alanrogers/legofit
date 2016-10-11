@@ -270,8 +270,6 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     int         flat = 0;     // iterations since last improvement
     double      bestSpread = HUGE_VAL;
 
-    FILE *flatlog = fopen("flat.log", "w");
-
     // Iteration loop
     for(gen = 1; gen <= genmax; ++gen) {
         for(i = 0; i < nPts; i++) { // Start of loop through ensemble
@@ -513,10 +511,6 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
         // Output part
         if(verbose && gen % refresh == 0) {
             // display after every refresh generations
-            fprintf(flatlog, "%5d cost=%1.10lg spread=%lf"
-                    " flat=%d\n",
-                    gen, cmin, *yspread, flat);
-            fflush(flatlog);
             fprintf(stderr,
                     "%5d cost=%1.10lg yspread=%lf flat=%d\n",
                     gen, cmin, *yspread, flat);
@@ -536,7 +530,6 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
             break;
     }
     // End iterations
-    fclose(flatlog);
 
 #if 1
     JobQueue_noMoreJobs(jq);
