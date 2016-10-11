@@ -498,8 +498,6 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 
         // Difference between best and worst cost values
         *yspread = cmax - cmin;
-        if(cmin > 1.0)
-            *yspread /= cmin;
 
         // Count iterations since last improvement in yspread
         if(*yspread < bestSpread) {
