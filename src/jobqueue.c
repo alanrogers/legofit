@@ -1,15 +1,15 @@
 /**
  * @file jobqueue.c
  * @author Alan R. Rogers
- * @brief Multithreaded job queue 
+ * @brief Multithreaded job queue
  *
  * This file implements a multithreaded job queue. Jobs are pushed
  * onto a queue by the main program. Each thread (or worker) removes a
  * job from the queue, executes it, and then goes back for
  * another. When all jobs are finished, control returns to the main
- * function. 
+ * function.
  *
- * @copyright Copyright (c) 2014, Alan R. Rogers 
+ * @copyright Copyright (c) 2014, Alan R. Rogers
  * <rogers@anthro.utah.edu>. This file is released under the Internet
  * Systems Consortium License, which can be found in file "LICENSE".
  */
@@ -452,7 +452,9 @@ void JobQueue_free(JobQueue * jq) {
 
     status = pthread_mutex_destroy(&jq->lock);
     if(status) {
-		dostacktrace(__FILE__,__LINE__, stdout);
+#ifndef NDEBUG
+		dostacktrace(__FILE__,__LINE__, stderr);
+#endif
         ERR(status, "destroy lock");
 	}
 

@@ -1,3 +1,4 @@
+// got following: jobqueue.c:JobQueue_free:456: destroy lock 16 (Device or resource busy)
 /**
  *        D I F F E R E N T I A L     E V O L U T I O N
  *
@@ -36,7 +37,7 @@
  * are referring to Rainer Storn and Ken Price as the originators of
  * the the DE idea. If you have questions concerning DE feel free to
  * contact us. We also will be happy to know about your experiences
- * with DE and your suggestions of improvement. 
+ * with DE and your suggestions of improvement.
  */
 
 #include "diffev.h"
@@ -322,7 +323,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
                 // This is one of my favourite strategies. It works
                 // especially well when the "bestit[]"-schemes experience
                 // misconvergence. Try e.g. F=0.7 and CR=0.5. as a first
-                // guess. 
+                // guess.
                 // strategy DE1 in the techreport
                 L = 0;
                 do {
@@ -340,7 +341,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
                 // strategies. Try F=0.85 and CR=1. If you get
                 // misconvergence try to increase nPts. If this doesn't help
                 // you should play around with all three control
-                // variables. 
+                // variables.
                 // similiar to DE2 but generally better
                 L = 0;
                 do {
@@ -380,7 +381,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
             case 6:
                 // Remaining strategies have binomial crossover.
                 // DE/best/1/bin
-                for(L = 0; L < dim; ++L) {  // perform dim binomial trials 
+                for(L = 0; L < dim; ++L) {  // perform dim binomial trials
                     if(L == 0 || gsl_rng_uniform(rng) < CR) {
                         tmp[n] = bestit[n] + F * ((*pold)[r[1]][n]
                                                   - (*pold)[r[2]][n]);
@@ -461,7 +462,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 #endif
 
         int improveCost=0, improveSpread=0;
-        
+
         // 2nd pass through ensemble generates a new generation, based
         // on the old generation and all the trials.
         double      cmax = -INFINITY;
