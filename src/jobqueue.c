@@ -440,7 +440,7 @@ void JobQueue_free(JobQueue * jq) {
     // sleep to give threads time to release mutex
     struct timespec t = {
         .tv_sec = 0,
-        .tv_nsec = 50000000L    // 1/20 of a second
+        .tv_nsec = 100000000L    // 1/10 of a second
     };
     status = nanosleep(&t, NULL);
     if(status)
