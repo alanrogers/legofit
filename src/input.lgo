@@ -1,22 +1,22 @@
-time fixed  T0=0
-time fixed  Tc=1
-time free   Tab=3
-time fixed  Tabc=5.5
-twoN fixed  2Na=100
-twoN fixed  2Nb=123
-twoN fixed  2Nc=213.4
-twoN fixed  2Nbb=32.1
-twoN free   2Nab=222 
-twoN fixed  2Nabc=1.2e2
-mixFrac free Mc=0.02
-segment a   t=T0     twoN=2Na    samples=1
-segment b   t=T0     twoN=2Nb    samples=1
-segment c   t=Tc     twoN=2Nc    samples=1
-segment bb  t=Tc     twoN=2Nbb
-segment ab  t=Tab    twoN=2Nab
-segment abc t=Tabc   twoN=2Nabc
-mix    b  from bb + Mc * c
-derive a  from ab
-derive bb from ab
-derive ab from abc
-derive c  from abc
+time fixed  zero=0
+twoN fixed  one =1
+time fixed  Tn=1
+time free   Txy=3
+time fixed  Txyn=5.5
+twoN fixed  2Nx=100
+twoN fixed  2Ny=123
+twoN fixed  2Nn=213.4
+twoN free   2Nxy=222 
+twoN fixed  2Nxyn=1.2e2
+mixFrac free mN=0.02
+segment x   t=zero   twoN=one    samples=1
+segment y   t=zero   twoN=one    samples=1
+segment n   t=Tn     twoN=2Nn    samples=1
+segment y2  t=Tn     twoN=2Ny
+segment xy  t=Txy    twoN=2Nxy
+segment xyn t=Txyn   twoN=2Nxyn
+mix    y  from y2 + mN * n
+derive x  from xy
+derive y2 from xy
+derive xy from xyn
+derive n  from xyn
