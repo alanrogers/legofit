@@ -671,12 +671,12 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     for(gen = 1; gen <= genmax; ++gen) {
         // Perturb points and calculate cost
         for(i = 0; i < nPts; i++) {
-            assignd(dim, tmp, (*pold)[i]);          // copy into tmp
+            assignd(dim, tmp, (*pold)[i]);
             (*stratfun)(dim, tmp, nPts, ndx, bestit,
-                        F, CR, pold, rng);          // perturb tmp
+                        F, CR, pold, rng);
             TaskArg_setArray(targ[i], dim, tmp);    
 #if 1
-            JobQueue_addJob(jq, taskfun, targ[i]);  // calculate cost.
+            JobQueue_addJob(jq, taskfun, targ[i]);
 #else
             taskfun(targ[i], NULL);
 #endif
