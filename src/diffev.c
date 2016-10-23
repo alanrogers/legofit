@@ -734,7 +734,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
         else
             ++flat;
 
-        // Output part
+        // output
         if(verbose && gen % refresh == 0) {
             // display after every refresh generations
             fprintf(stderr,
@@ -755,7 +755,6 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
         if(sigstat==SIGINT || flat==dep.maxFlat)
             break;
     }
-    // End iterations
 
 #if 1
     JobQueue_noMoreJobs(jq);
@@ -776,8 +775,10 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 
     // Free memory
     for(i = 0; i < nPts; ++i) {
-        if(jobData[i])
+        if(jobData[i]) {
+            assert(dep.JobData_free);
             (*dep.JobData_free)(jobData[i]);
+        }
         TaskArg_free(targ[i]);
     }
 #if 1
