@@ -669,20 +669,14 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 
     // Iteration loop
     for(gen = 1; gen <= genmax; ++gen) {
-        // Loop over points
+        // Perturb points and calculate cost
         for(i = 0; i < nPts; i++) {
-
-            // copy i'th point into tmp
-            assignd(dim, tmp, (*pold)[i]);
-
-            // Perturb tmp using strategy in stratfun
+            assignd(dim, tmp, (*pold)[i]);          // copy into tmp
             (*stratfun)(dim, tmp, nPts, ndx, bestit,
-                        F, CR, pold, rng);
-
-            // Calculate cost.
-            TaskArg_setArray(targ[i], dim, tmp);
+                        F, CR, pold, rng);          // perturb tmp
+            TaskArg_setArray(targ[i], dim, tmp);    
 #if 1
-            JobQueue_addJob(jq, taskfun, targ[i]);
+            JobQueue_addJob(jq, taskfun, targ[i]);  // calculate cost.
 #else
             taskfun(targ[i], NULL);
 #endif
@@ -694,8 +688,8 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 
         int improveCost=0, improveSpread=0;
 
-        // 2nd pass through ensemble generates a new generation, based
-        // on the old generation and all the trials.
+        // Generate a new generation, based on the old generation
+        // and all the trials.
         double      cmax = -INFINITY;
         for(i = 0; i < nPts; ++i) {
             double      trial_cost = targ[i]->cost;
