@@ -116,7 +116,7 @@ int main(int argc, char *argv[]) {
     int         refresh = 10;   // refresh rate
     double      F = 0.9;        // scale perturbations
     double      CR = 0.8;       // crossover prob
-    double      deTol = 1e-4;   // tolerance
+	int         maxFlat = 100; // termination criterion
 
     int         i;
     int         nthreads = 0;
@@ -213,12 +213,14 @@ int main(int argc, char *argv[]) {
         .refresh = refresh,
         .strategy = strategy,
         .nthreads = nthreads,
-        .seed = (unsigned long) time(NULL),
         .verbose = verbose,
+        .seed = ((unsigned long) time(NULL))-1ul,
         .F = F,
         .CR = CR,
-        .deTol = deTol,
+        .maxFlat = maxFlat,
         .jobData = NULL,
+        .JobData_dup = NULL,
+        .JobData_free = NULL,
         .objfun = objFunc,
         .threadData = NULL,
         .ThreadState_new = NULL,

@@ -138,7 +138,7 @@ int main(int argc, char **argv) {
 	// DiffEv parameters
 	double      F = 0.9;
 	double      CR = 0.8;
-	int         maxFlat = 300; // termination criterion
+	int         maxFlat = 100; // termination criterion
     double      u = 0.0;       // mutation rate per site per generation
     long        nnuc = 0;      // number of nucleotides per haploid genome
     int         deItr = 1000;  // number of diffev iterations
