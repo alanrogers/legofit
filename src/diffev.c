@@ -570,6 +570,51 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     TaskArg    *targ[nPts];
     void       *jobData[nPts];
 
+    void (*stratfun)(int dim, double tmp[dim],
+                  int nPts, int ndx[nPts],
+                  double bestit[dim],
+                  double F, double CR,
+                  double (*pold)[nPts][dim],
+                  gsl_rng *rng);
+
+    // Select strategy function
+    switch (strategy) {
+    case 1:
+        stratfun = stratDE_best_1_exp;
+        break;
+    case 2:
+        stratfun = stratDE_rand_1_exp;
+        break;
+    case 3:
+        stratfun = stratDE_rand_to_best_1_exp;
+        break;
+    case 4:
+        stratfun = stratDE_best_2_exp;
+        break;
+    case 5:
+        stratfun = stratDE_rand_2_exp;
+        break;
+    case 6:
+        stratfun = stratDE_best_1_bin;
+        break;
+    case 7:
+        stratfun = stratDE_rand_1_bin;
+        break;
+    case 8:
+        stratfun = stratDE_rand_to_best_1_bin;
+        break;
+    case 9:
+        stratfun = stratDE_best_2_bin;
+        break;
+    case 10:
+        stratfun = stratDE_rand_2_bin;
+        break;
+    default:
+        fprintf(stderr, "%s:%d: illegal strategy: %d\n",
+                __FILE__, __LINE__, strategy);
+        exit(1);
+    }
+
     // Initialize array of points
     for(i = 0; i < nPts; ++i) {
         (*dep.initialize)(i, dep.initData, dim, c[i], rng);
@@ -630,62 +675,18 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
             // copy i'th point into tmp
             assignd(dim, tmp, (*pold)[i]);
 
-            switch (strategy) {
-            case 1:
-                stratDE_best_1_exp(dim, tmp, nPts, ndx, bestit,
-                                   F, CR, pold, rng);
-                break;
-            case 2:
-                stratDE_rand_1_exp(dim, tmp, nPts, ndx, bestit,
-                                   F, CR, pold, rng);
-                break;
-            case 3:
-                stratDE_rand_to_best_1_exp(dim, tmp, nPts, ndx, bestit,
-                                           F, CR, pold, rng);
-                break;
-            case 4:
-                stratDE_best_2_exp(dim, tmp, nPts, ndx, bestit,
-                                           F, CR, pold, rng);
-                break;
-            case 5:
-                stratDE_rand_2_exp(dim, tmp, nPts, ndx, bestit,
-                                           F, CR, pold, rng);
-                break;
-            case 6:
-                stratDE_best_1_bin(dim, tmp, nPts, ndx, bestit,
-                                           F, CR, pold, rng);
-                break;
-            case 7:
-                stratDE_rand_1_bin(dim, tmp, nPts, ndx, bestit,
-                                           F, CR, pold, rng);
-                break;
-            case 8:
-                stratDE_rand_to_best_1_bin(dim, tmp, nPts, ndx, bestit,
-                                           F, CR, pold, rng);
-                break;
-            case 9:
-                stratDE_best_2_bin(dim, tmp, nPts, ndx, bestit,
-                                   F, CR, pold, rng);
-                break;
-            case 10:
-                // DE/rand/2/bin
-                stratDE_rand_2_bin(dim, tmp, nPts, ndx, bestit,
-                                   F, CR, pold, rng);
-                break;
-            default:
-                fprintf(stderr, "%s:%d: illegal strategy: %d\n",
-                        __FILE__, __LINE__, strategy);
-                exit(1);
-            }
+            // Perturb tmp using strategy in stratfun
+            (*stratfun)(dim, tmp, nPts, ndx, bestit,
+                        F, CR, pold, rng);
 
-            // Trial mutation now in tmp[]. Calculate cost.
+            // Calculate cost.
             TaskArg_setArray(targ[i], dim, tmp);
 #if 1
             JobQueue_addJob(jq, taskfun, targ[i]);
 #else
             taskfun(targ[i], NULL);
 #endif
-        }   // end loop over points
+        }
 
 #if 1
         JobQueue_waitOnJobs(jq);
