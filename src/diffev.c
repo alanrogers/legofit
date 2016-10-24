@@ -142,6 +142,7 @@ void stratDE_rand_2_bin(int dim, double tmp[dim],
                         double F, double CR,
                         double (*pold)[nPts][dim],
                         gsl_rng *rng);
+void *selectStrategy(int strategy);
 
 static const char *stratLbl[] = // strategy-indicator
 { "", "DE/best/1/exp", "DE/rand/1/exp", "DE/rand-to-best/1/exp",
@@ -531,6 +532,47 @@ static inline void assignd(int dim, double a[dim], double b[dim]) {
     memcpy(a, b, dim * sizeof(b[0]));
 }
 
+/// Return pointer to function implementing given strategy.
+void *selectStrategy(int strategy) {
+    switch (strategy) {
+    case 1:
+        return stratDE_best_1_exp;
+        break;
+    case 2:
+        return stratDE_rand_1_exp;
+        break;
+    case 3:
+        return stratDE_rand_to_best_1_exp;
+        break;
+    case 4:
+        return stratDE_best_2_exp;
+        break;
+    case 5:
+        return stratDE_rand_2_exp;
+        break;
+    case 6:
+        return stratDE_best_1_bin;
+        break;
+    case 7:
+        return stratDE_rand_1_bin;
+        break;
+    case 8:
+        return stratDE_rand_to_best_1_bin;
+        break;
+    case 9:
+        return stratDE_best_2_bin;
+        break;
+    case 10:
+        return stratDE_rand_2_bin;
+        break;
+    default:
+        fprintf(stderr, "%s:%d: illegal strategy: %d\n",
+                __FILE__, __LINE__, strategy);
+        exit(1);
+    }
+    return NULL; // NOTREACHED
+}
+
 int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
            DiffEvPar dep, gsl_rng * rng) {
 
@@ -542,9 +584,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     const int   strategy = dep.strategy;
     const double F = dep.F;
     const double CR = dep.CR;
-#if 1
     const int   nthreads = dep.nthreads;
-#endif
     const int   verbose = dep.verbose;
 
     int         nPts = dep.dim * dep.ptsPerDim;
@@ -561,59 +601,21 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     double      cost[nPts];     // obj. funct. values
     double      cmin;           // help variables
 
-#if 1
     JobQueue   *jq = JobQueue_new(nthreads, dep.threadData,
                                   dep.ThreadState_new,
                                   dep.ThreadState_free);
-#endif
 
     TaskArg    *targ[nPts];
     void       *jobData[nPts];
 
-    void (*stratfun)(int dim, double tmp[dim],
-                  int nPts, int ndx[nPts],
-                  double bestit[dim],
-                  double F, double CR,
-                  double (*pold)[nPts][dim],
-                  gsl_rng *rng);
+    void (*stratfun)(int dimarg, double tmparg[dim],
+                  int nPtsarg, int ndxarg[nPts],
+                  double bestitarg[dim],
+                  double Farg, double CRarg,
+                  double (*poldarg)[nPts][dim],
+                  gsl_rng *rngarg);
 
-    // Select strategy function
-    switch (strategy) {
-    case 1:
-        stratfun = stratDE_best_1_exp;
-        break;
-    case 2:
-        stratfun = stratDE_rand_1_exp;
-        break;
-    case 3:
-        stratfun = stratDE_rand_to_best_1_exp;
-        break;
-    case 4:
-        stratfun = stratDE_best_2_exp;
-        break;
-    case 5:
-        stratfun = stratDE_rand_2_exp;
-        break;
-    case 6:
-        stratfun = stratDE_best_1_bin;
-        break;
-    case 7:
-        stratfun = stratDE_rand_1_bin;
-        break;
-    case 8:
-        stratfun = stratDE_rand_to_best_1_bin;
-        break;
-    case 9:
-        stratfun = stratDE_best_2_bin;
-        break;
-    case 10:
-        stratfun = stratDE_rand_2_bin;
-        break;
-    default:
-        fprintf(stderr, "%s:%d: illegal strategy: %d\n",
-                __FILE__, __LINE__, strategy);
-        exit(1);
-    }
+    stratfun = selectStrategy(strategy);
 
     // Initialize array of points
     for(i = 0; i < nPts; ++i) {
@@ -627,15 +629,9 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 
         // calculate objective function values in parallel
         TaskArg_setArray(targ[i], dim, c[i]);
-#if 1
         JobQueue_addJob(jq, taskfun, targ[i]);
-#else
-        taskfun(targ[i], NULL);
-#endif
     }
-#if 1
     JobQueue_waitOnJobs(jq);
-#endif
     cmin = HUGE_VAL;
     imin = INT_MAX;
     for(i = 0; i < nPts; ++i) {
@@ -675,16 +671,10 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
             (*stratfun)(dim, tmp, nPts, ndx, bestit,
                         F, CR, pold, rng);
             TaskArg_setArray(targ[i], dim, tmp);    
-#if 1
             JobQueue_addJob(jq, taskfun, targ[i]);
-#else
-            taskfun(targ[i], NULL);
-#endif
         }
 
-#if 1
         JobQueue_waitOnJobs(jq);
-#endif
 
         int improveCost=0, improveSpread=0;
 
@@ -756,9 +746,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
             break;
     }
 
-#if 1
     JobQueue_noMoreJobs(jq);
-#endif
     if(flat < dep.maxFlat) {
         status = 1;
         if(verbose)
@@ -781,9 +769,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
         }
         TaskArg_free(targ[i]);
     }
-#if 1
     JobQueue_free(jq);
-#endif
 
     return status;
 }
