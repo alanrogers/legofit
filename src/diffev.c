@@ -142,7 +142,7 @@ void stratDE_rand_2_bin(int dim, double tmp[dim],
                         double F, double CR,
                         double (*pold)[nPts][dim],
                         gsl_rng *rng);
-void *selectStrategy(int strategy);
+void *getStratFun(int strategy);
 
 static const char *stratLbl[] = // strategy-indicator
 { "", "DE/best/1/exp", "DE/rand/1/exp", "DE/rand-to-best/1/exp",
@@ -533,7 +533,7 @@ static inline void assignd(int dim, double a[dim], double b[dim]) {
 }
 
 /// Return pointer to function implementing given strategy.
-void *selectStrategy(int strategy) {
+void *getStratFun(int strategy) {
     switch (strategy) {
     case 1:
         return stratDE_best_1_exp;
@@ -615,7 +615,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
                   double (*poldarg)[nPts][dim],
                   gsl_rng *rngarg);
 
-    stratfun = selectStrategy(strategy);
+    stratfun = getStratFun(strategy);
 
     // Initialize array of points
     for(i = 0; i < nPts; ++i) {
