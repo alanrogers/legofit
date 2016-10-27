@@ -30,7 +30,7 @@ extern pthread_mutex_t outputLock;
 #endif
 
 #undef ERR
-#  define ERR(code, msg) do{                        \
+#define ERR(code, msg) do{                          \
         char buff[50];                              \
         strerror_r((code), buff, sizeof(buff));     \
         fprintf(stderr,"%s:%s:%d: %s: %d (%s)\n",   \
