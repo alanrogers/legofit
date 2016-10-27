@@ -60,8 +60,7 @@ static SimSchedLink *SimSchedLink_popHead(SimSchedLink * self) {
 
 static inline int SimSchedLink_getSimReps(SimSchedLink * self) {
     if(self == NULL) {
-        fprintf(stderr, "%s:%d: NULL SimSchedLink\n",
-                __FILE__, __LINE__);
+        fprintf(stderr, "%s:%d: NULL SimSchedLink\n", __FILE__, __LINE__);
         exit(EXIT_FAILURE);
     }
     return self->nSimReps;
@@ -76,23 +75,26 @@ static inline int SimSchedLink_getOptItr(SimSchedLink * self) {
 }
 
 // Allocate a new SimSched with one stage.
-SimSched   *SimSched_new(int nOptItr, int nSimReps) {
+SimSched   *SimSched_new(void) {
     SimSched   *self = malloc(sizeof(SimSched));
     CHECKMEM(self);
 
-    self->list = SimSchedLink_append(NULL, nOptItr, nSimReps);
-    CHECKMEM(self->list);
+    self->list = NULL;
 
     int         status;
-
     if((status = pthread_mutex_init(&self->lock, NULL)))
-        ERR(status, "lock");
+        ERR(status, "init");
 
     return self;
 }
 
+int         SimSched_empty(const SimSched *self) {
+    return self->list == NULL;
+};
+
+
 // Append a stage to a SimSched.
-SimSched   *SimSched_append(SimSched * self, int nOptItr, int nSimReps) {
+void SimSched_append(SimSched * self, int nOptItr, int nSimReps) {
     int         status;
 
     status = pthread_mutex_lock(&self->lock);
@@ -105,8 +107,6 @@ SimSched   *SimSched_append(SimSched * self, int nOptItr, int nSimReps) {
     status = pthread_mutex_unlock(&self->lock);
     if(status)
         ERR(status, "unlock");
-
-    return self;
 }
 
 // Free a SimSched.
@@ -123,7 +123,7 @@ int SimSched_getSimReps(SimSched * self) {
     if(status)
         ERR(status, "lock");
 
-    nSimReps = SimSchedLink_getSimReps(self);
+    nSimReps = SimSchedLink_getSimReps(self->list);
 
     status = pthread_mutex_unlock(&self->lock);
     if(status)
@@ -139,7 +139,7 @@ int SimSched_getOptItr(SimSched * self) {
     if(status)
         ERR(status, "lock");
 
-    nOptItr = SimSchedLink_getOptItr(self);
+    nOptItr = SimSchedLink_getOptItr(self->list);
 
     status = pthread_mutex_unlock(&self->lock);
     if(status)
@@ -171,4 +171,3 @@ int SimSched_next(SimSched * self) {
 
     return 0;
 }
-

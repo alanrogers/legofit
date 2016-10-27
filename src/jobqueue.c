@@ -189,6 +189,8 @@ void JobQueue_addJob(JobQueue * jq, int (*jobfun) (void *, void *),
         status = pthread_create(&id, &jq->attr, threadfun, (void *) jq);
         if(status) 
             ERR(status, "create");
+        ++jq->nThreads;
+    }
 
     status = pthread_mutex_unlock(&jq->lock);
     if(status)
