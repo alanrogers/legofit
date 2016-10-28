@@ -20,8 +20,8 @@
 
 int main(void) {
 
-    int itr[] = {100, 20, 300};
-    int reps[] = {1000, 2000, 3000};
+    long itr[] = {100L, 20L, 300L};
+    long reps[] = {1000L, 2000L, 3000L};
 
     SimSched *ss = SimSched_new();
     assert(SimSched_empty(ss));
@@ -32,17 +32,30 @@ int main(void) {
     SimSched_append(ss, itr[2], reps[2]);
     assert(!SimSched_empty(ss));
 
-    assert(SimSched_getOptItr(ss) == 100);
-    assert(SimSched_getSimReps(ss) == 1000);
+    SimSched *ss2 = SimSched_dup(ss);
+
+    assert(SimSched_getOptItr(ss) == 100L);
+    assert(SimSched_getOptItr(ss2) == 100L);
+    assert(SimSched_getSimReps(ss) == 1000L);
+    assert(SimSched_getSimReps(ss2) == 1000L);
     SimSched_next(ss);
-    assert(SimSched_getOptItr(ss) == 20);
-    assert(SimSched_getSimReps(ss) == 2000);
+    SimSched_next(ss2);
+    assert(SimSched_getOptItr(ss) == 20L);
+    assert(SimSched_getOptItr(ss2) == 20L);
+    assert(SimSched_getSimReps(ss) == 2000L);
+    assert(SimSched_getSimReps(ss2) == 2000L);
     SimSched_next(ss);
-    assert(SimSched_getOptItr(ss) == 300);
-    assert(SimSched_getSimReps(ss) == 3000);
+    SimSched_next(ss2);
+    assert(SimSched_getOptItr(ss) == 300L);
+    assert(SimSched_getOptItr(ss2) == 300L);
+    assert(SimSched_getSimReps(ss) == 3000L);
+    assert(SimSched_getSimReps(ss2) == 3000L);
     SimSched_next(ss);
+    SimSched_next(ss2);
     assert(SimSched_empty(ss));
+    assert(SimSched_empty(ss2));
     SimSched_free(ss);
+    SimSched_free(ss2);
 
     unitTstResult("SimSched", "OK");
 

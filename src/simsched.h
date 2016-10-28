@@ -1,15 +1,16 @@
 #ifndef ARR_SIMSCHED
 #  define ARR_SIMSCHED
 
-typedef struct SimSched SimSched;
+#  include "typedefs.h"
 
 SimSched   *SimSched_new(void);
+SimSched   *SimSched_dup(const SimSched *self);
 int         SimSched_empty(const SimSched *self);
 void        SimSched_free(SimSched *self);
-void        SimSched_append(SimSched * self, int nOptItr, int nSimReps);
+void        SimSched_append(SimSched * self, long nOptItr, long nSimReps);
 void        SimSched_free(SimSched * self);
-int         SimSched_getOptItr(SimSched * self);
-int         SimSched_getSimReps(SimSched * self);
+long        SimSched_getOptItr(SimSched * self);
+long        SimSched_getSimReps(SimSched * self);
 int         SimSched_next(SimSched * self);
 
 #endif

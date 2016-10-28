@@ -6,16 +6,17 @@
 
 typedef struct SimSchedLink SimSchedLink;
 
-static SimSchedLink *SimSchedLink_append(SimSchedLink * self, int nOptItr,
-                                         int nSimReps);
+static SimSchedLink *SimSchedLink_append(SimSchedLink * self, long nOptItr,
+                                         long nSimReps);
+static SimSchedLink *SimSchedLink_dup(const SimSchedLink *self);
 static SimSchedLink *SimSchedLink_free(SimSchedLink * self);
 static SimSchedLink *SimSchedLink_popHead(SimSchedLink * self);
-static inline int SimSchedLink_getSimReps(SimSchedLink * self);
-static inline int SimSchedLink_getOptItr(SimSchedLink * self);
+static inline long SimSchedLink_getSimReps(SimSchedLink * self);
+static inline long SimSchedLink_getOptItr(SimSchedLink * self);
 
 struct SimSchedLink {
     SimSchedLink *next;
-    int         nOptItr, nSimReps;
+    long          nOptItr, nSimReps;
 };
 
 struct SimSched {
@@ -25,8 +26,8 @@ struct SimSched {
 
 // Append a new link to the end of the list. Return a pointer to the
 // beginning of the list.
-static SimSchedLink *SimSchedLink_append(SimSchedLink * self, int nOptItr,
-                                         int nSimReps) {
+static SimSchedLink *SimSchedLink_append(SimSchedLink * self, long nOptItr,
+                                         long nSimReps) {
     if(self == NULL) {
         SimSchedLink *new = malloc(sizeof(SimSchedLink));
         CHECKMEM(new);
@@ -37,6 +38,17 @@ static SimSchedLink *SimSchedLink_append(SimSchedLink * self, int nOptItr,
     }
     self->next = SimSchedLink_append(self->next, nOptItr, nSimReps);
     return self;
+}
+
+SimSchedLink *SimSchedLink_dup(const SimSchedLink *self) {
+    if(self == NULL)
+        return NULL;
+
+    SimSchedLink *new = memdup(self, sizeof(SimSchedLink));
+    CHECKMEM(new);
+
+    new->next = SimSchedLink_dup(self->next);
+    return new;
 }
 
 // Free the list and return NULL.
@@ -58,7 +70,7 @@ static SimSchedLink *SimSchedLink_popHead(SimSchedLink * self) {
     return head;
 }
 
-static inline int SimSchedLink_getSimReps(SimSchedLink * self) {
+static inline long SimSchedLink_getSimReps(SimSchedLink * self) {
     if(self == NULL) {
         fprintf(stderr, "%s:%d: NULL SimSchedLink\n", __FILE__, __LINE__);
         exit(EXIT_FAILURE);
@@ -66,7 +78,7 @@ static inline int SimSchedLink_getSimReps(SimSchedLink * self) {
     return self->nSimReps;
 }
 
-static inline int SimSchedLink_getOptItr(SimSchedLink * self) {
+static inline long SimSchedLink_getOptItr(SimSchedLink * self) {
     if(self == NULL) {
         fprintf(stderr, "%s:%d: NULL SimSchedLink\n", __FILE__, __LINE__);
         exit(EXIT_FAILURE);
@@ -92,9 +104,18 @@ int         SimSched_empty(const SimSched *self) {
     return self->list == NULL;
 };
 
+SimSched   *SimSched_dup(const SimSched *self) {
+    if(self == NULL)
+        return NULL;
+    SimSched *new = SimSched_new();
+    CHECKMEM(new);
+
+    new->list = SimSchedLink_dup(self->list);
+    return new;
+}
 
 // Append a stage to a SimSched.
-void SimSched_append(SimSched * self, int nOptItr, int nSimReps) {
+void SimSched_append(SimSched * self, long nOptItr, long nSimReps) {
     int         status;
 
     status = pthread_mutex_lock(&self->lock);
@@ -116,8 +137,9 @@ void SimSched_free(SimSched * self) {
     free(self);
 }
 
-int SimSched_getSimReps(SimSched * self) {
-    int         status, nSimReps;
+long SimSched_getSimReps(SimSched * self) {
+    int         status;
+    long        nSimReps;
 
     status = pthread_mutex_lock(&self->lock);
     if(status)
@@ -132,8 +154,9 @@ int SimSched_getSimReps(SimSched * self) {
     return nSimReps;
 }
 
-int SimSched_getOptItr(SimSched * self) {
-    int         status, nOptItr;
+long SimSched_getOptItr(SimSched * self) {
+    int         status;
+    long        nOptItr;
 
     status = pthread_mutex_lock(&self->lock);
     if(status)
