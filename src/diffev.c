@@ -595,6 +595,8 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
         ndx[i] = i;
 
     double      c[nPts][dim], d[nPts][dim];
+    double      (*pold)[nPts][dim] = &c;    // old population (generation G)
+    double      (*pnew)[nPts][dim] = &d;    // new population (generation G+1)
 
     *yspread = *loCost = strtod("NaN", NULL);
 
@@ -633,39 +635,12 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
         JobQueue_addJob(jq, taskfun, targ[i]);
     }
     JobQueue_waitOnJobs(jq);
-    cmin = HUGE_VAL;
-    imin = INT_MAX;
-    for(i = 0; i < nPts; ++i) {
-        cost[i] = targ[i]->cost;    // objective function value
-        if(cost[i] < cmin) {
-            cmin = cost[i];
-            imin = i;
-        }
-    }
-    if(!isfinite(cmin)) {
-        fprintf(stderr,"%s:%d: No initial points have finite values.\n",
-                __FILE__,__LINE__);
-        exit(EXIT_FAILURE);
-    }
-    assert(imin < INT_MAX);
-    assert(cmin < HUGE_VAL);
-    assignd(dim, best, c[imin]);    // save best member ever
-    assignd(dim, bestit, c[imin]);  // save best member of generation
 
-    double      (*pold)[nPts][dim] = &c;    // old population (generation G)
-    double      (*pnew)[nPts][dim] = &d;    // new population (generation G+1)
-
-#if 0
-    fprintf(stdout, "Initial State:\n");
-    printState(nPts, dim, *pold, cost, imin, stdout);
-    fflush(stdout);
-#endif
-
-    int         stage = 0;    // stage in SimSched
     int         flat;     // iterations since last improvement
     double      bestSpread;
+    int         stage, nstages = SimSched_nStages(simSched);
 
-    while(!SimSched_empty(simSched)) {
+    for(stage=0; stage < nstages; ++stage, SimSched_next(simSched)) {
         long genmax = SimSched_getOptItr(simSched);
         if(stage != 0) {
             // The number of simulation replicates changes with each
@@ -676,17 +651,31 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
             for(i = 0; i < nPts; i++)
                 JobQueue_addJob(jq, taskfun, targ[i]);
             JobQueue_waitOnJobs(jq);
+        }
 
-            cmin = HUGE_VAL;
-            imin = INT_MAX;
-            for(i = 0; i < nPts; ++i) {
-                cost[i] = targ[i]->cost;
-                if(cost[i] < cmin) {
-                    cmin = cost[i];
-                    imin = i;
-                }
+        cmin = HUGE_VAL;
+        imin = INT_MAX;
+        for(i = 0; i < nPts; ++i) {
+            cost[i] = targ[i]->cost;
+            if(cost[i] < cmin) {
+                cmin = cost[i];
+                imin = i;
             }
         }
+        if(!isfinite(cmin)) {
+            fprintf(stderr,"%s:%d: No initial points have finite values.\n",
+                    __FILE__,__LINE__);
+            exit(EXIT_FAILURE);
+        }
+        assert(imin < INT_MAX);
+        assert(cmin < HUGE_VAL);
+        assignd(dim, best, c[imin]);    // save best member ever
+        assignd(dim, bestit, c[imin]);  // save best member of generation
+#if 0
+        fprintf(stdout, "Initial State:\n");
+        printState(nPts, dim, *pold, cost, imin, stdout);
+        fflush(stdout);
+#endif
         flat = 0;     // iterations since last improvement
         bestSpread = HUGE_VAL;
         
@@ -707,7 +696,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 
             // Generate a new generation, based on the old generation
             // and all the trials.
-            double      cmax = -INFINITY;
+            double      cmax = -HUGE_VAL;
             for(i = 0; i < nPts; ++i) {
                 double      trial_cost = targ[i]->cost;
                 if(trial_cost <= cost[i]) {
@@ -772,8 +761,6 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
             if(sigstat==SIGINT || flat==dep.maxFlat)
                 break;
         }
-        SimSched_next(simSched);
-        ++stage;
     }
 
     JobQueue_noMoreJobs(jq);

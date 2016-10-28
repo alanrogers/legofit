@@ -37,13 +37,13 @@ int main(int argc, char **argv) {
     long reps[] = {1000L, 2000L, 3000L};
 
     SimSched *ss = SimSched_new();
-    assert(SimSched_empty(ss));
+    assert(0 == SimSched_nStages(ss));
     SimSched_append(ss, itr[0], reps[0]);
-    assert(!SimSched_empty(ss));
+    assert(1 == SimSched_nStages(ss));
     SimSched_append(ss, itr[1], reps[1]);
-    assert(!SimSched_empty(ss));
+    assert(2 == SimSched_nStages(ss));
     SimSched_append(ss, itr[2], reps[2]);
-    assert(!SimSched_empty(ss));
+    assert(3 == SimSched_nStages(ss));
 
     if(verbose)
         SimSched_print(ss, stdout);
@@ -68,11 +68,10 @@ int main(int argc, char **argv) {
     assert(SimSched_getSimReps(ss2) == 3000L);
     SimSched_next(ss);
     SimSched_next(ss2);
-    assert(SimSched_empty(ss));
-    assert(SimSched_empty(ss2));
+    assert(0 == SimSched_nStages(ss));
+    assert(0 == SimSched_nStages(ss2));
     SimSched_free(ss);
     SimSched_free(ss2);
-
 
     unitTstResult("SimSched", "OK");
 

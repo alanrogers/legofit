@@ -100,10 +100,6 @@ SimSched   *SimSched_new(void) {
     return self;
 }
 
-int         SimSched_empty(const SimSched *self) {
-    return self->list == NULL;
-};
-
 SimSched   *SimSched_dup(const SimSched *self) {
     if(self == NULL)
         return NULL;
@@ -204,4 +200,12 @@ void        SimSched_print(const SimSched *self, FILE *fp) {
                 i, stage->nOptItr, stage->nSimReps);
         ++i;
     }
+}
+
+int         SimSched_nStages(const SimSched *self) {
+    Stage *stage;
+    int nstages=0;
+    for(stage=self->list; stage != NULL; stage=stage->next)
+        ++nstages;
+    return nstages;
 }
