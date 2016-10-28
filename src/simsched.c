@@ -13,6 +13,7 @@ static SimSchedLink *SimSchedLink_free(SimSchedLink * self);
 static SimSchedLink *SimSchedLink_popHead(SimSchedLink * self);
 static inline long SimSchedLink_getSimReps(SimSchedLink * self);
 static inline long SimSchedLink_getOptItr(SimSchedLink * self);
+void        SimSchedLink_print(const SimSchedLink *self, FILE *fp);
 
 struct SimSchedLink {
     SimSchedLink *next;
@@ -84,6 +85,13 @@ static inline long SimSchedLink_getOptItr(SimSchedLink * self) {
         exit(EXIT_FAILURE);
     }
     return self->nOptItr;
+}
+
+void        SimSchedLink_print(const SimSchedLink *self, FILE *fp) {
+    if(self==NULL)
+        return;
+    fprintf(fp, " [nOptItr=%ld, nSimReps=%ld]", self->nOptItr, self->nSimReps);
+    SimSchedLink_print(self->next, fp);
 }
 
 // Allocate a new SimSched with one stage.
@@ -193,4 +201,10 @@ int SimSched_next(SimSched * self) {
         return 1;
 
     return 0;
+}
+
+void        SimSched_print(const SimSched *self, FILE *fp) {
+    fprintf(fp, "SimSched:");
+    SimSchedLink_print(self->list, fp);
+    putc('\n', fp);
 }

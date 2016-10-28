@@ -69,10 +69,15 @@ void * CostPar_dup(const void * arg) {
     CHECKMEM(new->obs);
     new->gptree = GPTree_dup(old->gptree);
     CHECKMEM(new->gptree);
+    new->simSched = SimSched_dup(old->simSched);
+    CHECKMEM(new->simSched);
     return new;
 }
 
 void CostPar_free(void *arg) {
-    if(arg)
-        free(arg);
+    CostPar *self = (CostPar *) arg;    
+    if(self) {
+        SimSched_free(self->simSched);
+        free(self);
+    }
 }

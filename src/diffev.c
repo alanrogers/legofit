@@ -41,6 +41,7 @@
 
 #include "diffev.h"
 #include "misc.h"
+#include "simsched.h"
 #if 1
 #include "jobqueue.h"
 #endif
@@ -579,7 +580,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     int         i, j;           // counting variables
     int         imin;           // index to member with lowest energy
     int         gen;
-    const int   genmax = dep.genmax;
+    SimSched   *simSched = dep.simSched;
     const int   refresh = dep.refresh;
     const int   strategy = dep.strategy;
     const double F = dep.F;
@@ -660,90 +661,119 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     fflush(stdout);
 #endif
 
-    int         flat = 0;     // iterations since last improvement
-    double      bestSpread = HUGE_VAL;
+    int         stage = 0;    // stage in SimSched
+    int         flat;     // iterations since last improvement
+    double      bestSpread;
 
-    // Iteration loop
-    for(gen = 1; gen <= genmax; ++gen) {
-        // Perturb points and calculate cost
-        for(i = 0; i < nPts; i++) {
-            assignd(dim, tmp, (*pold)[i]);
-            (*stratfun)(dim, tmp, nPts, ndx, bestit,
-                        F, CR, pold, rng);
-            TaskArg_setArray(targ[i], dim, tmp);    
-            JobQueue_addJob(jq, taskfun, targ[i]);
-        }
+    while(!SimSched_empty(simSched)) {
+        long genmax = SimSched_getOptItr(simSched);
+        if(stage != 0) {
+            // The number of simulation replicates changes with each
+            // stage. We need to recalculate all objective function
+            // values using the newly changed number of simulation
+            // replicates.  Not necessary in stage 0, because there
+            // has been no change in the number of replicates.
+            for(i = 0; i < nPts; i++)
+                JobQueue_addJob(jq, taskfun, targ[i]);
+            JobQueue_waitOnJobs(jq);
 
-        JobQueue_waitOnJobs(jq);
-
-        int improveCost=0, improveSpread=0;
-
-        // Generate a new generation, based on the old generation
-        // and all the trials.
-        double      cmax = -INFINITY;
-        for(i = 0; i < nPts; ++i) {
-            double      trial_cost = targ[i]->cost;
-            if(trial_cost <= cost[i]) {
-                // accept mutation
-                cost[i] = trial_cost;
-                assignd(dim, (*pnew)[i], targ[i]->v);
-                if(trial_cost < cmin) { // Was this a new minimum? If so,
-                    cmin = trial_cost;  // reset cmin to new low.
+            cmin = HUGE_VAL;
+            imin = INT_MAX;
+            for(i = 0; i < nPts; ++i) {
+                cost[i] = targ[i]->cost;
+                if(cost[i] < cmin) {
+                    cmin = cost[i];
                     imin = i;
-                    assignd(dim, best, targ[i]->v);
-                    improveCost = 1;
                 }
-            } else {
-                // reject mutation: keep old value
-                assignd(dim, (*pnew)[i], (*pold)[i]);
             }
-            cmax = fmax(cmax, cost[i]);
         }
-
-        // Best member of current generation
-        assignd(dim, bestit, best);
-
-        // swap population arrays. New becomes old.
-        {
-            double      (*pswap)[nPts][dim] = pold;
-            pold = pnew;
-            pnew = pswap;
-        }
-
-        // Difference between best and worst cost values
-        *yspread = cmax - cmin;
-
-        // Count iterations since last improvement in yspread
-        if(*yspread < bestSpread) {
-            improveSpread = 1;
-            bestSpread = *yspread;
-        }
-
-        if(improveCost || improveSpread)
-            flat=0;
-        else
-            ++flat;
-
-        // output
-        if(verbose && gen % refresh == 0) {
-            // display after every refresh generations
-            fprintf(stderr,
-                    "%5d cost=%1.10lg yspread=%lf flat=%d\n",
-                    gen, cmin, *yspread, flat);
-            fprintf(stderr, "   Best params:");
-            for(j = 0; j < dim; j++) {
-                fprintf(stderr, " %0.10lg", best[j]);
-                if(j != dim - 1)
-                    putc(',', stderr);
+        flat = 0;     // iterations since last improvement
+        bestSpread = HUGE_VAL;
+        
+        // Iteration loop
+        for(gen = 0; gen < genmax; ++gen) {
+            // Perturb points and calculate cost
+            for(i = 0; i < nPts; i++) {
+                assignd(dim, tmp, (*pold)[i]);
+                (*stratfun)(dim, tmp, nPts, ndx, bestit,
+                            F, CR, pold, rng);
+                TaskArg_setArray(targ[i], dim, tmp);    
+                JobQueue_addJob(jq, taskfun, targ[i]);
             }
-            putc('\n', stderr);
+
+            JobQueue_waitOnJobs(jq);
+
+            int improveCost=0, improveSpread=0;
+
+            // Generate a new generation, based on the old generation
+            // and all the trials.
+            double      cmax = -INFINITY;
+            for(i = 0; i < nPts; ++i) {
+                double      trial_cost = targ[i]->cost;
+                if(trial_cost <= cost[i]) {
+                    // accept mutation
+                    cost[i] = trial_cost;
+                    assignd(dim, (*pnew)[i], targ[i]->v);
+                    if(trial_cost < cmin) { // Was this a new minimum? If so,
+                        cmin = trial_cost;  // reset cmin to new low.
+                        imin = i;
+                        assignd(dim, best, targ[i]->v);
+                        improveCost = 1;
+                    }
+                } else {
+                    // reject mutation: keep old value
+                    assignd(dim, (*pnew)[i], (*pold)[i]);
+                }
+                cmax = fmax(cmax, cost[i]);
+            }
+
+            // Best member of current generation
+            assignd(dim, bestit, best);
+
+            // swap population arrays. New becomes old.
+            {
+                double      (*pswap)[nPts][dim] = pold;
+                pold = pnew;
+                pnew = pswap;
+            }
+
+            // Difference between best and worst cost values
+            *yspread = cmax - cmin;
+
+            // Count iterations since last improvement in yspread
+            if(*yspread < bestSpread) {
+                improveSpread = 1;
+                bestSpread = *yspread;
+            }
+
+            if(improveCost || improveSpread)
+                flat=0;
+            else
+                ++flat;
+
+            // output
+            if(verbose && gen % refresh == 0) {
+                // display after every refresh generations
+                fprintf(stderr,
+                        "%d:%5d cost=%1.10lg yspread=%lf flat=%d\n",
+                        stage, gen, cmin, *yspread, flat);
+                fprintf(stderr, "   Best params:");
+                for(j = 0; j < dim; j++) {
+                    fprintf(stderr, " %0.10lg", best[j]);
+                    if(j != dim - 1)
+                        putc(',', stderr);
+                }
+                putc('\n', stderr);
 #if 0
-            printState(nPts, dim, *pold, cost, imin, stdout);
+                printState(nPts, dim, *pold, cost, imin, stdout);
 #endif
-            fflush(stdout);
+                fflush(stdout);
+            }
+            if(sigstat==SIGINT || flat==dep.maxFlat)
+                break;
         }
-        if(sigstat==SIGINT || flat==dep.maxFlat)
-            break;
+        SimSched_next(simSched);
+        ++stage;
     }
 
     JobQueue_noMoreJobs(jq);

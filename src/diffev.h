@@ -3,6 +3,7 @@
 #  define MAXPOP  500
 #  define MAXDIM  35
 
+#  include "typedefs.h"
 #  include <assert.h>
 #  include <stdbool.h>
 #  include <gsl/gsl_rng.h>
@@ -12,11 +13,12 @@ typedef struct DiffEv DiffEv;
 typedef struct DiffEvPar DiffEvPar;
 
 struct DiffEvPar {
-    int         dim, ptsPerDim, genmax, refresh, strategy, nthreads, verbose;
+    int         dim, ptsPerDim, refresh, strategy, nthreads, verbose;
     unsigned long seed;
     double      F, CR;
     int         maxFlat;
     void       *jobData;
+    SimSched   *simSched;
     void       *(*JobData_dup) (const void *);
     void        (*JobData_free) (void *);
     double      (*objfun) (int dim, double x[dim], void *, void *);

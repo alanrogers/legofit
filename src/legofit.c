@@ -15,6 +15,7 @@
 #include "lblndx.h"
 #include "parstore.h"
 #include "patprob.h"
+#include "simsched.h"
 #include <assert.h>
 #include <getopt.h>
 #include <limits.h>
@@ -239,12 +240,16 @@ int main(int argc, char **argv) {
     if(nThreads > simreps)
         nThreads = simreps;
 
+    SimSched *simSched = SimSched_new();
+    SimSched_append(simSched, 200, 1000);
+    SimSched_append(simSched, deItr, simreps);
+
+    SimSched_print(simSched, stdout);
+
     printf("# DE strategy        : %d\n", strategy);
-    printf("#    deItr           : %d\n", deItr);
     printf("#    maxFlat         : %d\n", maxFlat);
     printf("#    F               : %lf\n", F);
     printf("#    CR              : %lf\n", CR);
-    printf("# simreps            : %lu\n", simreps);
     printf("# nthreads           : %d\n", nThreads);
     printf("# lgo input file     : %s\n", lgofname);
     printf("# site pat input file: %s\n", patfname);
@@ -302,10 +307,10 @@ int main(int argc, char **argv) {
         .obs = obs,
         .gptree = gptree,
         .nThreads = nThreads,
-        .nreps = simreps,
         .doSing = doSing,
         .u = u,
-        .nnuc = nnuc
+        .nnuc = nnuc,
+        .simSched = simSched
     };
 
     // parameters for Differential Evolution
@@ -318,7 +323,6 @@ int main(int argc, char **argv) {
     DiffEvPar   dep = {
         .dim = dim,
         .ptsPerDim = ptsPerDim,
-        .genmax = deItr,
         .refresh = 2,  // how often to print a line of output
         .strategy = strategy,
         .nthreads = nThreads,
@@ -335,7 +339,8 @@ int main(int argc, char **argv) {
 		.ThreadState_new = ThreadState_new,
 		.ThreadState_free = ThreadState_free,
         .initData = gptree,
-        .initialize = initStateVec
+        .initialize = initStateVec,
+        .simSched = simSched
     };
 
     double      estimate[dim];
@@ -388,6 +393,7 @@ int main(int argc, char **argv) {
     BranchTab_free(bt);
     gsl_rng_free(rng);
     GPTree_free(gptree);
+    SimSched_free(simSched);
     fprintf(stderr,"legofit is finished\n");
 
     return 0;
