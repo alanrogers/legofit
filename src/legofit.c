@@ -240,6 +240,10 @@ int main(int argc, char **argv) {
     if(nThreads > simreps)
         nThreads = simreps;
 
+    // Define simulation schedule.
+    // Stage 1: 200 DE generations of 1000 simulation replicates
+    // Stage 2: 100 generations of 10000 replicates
+    // Stage 3: determined by deItr and simreps.
     SimSched *simSched = SimSched_new();
     SimSched_append(simSched, 200, 1000);
     SimSched_append(simSched, 100, 10000);
