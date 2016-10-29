@@ -595,8 +595,6 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
         ndx[i] = i;
 
     double      c[nPts][dim], d[nPts][dim];
-    double      (*pold)[nPts][dim] = &c;    // old population (generation G)
-    double      (*pnew)[nPts][dim] = &d;    // new population (generation G+1)
 
     *yspread = *loCost = strtod("NaN", NULL);
 
@@ -629,29 +627,30 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
         }else
             jobData[i] = NULL;
         targ[i] = TaskArg_new(dim, dep.objfun, jobData[i]);
-
-        // calculate objective function values in parallel
-        TaskArg_setArray(targ[i], dim, c[i]);
-        JobQueue_addJob(jq, taskfun, targ[i]);
     }
     JobQueue_waitOnJobs(jq);
+
+    double      (*pold)[nPts][dim] = &c;    // old population (generation G)
+    double      (*pnew)[nPts][dim] = &d;    // new population (generation G+1)
 
     int         flat;     // iterations since last improvement
     double      bestSpread;
     int         stage, nstages = SimSched_nStages(simSched);
 
-    for(stage=0; stage < nstages; ++stage, SimSched_next(simSched)) {
-        long genmax = SimSched_getOptItr(simSched);
-        if(stage != 0) {
-            // The number of simulation replicates changes with each
-            // stage. We need to recalculate all objective function
-            // values using the newly changed number of simulation
-            // replicates.  Not necessary in stage 0, because there
-            // has been no change in the number of replicates.
-            for(i = 0; i < nPts; i++)
-                JobQueue_addJob(jq, taskfun, targ[i]);
-            JobQueue_waitOnJobs(jq);
+    for(stage=0;
+        sigstat==0 && stage < nstages;
+        ++stage, SimSched_next(simSched)) {
+
+        // The number of simulation replicates changes with each
+        // stage. We need to recalculate all objective function
+        // values using the newly changed number of simulation
+        // replicates.
+        for(i = 0; i < nPts; i++) {
+            // calculate objective function values in parallel
+            TaskArg_setArray(targ[i], dim, (*pold)[i]);
+            JobQueue_addJob(jq, taskfun, targ[i]);
         }
+        JobQueue_waitOnJobs(jq);
 
         cmin = HUGE_VAL;
         imin = INT_MAX;
@@ -669,8 +668,8 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
         }
         assert(imin < INT_MAX);
         assert(cmin < HUGE_VAL);
-        assignd(dim, best, c[imin]);    // save best member ever
-        assignd(dim, bestit, c[imin]);  // save best member of generation
+        assignd(dim, best, (*pold)[imin]);    // best ever
+        assignd(dim, bestit, (*pold)[imin]);  // best of generation
 #if 0
         fprintf(stdout, "Initial State:\n");
         printState(nPts, dim, *pold, cost, imin, stdout);
@@ -678,6 +677,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 #endif
         flat = 0;     // iterations since last improvement
         bestSpread = HUGE_VAL;
+        long genmax = SimSched_getOptItr(simSched);
         
         // Iteration loop
         for(gen = 0; gen < genmax; ++gen) {
@@ -744,7 +744,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
             if(verbose && gen % refresh == 0) {
                 // display after every refresh generations
                 fprintf(stderr,
-                        "%d:%5d cost=%1.10lg yspread=%lf flat=%d\n",
+                        "%d:%d cost=%1.10lg yspread=%lf flat=%d\n",
                         stage, gen, cmin, *yspread, flat);
                 fprintf(stderr, "   Best params:");
                 for(j = 0; j < dim; j++) {
@@ -758,7 +758,9 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 #endif
                 fflush(stdout);
             }
-            if(sigstat==SIGINT || flat==dep.maxFlat)
+            if(sigstat==SIGINT)
+                break;
+            if(stage==nstages-1 && flat==dep.maxFlat)
                 break;
         }
     }
