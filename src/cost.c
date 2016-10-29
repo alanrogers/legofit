@@ -77,8 +77,6 @@ void * CostPar_dup(const void * arg) {
 
 void CostPar_free(void *arg) {
     CostPar *self = (CostPar *) arg;    
-    if(self) {
-        SimSched_free(self->simSched);
+    if(self)
         free(self);
-    }
 }
