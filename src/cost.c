@@ -9,7 +9,7 @@
 */
 
 #undef DEBUG
-#undef DPRINTF_ON
+#define DPRINTF_ON
 
 #include "dprintf.h"
 #ifdef DPRINTF_ON
@@ -32,6 +32,7 @@ double costFun(int dim, double x[dim], void *jdata, void *tdata) {
     gsl_rng *rng = (gsl_rng *) tdata;
 
     long nreps = SimSched_getSimReps(cp->simSched);
+    DPRINTF(("%s:%d: nreps=%ld\n",__FILE__,__LINE__,nreps));
 
 	GPTree_setParams(cp->gptree, dim, x);
 	if(!GPTree_feasible(cp->gptree)) 
@@ -69,7 +70,7 @@ void * CostPar_dup(const void * arg) {
     CHECKMEM(new->obs);
     new->gptree = GPTree_dup(old->gptree);
     CHECKMEM(new->gptree);
-    new->simSched = SimSched_dup(old->simSched);
+    new->simSched = old->simSched;
     CHECKMEM(new->simSched);
     return new;
 }

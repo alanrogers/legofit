@@ -48,30 +48,17 @@ int main(int argc, char **argv) {
     if(verbose)
         SimSched_print(ss, stdout);
 
-    SimSched *ss2 = SimSched_dup(ss);
-
     assert(SimSched_getOptItr(ss) == 100L);
-    assert(SimSched_getOptItr(ss2) == 100L);
     assert(SimSched_getSimReps(ss) == 1000L);
-    assert(SimSched_getSimReps(ss2) == 1000L);
     SimSched_next(ss);
-    SimSched_next(ss2);
     assert(SimSched_getOptItr(ss) == 20L);
-    assert(SimSched_getOptItr(ss2) == 20L);
     assert(SimSched_getSimReps(ss) == 2000L);
-    assert(SimSched_getSimReps(ss2) == 2000L);
     SimSched_next(ss);
-    SimSched_next(ss2);
     assert(SimSched_getOptItr(ss) == 300L);
-    assert(SimSched_getOptItr(ss2) == 300L);
     assert(SimSched_getSimReps(ss) == 3000L);
-    assert(SimSched_getSimReps(ss2) == 3000L);
     SimSched_next(ss);
-    SimSched_next(ss2);
     assert(0 == SimSched_nStages(ss));
-    assert(0 == SimSched_nStages(ss2));
     SimSched_free(ss);
-    SimSched_free(ss2);
 
     unitTstResult("SimSched", "OK");
 

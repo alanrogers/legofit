@@ -8,7 +8,6 @@ typedef struct Stage Stage;
 
 static Stage *Stage_append(Stage * self, long nOptItr,
                                          long nSimReps);
-static Stage *Stage_dup(const Stage *self);
 static Stage *Stage_free(Stage * self);
 static Stage *Stage_popHead(Stage * self);
 static inline long Stage_getSimReps(Stage * self);
@@ -38,17 +37,6 @@ static Stage *Stage_append(Stage * self, long nOptItr,
     }
     self->next = Stage_append(self->next, nOptItr, nSimReps);
     return self;
-}
-
-Stage *Stage_dup(const Stage *self) {
-    if(self == NULL)
-        return NULL;
-
-    Stage *new = memdup(self, sizeof(Stage));
-    CHECKMEM(new);
-
-    new->next = Stage_dup(self->next);
-    return new;
 }
 
 // Free the list and return NULL.
@@ -98,16 +86,6 @@ SimSched   *SimSched_new(void) {
         ERR(status, "init");
 
     return self;
-}
-
-SimSched   *SimSched_dup(const SimSched *self) {
-    if(self == NULL)
-        return NULL;
-    SimSched *new = SimSched_new();
-    CHECKMEM(new);
-
-    new->list = Stage_dup(self->list);
-    return new;
 }
 
 // Append a stage to a SimSched.

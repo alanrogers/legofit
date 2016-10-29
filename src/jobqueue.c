@@ -30,13 +30,13 @@ extern pthread_mutex_t outputLock;
 #endif
 
 #undef ERR
-#define ERR(code, msg) do{                          \
-        char buff[50];                              \
-        strerror_r((code), buff, sizeof(buff));     \
-        fprintf(stderr,"%s:%s:%d: %s: %d (%s)\n",   \
-                __FILE__,__func__,__LINE__,         \
-                (msg), (code), buff);               \
-        exit(1);                                    \
+#define ERR(code, msg) do{                              \
+        char err_buff[50];                              \
+        strerror_r((code), err_buff, sizeof(err_buff)); \
+        fprintf(stderr,"%s:%s:%d: %s: %d (%s)\n",       \
+                __FILE__,__func__,__LINE__,             \
+                (msg), (code), err_buff);               \
+        exit(1);                                        \
     }while(0)
 
 #undef CHECKMEM
