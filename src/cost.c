@@ -9,7 +9,7 @@
 */
 
 #undef DEBUG
-#define DPRINTF_ON
+#undef DPRINTF_ON
 
 #include "dprintf.h"
 #ifdef DPRINTF_ON
