@@ -242,6 +242,7 @@ int main(int argc, char **argv) {
 
     SimSched *simSched = SimSched_new();
     SimSched_append(simSched, 200, 1000);
+    SimSched_append(simSched, 100, 10000);
     SimSched_append(simSched, deItr, simreps);
 
     SimSched_print(simSched, stdout);
