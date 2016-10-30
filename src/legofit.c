@@ -70,7 +70,7 @@ void usage(void) {
     tellopt("-F <x> or --scaleFactor <x>", "set DE scale factor");
     tellopt("-x <x> or --crossover <x>", "set DE crossover probability");
     tellopt("-s <x> or --strategy <x>", "set DE strategy");
-    tellopt("-S <g>:<r> or --stage <g>:<r>",
+    tellopt("-S <g>@<r> or --stage <g>@<r>",
             "add stage with <g> generations and <r> simulation reps");
     tellopt("-p <x> or --ptsPerDim <x>", "number of DE points per free var");
 	tellopt("-1 or --singletons", "Use singleton site patterns");
@@ -194,7 +194,7 @@ int main(int argc, char **argv) {
                     exit(EXIT_FAILURE);
                 }
                 g = r = b;
-                (void) strsep(&r, ":");
+                (void) strsep(&r, "@");
                 if(r==NULL
                    || strlen(r) == 0
                    || strlen(g) == 0)
