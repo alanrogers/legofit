@@ -599,8 +599,8 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     *yspread = *loCost = strtod("NaN", NULL);
 
     double      tmp[dim], best[dim], bestit[dim];   // members
-    double      cost[nPts];     // obj. funct. values
-    double      cmin;           // help variables
+    double      cost[nPts];      // obj. funct. values
+    double      cmin = HUGE_VAL; // help variables
 
     JobQueue   *jq = JobQueue_new(nthreads, dep.threadData,
                                   dep.ThreadState_new,
@@ -633,7 +633,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     double      (*pold)[nPts][dim] = &c;    // old population (generation G)
     double      (*pnew)[nPts][dim] = &d;    // new population (generation G+1)
 
-    int         flat;     // iterations since last improvement
+    int         flat=0;    // iterations since last improvement
     double      bestSpread;
     int         stage, nstages = SimSched_nStages(simSched);
 
