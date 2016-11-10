@@ -18,6 +18,7 @@ extern pthread_mutex_t outputLock;
 #endif
 
 #include "cost.h"
+#include "simsched.h"
 #include "gptree.h"
 #include "branchtab.h"
 #include "patprob.h"
@@ -30,24 +31,27 @@ double costFun(int dim, double x[dim], void *jdata, void *tdata) {
     CostPar *cp = (CostPar *) jdata;
     gsl_rng *rng = (gsl_rng *) tdata;
 
+    long nreps = SimSched_getSimReps(cp->simSched);
+    DPRINTF(("%s:%d: nreps=%ld\n",__FILE__,__LINE__,nreps));
+
 	GPTree_setParams(cp->gptree, dim, x);
 	if(!GPTree_feasible(cp->gptree)) 
 		return HUGE_VAL;
 
-    BranchTab  *prob = patprob(cp->gptree, cp->nreps, cp->doSing, rng);
-    BranchTab_divideBy(prob, cp->nreps);
+    BranchTab  *prob = patprob(cp->gptree, nreps, cp->doSing, rng);
+    BranchTab_divideBy(prob, nreps);
 #if COST==KL_COST
     BranchTab_normalize(prob);
     double cost = BranchTab_KLdiverg(cp->obs, prob);
 #elif COST==CHISQR_COST   
     double cost = BranchTab_chiSqCost(cp->obs, prob, cp->u, cp->nnuc,
-                                      cp->nreps);
+                                      nreps);
 #elif COST==SMPLCHISQR_COST   
     double cost = BranchTab_smplChiSqCost(cp->obs, prob, cp->u, cp->nnuc,
-                                      cp->nreps);
+                                      nreps);
 #elif COST==POISSON_COST   
     double cost = BranchTab_poissonCost(cp->obs, prob, cp->u, cp->nnuc,
-                                        cp->nreps);
+                                        nreps);
 #else
 # error "Unknown cost method"
 #endif
@@ -66,10 +70,13 @@ void * CostPar_dup(const void * arg) {
     CHECKMEM(new->obs);
     new->gptree = GPTree_dup(old->gptree);
     CHECKMEM(new->gptree);
+    new->simSched = old->simSched;
+    CHECKMEM(new->simSched);
     return new;
 }
 
 void CostPar_free(void *arg) {
-    if(arg)
-        free(arg);
+    CostPar *self = (CostPar *) arg;    
+    if(self)
+        free(self);
 }

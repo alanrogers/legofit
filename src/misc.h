@@ -47,14 +47,16 @@ int         stripchr(char *s, int c);
 
 static inline double survival(double t, double twoN);
 
-#  define ERR(code, msg) do{\
-    fprintf(stderr,"%s:%s:%d: %s: %d (%s)\n",\
-            __FILE__,__func__,__LINE__,\
-            (msg), (code), strerror((code)));   \
-    exit(1);\
-}while(0)
+#  define ERR(code, msg) do{                        \
+        char buff[50];                              \
+        strerror_r((code), buff, sizeof(buff));     \
+        fprintf(stderr,"%s:%s:%d: %s: %d (%s)\n",   \
+                __FILE__,__func__,__LINE__,         \
+                (msg), (code), buff);               \
+        exit(1);                                    \
+    }while(0)
 
-#  define   CHECKMEM(x) do {                                  \
+#  define   CHECKMEM(x) do {                                \
         if((x)==NULL) {                                     \
             fprintf(stderr, "%s:%s:%d: allocation error\n", \
                     __FILE__,__func__,__LINE__);            \

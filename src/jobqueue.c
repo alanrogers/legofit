@@ -30,12 +30,14 @@ extern pthread_mutex_t outputLock;
 #endif
 
 #undef ERR
-#define ERR(code, msg) do{\
-    fprintf(stderr,"%s:%s:%d: %s %d (%s)\n",\
-            __FILE__,__func__,__LINE__,\
-            (msg), (code), strerror((code)));   \
-    exit(1);\
-}while(0)
+#define ERR(code, msg) do{                              \
+        char err_buff[50];                              \
+        strerror_r((code), err_buff, sizeof(err_buff)); \
+        fprintf(stderr,"%s:%s:%d: %s: %d (%s)\n",       \
+                __FILE__,__func__,__LINE__,             \
+                (msg), (code), err_buff);               \
+        exit(1);                                        \
+    }while(0)
 
 #undef CHECKMEM
 #define   CHECKMEM(x) do {                                  \
@@ -118,34 +120,19 @@ JobQueue   *JobQueue_new(int maxThreads, void *threadData,
     jq->ThreadState_free = ThreadState_free;
 
     // set attr for detached threads
-    if((i = pthread_attr_init(&jq->attr))) {
-        fprintf(stderr, "%s:%d: pthread_attr_init returned %d (%s)",
-                __FILE__, __LINE__, i, strerror(i));
-        exit(1);
-    }
-    if((i = pthread_attr_setdetachstate(&jq->attr, PTHREAD_CREATE_DETACHED))) {
-        fprintf(stderr, "%s:%d: pthread_attr_setdetachstate returned %d (%s)",
-                __FILE__, __LINE__, i, strerror(i));
-        exit(1);
-    }
+    if((i = pthread_attr_init(&jq->attr)))
+        ERR(i, "pthread_attr_init");
+    if((i = pthread_attr_setdetachstate(&jq->attr, PTHREAD_CREATE_DETACHED)))
+        ERR(i, "pthread_attr_setdetachstate");
 
-    if((i = pthread_mutex_init(&jq->lock, NULL))) {
-        fprintf(stderr,"%s:%d: pthread_mutex_init returned %d (%s)",
-                __FILE__, __LINE__, i, strerror(i));
-        exit(1);
-    }
+    if((i = pthread_mutex_init(&jq->lock, NULL)))
+        ERR(i, "pthread_mutex_init");
 
-    if((i = pthread_cond_init(&jq->wakeWorker, NULL))) {
-        fprintf(stderr, "%s:%d: pthread_cond_init returned %d (%s)",
-                __FILE__, __LINE__, i, strerror(i));
-        exit(1);
-    }
+    if((i = pthread_cond_init(&jq->wakeWorker, NULL)))
+        ERR(i, "pthread_cond_init");
 
-    if((i = pthread_cond_init(&jq->wakeMain, NULL))) {
-        fprintf(stderr, "%s:%d: pthread_cond_init returned %d (%s)",
-                __FILE__, __LINE__, i, strerror(i));
-        exit(1);
-    }
+    if((i = pthread_cond_init(&jq->wakeMain, NULL)))
+        ERR(i, "pthread_cond_init");
 
     jq->valid = JOBQUEUE_VALID;
 
@@ -200,13 +187,9 @@ void JobQueue_addJob(JobQueue * jq, int (*jobfun) (void *, void *),
         // launch a new thread
         DPRINTF(("%s:%s:%d launching thread\n", __FILE__,__func__, __LINE__));
         status = pthread_create(&id, &jq->attr, threadfun, (void *) jq);
-        if(status) {
-            fprintf(stderr, "%s:%s:%d: pthread_create returned %d (%s)\n",
-                    __FILE__,__func__, __LINE__, status, strerror(status));
-            exit(1);
-        }
+        if(status) 
+            ERR(status, "create");
         ++jq->nThreads;
-
     }
 
     status = pthread_mutex_unlock(&jq->lock);

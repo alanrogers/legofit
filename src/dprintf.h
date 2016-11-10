@@ -13,21 +13,24 @@
 /// into executables that use DPRINTF.
 #  ifdef DPRINTF_ON
 #    define DPRINTF(arg) do{                                    \
-        int  dprintf_status;                                    \
-        dprintf_status=pthread_mutex_lock(&outputLock);         \
-        if(dprintf_status) {                                    \
+        int  dpr_status;                                        \
+        char dpr_buff[50];                                      \
+        dpr_status=pthread_mutex_lock(&outputLock);             \
+        if(dpr_status) {                                        \
+            strerror_r(dpr_status, dpr_buff, sizeof(dpr_buff)); \
             fprintf(stderr,"%s:%s:%d: lock %d (%s)\n",          \
                     __FILE__,__func__,__LINE__,                 \
-                    dprintf_status, strerror(dprintf_status));  \
+                    dpr_status, dpr_buff);                      \
             exit(1);                                            \
         }                                                       \
         printf arg ;                                            \
         fflush(stdout);                                         \
-        dprintf_status = pthread_mutex_unlock(&outputLock);     \
-        if(dprintf_status) {                                    \
+        dpr_status = pthread_mutex_unlock(&outputLock);         \
+        if(dpr_status) {                                        \
+            strerror_r(dpr_status, dpr_buff, sizeof(dpr_buff)); \
             fprintf(stderr,"%s:%s:%d: unlock %d (%s)\n",        \
                     __FILE__,__func__,__LINE__,                 \
-                    dprintf_status, strerror(dprintf_status));  \
+                    dpr_status, dpr_buff);                      \
             exit(1);                                            \
         }                                                       \
     }while(0)

@@ -8,7 +8,7 @@ incl := -I/usr/local/include -I/opt/local/include -I../src
 
 tests := xbinary xhashtab xparse xgene xgptree xbranchtab xparstore \
   xparkeyval xlblndx xpopnode xjobqueue xdiffev xdafreader xstrint \
-  xboot
+  xboot xsimsched
 
 CC := gcc
 
@@ -47,6 +47,7 @@ test : $(tests)
 	-./xgptree
 	-./xparkeyval
 	-./xparstore
+	-./xsimsched
 	-./xstrint
 	-./xlblndx
 	-./xdiffev
@@ -110,6 +111,10 @@ XPOPNODE := xpopnode.o misc.o gene.o branchtab.o binary.o lblndx.o tokenizer.o \
    parkeyval.o
 xpopnode : $(XPOPNODE)
 	$(CC) $(CFLAGS) -o $@ $(XPOPNODE) $(lib)
+
+XSIMSCHED := xsimsched.o simsched.o misc.o
+xsimsched : $(XSIMSCHED)
+	$(CC) $(CFLAGS) -o $@ $(XSIMSCHED) $(lib)
 
 xgptree.o : gptree.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/gptree.c

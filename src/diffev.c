@@ -1,4 +1,3 @@
-// got following: jobqueue.c:JobQueue_free:456: destroy lock 16 (Device or resource busy)
 /**
  *        D I F F E R E N T I A L     E V O L U T I O N
  *
@@ -42,6 +41,7 @@
 
 #include "diffev.h"
 #include "misc.h"
+#include "simsched.h"
 #if 1
 #include "jobqueue.h"
 #endif
@@ -83,6 +83,67 @@ void        TaskArg_print(TaskArg * self, FILE * fp);
 int         taskfun(void *voidPtr, void *tdat);
 void        printState(int nPts, int nPar, double par[nPts][nPar],
                        double cost[nPts], int imin, FILE *fp);
+void stratDE_best_1_exp(int dim, double tmp[dim],
+                        int nPts, int ndx[nPts],
+                        double bestit[dim],
+                        double F, double CR,
+                        double (*pold)[nPts][dim],
+                        gsl_rng *rng);
+void stratDE_rand_1_exp(int dim, double tmp[dim],
+                        int nPts, int ndx[nPts],
+                        double bestit[dim],
+                        double F, double CR,
+                        double (*pold)[nPts][dim],
+                        gsl_rng *rng);
+void stratDE_rand_to_best_1_exp(int dim, double tmp[dim],
+                                int nPts, int ndx[nPts],
+                                double bestit[dim],
+                                double F, double CR,
+                                double (*pold)[nPts][dim],
+                                gsl_rng *rng);
+void stratDE_best_2_exp(int dim, double tmp[dim],
+                        int nPts, int ndx[nPts],
+                        double bestit[dim],
+                        double F, double CR,
+                        double (*pold)[nPts][dim],
+                        gsl_rng *rng);
+void stratDE_rand_2_exp(int dim, double tmp[dim],
+                        int nPts, int ndx[nPts],
+                        double bestit[dim],
+                        double F, double CR,
+                        double (*pold)[nPts][dim],
+                        gsl_rng *rng);
+void stratDE_best_1_bin(int dim, double tmp[dim],
+                        int nPts, int ndx[nPts],
+                        double bestit[dim],
+                        double F, double CR,
+                        double (*pold)[nPts][dim],
+                        gsl_rng *rng);
+void stratDE_rand_1_bin(int dim, double tmp[dim],
+                        int nPts, int ndx[nPts],
+                        double bestit[dim],
+                        double F, double CR,
+                        double (*pold)[nPts][dim],
+                        gsl_rng *rng);
+void stratDE_rand_to_best_1_bin(int dim, double tmp[dim],
+                        int nPts, int ndx[nPts],
+                        double bestit[dim],
+                        double F, double CR,
+                        double (*pold)[nPts][dim],
+                                gsl_rng *rng);
+void stratDE_best_2_bin(int dim, double tmp[dim],
+                        int nPts, int ndx[nPts],
+                        double bestit[dim],
+                        double F, double CR,
+                        double (*pold)[nPts][dim],
+                        gsl_rng *rng);
+void stratDE_rand_2_bin(int dim, double tmp[dim],
+                        int nPts, int ndx[nPts],
+                        double bestit[dim],
+                        double F, double CR,
+                        double (*pold)[nPts][dim],
+                        gsl_rng *rng);
+void *getStratFun(int strategy);
 
 static const char *stratLbl[] = // strategy-indicator
 { "", "DE/best/1/exp", "DE/rand/1/exp", "DE/rand-to-best/1/exp",
@@ -94,6 +155,298 @@ static const char *stratLbl[] = // strategy-indicator
 /// Signal handler.
 void sighandle(int signo) {
     sigstat = signo;
+}
+
+// Strategies.
+// We have tried to come up with a sensible
+// naming-convention: DE/x/y/z
+// DE :  stands for Differential Evolution
+// x  :  a string which denotes the vector to be perturbed
+// y  :  number of difference vectors taken for perturbation of x
+// z  :  crossover method (exp = exponential, bin = binomial)
+//
+// There are some simple rules which are worth following:
+// 1)  F is usually between 0.5 and 1 (in rare cases > 1)
+// 2)  CR is between 0 and 1 with 0., 0.3, 0.7 and
+//     1. being worth to be tried first=
+// 3)  To start off nPts = 10*dim is a reasonable
+//     choice. Increase nPts if misconvergence happens.
+// 4)  If you increase nPts, F usually has to be decreased
+// 5)  When the DE/best... schemes fail DE/rand... usually
+//     works and vice versa
+
+// DE/best/1/exp
+// Our oldest strategy but still not bad. However, we have
+// found several optimization problems where misconvergence
+// occurs.
+// strategy DE0 (not in our paper)
+void stratDE_best_1_exp(int dim, double tmp[dim],
+                        int nPts, int ndx[nPts],
+                        double bestit[dim],
+                        double F, double CR,
+                        double (*pold)[nPts][dim],
+                        gsl_rng *rng){
+    int L = 0;
+    int n = gsl_rng_uniform_int(rng, (unsigned long) dim);
+    const int nr=3;
+    int r[nr];           // random indices
+    
+    // r gets indices of nr random points.
+    sample(nr, r, nPts, ndx, rng);
+
+    do {
+        tmp[n] =
+            bestit[n] + F * ((*pold)[r[1]][n] - (*pold)[r[2]][n]);
+        if(++n == dim)
+            n = 0;
+        ++L;
+    } while((gsl_rng_uniform(rng) < CR) && (L < dim));
+}
+
+// DE/rand/1/exp
+// This is one of my favourite strategies. It works
+// especially well when the "bestit[]"-schemes experience
+// misconvergence. Try e.g. F=0.7 and CR=0.5. as a first
+// guess.
+// strategy DE1 in the techreport
+void stratDE_rand_1_exp(int dim, double tmp[dim],
+                        int nPts, int ndx[nPts],
+                        double bestit[dim],
+                        double F, double CR,
+                        double (*pold)[nPts][dim],
+                        gsl_rng *rng) {
+    int L = 0;
+    int n = gsl_rng_uniform_int(rng, (unsigned long) dim);
+    const int nr=3;
+    int r[nr];           // random indices
+    
+    // r gets indices of nr random points.
+    sample(nr, r, nPts, ndx, rng);
+
+    do {
+        tmp[n] =
+            (*pold)[r[0]][n] + F * ((*pold)[r[1]][n] -
+                                    (*pold)[r[2]][n]);
+        if(++n == dim)
+            n = 0;
+        ++L;
+    } while((gsl_rng_uniform(rng) < CR) && (L < dim));
+}
+
+// DE/rand-to-best/1/exp
+// This strategy seems to be one of the best
+// strategies. Try F=0.85 and CR=1. If you get
+// misconvergence try to increase nPts. If this doesn't help
+// you should play around with all three control
+// variables.
+// similiar to DE2 but generally better
+void stratDE_rand_to_best_1_exp(int dim, double tmp[dim],
+                        int nPts, int ndx[nPts],
+                        double bestit[dim],
+                        double F, double CR,
+                        double (*pold)[nPts][dim],
+                        gsl_rng *rng) {
+    int L = 0;
+    int n = gsl_rng_uniform_int(rng, (unsigned long) dim);
+    const int nr=2;
+    int r[nr];           // random indices
+    
+    // r gets indices of nr random points.
+    sample(nr, r, nPts, ndx, rng);
+
+    do {
+        tmp[n] =
+            tmp[n] + F * (bestit[n] - tmp[n]) +
+            F * ((*pold)[r[0]][n] - (*pold)[r[1]][n]);
+        if(++n == dim)
+            n = 0;
+        ++L;
+    } while((gsl_rng_uniform(rng) < CR) && (L < dim));
+}
+
+// DE/best/2/exp is another powerful strategy worth trying
+void stratDE_best_2_exp(int dim, double tmp[dim],
+                        int nPts, int ndx[nPts],
+                        double bestit[dim],
+                        double F, double CR,
+                        double (*pold)[nPts][dim],
+                        gsl_rng *rng) {
+    int L = 0;
+    int n = gsl_rng_uniform_int(rng, (unsigned long) dim);
+    const int nr=4;
+    int r[nr];           // random indices
+    
+    // r gets indices of nr random points.
+    sample(nr, r, nPts, ndx, rng);
+
+    do {
+        tmp[n] = bestit[n] +
+            F * ((*pold)[r[0]][n] + (*pold)[r[1]][n]
+                 - (*pold)[r[2]][n] - (*pold)[r[3]][n]);
+        if(++n == dim)
+            n = 0;
+        ++L;
+    } while((gsl_rng_uniform(rng) < CR) && (L < dim));
+}
+
+// DE/rand/2/exp seems to be a robust optimizer for many
+// functions.
+void stratDE_rand_2_exp(int dim, double tmp[dim],
+                        int nPts, int ndx[nPts],
+                        double bestit[dim],
+                        double F, double CR,
+                        double (*pold)[nPts][dim],
+                        gsl_rng *rng) {
+    int L = 0;
+    int n = gsl_rng_uniform_int(rng, (unsigned long) dim);
+    const int nr=5;
+    int r[nr];           // random indices
+    
+    // r gets indices of nr random points.
+    sample(nr, r, nPts, ndx, rng);
+
+    do {
+        tmp[n] = (*pold)[r[4]][n] +
+            F * ((*pold)[r[0]][n] + (*pold)[r[1]][n]
+                 - (*pold)[r[2]][n] - (*pold)[r[3]][n]);
+        if(++n == dim)
+            n = 0;
+        ++L;
+    } while((gsl_rng_uniform(rng) < CR) && (L < dim));
+}
+
+// Remaining strategies have binomial crossover.
+// DE/best/1/bin
+void stratDE_best_1_bin(int dim, double tmp[dim],
+                        int nPts, int ndx[nPts],
+                        double bestit[dim],
+                        double F, double CR,
+                        double (*pold)[nPts][dim],
+                        gsl_rng *rng) {
+    int L;
+    int n = gsl_rng_uniform_int(rng, (unsigned long) dim);
+    const int nr=2;
+    int r[nr];           // random indices
+    
+    // r gets indices of nr random points.
+    sample(nr, r, nPts, ndx, rng);
+
+    for(L = 0; L < dim; ++L) {  // perform dim binomial trials
+        if(L == 0 || gsl_rng_uniform(rng) < CR) {
+            tmp[n] = bestit[n] + F * ((*pold)[r[0]][n]
+                                      - (*pold)[r[1]][n]);
+        }
+        if(++n == dim)
+            n = 0;
+    };
+}
+
+// DE/rand/1/bin
+void stratDE_rand_1_bin(int dim, double tmp[dim],
+                        int nPts, int ndx[nPts],
+                        double bestit[dim],
+                        double F, double CR,
+                        double (*pold)[nPts][dim],
+                        gsl_rng *rng) {
+    int L;
+    int n = gsl_rng_uniform_int(rng, (unsigned long) dim);
+    const int nr=3;
+    int r[nr];           // random indices
+    
+    // r gets indices of nr random points.
+    sample(nr, r, nPts, ndx, rng);
+
+    for(L = 0; L < dim; ++L) {  // perform dim binomial trials
+        if(L == 0 || gsl_rng_uniform(rng) < CR) {
+            // change at least one parameter
+            tmp[n] =
+                (*pold)[r[0]][n] + F * ((*pold)[r[1]][n] -
+                                        (*pold)[r[2]][n]);
+        }
+        if(++n == dim)
+            n = 0;
+    }
+}
+
+// DE/rand-to-best/1/bin
+void stratDE_rand_to_best_1_bin(int dim, double tmp[dim],
+                        int nPts, int ndx[nPts],
+                        double bestit[dim],
+                        double F, double CR,
+                        double (*pold)[nPts][dim],
+                        gsl_rng *rng) {
+    int L;
+    int n = gsl_rng_uniform_int(rng, (unsigned long) dim);
+    const int nr=2;
+    int r[nr];           // random indices
+    
+    // r gets indices of nr random points.
+    sample(nr, r, nPts, ndx, rng);
+
+    for(L = 0; L < dim; ++L) {  // perform dim binomial trials
+        if(L == 0 || gsl_rng_uniform(rng) < CR) {
+            // change at least one parameter
+            tmp[n] =
+                tmp[n] + F * (bestit[n] - tmp[n]) +
+                F * ((*pold)[r[0]][n] - (*pold)[r[1]][n]);
+        }
+        if(++n == dim)
+            n = 0;
+    }
+}
+
+// DE/best/2/bin
+void stratDE_best_2_bin(int dim, double tmp[dim],
+                        int nPts, int ndx[nPts],
+                        double bestit[dim],
+                        double F, double CR,
+                        double (*pold)[nPts][dim],
+                        gsl_rng *rng) {
+    int L;
+    int n = gsl_rng_uniform_int(rng, (unsigned long) dim);
+    const int nr=4;
+    int r[nr];           // random indices
+    
+    // r gets indices of nr random points.
+    sample(nr, r, nPts, ndx, rng);
+
+    for(L = 0; L < dim; ++L) {  // perform dim binomial trials
+        if(L == 0 || gsl_rng_uniform(rng) < CR) {
+            // change at least one parameter
+            tmp[n] = bestit[n]
+                + F * ((*pold)[r[0]][n] + (*pold)[r[1]][n]
+                       - (*pold)[r[2]][n] - (*pold)[r[3]][n]);
+        }
+        if(++n == dim)
+            n = 0;
+    }
+}
+
+// DE/rand/2/bin
+void stratDE_rand_2_bin(int dim, double tmp[dim],
+                        int nPts, int ndx[nPts],
+                        double bestit[dim],
+                        double F, double CR,
+                        double (*pold)[nPts][dim],
+                        gsl_rng *rng) {
+    int L;
+    int n = gsl_rng_uniform_int(rng, (unsigned long) dim);
+    const int nr=5;
+    int r[nr];           // random indices
+    
+    // r gets indices of nr random points.
+    sample(nr, r, nPts, ndx, rng);
+
+    for(L = 0; L < dim; ++L) {  // perform dim binomial trials
+        if(L == 0 || gsl_rng_uniform(rng) < CR) {
+            // change at least one parameter
+            tmp[n] = (*pold)[r[4]][n]
+                + F * ((*pold)[r[0]][n] + (*pold)[r[1]][n]
+                       - (*pold)[r[2]][n] - (*pold)[r[3]][n]);
+        }
+        if(++n == dim)
+            n = 0;
+    }
 }
 
 /// Called by JobQueue
@@ -180,21 +533,59 @@ static inline void assignd(int dim, double a[dim], double b[dim]) {
     memcpy(a, b, dim * sizeof(b[0]));
 }
 
+/// Return pointer to function implementing given strategy.
+void *getStratFun(int strategy) {
+    switch (strategy) {
+    case 1:
+        return stratDE_best_1_exp;
+        break;
+    case 2:
+        return stratDE_rand_1_exp;
+        break;
+    case 3:
+        return stratDE_rand_to_best_1_exp;
+        break;
+    case 4:
+        return stratDE_best_2_exp;
+        break;
+    case 5:
+        return stratDE_rand_2_exp;
+        break;
+    case 6:
+        return stratDE_best_1_bin;
+        break;
+    case 7:
+        return stratDE_rand_1_bin;
+        break;
+    case 8:
+        return stratDE_rand_to_best_1_bin;
+        break;
+    case 9:
+        return stratDE_best_2_bin;
+        break;
+    case 10:
+        return stratDE_rand_2_bin;
+        break;
+    default:
+        fprintf(stderr, "%s:%d: illegal strategy: %d\n",
+                __FILE__, __LINE__, strategy);
+        exit(1);
+    }
+    return NULL; // NOTREACHED
+}
+
 int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
            DiffEvPar dep, gsl_rng * rng) {
 
-    int         i, j, L, n;     // counting variables
-    int         r[5];           // random indices
+    int         i, j;           // counting variables
     int         imin;           // index to member with lowest energy
     int         gen;
-    const int   genmax = dep.genmax;
+    SimSched   *simSched = dep.simSched;
     const int   refresh = dep.refresh;
     const int   strategy = dep.strategy;
     const double F = dep.F;
     const double CR = dep.CR;
-#if 1
     const int   nthreads = dep.nthreads;
-#endif
     const int   verbose = dep.verbose;
 
     int         nPts = dep.dim * dep.ptsPerDim;
@@ -208,333 +599,173 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     *yspread = *loCost = strtod("NaN", NULL);
 
     double      tmp[dim], best[dim], bestit[dim];   // members
-    double      cost[nPts];     // obj. funct. values
-    double      cmin;           // help variables
+    double      cost[nPts];      // obj. funct. values
+    double      cmin = HUGE_VAL; // help variables
 
-#if 1
     JobQueue   *jq = JobQueue_new(nthreads, dep.threadData,
                                   dep.ThreadState_new,
                                   dep.ThreadState_free);
-#endif
 
     TaskArg    *targ[nPts];
     void       *jobData[nPts];
 
+    void (*stratfun)(int dimarg, double tmparg[dim],
+                  int nPtsarg, int ndxarg[nPts],
+                  double bestitarg[dim],
+                  double Farg, double CRarg,
+                  double (*poldarg)[nPts][dim],
+                  gsl_rng *rngarg);
+
+    stratfun = getStratFun(strategy);
+
+    // Initialize array of points
     for(i = 0; i < nPts; ++i) {
         (*dep.initialize)(i, dep.initData, dim, c[i], rng);
-        if(dep.jobData)
+        if(dep.jobData) {
             jobData[i] = (*dep.JobData_dup)(dep.jobData);
-        else
+            CHECKMEM(jobData[i]);
+        }else
             jobData[i] = NULL;
-        CHECKMEM(jobData[i]);
         targ[i] = TaskArg_new(dim, dep.objfun, jobData[i]);
-
-        // calculate objective function values in parallel
-        TaskArg_setArray(targ[i], dim, c[i]);
-#if 1
-        JobQueue_addJob(jq, taskfun, targ[i]);
-#else
-        taskfun(targ[i], NULL);
-#endif
     }
-#if 1
     JobQueue_waitOnJobs(jq);
-#endif
-    cmin = HUGE_VAL;
-    imin = INT_MAX;
-    for(i = 0; i < nPts; ++i) {
-        cost[i] = targ[i]->cost;    // objective function value
-        if(cost[i] < cmin) {
-            cmin = cost[i];
-            imin = i;
-        }
-    }
-    if(!isfinite(cmin)) {
-        fprintf(stderr,"%s:%d: No initial points have finite values.\n",
-                __FILE__,__LINE__);
-        exit(EXIT_FAILURE);
-    }
-    assert(imin < INT_MAX);
-    assert(cmin < HUGE_VAL);
-    assignd(dim, best, c[imin]);    // save best member ever
-    assignd(dim, bestit, c[imin]);  // save best member of generation
 
     double      (*pold)[nPts][dim] = &c;    // old population (generation G)
     double      (*pnew)[nPts][dim] = &d;    // new population (generation G+1)
 
-#if 0
-    fprintf(stdout, "Initial State:\n");
-    printState(nPts, dim, *pold, cost, imin, stdout);
-    fflush(stdout);
-#endif
+    int         flat=0;    // iterations since last improvement
+    double      bestSpread;
+    int         stage, nstages = SimSched_nStages(simSched);
 
-    int         flat = 0;     // iterations since last improvement
-    double      bestSpread = HUGE_VAL;
+    for(stage=0;
+        sigstat==0 && stage < nstages;
+        ++stage, SimSched_next(simSched)) {
 
-    // Iteration loop
-    for(gen = 1; gen <= genmax; ++gen) {
-        for(i = 0; i < nPts; i++) { // Start of loop through ensemble
-
-            // r gets indices of 5 random points.
-            sample(5, r, nPts, ndx, rng);
-
-            // copy i'th point into tmp
-            assignd(dim, tmp, (*pold)[i]);
-
-            // identify a random parameter to perturb first
-            n = gsl_rng_uniform_int(rng, (unsigned long) dim);
-
-            // Choice of strategy
-            // We have tried to come up with a sensible
-            // naming-convention: DE/x/y/z
-            // DE :  stands for Differential Evolution
-            // x  :  a string which denotes the vector to be perturbed
-            // y  :  number of difference vectors taken for perturbation of x
-            // z  :  crossover method (exp = exponential, bin = binomial)
-            //
-            // There are some simple rules which are worth following:
-            // 1)  F is usually between 0.5 and 1 (in rare cases > 1)
-            // 2)  CR is between 0 and 1 with 0., 0.3, 0.7 and
-            //     1. being worth to be tried first=
-            // 3)  To start off nPts = 10*dim is a reasonable
-            //     choice. Increase nPts if misconvergence happens.
-            // 4)  If you increase nPts, F usually has to be decreased
-            // 5)  When the DE/best... schemes fail DE/rand... usually
-            //     works and vice versa
-
-            switch (strategy) {
-            case 1:
-                // DE/best/1/exp
-                // Our oldest strategy but still not bad. However, we have
-                // found several optimization problems where misconvergence
-                // occurs.
-                // strategy DE0 (not in our paper)
-                L = 0;
-                do {
-                    tmp[n] =
-                        bestit[n] + F * ((*pold)[r[1]][n] - (*pold)[r[2]][n]);
-                    if(++n == dim)
-                        n = 0;
-                    ++L;
-                } while((gsl_rng_uniform(rng) < CR) && (L < dim));
-                break;
-            case 2:
-                // DE/rand/1/exp
-                // This is one of my favourite strategies. It works
-                // especially well when the "bestit[]"-schemes experience
-                // misconvergence. Try e.g. F=0.7 and CR=0.5. as a first
-                // guess.
-                // strategy DE1 in the techreport
-                L = 0;
-                do {
-                    tmp[n] =
-                        (*pold)[r[0]][n] + F * ((*pold)[r[1]][n] -
-                                                (*pold)[r[2]][n]);
-                    if(++n == dim)
-                        n = 0;
-                    ++L;
-                } while((gsl_rng_uniform(rng) < CR) && (L < dim));
-                break;
-            case 3:
-                // DE/rand-to-best/1/exp
-                // This strategy seems to be one of the best
-                // strategies. Try F=0.85 and CR=1. If you get
-                // misconvergence try to increase nPts. If this doesn't help
-                // you should play around with all three control
-                // variables.
-                // similiar to DE2 but generally better
-                L = 0;
-                do {
-                    tmp[n] =
-                        tmp[n] + F * (bestit[n] - tmp[n]) +
-                        F * ((*pold)[r[0]][n] - (*pold)[r[1]][n]);
-                    if(++n == dim)
-                        n = 0;
-                    ++L;
-                } while((gsl_rng_uniform(rng) < CR) && (L < dim));
-                break;
-            case 4:
-                // DE/best/2/exp is another powerful strategy worth trying
-                L = 0;
-                do {
-                    tmp[n] = bestit[n] +
-                        F * ((*pold)[r[0]][n] + (*pold)[r[1]][n]
-                             - (*pold)[r[2]][n] - (*pold)[r[3]][n]);
-                    if(++n == dim)
-                        n = 0;
-                    ++L;
-                } while((gsl_rng_uniform(rng) < CR) && (L < dim));
-                break;
-            case 5:
-                // DE/rand/2/exp seems to be a robust optimizer for many
-                // functions.
-                L = 0;
-                do {
-                    tmp[n] = (*pold)[r[4]][n] +
-                        F * ((*pold)[r[0]][n] + (*pold)[r[1]][n]
-                             - (*pold)[r[2]][n] - (*pold)[r[3]][n]);
-                    if(++n == dim)
-                        n = 0;
-                    ++L;
-                } while((gsl_rng_uniform(rng) < CR) && (L < dim));
-                break;
-            case 6:
-                // Remaining strategies have binomial crossover.
-                // DE/best/1/bin
-                for(L = 0; L < dim; ++L) {  // perform dim binomial trials
-                    if(L == 0 || gsl_rng_uniform(rng) < CR) {
-                        tmp[n] = bestit[n] + F * ((*pold)[r[1]][n]
-                                                  - (*pold)[r[2]][n]);
-                    }
-                    if(++n == dim)
-                        n = 0;
-                };
-                break;
-            case 7:
-                // DE/rand/1/bin
-                for(L = 0; L < dim; ++L) {  // perform dim binomial trials
-                    if(L == 0 || gsl_rng_uniform(rng) < CR) {
-                        // change at least one parameter
-                        tmp[n] =
-                            (*pold)[r[0]][n] + F * ((*pold)[r[1]][n] -
-                                                    (*pold)[r[2]][n]);
-                    }
-                    if(++n == dim)
-                        n = 0;
-                }
-                break;
-            case 8:
-                // DE/rand-to-best/1/bin
-                for(L = 0; L < dim; ++L) {  // perform dim binomial trials
-                    if(L == 0 || gsl_rng_uniform(rng) < CR) {
-                        // change at least one parameter
-                        tmp[n] =
-                            tmp[n] + F * (bestit[n] - tmp[n]) +
-                            F * ((*pold)[r[0]][n] - (*pold)[r[1]][n]);
-                    }
-                    if(++n == dim)
-                        n = 0;
-                }
-                break;
-            case 9:
-                // DE/best/2/bin
-                for(L = 0; L < dim; ++L) {  // perform dim binomial trials
-                    if(L == 0 || gsl_rng_uniform(rng) < CR) {
-                        // change at least one parameter
-                        tmp[n] = bestit[n]
-                            + F * ((*pold)[r[0]][n] + (*pold)[r[1]][n]
-                                   - (*pold)[r[2]][n] - (*pold)[r[3]][n]);
-                    }
-                    if(++n == dim)
-                        n = 0;
-                }
-                break;
-            case 10:
-                // DE/rand/2/bin
-                for(L = 0; L < dim; ++L) {  // perform dim binomial trials
-                    if(L == 0 || gsl_rng_uniform(rng) < CR) {
-                        // change at least one parameter
-                        tmp[n] = (*pold)[r[4]][n]
-                            + F * ((*pold)[r[0]][n] + (*pold)[r[1]][n]
-                                   - (*pold)[r[2]][n] - (*pold)[r[3]][n]);
-                    }
-                    if(++n == dim)
-                        n = 0;
-                }
-                break;
-            default:
-                fprintf(stderr, "%s:%d: illegal strategy: %d\n",
-                        __FILE__, __LINE__, strategy);
-                exit(1);
-            }
-
-            // Trial mutation now in tmp[]. Calculate cost.
-            TaskArg_setArray(targ[i], dim, tmp);
-#if 1
+        // The number of simulation replicates changes with each
+        // stage. We need to recalculate all objective function
+        // values using the newly changed number of simulation
+        // replicates.
+        for(i = 0; i < nPts; i++) {
+            // calculate objective function values in parallel
+            TaskArg_setArray(targ[i], dim, (*pold)[i]);
             JobQueue_addJob(jq, taskfun, targ[i]);
-#else
-            taskfun(targ[i], NULL);
-#endif
-        }                       // End loop ensemble
-
-#if 1
+        }
         JobQueue_waitOnJobs(jq);
-#endif
 
-        int improveCost=0, improveSpread=0;
-
-        // 2nd pass through ensemble generates a new generation, based
-        // on the old generation and all the trials.
-        double      cmax = -INFINITY;
+        cmin = HUGE_VAL;
+        imin = INT_MAX;
         for(i = 0; i < nPts; ++i) {
-            double      trial_cost = targ[i]->cost;
-            if(trial_cost <= cost[i]) {
-                // accept mutation
-                cost[i] = trial_cost;
-                assignd(dim, (*pnew)[i], targ[i]->v);
-                if(trial_cost < cmin) { // Was this a new minimum? If so,
-                    cmin = trial_cost;  // reset cmin to new low.
-                    imin = i;
-                    assignd(dim, best, targ[i]->v);
-                    improveCost = 1;
-                }
-            } else {
-                // reject mutation: keep old value
-                assignd(dim, (*pnew)[i], (*pold)[i]);
+            cost[i] = targ[i]->cost;
+            if(cost[i] < cmin) {
+                cmin = cost[i];
+                imin = i;
             }
-            cmax = fmax(cmax, cost[i]);
         }
-
-        // Best member of current generation
-        assignd(dim, bestit, best);
-
-        // swap population arrays. New becomes old.
-        {
-            double      (*pswap)[nPts][dim] = pold;
-            pold = pnew;
-            pnew = pswap;
+        if(!isfinite(cmin)) {
+            fprintf(stderr,"%s:%d: No initial points have finite values.\n",
+                    __FILE__,__LINE__);
+            exit(EXIT_FAILURE);
         }
-
-        // Difference between best and worst cost values
-        *yspread = cmax - cmin;
-
-        // Count iterations since last improvement in yspread
-        if(*yspread < bestSpread) {
-            improveSpread = 1;
-            bestSpread = *yspread;
-        }
-
-        if(improveCost || improveSpread)
-            flat=0;
-        else
-            ++flat;
-
-        // Output part
-        if(verbose && gen % refresh == 0) {
-            // display after every refresh generations
-            fprintf(stderr,
-                    "%5d cost=%1.10lg yspread=%lf flat=%d\n",
-                    gen, cmin, *yspread, flat);
-            fprintf(stderr, "   Best params:");
-            for(j = 0; j < dim; j++) {
-                fprintf(stderr, " %0.10lg", best[j]);
-                if(j != dim - 1)
-                    putc(',', stderr);
-            }
-            putc('\n', stderr);
+        assert(imin < INT_MAX);
+        assert(cmin < HUGE_VAL);
+        assignd(dim, best, (*pold)[imin]);    // best ever
+        assignd(dim, bestit, (*pold)[imin]);  // best of generation
 #if 0
-            printState(nPts, dim, *pold, cost, imin, stdout);
+        fprintf(stdout, "Initial State:\n");
+        printState(nPts, dim, *pold, cost, imin, stdout);
+        fflush(stdout);
 #endif
-            fflush(stdout);
-        }
-        if(sigstat==SIGINT || flat==dep.maxFlat)
-            break;
-    }
-    // End iterations
+        flat = 0;     // iterations since last improvement
+        bestSpread = HUGE_VAL;
+        long genmax = SimSched_getOptItr(simSched);
+        
+        // Iteration loop
+        for(gen = 0; gen < genmax; ++gen) {
+            // Perturb points and calculate cost
+            for(i = 0; i < nPts; i++) {
+                assignd(dim, tmp, (*pold)[i]);
+                (*stratfun)(dim, tmp, nPts, ndx, bestit,
+                            F, CR, pold, rng);
+                TaskArg_setArray(targ[i], dim, tmp);    
+                JobQueue_addJob(jq, taskfun, targ[i]);
+            }
 
-#if 1
-    JobQueue_noMoreJobs(jq);
+            JobQueue_waitOnJobs(jq);
+
+            int improveCost=0, improveSpread=0;
+
+            // Generate a new generation, based on the old generation
+            // and all the trials.
+            double      cmax = -HUGE_VAL;
+            for(i = 0; i < nPts; ++i) {
+                double      trial_cost = targ[i]->cost;
+                if(trial_cost <= cost[i]) {
+                    // accept mutation
+                    cost[i] = trial_cost;
+                    assignd(dim, (*pnew)[i], targ[i]->v);
+                    if(trial_cost < cmin) { // Was this a new minimum? If so,
+                        cmin = trial_cost;  // reset cmin to new low.
+                        imin = i;
+                        assignd(dim, best, targ[i]->v);
+                        improveCost = 1;
+                    }
+                } else {
+                    // reject mutation: keep old value
+                    assignd(dim, (*pnew)[i], (*pold)[i]);
+                }
+                cmax = fmax(cmax, cost[i]);
+            }
+
+            // Best member of current generation
+            assignd(dim, bestit, best);
+
+            // swap population arrays. New becomes old.
+            {
+                double      (*pswap)[nPts][dim] = pold;
+                pold = pnew;
+                pnew = pswap;
+            }
+
+            // Difference between best and worst cost values
+            *yspread = cmax - cmin;
+
+            // Count iterations since last improvement in yspread
+            if(*yspread < bestSpread) {
+                improveSpread = 1;
+                bestSpread = *yspread;
+            }
+
+            if(improveCost || improveSpread)
+                flat=0;
+            else
+                ++flat;
+
+            // output
+            if(verbose && gen % refresh == 0) {
+                // display after every refresh generations
+                fprintf(stderr,
+                        "%d:%d cost=%1.10lg yspread=%lf flat=%d\n",
+                        stage, gen, cmin, *yspread, flat);
+                fprintf(stderr, "   Best params:");
+                for(j = 0; j < dim; j++) {
+                    fprintf(stderr, " %0.10lg", best[j]);
+                    if(j != dim - 1)
+                        putc(',', stderr);
+                }
+                putc('\n', stderr);
+#if 0
+                printState(nPts, dim, *pold, cost, imin, stdout);
 #endif
+                fflush(stdout);
+            }
+            if(sigstat==SIGINT)
+                break;
+            if(stage==nstages-1 && flat==dep.maxFlat)
+                break;
+        }
+    }
+
+    JobQueue_noMoreJobs(jq);
     if(flat < dep.maxFlat) {
         status = 1;
         if(verbose)
@@ -551,13 +782,13 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 
     // Free memory
     for(i = 0; i < nPts; ++i) {
-        if(jobData[i])
+        if(jobData[i]) {
+            assert(dep.JobData_free);
             (*dep.JobData_free)(jobData[i]);
+        }
         TaskArg_free(targ[i]);
     }
-#if 1
     JobQueue_free(jq);
-#endif
 
     return status;
 }

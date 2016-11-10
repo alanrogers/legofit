@@ -18,6 +18,7 @@ typedef struct NodeStore NodeStore;
 typedef struct ParKeyVal ParKeyVal;
 typedef struct ParStore ParStore;
 typedef struct PopNode PopNode;
+typedef struct SimSched SimSched;
 typedef struct SampNdx SampNdx;
 typedef struct StrInt StrInt;
 typedef struct Tokenizer Tokenizer;

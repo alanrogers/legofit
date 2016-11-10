@@ -15,17 +15,19 @@
 #include "lblndx.h"
 #include "parstore.h"
 #include "patprob.h"
+#include "simsched.h"
 #include <assert.h>
+#include <float.h>
 #include <getopt.h>
+#include <gsl/gsl_sf_gamma.h>
 #include <limits.h>
+#include <pthread.h>
+#include <signal.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
-#include <float.h>
-#include <pthread.h>
-#include <gsl/gsl_sf_gamma.h>
-#include <signal.h>
 
 extern pthread_mutex_t seedLock;
 extern unsigned long rngseed;
@@ -63,13 +65,13 @@ void usage(void) {
             "   population history, and file sitepat.txt contains site\n"
             "   pattern frequencies.\n");
     fprintf(stderr,"Options may include:\n");
-    tellopt("-i <x> or --deItr <x>", "number of DE iterations");
-    tellopt("-r <x> or --simreps <x>", "number of reps in each function eval");
     tellopt("-M <x> or --maxFlat <x>", "termination criterion");
     tellopt("-t <x> or --threads <x>", "number of threads (default is auto)");
     tellopt("-F <x> or --scaleFactor <x>", "set DE scale factor");
     tellopt("-x <x> or --crossover <x>", "set DE crossover probability");
     tellopt("-s <x> or --strategy <x>", "set DE strategy");
+    tellopt("-S <g>@<r> or --stage <g>@<r>",
+            "add stage with <g> generations and <r> simulation reps");
     tellopt("-p <x> or --ptsPerDim <x>", "number of DE points per free var");
 	tellopt("-1 or --singletons", "Use singleton site patterns");
     tellopt("-v or --verbose", "verbose output");
@@ -102,12 +104,11 @@ int main(int argc, char **argv) {
 
     static struct option myopts[] = {
         /* {char *name, int has_arg, int *flag, int val} */
-        {"deItr", required_argument, 0, 'i'},
         {"threads", required_argument, 0, 't'},
 		{"crossover", required_argument, 0, 'x'},
 		{"scaleFactor", required_argument, 0, 'F'},
-		{"simreps", required_argument, 0, 'r'},
         {"strategy", required_argument, 0, 's'},
+        {"stage", required_argument, 0, 'S'},
         {"maxFlat", required_argument, 0, 'M'},
         {"ptsPerDim", required_argument, 0, 'p'},
         {"mutRate", required_argument, 0, 'u'},
@@ -130,21 +131,21 @@ int main(int argc, char **argv) {
     double      lo_t = 0.0, hi_t = 1e6;        // t bounds
     int         nThreads = 0;     // total number of threads
     int         doSing=0;  // nonzero means use singleton site patterns
-    int         optndx;
-    long        simreps = 100;
+    int         status, optndx;
+    long        simreps = 1000000;
     char        lgofname[200] = { '\0' };
     char        patfname[200] = { '\0' };
 
 	// DiffEv parameters
 	double      F = 0.9;
 	double      CR = 0.8;
-	int         maxFlat = 300; // termination criterion
+	int         maxFlat = 100; // termination criterion
     double      u = 0.0;       // mutation rate per site per generation
     long        nnuc = 0;      // number of nucleotides per haploid genome
-    int         deItr = 1000;  // number of diffev iterations
 	int         strategy = 1;
 	int         ptsPerDim = 10;
     int         verbose = 0;
+    SimSched    *simSched = SimSched_new();
 
 #if defined(__DATE__) && defined(__TIME__)
     printf("# Program was compiled: %s %s\n", __DATE__, __TIME__);
@@ -161,19 +162,14 @@ int main(int argc, char **argv) {
 
     // command line arguments
     for(;;) {
-        i = getopt_long(argc, argv, "i:t:F:p:r:s:a:vx:u:n:1h", myopts, &optndx);
+        i = getopt_long(argc, argv, "t:F:p:s:S:a:vx:u:n:1h",
+                        myopts, &optndx);
         if(i == -1)
             break;
         switch (i) {
         case ':':
         case '?':
             usage();
-            break;
-        case 'r':
-            simreps = strtol(optarg, 0, 10);
-            break;
-        case 'i':
-            deItr = strtol(optarg, 0, 10);
             break;
         case 't':
             nThreads = strtol(optarg, NULL, 10);
@@ -186,6 +182,30 @@ int main(int argc, char **argv) {
             break;
 		case 's':
 			strategy = strtol(optarg, NULL, 10);
+            break;
+		case 'S':
+            {
+                // Add a stage to simSched.
+                char b[20], *g, *r;
+                status = snprintf(b, sizeof b, "%s", optarg);
+                if(status >= sizeof b) {
+                    fprintf(stderr,"%s:%d: buffer overflow reading arg %s\n",
+                            __FILE__,__LINE__,optarg);
+                    exit(EXIT_FAILURE);
+                }
+                g = r = b;
+                (void) strsep(&r, "@");
+                if(r==NULL
+                   || strlen(r) == 0
+                   || strlen(g) == 0)
+                    usage();
+                long stageGen = strtol(g, NULL, 10);
+                long stageRep  = strtol(r, NULL, 10);
+                simreps = stageRep;
+                fprintf(stderr,"%s:%d: gen=%ld reps=%ld\n",
+                        __FILE__,__LINE__,stageGen, stageRep);
+                SimSched_append(simSched, stageGen, stageRep);
+            }
             break;
         case 'v':
             verbose = 1;
@@ -233,18 +253,42 @@ int main(int argc, char **argv) {
     snprintf(patfname, sizeof(patfname), "%s", argv[optind+1]);
     assert(patfname[0] != '\0');
 
+    // Default simulation schedule.
+    // Stage 1: 200 DE generations of 1000 simulation replicates
+    // Stage 2: 100 generations of 10000 replicates
+    if(0 == SimSched_nStages(simSched)) {
+        SimSched_append(simSched, 200, 1000);
+        SimSched_append(simSched, 100, 10000);
+        SimSched_append(simSched, 1000, simreps);
+    }
+
+    SimSched_print(simSched, stdout);
+
+    Bounds bnd = {
+            .lo_twoN = lo_twoN,
+            .hi_twoN = hi_twoN,
+            .lo_t = lo_t,
+            .hi_t = hi_t
+    };
+    GPTree *gptree = GPTree_new(lgofname, bnd);
+	LblNdx lblndx  = GPTree_getLblNdx(gptree);
+
+    int dim = GPTree_nFree(gptree); // number of free parameters
+    if(dim == 0) {
+        fprintf(stderr,"Error@%s:%d: no free parameters\n",
+                __FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
+
     if(nThreads == 0)
         nThreads = getNumCores();
-
-    if(nThreads > simreps)
-        nThreads = simreps;
+    if(nThreads > dim*ptsPerDim)
+        nThreads = dim*ptsPerDim;
 
     printf("# DE strategy        : %d\n", strategy);
-    printf("#    deItr           : %d\n", deItr);
     printf("#    maxFlat         : %d\n", maxFlat);
     printf("#    F               : %lf\n", F);
     printf("#    CR              : %lf\n", CR);
-    printf("# simreps            : %lu\n", simreps);
     printf("# nthreads           : %d\n", nThreads);
     printf("# lgo input file     : %s\n", lgofname);
     printf("# site pat input file: %s\n", patfname);
@@ -264,15 +308,6 @@ int main(int argc, char **argv) {
 #else
 # error "Unknown cost function"
 #endif
-
-    Bounds bnd = {
-            .lo_twoN = lo_twoN,
-            .hi_twoN = hi_twoN,
-            .lo_t = lo_t,
-            .hi_t = hi_t
-    };
-    GPTree *gptree = GPTree_new(lgofname, bnd);
-	LblNdx lblndx  = GPTree_getLblNdx(gptree);
 
     // Observed site pattern frequencies
     BranchTab *obs = BranchTab_parse(patfname, &lblndx);
@@ -302,23 +337,16 @@ int main(int argc, char **argv) {
         .obs = obs,
         .gptree = gptree,
         .nThreads = nThreads,
-        .nreps = simreps,
         .doSing = doSing,
         .u = u,
-        .nnuc = nnuc
+        .nnuc = nnuc,
+        .simSched = simSched
     };
 
     // parameters for Differential Evolution
-    int dim = GPTree_nFree(gptree); // number of free parameters
-    if(dim == 0) {
-        fprintf(stderr,"Error@%s:%d: no free parameters\n",
-                __FILE__,__LINE__);
-        exit(EXIT_FAILURE);
-    }
     DiffEvPar   dep = {
         .dim = dim,
         .ptsPerDim = ptsPerDim,
-        .genmax = deItr,
         .refresh = 2,  // how often to print a line of output
         .strategy = strategy,
         .nthreads = nThreads,
@@ -335,7 +363,8 @@ int main(int argc, char **argv) {
 		.ThreadState_new = ThreadState_new,
 		.ThreadState_free = ThreadState_free,
         .initData = gptree,
-        .initialize = initStateVec
+        .initialize = initStateVec,
+        .simSched = simSched
     };
 
     double      estimate[dim];
@@ -352,7 +381,7 @@ int main(int argc, char **argv) {
     // possible while diffev is running.
     fflush(stdout);
 
-    int         status = diffev(dim, estimate, &cost, &yspread, dep, rng);
+    status = diffev(dim, estimate, &cost, &yspread, dep, rng);
     
     printf("DiffEv %s. cost=%0.5lg; spread=%0.5lg\n",
            status==0 ? "converged" : "FAILED", cost, yspread);
@@ -388,6 +417,7 @@ int main(int argc, char **argv) {
     BranchTab_free(bt);
     gsl_rng_free(rng);
     GPTree_free(gptree);
+    SimSched_free(simSched);
     fprintf(stderr,"legofit is finished\n");
 
     return 0;
