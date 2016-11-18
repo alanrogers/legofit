@@ -29,6 +29,13 @@ DAFReader *DAFReader_new(const char *fname) {
     return self;
 }
 
+// Clear all chromosome names
+void        DAFReader_clearChromosomes(int n, DAFReader *r[n]) {
+    int i;
+    for(i=0; i < n; ++i)
+        r[i]->chr[0] = '\0';
+}
+
 void DAFReader_free(DAFReader *self) {
     fclose(self->fp);
     free(self->fname);

@@ -426,6 +426,7 @@ int main(int argc, char **argv) {
 
 	// Iterate through daf files
     int chrndx=-1, currChr = INT_MAX;
+    DAFReader_clearChromosomes(n, r);
 	while(EOF != DAFReader_multiNext(n, r)) {
 
         // Skip loci at which data sets disagree about which allele

@@ -21,6 +21,7 @@ struct DAFReader {
 };
 
 DAFReader  *DAFReader_new(const char *fname);
+void        DAFReader_clearChromosomes(int n, DAFReader *r[n]);
 void        DAFReader_free(DAFReader * self);
 int         DAFReader_next(DAFReader * self);
 double      DAFReader_daf(DAFReader *r);
