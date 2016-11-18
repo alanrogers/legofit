@@ -52,7 +52,7 @@ static void usage(void) {
             8*sizeof(tipId_t));
 	fputs("\nOptions may include:\n", stderr);
 	tellopt("-f <name> or --bootfile <name>",
-			"Bootstrap output file. Def: tabpat.boot.");
+			"Bootstrap output file basename. Def: tabpat.boot.");
 	tellopt("-r <x> or --bootreps <x>",
 			"# of bootstrap replicates. Def: 0");
 	tellopt("-b <x> or --blocksize <x>",
@@ -534,22 +534,29 @@ int main(int argc, char **argv) {
 #ifndef NDEBUG
 		Boot_sanityCheck(boot,__FILE__,__LINE__);
 #endif
+        // put site pattern counts into matrix boottab.
 		for(i=0; i<bootreps; ++i)
 			Boot_aggregate(boot, i, npat, boottab[i]);
 
-		FILE *fp = fopen(bootfname, "w");
-		fprintf(fp, "# %s", "SitePat");
-		for(j=0; j < bootreps; ++j)
-			fprintf(fp, " boot%03d", j);
-		putc('\n', fp);
-		for(i=0; i<npat; ++i) {
-			fprintf(fp, "%s",
-				   patLbl(lblsize, lblbuff,  pat[i], &lndx));
-			for(j=0; j < bootreps; ++j)
-				fprintf(fp, " %0.9lf", boottab[j][i]);
-			putc('\n', fp);
-		}
-		fclose(fp);
+        // write an output file for each bootstrap replicate
+		for(j=0; j < bootreps; ++j) {
+            char buff[FILENAMESIZE+3];
+            status = snprintf(buff, sizeof buff, "%s%03d",
+                              bootfname, j);
+			if(status >= sizeof buff)
+                DIE("buffer overflow in snprintf");
+
+            FILE *fp = fopen(buff, "w");
+            if(fp == NULL)
+                DIE("bad fopen");
+            fprintf(fp,"# %13s %20s", "SitePat", "E[count]\n");
+            for(i=0; i<npat; ++i) {
+                fprintf(fp, "%15s %20.7lf\n",
+                       patLbl(lblsize, lblbuff,  pat[i], &lndx),
+                       boottab[j][i]);
+            }
+            fclose(fp);
+        }
 	}
 
     // print labels and binary representation of site patterns

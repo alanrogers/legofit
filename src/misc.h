@@ -56,6 +56,12 @@ static inline double survival(double t, double twoN);
         exit(1);                                    \
     }while(0)
 
+#  define DIE(msg) do{                              \
+        fprintf(stderr,"%s:%s:%d: %s\n",            \
+                __FILE__,__func__,__LINE__, (msg)); \
+        exit(EXIT_FAILURE);                         \
+    }while(0)
+
 #  define   CHECKMEM(x) do {                                \
         if((x)==NULL) {                                     \
             fprintf(stderr, "%s:%s:%d: allocation error\n", \
