@@ -100,6 +100,8 @@ int DAFReader_next(DAFReader *self) {
                 __FILE__,__func__,__LINE__);
         fprintf(stderr,"          \"%s\" precedes \"%s\".\n",
                 prev, self->chr);
+        Tokenizer_printSummary(self->tkz, stderr);
+        Tokenizer_print(self->tkz, stderr);
         exit(EXIT_FAILURE);
     }
 
