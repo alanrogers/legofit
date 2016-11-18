@@ -83,8 +83,6 @@ BootChr       *BootChr_new(long nsnp, long nrep, int npat, long blocksize,
     self->nsnp = nsnp;
     self->nrep = nrep;
 	self->blocksize = adjustBlockLength(blocksize, nsnp);
-	fprintf(stderr,"%s:%d: blocksize %ld -> %ld\n",
-			__FILE__,__LINE__, blocksize, self->blocksize);
     self->npat = npat;
     self->nblock = LInt_div_round(nsnp, blocksize);
 
