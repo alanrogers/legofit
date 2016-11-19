@@ -425,6 +425,7 @@ int main(int argc, char **argv) {
     long snpndx = -1;
 
 	// Iterate through daf files
+    fprintf(stderr,"Doing 2nd pass through data to tabulate patterns..\n");
     int chrndx=-1, currChr = INT_MAX;
     DAFReader_clearChromosomes(n, r);
 	while(EOF != DAFReader_multiNext(n, r)) {
