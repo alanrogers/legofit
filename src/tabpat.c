@@ -52,7 +52,7 @@ static void usage(void) {
             8*sizeof(tipId_t));
 	fputs("\nOptions may include:\n", stderr);
 	tellopt("-f <name> or --bootfile <name>",
-			"Bootstrap output file basename. Def: legoboot.");
+			"Bootstrap output file basename. Def: boot.");
 	tellopt("-r <x> or --bootreps <x>",
 			"# of bootstrap replicates. Def: 0");
 	tellopt("-b <x> or --blocksize <x>",
@@ -314,7 +314,7 @@ int main(int argc, char **argv) {
 
 	// Default boot file name
     if(bootfname[0] == '\0') {
-		const char *defName = "legoboot";
+		const char *defName = "tabpat.boot";
 		status = snprintf(bootfname, sizeof bootfname, "%s", defName);
 		if(status >= sizeof bootfname) {
 			fprintf(stderr,"%s:%d: ERR: Filename %s is too large."
