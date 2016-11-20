@@ -8,7 +8,7 @@ prof :=
 incl := -I/usr/local/include -I/opt/local/include
 
 targets := lego legofit tabpat daf
-pytargets := diverg.py daf.py
+pytargets := diverg.py daf.py bootci.py
 tests := xzeroin xbinary
 
 CC := gcc
