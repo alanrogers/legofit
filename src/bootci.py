@@ -6,11 +6,15 @@ from math import floor, ceil
 
 # Print usage message and abort
 def usage(msg1):
-    print >> sys.stderr, msg1
+    if len(msg1) > 0:
+        print >> sys.stderr, msg1
     msg = \
         """
-usage: bootci.py [options] <bootfile1> <bootfile2> ...
-where options may include:
+usage: bootci.py [options] <central_tendency> <boot1> <boot2> ...
+
+where <central_tendency> is the legofit output for the real data
+and the <boot*> files are legofit output for bootstrap replicates.
+Options may include:
 
   -c <x> or --conf <x>     Set confidence level.
 
@@ -64,7 +68,8 @@ def interpolate(p, v):
     return (1.0-w)*v[i] + w*v[j]
 
 conf = 0.95
-fnames = []
+realdata = None
+bootnames = []
 
 # Loop over command line arguments, ignoring the 0th.
 # (The 0th is just the name of the program.)
@@ -72,6 +77,8 @@ i = 1
 while(True):
     if i >= len(sys.argv):
         break
+    elif sys.argv[i]=="-h" or sys.argv[i]=="--help":
+        usage("")
     elif sys.argv[i]=="-c" or sys.argv[i]=="--confidence":
         i += 1
         if i >= len(sys.argv):
@@ -80,32 +87,34 @@ while(True):
     elif sys.argv[i][0] == "-":
         usage("Unknown argument: %s" % sys.argv[i])
     else:
-        fnames.append(sys.argv[i])
+        if realdata == None:
+            realdata = sys.argv[i]
+        else:
+            bootnames.append(sys.argv[i])
     i += 1
 
-if len(fnames) < 2:
-    usage("Command line must list at least 2 input files")
+if len(bootnames) < 2:
+    usage("Command line must list at least 3 input files")
 
-print "# inputs:",
-for i in range(len(fnames)):
-    print fnames[i],
+print "# real data:", realdata
+print "# bootstrap replicates:",
+for i in range(len(bootnames)):
+    print bootnames[i],
 print
 print "# %s: %0.3f" % ("confidence", conf)
 
-parnames = None
+parnames, realEst = parselegofit(realdata)
 mat = []
+mat.append(realEst)
 
-for name in fnames:
+for name in bootnames:
     parnames2, estimates = parselegofit(name)
 
-    if parnames:
-        if parnames != parnames2:
-            print >> sys.stderr, "Input files estimate different parameters"
-            print >> sys.stderr, "  1:", parnames
-            print >> sys.stderr, "  2:", parnames2
-            exit(1)
-    else:
-        parnames = parnames2
+    if parnames != parnames2:
+        print >> sys.stderr, "Input files estimate different parameters"
+        print >> sys.stderr, "  1:", parnames
+        print >> sys.stderr, "  2:", parnames2
+        exit(1)
 
     mat.append(estimates)
 
@@ -119,12 +128,13 @@ npar = len(mat)
 
 tailProb = (1.0 - conf)/2.0
 
-print "%10s %15s %15s" % ("Parameter", "lowBnd", "highBnd")
+print "%10s %15s %15s %15s" % ("Parameter", "Estimate", "lowBnd", "highBnd")
 for i in range(npar):
     v = sorted(mat[i])
     lowBnd = interpolate(tailProb, v)
     highBnd = interpolate(1.0-tailProb, v)
-    print "%10s %15.8f %15.8f" % (parnames[i], lowBnd, highBnd)
+    print "%10s %15.8f %15.8f %15.8f" % \
+        (parnames[i], realEst[i], lowBnd, highBnd)
 
 
     
