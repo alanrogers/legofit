@@ -18,6 +18,8 @@ and the <boot*> files are legofit output for bootstrap replicates.
 Options may include:
 
   -c <x> or --conf <x>     Set confidence level.
+  -h     or --help         Print this message.
+  -l <x> or --label <x>    Set label.
 
 The program writes to standard output.
 """
@@ -71,6 +73,7 @@ def interpolate(p, v):
 conf = 0.95
 realdata = None
 bootnames = []
+lbl = None
 
 # Loop over command line arguments, ignoring the 0th.
 # (The 0th is just the name of the program.)
@@ -85,6 +88,11 @@ while(True):
         if i >= len(sys.argv):
             usage("Missing arg to -c or --confidence")
         conf = float(sys.argv[i])
+    elif sys.argv[i]=="-l" or sys.argv[i]=="--label":
+        i += 1
+        if i >= len(sys.argv):
+            usage("Missing arg to -l or --label")
+        lbl = sys.argv[i]
     elif sys.argv[i][0] == "-":
         usage("Unknown argument: %s" % sys.argv[i])
     else:
@@ -130,14 +138,17 @@ npar = len(mat)
 
 tailProb = (1.0 - conf)/2.0
 
-print "%10s %15s %15s %15s" % ("Parameter", "Estimate", "lowBnd", "highBnd")
+if lbl:
+    print "%10s %15s %15s %15s %s" % ("par", "est", "low", "high", "lbl")
+else:
+    print "%10s %15s %15s %15s" % ("par", "est", "low", "high")
 for i in range(npar):
     v = sorted(mat[i])
     lowBnd = interpolate(tailProb, v)
     highBnd = interpolate(1.0-tailProb, v)
-    print "%10s %15.8f %15.8f %15.8f" % \
-        (parnames[i], realEst[i], lowBnd, highBnd)
-
-
-    
-    
+    if lbl:
+        print "%10s %15.8f %15.8f %15.8f %s" % \
+            (parnames[i], realEst[i], lowBnd, highBnd, lbl)
+    else:
+        print "%10s %15.8f %15.8f %15.8f" % \
+            (parnames[i], realEst[i], lowBnd, highBnd)
