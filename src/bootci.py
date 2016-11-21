@@ -3,6 +3,7 @@
 # confidence interval of each parameter.
 import sys
 from math import floor, ceil
+import datetime
 
 # Print usage message and abort
 def usage(msg1):
@@ -96,6 +97,7 @@ while(True):
 if len(bootnames) < 2:
     usage("Command line must list at least 3 input files")
 
+print "# bootci.py run at: %s" % datetime.datetime.now()
 print "# real data:", realdata
 print "# bootstrap replicates:",
 for i in range(len(bootnames)):
