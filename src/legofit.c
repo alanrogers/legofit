@@ -202,8 +202,6 @@ int main(int argc, char **argv) {
                 long stageGen = strtol(g, NULL, 10);
                 long stageRep  = strtol(r, NULL, 10);
                 simreps = stageRep;
-                fprintf(stderr,"%s:%d: gen=%ld reps=%ld\n",
-                        __FILE__,__LINE__,stageGen, stageRep);
                 SimSched_append(simSched, stageGen, stageRep);
             }
             break;

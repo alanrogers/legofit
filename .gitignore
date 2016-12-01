@@ -12,6 +12,7 @@ xbinary
 xlblndx
 xpopnode
 xsampndx
+xsimsched
 xstrtab
 xbranchtab
 xparstore
@@ -24,5 +25,6 @@ xstrint
 lego
 legofit
 tabpat
+daf
 q
 try

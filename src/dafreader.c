@@ -29,6 +29,13 @@ DAFReader *DAFReader_new(const char *fname) {
     return self;
 }
 
+// Clear all chromosome names
+void        DAFReader_clearChromosomes(int n, DAFReader *r[n]) {
+    int i;
+    for(i=0; i < n; ++i)
+        r[i]->chr[0] = '\0';
+}
+
 void DAFReader_free(DAFReader *self) {
     fclose(self->fp);
     free(self->fname);
@@ -100,6 +107,8 @@ int DAFReader_next(DAFReader *self) {
                 __FILE__,__func__,__LINE__);
         fprintf(stderr,"          \"%s\" precedes \"%s\".\n",
                 prev, self->chr);
+        Tokenizer_printSummary(self->tkz, stderr);
+        Tokenizer_print(self->tkz, stderr);
         exit(EXIT_FAILURE);
     }
 

@@ -1,4 +1,33 @@
 /**
+ * @file diffev.c
+ * @author Alan R. Rogers
+ * @brief Numerical minimization using differential evolution (DE).
+ *
+ * This file began with Rainer Storn's de.c, version 3.6. I have made
+ * lots of changes. Most of these are just re-organizations, but
+ * several are substantive:
+ *
+ * This code is multithreaded: function evaluations are done in a
+ * multithreaded job queue.
+ *
+ * There are also hooks that allow each thread to maintain state. For
+ * example, it can be useful to run a separate random number generator
+ * in each thread.
+ *
+ * This code has also been modified to facilitate using simulations
+ * for evaluating the objective function. In initial generations of
+ * the DE algorithm, the swarm of points adapts itself to the
+ * objective function. Great precision is not necessary during this
+ * burn-in period, so it can be useful to do fewer simulation
+ * replicates per function evaluation. To facilitate this, the current
+ * code allows the user to define a series of stages, each with a
+ * distinct number of DE generations and simulation
+ * replicates. Convergence can occur only during the final stage.
+ *
+ * The criterion for convergence is new.
+ *
+ * Storn's documentation and license are below follow.
+ *
  *        D I F F E R E N T I A L     E V O L U T I O N
  *
  * Program: de.c
