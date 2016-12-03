@@ -22,6 +22,8 @@ struct ExoParList {
 void ExoPar_init(ExoPar *self, double *ptr, double mean, double sd,
                  double low, double high);
 int ExoParList_size(ExoParList *self);
+int compare_ExoPar_ExoPar(const void *void_x, const void void_y);
+int compare_dblPtr_ExoPar(const void *void_x, const void void_y);
 
 void ExoPar_init(ExoPar *self, double *ptr, double mean, double sd,
                  double low, double high) {
