@@ -55,6 +55,8 @@ double costFun(int dim, double x[dim], void *jdata, void *tdata) {
 #else
 # error "Unknown cost method"
 #endif
+
+    BranchTab_free(prob);
     
     return cost;
 }

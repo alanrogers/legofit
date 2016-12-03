@@ -1,15 +1,15 @@
-#include "exogpar.h"
+#include "exopar.h"
 #include "misc.h"
 #include "misc.h"
 #include <gsl/gsl_randist.h>
 
-struct ExogPar {
+struct ExoPar {
     double *valptr;
     double mean, sd;
 };
 
-ExogPar *ExogPar_new(double *valptr, mean, sd) {
-    ExogPar *self = malloc(sizeof *self);
+ExoPar *ExoPar_new(double *valptr, mean, sd) {
+    ExoPar *self = malloc(sizeof *self);
     CHECKMEM(self);
 
     self->valptr = valptr;
@@ -18,11 +18,11 @@ ExogPar *ExogPar_new(double *valptr, mean, sd) {
     return self;
 }
 
-void ExogPar_free(ExogPar *self) {
+void ExoPar_free(ExoPar *self) {
     free(self);
 }
 
-double ExogPar_sample(ExogPar *self, double low, double high, gsl_rng *rng) {
+double ExoPar_sample(ExoPar *self, double low, double high, gsl_rng *rng) {
     double x;
     assert(self->mean >= low);
     assert(self->mean <= high);
