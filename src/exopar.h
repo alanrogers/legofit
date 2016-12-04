@@ -8,8 +8,10 @@ void ExoParList_free(ExoParList *self);
 
 ExoParTab *ExoParTab_new(void);
 void ExoParTab_free(ExoParTab *self);
+void ExoParTab_add(ExoParTab *self, double *ptr, double m, double sd,
+                   double low, double high);
 void ExoParTab_freeze(ExoParTab *self);
-double * const ExoParTab_sample(ExoParTab *self, double *ptr,
+double ExoParTab_sample(ExoParTab *self, double *ptr,
                                 double low, double high,
                                 gsl_rng *rng);
 
