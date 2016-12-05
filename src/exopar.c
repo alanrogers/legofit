@@ -23,7 +23,7 @@ struct ExoParTab {
 };
 
 static void ExoPar_init(ExoPar * self, double *ptr, double mean, double sd);
-static double ExoPar_sample(const ExoPar * self, double low, double high,
+static void ExoPar_sample(const ExoPar * self, double low, double high,
                             gsl_rng * rng);
 static int  ExoParList_size(ExoParList * self);
 static ExoParList *ExoParList_add(ExoParList * old, double *ptr, double m,
@@ -38,18 +38,17 @@ static void ExoPar_init(ExoPar * self, double *ptr, double mean, double sd) {
     self->sd = sd;
 }
 
-static double ExoPar_sample(const ExoPar * self, double low, double high,
+static void ExoPar_sample(const ExoPar * self, double low, double high,
                             gsl_rng * rng) {
     double      x;
     fprintf(stderr,"%s: low=%lf high=%lf\n",
             __func__, low, high);
     assert(low < high);
     if(self->sd == 0.0)
-        return *self->ptr;
+        return;
     x = self->mean + gsl_ran_gaussian(rng, self->sd);
     x = reflect(x, low, high);
     *self->ptr = x;
-    return x;
 }
 
 /// Add a new link to list.
@@ -139,14 +138,15 @@ void ExoParTab_freeze(ExoParTab * self) {
 
 /// Return a new value sampled from the distribution associated with
 /// ptr.
-double ExoParTab_sample(ExoParTab * self, double *ptr,
+void ExoParTab_sample(ExoParTab * self, double *ptr,
                         double low, double high, gsl_rng * rng) {
     assert(self->frozen);
     const ExoPar *exopar = bsearch(&ptr, self->v,
                                    (size_t) self->n,
                                    sizeof(ExoPar),
                                    compare_dblPtr_ExoPar);
-    return ExoPar_sample(exopar, low, high, rng);
+    if(exopar)
+        ExoPar_sample(exopar, low, high, rng);
 }
 
 void ExoParTab_free(ExoParTab * self) {
@@ -165,4 +165,31 @@ void ExoParTab_free(ExoParTab * self) {
 // sd the standard deviation.
 void ExoParTab_add(ExoParTab * self, double *ptr, double m, double sd) {
     self->list = ExoParList_add(self->list, ptr, m, sd);
+}
+
+/// Duplicate an ExoParTab object.
+ExoParTab  *ExoParTab_dup(const ExoParTab *old) {
+    if(!old->frozen)
+        DIE("Can't dup an unfrozen ExoParTab");
+
+    ExoParTab *new = malloc(sizeof(ExoParTab));
+    CHECKMEM(new);
+
+    new->n = old->n;
+    new->frozen = old->frozen;
+    new->list = NULL;
+    new->v = memdup(old->v, old->n * sizeof(old->v[0]));
+    CHECKMEM(new->v);
+    return new;
+}
+
+void        ExoParTab_shiftPtrs(ExoParTab *self, size_t offset) {
+    if(!self->frozen)
+        DIE("Can't shift pointers in an unfrozen ExoParTab");
+    int i;
+    for(i=0; i < self->n; ++i) {
+        size_t memloc = (size_t) self->v[i].ptr;
+        memloc += offset;
+        self->v[i].ptr = (double *) memloc;
+    }
 }

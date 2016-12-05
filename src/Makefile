@@ -45,14 +45,14 @@ test : $(tests)
 
 LEGO := lego.o patprob.o gptree.o binary.o jobqueue.o misc.o parse.o \
   branchtab.o hashtab.o lblndx.o tokenizer.o parstore.o parkeyval.o \
-  popnode.o gene.o dprintf.o rngseed.o
+  popnode.o gene.o dprintf.o rngseed.o exopar.o
 lego : $(LEGO)
 	$(CC) $(CFLAGS) -o $@ $(LEGO) $(lib)
 
 LEGOFIT := legofit.o patprob.o gptree.o binary.o jobqueue.o misc.o \
   parse.o branchtab.o hashtab.o lblndx.o tokenizer.o parstore.o \
   parkeyval.o popnode.o gene.o cost.o diffev.o dprintf.o rngseed.o \
-  simsched.o
+  simsched.o exopar.o
 legofit : $(LEGOFIT)
 	$(CC) $(CFLAGS) -o $@ $(LEGOFIT) $(lib)
 

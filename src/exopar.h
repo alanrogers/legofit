@@ -8,7 +8,9 @@ ExoParTab  *ExoParTab_new(void);
 void        ExoParTab_free(ExoParTab * self);
 void        ExoParTab_add(ExoParTab * self, double *ptr, double m, double sd);
 void        ExoParTab_freeze(ExoParTab * self);
-double      ExoParTab_sample(ExoParTab * self, double *ptr,
+void        ExoParTab_sample(ExoParTab * self, double *ptr,
                              double low, double high, gsl_rng * rng);
+ExoParTab  *ExoParTab_dup(const ExoParTab *old);
+void        ExoParTab_shiftPtrs(ExoParTab *self, size_t offset);
 
 #endif

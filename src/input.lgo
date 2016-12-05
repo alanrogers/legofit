@@ -2,9 +2,8 @@ time fixed  zero=0
 twoN fixed  one =1
 time fixed  Tn=1
 time free   Txy=3
-time fixed  Txyn=5.5
-twoN fixed  2Nx=100
-twoN fixed  2Ny=123
+time fixed  Txyn=5.5 sd=1
+twoN fixed  2Ny=123  sd = 10
 twoN fixed  2Nn=213.4
 twoN free   2Nxy=222 
 twoN fixed  2Nxyn=1.2e2

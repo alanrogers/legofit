@@ -65,6 +65,8 @@ void        PopNode_shiftParamPtrs(PopNode *self, size_t dp);
 void        PopNode_shiftPopNodePtrs(PopNode *self, size_t dp);
 void        PopNode_untouch(PopNode * self);
 void        PopNode_randomize(PopNode *self, Bounds bnd, gsl_rng *rng);
+void        PopNode_gaussian(PopNode *self, Bounds bnd,
+                             ExoParTab *ept, gsl_rng *rng);
 
 void        SampNdx_init(SampNdx * self);
 void        SampNdx_addSamples(SampNdx * self, unsigned nsamples,

@@ -4,6 +4,6 @@
 #include "typedefs.h"
 int         countSegments(FILE * fp);
 PopNode    *mktree(FILE * fp, SampNdx *sndx, LblNdx *lndx, ParStore *parstore,
-                   Bounds *bnd, NodeStore *ns);
+                   ExoParTab *ept, Bounds *bnd, NodeStore *ns);
 
 #endif

@@ -1,15 +1,17 @@
+#include "exopar.h"
 #include "hashtab.h"
+#include "lblndx.h"
 #include "misc.h"
 #include "parse.h"
 #include "parstore.h"
 #include "popnode.h"
 #include "tokenizer.h"
-#include "lblndx.h"
 #include <assert.h>
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <ctype.h>
 #include <string.h>
+#include <stdbool.h>
 
 // Consider the following tree of populations:
 //
@@ -102,12 +104,13 @@
     }while(0)
 
 enum ParamType { TwoN, Time, MixFrac };
+enum ParamStatus { Free, Fixed, Gaussian };
 
 int         getDbl(double *x, Tokenizer * tkz, int i);
 int         getULong(unsigned long *x, Tokenizer * tkz, int i);
 void		parseParam(Tokenizer *tkz, enum ParamType type,
 					   ParStore *parstore, Bounds *bnd,
-                       bool isTimeParam);
+                       ExoParTab *exopartab, bool isTimeParam);
 void        parseSegment(Tokenizer *tkz, HashTab *poptbl, SampNdx *sndx,
 						 LblNdx *lndx, ParStore *parstore,
                          NodeStore *ns);
@@ -138,9 +141,9 @@ int getULong(unsigned long *x, Tokenizer * tkz, int i) {
 // mixFrac fixed|free name=100
 void		parseParam(Tokenizer *tkz, enum ParamType type,
 					   ParStore *parstore, Bounds *bnd,
-                       bool isTimeParam) {
+                       ExoParTab *exopartab, bool isTimeParam) {
 	int curr=1, ntokens = Tokenizer_ntokens(tkz);
-	int isfixed=0;
+    enum ParamStatus pstat = Free;
 
 	// Read type of parameter: "fixed" or "free"
 	{
@@ -148,9 +151,11 @@ void		parseParam(Tokenizer *tkz, enum ParamType type,
 		CHECK_INDEX(curr, ntokens);
 		tok = Tokenizer_token(tkz, curr++);
 		if(0 == strcmp("fixed", tok))
-			isfixed = 1;
+			pstat = Fixed;
 		else if(0 == strcmp("free", tok))
-			isfixed = 0;
+			pstat = Free;
+        else if(0 == strcmp("gaussian", tok))
+            pstat = Gaussian;
 		else {
 			fprintf(stderr, "%s:%s:%d: got %s when expecting"
 					" \"fixed\" or \"free\".\n",
@@ -182,31 +187,77 @@ void		parseParam(Tokenizer *tkz, enum ParamType type,
         exit(EXIT_FAILURE);
     }
 
-	// Allocate and initialize parameter in ParStore
-	if(isfixed)
-		ParStore_addFixedPar(parstore, value, name);
-	else {
-        // Set bounds, based on type of parameter
-        double lo, hi;
-        switch(type) {
-        case TwoN:
-            lo = bnd->lo_twoN;
-            hi = bnd->hi_twoN;
-            break;
-        case Time:
-            lo = bnd->lo_t;
-            hi = bnd->hi_t;
-            break;
-        case MixFrac:
-            lo = 0.0;
-            hi = 1.0;
-            break;
-        default:
-			lo = hi = 0.0;
-            eprintf("%s:%s:%d: This shouldn't happen\n",
-                    __FILE__,__func__,__LINE__);
+    double sd;
+    if(pstat == Gaussian) {
+
+        // Read string "sd"
+        char *sdstr;
+        CHECK_INDEX(curr, ntokens);
+        sdstr = Tokenizer_token(tkz, curr++);
+        assert(sdstr != NULL);
+        if( 0 != strcmp(sdstr, "sd") )
+            eprintf("%s:%s:%d: \"%s\" should be \"sd\".\n",
+                    __FILE__,__func__,__LINE__, sdstr);
+
+        // Read sd value
+        CHECK_INDEX(curr, ntokens);
+        if(getDbl(&sd, tkz, curr)) {
+            fflush(stdout);
+            fprintf(stderr, 
+                    "%s:%s:%d:Can't parse \"%s\" as a double.\n",
+                    __FILE__,__func__,__LINE__,
+                    Tokenizer_token(tkz, curr));
+            Tokenizer_print(tkz, stderr);
+            exit(EXIT_FAILURE);
         }
-		ParStore_addFreePar(parstore, value, lo, hi, name, isTimeParam);
+        if(sd <= 0.0) {
+            fprintf(stderr,"%s:%s:%d: Warning: sd <= 0.0\n",
+                    __FILE__,__func__,__LINE__);
+            Tokenizer_print(tkz, stderr);
+        }
+    }
+
+	// Allocate and initialize parameter in ParStore
+    switch(pstat) {
+    case Fixed:
+		ParStore_addFixedPar(parstore, value, name);
+        // Fall through
+    case Gaussian:
+        {
+            bool isfree;
+            double *ptr = ParStore_findPtr(parstore, &isfree, name);
+            assert(!isfree);
+            ExoParTab_add(exopartab, ptr, value, sd);
+        }
+        break;
+    case Free:
+        // Set bounds, based on type of parameter
+        {
+            double lo, hi;
+            switch(type) {
+            case TwoN:
+                lo = bnd->lo_twoN;
+                hi = bnd->hi_twoN;
+                break;
+            case Time:
+                lo = bnd->lo_t;
+                hi = bnd->hi_t;
+                break;
+            case MixFrac:
+                lo = 0.0;
+                hi = 1.0;
+                break;
+            default:
+                lo = hi = 0.0;
+                eprintf("%s:%s:%d: This shouldn't happen\n",
+                        __FILE__,__func__,__LINE__);
+            }
+            ParStore_addFreePar(parstore, value, lo, hi, name, isTimeParam);
+        }
+        break;
+    default:
+        eprintf("%s:%s:%d: This shouldn't happen\n",
+                __FILE__,__func__,__LINE__);
     }
 }
 
@@ -420,12 +471,11 @@ void parseMix(Tokenizer *tkz, HashTab *poptbl, ParStore *parstore) {
         eprintf("%s:%s:%d: parent segment \"%s\" undefined\n",
                  __FILE__,__func__,__LINE__, parName[1]);
 
-    // This won't compile, because mixFree is undefined.
     PopNode_mix(childNode, mPtr, mfree, parNode1, parNode0);
 }
 
 PopNode    *mktree(FILE * fp, SampNdx *sndx, LblNdx *lndx, ParStore *parstore,
-                   Bounds *bnd, NodeStore *ns) {
+                   ExoParTab *exopartab, Bounds *bnd, NodeStore *ns) {
     int         ntokens;
     char        buff[500];
     Tokenizer  *tkz = Tokenizer_new(50);
@@ -452,11 +502,11 @@ PopNode    *mktree(FILE * fp, SampNdx *sndx, LblNdx *lndx, ParStore *parstore,
 
         char *tok = Tokenizer_token(tkz, 0);
 		if(0 == strcmp(tok, "twoN"))
-			parseParam(tkz, TwoN, parstore, bnd, false);
+			parseParam(tkz, TwoN, parstore, bnd, exopartab, false);
 		else if(0 == strcmp(tok, "time"))
-			parseParam(tkz, Time, parstore, bnd, true);
+			parseParam(tkz, Time, parstore, bnd, exopartab, true);
 		else if(0 == strcmp(tok, "mixFrac"))
-			parseParam(tkz, MixFrac, parstore, bnd, false);
+			parseParam(tkz, MixFrac, parstore, bnd, exopartab, false);
         else if(0 == strcmp(tok, "segment"))
             parseSegment(tkz, poptbl, sndx, lndx, parstore, ns);
         else if(0 == strcmp(tok, "mix"))
