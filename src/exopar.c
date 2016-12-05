@@ -41,8 +41,6 @@ static void ExoPar_init(ExoPar * self, double *ptr, double mean, double sd) {
 static void ExoPar_sample(const ExoPar * self, double low, double high,
                             gsl_rng * rng) {
     double      x;
-    fprintf(stderr,"%s: low=%lf high=%lf\n",
-            __func__, low, high);
     assert(low < high);
     if(self->sd == 0.0)
         return;

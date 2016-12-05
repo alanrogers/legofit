@@ -517,6 +517,9 @@ PopNode    *mktree(FILE * fp, SampNdx *sndx, LblNdx *lndx, ParStore *parstore,
             ILLEGAL_INPUT(tok);
     }
 
+    // No more additions allowed to exopartab.
+    ExoParTab_freeze(exopartab);
+
     // Make sure the tree of populations has a single root. This
     // code iterates through all the nodes in the HashTab, and
     // searches from each node back to the root. If all is well,
