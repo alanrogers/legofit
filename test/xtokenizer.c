@@ -100,7 +100,6 @@ int main(int argc, char **argv) {
     Tokenizer_free(tkz);
 
     unitTstResult("Tokenizer", "OK");
-    fflush(stdout);
 
     return 0;
 }

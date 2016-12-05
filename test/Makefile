@@ -93,6 +93,10 @@ XPARSE := xparse.o hashtab.o misc.o tokenizer.o gptree.o lblndx.o \
 xparse : $(XPARSE)
 	$(CC) $(CFLAGS) -o $@ $(XPARSE) $(lib)
 
+XEXOPAR := xexopar.o misc.o exopar.o
+xexopar : $(XEXOPAR)
+	$(CC) $(CFLAGS) -o $@ $(XEXOPAR) $(lib)
+
 xgene.o : gene.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/gene.c
 
