@@ -916,7 +916,7 @@ int main(int argc, char **argv) {
     size_t twoNloc = (size_t) p1->twoN;
     size_t startloc = (size_t) p1->start;
     size_t endloc = (size_t) p1->end;
-    PopNode_shiftParamPtrs(p1, (size_t) 1u);
+    PopNode_shiftParamPtrs(p1, (size_t) 1u, 1);
     assert(endloc==0u || twoNloc+1u == (size_t) p1->twoN);
     assert(endloc==0u || startloc+1u == (size_t) p1->start);
     assert(endloc==0u || endloc+1u == (size_t) p1->end);
@@ -927,7 +927,7 @@ int main(int argc, char **argv) {
         parent[i] = (size_t) p1->parent[i];
     for(i=0; i < p1->nchildren; ++i)
         child[i] = (size_t) p1->child[i];
-    PopNode_shiftPopNodePtrs(p1, (size_t) 1u);
+    PopNode_shiftPopNodePtrs(p1, (size_t) 1u, 1);
     for(i=0; i < p1->nparents; ++i)
         assert(parent[i]+1u == (size_t) p1->parent[i]);
     for(i=0; i < p1->nchildren; ++i)

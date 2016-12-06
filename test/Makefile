@@ -111,8 +111,8 @@ xboot : $(XBOOT)
 xpopnode.o : popnode.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/popnode.c
 
-XPOPNODE := xpopnode.o misc.o gene.o branchtab.o binary.o lblndx.o tokenizer.o \
-   parkeyval.o
+XPOPNODE := xpopnode.o misc.o gene.o branchtab.o binary.o lblndx.o \
+   tokenizer.o parkeyval.o exopar.o
 xpopnode : $(XPOPNODE)
 	$(CC) $(CFLAGS) -o $@ $(XPOPNODE) $(lib)
 
