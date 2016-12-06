@@ -4,6 +4,7 @@ try.c
 core
 depend
 xboot
+xexopar
 xhashtab
 xgene
 xgptree
