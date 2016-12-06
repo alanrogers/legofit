@@ -110,7 +110,7 @@ int         getDbl(double *x, Tokenizer * tkz, int i);
 int         getULong(unsigned long *x, Tokenizer * tkz, int i);
 void		parseParam(Tokenizer *tkz, enum ParamType type,
 					   ParStore *parstore, Bounds *bnd,
-                       ExoParTab *exopartab, bool isTimeParam);
+                       ExoPar *exopar, bool isTimeParam);
 void        parseSegment(Tokenizer *tkz, HashTab *poptbl, SampNdx *sndx,
 						 LblNdx *lndx, ParStore *parstore,
                          NodeStore *ns);
@@ -141,7 +141,7 @@ int getULong(unsigned long *x, Tokenizer * tkz, int i) {
 // mixFrac fixed|free name=100
 void		parseParam(Tokenizer *tkz, enum ParamType type,
 					   ParStore *parstore, Bounds *bnd,
-                       ExoParTab *exopartab, bool isTimeParam) {
+                       ExoPar *exopar, bool isTimeParam) {
 	int curr=1, ntokens = Tokenizer_ntokens(tkz);
     enum ParamStatus pstat = Free;
 
@@ -227,7 +227,7 @@ void		parseParam(Tokenizer *tkz, enum ParamType type,
             bool isfree;
             double *ptr = ParStore_findPtr(parstore, &isfree, name);
             assert(!isfree);
-            ExoParTab_add(exopartab, ptr, value, sd);
+            ExoPar_add(exopar, ptr, value, sd);
         }
         break;
     case Free:
@@ -475,7 +475,7 @@ void parseMix(Tokenizer *tkz, HashTab *poptbl, ParStore *parstore) {
 }
 
 PopNode    *mktree(FILE * fp, SampNdx *sndx, LblNdx *lndx, ParStore *parstore,
-                   ExoParTab *exopartab, Bounds *bnd, NodeStore *ns) {
+                   ExoPar *exopar, Bounds *bnd, NodeStore *ns) {
     int         ntokens;
     char        buff[500];
     Tokenizer  *tkz = Tokenizer_new(50);
@@ -502,11 +502,11 @@ PopNode    *mktree(FILE * fp, SampNdx *sndx, LblNdx *lndx, ParStore *parstore,
 
         char *tok = Tokenizer_token(tkz, 0);
 		if(0 == strcmp(tok, "twoN"))
-			parseParam(tkz, TwoN, parstore, bnd, exopartab, false);
+			parseParam(tkz, TwoN, parstore, bnd, exopar, false);
 		else if(0 == strcmp(tok, "time"))
-			parseParam(tkz, Time, parstore, bnd, exopartab, true);
+			parseParam(tkz, Time, parstore, bnd, exopar, true);
 		else if(0 == strcmp(tok, "mixFrac"))
-			parseParam(tkz, MixFrac, parstore, bnd, exopartab, false);
+			parseParam(tkz, MixFrac, parstore, bnd, exopar, false);
         else if(0 == strcmp(tok, "segment"))
             parseSegment(tkz, poptbl, sndx, lndx, parstore, ns);
         else if(0 == strcmp(tok, "mix"))
@@ -517,8 +517,8 @@ PopNode    *mktree(FILE * fp, SampNdx *sndx, LblNdx *lndx, ParStore *parstore,
             ILLEGAL_INPUT(tok);
     }
 
-    // No more additions allowed to exopartab.
-    ExoParTab_freeze(exopartab);
+    // No more additions allowed to exopar.
+    ExoPar_freeze(exopar);
 
     // Make sure the tree of populations has a single root. This
     // code iterates through all the nodes in the HashTab, and

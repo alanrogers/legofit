@@ -22,7 +22,7 @@ struct GPTree {
     PopNode *rootPop;
     Gene *rootGene;
     Bounds bnd;
-    ExoParTab *exopartab;
+    ExoPar *exopar;
     ParStore *parstore;
     LblNdx lblndx;
     SampNdx sndx;
@@ -62,7 +62,7 @@ void GPTree_simulate(GPTree *self, BranchTab *branchtab, gsl_rng *rng,
         PopNode_clear(self->rootPop); // remove old samples 
         SampNdx_populateTree(&(self->sndx));    // add new samples
         PopNode_gaussian(self->rootPop, self->bnd,
-                         self->exopartab, rng);
+                         self->exopar, rng);
 
         // coalescent simulation generates gene genealogy within
         // population tree.
@@ -85,7 +85,7 @@ GPTree *GPTree_new(const char *fname, Bounds bnd) {
 
     memset(self, 0, sizeof(GPTree));
     self->bnd = bnd;
-    self->exopartab = ExoParTab_new();
+    self->exopar = ExoPar_new();
     self->parstore = ParStore_new();
     LblNdx_init(&self->lblndx);
     SampNdx_init(&self->sndx);
@@ -102,7 +102,7 @@ GPTree *GPTree_new(const char *fname, Bounds bnd) {
     CHECKMEM(ns);
 
     self->rootPop = mktree(fp, &self->sndx, &self->lblndx, self->parstore,
-                           self->exopartab, &self->bnd, ns);
+                           self->exopar, &self->bnd, ns);
 
     fclose(fp);
     NodeStore_free(ns);
@@ -123,7 +123,7 @@ void GPTree_free(GPTree *self) {
     self->rootPop = NULL;
     free(self->pnv);
     ParStore_free(self->parstore);
-    ExoParTab_free(self->exopartab);
+    ExoPar_free(self->exopar);
     free(self);
 }
 
@@ -141,35 +141,52 @@ GPTree *GPTree_dup(const GPTree *old) {
 
     GPTree *new   = memdup(old, sizeof(GPTree));
     new->parstore = ParStore_dup(old->parstore);
-    new->exopartab = ExoParTab_dup(old->exopartab);
+    new->exopar = ExoPar_dup(old->exopar);
     new->pnv      = memdup(old->pnv, old->nseg * sizeof(PopNode));
 
     assert(old->nseg == new->nseg);
     CHECKMEM(new->parstore);
-    CHECKMEM(new->exopartab);
+    CHECKMEM(new->exopar);
     CHECKMEM(new->pnv);
 
     new->sndx = old->sndx;
 
     /*
-     * Adjust the pointers within each PopNode object so they refer to
-     * the memory allocated in "new" rather than that in "old".
-     * dpar is the offset between new and old for parameter pointers.
-     * dpop is the analogous offset for PopNode pointers. Everything
-     * has to be cast to size_t, because we are not doing pointer
-     * arithmetic in the usual sense. Ordinarily, ptr+3 means
-     * ptr + 3*sizeof(*ptr). We want it to mean ptr+3*sizeof(char).
+     * Adjust the pointers so they refer to the memory allocated in
+     * "new" rather than that in "old".  dpar is the absolute offset
+     * between new and old for parameter pointers.  dpop is the
+     * analogous offset for PopNode pointers. spar and spop are the
+     * signs of these offsets. Everything has to be cast to size_t,
+     * because we are not doing pointer arithmetic in the usual
+     * sense. Ordinarily, ptr+3 means ptr + 3*sizeof(*ptr). We want it
+     * to mean ptr+3*sizeof(char).
      */
-    int i;
-    size_t dpar = ((size_t) new->parstore) - ((size_t) old->parstore);
-    size_t dpop = ((size_t) new->pnv) - ((size_t) old->pnv);
-    INCR_PTR(new->rootPop, dpop);
-    ExoParTab_shiftPtrs(new->exopartab, dpar);
-    for(i=0; i < old->nseg; ++i) {
-        PopNode_shiftParamPtrs(&new->pnv[i], dpar);
-        PopNode_shiftPopNodePtrs(&new->pnv[i], dpop);
+    int i, spar, spop;
+    size_t dpar, dpop;
+
+    // Calculate offsets and signs
+    if(new->parstore > old->parstore) {
+        dpar = ((size_t) new->parstore) - ((size_t) old->parstore);
+        spar = 1;
+    }else{
+        dpar = ((size_t) old->parstore) - ((size_t) new->parstore);
+        spar = -1;
     }
-    SampNdx_shiftPtrs(&new->sndx, dpop);
+    if(new->pnv > old->pnv) {
+        dpop = ((size_t) new->pnv) - ((size_t) old->pnv);
+        spop = 1;
+    }else{
+        dpop = ((size_t) new->pnv) - ((size_t) old->pnv);
+        spop = -1;
+    }
+    
+    SHIFT_PTR(new->rootPop, dpop, spop);
+    ExoPar_shiftPtrs(new->exopar, dpar, spar);
+    for(i=0; i < old->nseg; ++i) {
+        PopNode_shiftParamPtrs(&new->pnv[i], dpar, spar);
+        PopNode_shiftPopNodePtrs(&new->pnv[i], dpop, spop);
+    }
+    SampNdx_shiftPtrs(&new->sndx, dpop, spop);
     assert(SampNdx_ptrsLegal(&new->sndx, new->pnv, new->pnv + new->nseg));
 
     GPTree_sanityCheck(new, __FILE__, __LINE__);

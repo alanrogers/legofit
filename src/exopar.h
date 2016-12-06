@@ -4,13 +4,13 @@
 #include "typedefs.h"
 #include <gsl/gsl_rng.h>
 
-ExoParTab  *ExoParTab_new(void);
-void        ExoParTab_free(ExoParTab * self);
-void        ExoParTab_add(ExoParTab * self, double *ptr, double m, double sd);
-void        ExoParTab_freeze(ExoParTab * self);
-void        ExoParTab_sample(ExoParTab * self, double *ptr,
-                             double low, double high, gsl_rng * rng);
-ExoParTab  *ExoParTab_dup(const ExoParTab *old);
-void        ExoParTab_shiftPtrs(ExoParTab *self, size_t offset);
+ExoPar     *ExoPar_new(void);
+void        ExoPar_free(ExoPar * self);
+void        ExoPar_add(ExoPar * self, double *ptr, double m, double sd);
+void        ExoPar_freeze(ExoPar * self);
+int         ExoPar_sample(ExoPar * self, double *ptr,
+                          double low, double high, gsl_rng * rng);
+ExoPar     *ExoPar_dup(const ExoPar * old);
+void        ExoPar_shiftPtrs(ExoPar * self, size_t offset, int sign);
 
 #endif

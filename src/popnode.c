@@ -23,7 +23,7 @@ struct NodeStore {
 static void PopNode_sanityCheck(PopNode * self, const char *file, int lineno);
 static void PopNode_randomize_r(PopNode *self, Bounds bnd, gsl_rng *rng);
 static void PopNode_gaussian_r(PopNode *self, Bounds bnd,
-                               ExoParTab *ept, gsl_rng *rng);
+                               ExoPar *ep, gsl_rng *rng);
 
 void PopNode_sanityFromLeaf(PopNode * self, const char *file, int line) {
 #ifndef NDEBUG
@@ -551,16 +551,16 @@ static void PopNode_randomize_r(PopNode *self, Bounds bnd, gsl_rng *rng) {
 /// Reset the value of each Gaussian parameter by sampling from the
 /// relevant distribution.
 void PopNode_gaussian(PopNode *self, Bounds bnd,
-                      ExoParTab *ept, gsl_rng *rng) {
+                      ExoPar *ep, gsl_rng *rng) {
 	PopNode_untouch(self);
-	PopNode_gaussian_r(self, bnd, ept, rng);
+	PopNode_gaussian_r(self, bnd, ep, rng);
 }
 
 /// Traverse the population tree to reset the value of each Gaussian
 /// parameter by sampling from the relevant distribution.
 /// Call PopNode_untouch before calling this function.
 static void PopNode_gaussian_r(PopNode *self, Bounds bnd,
-                               ExoParTab *ept, gsl_rng *rng) {
+                               ExoPar *ep, gsl_rng *rng) {
 
 	// If parents are untouched, postpone this node.
 	bool postpone = false;
@@ -587,7 +587,7 @@ static void PopNode_gaussian_r(PopNode *self, Bounds bnd,
 		return;
 
     // perturb self->twoN
-    ExoParTab_sample(ept, self->twoN, bnd.lo_twoN, bnd.hi_twoN, rng);
+    ExoPar_sample(ep, self->twoN, bnd.lo_twoN, bnd.hi_twoN, rng);
 
     // perturb self->start
     // hi_t is the minimum age of parents or bnd.hi_t
@@ -628,16 +628,16 @@ static void PopNode_gaussian_r(PopNode *self, Bounds bnd,
                 __FILE__,__func__,__LINE__, self->nchildren);
         exit(EXIT_FAILURE);
     }
-    ExoParTab_sample(ept, self->start, lo_t, hi_t, rng);
+    ExoPar_sample(ep, self->start, lo_t, hi_t, rng);
 
     // Perturb mix probability
-    ExoParTab_sample(ept, self->mix, 0.0, 1.0, rng);
+    ExoPar_sample(ep, self->mix, 0.0, 1.0, rng);
 
 	self->touched = true;
 
     int i;
     for(i=0; i < self->nchildren; ++i)
-        PopNode_gaussian_r(self->child[i], bnd, ept, rng);
+        PopNode_gaussian_r(self->child[i], bnd, ep, rng);
 }
 
 /// Return 1 if parameters satisfy inequality constraints, or 0 otherwise.
@@ -692,22 +692,22 @@ int PopNode_feasible(const PopNode *self, Bounds bnd) {
 
 /// Add dp to each parameter pointer, using ordinary (not pointer)
 /// arithmetic.
-void PopNode_shiftParamPtrs(PopNode *self, size_t dp) {
-    INCR_PTR(self->twoN, dp);
-    INCR_PTR(self->start, dp);
-    INCR_PTR(self->end, dp);
-    INCR_PTR(self->mix, dp);
+void PopNode_shiftParamPtrs(PopNode *self, size_t dp, int sign) {
+    SHIFT_PTR(self->twoN, dp, sign);
+    SHIFT_PTR(self->start, dp, sign);
+    SHIFT_PTR(self->end, dp, sign);
+    SHIFT_PTR(self->mix, dp, sign);
 }
 
 /// Add dp to each PopNode pointer, using ordinary (not pointer)
 /// arithmetic.
-void PopNode_shiftPopNodePtrs(PopNode *self, size_t dp) {
+void PopNode_shiftPopNodePtrs(PopNode *self, size_t dp, int sign) {
     int i;
     for(i=0; i < self->nparents; ++i)
-        INCR_PTR(self->parent[i], dp);
+        SHIFT_PTR(self->parent[i], dp, sign);
 
     for(i=0; i < self->nchildren; ++i)
-        INCR_PTR(self->child[i], dp);
+        SHIFT_PTR(self->child[i], dp, sign);
 }
 
 NodeStore *NodeStore_new(int len, PopNode *v) {
@@ -797,10 +797,10 @@ int SampNdx_ptrsLegal(SampNdx *self, PopNode *start, PopNode *end) {
     return 1;
 }
 
-void SampNdx_shiftPtrs(SampNdx *self, size_t dpop) {
+void SampNdx_shiftPtrs(SampNdx *self, size_t dpop, int sign) {
     int i;
     for(i=0; i < self->n; ++i)
-        INCR_PTR(self->node[i], dpop);
+        SHIFT_PTR(self->node[i], dpop, sign);
 }
 
 

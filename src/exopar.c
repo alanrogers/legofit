@@ -4,42 +4,48 @@
 #include <assert.h>
 #include <gsl/gsl_randist.h>
 
-struct ExoPar {
+typedef struct ExoParList ExoParList;
+typedef struct ExoParItem ExoParItem;
+
+struct ExoParItem {
     double     *ptr;            // not locally owned
     double      mean, sd;
 };
 
 struct ExoParList {
     double     *ptr;            // not locally owned
-    ExoPar      par;
+    ExoParItem  par;
     ExoParList *next;
 };
 
-struct ExoParTab {
+struct ExoPar {
     ExoParList *list;
     int         frozen;
     int         n;
-    ExoPar     *v;
+    ExoParItem *v;
 };
 
-static void ExoPar_init(ExoPar * self, double *ptr, double mean, double sd);
-static void ExoPar_sample(const ExoPar * self, double low, double high,
-                            gsl_rng * rng);
+static void ExoParItem_init(ExoParItem * self, double *ptr, double mean,
+                            double sd);
+static void ExoParItem_sample(const ExoParItem * self, double low,
+                              double high, gsl_rng * rng);
 static int  ExoParList_size(ExoParList * self);
 static ExoParList *ExoParList_add(ExoParList * old, double *ptr, double m,
                                   double sd);
 static void ExoParList_free(ExoParList * self);
-static int  compare_ExoPar_ExoPar(const void *void_x, const void *void_y);
-static int  compare_dblPtr_ExoPar(const void *void_x, const void *void_y);
+static int  compare_ExoParItem_ExoParItem(const void *void_x,
+                                          const void *void_y);
+static int  compare_dblPtr_ExoParItem(const void *void_x, const void *void_y);
 
-static void ExoPar_init(ExoPar * self, double *ptr, double mean, double sd) {
+static void ExoParItem_init(ExoParItem * self, double *ptr, double mean,
+                            double sd) {
     self->ptr = ptr;
     *self->ptr = self->mean = mean;
     self->sd = sd;
 }
 
-static void ExoPar_sample(const ExoPar * self, double low, double high,
-                            gsl_rng * rng) {
+static void ExoParItem_sample(const ExoParItem * self, double low,
+                              double high, gsl_rng * rng) {
     double      x;
     assert(low < high);
     if(self->sd == 0.0)
@@ -57,7 +63,7 @@ static ExoParList *ExoParList_add(ExoParList * old, double *ptr, double m,
     ExoParList *new = malloc(sizeof(ExoParList));
     CHECKMEM(new);
 
-    ExoPar_init(&new->par, ptr, m, sd);
+    ExoParItem_init(&new->par, ptr, m, sd);
     new->next = old;
     return new;
 }
@@ -79,9 +85,10 @@ static int ExoParList_size(ExoParList * self) {
     return n;
 }
 
-static int compare_ExoPar_ExoPar(const void *void_x, const void *void_y) {
-    const ExoPar *x = (const ExoPar *) void_x;
-    const ExoPar *y = (const ExoPar *) void_y;
+static int compare_ExoParItem_ExoParItem(const void *void_x,
+                                         const void *void_y) {
+    const ExoParItem *x = (const ExoParItem *) void_x;
+    const ExoParItem *y = (const ExoParItem *) void_y;
 
     if(x->ptr > y->ptr)
         return 1;
@@ -91,9 +98,9 @@ static int compare_ExoPar_ExoPar(const void *void_x, const void *void_y) {
     return 0;
 }
 
-static int compare_dblPtr_ExoPar(const void *void_x, const void *void_y) {
+static int compare_dblPtr_ExoParItem(const void *void_x, const void *void_y) {
     double     *const *x = (double *const *) void_x;
-    const ExoPar *y = (const ExoPar *) void_y;
+    const ExoParItem *y = (const ExoParItem *) void_y;
 
     if(*x > y->ptr)
         return 1;
@@ -103,10 +110,10 @@ static int compare_dblPtr_ExoPar(const void *void_x, const void *void_y) {
     return 0;
 }
 
-/// Create a new ExoParTab object by coping ExoPar values
+/// Create a new ExoPar object by coping ExoParItem values
 /// from linked list and then sorting them.
-ExoParTab  *ExoParTab_new(void) {
-    ExoParTab  *self = malloc(sizeof(ExoParTab));
+ExoPar     *ExoPar_new(void) {
+    ExoPar     *self = malloc(sizeof(ExoPar));
     CHECKMEM(self);
 
     self->list = NULL;
@@ -116,38 +123,44 @@ ExoParTab  *ExoParTab_new(void) {
     return self;
 }
 
-void ExoParTab_freeze(ExoParTab * self) {
+void ExoPar_freeze(ExoPar * self) {
 
     if(self->frozen)
-        DIE("Can't freeze an ExoParTab twice");
+        DIE("Can't freeze an ExoPar twice");
     self->frozen = 1;
     self->n = ExoParList_size(self->list);
-    self->v = malloc(self->n * sizeof(ExoPar));
+    self->v = malloc(self->n * sizeof(ExoParItem));
     CHECKMEM(self->v);
     for(int i = 0; i < self->n; ++i) {
         assert(self->list != NULL);
-        memcpy(self->v + i, &self->list->par, sizeof(ExoPar));
+        memcpy(self->v + i, &self->list->par, sizeof(ExoParItem));
         self->list = self->list->next;
     }
-    qsort(self->v, (size_t) self->n, sizeof(ExoPar), compare_ExoPar_ExoPar);
+    qsort(self->v, (size_t) self->n, sizeof(ExoParItem),
+          compare_ExoParItem_ExoParItem);
     ExoParList_free(self->list);
     self->list = NULL;
 }
 
-/// Return a new value sampled from the distribution associated with
-/// ptr.
-void ExoParTab_sample(ExoParTab * self, double *ptr,
-                        double low, double high, gsl_rng * rng) {
+/// If ptr is in ExoPar, then reset the value it points to with a
+/// random value generated by sampling from the normal distribution
+/// and then reflecting back and forth so that the value lies within
+/// [low, high]. Return 0 on success or 1 if ptr is not in ExoPar.
+int ExoPar_sample(ExoPar * self, double *ptr,
+                  double low, double high, gsl_rng * rng) {
     assert(self->frozen);
-    const ExoPar *exopar = bsearch(&ptr, self->v,
-                                   (size_t) self->n,
-                                   sizeof(ExoPar),
-                                   compare_dblPtr_ExoPar);
-    if(exopar)
-        ExoPar_sample(exopar, low, high, rng);
+    const ExoParItem *exopar = bsearch(&ptr, self->v,
+                                       (size_t) self->n,
+                                       sizeof(ExoParItem),
+                                       compare_dblPtr_ExoParItem);
+    if(exopar) {
+        ExoParItem_sample(exopar, low, high, rng);
+        return 0;
+    }
+    return 1;
 }
 
-void ExoParTab_free(ExoParTab * self) {
+void ExoPar_free(ExoPar * self) {
     if(self->frozen) {
         free(self->v);
         assert(self->list == NULL);
@@ -161,16 +174,16 @@ void ExoParTab_free(ExoParTab * self) {
 // Add an exogeneous parameter to the table.
 // ptr points to the memory occupied by the parameter; m is the mean,
 // sd the standard deviation.
-void ExoParTab_add(ExoParTab * self, double *ptr, double m, double sd) {
+void ExoPar_add(ExoPar * self, double *ptr, double m, double sd) {
     self->list = ExoParList_add(self->list, ptr, m, sd);
 }
 
-/// Duplicate an ExoParTab object.
-ExoParTab  *ExoParTab_dup(const ExoParTab *old) {
+/// Duplicate an ExoPar object.
+ExoPar     *ExoPar_dup(const ExoPar * old) {
     if(!old->frozen)
-        DIE("Can't dup an unfrozen ExoParTab");
+        DIE("Can't dup an unfrozen ExoPar");
 
-    ExoParTab *new = malloc(sizeof(ExoParTab));
+    ExoPar     *new = malloc(sizeof(ExoPar));
     CHECKMEM(new);
 
     new->n = old->n;
@@ -181,13 +194,10 @@ ExoParTab  *ExoParTab_dup(const ExoParTab *old) {
     return new;
 }
 
-void        ExoParTab_shiftPtrs(ExoParTab *self, size_t offset) {
+void ExoPar_shiftPtrs(ExoPar * self, size_t offset, int sign) {
     if(!self->frozen)
-        DIE("Can't shift pointers in an unfrozen ExoParTab");
-    int i;
-    for(i=0; i < self->n; ++i) {
-        size_t memloc = (size_t) self->v[i].ptr;
-        memloc += offset;
-        self->v[i].ptr = (double *) memloc;
-    }
+        DIE("Can't shift pointers in an unfrozen ExoPar");
+    int         i;
+    for(i = 0; i < self->n; ++i)
+        SHIFT_PTR(self->v[i].ptr, offset, sign);
 }
