@@ -5,10 +5,9 @@ opt :=  -O0 -fno-inline-functions -DDEBUG     # For debugging
 #prof := -pg -rdynamic                    # For profiling
 prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
-
-tests := xbinary xhashtab xparse xgene xgptree xbranchtab xparstore \
-  xparkeyval xlblndx xpopnode xjobqueue xdiffev xdafreader xstrint \
-  xboot xsimsched
+tests := xbinary xboot xbranchtab xdafreader xdiffev xexopar xgene \
+  xgptree xhashtab xjobqueue xlblndx xparkeyval xparse xparstore \
+  xpopnode xsimsched xstrint xzeroin
 
 CC := gcc
 
@@ -40,18 +39,22 @@ all : $(tests)
 test : $(tests)
 	-./xbinary
 	-./xboot
-	-./xhashtab
+	-./xbranchtab
+	-./xdafreader
+	-./xdiffev
+	-./xexopar
 	-./xgene
-	-./xparse
-	-./xpopnode
 	-./xgptree
+	-./xhashtab
+	-./xjobqueue
+	-./xlblndx
 	-./xparkeyval
+	-./xparse
 	-./xparstore
+	-./xpopnode
 	-./xsimsched
 	-./xstrint
-	-./xlblndx
-	-./xdiffev
-#	-./xzeroin
+	-./xzeroin
 	@echo "ALL UNIT TESTS WERE COMPLETED."
 
 zeroin.o : zeroin.h
@@ -76,7 +79,8 @@ XJOBQUEUE := xjobqueue.o jobqueue.o
 xjobqueue : $(XJOBQUEUE)
 	$(CC) $(CFLAGS) -o $@ $(XJOBQUEUE) $(lib)
 
-XDIFFEV := xdiffev.o diffev.o misc.o binary.o lblndx.o jobqueue.o parkeyval.o
+XDIFFEV := xdiffev.o diffev.o misc.o binary.o lblndx.o jobqueue.o parkeyval.o \
+  simsched.o
 xdiffev : $(XDIFFEV)
 	$(CC) $(CFLAGS) -o $@ $(XDIFFEV) $(lib)
 
@@ -146,8 +150,9 @@ xlblndx : $(XLBLNDX)
 xbranchtab.o : branchtab.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/branchtab.c
 
-XBRANCHTAB := xbranchtab.o gptree.o misc.o binary.o parstore.o popnode.o gene.o \
-   lblndx.o parse.o parkeyval.o tokenizer.o hashtab.o
+XBRANCHTAB := xbranchtab.o gptree.o misc.o binary.o parstore.o popnode.o \
+   gene.o lblndx.o parse.o parkeyval.o tokenizer.o hashtab.o exopar.o \
+   dprintf.o
 xbranchtab : $(XBRANCHTAB)
 	$(CC) $(CFLAGS) -o $@ $(XBRANCHTAB) $(lib)
 
