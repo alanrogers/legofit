@@ -674,10 +674,11 @@ int main(int argc, char **argv) {
 
     PopNode  nodeVec[nseg];
     PopNode *root=NULL;
+    ExoPar *ep = ExoPar_new();
 
     {
         NodeStore *ns = NodeStore_new(nseg, nodeVec);
-        root = mktree(fp, &sndx, &lndx, parstore, &bnd, ns);
+        root = mktree(fp, &sndx, &lndx, parstore, ep, &bnd, ns);
         assert(root != NULL);
         NodeStore_free(ns);
     }
@@ -698,6 +699,7 @@ int main(int argc, char **argv) {
 	ParStore_free(parstore);
     fclose(fp);
     unlink(tstFname);
+    ExoPar_free(ep);
     return 0;
 }
 #endif

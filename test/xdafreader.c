@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
     DAFReader *r[3];
 	r[0] = DAFReader_new("altai.daf");
 	while(EOF != DAFReader_next(r[0])) {
-		const char *chr = DAFReader_chr(r[0]);
+		//      const char *chr = DAFReader_chr(r[0]);
         //		assert(0 == strcmp(chr, "22"));
 		if(verbose)
 			DAFReader_print(r[0], stdout);

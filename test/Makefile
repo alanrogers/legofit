@@ -71,11 +71,12 @@ xbinary : $(XBINARY)
 	$(CC) $(CFLAGS) -o $@ $(XBINARY) $(lib)
 
 XHASHTAB := xhashtab.o hashtab.o misc.o gptree.o branchtab.o parstore.o \
-   parkeyval.o tokenizer.o binary.o lblndx.o popnode.o gene.o parse.o
+   parkeyval.o tokenizer.o binary.o lblndx.o popnode.o gene.o parse.o \
+   exopar.o dprintf.o
 xhashtab : $(XHASHTAB)
 	$(CC) $(CFLAGS) -o $@ $(XHASHTAB) $(lib)
 
-XJOBQUEUE := xjobqueue.o jobqueue.o
+XJOBQUEUE := xjobqueue.o jobqueue.o misc.o
 xjobqueue : $(XJOBQUEUE)
 	$(CC) $(CFLAGS) -o $@ $(XJOBQUEUE) $(lib)
 
@@ -93,7 +94,8 @@ xparse.o : parse.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/parse.c
 
 XPARSE := xparse.o hashtab.o misc.o tokenizer.o gptree.o lblndx.o \
-       branchtab.o parstore.o parkeyval.o popnode.o binary.o gene.o
+       branchtab.o parstore.o parkeyval.o popnode.o binary.o gene.o \
+       exopar.o dprintf.o
 xparse : $(XPARSE)
 	$(CC) $(CFLAGS) -o $@ $(XPARSE) $(lib)
 
@@ -128,7 +130,8 @@ xgptree.o : gptree.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/gptree.c
 
 XGPTREE := xgptree.o misc.o branchtab.o parstore.o parse.o lblndx.o \
-        parkeyval.o tokenizer.o hashtab.o gene.o popnode.o binary.o
+        parkeyval.o tokenizer.o hashtab.o gene.o popnode.o binary.o \
+        exopar.o dprintf.o
 xgptree : $(XGPTREE)
 	$(CC) $(CFLAGS) -o $@ $(XGPTREE) $(lib)
 
