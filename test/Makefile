@@ -7,7 +7,7 @@ prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
 tests := xbinary xboot xbranchtab xdafreader xdiffev xexopar xgene \
   xgptree xhashtab xjobqueue xlblndx xparkeyval xparse xparstore \
-  xpopnode xsimsched xstrint xzeroin
+  xpopnode xsimsched xstrint
 
 CC := gcc
 
@@ -54,17 +54,7 @@ test : $(tests)
 	-./xpopnode
 	-./xsimsched
 	-./xstrint
-	-./xzeroin
 	@echo "ALL UNIT TESTS WERE COMPLETED."
-
-zeroin.o : zeroin.h
-
-xzeroin.o : zeroin.c zeroin.h
-	$(CC) $(CFLAGS) -c -DTEST -o $@ zeroin.c
-
-XZEROIN := xzeroin.o
-xzeroin : $(XZEROIN)
-	$(CC) $(CFLAGS) -o $@ $(XZEROIN) $(lib)
 
 XBINARY := xbinary.o binary.o
 xbinary : $(XBINARY)
