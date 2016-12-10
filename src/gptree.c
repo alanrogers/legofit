@@ -176,7 +176,7 @@ GPTree *GPTree_dup(const GPTree *old) {
         dpop = ((size_t) new->pnv) - ((size_t) old->pnv);
         spop = 1;
     }else{
-        dpop = ((size_t) new->pnv) - ((size_t) old->pnv);
+        dpop = ((size_t) old->pnv) - ((size_t) new->pnv);
         spop = -1;
     }
     
