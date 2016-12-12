@@ -186,6 +186,7 @@ void		parseParam(Tokenizer *tkz, enum ParamType type,
         Tokenizer_print(tkz, stderr);
         exit(EXIT_FAILURE);
     }
+    ++curr;
 
     double sd;
     if(pstat == Gaussian) {
@@ -215,17 +216,25 @@ void		parseParam(Tokenizer *tkz, enum ParamType type,
                     __FILE__,__func__,__LINE__);
             Tokenizer_print(tkz, stderr);
         }
+        ++curr;
     }
 
 	// Allocate and initialize parameter in ParStore
     switch(pstat) {
     case Fixed:
 		ParStore_addFixedPar(parstore, value, name);
-        // Fall through
+        break;
     case Gaussian:
+		ParStore_addFixedPar(parstore, value, name);
         {
             bool isfree;
             double *ptr = ParStore_findPtr(parstore, &isfree, name);
+            if(ptr == NULL) {
+                fprintf(stderr,"%s:%d: Parameter \"%s\" is undefined.\n",
+                        __FILE__,__LINE__, name);
+                Tokenizer_print(tkz, stderr);
+                exit(EXIT_FAILURE);
+            }
             assert(!isfree);
             ExoPar_add(exopar, ptr, value, sd);
         }
@@ -495,7 +504,9 @@ PopNode    *mktree(FILE * fp, SampNdx *sndx, LblNdx *lndx, ParStore *parstore,
         if(comment)
             *comment = '\0';
 
-        Tokenizer_split(tkz, buff, " \t="); // tokenize
+        // Tokenize. Fields are separated by spaces, tabs, or "=".
+        Tokenizer_split(tkz, buff, " \t=");
+
         ntokens = Tokenizer_strip(tkz, " \t=\n");
         if(ntokens == 0)
             continue;

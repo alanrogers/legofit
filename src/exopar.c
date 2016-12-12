@@ -39,6 +39,7 @@ static int  compare_dblPtr_ExoParItem(const void *void_x, const void *void_y);
 
 static void ExoParItem_init(ExoParItem * self, double *ptr, double mean,
                             double sd) {
+    assert(ptr);
     self->ptr = ptr;
     *self->ptr = self->mean = mean;
     self->sd = sd;
@@ -60,6 +61,7 @@ static void ExoParItem_sample(const ExoParItem * self, double low,
 /// sd the standard deviation.
 static ExoParList *ExoParList_add(ExoParList * old, double *ptr, double m,
                                   double sd) {
+    assert(ptr);
     ExoParList *new = malloc(sizeof(ExoParList));
     CHECKMEM(new);
 
@@ -175,6 +177,7 @@ void ExoPar_free(ExoPar * self) {
 // ptr points to the memory occupied by the parameter; m is the mean,
 // sd the standard deviation.
 void ExoPar_add(ExoPar * self, double *ptr, double m, double sd) {
+    assert(ptr);
     self->list = ExoParList_add(self->list, ptr, m, sd);
 }
 
