@@ -49,8 +49,6 @@ static void ExoParItem_sample(const ExoParItem * self, double low,
                               double high, gsl_rng * rng) {
     double      x;
     assert(low < high);
-    if(self->sd == 0.0)
-        return;
     x = self->mean + gsl_ran_gaussian(rng, self->sd);
     x = reflect(x, low, high);
     *self->ptr = x;
