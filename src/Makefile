@@ -67,6 +67,10 @@ daf : $(DAF)
 
 zeroin.o : zeroin.h
 
+TRY := try.o
+try : $(TRY)
+	$(CC) $(CFLAGS) -o $@ $(TRY) $(lib)
+
 # Make dependencies file
 depend : *.c *.h
 	echo '#Automatically generated dependency info' > depend
