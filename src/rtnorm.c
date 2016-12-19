@@ -67,6 +67,9 @@ double rtnorm(gsl_rng * rng,
         b = (b - mu) / sigma;
     }
 
+    double bpa = b+a;
+    double bma = b-a;
+
     // Check if a < b
     if(a >= b) {
         fprintf(stderr, "%s:%d: *** B must be greater than A ! ***\n",
@@ -87,12 +90,30 @@ double rtnorm(gsl_rng * rng,
     // a Gaussian proposal 
     else if(a < xmin) {
         while(!stop) {
-            r = gsl_ran_gaussian_ziggurat(rng, 1);
+            r = gsl_ran_gaussian_ziggurat(rng, 1.0);
             stop = (r >= a) && (r <= b);
         }
     }
 
-    // In other cases (xmin < a < xmax), use Chopin's algorithm
+    // Robert's algorithm
+    else if(bma <= 0.25 || bpa <= 0.0 || (bma < 1.0 && bpa < 2.0) {
+        double rho;
+        do{
+            r = gsl_ran_flat(rng, a, b);
+            if( a*b < 0.0 )               // of opposite sign
+                rho = exp(-0.5*r*r);
+            else if( b < 0.0 )             // both negative
+                rho = exp( 0.5*(b*b - r*r) );
+            else{                           // both positive
+                assert(a > 0.0);
+                rho = exp( 0.5*(a*a - r*r) );
+            }
+
+            u = gsl_rng_uniform(rng);
+        }while( u > rho );
+    }
+
+    // Chopin's algorithm
     else {
         // Compute ka
         i = I0 + floor(a * INVH);
@@ -214,7 +235,7 @@ double rtnorm_robert(gsl_rng * rng, double a, double b, const double mu,
     // a Gaussian proposal 
     else if(a < xmin) {
         while(!stop) {
-            r = gsl_ran_gaussian_ziggurat(rng, 1);
+            r = gsl_ran_gaussian_ziggurat(rng, 1.0);
             stop = (r >= a) && (r <= b);
         }
     }
