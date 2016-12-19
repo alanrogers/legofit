@@ -44,9 +44,8 @@ double rtexp(gsl_rng *gen, double a, double b);
 // Pseudorandom numbers from a truncated Gaussian distribution The
 // Gaussian has parameters mu (default 0) and sigma (default 1) and is
 // truncated on the interval [a,b].  Returns the random variate x.
-double rtnorm (gsl_rng *rng, double a, double b, const double mu,
-               const double sigma);
-double rtnorm_robert(gsl_rng * rng, double a, double b, const double mu,
-                     const double sigma);
+double rtnorm(const double mu, const double sigma, double a, double b, gsl_rng *rng);
+double rtnorm_robert(const double mu, const double sigma, double a, double b,
+                     gsl_rng *rng);  
 
 #endif //__RTNORM_H

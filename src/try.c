@@ -11,7 +11,8 @@
 // https://sites.google.com/site/nicolaschopinstatistician/software 
 
 /*
-  Prefer Robert if b+a <= 0.0 or if (b-a < a and b+a < 2)
+  Prefer Robert if b+a <= 0.0 or if (b-a < 1 and b+a < 2)
+  or if b-a < 0.25
 
 b = (bpa + bma)/2
 bpa - (bpa + bma)/2 = k = (bpa - bma)/2
@@ -20,6 +21,9 @@ bma = -2*k + bpa
 
 */
 
+double timefun(int nreps, double a, double b,
+               double (*fun)(double m, double sd, double a, double b, gsl_rng *rng),
+               gsl_rng *rng);
 double dtnorm_simple(double mean, double sd, double a, double b, gsl_rng *rng);
 double dtnorm_robert(double mean, double sd, double a, double b, gsl_rng *rng);
 double dtnorm(double mean, double sd, double a, double b, gsl_rng *rng);
@@ -79,14 +83,26 @@ double dtnorm_robert(double mean, double sd, double a, double b, gsl_rng *rng) {
     return mean + z*sd;
 }
 
+double timefun(int nreps, double a, double b,
+               double (*fun)(double m, double sd, double a, double b, gsl_rng *rng),
+               gsl_rng *rng) {
+    clock_t start, finish;
+    int i;
+
+    start = clock();
+    for(i=0; i < nreps; ++i)
+        (void) (*fun)(0.0, 1.0, a, b, rng);
+    finish = clock();
+    return ((double) (finish-start)) / CLOCKS_PER_SEC;
+}
+
 int main(int argc, char **argv) {
 
     gsl_rng *rng = gsl_rng_alloc(gsl_rng_taus);
     gsl_rng_set(rng, (unsigned long) time(NULL));
     
-    int i, trial, ntrials=1000, nreps=10000000;
-    clock_t start, finish;
-    double m=0.0, sd=1.0, a, b, bma, bpa;
+    int trial, ntrials=1000, nreps=10000000;
+    double a, b, bma, bpa;
     double trobert, tchopin;
     //    double amin=1.5, amax = 3.0, diffmax = 3.0;
     double bpa0=-5.0, bpa1 = 10.0;
@@ -99,17 +115,8 @@ int main(int argc, char **argv) {
         b = (bpa + bma)/2.0;
         a = bpa - b;
         
-        start = clock();
-        for(i=0; i < nreps; ++i)
-            (void) rtnorm_robert(rng, a, b, m, sd);
-        finish = clock();
-        trobert = ((double) (finish - start)) / CLOCKS_PER_SEC;
-
-        start = clock();
-        for(i=0; i < nreps; ++i)
-            (void) rtnorm(rng, a, b, m, sd);
-        finish = clock();
-        tchopin = ((double) (finish - start)) / CLOCKS_PER_SEC;
+        trobert = timefun(nreps, a, b, rtnorm_robert, rng);
+        tchopin = timefun(nreps, a, b, rtnorm, rng);
 
         printf("%7.4lf %7.4lf %7.4lf %7.4lf\n", a, b, trobert, tchopin);
         fflush(stdout);

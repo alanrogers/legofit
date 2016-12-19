@@ -46,8 +46,7 @@ int         N = 4001;           // Index of the right tail
 // The Gaussian has parameters mu (default 0) and sigma (default 1)
 // and is truncated on the interval [a,b].
 // Returns the random variable x and its probability p(x).
-double rtnorm(gsl_rng * rng,
-            double a, double b, const double mu, const double sigma) {
+double rtnorm(const double mu, const double sigma, double a, double b, gsl_rng *rng) {
     // Design variables
     double      xmin = -2.00443204036;  // Left bound
     double      xmax = 3.48672170399;   // Right bound
@@ -79,7 +78,7 @@ double rtnorm(gsl_rng * rng,
 
     // Check if |a| < |b|
     else if(fabs(a) > fabs(b))
-        r = -rtnorm(rng, -b, -a, 0.0, 1.0);
+        r = -rtnorm(0.0, 1.0, -b, -a, rng);
 
     // If a in the right tail (a > xmax), use rejection algorithm with
     // a truncated exponential proposal   
@@ -96,7 +95,7 @@ double rtnorm(gsl_rng * rng,
     }
 
     // Robert's algorithm
-    else if(bma <= 0.25 || bpa <= 0.0 || (bma < 1.0 && bpa < 2.0) {
+    else if(bma <= 0.25 || bpa <= 0.0 || (bma < 1.0 && bpa < 2.0)) {
         double rho;
         do{
             r = gsl_ran_flat(rng, a, b);
@@ -200,8 +199,8 @@ double rtnorm(gsl_rng * rng,
 // The Gaussian has parameters mu (default 0) and sigma (default 1)
 // and is truncated on the interval [a,b].
 // Returns the random variable x and its probability p(x).
-double rtnorm_robert(gsl_rng * rng, double a, double b, const double mu,
-                     const double sigma) {
+double rtnorm_robert(const double mu, const double sigma, double a, double b,
+                     gsl_rng *rng) {
     // Design variables
     double      xmin = -2.00443204036;  // Left bound
     double      xmax = 3.48672170399;   // Right bound
@@ -224,7 +223,7 @@ double rtnorm_robert(gsl_rng * rng, double a, double b, const double mu,
 
     // Check if |a| < |b|
     else if(fabs(a) > fabs(b))
-        r = -rtnorm(rng, -b, -a, 0.0, 1.0);
+        r = -rtnorm(0.0, 1.0, -b, -a, rng);
 
     // If a in the right tail (a > xmax), use rejection algorithm with
     // a truncated exponential proposal   
