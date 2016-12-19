@@ -1,6 +1,5 @@
 *.o
 *~
-try.c
 core
 depend
 xboot
@@ -27,5 +26,4 @@ lego
 legofit
 tabpat
 daf
-q
 try
