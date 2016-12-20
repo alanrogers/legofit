@@ -223,7 +223,7 @@ double rtnorm_robert(const double mu, const double sigma, double a, double b,
 
     // Check if |a| < |b|
     else if(fabs(a) > fabs(b))
-        r = -rtnorm(0.0, 1.0, -b, -a, rng);
+        r = -rtnorm_robert(0.0, 1.0, -b, -a, rng);
 
     // If a in the right tail (a > xmax), use rejection algorithm with
     // a truncated exponential proposal   

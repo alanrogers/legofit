@@ -67,7 +67,7 @@ daf : $(DAF)
 
 zeroin.o : zeroin.h
 
-TRY := try.o rtnorm.o
+TRY := try.o rtn.o
 try : $(TRY)
 	$(CC) $(CFLAGS) -o $@ $(TRY) $(lib)
 
