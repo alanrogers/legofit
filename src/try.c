@@ -13,17 +13,8 @@
 // https://sites.google.com/site/nicolaschopinstatistician/software 
 
 /*
-b = (bpa + bma)/2
-bpa - (bpa + bma)/2 = k = (bpa - bma)/2
-2*k = bpa - bma
-bma = -2*k + bpa
-
-p + 
-  geom_abline(slope=1, intercept=4, color="red") + 
-  geom_abline(slope=1, intercept=0) + 
-  geom_abline(slope=1, intercept=-6.97) + 
-  geom_abline(slope=-1, intercept=0) + 
-  geom_abline(slope=-1, intercept=4)
+d <- read.table("tnorm.txt", header=T)
+ggplot(d, aes(a, b-a, color=best)) + geom_point()
 
 Roberts if a < b < 0 or (a > 3 and b-a < 0.5)
 
