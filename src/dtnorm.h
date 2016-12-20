@@ -30,8 +30,8 @@
 //  OS: Unix based system
 
 
-#ifndef __RTNORM_H
-#define __RTNORM_H
+#ifndef DTNORM_H
+#define DTNORM_H
 
 #include <gsl/gsl_rng.h>
 
@@ -39,13 +39,11 @@
 double yl(int k);
 
 // Rejection algorithm with a truncated exponential proposal
-double rtexp(gsl_rng *gen, double a, double b);
+double dtexp(gsl_rng *rng, double a, double b);
 
 // Pseudorandom numbers from a truncated Gaussian distribution The
 // Gaussian has parameters mu (default 0) and sigma (default 1) and is
 // truncated on the interval [a,b].  Returns the random variate x.
-double rtnorm(const double mu, const double sigma, double a, double b, gsl_rng *rng);
-double rtnorm_robert(const double mu, const double sigma, double a, double b,
-                     gsl_rng *rng);  
+double dtnorm(const double mu, const double sigma, double a, double b, gsl_rng *rng);
 
-#endif //__RTNORM_H
+#endif

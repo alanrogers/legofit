@@ -7,7 +7,7 @@ prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
 tests := xbinary xboot xbranchtab xdafreader xdiffev xexopar xgene \
   xgptree xhashtab xjobqueue xlblndx xparkeyval xparse xparstore \
-  xpopnode xsimsched xstrint
+  xpopnode xsimsched xstrint xdtnorm
 
 CC := gcc
 
@@ -42,6 +42,7 @@ test : $(tests)
 	-./xbranchtab
 	-./xdafreader
 	-./xdiffev
+	-./xdtnorm
 	-./xexopar
 	-./xgene
 	-./xgptree
@@ -66,6 +67,10 @@ XHASHTAB := xhashtab.o hashtab.o misc.o gptree.o branchtab.o parstore.o \
 xhashtab : $(XHASHTAB)
 	$(CC) $(CFLAGS) -o $@ $(XHASHTAB) $(lib)
 
+XDTNORM := xdtnorm.o dtnorm.o
+xdtnorm : $(XDTNORM)
+	$(CC) $(CFLAGS) -o $@ $(XDTNORM) $(lib)
+
 XJOBQUEUE := xjobqueue.o jobqueue.o misc.o
 xjobqueue : $(XJOBQUEUE)
 	$(CC) $(CFLAGS) -o $@ $(XJOBQUEUE) $(lib)
@@ -89,7 +94,7 @@ XPARSE := xparse.o hashtab.o misc.o tokenizer.o gptree.o lblndx.o \
 xparse : $(XPARSE)
 	$(CC) $(CFLAGS) -o $@ $(XPARSE) $(lib)
 
-XEXOPAR := xexopar.o misc.o exopar.o
+XEXOPAR := xexopar.o misc.o exopar.o dtnorm.o
 xexopar : $(XEXOPAR)
 	$(CC) $(CFLAGS) -o $@ $(XEXOPAR) $(lib)
 

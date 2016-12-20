@@ -37,8 +37,8 @@
 #include <gsl/gsl_sf_erf.h>
 #include <assert.h>
 
-#include "rtnorm.h"
-#include "rtnorm_data.h"
+#include "dtnorm.h"
+#include "dtnorm_data.h"
 
 int         N = 4001;           // Index of the right tail
 
@@ -46,9 +46,9 @@ int         N = 4001;           // Index of the right tail
 // The Gaussian has parameters mu (default 0) and sigma (default 1)
 // and is truncated on the interval [a,b].
 // Returns the random variable x and its probability p(x).
-double rtnorm(const double mu, const double sigma, double a, double b, gsl_rng *rng) {
+double dtnorm(const double mu, const double sigma, double a, double b, gsl_rng *rng) {
     // Design variables
-    double      xmin = -2.00443204036;  // Left bound
+    //double      xmin = -2.00443204036;  // Left bound
     double      xmax = 3.48672170399;   // Right bound
     int         kmin = 5;       // if kb-ka < kmin then use a rejection algorithm
     double      INVH = 1631.73284006;   // = 1/h, h being the minimal interval range
@@ -66,8 +66,7 @@ double rtnorm(const double mu, const double sigma, double a, double b, gsl_rng *
         b = (b - mu) / sigma;
     }
 
-    double bpa = b+a;
-    double bma = b-a;
+    double bma = b - a;
 
     // Check if a < b
     if(a >= b) {
@@ -78,16 +77,14 @@ double rtnorm(const double mu, const double sigma, double a, double b, gsl_rng *
 
     // Check if |a| < |b|
     else if(fabs(a) > fabs(b))
-        r = -rtnorm(0.0, 1.0, -b, -a, rng);
+        r = -dtnorm(0.0, 1.0, -b, -a, rng);
 
-    // If a in the right tail (a > xmax), use rejection algorithm with
-    // a truncated exponential proposal   
-    else if(a > xmax)
-        r = rtexp(rng, a, b);
+    // Truncated exponential proposal   
+    else if(a > 3.0 && bma > 0.5)
+        r = dtexp(rng, a, b);
 
-    // If a in the left tail (a < xmin), use rejection algorithm with
-    // a Gaussian proposal 
-    else if(a < xmin) {
+    // Gaussian proposal 
+    else if(a < 0.0 && b > 0.0 && bma > 0.75) {
         while(!stop) {
             r = gsl_ran_gaussian_ziggurat(rng, 1.0);
             stop = (r >= a) && (r <= b);
@@ -95,7 +92,9 @@ double rtnorm(const double mu, const double sigma, double a, double b, gsl_rng *
     }
 
     // Robert's algorithm
-    else if(bma <= 0.25 || bpa <= 0.0 || (bma < 1.0 && bpa < 2.0)) {
+    else if(b < 0.0
+            || (a < 0.0 && bma < 0.75)
+            || (a > 3.0 && bma < 0.5)) {
         double rho;
         do{
             r = gsl_ran_flat(rng, a, b);
@@ -114,6 +113,13 @@ double rtnorm(const double mu, const double sigma, double a, double b, gsl_rng *
 
     // Chopin's algorithm
     else {
+        if(!(0.0 <= a && a <= 3.0)) {
+            fprintf(stderr,"%s:%d: (a,b) = (%lf, %lf)\n",
+                    __FILE__, __LINE__, a, b);
+            exit(1);
+        }
+        assert(0.0 <= a);
+        assert(a <= 3.0);
         // Compute ka
         i = I0 + floor(a * INVH);
         ka = ncell[i];
@@ -126,7 +132,7 @@ double rtnorm(const double mu, const double sigma, double a, double b, gsl_rng *
         // If |b-a| is small, use rejection algorithm with a truncated
         // exponential proposal 
         if(abs(kb - ka) < kmin) {
-            r = rtexp(rng, a, b);
+            r = dtexp(rng, a, b);
             stop = true;
         }
 
@@ -195,75 +201,6 @@ double rtnorm(const double mu, const double sigma, double a, double b, gsl_rng *
     return r;
 }
 
-// Pseudorandom numbers from a truncated Gaussian distribution
-// The Gaussian has parameters mu (default 0) and sigma (default 1)
-// and is truncated on the interval [a,b].
-// Returns the random variable x and its probability p(x).
-double rtnorm_robert(const double mu, const double sigma, double a, double b,
-                     gsl_rng *rng) {
-    // Design variables
-    double      xmin = -2.00443204036;  // Left bound
-    double      xmax = 3.48672170399;   // Right bound
-    int         stop = false;
-
-    double      r, u;
-
-    // Scaling
-    if(mu != 0 || sigma != 1) {
-        a = (a - mu) / sigma;
-        b = (b - mu) / sigma;
-    }
-
-    // Check if a < b
-    if(a >= b) {
-        fprintf(stderr, "%s:%d: *** B must be greater than A ! ***\n",
-                __FILE__, __LINE__);
-        exit(1);
-    }
-
-    // Check if |a| < |b|
-    else if(fabs(a) > fabs(b))
-        r = -rtnorm_robert(0.0, 1.0, -b, -a, rng);
-
-    // If a in the right tail (a > xmax), use rejection algorithm with
-    // a truncated exponential proposal   
-    else if(a > xmax)
-        r = rtexp(rng, a, b);
-
-    // If a in the left tail (a < xmin), use rejection algorithm with
-    // a Gaussian proposal 
-    else if(a < xmin) {
-        while(!stop) {
-            r = gsl_ran_gaussian_ziggurat(rng, 1.0);
-            stop = (r >= a) && (r <= b);
-        }
-    }
-
-    // In other cases (xmin < a < xmax), use Robert's algorithm
-    else {
-        double rho;
-        do{
-            r = gsl_ran_flat(rng, a, b);
-            if( a*b < 0.0 )               // of opposite sign
-                rho = exp(-0.5*r*r);
-            else if( b < 0.0 )             // both negative
-                rho = exp( 0.5*(b*b - r*r) );
-            else{                           // both positive
-                assert(a > 0.0);
-                rho = exp( 0.5*(a*a - r*r) );
-            }
-
-            u = gsl_rng_uniform(rng);
-        }while( u > rho );
-    }
-
-    // Scaling
-    if(mu != 0 || sigma != 1)
-        r = r * sigma + mu;
-
-    return r;
-}
-
 // Compute y_l from y_k
 double yl(int k) {
     double      yl0 = 0.053513975472;   // y_l of the leftmost rectangle
@@ -283,7 +220,7 @@ double yl(int k) {
 }
 
 // Rejection algorithm with a truncated exponential proposal
-double rtexp(gsl_rng * rng, double a, double b) {
+double dtexp(gsl_rng * rng, double a, double b) {
     double      twoasq = 2*a*a;
     double      expab = expm1(-a * (b - a));
     double      z, e;

@@ -1,5 +1,6 @@
 #include "exopar.h"
 #include "misc.h"
+#include "dtnorm.h"
 #include <string.h>
 #include <assert.h>
 #include <gsl/gsl_randist.h>
@@ -49,8 +50,10 @@ static void ExoParItem_sample(const ExoParItem * self, double low,
                               double high, gsl_rng * rng) {
     double      x;
     assert(low < high);
-    x = self->mean + gsl_ran_gaussian(rng, self->sd);
-    x = reflect(x, low, high);
+
+    // Doubly-truncated normal random variate
+    x = dtnorm(self->mean, self->sd, low, high, rng);
+
     *self->ptr = x;
 }
 

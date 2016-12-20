@@ -16,11 +16,11 @@
 d <- read.table("tnorm.txt", header=T)
 ggplot(d, aes(a, b-a, color=best)) + geom_point()
 
-Roberts if a < b < 0 or (a > 3 and b-a < 0.5)
+Exp if 3 < a  and b-a > 0.5
 
-Gauss if a < 0 < b
+Gauss if a < 0 < b and b-a > 0.75
 
-Exp if 3 < a 
+Robert if (a < 0 and b < 0 or b-a < 0.75) or (a > 3 and b-a < 0.5)
 
 Chopin if 0 < a < 3
 

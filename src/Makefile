@@ -52,7 +52,7 @@ lego : $(LEGO)
 LEGOFIT := legofit.o patprob.o gptree.o binary.o jobqueue.o misc.o \
   parse.o branchtab.o hashtab.o lblndx.o tokenizer.o parstore.o \
   parkeyval.o popnode.o gene.o cost.o diffev.o dprintf.o rngseed.o \
-  simsched.o exopar.o
+  simsched.o exopar.o dtnorm.o
 legofit : $(LEGOFIT)
 	$(CC) $(CFLAGS) -o $@ $(LEGOFIT) $(lib)
 
