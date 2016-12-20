@@ -84,7 +84,7 @@ double dtnorm(const double mu, const double sigma, double a, double b, gsl_rng *
         r = dtexp(rng, a, b);
 
     // Gaussian proposal 
-    else if(a < 0.0 && b > 0.0 && bma > 0.75) {
+    else if(a < 0.0 && b > 0.0 && bma > 1.0) {
         while(!stop) {
             r = gsl_ran_gaussian_ziggurat(rng, 1.0);
             stop = (r >= a) && (r <= b);
@@ -93,7 +93,7 @@ double dtnorm(const double mu, const double sigma, double a, double b, gsl_rng *
 
     // Robert's algorithm
     else if(b < 0.0
-            || (a < 0.0 && bma < 0.75)
+            || (a < 0.0 && (b < 0.0 || bma < 1.0))
             || (a > 3.0 && bma < 0.5)) {
         double rho;
         do{
