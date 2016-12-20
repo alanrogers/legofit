@@ -188,7 +188,7 @@ void		parseParam(Tokenizer *tkz, enum ParamType type,
     }
     ++curr;
 
-    double sd;
+    double sd = 0.0;
     if(pstat == Gaussian) {
 
         // Read string "sd"
