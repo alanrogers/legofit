@@ -60,8 +60,78 @@ z_i\f$ summarizes the information in the data about this site
 pattern. These are the numbers that appear in the 2nd column of the
 table above.
 
-*/
+# Installation and testing
 
-/* Local Variables: */
-/* mode: markdown */
-/* End: */
+The package is available at
+[github](github.com/alanrogers/lego). Before compiling, you must
+install two libraries: `pthreads` and
+[`gsl`](http://www.gnu.org/software/gsl). You will need not only the
+libraries themselves but also several header files, such as
+`pthread.h`. I didn't need to install `pthreads`, because it came
+bundled with the Gnu C compiler. But the gsl was an extra. Under
+ubuntu Linux, you can install it like this:
+
+    sudo apt-get install libgsl0-dev
+
+On the mac, using homebrew, the command is
+
+    brew install gsl
+
+By default, the executable files will be copied into a directory named
+`bin` in your home directory. If you want them to go somewhere else,
+edit the first non-comment line of src/Makefile.
+
+Then 
+
+1. Cd into the src directory.
+2. Type "make".
+3. Type "make install".
+
+This will try to place the executables into directory "bin" in the
+user's home directory. Make sure this directory appears in your
+PATH, so that the shell can find it.
+
+This installation will work under unix-like operating systems, such as
+linux and Apple's osx. I haven't tried to port this software to
+Windows. 
+
+The directory `test` contains a unit test for many of the .c files in
+directory `src`. Within this directory, type
+
+1. make xboot
+2. ./xboot
+
+to test the source file `boot.c`.  To run all unit tests, type
+"make". This will take awhile, as some of the unit tests are slow.
+
+# Genetic input data
+
+Before doing data analysis with `lego`, you must generate data files
+in "daf" format. Such files end with ".daf", which stands for "derived
+allele frequency. Here are the first few lines of one such file:
+
+    #chr        pos aa da                  daf
+       1     752566  g  a 0.835294117647058854
+       1     754192  a  g 0.858823529411764652
+       1     755225  t  g 0.000000000000000000
+       1     755228  t  g 0.000000000000000000
+       1     765437  g  a 0.000000000000000000
+
+The first line (beginning with "#") is an optional comment, which is
+used here to label the columns. The columns are as follows:
+
+1. Character strings that label chromosomes or scaffolds.
+2. Position of the SNP on the chromosome or scaffold, measured in base
+   pairs. Daf format doesn't care whether nucleotide positions are
+   numbered beginning with 0 or with 1, provided that they are consistent
+   across files in a given analysis.
+4. Ancestral allele, a single letter.
+5. Derived allele, also a single letter. Loci with 3 or more alleles
+   should be excluded.
+6. Frequency of the derived allele within the sample.
+
+The lines should be sorted lexically by chromosome. Within
+chromosomes, they should be sorted in ascending numerical order of
+column 2.
+
+*/

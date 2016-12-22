@@ -63,7 +63,7 @@ xbinary : $(XBINARY)
 
 XHASHTAB := xhashtab.o hashtab.o misc.o gptree.o branchtab.o parstore.o \
    parkeyval.o tokenizer.o binary.o lblndx.o popnode.o gene.o parse.o \
-   exopar.o dprintf.o
+   exopar.o dprintf.o dtnorm.o
 xhashtab : $(XHASHTAB)
 	$(CC) $(CFLAGS) -o $@ $(XHASHTAB) $(lib)
 
@@ -90,7 +90,7 @@ xparse.o : parse.c
 
 XPARSE := xparse.o hashtab.o misc.o tokenizer.o gptree.o lblndx.o \
        branchtab.o parstore.o parkeyval.o popnode.o binary.o gene.o \
-       exopar.o dprintf.o
+       exopar.o dprintf.o dtnorm.o
 xparse : $(XPARSE)
 	$(CC) $(CFLAGS) -o $@ $(XPARSE) $(lib)
 
@@ -113,7 +113,7 @@ xpopnode.o : popnode.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/popnode.c
 
 XPOPNODE := xpopnode.o misc.o gene.o branchtab.o binary.o lblndx.o \
-   tokenizer.o parkeyval.o exopar.o
+   tokenizer.o parkeyval.o exopar.o dtnorm.o
 xpopnode : $(XPOPNODE)
 	$(CC) $(CFLAGS) -o $@ $(XPOPNODE) $(lib)
 
@@ -126,7 +126,7 @@ xgptree.o : gptree.c
 
 XGPTREE := xgptree.o misc.o branchtab.o parstore.o parse.o lblndx.o \
         parkeyval.o tokenizer.o hashtab.o gene.o popnode.o binary.o \
-        exopar.o dprintf.o
+        exopar.o dprintf.o dtnorm.o
 xgptree : $(XGPTREE)
 	$(CC) $(CFLAGS) -o $@ $(XGPTREE) $(lib)
 
@@ -150,7 +150,7 @@ xbranchtab.o : branchtab.c
 
 XBRANCHTAB := xbranchtab.o gptree.o misc.o binary.o parstore.o popnode.o \
    gene.o lblndx.o parse.o parkeyval.o tokenizer.o hashtab.o exopar.o \
-   dprintf.o
+   dprintf.o dtnorm.o
 xbranchtab : $(XBRANCHTAB)
 	$(CC) $(CFLAGS) -o $@ $(XBRANCHTAB) $(lib)
 
