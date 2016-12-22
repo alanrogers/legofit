@@ -1,10 +1,43 @@
 /**
- * @file tabpat.c
- * @brief Tabulate site pattern frequencies from .daf files.
- * @copyright Copyright (c) 2016 Alan R. Rogers
- * <rogers@anthro.utah.edu>. This file is released under the Internet
- * Systems Consortium License, which can be found in file "LICENSE".
- */
+@file tabpat.c
+@page tabpat
+@brief Tabulate site pattern frequencies from .daf files.
+
+# Tabpat: tabulates site patterns
+
+Tabpat reads data in .daf format and tabulates counts of nucleotide
+site patterns, writing the result to standard output. Optionally, it
+also calculates a moving-blocks bootstrap, writing each bootstrap
+replicate into a separate file.
+
+Usage
+-----
+
+    Usage: tabpat [options] <x>=<in1> <y>=<in2> ...
+       where <x> and <y> are arbitrary labels, and <in1> and <in2> are input
+       files in daf format. Writes to standard output. Labels may not include
+       the character ":". Maximum number of input files: 32.
+    
+    Options may include:
+       -f <name> or --bootfile <name>
+          Bootstrap output file basename. Def: boot.
+       -r <x> or --bootreps <x>
+          # of bootstrap replicates. Def: 0
+       -b <x> or --blocksize <x>
+          # of SNPs per block in moving-blocks bootstrap. Def: 0.
+       -1 or --singletons
+          Use singleton site patterns
+       -m or --logMismatch
+          log AA/DA mismatches to tabpat.log
+       -F or --logFixed
+          log fixed sites to tabpat.log
+       -h or --help
+          Print this message
+
+@copyright Copyright (c) 2016, Alan R. Rogers 
+<rogers@anthro.utah.edu>. This file is released under the Internet
+Systems Consortium License, which can be found in file "LICENSE".
+*/
 
 #include "binary.h"
 #include "boot.h"
