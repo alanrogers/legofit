@@ -5,10 +5,9 @@ opt :=  -O0 -fno-inline-functions -DDEBUG     # For debugging
 #prof := -pg -rdynamic                    # For profiling
 prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
-
-tests := xbinary xhashtab xparse xgene xgptree xbranchtab xparstore \
-  xparkeyval xlblndx xpopnode xjobqueue xdiffev xdafreader xstrint \
-  xboot xsimsched
+tests := xbinary xboot xbranchtab xdafreader xdiffev xexopar xgene \
+  xgptree xhashtab xjobqueue xlblndx xparkeyval xparse xparstore \
+  xpopnode xsimsched xstrint xdtnorm
 
 CC := gcc
 
@@ -40,43 +39,44 @@ all : $(tests)
 test : $(tests)
 	-./xbinary
 	-./xboot
-	-./xhashtab
+	-./xbranchtab
+	-./xdafreader
+	-./xdiffev
+	-./xdtnorm
+	-./xexopar
 	-./xgene
-	-./xparse
-	-./xpopnode
 	-./xgptree
+	-./xhashtab
+	-./xjobqueue
+	-./xlblndx
 	-./xparkeyval
+	-./xparse
 	-./xparstore
+	-./xpopnode
 	-./xsimsched
 	-./xstrint
-	-./xlblndx
-	-./xdiffev
-#	-./xzeroin
 	@echo "ALL UNIT TESTS WERE COMPLETED."
-
-zeroin.o : zeroin.h
-
-xzeroin.o : zeroin.c zeroin.h
-	$(CC) $(CFLAGS) -c -DTEST -o $@ zeroin.c
-
-XZEROIN := xzeroin.o
-xzeroin : $(XZEROIN)
-	$(CC) $(CFLAGS) -o $@ $(XZEROIN) $(lib)
 
 XBINARY := xbinary.o binary.o
 xbinary : $(XBINARY)
 	$(CC) $(CFLAGS) -o $@ $(XBINARY) $(lib)
 
 XHASHTAB := xhashtab.o hashtab.o misc.o gptree.o branchtab.o parstore.o \
-   parkeyval.o tokenizer.o binary.o lblndx.o popnode.o gene.o parse.o
+   parkeyval.o tokenizer.o binary.o lblndx.o popnode.o gene.o parse.o \
+   exopar.o dprintf.o
 xhashtab : $(XHASHTAB)
 	$(CC) $(CFLAGS) -o $@ $(XHASHTAB) $(lib)
 
-XJOBQUEUE := xjobqueue.o jobqueue.o
+XDTNORM := xdtnorm.o dtnorm.o
+xdtnorm : $(XDTNORM)
+	$(CC) $(CFLAGS) -o $@ $(XDTNORM) $(lib)
+
+XJOBQUEUE := xjobqueue.o jobqueue.o misc.o
 xjobqueue : $(XJOBQUEUE)
 	$(CC) $(CFLAGS) -o $@ $(XJOBQUEUE) $(lib)
 
-XDIFFEV := xdiffev.o diffev.o misc.o binary.o lblndx.o jobqueue.o parkeyval.o
+XDIFFEV := xdiffev.o diffev.o misc.o binary.o lblndx.o jobqueue.o parkeyval.o \
+  simsched.o
 xdiffev : $(XDIFFEV)
 	$(CC) $(CFLAGS) -o $@ $(XDIFFEV) $(lib)
 
@@ -89,9 +89,14 @@ xparse.o : parse.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/parse.c
 
 XPARSE := xparse.o hashtab.o misc.o tokenizer.o gptree.o lblndx.o \
-       branchtab.o parstore.o parkeyval.o popnode.o binary.o gene.o
+       branchtab.o parstore.o parkeyval.o popnode.o binary.o gene.o \
+       exopar.o dprintf.o
 xparse : $(XPARSE)
 	$(CC) $(CFLAGS) -o $@ $(XPARSE) $(lib)
+
+XEXOPAR := xexopar.o misc.o exopar.o dtnorm.o
+xexopar : $(XEXOPAR)
+	$(CC) $(CFLAGS) -o $@ $(XEXOPAR) $(lib)
 
 xgene.o : gene.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/gene.c
@@ -107,8 +112,8 @@ xboot : $(XBOOT)
 xpopnode.o : popnode.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/popnode.c
 
-XPOPNODE := xpopnode.o misc.o gene.o branchtab.o binary.o lblndx.o tokenizer.o \
-   parkeyval.o
+XPOPNODE := xpopnode.o misc.o gene.o branchtab.o binary.o lblndx.o \
+   tokenizer.o parkeyval.o exopar.o
 xpopnode : $(XPOPNODE)
 	$(CC) $(CFLAGS) -o $@ $(XPOPNODE) $(lib)
 
@@ -120,7 +125,8 @@ xgptree.o : gptree.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/gptree.c
 
 XGPTREE := xgptree.o misc.o branchtab.o parstore.o parse.o lblndx.o \
-        parkeyval.o tokenizer.o hashtab.o gene.o popnode.o binary.o
+        parkeyval.o tokenizer.o hashtab.o gene.o popnode.o binary.o \
+        exopar.o dprintf.o
 xgptree : $(XGPTREE)
 	$(CC) $(CFLAGS) -o $@ $(XGPTREE) $(lib)
 
@@ -142,8 +148,9 @@ xlblndx : $(XLBLNDX)
 xbranchtab.o : branchtab.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/branchtab.c
 
-XBRANCHTAB := xbranchtab.o gptree.o misc.o binary.o parstore.o popnode.o gene.o \
-   lblndx.o parse.o parkeyval.o tokenizer.o hashtab.o
+XBRANCHTAB := xbranchtab.o gptree.o misc.o binary.o parstore.o popnode.o \
+   gene.o lblndx.o parse.o parkeyval.o tokenizer.o hashtab.o exopar.o \
+   dprintf.o
 xbranchtab : $(XBRANCHTAB)
 	$(CC) $(CFLAGS) -o $@ $(XBRANCHTAB) $(lib)
 
@@ -153,11 +160,6 @@ xstrint.o : strint.c
 XSTRINT := xstrint.o misc.o binary.o lblndx.o parkeyval.o
 xstrint : $(XSTRINT)
 	$(CC) $(CFLAGS) -o $@ $(XSTRINT) $(lib)
-
-Q := q.o misc.o gptree.o hashtab.o branchtab.o binary.o lblndx.o parstore.o \
-   popnode.o parse.o gene.o tokenizer.o parkeyval.o
-q : $(Q)
-	$(CC) $(CFLAGS) -o $@ $(Q) $(lib)
 
 # Make dependencies file
 depend : *.c 

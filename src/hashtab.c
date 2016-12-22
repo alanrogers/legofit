@@ -16,7 +16,7 @@
 # error HASHDIM must be a power of 2
 #endif
 
-// A single element in a sparse matrix.
+// A single element in a sparse array.
 struct El {
     struct El  *next;
     char        key[KEYSIZE];

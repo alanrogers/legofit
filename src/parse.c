@@ -1,15 +1,17 @@
+#include "exopar.h"
 #include "hashtab.h"
+#include "lblndx.h"
 #include "misc.h"
 #include "parse.h"
 #include "parstore.h"
 #include "popnode.h"
 #include "tokenizer.h"
-#include "lblndx.h"
 #include <assert.h>
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <ctype.h>
 #include <string.h>
+#include <stdbool.h>
 
 // Consider the following tree of populations:
 //
@@ -102,12 +104,13 @@
     }while(0)
 
 enum ParamType { TwoN, Time, MixFrac };
+enum ParamStatus { Free, Fixed, Gaussian };
 
 int         getDbl(double *x, Tokenizer * tkz, int i);
 int         getULong(unsigned long *x, Tokenizer * tkz, int i);
 void		parseParam(Tokenizer *tkz, enum ParamType type,
 					   ParStore *parstore, Bounds *bnd,
-                       bool isTimeParam);
+                       ExoPar *exopar, bool isTimeParam);
 void        parseSegment(Tokenizer *tkz, HashTab *poptbl, SampNdx *sndx,
 						 LblNdx *lndx, ParStore *parstore,
                          NodeStore *ns);
@@ -138,9 +141,9 @@ int getULong(unsigned long *x, Tokenizer * tkz, int i) {
 // mixFrac fixed|free name=100
 void		parseParam(Tokenizer *tkz, enum ParamType type,
 					   ParStore *parstore, Bounds *bnd,
-                       bool isTimeParam) {
+                       ExoPar *exopar, bool isTimeParam) {
 	int curr=1, ntokens = Tokenizer_ntokens(tkz);
-	int isfixed=0;
+    enum ParamStatus pstat = Free;
 
 	// Read type of parameter: "fixed" or "free"
 	{
@@ -148,9 +151,11 @@ void		parseParam(Tokenizer *tkz, enum ParamType type,
 		CHECK_INDEX(curr, ntokens);
 		tok = Tokenizer_token(tkz, curr++);
 		if(0 == strcmp("fixed", tok))
-			isfixed = 1;
+			pstat = Fixed;
 		else if(0 == strcmp("free", tok))
-			isfixed = 0;
+			pstat = Free;
+        else if(0 == strcmp("gaussian", tok))
+            pstat = Gaussian;
 		else {
 			fprintf(stderr, "%s:%s:%d: got %s when expecting"
 					" \"fixed\" or \"free\".\n",
@@ -181,32 +186,87 @@ void		parseParam(Tokenizer *tkz, enum ParamType type,
         Tokenizer_print(tkz, stderr);
         exit(EXIT_FAILURE);
     }
+    ++curr;
+
+    double sd = 0.0;
+    if(pstat == Gaussian) {
+
+        // Read string "sd"
+        char *sdstr;
+        CHECK_INDEX(curr, ntokens);
+        sdstr = Tokenizer_token(tkz, curr++);
+        assert(sdstr != NULL);
+        if( 0 != strcmp(sdstr, "sd") )
+            eprintf("%s:%s:%d: \"%s\" should be \"sd\".\n",
+                    __FILE__,__func__,__LINE__, sdstr);
+
+        // Read sd value
+        CHECK_INDEX(curr, ntokens);
+        if(getDbl(&sd, tkz, curr)) {
+            fflush(stdout);
+            fprintf(stderr, 
+                    "%s:%s:%d:Can't parse \"%s\" as a double.\n",
+                    __FILE__,__func__,__LINE__,
+                    Tokenizer_token(tkz, curr));
+            Tokenizer_print(tkz, stderr);
+            exit(EXIT_FAILURE);
+        }
+        if(sd <= 0.0) {
+            fprintf(stderr,"%s:%s:%d: Warning: sd <= 0.0\n",
+                    __FILE__,__func__,__LINE__);
+            Tokenizer_print(tkz, stderr);
+        }
+        ++curr;
+    }
 
 	// Allocate and initialize parameter in ParStore
-	if(isfixed)
+    switch(pstat) {
+    case Fixed:
 		ParStore_addFixedPar(parstore, value, name);
-	else {
-        // Set bounds, based on type of parameter
-        double lo, hi;
-        switch(type) {
-        case TwoN:
-            lo = bnd->lo_twoN;
-            hi = bnd->hi_twoN;
-            break;
-        case Time:
-            lo = bnd->lo_t;
-            hi = bnd->hi_t;
-            break;
-        case MixFrac:
-            lo = 0.0;
-            hi = 1.0;
-            break;
-        default:
-			lo = hi = 0.0;
-            eprintf("%s:%s:%d: This shouldn't happen\n",
-                    __FILE__,__func__,__LINE__);
+        break;
+    case Gaussian:
+		ParStore_addFixedPar(parstore, value, name);
+        {
+            bool isfree;
+            double *ptr = ParStore_findPtr(parstore, &isfree, name);
+            if(ptr == NULL) {
+                fprintf(stderr,"%s:%d: Parameter \"%s\" is undefined.\n",
+                        __FILE__,__LINE__, name);
+                Tokenizer_print(tkz, stderr);
+                exit(EXIT_FAILURE);
+            }
+            assert(!isfree);
+            ExoPar_add(exopar, ptr, value, sd);
         }
-		ParStore_addFreePar(parstore, value, lo, hi, name, isTimeParam);
+        break;
+    case Free:
+        // Set bounds, based on type of parameter
+        {
+            double lo, hi;
+            switch(type) {
+            case TwoN:
+                lo = bnd->lo_twoN;
+                hi = bnd->hi_twoN;
+                break;
+            case Time:
+                lo = bnd->lo_t;
+                hi = bnd->hi_t;
+                break;
+            case MixFrac:
+                lo = 0.0;
+                hi = 1.0;
+                break;
+            default:
+                lo = hi = 0.0;
+                eprintf("%s:%s:%d: This shouldn't happen\n",
+                        __FILE__,__func__,__LINE__);
+            }
+            ParStore_addFreePar(parstore, value, lo, hi, name, isTimeParam);
+        }
+        break;
+    default:
+        eprintf("%s:%s:%d: This shouldn't happen\n",
+                __FILE__,__func__,__LINE__);
     }
 }
 
@@ -420,12 +480,11 @@ void parseMix(Tokenizer *tkz, HashTab *poptbl, ParStore *parstore) {
         eprintf("%s:%s:%d: parent segment \"%s\" undefined\n",
                  __FILE__,__func__,__LINE__, parName[1]);
 
-    // This won't compile, because mixFree is undefined.
     PopNode_mix(childNode, mPtr, mfree, parNode1, parNode0);
 }
 
 PopNode    *mktree(FILE * fp, SampNdx *sndx, LblNdx *lndx, ParStore *parstore,
-                   Bounds *bnd, NodeStore *ns) {
+                   ExoPar *exopar, Bounds *bnd, NodeStore *ns) {
     int         ntokens;
     char        buff[500];
     Tokenizer  *tkz = Tokenizer_new(50);
@@ -445,18 +504,20 @@ PopNode    *mktree(FILE * fp, SampNdx *sndx, LblNdx *lndx, ParStore *parstore,
         if(comment)
             *comment = '\0';
 
-        Tokenizer_split(tkz, buff, " \t="); // tokenize
+        // Tokenize. Fields are separated by spaces, tabs, or "=".
+        Tokenizer_split(tkz, buff, " \t=");
+
         ntokens = Tokenizer_strip(tkz, " \t=\n");
         if(ntokens == 0)
             continue;
 
         char *tok = Tokenizer_token(tkz, 0);
 		if(0 == strcmp(tok, "twoN"))
-			parseParam(tkz, TwoN, parstore, bnd, false);
+			parseParam(tkz, TwoN, parstore, bnd, exopar, false);
 		else if(0 == strcmp(tok, "time"))
-			parseParam(tkz, Time, parstore, bnd, true);
+			parseParam(tkz, Time, parstore, bnd, exopar, true);
 		else if(0 == strcmp(tok, "mixFrac"))
-			parseParam(tkz, MixFrac, parstore, bnd, false);
+			parseParam(tkz, MixFrac, parstore, bnd, exopar, false);
         else if(0 == strcmp(tok, "segment"))
             parseSegment(tkz, poptbl, sndx, lndx, parstore, ns);
         else if(0 == strcmp(tok, "mix"))
@@ -466,6 +527,9 @@ PopNode    *mktree(FILE * fp, SampNdx *sndx, LblNdx *lndx, ParStore *parstore,
         else
             ILLEGAL_INPUT(tok);
     }
+
+    // No more additions allowed to exopar.
+    ExoPar_freeze(exopar);
 
     // Make sure the tree of populations has a single root. This
     // code iterates through all the nodes in the HashTab, and
@@ -621,10 +685,11 @@ int main(int argc, char **argv) {
 
     PopNode  nodeVec[nseg];
     PopNode *root=NULL;
+    ExoPar *ep = ExoPar_new();
 
     {
         NodeStore *ns = NodeStore_new(nseg, nodeVec);
-        root = mktree(fp, &sndx, &lndx, parstore, &bnd, ns);
+        root = mktree(fp, &sndx, &lndx, parstore, ep, &bnd, ns);
         assert(root != NULL);
         NodeStore_free(ns);
     }
@@ -645,6 +710,7 @@ int main(int argc, char **argv) {
 	ParStore_free(parstore);
     fclose(fp);
     unlink(tstFname);
+    ExoPar_free(ep);
     return 0;
 }
 #endif

@@ -32,7 +32,7 @@ void usage(void) {
     fprintf(stderr, "   where options may include:\n");
     tellopt("-i <x> or --nItr <x>", "number of iterations in simulation");
 	tellopt("-1 or --singletons", "Use singleton site patterns");
-    tellopt("-U", "Mutations per generation per haploid genome.");
+    tellopt("-U <x>", "Mutations per generation per haploid genome.");
     tellopt("-h or --help", "print this message");
     exit(1);
 }

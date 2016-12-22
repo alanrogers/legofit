@@ -1,4 +1,4 @@
-#       SitePat       Prob
-            a:b  0.3050793
-            a:c  0.3833700
-            b:c  0.3115506
+#       SitePat           Count
+            x:y             743
+            x:n             696
+            y:n             748

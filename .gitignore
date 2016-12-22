@@ -1,9 +1,10 @@
 *.o
 *~
-try.c
 core
 depend
 xboot
+xdtnorm
+xexopar
 xhashtab
 xgene
 xgptree
@@ -25,6 +26,6 @@ xstrint
 lego
 legofit
 tabpat
+tabpat.log
 daf
-q
 try

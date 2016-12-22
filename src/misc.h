@@ -78,6 +78,18 @@ static inline double survival(double t, double twoN);
    }\
 } while(0)
 
+// If PTR!=NULL, add offset OSET to pointer PTR (if SIGN>0) or
+// subtract it (otherwise). Units are sizeof(char) rather than the
+// size of the object to which PTR refers.
+#define SHIFT_PTR(PTR,OSET,SIGN) do{                                    \
+        if((PTR) != NULL) {                                             \
+            if((SIGN) > 0)                                              \
+                (PTR) = (void *) (((size_t) (PTR)) + ((size_t) (OSET))); \
+            else                                                        \
+                (PTR) = (void *) (((size_t) (PTR)) - ((size_t) (OSET))); \
+        }                                                               \
+    }while(0);
+
 /// Return 1 if the relative difference between x and y is less than or
 /// equal to 8*DBL_EPSILON.
 static inline int Dbl_near(double x, double y) {

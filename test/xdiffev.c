@@ -1,5 +1,6 @@
 #include "diffev.h"
 #include "misc.h"
+#include "simsched.h"
 #include <getopt.h>
 #include <limits.h>
 #include <math.h>
@@ -125,6 +126,8 @@ int main(int argc, char *argv[]) {
     gsl_rng    *rng = gsl_rng_alloc(gsl_rng_taus);
     CHECKMEM(rng);
     gsl_rng_set(rng, baseSeed);
+    long simreps = 1000;
+    SimSched    *simSched = SimSched_new();
 
     // command line arguments
     for(;;) {
@@ -169,6 +172,10 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    SimSched_append(simSched, 200, 1000);
+    SimSched_append(simSched, 100, 10000);
+    SimSched_append(simSched, 1000, simreps);
+
     // There should be no non-flag arguments
     if(argc > optind)
         usage();
@@ -209,7 +216,6 @@ int main(int argc, char *argv[]) {
     DiffEvPar   dep = {
         .dim = dim,
         .ptsPerDim = ptsPerDim,
-        .genmax = genmax,
         .refresh = refresh,
         .strategy = strategy,
         .nthreads = nthreads,
@@ -226,7 +232,8 @@ int main(int argc, char *argv[]) {
         .ThreadState_new = NULL,
         .ThreadState_free = NULL,
 		.initData = initVec,
-		.initialize = initStateVec
+		.initialize = initStateVec,
+        .simSched = simSched
     };
 
     double      estimate[dim];

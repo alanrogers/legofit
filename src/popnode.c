@@ -7,6 +7,7 @@
 
 #include "popnode.h"
 #include "gene.h"
+#include "exopar.h"
 #include "misc.h"
 #include "parstore.h"
 #include <string.h>
@@ -21,6 +22,8 @@ struct NodeStore {
 
 static void PopNode_sanityCheck(PopNode * self, const char *file, int lineno);
 static void PopNode_randomize_r(PopNode *self, Bounds bnd, gsl_rng *rng);
+static void PopNode_gaussian_r(PopNode *self, Bounds bnd,
+                               ExoPar *ep, gsl_rng *rng);
 
 void PopNode_sanityFromLeaf(PopNode * self, const char *file, int line) {
 #ifndef NDEBUG
@@ -542,7 +545,99 @@ static void PopNode_randomize_r(PopNode *self, Bounds bnd, gsl_rng *rng) {
 
     int i;
     for(i=0; i < self->nchildren; ++i)
-        PopNode_randomize(self->child[i], bnd, rng);
+        PopNode_randomize_r(self->child[i], bnd, rng);
+}
+
+/// Reset the value of each Gaussian parameter by sampling from the
+/// relevant distribution.
+void PopNode_gaussian(PopNode *self, Bounds bnd,
+                      ExoPar *ep, gsl_rng *rng) {
+	PopNode_untouch(self);
+	PopNode_gaussian_r(self, bnd, ep, rng);
+}
+
+/// Traverse the population tree to reset the value of each Gaussian
+/// parameter by sampling from the relevant distribution.
+/// Call PopNode_untouch before calling this function.
+static void PopNode_gaussian_r(PopNode *self, Bounds bnd,
+                               ExoPar *ep, gsl_rng *rng) {
+
+	// If parents are untouched, postpone this node.
+	bool postpone = false;
+	switch(self->nparents) {
+	case 0:
+		postpone = false;
+		break;
+	case 2:
+		if(!self->parent[1]->touched) {
+			postpone = true;
+			break;
+		}
+		// fall through
+	case 1:
+		assert(self->parent[0]->touched);
+		break;
+	default:
+            fprintf(stderr,"%s:%s:%d: bad value of nparents: %d\n",
+                    __FILE__,__func__,__LINE__, self->nparents);
+            exit(EXIT_FAILURE);
+	}			
+
+	if(postpone)
+		return;
+
+    // perturb self->twoN
+    ExoPar_sample(ep, self->twoN, bnd.lo_twoN, bnd.hi_twoN, rng);
+
+    // perturb self->start
+    // hi_t is the minimum age of parents or bnd.hi_t
+    double hi_t = bnd.hi_t;
+    switch(self->nparents) {
+    case 0:
+        hi_t = fmin(hi_t, *self->start
+                    + gsl_ran_exponential(rng, 10000.0));
+        break;
+    case 1:
+        assert(self->parent[0]->touched);
+        hi_t = *self->parent[0]->start;
+        break;
+    case 2:
+        assert(self->parent[0]->touched);
+        assert(self->parent[1]->touched);
+        hi_t = fmin(*self->parent[0]->start, *self->parent[1]->start);
+        break;
+    default:
+        fprintf(stderr,"%s:%s:%d: bad value of nparents: %d\n",
+                __FILE__,__func__,__LINE__, self->nparents);
+        exit(EXIT_FAILURE);
+    }
+
+    // lo_t is the maximum age of children or bnd.lo_t
+    double lo_t = bnd.lo_t;
+    switch(self->nchildren) {
+    case 0:
+        break;
+    case 1:
+        lo_t = *self->child[0]->start;
+        break;
+    case 2:
+        lo_t = fmax(*self->child[0]->start, *self->child[1]->start);
+        break;
+    default:
+        fprintf(stderr,"%s:%s:%d: bad value of nchildren: %d\n",
+                __FILE__,__func__,__LINE__, self->nchildren);
+        exit(EXIT_FAILURE);
+    }
+    ExoPar_sample(ep, self->start, lo_t, hi_t, rng);
+
+    // Perturb mix probability
+    ExoPar_sample(ep, self->mix, 0.0, 1.0, rng);
+
+	self->touched = true;
+
+    int i;
+    for(i=0; i < self->nchildren; ++i)
+        PopNode_gaussian_r(self->child[i], bnd, ep, rng);
 }
 
 /// Return 1 if parameters satisfy inequality constraints, or 0 otherwise.
@@ -597,22 +692,22 @@ int PopNode_feasible(const PopNode *self, Bounds bnd) {
 
 /// Add dp to each parameter pointer, using ordinary (not pointer)
 /// arithmetic.
-void PopNode_shiftParamPtrs(PopNode *self, size_t dp) {
-    INCR_PTR(self->twoN, dp);
-    INCR_PTR(self->start, dp);
-    INCR_PTR(self->end, dp);
-    INCR_PTR(self->mix, dp);
+void PopNode_shiftParamPtrs(PopNode *self, size_t dp, int sign) {
+    SHIFT_PTR(self->twoN, dp, sign);
+    SHIFT_PTR(self->start, dp, sign);
+    SHIFT_PTR(self->end, dp, sign);
+    SHIFT_PTR(self->mix, dp, sign);
 }
 
 /// Add dp to each PopNode pointer, using ordinary (not pointer)
 /// arithmetic.
-void PopNode_shiftPopNodePtrs(PopNode *self, size_t dp) {
+void PopNode_shiftPopNodePtrs(PopNode *self, size_t dp, int sign) {
     int i;
     for(i=0; i < self->nparents; ++i)
-        INCR_PTR(self->parent[i], dp);
+        SHIFT_PTR(self->parent[i], dp, sign);
 
     for(i=0; i < self->nchildren; ++i)
-        INCR_PTR(self->child[i], dp);
+        SHIFT_PTR(self->child[i], dp, sign);
 }
 
 NodeStore *NodeStore_new(int len, PopNode *v) {
@@ -702,10 +797,10 @@ int SampNdx_ptrsLegal(SampNdx *self, PopNode *start, PopNode *end) {
     return 1;
 }
 
-void SampNdx_shiftPtrs(SampNdx *self, size_t dpop) {
+void SampNdx_shiftPtrs(SampNdx *self, size_t dpop, int sign) {
     int i;
     for(i=0; i < self->n; ++i)
-        INCR_PTR(self->node[i], dpop);
+        SHIFT_PTR(self->node[i], dpop, sign);
 }
 
 
@@ -821,7 +916,7 @@ int main(int argc, char **argv) {
     size_t twoNloc = (size_t) p1->twoN;
     size_t startloc = (size_t) p1->start;
     size_t endloc = (size_t) p1->end;
-    PopNode_shiftParamPtrs(p1, (size_t) 1u);
+    PopNode_shiftParamPtrs(p1, (size_t) 1u, 1);
     assert(endloc==0u || twoNloc+1u == (size_t) p1->twoN);
     assert(endloc==0u || startloc+1u == (size_t) p1->start);
     assert(endloc==0u || endloc+1u == (size_t) p1->end);
@@ -832,7 +927,7 @@ int main(int argc, char **argv) {
         parent[i] = (size_t) p1->parent[i];
     for(i=0; i < p1->nchildren; ++i)
         child[i] = (size_t) p1->child[i];
-    PopNode_shiftPopNodePtrs(p1, (size_t) 1u);
+    PopNode_shiftPopNodePtrs(p1, (size_t) 1u, 1);
     for(i=0; i < p1->nparents; ++i)
         assert(parent[i]+1u == (size_t) p1->parent[i]);
     for(i=0; i < p1->nchildren; ++i)

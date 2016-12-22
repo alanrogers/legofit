@@ -9,6 +9,7 @@ typedef struct BootChr BootChr;
 typedef struct Bounds Bounds;
 typedef struct BranchTab BranchTab;
 typedef struct El El;
+typedef struct ExoPar ExoPar;
 typedef struct Gene Gene;
 typedef struct GPTree GPTree;
 typedef struct HashTab HashTab;
