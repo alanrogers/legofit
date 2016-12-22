@@ -1,27 +1,36 @@
-// Calculate derived allele frequency, daf.
-//
-// Input file should consist of tab-separated columns:
-// Col 1: chromosome
-// Col 2: position
-// Col 3: reference allele
-// Col 4: alternate alleles
-// Col 5: ancestral allele
-// Cols 6..: genotypes in format "0/1" or "0|1", where 0 represents
-//           a copy of the reference allele and 1 a copy of the derived
-//           allele.
-// With 1000-genomes data, this input can be generated from a vcf or
-// bcf file as follows:
-// bcftools query -f '%CHROM\t%POS\t%REF\t%ALT\t%INFO/AA[\t%GT]\n' fname.bcf//
-//
-// Output is in 3 columns, separated by a space character:
-// Col 1: chromosome
-// Col 2: position of the nucleotide
-// Col 3: aa, the ancestral allele
-// Col 4: da, the derived allele
-// Col 5: daf, derived allele frequency
-//
-// If ref, alt, or the ancestral allele consists of more than a single
-// character, the site is skipped. 
+/**
+   @file daf.c
+   @page daf
+   @brief Calculate derived allele frequency, daf.
+
+   Input file should consist of tab-separated columns:
+   Col 1: chromosome
+   Col 2: position
+   Col 3: reference allele
+   Col 4: alternate alleles
+   Col 5: ancestral allele
+   Cols 6..: genotypes in format "0/1" or "0|1", where 0 represents
+   a copy of the reference allele and 1 a copy of the derived
+   allele.
+   With 1000-genomes data, this input can be generated from a vcf or
+   bcf file as follows:
+   bcftools query -f '%CHROM\t%POS\t%REF\t%ALT\t%INFO/AA[\t%GT]\n' fname.bcf
+  
+   Output is in 3 columns, separated by a space character:
+   Col 1: chromosome
+   Col 2: position of the nucleotide
+   Col 3: aa, the ancestral allele
+   Col 4: da, the derived allele
+   Col 5: daf, derived allele frequency
+  
+   If ref, alt, or the ancestral allele consists of more than a single
+   character, the site is skipped. 
+
+   @copyright Copyright (c) 2016, Alan R. Rogers 
+   <rogers@anthro.utah.edu>. This file is released under the Internet
+   Systems Consortium License, which can be found in file "LICENSE".
+*/
+
 #include "misc.h"
 #include <stdio.h>
 #include <stdlib.h>

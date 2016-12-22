@@ -18,32 +18,34 @@
 /// Contains the all data involved in a moving blocks bootstrap of
 /// a single chromosome.
 struct BootChr {
-    long        blocksize;      // number of SNPs per block
-    long        nrep;           // number of bootstrap replicates 
-    long        nsnp;           // number of snps
-    long        nblock;         // number of blocks
-    int         npat;           // number of site patterns
-    double    **count;          // count[i][j]: j'th site pattern in i'th rep
-    long      **start;          // start[i][j] = start of j'th block in i'th rep
+    long        blocksize;  ///< number of SNPs per block
+    long        nrep;       ///< number of bootstrap replicates 
+    long        nsnp;       ///< number of snps
+    long        nblock;     ///< number of blocks
+    int         npat;       ///< number of site patterns
+    double    **count;      ///< count[i][j]: j'th site pattern in i'th rep
+    long      **start;      ///< start[i][j] = start of j'th block in i'th rep
 };
 
+/// An array of BootChr pointers.
 struct Boot {
-    int nchr;                   // number of chromosomes
-    BootChr **bc;               // bc[i]: bootstrap for i'th chromosome
+    int nchr;               ///< number of chromosomes
+    BootChr **bc;           ///< bc[i]: bootstrap for i'th chromosome
 };
 
-/** Contains the data for a bootstrap confidence interval. */
+/// Contains the data for a bootstrap confidence interval.
 struct BootConf {
-    long        nrep;           // repetitions
-    long        blocksize;      // nucleotide positions per block
-    double      confidence;     // size of confidence region
-    double     *low, *high;     // confidence bounds
+    long        nrep;       ///< repetitions
+    long        blocksize;  ///< nucleotide positions per block
+    double      confidence; ///< size of confidence region
+    double     *low, *high; ///< confidence bounds
 };
 
 long LInt_div_round(long num, long denom);
 static void BootChr_allocArrays(BootChr * self);
 
-// Divide num by denom and round the result to the nearest integer.
+/// Divide num by denom and round the result to the nearest integer.
+/// @return an structure of type ldiv_t.
 long LInt_div_round(long num, long denom) {
         assert(denom != 0L);
         ldiv_t quotrem = ldiv(num, denom);
@@ -52,8 +54,8 @@ long LInt_div_round(long num, long denom) {
         return quotrem.quot;
 }
 
-// Return a blocksize that is as close as possible to lengthWanted
-// while still making length*nblock close to nsnp.
+/// Return a blocksize that is as close as possible to lengthWanted
+/// while still making length*nblock close to nsnp.
 long adjustBlockLength(long lengthWanted, int nsnp) {
 	long nblock = LInt_div_round(nsnp, lengthWanted);
 	return LInt_div_round(nsnp, nblock);
@@ -161,7 +163,8 @@ void BootChr_sanityCheck(const BootChr * self, const char *file, int line) {
 }
 #endif
 
-/// How many copies of snp are present in a given repetition (rep)?
+/// How many copies of snp with index snpndx are present in a given
+/// repetition (rep)? 
 long BootChr_multiplicity(const BootChr * self, long snpndx, long rep) {
     long        lndx, hndx, lowtarget;
 
@@ -187,11 +190,12 @@ long BootChr_multiplicity(const BootChr * self, long snpndx, long rep) {
     return hndx - lndx;
 }
 
-/*
- * Add one site pattern contribution to a BootChr structure. On entry,
- * self points to the BootChr structure, snpndx is the index of the
- * current snp, pat is that of the current site pattern, and z is the
- * contribution of the snp to the site pattern.
+/**
+ * Add one site pattern contribution to a BootChr structure.
+ * @param [inout] self The BootChr structure to modify.
+ * @param [in] snpndx The index of the current snp.
+ * @param [in] pat The index of the current site pattern.
+ * @param [in] z the contribution of the snp to the site pattern.
  */
 void BootChr_add(BootChr * self, long snpndx, int pat, double z) {
     assert(pat < self->npat);
@@ -215,7 +219,7 @@ long BootChr_nrep(const BootChr * self) {
     return self->nrep;
 }
 
-/// Return number of bootstrap repetitions
+/// Return number of site patterns
 long BootChr_npat(const BootChr * self) {
     assert(self);
     return self->npat;
@@ -233,7 +237,7 @@ long BootChr_nsnp(const BootChr * self) {
     return self->nsnp;
 }
 
-// Destructor
+/// Destructor
 void BootChr_free(BootChr * self) {
 #ifndef NDEBUG
     BootChr_sanityCheck(self, __FILE__, __LINE__);
@@ -248,7 +252,14 @@ void BootChr_free(BootChr * self) {
     free(self);
 }
 
-/// Add to array "count" the values for bootstrap repetition "rep".
+/// Add to an array the site pattern counts from the bootstrap
+/// replicate of a single chromosome.
+/// @param [in] self Points to a BootChr object.
+/// @param [in] the index of the bootstrap replicate
+/// @param [in] npat the number of site patterns
+/// @param [out] count An array of doubles. The function will add to
+/// count[i] the contribution of site pattern i in bootstrap replicate
+/// rep. 
 void BootChr_aggregate(BootChr * self, int rep, int npat, double count[npat]) {
     assert(self);
     assert(npat == self->npat);
@@ -257,6 +268,7 @@ void BootChr_aggregate(BootChr * self, int rep, int npat, double count[npat]) {
         count[j] += self->count[rep][j];
 }
 
+/// Constructor for class Boot.
 Boot * Boot_new(int nchr, long nsnp[nchr], long nrep, int npat,
                 long blocksize, gsl_rng *rng) {
     Boot *self = malloc(sizeof(Boot));
@@ -272,6 +284,7 @@ Boot * Boot_new(int nchr, long nsnp[nchr], long nrep, int npat,
     return self;
 }
 
+/// Destructor for class Boot.
 void Boot_free(Boot *self) {
     for(int i=0; i < self->nchr; ++i)
         free(self->bc[i]);
@@ -279,10 +292,26 @@ void Boot_free(Boot *self) {
     free(self);
 }
 
+/**
+ * Add one site pattern contribution to a Boot structure.
+ * @param [inout] self The Boot structure to modify.
+ * @param [in] chr The index of the chromosome to modify.
+ * @param [in] snpndx The index of the current snp.
+ * @param [in] pat The index of the current site pattern.
+ * @param [in] z the contribution of the snp to the site pattern.
+ */
 void Boot_add(Boot *self, int chr, long snpndx, int pat, double z) {
     BootChr_add(self->bc[chr], snpndx, pat, z);
 }
 
+/// Add to an array the site pattern counts from the bootstrap
+/// replicate of an entire genome.
+/// @param [in] self Points to a Boot object.
+/// @param [in] the index of the bootstrap replicate
+/// @param [in] npat the number of site patterns
+/// @param [out] count An array of doubles. The function will add to
+/// count[i] the contribution of site pattern i in bootstrap replicate
+/// rep. 
 void Boot_aggregate(Boot * self, int rep, int npat,
                     double count[npat]) {
 	int i;
@@ -346,7 +375,7 @@ double interpolate(double p, double *v, long len) {
  * inside the confidence bounds.
  * @param[in] len The number of values inf v.
  * @param[in] v The vector of values.
- * @sideeffect The function sorts the vector v.
+ * @sideeffect Sorts the vector v.
  */
 void confidenceBounds(double *lowBnd, double *highBnd, double confidence,
                       long len, double v[len]) {
@@ -383,7 +412,7 @@ void BootChr_print(const BootChr * self, FILE * ofp) {
 }
 
 #ifndef NDEBUG
-/* For debugging BootChr_multiplicity */
+/** For debugging BootChr_multiplicity */
 unsigned BootChr_multiplicity_slow(BootChr * self, long snp, long rep) {
     unsigned    i, n = 0;
 
@@ -399,308 +428,3 @@ unsigned BootChr_multiplicity_slow(BootChr * self, long snp, long rep) {
 }
 #endif
 
-#if 0
-/*
- * Allocate and initialize a duplicate of a BootChr structure. Deallocate
- * with BootChr_free.
- */
-BootChr       *BootChr_dup(const BootChr * old) {
-    assert(old != NULL);
-    assert(old->nblock > 0);
-    BootChr       *new = memdup(old, sizeof(*old));
-
-    assert(new->nblock > 0);
-
-    new->start = malloc(new->nrep * sizeof(new->start[0]));
-    checkmem(new->start, __FILE__, __LINE__);
-
-    new->tab = malloc(new->nrep * sizeof(new->tab[0]));
-    checkmem(new->tab, __FILE__, __LINE__);
-
-    new->spectab = malloc(new->nrep * sizeof(new->spectab[0]));
-    checkmem(new->spectab, __FILE__, __LINE__);
-
-    assert(sizeof(new->start[0][0]) > 0);
-
-    for(int i = 0; i < new->nrep; ++i) {
-        new->tab[i] = Tabulation_dup(old->tab[i]);
-        new->spectab[i] = Spectab_dup(old->spectab[i]);
-        new->start[i] = memdup(old->start[i],
-                               new->nblock * sizeof(new->start[0][0]));
-    }
-
-#ifndef NDEBUG
-    BootChr_sanityCheck(new, __FILE__, __LINE__);
-#endif
-    return new;
-}
-
-/* Return 1 if the two BootChr structs are idential; zero otherwise */
-int BootChr_equals(const BootChr * x, const BootChr * y) {
-    if(x == NULL || y == NULL)
-        return false;
-    if(x->nsnp != y->nsnp)
-        return false;
-    if(x->nrep != y->nrep)
-        return false;
-    if(x->blocksize != y->blocksize)
-        return false;
-    if(x->nBins != y->nBins)
-        return false;
-
-    long        i, j;
-
-    for(i = 0; i < x->nrep; ++i) {
-        if(!Tabulation_equals(x->tab[i], y->tab[i]))
-            return false;
-
-        if(!Spectab_equals(x->spectab[i], y->spectab[i]))
-            return false;
-
-        for(j = 0; j < x->nblock; ++j)
-            if(x->start[i][j] != y->start[i][j])
-                return false;
-    }
-    return true;
-}
-
-/*
- * Add the contents of BootChr structure y to BootChr structure x.
- * On return x will summarize all the LD values that were originally
- * contained in the two original BootChr structures.
- */
-void BootChr_plus_equals(BootChr * x, const BootChr * y) {
-    int         rep;
-
-#ifndef NDEBUG
-    BootChr_sanityCheck(x, __FILE__, __LINE__);
-    BootChr_sanityCheck(y, __FILE__, __LINE__);
-#endif
-    if(x == NULL)
-        die("BootChr_plus_equals: destination is NULL", __FILE__, __LINE__);
-    if(y == NULL)
-        return;
-
-    if(x->nsnp != y->nsnp
-       || x->nrep != y->nrep
-       || x->blocksize != y->blocksize
-       || x->nblock != y->nblock || x->nBins != y->nBins)
-        die("BootChr_plus_equals: unconformable arguments", __FILE__, __LINE__);
-
-    for(rep = 0; rep < x->nrep; ++rep) {
-        long        block;
-
-        for(block = 0; block < x->nblock; ++block) {
-            if(x->start[rep][block] != y->start[rep][block])
-                die("BootChr_plus_equals: incompatible block starts",
-                    __FILE__, __LINE__);
-        }
-        Tabulation_plus_equals(x->tab[rep], y->tab[rep]);
-        Spectab_plus_equals(x->spectab[rep], y->spectab[rep]);
-    }
-#ifndef NDEBUG
-    BootChr_sanityCheck(x, __FILE__, __LINE__);
-#endif
-    return;
-}
-
-/*
- * Return the raw counts for a single rep and bin. Counts for
- * numerator, denominator, and sep_cm are returned in the
- * corresponding arguments. The function itself returns nobs.
- */
-long unsigned BootChr_rawCounts(const BootChr * self, int rep, int bin,
-                             double *numerator, double *denominator,
-                             double *sumRsq, double *sep_cm) {
-
-    assert(rep < self->nrep);
-    assert(bin < self->nBins);
-
-    return Tabulation_rawCounts(self->tab[rep], bin, numerator,
-                                denominator, sumRsq, sep_cm);
-}
-
-/**
- * Remove replicates in which some bins have zero observations.
- * These would generate NaN values in the calculation of sigdsq,
- * which are not handled by the minimizer. Return revised number of
- * bootstrap replicates.
- */
-long BootChr_purge(BootChr * self) {
-    assert(self);
-
-    long        rep, nGoodReps = self->nrep;
-    int         bin;
-
-    rep = 0;
-    while(rep < nGoodReps) {
-        int         clean = 1;
-
-        for(bin = 0; bin < self->nBins; ++bin) {
-            if(Tabulation_nObs(self->tab[rep], bin) == 0) {
-                /*
-                 * Current rep has an empty bin, which is not OK.
-                 * Mark this rep as dirty and break out of loop.
-                 */
-                clean = 0;
-                break;
-            }
-            if(Tabulation_overflow(self->tab[rep])) {
-                /*
-                 * Current rep has invalid data because its Tabulation
-                 * overflowed.
-                 */
-                clean = 0;
-                break;
-            }
-        }
-        /*
-         * If current rep is clean, then increment reps; otherwise
-         * free current rep, move in terminal rep, and reduce count of
-         * good reps.
-         */
-        if(clean)
-            ++rep;
-        else {
-            free(self->start[rep]);
-            Tabulation_free(self->tab[rep]);
-            Spectab_free(self->spectab[rep]);
-
-            if(rep < nGoodReps - 1) {
-                self->start[rep] = self->start[nGoodReps - 1];
-                self->tab[rep] = self->tab[nGoodReps - 1];
-                self->spectab[rep] = self->spectab[nGoodReps - 1];
-            }
-            --nGoodReps;
-        }
-    }
-    self->nrep = nGoodReps;
-#ifndef NDEBUG
-    BootChr_sanityCheck(self, __FILE__, __LINE__);
-#endif
-    return self->nrep;
-}
-
-BootConf   *BootConf_new(BootChr * boot, double confidence) {
-    BootConf   *bc = malloc(sizeof(BootConf));
-
-    checkmem(bc, __FILE__, __LINE__);
-
-    bc->confidence = confidence;
-    bc->nrep = boot->nrep;
-    bc->blocksize = boot->blocksize;
-    bc->nBins = boot->nBins;
-
-    bc->low = malloc(bc->nBins * sizeof(bc->low[0]));
-    checkmem(bc->low, __FILE__, __LINE__);
-
-    bc->high = malloc(bc->nBins * sizeof(bc->high[0]));
-    checkmem(bc->high, __FILE__, __LINE__);
-
-    bc->sep_cm = malloc(bc->nBins * sizeof(bc->sep_cm[0]));
-    checkmem(bc->sep_cm, __FILE__, __LINE__);
-    memset(bc->sep_cm, 0, bc->nBins * sizeof(bc->sep_cm[0]));
-
-    assert(boot->spectab && boot->spectab[0]);
-
-    // Dimension of site frequency spectrum
-    bc->specDim = Spectab_dim(boot->spectab[0]);
-
-    bc->loSpec = malloc(bc->specDim * sizeof(bc->loSpec[0]));
-    checkmem(bc->loSpec, __FILE__, __LINE__);
-
-    bc->hiSpec = malloc(bc->specDim * sizeof(bc->hiSpec[0]));
-    checkmem(bc->hiSpec, __FILE__, __LINE__);
-
-    int         i, rep, nvals;
-    double      v[bc->nrep];
-
-    // Confidence bounds on sigdsq
-    for(i = 0; i < bc->nBins; ++i) {
-        double      tmp1, nobs = 0, sigdsq;
-        long unsigned tmp2;
-        nvals = 0;
-
-        for(rep = 0; rep < bc->nrep; ++rep) {
-            sigdsq = Tabulation_sigdsq(boot->tab[rep], i, &tmp1, &tmp2);
-            if(isfinite(sigdsq)) {
-                assert(nvals < bc->nrep);
-                v[nvals] = sigdsq;
-                bc->sep_cm[i] += tmp1;
-                nobs += tmp2;
-                ++nvals;
-            }
-        }
-        nobs /= nvals;
-        bc->sep_cm[i] /= nvals;
-        if(nvals < 10) {
-            bc->low[i] = bc->high[i] = strtod("NAN", NULL);
-        } else
-            confidenceBounds(bc->low + i, bc->high + i, confidence, v, nvals);
-    }
-
-    // Confidence bounds on spectrum
-    for(i = 0; i < bc->specDim; ++i) {
-        long unsigned count;
-        nvals = 0;
-
-        for(rep = 0; rep < bc->nrep; ++rep) {
-            count = Spectab_get(boot->spectab[rep], i);
-            v[nvals++] = (double) count;
-        }
-        if(nvals < 10) {
-            bc->low[i] = bc->high[i] = strtod("NAN", NULL);
-        } else
-            confidenceBounds(bc->loSpec + i, bc->hiSpec + i,
-                             confidence, v, nvals);
-    }
-
-    return bc;
-}
-
-void BootConf_printHdr(const BootConf * self, FILE * ofp) {
-    fprintf(ofp, "#%12s: %lg%% confidence bounds"
-            " based on moving blocks bootstrap\n",
-            "loLD, hiLD", 100.0 * self->confidence);
-    fprintf(ofp, "#%12s: nrep=%ld blocksize=%ld nBins=%d\n",
-            "Bootstrap parameters", self->nrep, self->blocksize, self->nBins);
-}
-
-double BootConf_lowBound(const BootConf * self, long bin) {
-    return self->low[bin];
-}
-
-double BootConf_highBound(const BootConf * self, long bin) {
-    return self->high[bin];
-}
-
-double BootConf_loSpecBound(const BootConf * self, long i) {
-    return self->loSpec[i];
-}
-
-double BootConf_hiSpecBound(const BootConf * self, long i) {
-    return self->hiSpec[i];
-}
-
-void BootConf_print(const BootConf * self, FILE * ofp) {
-    int         i;
-
-    BootConf_printHdr(self, ofp);
-    fprintf(ofp, "%5s %10s %10s\n", "bin", "loLD", "hiLD");
-    for(i = 0; i < self->nBins; ++i)
-        fprintf(ofp, "%5d %10g %10g\n", i, self->low[i], self->high[i]);
-
-    putc('\n', ofp);
-    fprintf(ofp, "%5s %10s %10s\n", "i", "loSpec", "hiSpec");
-    for(i = 0; i < self->specDim; ++i)
-        fprintf(ofp, "%5d %10g %10g\n", i + 1, self->loSpec[i], self->hiSpec[i]);
-}
-
-void BootConf_free(BootConf * self) {
-    free(self->low);
-    free(self->high);
-    free(self->sep_cm);
-    free(self);
-}
-
-#endif

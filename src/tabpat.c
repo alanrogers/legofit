@@ -59,6 +59,7 @@ Systems Consortium License, which can be found in file "LICENSE".
 
 typedef struct Stack Stack;
 
+/// Treat a vector of tipId_t values as a push-down stack.
 struct Stack {
     int dim, nused;
     tipId_t *buff;  // not locally owned
@@ -70,7 +71,6 @@ static void Stack_free(Stack *stk);
 static void Stack_push(Stack *self, tipId_t x);
 static void generatePatterns(int bit,  int npops, Stack *stk, tipId_t pat,
                              int doSing);
-static void parseChromosomeLbls(const char *arg, StrInt *strint);
 
 const char *useMsg =
     "\nUsage: tabpat [options] <x>=<in1> <y>=<in2> ...\n"
@@ -79,6 +79,7 @@ const char *useMsg =
 	" Labels may not include\n"
 	"   the character \":\".";
 
+/// Print usage message and die.
 static void usage(void) {
     fputs(useMsg, stderr);
     fprintf(stderr," Maximum number of input files: %lu.\n",
@@ -124,9 +125,9 @@ static void Stack_push(Stack *self, tipId_t x) {
     self->buff[self->nused++] = x;
 }
 
-/// Call as generatePatterns(0, npops, stk, 0);
-/// Recursive function, which generates all legal site patterns
-/// and pushes them onto a stack.
+/// Call as generatePatterns(0, npops, stk, 0); Recursive function,
+/// which generates all legal site patterns and pushes them onto a
+/// stack.
 static void generatePatterns(int bit, int npops, Stack *stk, tipId_t pat,
                              int doSing) {
     assert(sizeof(tipId_t) < sizeof (unsigned long long));
@@ -146,87 +147,6 @@ static void generatePatterns(int bit, int npops, Stack *stk, tipId_t pat,
     tipId_t on = 1UL << bit;
     generatePatterns(bit+1, npops, stk, pat|on, doSing); // curr bit on
     generatePatterns(bit+1, npops, stk, pat, doSing);    // curr bit off
-}
-
-/// On input, "arg" is a comma-separated list of chromosome labels.
-/// On return, the first label is associated (in strint) with index 0,
-/// the second with index 1, and so on. If one of the labels is of form
-/// x-y, where x and y are integers, then x-y is expanded into a
-/// sequence of integers ranging from x to y inclusive. These integers
-/// are converted into strings, and then associated with consequtive
-/// integers in the usual way.
-///
-/// Example: if "arg" is "x,2-4,mtdna", then we end up with the
-/// following mapping:
-///     x -> 0
-///     2 -> 1
-///     3 -> 2
-///     4 -> 3
-/// mtdna -> 4
-static void parseChromosomeLbls(const char *arg, StrInt *strint) {
-    int i, j;
-    char chrs[100], *ptr, *token;
-    snprintf(chrs, sizeof chrs, "%s", arg);
-    if(NULL != strchr(chrs, '=')) {
-        fprintf(stderr,"Bad list of chromosomes: %s\n", chrs);
-        usage();
-    }
-    i = 0;
-    ptr = chrs;
-    fprintf(stderr,"Expecting chromosomes:");
-    while( (token = strsep(&ptr, ",")) != NULL) {
-        char *dash = strchr(token, '-');
-        int isinteger=1;
-        if(dash) {
-            if(dash == token) {
-                isinteger = 0;
-            }else {
-                char *p;
-                for(p = token; p < dash; ++p) {
-                    if(!isdigit(*p)) {
-                        isinteger = 0;
-                        break;
-                    }
-                }
-                for(p = dash+1; isinteger && *p != '\0'; ++p) {
-                    if(!isdigit(*p)) {
-                        isinteger = 0;
-                        break;
-                    }
-                }
-            }
-        }
-        if(dash && isinteger) {  // parse range
-            *dash = '\0';
-            int from = strtol(token, NULL, 10);
-            int to = strtol(dash+1, NULL, 10);
-			int inc = (to < from ? -1 : 1);
-			to += inc; // 1 past final position
-            for(j=from; j != to; j += inc) {
-                char curr[10];
-                snprintf(curr, sizeof curr, "%d", j);
-                fprintf(stderr, " %s", curr);
-				errno = 0;
-                StrInt_insert(strint, curr, i++);
-				if(errno) {
-					fprintf(stderr,"\n%s:%d: ERR:"
-                            " Duplicate chromosome label: %s\n",
-							__FILE__,__LINE__, curr);
-					exit(EXIT_FAILURE);
-				}
-            }
-        }else{                  // token isn't a range
-            fprintf(stderr, " %s", token);
-			errno = 0;
-            StrInt_insert(strint, token, i++);
-			if(errno) {
-				fprintf(stderr,"\n%s:%d: ERR: Duplicate chromosome label: %s\n",
-						__FILE__,__LINE__, token);
-				exit(EXIT_FAILURE);
-			}
-        }
-    }
-    putc('\n', stderr);
 }
 
 int main(int argc, char **argv) {

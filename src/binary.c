@@ -1,9 +1,19 @@
+/**
+@file binary.c
+@brief Functions for fiddling with bits.
+
+@copyright Copyright (c) 2016, Alan R. Rogers 
+<rogers@anthro.utah.edu>. This file is released under the Internet
+Systems Consortium License, which can be found in file "LICENSE".
+*/
+
 #include "binary.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <assert.h>
 
+/// Return x after reversing the order of the bits.
 tipId_t reverseBits(tipId_t x) {
     if(sizeof(x)==4)
         return rev32(x);
@@ -11,8 +21,8 @@ tipId_t reverseBits(tipId_t x) {
     return rev64(x);
 }
 
-// Reverse bits in a 32-bit integer
-// p 129 of Hacker's Delight, 2nd edn.
+/// Reverse bits in a 32-bit integer.  p 129 of Hacker's Delight, 2nd
+/// edn.
 uint32_t rev32(uint32_t x) {
     x = (x & 0x55555555) <<  1 | (x & 0xAAAAAAAA) >>  1;
     x = (x & 0x33333333) <<  2 | (x & 0xCCCCCCCC) >>  2;
@@ -22,8 +32,8 @@ uint32_t rev32(uint32_t x) {
     return x;
 }
 
-// Reverse bits in a 64-bit integer.
-// This just extends the pattern in rev32.
+/// Reverse bits in a 64-bit integer.  This just extends the pattern
+/// in rev32.
 uint64_t rev64(uint64_t x) {
     x = (x & 0x5555555555555555) <<  1
         | (x & 0xAAAAAAAAAAAAAAAA) >>  1;
@@ -40,7 +50,8 @@ uint64_t rev64(uint64_t x) {
     return x;
 }
 
-// assumes little endian 
+/// Print the bits in an object of size "size", pointed to by
+/// "ptr". Assumes little endian   
 void printBits(size_t size, void const * const ptr, FILE *fp) {
     unsigned char const * const b = (unsigned char const * const) ptr;
     unsigned char byte;
@@ -58,7 +69,7 @@ void printBits(size_t size, void const * const ptr, FILE *fp) {
     putc('\n', fp);
 }
 
-/*
+/**
  * Examine the bits in x. If bit i equals 1, then add i to array bit.
  * Return the number of nonzero bits. maxbits is the allocated length
  * of array bit. It is an error if the number of nonzero bits exceeds
@@ -83,6 +94,9 @@ int getBits(tipId_t x, int maxbits, int bit[maxbits]) {
     return nbits;
 }
 
+/// Print the (0-based) indices of the bits that are "on".
+/// @param [in] ptr points to the object whose bits will be examined
+/// @param [in] size the size of the object in bytes
 void printWhichBits(size_t const size, void const * const ptr) {
     unsigned char const * const b = (unsigned char const * const) ptr;
     unsigned char byte;
@@ -103,10 +117,11 @@ void printWhichBits(size_t const size, void const * const ptr) {
     }
 }
 
-/// Count the number of 1 bits. From p 85 of Hacker's Delight, 2nd
-/// Edn, by Henry S. Warren, Jr. This algorithm is fast when the
-/// number of 1 bits is small, and it makes no assumption about the 
+/// Count the number of 1 bits in x. From p 85 of Hacker's Delight,
+/// 2nd Edn, by Henry S. Warren, Jr. This algorithm is fast when the
+/// number of 1 bits is small, and it makes no assumption about the
 /// number of bits in x.
+/// @return the number of bits.
 int num1bits(tipId_t x) {
     int n=0;
 
