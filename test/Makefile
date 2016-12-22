@@ -161,11 +161,6 @@ XSTRINT := xstrint.o misc.o binary.o lblndx.o parkeyval.o
 xstrint : $(XSTRINT)
 	$(CC) $(CFLAGS) -o $@ $(XSTRINT) $(lib)
 
-Q := q.o misc.o gptree.o hashtab.o branchtab.o binary.o lblndx.o parstore.o \
-   popnode.o parse.o gene.o tokenizer.o parkeyval.o
-q : $(Q)
-	$(CC) $(CFLAGS) -o $@ $(Q) $(lib)
-
 # Make dependencies file
 depend : *.c 
 	echo '#Automatically generated dependency info' > depend
