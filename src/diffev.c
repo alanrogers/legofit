@@ -1,6 +1,8 @@
 /**
  * @file diffev.c
+ * @page diffev
  * @author Alan R. Rogers
+ *
  * @brief Numerical minimization using differential evolution (DE).
  *
  * This file began with Rainer Storn's de.c, version 3.6. I have made
@@ -8,11 +10,9 @@
  * several are substantive:
  *
  * This code is multithreaded: function evaluations are done in a
- * multithreaded job queue.
- *
- * There are also hooks that allow each thread to maintain state. For
- * example, it can be useful to run a separate random number generator
- * in each thread.
+ * multithreaded job queue.  There are also hooks that allow each
+ * thread to maintain state. For example, it can be useful to run a
+ * separate random number generator in each thread.
  *
  * This code has also been modified to facilitate using simulations
  * for evaluating the objective function. In initial generations of
@@ -204,11 +204,11 @@ void sighandle(int signo) {
 // 5)  When the DE/best... schemes fail DE/rand... usually
 //     works and vice versa
 
-// DE/best/1/exp
-// Our oldest strategy but still not bad. However, we have
-// found several optimization problems where misconvergence
-// occurs.
-// strategy DE0 (not in our paper)
+/// DE/best/1/exp
+/// Our oldest strategy but still not bad. However, we have
+/// found several optimization problems where misconvergence
+/// occurs.
+/// strategy DE0 (not in our paper)
 void stratDE_best_1_exp(int dim, double tmp[dim],
                         int nPts, int ndx[nPts],
                         double bestit[dim],
@@ -219,7 +219,7 @@ void stratDE_best_1_exp(int dim, double tmp[dim],
     int n = gsl_rng_uniform_int(rng, (unsigned long) dim);
     const int nr=3;
     int r[nr];           // random indices
-    
+
     // r gets indices of nr random points.
     sample(nr, r, nPts, ndx, rng);
 
@@ -232,12 +232,12 @@ void stratDE_best_1_exp(int dim, double tmp[dim],
     } while((gsl_rng_uniform(rng) < CR) && (L < dim));
 }
 
-// DE/rand/1/exp
-// This is one of my favourite strategies. It works
-// especially well when the "bestit[]"-schemes experience
-// misconvergence. Try e.g. F=0.7 and CR=0.5. as a first
-// guess.
-// strategy DE1 in the techreport
+/// DE/rand/1/exp
+/// This is one of my favourite strategies. It works
+/// especially well when the "bestit[]"-schemes experience
+/// misconvergence. Try e.g. F=0.7 and CR=0.5. as a first
+/// guess.
+/// strategy DE1 in the techreport
 void stratDE_rand_1_exp(int dim, double tmp[dim],
                         int nPts, int ndx[nPts],
                         double bestit[dim],
@@ -248,7 +248,7 @@ void stratDE_rand_1_exp(int dim, double tmp[dim],
     int n = gsl_rng_uniform_int(rng, (unsigned long) dim);
     const int nr=3;
     int r[nr];           // random indices
-    
+
     // r gets indices of nr random points.
     sample(nr, r, nPts, ndx, rng);
 
@@ -262,13 +262,13 @@ void stratDE_rand_1_exp(int dim, double tmp[dim],
     } while((gsl_rng_uniform(rng) < CR) && (L < dim));
 }
 
-// DE/rand-to-best/1/exp
-// This strategy seems to be one of the best
-// strategies. Try F=0.85 and CR=1. If you get
-// misconvergence try to increase nPts. If this doesn't help
-// you should play around with all three control
-// variables.
-// similiar to DE2 but generally better
+/// DE/rand-to-best/1/exp
+/// This strategy seems to be one of the best
+/// strategies. Try F=0.85 and CR=1. If you get
+/// misconvergence try to increase nPts. If this doesn't help
+/// you should play around with all three control
+/// variables.
+/// similiar to DE2 but generally better
 void stratDE_rand_to_best_1_exp(int dim, double tmp[dim],
                         int nPts, int ndx[nPts],
                         double bestit[dim],
@@ -279,7 +279,7 @@ void stratDE_rand_to_best_1_exp(int dim, double tmp[dim],
     int n = gsl_rng_uniform_int(rng, (unsigned long) dim);
     const int nr=2;
     int r[nr];           // random indices
-    
+
     // r gets indices of nr random points.
     sample(nr, r, nPts, ndx, rng);
 
@@ -293,7 +293,7 @@ void stratDE_rand_to_best_1_exp(int dim, double tmp[dim],
     } while((gsl_rng_uniform(rng) < CR) && (L < dim));
 }
 
-// DE/best/2/exp is another powerful strategy worth trying
+/// DE/best/2/exp is another powerful strategy worth trying
 void stratDE_best_2_exp(int dim, double tmp[dim],
                         int nPts, int ndx[nPts],
                         double bestit[dim],
@@ -304,7 +304,7 @@ void stratDE_best_2_exp(int dim, double tmp[dim],
     int n = gsl_rng_uniform_int(rng, (unsigned long) dim);
     const int nr=4;
     int r[nr];           // random indices
-    
+
     // r gets indices of nr random points.
     sample(nr, r, nPts, ndx, rng);
 
@@ -318,8 +318,8 @@ void stratDE_best_2_exp(int dim, double tmp[dim],
     } while((gsl_rng_uniform(rng) < CR) && (L < dim));
 }
 
-// DE/rand/2/exp seems to be a robust optimizer for many
-// functions.
+/// DE/rand/2/exp seems to be a robust optimizer for many
+/// functions.
 void stratDE_rand_2_exp(int dim, double tmp[dim],
                         int nPts, int ndx[nPts],
                         double bestit[dim],
@@ -330,7 +330,7 @@ void stratDE_rand_2_exp(int dim, double tmp[dim],
     int n = gsl_rng_uniform_int(rng, (unsigned long) dim);
     const int nr=5;
     int r[nr];           // random indices
-    
+
     // r gets indices of nr random points.
     sample(nr, r, nPts, ndx, rng);
 
@@ -344,8 +344,8 @@ void stratDE_rand_2_exp(int dim, double tmp[dim],
     } while((gsl_rng_uniform(rng) < CR) && (L < dim));
 }
 
-// Remaining strategies have binomial crossover.
-// DE/best/1/bin
+/// Remaining strategies have binomial crossover.
+/// DE/best/1/bin
 void stratDE_best_1_bin(int dim, double tmp[dim],
                         int nPts, int ndx[nPts],
                         double bestit[dim],
@@ -356,7 +356,7 @@ void stratDE_best_1_bin(int dim, double tmp[dim],
     int n = gsl_rng_uniform_int(rng, (unsigned long) dim);
     const int nr=2;
     int r[nr];           // random indices
-    
+
     // r gets indices of nr random points.
     sample(nr, r, nPts, ndx, rng);
 
@@ -370,7 +370,7 @@ void stratDE_best_1_bin(int dim, double tmp[dim],
     };
 }
 
-// DE/rand/1/bin
+/// DE/rand/1/bin
 void stratDE_rand_1_bin(int dim, double tmp[dim],
                         int nPts, int ndx[nPts],
                         double bestit[dim],
@@ -381,7 +381,7 @@ void stratDE_rand_1_bin(int dim, double tmp[dim],
     int n = gsl_rng_uniform_int(rng, (unsigned long) dim);
     const int nr=3;
     int r[nr];           // random indices
-    
+
     // r gets indices of nr random points.
     sample(nr, r, nPts, ndx, rng);
 
@@ -397,7 +397,7 @@ void stratDE_rand_1_bin(int dim, double tmp[dim],
     }
 }
 
-// DE/rand-to-best/1/bin
+/// DE/rand-to-best/1/bin
 void stratDE_rand_to_best_1_bin(int dim, double tmp[dim],
                         int nPts, int ndx[nPts],
                         double bestit[dim],
@@ -408,7 +408,7 @@ void stratDE_rand_to_best_1_bin(int dim, double tmp[dim],
     int n = gsl_rng_uniform_int(rng, (unsigned long) dim);
     const int nr=2;
     int r[nr];           // random indices
-    
+
     // r gets indices of nr random points.
     sample(nr, r, nPts, ndx, rng);
 
@@ -424,7 +424,7 @@ void stratDE_rand_to_best_1_bin(int dim, double tmp[dim],
     }
 }
 
-// DE/best/2/bin
+/// DE/best/2/bin
 void stratDE_best_2_bin(int dim, double tmp[dim],
                         int nPts, int ndx[nPts],
                         double bestit[dim],
@@ -435,7 +435,7 @@ void stratDE_best_2_bin(int dim, double tmp[dim],
     int n = gsl_rng_uniform_int(rng, (unsigned long) dim);
     const int nr=4;
     int r[nr];           // random indices
-    
+
     // r gets indices of nr random points.
     sample(nr, r, nPts, ndx, rng);
 
@@ -451,7 +451,7 @@ void stratDE_best_2_bin(int dim, double tmp[dim],
     }
 }
 
-// DE/rand/2/bin
+/// DE/rand/2/bin
 void stratDE_rand_2_bin(int dim, double tmp[dim],
                         int nPts, int ndx[nPts],
                         double bestit[dim],
@@ -462,7 +462,7 @@ void stratDE_rand_2_bin(int dim, double tmp[dim],
     int n = gsl_rng_uniform_int(rng, (unsigned long) dim);
     const int nr=5;
     int r[nr];           // random indices
-    
+
     // r gets indices of nr random points.
     sample(nr, r, nPts, ndx, rng);
 
@@ -485,6 +485,7 @@ int taskfun(void *voidPtr, void *tdat) {
     return 0;
 }
 
+/// Print a TaskArg
 void TaskArg_print(TaskArg * self, FILE * fp) {
     int         i;
     fprintf(fp, "cost(");
@@ -496,6 +497,7 @@ void TaskArg_print(TaskArg * self, FILE * fp) {
     }
 }
 
+/// Return a const pointer to the label of the i'th strategy.
 const char *diffEvStrategyLbl(int i) {
     unsigned    n = (unsigned) ((sizeof stratLbl) / (sizeof stratLbl[0]));
     if(i < 1 || i >= n) {
@@ -506,6 +508,7 @@ const char *diffEvStrategyLbl(int i) {
     return stratLbl[i];
 }
 
+/// TaskArg constructor
 TaskArg    *TaskArg_new(int dim,
                         double (*objfun) (int xdim, double x[xdim],
                                           void *jdat, void *tdat),
@@ -522,12 +525,14 @@ TaskArg    *TaskArg_new(int dim,
     return self;
 }
 
-// Don't free self->jobData or self->objfun, which are not locally owned.
+/// TaskArg destructor. Doesn't free self->jobData or self->objfun,
+/// which are not locally owned.
 void TaskArg_free(TaskArg * self) {
     free(self->v);
     free(self);
 }
 
+/// Macro to print array.
 #define PRARRAY(nn,xx) \
     do { \
       printf("%s:%s:%d:", __FILE__,__func__,__LINE__);    \
@@ -537,12 +542,14 @@ void TaskArg_free(TaskArg * self) {
       putchar('\n'); \
     }while(0);
 
+/// Set the array within a TaskArg equal to an external array, v.
 static inline void TaskArg_setArray(TaskArg * self, int dim, double v[dim]) {
     assert(dim == self->dim);
     memcpy(self->v, v, dim * sizeof(v[0]));
     self->cost = -1.0;
 }
 
+/// Print current state
 void printState(int nPts, int nPar, double par[nPts][nPar],
                 double cost[nPts], int imin, FILE *fp) {
     int i, j;
@@ -603,6 +610,7 @@ void *getStratFun(int strategy) {
     return NULL; // NOTREACHED
 }
 
+/// The diffev optimizer.
 int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
            DiffEvPar dep, gsl_rng * rng) {
 
@@ -712,7 +720,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
         flat = 0;     // iterations since last improvement
         bestSpread = HUGE_VAL;
         long genmax = SimSched_getOptItr(simSched);
-        
+
         // Iteration loop
         for(gen = 0; gen < genmax; ++gen) {
             // Perturb points and calculate cost
@@ -720,7 +728,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
                 assignd(dim, tmp, (*pold)[i]);
                 (*stratfun)(dim, tmp, nPts, ndx, bestit,
                             F, CR, pold, rng);
-                TaskArg_setArray(targ[i], dim, tmp);    
+                TaskArg_setArray(targ[i], dim, tmp);
                 JobQueue_addJob(jq, taskfun, targ[i]);
             }
 
