@@ -1,3 +1,8 @@
+/**
+ * @brief Exogeneous parameters sampled from truncated normal distribution.
+ * @file exopar.c
+ * @author Alan R. Rogers
+ */
 #include "exopar.h"
 #include "misc.h"
 #include "dtnorm.h"

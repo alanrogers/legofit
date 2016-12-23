@@ -836,9 +836,9 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 }
 
 /// Choose at random k distinct integers from array of n, placing
-/// result in "rtn". Function re-orders the entries of "array", but
-/// leaves it otherwise unchanged. The function can therefore be
-/// called repeatedly without re-initializing "array".
+/// result in "rtn". The function can be called repeatedly without
+/// re-initializing "array".
+/// @sideeffect Re-orders entries of array.
 void sample(int k, int rtn[k], int n, int array[n], const gsl_rng * rng) {
     assert(k <= n);
     int         j;
