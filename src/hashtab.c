@@ -1,3 +1,12 @@
+/**
+ * @file hashtab.c
+ * @author Alan R. Rogers
+ * @brief Hash table mapping keys (character strings) to values (void
+ * pointers).
+ * @copyright Copyright (c) 2016, Alan R. Rogers
+ * <rogers@anthro.utah.edu>. This file is released under the Internet
+ * Systems Consortium License, which can be found in file "LICENSE".
+ */
 #include "hashtab.h"
 #include "misc.h"
 #include <assert.h>
@@ -8,7 +17,7 @@
 
 #define KEYSIZE 20
 
-// HASHDIM must be a power of 2
+/// HASHDIM: dimention of hash table must be a power of 2
 #define HASHDIM 32u
 
 // Make sure HASHDIM is a power of 2
@@ -16,17 +25,21 @@
 # error HASHDIM must be a power of 2
 #endif
 
-// A single element in a sparse array.
+/// A single key-value pair, with a pointer to the next one.
+/// Within each bin of the hash table, key-value pairs are
+/// stored in a sorted linked list.
 struct El {
     struct El  *next;
     char        key[KEYSIZE];
     void       *value;
 };
 
+/// The hash table.
 struct HashTab {
     El         *tab[HASHDIM];
 };
 
+/// Treats the hash table as a continuous sequence.
 struct HashTabSeq {
     struct HashTab *ht;
     int ndx;
@@ -46,6 +59,7 @@ void freeValue(void *p, void *unused) {
         free(p);
 }
 
+/// Construct a new element with given key and NULL value.
 El         *El_new(const char *key) {
     El         *new = malloc(sizeof(*new));
     CHECKMEM(new);
@@ -57,6 +71,7 @@ El         *El_new(const char *key) {
     return new;
 }
 
+/// Destroy a linked list of El objects.
 void El_free(El * e) {
     if(e == NULL)
         return;
@@ -64,11 +79,13 @@ void El_free(El * e) {
     free(e);
 }
 
+/// Return the value pointer of an El object.
 void * El_get(El * self) {
     assert(self);
     return self->value;
 }
 
+/// Set the value pointer of an El object
 void El_set(El * self, void *value) {
     assert(self);
     self->value = value;
@@ -93,12 +110,14 @@ El *El_find(El * self, El ** found, const char *key) {
     return self;
 }
 
+/// Print an El but not the entire linked list.
 void El_printShallow(El * self) {
     if(self == NULL)
         return;
     printf(" [%s, %p]", self->key, self->value);
 }
 
+/// Print a linked list of El objects.
 void El_print(El * self) {
     if(self == NULL)
         return;
@@ -114,6 +133,7 @@ void El_map(El *self, void(*f)(void *value, void *data), void *data) {
     El_map(self->next, f, data);
 }
 
+/// HashTab constructor
 HashTab    *HashTab_new(void) {
     HashTab    *new = malloc(sizeof(*new));
     CHECKMEM(new);
@@ -121,6 +141,7 @@ HashTab    *HashTab_new(void) {
     return new;
 }
 
+/// HashTab destructor
 void HashTab_free(HashTab * self) {
     int i;
     for(i=0; i < HASHDIM; ++i)
@@ -128,6 +149,9 @@ void HashTab_free(HashTab * self) {
     free(self);
 }
 
+/// Get the El object associated with key. If no
+/// such object exists in HashTab, insert a new one with
+/// NULL value pointer and return that.
 El *HashTab_get(HashTab * self, const char *key) {
 
     // Same as hash % HASHDIM but faster. Requires
@@ -157,6 +181,7 @@ unsigned long HashTab_size(HashTab * self) {
     return size;
 }
 
+/// Print a HashTab
 void HashTab_print(HashTab *self) {
     unsigned i;
     for(i=0; i < HASHDIM; ++i) {
@@ -174,7 +199,7 @@ void HashTab_map(HashTab *self, void(*f)(void *value, void *data), void *data) {
         El_map(self->tab[i], f, data);
 }
 
-// This object is for stepping through the entries of a hash table.
+/// HashTabSeq constructor.
 HashTabSeq *HashTabSeq_new(HashTab *ht) {
     HashTabSeq *self = malloc(sizeof(*self));
     CHECKMEM(self);
@@ -185,15 +210,15 @@ HashTabSeq *HashTabSeq_new(HashTab *ht) {
     return self;
 }
 
-// Find the next bucket, ignoring empty buckets. If all remaining buckets
-// are empty, set self->ndx equal to HASHDIM.
+/// Find the next bucket, ignoring empty buckets. If all remaining buckets
+/// are empty, set self->ndx equal to HASHDIM.
 void HashTabSeq_nextBucket(HashTabSeq *self) {
     ++self->ndx;
     while(self->ndx < HASHDIM && self->ht->tab[self->ndx]==NULL)
         ++self->ndx;
 }
 
-// Return the next element in table.
+/// Return the next element in table.
 El *HashTabSeq_next(HashTabSeq *self) {
     if(self->ndx < 0) {
         HashTabSeq_nextBucket(self);
@@ -222,7 +247,7 @@ El *HashTabSeq_next(HashTabSeq *self) {
     return self->el;
 }
 
+/// HashTabSeq destructor
 void HashTabSeq_free(HashTabSeq *self) {
     free(self);
 }
-

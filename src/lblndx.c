@@ -39,6 +39,7 @@ const char *LblNdx_lbl(const LblNdx * self, unsigned i) {
     return self->lbl[i];
 }
 
+/// Return number of samples, which equals number of labels.
 unsigned LblNdx_size(const LblNdx * self) {
     return self->n;
 }
@@ -72,7 +73,8 @@ int         LblNdx_equals(const LblNdx *lhs, const LblNdx *rhs) {
 }
 
 /// Reverse lookup. Return tipId_t value corresponding to
-/// label. If label is not present in LblNdx, return 0.
+/// label. For the i'th label, this value equals the i'th power of 2.
+/// If label is not present in LblNdx, return 0.
 tipId_t     LblNdx_getTipId(const LblNdx *self, const char *lbl) {
     unsigned i;
     tipId_t rval = 1;
@@ -88,6 +90,7 @@ tipId_t     LblNdx_getTipId(const LblNdx *self, const char *lbl) {
     return rval;
 }
 
+/// Print a LblNdx
 void LblNdx_print(const LblNdx *self, FILE *fp) {
     unsigned i;
     for(i=0; i < self->n; ++i)
@@ -97,7 +100,7 @@ void LblNdx_print(const LblNdx *self, FILE *fp) {
 /// Generate a label for site pattern tid. Label goes into
 /// buff. Function returns a pointer to buff;
 char       *patLbl(size_t n, char buff[n], tipId_t tid, const LblNdx * lblndx) {
-    int         maxbits = 40;
+    const int   maxbits = 40;
     int         bit[maxbits];
     int         i, nbits;
     char        lbl[100];

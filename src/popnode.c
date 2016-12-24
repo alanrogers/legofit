@@ -15,6 +15,8 @@
 #include <stdbool.h>
 #include <gsl/gsl_randist.h>
 
+/// This structure allows you to allocate PopNode objects in an array
+/// and then dole them out one at a time via calls to NodeStore_alloc.
 struct NodeStore {
     int nused, len;
     PopNode *v; // not locally owned
@@ -225,7 +227,7 @@ PopNode    *PopNode_new(double *twoN, bool twoNfree, double *start,
     return new;
 }
 
-/// Connect parent and child 
+/// Connect parent and child
 void PopNode_addChild(PopNode * parent, PopNode * child) {
     if(parent->nchildren > 1)
         eprintf("%s:%s:%d: Can't add child because parent already has %d.\n",
@@ -284,7 +286,7 @@ void PopNode_mix(PopNode * child, double *mPtr, bool mixFree,
     if(introgressor->nchildren > 1)
         eprintf("%s:%s:%d:"
 				" Can't add child because introgressor already has %d.\n",
-				 __FILE__, __func__, __LINE__, introgressor->nchildren);  
+				 __FILE__, __func__, __LINE__, introgressor->nchildren);
     if(native->nchildren > 1)
         eprintf("%s:%s:%d:"
 				" Can't add child because native parent already has %d.\n",
@@ -481,7 +483,7 @@ static void PopNode_randomize_r(PopNode *self, Bounds bnd, gsl_rng *rng) {
             fprintf(stderr,"%s:%s:%d: bad value of nparents: %d\n",
                     __FILE__,__func__,__LINE__, self->nparents);
             exit(EXIT_FAILURE);
-	}			
+	}
 
 	if(postpone)
 		return;
@@ -581,7 +583,7 @@ static void PopNode_gaussian_r(PopNode *self, Bounds bnd,
             fprintf(stderr,"%s:%s:%d: bad value of nparents: %d\n",
                     __FILE__,__func__,__LINE__, self->nparents);
             exit(EXIT_FAILURE);
-	}			
+	}
 
 	if(postpone)
 		return;
@@ -676,7 +678,7 @@ int PopNode_feasible(const PopNode *self, Bounds bnd) {
 	default:
 		break;
 	}
-    
+
     if(self->mix != NULL) {
 		if(*self->mix < 0.0 || *self->mix > 1.0)
 			return 0;
@@ -710,6 +712,12 @@ void PopNode_shiftPopNodePtrs(PopNode *self, size_t dp, int sign) {
         SHIFT_PTR(self->child[i], dp, sign);
 }
 
+/// Allocate a new NodeStore, which provides an interface
+/// for getting PopNode objects, one at a time, out
+/// of a previously-allocated array v.
+/// @param[in] len number of PopNode objects in array.
+/// @param[in] v array of PopNode objects
+/// @return newly-allocated NodeStore.
 NodeStore *NodeStore_new(int len, PopNode *v) {
     NodeStore *self = malloc(sizeof(NodeStore));
     CHECKMEM(self);
@@ -720,11 +728,14 @@ NodeStore *NodeStore_new(int len, PopNode *v) {
     return self;
 }
 
+/// Destructor for NodeStore
 void NodeStore_free(NodeStore *self) {
     // Does not free self->v
     free(self);
 }
 
+/// Return a pointer to an unused PopNode object
+/// within NodeStore. Abort if none are left.
 PopNode *NodeStore_alloc(NodeStore *self) {
     if(self->nused >= self->len)
         eprintf("%s:%s:%d: Ran out of PopNode objects.\n",
