@@ -1,6 +1,10 @@
 /**
  * @file lblndx.c
+ * @author Alan R. Rogers
  * @brief An index of sample labels.
+ * @copyright Copyright (c) 2016, Alan R. Rogers
+ * <rogers@anthro.utah.edu>. This file is released under the Internet
+ * Systems Consortium License, which can be found in file "LICENSE".
  */
 #include "lblndx.h"
 #include "misc.h"
@@ -57,6 +61,7 @@ void        LblNdx_sanityCheck(const LblNdx *self, const char *file, int line) {
 #endif
 }
 
+/// Return 1 if the two arguments are equal; 0 otherwise.
 int         LblNdx_equals(const LblNdx *lhs, const LblNdx *rhs) {
     if(lhs == rhs)
         return 1;
