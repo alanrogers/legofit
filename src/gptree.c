@@ -2,6 +2,10 @@
  * @file gptree.c
  * @brief Methods for simulating gene genealogies within a given tree
  * of populations, and allowing populations to mix and also to split.
+ * @author Alan R. Rogers
+ * @copyright Copyright (c) 2016, Alan R. Rogers
+ * <rogers@anthro.utah.edu>. This file is released under the Internet
+ * Systems Consortium License, which can be found in file "LICENSE".
  */
 
 #include "gptree.h"
@@ -59,7 +63,7 @@ void GPTree_simulate(GPTree *self, BranchTab *branchtab, gsl_rng *rng,
                      unsigned long nreps, int doSing) {
     unsigned long rep;
     for(rep = 0; rep < nreps; ++rep) {
-        PopNode_clear(self->rootPop); // remove old samples 
+        PopNode_clear(self->rootPop); // remove old samples
         SampNdx_populateTree(&(self->sndx));    // add new samples
         PopNode_gaussian(self->rootPop, self->bnd,
                          self->exopar, rng);
@@ -179,7 +183,7 @@ GPTree *GPTree_dup(const GPTree *old) {
         dpop = ((size_t) old->pnv) - ((size_t) new->pnv);
         spop = -1;
     }
-    
+
     SHIFT_PTR(new->rootPop, dpop, spop);
     ExoPar_shiftPtrs(new->exopar, dpar, spar);
     for(i=0; i < old->nseg; ++i) {

@@ -2,6 +2,9 @@
  * @brief Exogeneous parameters sampled from truncated normal distribution.
  * @file exopar.c
  * @author Alan R. Rogers
+ * @copyright Copyright (c) 2016, Alan R. Rogers
+ * <rogers@anthro.utah.edu>. This file is released under the Internet
+ * Systems Consortium License, which can be found in file "LICENSE".
  */
 #include "exopar.h"
 #include "misc.h"
