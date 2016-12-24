@@ -1,17 +1,25 @@
 This file summarizes the software licenses that apply to files within
-the LDPSIZ package of computer programs.
+the lego package of computer programs.
 
-The files src/sasimplex.c, src/sasimplex.h, src/annealsched.c and
-src/annealsched.h are released under version 2 of the GNU General
-Public license. All other files are released under the Internet
-Systems Consortium License. Both of these licenses are reproduced
-below.
+Files src/dtnorm.c, src/dtnorm.h, and src/dtnorm_data.h are released
+under version 2 of the GNU General Public license.
+
+Files src/diffev.c, and src/diffev.h are modified versions of software
+released by Rainer Storn and Ken Price, whose license reads as follows:
+
+    You may use this program for any purpose, give it to any
+    person or change it according to your needs as long as you
+    are referring to Rainer Storn and Ken Price as the originators of
+    the the DE idea.
+
+All other files are released under the Internet Systems Consortium
+License. The GPL2 and ISCL licenses are reproduced below.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 Internet Systems Consortium License
 
-Copyright (c) 2014, Alan R. Rogers <rogers@anthro.utah.edu>
+Copyright (c) 2016, Alan R. Rogers <rogers@anthro.utah.edu>
 
 Permission to use, copy, modify, and/or distribute this software for
 any purpose with or without fee is hereby granted, provided that the
