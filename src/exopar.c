@@ -245,8 +245,12 @@ ExoPar     *ExoPar_dup(const ExoPar * old) {
     new->n = old->n;
     new->frozen = old->frozen;
     new->list = NULL;
-    new->v = memdup(old->v, old->n * sizeof(old->v[0]));
-    CHECKMEM(new->v);
+    if(old->n == 0)
+        new->v = NULL;
+    else {
+        new->v = memdup(old->v, old->n * sizeof(old->v[0]));
+        CHECKMEM(new->v);
+    }
     return new;
 }
 

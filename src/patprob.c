@@ -6,7 +6,6 @@
 #include "patprob.h"
 #include "misc.h"
 #include "branchtab.h"
-#include "hashtab.h"
 #include "parse.h"
 #include "parstore.h"
 #include "binary.h"

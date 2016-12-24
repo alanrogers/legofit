@@ -44,13 +44,13 @@ test : $(tests)
 	@echo "ALL UNIT TESTS WERE COMPLETED."
 
 LEGO := lego.o patprob.o gptree.o binary.o jobqueue.o misc.o parse.o \
-  branchtab.o hashtab.o lblndx.o tokenizer.o parstore.o parkeyval.o \
+  branchtab.o popnodetab.o lblndx.o tokenizer.o parstore.o parkeyval.o \
   popnode.o gene.o dprintf.o rngseed.o exopar.o dtnorm.o
 lego : $(LEGO)
 	$(CC) $(CFLAGS) -o $@ $(LEGO) $(lib)
 
 LEGOFIT := legofit.o patprob.o gptree.o binary.o jobqueue.o misc.o \
-  parse.o branchtab.o hashtab.o lblndx.o tokenizer.o parstore.o \
+  parse.o branchtab.o popnodetab.o lblndx.o tokenizer.o parstore.o \
   parkeyval.o popnode.o gene.o cost.o diffev.o dprintf.o rngseed.o \
   simsched.o exopar.o dtnorm.o
 legofit : $(LEGOFIT)

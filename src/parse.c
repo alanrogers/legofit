@@ -1,5 +1,5 @@
 #include "exopar.h"
-#include "hashtab.h"
+#include "popnodetab.h"
 #include "lblndx.h"
 #include "misc.h"
 #include "parse.h"
@@ -35,7 +35,7 @@
 // segments are connected. The "mix" statement is used when a segment
 // originates as a mixture of two ancestral segments. The "derive"
 // statement is used when a segment derives from a single ancestral
-// segment. 
+// segment.
 //
 // No segment can have more than two "parents" or more than two
 // "children".
@@ -50,7 +50,7 @@
 // twoN fixed  2Nb=123
 // twoN free 2Nc=213.4
 // twoN fixed  2Nbb=32.1
-// twoN free 2Nab=222 
+// twoN free 2Nab=222
 // twoN fixed  2Nabc=1.2e2
 // mixFrac free Mc=0.8
 // segment a   t=T0     twoN=2Na    samples=1
@@ -111,11 +111,11 @@ int         getULong(unsigned long *x, Tokenizer * tkz, int i);
 void		parseParam(Tokenizer *tkz, enum ParamType type,
 					   ParStore *parstore, Bounds *bnd,
                        ExoPar *exopar, bool isTimeParam);
-void        parseSegment(Tokenizer *tkz, HashTab *poptbl, SampNdx *sndx,
+void        parseSegment(Tokenizer *tkz, PopNodeTab *poptbl, SampNdx *sndx,
 						 LblNdx *lndx, ParStore *parstore,
                          NodeStore *ns);
-void        parseDerive(Tokenizer *tkz, HashTab *poptbl);
-void        parseMix(Tokenizer *tkz, HashTab *poptbl, ParStore *parstore);
+void        parseDerive(Tokenizer *tkz, PopNodeTab *poptbl);
+void        parseMix(Tokenizer *tkz, PopNodeTab *poptbl, ParStore *parstore);
 
 int getDbl(double *x, Tokenizer * tkz, int i) {
     char       *end = NULL;
@@ -179,7 +179,7 @@ void		parseParam(Tokenizer *tkz, enum ParamType type,
 	double value;
     if(getDbl(&value, tkz, curr)) {
 		fflush(stdout);
-        fprintf(stderr, 
+        fprintf(stderr,
                 "%s:%s:%d:Can't parse \"%s\" as a double.\n",
 				__FILE__,__func__,__LINE__,
                 Tokenizer_token(tkz, curr));
@@ -204,7 +204,7 @@ void		parseParam(Tokenizer *tkz, enum ParamType type,
         CHECK_INDEX(curr, ntokens);
         if(getDbl(&sd, tkz, curr)) {
             fflush(stdout);
-            fprintf(stderr, 
+            fprintf(stderr,
                     "%s:%s:%d:Can't parse \"%s\" as a double.\n",
                     __FILE__,__func__,__LINE__,
                     Tokenizer_token(tkz, curr));
@@ -271,7 +271,7 @@ void		parseParam(Tokenizer *tkz, enum ParamType type,
 }
 
 // segment a   t=0     twoN=100    samples=1
-void parseSegment(Tokenizer *tkz, HashTab *poptbl, SampNdx *sndx,
+void parseSegment(Tokenizer *tkz, PopNodeTab *poptbl, SampNdx *sndx,
 				  LblNdx *lndx, ParStore *parstore, NodeStore *ns) {
     char *popName, *tok;
     double *tPtr, *twoNptr;
@@ -330,13 +330,13 @@ void parseSegment(Tokenizer *tkz, HashTab *poptbl, SampNdx *sndx,
                      __FILE__,__func__,__LINE__,
                      Tokenizer_token(tkz, curr - 1));
         CHECK_INDEX(curr, ntokens);
-        if(getULong(&nsamples, tkz, curr)) 
+        if(getULong(&nsamples, tkz, curr))
             eprintf("%s:%s:%d: Can't parse \"%s\" as an unsigned int."
                     " Expecting value of \"samples\"\n",
                      __FILE__,__func__,__LINE__,
                      Tokenizer_token(tkz, curr - 1));
         else {
-            if(nsamples > MAXSAMP) 
+            if(nsamples > MAXSAMP)
                 eprintf("%s:%s:%d: %lu samples is too many: max is %d:\n",
                          __FILE__,__func__,__LINE__, nsamples, MAXSAMP);
             ++curr;
@@ -348,13 +348,8 @@ void parseSegment(Tokenizer *tkz, HashTab *poptbl, SampNdx *sndx,
                  __FILE__,__func__,__LINE__, Tokenizer_token(tkz,curr));
 
     assert(strlen(popName) > 0);
-    El *e = HashTab_get(poptbl, popName);
-    PopNode *thisNode = (PopNode *) El_get(e);
-    if(thisNode == NULL) {
-		// Create new node, with pointers to the relevant parameters
-        thisNode = PopNode_new(twoNptr, twoNfree, tPtr, tfree, ns);
-        El_set(e, thisNode);
-    }else
+    PopNode *thisNode = PopNode_new(twoNptr, twoNfree, tPtr, tfree, ns);
+    if(0 != PopNodeTab_insert(poptbl, popName, thisNode))
         eprintf("%s:%s:%d: duplicate \"segment %s\"\n",
                  __FILE__,__func__,__LINE__, popName);
     LblNdx_addSamples(lndx, nsamples, popName);
@@ -362,7 +357,7 @@ void parseSegment(Tokenizer *tkz, HashTab *poptbl, SampNdx *sndx,
 }
 
 // derive a from ab
-void parseDerive(Tokenizer *tkz, HashTab *poptbl) {
+void parseDerive(Tokenizer *tkz, PopNodeTab *poptbl) {
     char *childName, *parName;
     int curr=1,  ntokens = Tokenizer_ntokens(tkz);
 
@@ -378,7 +373,7 @@ void parseDerive(Tokenizer *tkz, HashTab *poptbl) {
         Tokenizer_print(tkz, stderr);
         exit(EXIT_FAILURE);
     }
-    
+
     // Read name of parent
     CHECK_INDEX(curr, ntokens);
     parName = Tokenizer_token(tkz, curr++);
@@ -388,16 +383,14 @@ void parseDerive(Tokenizer *tkz, HashTab *poptbl) {
                  __FILE__,__func__,__LINE__, Tokenizer_token(tkz,curr));
 
     assert(strlen(childName) > 0);
-    El *childEl = HashTab_get(poptbl, childName);
-    PopNode *childNode = (PopNode *) El_get(childEl);
+    PopNode *childNode = PopNodeTab_get(poptbl, childName);
     if(childNode == NULL) {
         eprintf("%s:%s:%d: child segment \"%s\" undefined\n",
                  __FILE__,__func__,__LINE__, childName);
     }
 
     assert(strlen(parName) > 0);
-    El *parEl = HashTab_get(poptbl, parName);
-    PopNode *parNode = (PopNode *) El_get(parEl);
+    PopNode *parNode = PopNodeTab_get(poptbl, parName);
     if(parNode == NULL) {
         eprintf("%s:%s:%d: parent segment \"%s\" undefined\n",
                  __FILE__,__func__,__LINE__, parName);
@@ -406,7 +399,7 @@ void parseDerive(Tokenizer *tkz, HashTab *poptbl) {
 }
 
 // mix    b  from bb + 0.1 c
-void parseMix(Tokenizer *tkz, HashTab *poptbl, ParStore *parstore) {
+void parseMix(Tokenizer *tkz, PopNodeTab *poptbl, ParStore *parstore) {
     char *childName, *parName[2], *tok;
     double *mPtr;
 	bool mfree;
@@ -459,23 +452,20 @@ void parseMix(Tokenizer *tkz, HashTab *poptbl, ParStore *parstore) {
                  __FILE__,__func__,__LINE__, Tokenizer_token(tkz,curr));
 
     assert(strlen(childName) > 0);
-    El *childEl = HashTab_get(poptbl, childName);
-    PopNode *childNode = (PopNode *) El_get(childEl);
+    PopNode *childNode = PopNodeTab_get(poptbl, childName);
     if(childNode == NULL) {
         eprintf("%s:%s:%d: child segment \"%s\" undefined\n",
                  __FILE__,__func__,__LINE__, childName);
     }
 
     assert(strlen(parName[0]) > 0);
-    El *parEl0 = HashTab_get(poptbl, parName[0]);
-    PopNode *parNode0 = (PopNode *) El_get(parEl0);
+    PopNode *parNode0 = PopNodeTab_get(poptbl, parName[0]);
     if(parNode0 == NULL)
         eprintf("%s:%s:%d: parent segment \"%s\" undefined\n",
                  __FILE__,__func__,__LINE__, parName[0]);
 
     assert(strlen(parName[1]) > 0);
-    El *parEl1 = HashTab_get(poptbl, parName[1]);
-    PopNode *parNode1 = (PopNode *) El_get(parEl1);
+    PopNode *parNode1 = PopNodeTab_get(poptbl, parName[1]);
     if(parNode1 == NULL)
         eprintf("%s:%s:%d: parent segment \"%s\" undefined\n",
                  __FILE__,__func__,__LINE__, parName[1]);
@@ -489,13 +479,13 @@ PopNode    *mktree(FILE * fp, SampNdx *sndx, LblNdx *lndx, ParStore *parstore,
     char        buff[500];
     Tokenizer  *tkz = Tokenizer_new(50);
 
-    HashTab *poptbl = HashTab_new();
+    PopNodeTab *poptbl = PopNodeTab_new();
 
     while(1) {
         if(fgets(buff, sizeof(buff), fp) == NULL)
             break;
 
-        if(!strchr(buff, '\n') && !feof(fp)) 
+        if(!strchr(buff, '\n') && !feof(fp))
             eprintf("s:%s:%d: buffer overflow. buff size: %zu\n",
                     __FILE__, __func__, __LINE__, sizeof(buff));
 
@@ -532,38 +522,14 @@ PopNode    *mktree(FILE * fp, SampNdx *sndx, LblNdx *lndx, ParStore *parstore,
     ExoPar_freeze(exopar);
 
     // Make sure the tree of populations has a single root. This
-    // code iterates through all the nodes in the HashTab, and
+    // code iterates through all the nodes in the PopNodeTab, and
     // searches from each node back to the root. If all is well,
     // these searches all find the same root. Otherwise, it aborts
     // with an error.
-    PopNode    *root = NULL;
-    {
-        HashTabSeq *popseq = HashTabSeq_new(poptbl);
-        CHECKMEM(popseq);
-
-        El         *el = HashTabSeq_next(popseq);
-        while(el != NULL) {
-            PopNode    *node = El_get(el);
-            assert(node != NULL);
-
-            PopNode_sanityFromLeaf(node, __FILE__, __LINE__);
-            node = PopNode_root(node);
-            if(root == NULL)
-                root = node;
-            else {
-                if(root != node) {
-                    fprintf(stderr,
-                            "%s:%s:%d: Pop tree has multiple roots.\n",
-                            __FILE__, __func__, __LINE__);
-                    exit(EXIT_FAILURE);
-                }
-            }
-            el = HashTabSeq_next(popseq);
-        }
-        HashTabSeq_free(popseq);
-    }
+    PopNodeTab_sanityCheck(poptbl, __FILE__, __LINE__);
+    PopNode *root = PopNodeTab_root(poptbl);
     Tokenizer_free(tkz);
-    HashTab_free(poptbl);
+    PopNodeTab_free(poptbl);
     return root;
 }
 
