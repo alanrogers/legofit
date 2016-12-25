@@ -64,7 +64,6 @@
 // derive ab from abc
 // derive c  from abc
 
-#if 1
 #  define CHECK_INDEX(ndx,n) do{                                \
         if((ndx)>=(n)){                                         \
             fprintf(stderr,"%s:%s:%d: index out of bounds\n",   \
@@ -72,29 +71,6 @@
             exit(EXIT_FAILURE);                                 \
         }                                                       \
     }while(0)
-#else
-#  define CHECK_INDEX(ndx,n)
-#endif
-
-#if 1
-#  define CHECK_NAME(s) do {                                    \
-        if((s)==NULL) {                                         \
-            fprintf(stderr, "%s:%s:%d: Null population name\n", \
-                    __FILE__,__func__,__LINE__);                \
-            exit(EXIT_FAILURE);                                 \
-        }                                                       \
-        if(strlen((s)) >= POPNAMESIZE) {                        \
-            fprintf(stderr,"%s:%s:%d:"                          \
-                    " Pop name \"%s\" is too long."             \
-                    " Max=%d.\n",                               \
-                    __FILE__,__func__,__LINE__,                 \
-                    (s), POPNAMESIZE-1);                        \
-            exit(EXIT_FAILURE);                                 \
-        }                                                       \
-    }while(0)
-#else
-#  define CHECK_NAME(s)
-#endif
 
 #define ILLEGAL_INPUT(x) do{                                    \
         fprintf(stderr,"%s:%s:%d: Illegal input: \"%s\"\n",     \

@@ -5,7 +5,7 @@
 
 # `lego`: coalescent simulations within a network of populations
 
-The network of populations is read from a \ref lgo ".lgo" file.
+The network of populations is read from a file in ".lgo" format.
 
     usage: lego [options] input_file_name
        where options may include:
