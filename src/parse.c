@@ -1,4 +1,3 @@
-#include "exopar.h"
 #include "popnodetab.h"
 #include "lblndx.h"
 #include "misc.h"
@@ -109,8 +108,7 @@ enum ParamStatus { Free, Fixed, Gaussian };
 int         getDbl(double *x, Tokenizer * tkz, int i);
 int         getULong(unsigned long *x, Tokenizer * tkz, int i);
 void		parseParam(Tokenizer *tkz, enum ParamType type,
-					   ParStore *parstore, Bounds *bnd,
-                       ExoPar *exopar, bool isTimeParam);
+					   ParStore *parstore, Bounds *bnd);
 void        parseSegment(Tokenizer *tkz, PopNodeTab *poptbl, SampNdx *sndx,
 						 LblNdx *lndx, ParStore *parstore,
                          NodeStore *ns);
@@ -140,8 +138,7 @@ int getULong(unsigned long *x, Tokenizer * tkz, int i) {
 // time    fixed|free name=100
 // mixFrac fixed|free name=100
 void		parseParam(Tokenizer *tkz, enum ParamType type,
-					   ParStore *parstore, Bounds *bnd,
-                       ExoPar *exopar, bool isTimeParam) {
+					   ParStore *parstore, Bounds *bnd) {
 	int curr=1, ntokens = Tokenizer_ntokens(tkz);
     enum ParamStatus pstat = Free;
 
@@ -225,19 +222,7 @@ void		parseParam(Tokenizer *tkz, enum ParamType type,
 		ParStore_addFixedPar(parstore, value, name);
         break;
     case Gaussian:
-		ParStore_addFixedPar(parstore, value, name);
-        {
-            bool isfree;
-            double *ptr = ParStore_findPtr(parstore, &isfree, name);
-            if(ptr == NULL) {
-                fprintf(stderr,"%s:%d: Parameter \"%s\" is undefined.\n",
-                        __FILE__,__LINE__, name);
-                Tokenizer_print(tkz, stderr);
-                exit(EXIT_FAILURE);
-            }
-            assert(!isfree);
-            ExoPar_add(exopar, ptr, value, sd);
-        }
+		ParStore_addGaussianPar(parstore, value, sd, name);
         break;
     case Free:
         // Set bounds, based on type of parameter
@@ -261,7 +246,7 @@ void		parseParam(Tokenizer *tkz, enum ParamType type,
                 eprintf("%s:%s:%d: This shouldn't happen\n",
                         __FILE__,__func__,__LINE__);
             }
-            ParStore_addFreePar(parstore, value, lo, hi, name, isTimeParam);
+            ParStore_addFreePar(parstore, value, lo, hi, name);
         }
         break;
     default:
@@ -474,7 +459,7 @@ void parseMix(Tokenizer *tkz, PopNodeTab *poptbl, ParStore *parstore) {
 }
 
 PopNode    *mktree(FILE * fp, SampNdx *sndx, LblNdx *lndx, ParStore *parstore,
-                   ExoPar *exopar, Bounds *bnd, NodeStore *ns) {
+                   Bounds *bnd, NodeStore *ns) {
     int         ntokens;
     char        buff[500];
     Tokenizer  *tkz = Tokenizer_new(50);
@@ -503,11 +488,11 @@ PopNode    *mktree(FILE * fp, SampNdx *sndx, LblNdx *lndx, ParStore *parstore,
 
         char *tok = Tokenizer_token(tkz, 0);
 		if(0 == strcmp(tok, "twoN"))
-			parseParam(tkz, TwoN, parstore, bnd, exopar, false);
+			parseParam(tkz, TwoN, parstore, bnd);
 		else if(0 == strcmp(tok, "time"))
-			parseParam(tkz, Time, parstore, bnd, exopar, true);
+			parseParam(tkz, Time, parstore, bnd);
 		else if(0 == strcmp(tok, "mixFrac"))
-			parseParam(tkz, MixFrac, parstore, bnd, exopar, false);
+			parseParam(tkz, MixFrac, parstore, bnd);
         else if(0 == strcmp(tok, "segment"))
             parseSegment(tkz, poptbl, sndx, lndx, parstore, ns);
         else if(0 == strcmp(tok, "mix"))
@@ -518,16 +503,12 @@ PopNode    *mktree(FILE * fp, SampNdx *sndx, LblNdx *lndx, ParStore *parstore,
             ILLEGAL_INPUT(tok);
     }
 
-    // No more additions allowed to exopar.
-    ExoPar_freeze(exopar);
-
     // Make sure the tree of populations has a single root. This
     // code iterates through all the nodes in the PopNodeTab, and
     // searches from each node back to the root. If all is well,
     // these searches all find the same root. Otherwise, it aborts
     // with an error.
-    PopNodeTab_sanityCheck(poptbl, __FILE__, __LINE__);
-    PopNode *root = PopNodeTab_root(poptbl);
+    PopNode *root = PopNodeTab_check_and_root(poptbl, __FILE__, __LINE__);
     Tokenizer_free(tkz);
     PopNodeTab_free(poptbl);
     return root;
@@ -651,11 +632,10 @@ int main(int argc, char **argv) {
 
     PopNode  nodeVec[nseg];
     PopNode *root=NULL;
-    ExoPar *ep = ExoPar_new();
 
     {
         NodeStore *ns = NodeStore_new(nseg, nodeVec);
-        root = mktree(fp, &sndx, &lndx, parstore, ep, &bnd, ns);
+        root = mktree(fp, &sndx, &lndx, parstore, &bnd, ns);
         assert(root != NULL);
         NodeStore_free(ns);
     }
@@ -676,7 +656,6 @@ int main(int argc, char **argv) {
 	ParStore_free(parstore);
     fclose(fp);
     unlink(tstFname);
-    ExoPar_free(ep);
     return 0;
 }
 #endif

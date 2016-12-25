@@ -9,8 +9,7 @@ int         PopNodeTab_insert(PopNodeTab * self, const char *key,
                               PopNode * node);
 unsigned long PopNodeTab_size(PopNodeTab * self);
 void        PopNodeTab_print(PopNodeTab * self);
-void        PopNodeTab_sanityCheck(PopNodeTab * self, const char *file,
-                                   int line);
-PopNode    *PopNodeTab_root(PopNodeTab *self);
+PopNode    *PopNodeTab_check_and_root(PopNodeTab *self, const char *file,
+                                      int line);
 
 #endif

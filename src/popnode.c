@@ -7,7 +7,6 @@
 
 #include "popnode.h"
 #include "gene.h"
-#include "exopar.h"
 #include "misc.h"
 #include "parstore.h"
 #include <string.h>
@@ -25,7 +24,7 @@ struct NodeStore {
 static void PopNode_sanityCheck(PopNode * self, const char *file, int lineno);
 static void PopNode_randomize_r(PopNode *self, Bounds bnd, gsl_rng *rng);
 static void PopNode_gaussian_r(PopNode *self, Bounds bnd,
-                               ExoPar *ep, gsl_rng *rng);
+                               ParStore *ps, gsl_rng *rng);
 
 void PopNode_sanityFromLeaf(PopNode * self, const char *file, int line) {
 #ifndef NDEBUG
@@ -553,16 +552,16 @@ static void PopNode_randomize_r(PopNode *self, Bounds bnd, gsl_rng *rng) {
 /// Reset the value of each Gaussian parameter by sampling from the
 /// relevant distribution.
 void PopNode_gaussian(PopNode *self, Bounds bnd,
-                      ExoPar *ep, gsl_rng *rng) {
+                      ParStore *ps, gsl_rng *rng) {
 	PopNode_untouch(self);
-	PopNode_gaussian_r(self, bnd, ep, rng);
+	PopNode_gaussian_r(self, bnd, ps, rng);
 }
 
 /// Traverse the population tree to reset the value of each Gaussian
 /// parameter by sampling from the relevant distribution.
 /// Call PopNode_untouch before calling this function.
 static void PopNode_gaussian_r(PopNode *self, Bounds bnd,
-                               ExoPar *ep, gsl_rng *rng) {
+                               ParStore *ps, gsl_rng *rng) {
 
 	// If parents are untouched, postpone this node.
 	bool postpone = false;
@@ -589,7 +588,7 @@ static void PopNode_gaussian_r(PopNode *self, Bounds bnd,
 		return;
 
     // perturb self->twoN
-    ExoPar_sample(ep, self->twoN, bnd.lo_twoN, bnd.hi_twoN, rng);
+    ParStore_sample(ps, self->twoN, bnd.lo_twoN, bnd.hi_twoN, rng);
 
     // perturb self->start
     // hi_t is the minimum age of parents or bnd.hi_t
@@ -630,16 +629,16 @@ static void PopNode_gaussian_r(PopNode *self, Bounds bnd,
                 __FILE__,__func__,__LINE__, self->nchildren);
         exit(EXIT_FAILURE);
     }
-    ExoPar_sample(ep, self->start, lo_t, hi_t, rng);
+    ParStore_sample(ps, self->start, lo_t, hi_t, rng);
 
     // Perturb mix probability
-    ExoPar_sample(ep, self->mix, 0.0, 1.0, rng);
+    ParStore_sample(ps, self->mix, 0.0, 1.0, rng);
 
 	self->touched = true;
 
     int i;
     for(i=0; i < self->nchildren; ++i)
-        PopNode_gaussian_r(self->child[i], bnd, ep, rng);
+        PopNode_gaussian_r(self->child[i], bnd, ps, rng);
 }
 
 /// Return 1 if parameters satisfy inequality constraints, or 0 otherwise.

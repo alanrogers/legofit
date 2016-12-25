@@ -180,19 +180,11 @@ void PopNodeTab_print(PopNodeTab *self) {
     }
 }
 
-/// Return root of population tree. Run PopNodeTab_sanityCheck before
-/// calling this function.
-PopNode *PopNodeTab_root(PopNodeTab *self) {
-    int i;
-    for(i=0; i < PNT_DIM; ++i) {
-        if(self->tab[i])
-            return PopNode_root(self->tab[i]->node);
-    }
-    return NULL;
-}
-
-/// Check the sanity of each node and make sure there is only one root.
-void PopNodeTab_sanityCheck(PopNodeTab *self, const char *file, int line) {
+/// Check the sanity of each node and make sure there is only one
+/// root.
+/// @return root of population tree
+PopNode *PopNodeTab_check_and_root(PopNodeTab *self, const char *file,
+                                   int line) {
     int i;
     PopNode *node, *root = NULL;
     for(i=0; i < PNT_DIM; ++i) {
@@ -210,5 +202,6 @@ void PopNodeTab_sanityCheck(PopNodeTab *self, const char *file, int line) {
             }
         }
     }
+    return root;
 }
 

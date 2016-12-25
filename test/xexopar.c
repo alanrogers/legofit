@@ -108,6 +108,7 @@ int main(int argc, char **argv) {
                x2, y2, z2);
 
     ExoPar_free(ep);
+    gsl_rng_free(rng);
     unitTstResult("ExoPar", "OK");
     return 0;
 }

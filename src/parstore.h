@@ -14,17 +14,23 @@ struct Bounds {
 ParStore   *ParStore_new(void);
 void        ParStore_free(ParStore * self);
 void        ParStore_addFreePar(ParStore * self, double value,
-                                double lo, double hi, const char *name,
-                                bool isTimeParameter);
+                                double lo, double hi, const char *name);
+void        ParStore_addGaussianPar(ParStore * self, double mean, double sd,
+                                    const char *name);
 void        ParStore_addFixedPar(ParStore * self, double value,
                                  const char *name);
 int         ParStore_nFixed(ParStore * self);
 int         ParStore_nFree(ParStore * self);
+int         ParStore_nGaussian(ParStore * self);
+
 double      ParStore_getFixed(ParStore * self, int i);
 double      ParStore_getFree(ParStore * self, int i);
+double      ParStore_getGaussian(ParStore * self, int i);
 
 const char *ParStore_getNameFixed(ParStore * self, int i);
 const char *ParStore_getNameFree(ParStore * self, int i);
+const char *ParStore_getNameGaussian(ParStore * self, int i);
+
 void        ParStore_setFree(ParStore * self, int i, double value);
 double      ParStore_loFree(ParStore * self, int i);
 double      ParStore_hiFree(ParStore * self, int i);
@@ -39,6 +45,8 @@ void        ParStore_printFree(ParStore *self, FILE *fp);
 int         ParStore_equals(const ParStore *lhs, const ParStore *rhs);
 void        ParStore_setFreeParams(ParStore *self, int n, double x[n]);
 void        ParStore_getFreeParams(ParStore *self, int n, double x[n]);
+void        ParStore_sample(ParStore *self, double *ptr, double low,
+                            double high, gsl_rng * rng);
 
 void        Bounds_sanityCheck(Bounds *self, const char *file, int line);
 int         Bounds_equals(const Bounds *lhs, const Bounds *rhs);

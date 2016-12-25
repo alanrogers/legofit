@@ -10,7 +10,6 @@
 
 #include "gptree.h"
 #include "gene.h"
-#include "exopar.h"
 #include "lblndx.h"
 #include "parse.h"
 #include "parstore.h"
@@ -33,7 +32,6 @@ struct GPTree {
     PopNode *rootPop; // root of population tree
     Gene *rootGene;   // root of gene tree
     Bounds bnd;       // legal range of twoN parameters and time parameters
-    ExoPar *exopar;   // Gaussian parameters
     ParStore *parstore; // Fixed and free parameters
     LblNdx lblndx;    // Index of sample labels
     SampNdx sndx;     // Index of sample pointers into PopNode objects.
@@ -94,7 +92,7 @@ void GPTree_simulate(GPTree *self, BranchTab *branchtab, gsl_rng *rng,
         PopNode_clear(self->rootPop); // remove old samples
         SampNdx_populateTree(&(self->sndx));    // add new samples
         PopNode_gaussian(self->rootPop, self->bnd,
-                         self->exopar, rng);
+                         self->parstore, rng);
 
         // coalescent simulation generates gene genealogy within
         // population tree.
@@ -118,7 +116,6 @@ GPTree *GPTree_new(const char *fname, Bounds bnd) {
 
     memset(self, 0, sizeof(GPTree));
     self->bnd = bnd;
-    self->exopar = ExoPar_new();
     self->parstore = ParStore_new();
     LblNdx_init(&self->lblndx);
     SampNdx_init(&self->sndx);
@@ -135,7 +132,7 @@ GPTree *GPTree_new(const char *fname, Bounds bnd) {
     CHECKMEM(ns);
 
     self->rootPop = mktree(fp, &self->sndx, &self->lblndx, self->parstore,
-                           self->exopar, &self->bnd, ns);
+                           &self->bnd, ns);
 
     fclose(fp);
     NodeStore_free(ns);
@@ -156,7 +153,6 @@ void GPTree_free(GPTree *self) {
     self->rootPop = NULL;
     free(self->pnv);
     ParStore_free(self->parstore);
-    ExoPar_free(self->exopar);
     free(self);
 }
 
@@ -174,12 +170,10 @@ GPTree *GPTree_dup(const GPTree *old) {
 
     GPTree *new   = memdup(old, sizeof(GPTree));
     new->parstore = ParStore_dup(old->parstore);
-    new->exopar = ExoPar_dup(old->exopar);
     new->pnv      = memdup(old->pnv, old->nseg * sizeof(PopNode));
 
     assert(old->nseg == new->nseg);
     CHECKMEM(new->parstore);
-    CHECKMEM(new->exopar);
     CHECKMEM(new->pnv);
 
     new->sndx = old->sndx;
@@ -214,7 +208,6 @@ GPTree *GPTree_dup(const GPTree *old) {
     }
 
     SHIFT_PTR(new->rootPop, dpop, spop);
-    ExoPar_shiftPtrs(new->exopar, dpar, spar);
     for(i=0; i < old->nseg; ++i) {
         PopNode_shiftParamPtrs(&new->pnv[i], dpar, spar);
         PopNode_shiftPopNodePtrs(&new->pnv[i], dpop, spop);
