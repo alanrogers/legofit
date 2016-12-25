@@ -1,9 +1,9 @@
 /**
  * @file legofit.c
- * @brief Estimate parameters describing population sizes, the times of separations
- * and of episodes of gene flow, and levels of gene flow.
+ * @brief Estimate parameters describing population sizes, the times
+ * of separations and of episodes of gene flow, and levels of gene flow.
  *
- * @copyright Copyright (c) 2016, Alan R. Rogers 
+ * @copyright Copyright (c) 2016, Alan R. Rogers
  * <rogers@anthro.utah.edu>. This file is released under the Internet
  * Systems Consortium License, which can be found in file "LICENSE".
  */
@@ -245,7 +245,7 @@ int main(int argc, char **argv) {
         fprintf(stderr,"Use -n to set # of nucleotides per haploid genome.\n");
         usage();
     }
-        
+
     snprintf(lgofname, sizeof(lgofname), "%s", argv[optind]);
     assert(lgofname[0] != '\0');
     snprintf(patfname, sizeof(patfname), "%s", argv[optind+1]);
@@ -380,7 +380,7 @@ int main(int argc, char **argv) {
     fflush(stdout);
 
     status = diffev(dim, estimate, &cost, &yspread, dep, rng);
-    
+
     printf("DiffEv %s. cost=%0.5lg; spread=%0.5lg\n",
            status==0 ? "converged" : "FAILED", cost, yspread);
 
@@ -388,7 +388,7 @@ int main(int argc, char **argv) {
     GPTree_setParams(gptree, dim, estimate);
     BranchTab *bt = patprob(gptree, simreps, doSing, rng);
     BranchTab_divideBy(bt, simreps);
-    
+
     printf("Fitted parameter values\n");
 	GPTree_printParStoreFree(gptree, stdout);
 

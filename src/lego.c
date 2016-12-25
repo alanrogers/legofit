@@ -1,11 +1,28 @@
 /**
- * @file lego.c
- * @brief Simulate branch lengths
- *
- * @copyright Copyright (c) 2015, 2016, Alan R. Rogers 
- * <rogers@anthro.utah.edu>. This file is released under the Internet
- * Systems Consortium License, which can be found in file "LICENSE".
- */
+@file lego.c
+@page lego
+@brief Simulate branch lengths
+
+# `lego`: coalescent simulations within a network of populations
+
+The network of populations is read from a \ref lgo ".lgo" file.
+
+    usage: lego [options] input_file_name
+       where options may include:
+       -i <x> or --nItr <x>
+          number of iterations in simulation
+       -1 or --singletons
+          Use singleton site patterns
+       -U <x>
+          Mutations per generation per haploid genome.
+       -h or --help
+          print this message
+
+
+@copyright Copyright (c) 2015, 2016, Alan R. Rogers
+<rogers@anthro.utah.edu>. This file is released under the Internet
+Systems Consortium License, which can be found in file "LICENSE".
+*/
 
 #include "gptree.h"
 #include "patprob.h"
@@ -98,7 +115,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    // remaining option gives file name 
+    // remaining option gives file name
     switch (argc - optind) {
     case 0:
         fprintf(stderr, "Command line must specify input file\n");
@@ -119,7 +136,7 @@ int main(int argc, char **argv) {
         printf("# mutations per haploid genome: %lf\n", U);
     else
         printf("# not simulating mutations\n");
-    
+
     printf("# %s singleton site patterns.\n",
            (doSing ? "including" : "excluding"));
 
