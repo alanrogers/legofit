@@ -1,7 +1,7 @@
-/** 
-\mainpage 
+/**
+\mainpage
 
-# Introduction 
+# Introduction
 
 Lego is a computer package that uses counts of nucleotide site
 patterns to estimate the history of population size, subdivision, and
@@ -11,7 +11,7 @@ summary statistics that are rich in information about sizes of and
 relationships among ancestral populations but are not influenced by
 the recent population size. So what is a site pattern?
 
-## Site patterns, counts, and their expectations
+## Site patterns, counts, and their expectations {#sitepat}
 
 Consider a sample consisting of one haploid genome drawn from each of
 3 populations, *X*, *Y*, and *Z*. Suppose that, at a given nucleotide
@@ -28,7 +28,7 @@ In the general case, with samples from *K* populations, the number of
 site patterns is \f$2^K - K - 2\f$. For example, there are 10 site
 patterns in a sample involving \f$K=4\f$ populations. The table below
 shows data from a sample involving 4 populations, *X*, *Y*, *N*, and
-*D*. 
+*D*.
 
     SitePat          E[count]
          xy    340952.4592501
@@ -87,7 +87,7 @@ By default, the executable files will be copied into a directory named
 `bin` in your home directory. If you want them to go somewhere else,
 edit the first non-comment line of src/Makefile.
 
-Then 
+Then
 
 1. Cd into the src directory.
 2. Type "make".
@@ -99,7 +99,7 @@ PATH, so that the shell can find it.
 
 This installation will work under unix-like operating systems, such as
 linux and Apple's osx. I haven't tried to port this software to
-Windows. 
+Windows.
 
 The directory `test` contains a unit test for many of the .c files in
 directory `src`. Within this directory, type
@@ -139,5 +139,7 @@ used here to label the columns. The columns are as follows:
 The lines should be sorted lexically by chromosome. Within
 chromosomes, they should be sorted in ascending numerical order of
 column 2.
+
+# Describing population history in an `lgo` file {#lgo}
 
 */
