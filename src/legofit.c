@@ -1,11 +1,96 @@
 /**
- * @file legofit.c
- * @brief Estimate parameters describing population sizes, the times
- * of separations and of episodes of gene flow, and levels of gene flow.
- *
- * @copyright Copyright (c) 2016, Alan R. Rogers
- * <rogers@anthro.utah.edu>. This file is released under the Internet
- * Systems Consortium License, which can be found in file "LICENSE".
+@file legofit.c
+@page legofit
+@brief Estimate parameters describing population sizes, the times
+of separations and of episodes of gene flow, and levels of gene flow.
+
+# `legofit`: estimate population history from site pattern data
+
+    usage: legofit [options] -u <mut_rate> -n <genome_size> input.lgo sitepat.txt
+       where <mut_rate> is the mutation rate per nucleotide
+       site per generation, <genome_size> is the number of
+       nucleotides per haploid genome, file input.lgo describes
+       population history, and file sitepat.txt contains site
+       pattern frequencies.
+    Options may include:
+       -M <x> or --maxFlat <x>
+          termination criterion
+       -t <x> or --threads <x>
+          number of threads (default is auto)
+       -F <x> or --scaleFactor <x>
+          set DE scale factor
+       -x <x> or --crossover <x>
+          set DE crossover probability
+       -s <x> or --strategy <x>
+          set DE strategy
+       -S <g>@<r> or --stage <g>@<r>
+          add stage with <g> generations and <r> simulation reps
+       -p <x> or --ptsPerDim <x>
+          number of DE points per free var
+       -1 or --singletons
+          Use singleton site patterns
+       -v or --verbose
+          verbose output
+       -h or --help
+          print this message
+
+Four arguments are required:
+
+ - `-u`, the mutation rate per nucleotide site per generation;
+ - `-n`, the number of nucleotide sites sequenced, including
+    monomorphic sites but not including sites that failed quality
+    control criteria;
+ - an input file in @ref lgo ".lgo" format, which describes the history
+   of population size, subdivision, and gene flow;
+ - a file in the format produced by @ref tabpat "tabpat", which
+   provides counts of site patterns in the data.
+
+Legofit estimates the values of all the parameters that are declared
+as "free" (rather than "fixed" or "gaussian") in the .lgo file. It
+does this by minimizing the Chi-squared difference between observed
+and expected site pattern counts. Expected counts are estimated by
+computer simulation, and optimization is done using the "differential
+evolution" (DE) algorithm.
+
+The DE algorithm maintains a swarm of points, each at a different set
+of parameter values. The objective function is evaluated at these
+points in a multithreaded job queue, so the program runs fasted on a
+machine with lots of cores. You can set the number of threads using
+the `-t` argument. By default, the program uses as many threads as
+there are processors on the machine---usually the number of
+hypercores. The optimal number of threads is usually somewhat smaller
+that this default.
+
+The DE algorithm can be tuned via command line arguments `-F`, `-x`,
+`-s`, and `-p`. Details regarding these choices can be found in
+"Differential evolution: a practical approach to global optimization",
+by Price, Storn, and Lampinen. I don't yet know what is best, but I'm
+currently using `-s 2` and `-s 4`, with default values of the other
+options.
+
+During the first few hundred generations of the DE algorithm, the
+swarm of points adapts to the objective function. During this initial
+phase, high accuracy is not required, so it can speed things up to use
+low resolution in function evaluations. This is the purpose of the
+`-S` argument, which adds a "stage" to the simulation schedule. For
+example, `-S 1000@10000` adds a stage of 1000 DE generations, in each
+of which 10000 simulation replicates are used to evaluate each
+objective function. The `-S` argument can be given several times to
+set up a simulation schedule with several stages. The algorithm is
+allowed to converge only during the final stage. I am currently using
+a 2-stage schedule: `-S 1000@10000 -S `1000@2000000`.
+
+The `-1` option tells legofit to use singleton site patterns--patterns
+in which the derived allele is present in only a single sample. This
+is a bad idea with low-coverage sequence data. It also behaves poorly
+with archaic DNA, because singletons are likely to be sequencing
+artifacts. With high-quality modern DNA, it may one day prove
+useful. To use it, you need to generate a data set that contains
+singletons, by using the `-1` option of @\ref tabpat "tabpat".
+
+@copyright Copyright (c) 2016, Alan R. Rogers
+<rogers@anthro.utah.edu>. This file is released under the Internet
+Systems Consortium License, which can be found in file "LICENSE".
  */
 
 #include "branchtab.h"
@@ -224,6 +309,8 @@ int main(int argc, char **argv) {
             doSing=1;
             break;
         case 'h':
+            usage();
+            break;
         default:
             fprintf(stderr,"Can't parse option %c\n", i);
             usage();
