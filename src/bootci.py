@@ -41,7 +41,10 @@ def parselegofit(fname):
 
         key = line[0].strip()
         key = key.replace("2","two")
-        value = float(line[1].strip())
+        if "Gaussian" in line[1]:
+            value = 1.0
+        else:
+            value = float(line[1].strip())
 
         if key in parmap:
             estmap[key] = value
@@ -61,7 +64,7 @@ def parselegofit(fname):
 def interpolate(p, v):
     if len(v) == 0:
         raise Exception("interpolate can't deal with 0-length vector")
-    
+
     goal = p*(len(v) - 1)
     i = int(floor(goal))
     j = int(ceil(goal))
@@ -129,7 +132,7 @@ for name in bootnames:
     mat.append(estimates)
 
 # transpose matrix, so that mat[i] is a list of estimates for a single
-# parameter.    
+# parameter.
 mat = zip(*mat)
 assert len(mat) == len(parnames)
 
