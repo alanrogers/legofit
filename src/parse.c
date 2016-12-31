@@ -1,3 +1,65 @@
+/**
+ * @file parse.c
+ * @brief Parse a .lgo file
+ * @author Alan R. Rogers
+ *
+ * Consider the following tree of populations:
+ *
+ *      a-------|
+ *              |ab--|
+ *      b--|bb--|    |
+ *         |         |abc--
+ *         |c--------|
+ *
+ *  t = 0  1    3    5.5     inf
+ *
+ * In this tree, a, b, c, bb, ab, and abc represent segments of the
+ * population tree.  The input file begins with a series of "segment"
+ * statements that define each of the segments in the tree. The
+ * segment statements also provide the time (backwards from the
+ * present) at which the segment starts, and the size, twoN, of the
+ * population. Optionally, it also provides the number of haploid
+ * samples observed in this segment of the tree.
+ *
+ * The statements that follow the segment statements describe how the
+ * segments are connected. The "mix" statement is used when a segment
+ * originates as a mixture of two ancestral segments. The "derive"
+ * statement is used when a segment derives from a single ancestral
+ * segment.
+ *
+ * No segment can have more than two "parents" or more than two
+ * "children".
+ *
+ * Here is input that would generate the tree above:
+ *
+ * time fixed  T0=0
+ * time free Tc=1
+ * time free Tab=3
+ * time free Tabc=5.5
+ * twoN free 2Na=100
+ * twoN fixed  2Nb=123
+ * twoN free 2Nc=213.4
+ * twoN fixed  2Nbb=32.1
+ * twoN free 2Nab=222
+ * twoN fixed  2Nabc=1.2e2
+ * mixFrac free Mc=0.8
+ * segment a   t=T0     twoN=2Na    samples=1
+ * segment b   t=T0     twoN=2Nb    samples=2
+ * segment c   t=Tc     twoN=2Nc    samples=1
+ * segment bb  t=Tc     twoN=2Nbb
+ * segment ab  t=Tab    twoN=2Nab
+ * segment abc t=Tabc   twoN=2Nabc
+ * mix    b  from bb + Mc * c
+ * derive a  from ab
+ * derive bb from ab
+ * derive ab from abc
+ * derive c  from abc
+ *
+ * @copyright Copyright (c) 2016, Alan R. Rogers
+ * <rogers@anthro.utah.edu>. This file is released under the Internet
+ * Systems Consortium License, which can be found in file "LICENSE".
+ */
+
 #include "popnodetab.h"
 #include "lblndx.h"
 #include "misc.h"
@@ -12,58 +74,7 @@
 #include <string.h>
 #include <stdbool.h>
 
-// Consider the following tree of populations:
-//
-//      a-------|
-//              |ab--|
-//      b--|bb--|    |
-//         |         |abc--
-//         |c--------|
-//
-//  t = 0  1    3    5.5     inf
-//
-// In this tree, a, b, c, bb, ab, and abc represent segments of the
-// population tree.  The input file begins with a series of "segment"
-// statements that define each of the segments in the tree. The
-// segment statements also provide the time (backwards from the
-// present) at which the segment starts, and the size, twoN, of the
-// population. Optionally, it also provides the number of haploid
-// samples observed in this segment of the tree.
-//
-// The statements that follow the segment statements describe how the
-// segments are connected. The "mix" statement is used when a segment
-// originates as a mixture of two ancestral segments. The "derive"
-// statement is used when a segment derives from a single ancestral
-// segment.
-//
-// No segment can have more than two "parents" or more than two
-// "children".
-//
-// Here is input that would generate the tree above:
-//
-// time fixed  T0=0
-// time free Tc=1
-// time free Tab=3
-// time free Tabc=5.5
-// twoN free 2Na=100
-// twoN fixed  2Nb=123
-// twoN free 2Nc=213.4
-// twoN fixed  2Nbb=32.1
-// twoN free 2Nab=222
-// twoN fixed  2Nabc=1.2e2
-// mixFrac free Mc=0.8
-// segment a   t=T0     twoN=2Na    samples=1
-// segment b   t=T0     twoN=2Nb    samples=2
-// segment c   t=Tc     twoN=2Nc    samples=1
-// segment bb  t=Tc     twoN=2Nbb
-// segment ab  t=Tab    twoN=2Nab
-// segment abc t=Tabc   twoN=2Nabc
-// mix    b  from bb + Mc * c
-// derive a  from ab
-// derive bb from ab
-// derive ab from abc
-// derive c  from abc
-
+/// Abort if index is out of bounds
 #  define CHECK_INDEX(ndx,n) do{                                \
         if((ndx)>=(n)){                                         \
             fprintf(stderr,"%s:%s:%d: index out of bounds\n",   \
@@ -72,13 +83,21 @@
         }                                                       \
     }while(0)
 
+/// Abort with an error message about illegal input.
 #define ILLEGAL_INPUT(x) do{                                    \
         fprintf(stderr,"%s:%s:%d: Illegal input: \"%s\"\n",     \
             __FILE__,__func__,__LINE__, (x));                   \
         exit(EXIT_FAILURE);                                     \
     }while(0)
 
+/// Distinguish between parameters that describe population size,
+/// time, and gene flow.
 enum ParamType { TwoN, Time, MixFrac };
+
+/// Distinguish between parameters that free, fixed, and Gaussian.
+/// Free parameters can be changed during optimization; fixed ones
+/// never change; Gaussian ones are reset for each simulation
+/// replicate by sampling from a truncated normal distribution.
 enum ParamStatus { Free, Fixed, Gaussian };
 
 int         getDbl(double *x, Tokenizer * tkz, int i);
@@ -91,6 +110,11 @@ void        parseSegment(Tokenizer *tkz, PopNodeTab *poptbl, SampNdx *sndx,
 void        parseDerive(Tokenizer *tkz, PopNodeTab *poptbl);
 void        parseMix(Tokenizer *tkz, PopNodeTab *poptbl, ParStore *parstore);
 
+/// Interpret token i as a double.
+/// @param[out] x points to variable into which double value will be
+/// placed
+/// @param[inout] tkz points to Tokenizer
+/// @param[in] i index of token to be interpreted as a double
 int getDbl(double *x, Tokenizer * tkz, int i) {
     char       *end = NULL;
 	const char *tok = Tokenizer_token(tkz, i);
@@ -101,6 +125,12 @@ int getDbl(double *x, Tokenizer * tkz, int i) {
     return 1;                   // failure
 }
 
+/// Interpret token i as an unsigned long integer.
+/// @param[out] x points to variable into which value will be
+/// placed
+/// @param[inout] tkz points to Tokenizer
+/// @param[in] i index of token to be interpreted as an unsigned long
+/// integer.
 int getULong(unsigned long *x, Tokenizer * tkz, int i) {
     char       *end = NULL;
 
@@ -110,15 +140,18 @@ int getULong(unsigned long *x, Tokenizer * tkz, int i) {
     return 1;                   // failure
 }
 
-// twoN    fixed|free name=100
-// time    fixed|free name=100
-// mixFrac fixed|free name=100
+/// Parse a line of input defining a parameter
+/// @param[inout] tkz the Tokenizer
+/// @param[in] type the type of the current parameter: TwoN, Time, or MixFrac
+/// @param[out] parstore structure that maintains info about
+/// parameters
+/// @param[in] bnd the bounds of each type of parameter
 void		parseParam(Tokenizer *tkz, enum ParamType type,
 					   ParStore *parstore, Bounds *bnd) {
 	int curr=1, ntokens = Tokenizer_ntokens(tkz);
     enum ParamStatus pstat = Free;
 
-	// Read type of parameter: "fixed" or "free"
+	// Read status of parameter: "fixed" or "free"
 	{
 		char *tok;
 		CHECK_INDEX(curr, ntokens);
@@ -231,7 +264,16 @@ void		parseParam(Tokenizer *tkz, enum ParamType type,
     }
 }
 
-// segment a   t=0     twoN=100    samples=1
+/// Parse a line describing a segment of the population tree
+/// @param[inout] tkz the Tokenizer
+/// @param[inout] poptbl associates names of segments
+/// with pointers to them.
+/// @param[inout] sndx associates the index of each
+/// sample with the PopNode object to which it belongs.
+/// @param[inout] lndx associated index of each sample with its name
+/// @param[out] parstore structure that maintains info about
+/// parameters
+/// @param[inout] ns allocates PopNode objects
 void parseSegment(Tokenizer *tkz, PopNodeTab *poptbl, SampNdx *sndx,
 				  LblNdx *lndx, ParStore *parstore, NodeStore *ns) {
     char *popName, *tok;
@@ -317,7 +359,11 @@ void parseSegment(Tokenizer *tkz, PopNodeTab *poptbl, SampNdx *sndx,
     SampNdx_addSamples(sndx, nsamples, thisNode);
 }
 
-// derive a from ab
+/// Parse a line of input describing a parent-offspring relationship
+/// between two nodes.
+/// @param[inout] tkz the Tokenizer
+/// @param[inout] poptbl associates names of segments
+/// with pointers to them.
 void parseDerive(Tokenizer *tkz, PopNodeTab *poptbl) {
     char *childName, *parName;
     int curr=1,  ntokens = Tokenizer_ntokens(tkz);
@@ -359,7 +405,12 @@ void parseDerive(Tokenizer *tkz, PopNodeTab *poptbl) {
     PopNode_addChild(parNode, childNode);
 }
 
-// mix    b  from bb + 0.1 c
+/// Parse a line of input describing gene flow.
+/// @param[inout] tkz the Tokenizer
+/// @param[inout] poptbl associates names of segments
+/// with pointers to them.
+/// @param[out] parstore structure that maintains info about
+/// parameters
 void parseMix(Tokenizer *tkz, PopNodeTab *poptbl, ParStore *parstore) {
     char *childName, *parName[2], *tok;
     double *mPtr;
@@ -434,6 +485,15 @@ void parseMix(Tokenizer *tkz, PopNodeTab *poptbl, ParStore *parstore) {
     PopNode_mix(childNode, mPtr, mfree, parNode1, parNode0);
 }
 
+/// Parse an input file in .lgo format
+/// @param[inout] fp input file pointer
+/// @param[inout] sndx associates the index of each
+/// sample with the PopNode object to which it belongs.
+/// @param[inout] lndx associated index of each sample with its name
+/// @param[out] parstore structure that maintains info about
+/// parameters
+/// @param[in] bnd the bounds of each type of parameter
+/// @param[inout] ns allocates PopNode objects
 PopNode    *mktree(FILE * fp, SampNdx *sndx, LblNdx *lndx, ParStore *parstore,
                    Bounds *bnd, NodeStore *ns) {
     int         ntokens;

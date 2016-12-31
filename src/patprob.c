@@ -49,7 +49,7 @@ int simfun(void *varg, void *tdata) {
 /// Construct a new SimArg by copying a template.
 SimArg    *SimArg_new(const GPTree *gptree, unsigned nreps, int doSing) {
     SimArg    *a = malloc(sizeof(SimArg));
-    checkmem(a, __FILE__, __LINE__);
+    CHECKMEM(a);
 
     a->nreps = nreps;
     a->doSing = doSing;

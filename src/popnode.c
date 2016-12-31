@@ -205,7 +205,7 @@ int PopNode_nsamples(PopNode * self) {
 PopNode    *PopNode_new(double *twoN, bool twoNfree, double *start,
                         bool startFree, NodeStore *ns) {
     PopNode    *new = NodeStore_alloc(ns);
-    checkmem(new, __FILE__, __LINE__);
+    CHECKMEM(new);
 
     new->nparents = new->nchildren = new->nsamples = 0;
     new->twoN = twoN;
@@ -333,7 +333,7 @@ void PopNode_newGene(PopNode * self, unsigned ndx) {
 
     static const tipId_t one = 1;
     Gene       *gene = Gene_new(one << ndx);
-    checkmem(gene, __FILE__, __LINE__);
+    CHECKMEM(gene);
     self->sample[self->nsamples] = gene;
     ++self->nsamples;
     PopNode_sanityCheck(self, __FILE__, __LINE__);
@@ -389,7 +389,7 @@ Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng) {
             assert(i < j);
 
             self->sample[i] = Gene_join(self->sample[i], self->sample[j]);
-            checkmem(self->sample[i], __FILE__, __LINE__);
+            CHECKMEM(self->sample[i]);
             --self->nsamples;
             if(j != self->nsamples) {
                 self->sample[j] = self->sample[self->nsamples];

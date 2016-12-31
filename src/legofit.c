@@ -47,19 +47,25 @@ Four arguments are required:
 
 Legofit estimates the values of all the parameters that are declared
 as "free" (rather than "fixed" or "gaussian") in the .lgo file. It
-does this by minimizing the Chi-squared difference between observed
-and expected site pattern counts. Expected counts are estimated by
-computer simulation, and optimization is done using the "differential
-evolution" (DE) algorithm.
+does this by minimizing a "cost function", which measures the
+difference between observed and expected values. Currently, the cost
+function is a Chi-square statistic. Other options are available via
+compile-time option (see `typedefs.h`). One of the alternatives,
+KL_COST, would not require the -u and -n command-line arguments. On
+the other hand, it would not provide an internal molecular clock--the
+clock would be calibrated only by the time parameters in the .lgo
+file. I don't yet know which cost function is best.
 
-The DE algorithm maintains a swarm of points, each at a different set
-of parameter values. The objective function is evaluated at these
-points in a multithreaded job queue, so the program runs fasted on a
-machine with lots of cores. You can set the number of threads using
-the `-t` argument. By default, the program uses as many threads as
-there are processors on the machine---usually the number of
-hypercores. The optimal number of threads is usually somewhat smaller
-that this default.
+Expected counts are estimated by computer simulation, and optimization
+is done using the "differential evolution" (DE) algorithm.  The DE
+algorithm maintains a swarm of points, each at a different set of
+parameter values. The objective function is evaluated at these points
+in a multithreaded job queue, so the program runs fasted on a machine
+with lots of cores. You can set the number of threads using the `-t`
+argument. By default, the program uses as many threads as there are
+processors on the machine---usually the number of hypercores. The
+optimal number of threads is usually somewhat smaller that this
+default.
 
 The DE algorithm can be tuned via command line arguments `-F`, `-x`,
 `-s`, and `-p`. Details regarding these choices can be found in
