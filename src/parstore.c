@@ -11,6 +11,12 @@
  * that value is returned, so that it can be stored in the distributed
  * data structure.
  *
+ * In fact, it maintains 3 such vectors: one each for free parameters,
+ * fixed parameters, and Gaussian parameters. ParStore knows how to
+ * perturb Gaussian parameters by sampling from a truncated Gaussian
+ * distribution. Fixed parameters never change. Free ones are manipulated
+ * from outside via function calls.
+ *
  * @copyright Copyright (c) 2016, Alan R. Rogers
  * <rogers@anthro.utah.edu>. This file is released under the Internet
  * Systems Consortium License, which can be found in file "LICENSE".
@@ -68,6 +74,7 @@ void ParStore_getFreeParams(ParStore *self, int n, double x[n]) {
     memcpy(x, self->freeVal, n*sizeof(double));
 }
 
+/// Print a ParStore
 void ParStore_print(ParStore *self, FILE *fp) {
     int i;
     fprintf(fp, "%5d fixed:\n", self->nFixed);
@@ -80,6 +87,7 @@ void ParStore_print(ParStore *self, FILE *fp) {
     ParStore_printFree(self, fp);
 }
 
+/// Print free parameter values
 void ParStore_printFree(ParStore *self, FILE *fp) {
     int i;
     fprintf(fp, "%5d free:\n", self->nFree);
@@ -336,6 +344,7 @@ void ParStore_sanityCheck(ParStore *self, const char *file, int line) {
 #endif
 }
 
+/// Return 1 if two ParStore objects are equal; 0 otherwise.
 int         ParStore_equals(const ParStore *lhs, const ParStore *rhs) {
     if(lhs == rhs)
         return 1;
@@ -401,6 +410,7 @@ void ParStore_sample(ParStore *self, double *ptr, double low, double high,
     assert(*ptr == self->gaussianVal[i]);
 }
 
+/// Make sure Bounds object is sane.
 void Bounds_sanityCheck(Bounds * self, const char *file, int line) {
 #ifndef NDEBUG
     REQUIRE(self, file, line);
@@ -411,6 +421,7 @@ void Bounds_sanityCheck(Bounds * self, const char *file, int line) {
 #endif
 }
 
+/// Return 1 if two Bounds objects are equal; 0 otherwise.
 int         Bounds_equals(const Bounds *lhs, const Bounds *rhs) {
     if(lhs == rhs)
         return 1;

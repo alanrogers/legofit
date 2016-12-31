@@ -1,8 +1,13 @@
 /**
  * @file popnode.c
- * @brief Class PopNode represents a single segment of a population
- * tree. These nodes are linked together into a network, which models
- * bifurcation of populations and gene flow among them.
+ * @author Alan R. Rogers
+ * @brief A single segment of a population tree.
+ *
+ * PopNode objects can be linked together into a network, which models
+ * bifurcation of populations and gene flow among them. Each PopNode
+ * knows its size and duration. It has pointers to parents and
+ * children. If it has two parents, there is also a mixing parameter,
+ * which determines what fraction of the node derives from each parent.
  */
 
 #include "popnode.h"
@@ -26,6 +31,7 @@ static void PopNode_randomize_r(PopNode *self, Bounds bnd, gsl_rng *rng);
 static void PopNode_gaussian_r(PopNode *self, Bounds bnd,
                                ParStore *ps, gsl_rng *rng);
 
+/// Check for errors in PopNode tree. Call this from each leaf node.
 void PopNode_sanityFromLeaf(PopNode * self, const char *file, int line) {
 #ifndef NDEBUG
     REQUIRE(self != NULL, file, line);
@@ -147,6 +153,7 @@ int PopNode_isClear(const PopNode *self) {
     return 1;
 }
 
+/// Print a PopNode and (recursively) its descendants.
 void PopNode_print(FILE * fp, PopNode * self, int indent) {
     int         i;
     for(i = 0; i < indent; ++i)
@@ -162,6 +169,7 @@ void PopNode_print(FILE * fp, PopNode * self, int indent) {
         PopNode_print(fp, self->child[i], indent + 1);
 }
 
+/// Print a PopNode but not its descendants.
 void PopNode_printShallow(PopNode * self, FILE * fp) {
     fprintf(fp, "%p twoN=%lf ntrval=(%lf,",
             self, *self->twoN, *self->start);
@@ -198,10 +206,12 @@ void PopNode_printShallow(PopNode * self, FILE * fp) {
     putc('\n', fp);
 }
 
+/// Return the number of samples in a PopNode
 int PopNode_nsamples(PopNode * self) {
     return self->nsamples;
 }
 
+/// PopNode constructor
 PopNode    *PopNode_new(double *twoN, bool twoNfree, double *start,
                         bool startFree, NodeStore *ns) {
     PopNode    *new = NodeStore_alloc(ns);
@@ -254,6 +264,7 @@ void PopNode_addChild(PopNode * parent, PopNode * child) {
     PopNode_sanityCheck(child, __FILE__, __LINE__);
 }
 
+/// Check sanity of PopNode
 static void PopNode_sanityCheck(PopNode * self, const char *file,
 								int lineno) {
 #ifndef NDEBUG
@@ -266,6 +277,7 @@ static void PopNode_sanityCheck(PopNode * self, const char *file,
 #endif
 }
 
+/// Add a sample to a PopNode
 void PopNode_addSample(PopNode * self, Gene * gene) {
 	assert(self!=NULL);
 	assert(gene!=NULL);
@@ -279,6 +291,12 @@ void PopNode_addSample(PopNode * self, Gene * gene) {
     PopNode_sanityCheck(self, __FILE__, __LINE__);
 }
 
+/// Connect a child PopNode to two parents.
+/// @param[inout] child pointer to the child PopNode
+/// @param[in] mPtr pointer to the gene flow variable
+/// @param[in] mixFree 1 if mPtr is a free parameter; 0 otherwise
+/// @param[inout] introgressor pointer to the introgressing parent
+/// @param[inout] native pointer to the native parent
 void PopNode_mix(PopNode * child, double *mPtr, bool mixFree,
                  PopNode * introgressor, PopNode * native) {
 
@@ -327,6 +345,7 @@ void PopNode_mix(PopNode * child, double *mPtr, bool mixFree,
     PopNode_sanityCheck(native, __FILE__, __LINE__);
 }
 
+/// PopNode constructor
 void PopNode_newGene(PopNode * self, unsigned ndx) {
     assert(1 + self->nsamples < MAXSAMP);
     assert(ndx < 8*sizeof(tipId_t));
@@ -785,6 +804,7 @@ int         SampNdx_equals(const SampNdx *lhs, const SampNdx *rhs){
     return 1;
 }
 
+/// Check sanity of a SampNdx.
 void        SampNdx_sanityCheck(SampNdx *self, const char *file, int line) {
 #ifndef NDEBUG
     REQUIRE(self != NULL, file, line);
@@ -807,6 +827,9 @@ int SampNdx_ptrsLegal(SampNdx *self, PopNode *start, PopNode *end) {
     return 1;
 }
 
+/// Shift all pointers within SampNdx by an offset of magnitude
+/// dpop. If sign > 0, the shift is positive; otherwise it is
+/// negative.
 void SampNdx_shiftPtrs(SampNdx *self, size_t dpop, int sign) {
     int i;
     for(i=0; i < self->n; ++i)

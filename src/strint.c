@@ -3,7 +3,7 @@
  * @author Alan R. Rogers
  * @brief Associate character strings with integers.
  *
- * @copyright Copyright (c) 2016, Alan R. Rogers 
+ * @copyright Copyright (c) 2016, Alan R. Rogers
  * <rogers@anthro.utah.edu>. This file is released under the Internet
  * Systems Consortium License, which can be found in file "LICENSE".
  */
@@ -15,7 +15,7 @@
 #include <stdio.h>
 #include <errno.h>
 
-// STRINT_DIM must be a power of 2
+/// STRINT_DIM must be a power of 2
 #define STRINT_DIM 64u
 
 #if (STRINT_DIM==0u || (STRINT_DIM & (STRINT_DIM-1u)))
@@ -24,14 +24,14 @@
 
 #define MAXKEY 10
 
-// A single element of a linked list
+/// A single element of a linked list
 typedef struct SILink {
     struct SILink *next;
     char        key[MAXKEY];
     int         value;
 } SILink;
 
-// Hash table
+/// Hash table
 struct StrInt {
     SILink     *tab[STRINT_DIM];
 };
@@ -43,6 +43,7 @@ int         SILink_get(SILink * self, const char *key);
 void        SILink_print(const SILink * self, FILE *fp);
 unsigned    SILink_size(SILink *self);
 
+/// SILink constructor
 SILink     *SILink_new(const char *key, int value, SILink * next) {
     SILink     *new = malloc(sizeof(*new));
     CHECKMEM(new);
@@ -60,13 +61,14 @@ SILink     *SILink_new(const char *key, int value, SILink * next) {
     return new;
 }
 
-// Return number of links in list
+/// Return number of links in list
 unsigned SILink_size(SILink *self) {
     if(self == NULL)
         return 0u;
     return 1u + SILink_size(self->next);
 }
 
+/// Free linked list of SILink objects
 void SILink_free(SILink * self) {
     if(self == NULL)
         return;
@@ -114,6 +116,7 @@ int SILink_get(SILink * self, const char *key) {
     }
 }
 
+/// Print linked list of SILink objects
 void SILink_print(const SILink * self, FILE *fp) {
     if(self == NULL)
         return;
@@ -121,6 +124,7 @@ void SILink_print(const SILink * self, FILE *fp) {
     SILink_print(self->next, fp);
 }
 
+/// StrInt constructor
 StrInt     *StrInt_new(void) {
     StrInt     *new = malloc(sizeof(*new));
     CHECKMEM(new);
@@ -128,6 +132,7 @@ StrInt     *StrInt_new(void) {
     return new;
 }
 
+/// StrInt destructor
 void StrInt_free(StrInt * self) {
     int         i;
     for(i = 0; i < STRINT_DIM; ++i)
@@ -135,8 +140,8 @@ void StrInt_free(StrInt * self) {
     free(self);
 }
 
-// Insert a key-value pair into the hash table. Set errno=EDOM if
-// pair already exists.
+/// Insert a key-value pair into the hash table. Set errno=EDOM if
+/// pair already exists.
 void StrInt_insert(StrInt *self, const char *key, int value) {
     unsigned    h = strhash(key) & (STRINT_DIM - 1u);
     assert(h < STRINT_DIM);
@@ -153,6 +158,7 @@ int StrInt_get(StrInt * self, const char *key) {
     return SILink_get(self->tab[h], key);
 }
 
+/// Print a StrInt object
 void StrInt_print(const StrInt * self, FILE *fp) {
     unsigned    i;
     for(i = 0; i < STRINT_DIM; ++i) {
@@ -162,7 +168,7 @@ void StrInt_print(const StrInt * self, FILE *fp) {
     }
 }
 
-// Number of items stored in hash table.
+/// Number of items stored in hash table.
 unsigned StrInt_size(const StrInt *self) {
     unsigned i, n=0;
 
