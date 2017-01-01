@@ -17,7 +17,8 @@ allele.
 
 With 1000-genomes data, this input can be generated from a vcf or
 bcf file as follows:
-bcftools query -f '%CHROM\t%POS\t%REF\t%ALT\t%INFO/AA[\t%GT]\n' fname.bcf
+
+    bcftools query -f '%CHROM\t%POS\t%REF\t%ALT\t%INFO/AA[\t%GT]\n' fname.bcf
 
 Output is in 5 columns, separated by whitespace:
 

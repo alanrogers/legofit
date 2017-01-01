@@ -1,21 +1,20 @@
+# Example .lgo file
 time fixed    zero=0
-twoN fixed    one =1
-time fixed    Tn=1
-time gaussian Txy=3 sd=1
-time fixed    Txyn=5.5
-twoN fixed    2Ny=123  sd = 10
-twoN fixed    2Nn=213.4
-twoN free     2Nxy=222
-twoN fixed    2Nxyn=1.2e2
-mixFrac free  mN=0.02
-segment x     t=zero   twoN=one    samples=1
-segment y     t=zero   twoN=one    samples=1
-segment n     t=Tn     twoN=2Nn    samples=1
-segment y2    t=Tn     twoN=2Ny
-segment xy    t=Txy    twoN=2Nxy
-segment xyn   t=Txyn   twoN=2Nxyn
-mix    y  from y2 + mN * n
-derive x  from xy
-derive y2 from xy
-derive xy from xyn
-derive n  from xyn
+twoN fixed     one=1
+time free     Txyn=25920        # archaic-modern separation time
+time fixed     Tn=1897          # time of Neanderthal admixture
+time gaussian  Txy=3788 sd=1000 # Africa-Eurasia separation time
+twoN free     2Nn=1000          # Neanderthal population size
+twoN free    2Nxy=10000         # early modern population size
+mixFrac free  mN=0.02           # Neanderthal admixture into y
+segment x     t=zero   twoN=one    samples=1  # Africa
+segment y     t=zero   twoN=one    samples=1  # Eurasia
+segment n     t=Tn     twoN=2Nn    samples=1  # Neanderthal
+segment y2    t=Tn     twoN=one               # pre-mig eurasia
+segment xy    t=Txy    twoN=2Nxy              # early modern
+segment xyn   t=Txyn   twoN=2Nn               # ancestral
+mix    y  from y2 + mN * n      # y is a mixture of y2 and n
+derive x  from xy               # x is child of xy
+derive y2 from xy               # y2 is child of xy
+derive xy from xyn              # xy is child of xyn
+derive n  from xyn              # n is child of xyn
