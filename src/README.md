@@ -24,9 +24,9 @@ gene flow. The package consists of the following programs
 # Nucleotide site patterns {#sitepat}
 
 These programs all operate on "nucleotide site patterns", which are
-summary statistics not influenced by the recent population size but
-rich in information about ancestral populations. This section will
-define site patterns and explain how lego tabulates their counts, and
+summary statistics not influenced by recent population size but rich
+in information about ancestral populations. This section will define
+site patterns and explain how lego tabulates their counts, and
 estimates the expectations of these counts.
 
 Consider a sample consisting of one haploid genome drawn from each of
