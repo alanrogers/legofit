@@ -1,10 +1,128 @@
 /**
- * @file tabpat.c
- * @brief Tabulate site pattern frequencies from .daf files.
- * @copyright Copyright (c) 2016 Alan R. Rogers
- * <rogers@anthro.utah.edu>. This file is released under the Internet
- * Systems Consortium License, which can be found in file "LICENSE".
- */
+@file tabpat.c
+@page tabpat
+@brief Tabulate site pattern frequencies from .daf files.
+
+# Tabpat: tabulates site patterns
+
+Tabpat reads data in .daf format and tabulates counts of nucleotide
+site patterns, writing the result to standard output. Optionally, it
+also calculates a moving-blocks bootstrap, writing each bootstrap
+replicate into a separate file.
+
+# Usage
+
+    Usage: tabpat [options] <x>=<in1> <y>=<in2> ...
+       where <x> and <y> are arbitrary labels, and <in1> and <in2> are input
+       files in daf format. Writes to standard output. Labels may not include
+       the character ":". Maximum number of input files: 32.
+    
+    Options may include:
+       -f <name> or --bootfile <name>
+          Bootstrap output file basename. Def: boot.
+       -r <x> or --bootreps <x>
+          # of bootstrap replicates. Def: 0
+       -b <x> or --blocksize <x>
+          # of SNPs per block in moving-blocks bootstrap. Def: 0.
+       -1 or --singletons
+          Use singleton site patterns
+       -m or --logMismatch
+          log AA/DA mismatches to tabpat.log
+       -F or --logFixed
+          log fixed sites to tabpat.log
+       -h or --help
+          Print this message
+
+# Example
+
+Before running `tabpat`, use @ref daf "daf" to convert the input data
+into daf format. Let us assume you have done this, and that directory
+~/daf contains a separate daf file for each population. We want to
+compare 4 populations, whose .daf files are `yri.daf`, `ceu.daf`,
+`altai.daf`, and `denisova.daf`. The following command will do this,
+putting the results into `obs.txt`.
+
+    tabpat x=~/daf/yri.daf \
+           y=~/daf/ceu.daf \
+           n=~/daf/altai.daf \
+           d=~/daf/denisova.daf > obs.txt
+
+Here, "x", "y", "n", and "d" are labels that will be used to identify
+site patterns in the output. For example, site pattern "x:y" refers to
+the pattern in which the derived allele is present haploid samples
+from "x" and "y" but not on those from other populations.
+
+The output looks like this:
+
+    # Population labels:
+    #    x = /home/rogers/daf/yri.daf
+    #    y = /home/rogers/daf/ceu.daf
+    #    n = /home/rogers/daf/altai.daf
+    #    d = /home/rogers/daf/denisova.daf
+    # Excluding singleton site patterns.
+    # Number of site patterns: 10
+    # Tabulated 12327755 SNPs
+    #       SitePat             E[count]
+                x:y       340952.4592501
+                x:n        46874.1307236
+                x:d        46034.4670204
+                y:n        55137.4236715
+                y:d        43535.5248078
+                n:d       231953.3372578
+              x:y:n        91646.1277991
+              x:y:d        88476.9619569
+              x:n:d        96676.3877423
+              y:n:d       100311.4411513
+
+The left column lists the site patterns that occur in the data. The
+right column gives the expected count of each site pattern. These are
+not integers, because they represent averages over all possible
+subsamples consisting of a single haploid genome from each
+population. 
+    
+To generate a bootstrap, use the `--bootreps` option:
+
+    tabpat --bootreps 50 \
+           x=~/daf/yri.daf \
+           y=~/daf/ceu.daf \
+           n=~/daf/altai.daf \
+           d=~/daf/denisova.daf > obs.txt
+
+This will generate not only the primary output file, `obs.txt`, but also
+50 additional files, each representing a single bootstrap
+replicate. The primary output file now has a bootstrap confidence
+interval: 
+
+    # Population labels:
+    #    x = /home/rogers/daf/yri.daf
+    #    y = /home/rogers/daf/ceu.daf
+    #    n = /home/rogers/daf/altai.daf
+    #    d = /home/rogers/daf/denisova.daf
+    # Excluding singleton site patterns.
+    # Number of site patterns: 10
+    # Tabulated 12327755 SNPs
+    # bootstrap output file = tabpat.boot
+    # confidence level = 95%
+    #       SitePat             E[count]          loBnd          hiBnd
+                x:y       340952.4592501 338825.6604586 342406.6670816
+                x:n        46874.1307236  46361.5798377  47438.1857029
+                x:d        46034.4670204  45605.6588012  46631.6434277
+                y:n        55137.4236715  54650.0763578  55783.7051253
+                y:d        43535.5248078  43110.5119922  44234.0919024
+                n:d       231953.3372578 229495.3741057 234173.6878092
+              x:y:n        91646.1277991  90494.0219749  92873.4443706
+              x:y:d        88476.9619569  87137.1867967  89585.8431419
+              x:n:d        96676.3877423  95935.5184294  97417.6241185
+              y:n:d       100311.4411513  99292.9839140 101163.3457462
+
+Here, `loBnd` and `hiBnd` are the limits of a 95% confidence
+interval. The bootstrap output files look like `tabpat.boot000`,
+`tabpat.boot001`, and so on.
+
+@copyright Copyright (c) 2016, Alan R. Rogers 
+<rogers@anthro.utah.edu>. This file is released under the Internet
+Systems Consortium License, which can be found in file "LICENSE".
+*/
 
 #include "binary.h"
 #include "boot.h"
@@ -26,6 +144,7 @@
 
 typedef struct Stack Stack;
 
+/// Treat a vector of tipId_t values as a push-down stack.
 struct Stack {
     int dim, nused;
     tipId_t *buff;  // not locally owned
@@ -37,7 +156,6 @@ static void Stack_free(Stack *stk);
 static void Stack_push(Stack *self, tipId_t x);
 static void generatePatterns(int bit,  int npops, Stack *stk, tipId_t pat,
                              int doSing);
-static void parseChromosomeLbls(const char *arg, StrInt *strint);
 
 const char *useMsg =
     "\nUsage: tabpat [options] <x>=<in1> <y>=<in2> ...\n"
@@ -46,6 +164,7 @@ const char *useMsg =
 	" Labels may not include\n"
 	"   the character \":\".";
 
+/// Print usage message and die.
 static void usage(void) {
     fputs(useMsg, stderr);
     fprintf(stderr," Maximum number of input files: %lu.\n",
@@ -91,9 +210,9 @@ static void Stack_push(Stack *self, tipId_t x) {
     self->buff[self->nused++] = x;
 }
 
-/// Call as generatePatterns(0, npops, stk, 0);
-/// Recursive function, which generates all legal site patterns
-/// and pushes them onto a stack.
+/// Call as generatePatterns(0, npops, stk, 0); Recursive function,
+/// which generates all legal site patterns and pushes them onto a
+/// stack.
 static void generatePatterns(int bit, int npops, Stack *stk, tipId_t pat,
                              int doSing) {
     assert(sizeof(tipId_t) < sizeof (unsigned long long));
@@ -115,91 +234,11 @@ static void generatePatterns(int bit, int npops, Stack *stk, tipId_t pat,
     generatePatterns(bit+1, npops, stk, pat, doSing);    // curr bit off
 }
 
-/// On input, "arg" is a comma-separated list of chromosome labels.
-/// On return, the first label is associated (in strint) with index 0,
-/// the second with index 1, and so on. If one of the labels is of form
-/// x-y, where x and y are integers, then x-y is expanded into a
-/// sequence of integers ranging from x to y inclusive. These integers
-/// are converted into strings, and then associated with consequtive
-/// integers in the usual way.
-///
-/// Example: if "arg" is "x,2-4,mtdna", then we end up with the
-/// following mapping:
-///     x -> 0
-///     2 -> 1
-///     3 -> 2
-///     4 -> 3
-/// mtdna -> 4
-static void parseChromosomeLbls(const char *arg, StrInt *strint) {
-    int i, j;
-    char chrs[100], *ptr, *token;
-    snprintf(chrs, sizeof chrs, "%s", arg);
-    if(NULL != strchr(chrs, '=')) {
-        fprintf(stderr,"Bad list of chromosomes: %s\n", chrs);
-        usage();
-    }
-    i = 0;
-    ptr = chrs;
-    fprintf(stderr,"Expecting chromosomes:");
-    while( (token = strsep(&ptr, ",")) != NULL) {
-        char *dash = strchr(token, '-');
-        int isinteger=1;
-        if(dash) {
-            if(dash == token) {
-                isinteger = 0;
-            }else {
-                char *p;
-                for(p = token; p < dash; ++p) {
-                    if(!isdigit(*p)) {
-                        isinteger = 0;
-                        break;
-                    }
-                }
-                for(p = dash+1; isinteger && *p != '\0'; ++p) {
-                    if(!isdigit(*p)) {
-                        isinteger = 0;
-                        break;
-                    }
-                }
-            }
-        }
-        if(dash && isinteger) {  // parse range
-            *dash = '\0';
-            int from = strtol(token, NULL, 10);
-            int to = strtol(dash+1, NULL, 10);
-			int inc = (to < from ? -1 : 1);
-			to += inc; // 1 past final position
-            for(j=from; j != to; j += inc) {
-                char curr[10];
-                snprintf(curr, sizeof curr, "%d", j);
-                fprintf(stderr, " %s", curr);
-				errno = 0;
-                StrInt_insert(strint, curr, i++);
-				if(errno) {
-					fprintf(stderr,"\n%s:%d: ERR:"
-                            " Duplicate chromosome label: %s\n",
-							__FILE__,__LINE__, curr);
-					exit(EXIT_FAILURE);
-				}
-            }
-        }else{                  // token isn't a range
-            fprintf(stderr, " %s", token);
-			errno = 0;
-            StrInt_insert(strint, token, i++);
-			if(errno) {
-				fprintf(stderr,"\n%s:%d: ERR: Duplicate chromosome label: %s\n",
-						__FILE__,__LINE__, token);
-				exit(EXIT_FAILURE);
-			}
-        }
-    }
-    putc('\n', stderr);
-}
-
 int main(int argc, char **argv) {
     int i, j, status, optndx;
     int doSing=0;       // nonzero means use singleton site patterns
     long bootreps = 0;
+    double conf = 0.95; // confidence level
     long blocksize = 300;
     StrInt *strint = StrInt_new();
     char bootfname[FILENAMESIZE] = { '\0' };
@@ -533,6 +572,7 @@ int main(int argc, char **argv) {
 
 	if(bootreps > 0) {
 		printf("# %s = %s\n", "bootstrap output file", bootfname);
+		printf("# %s = %4.2lf%%\n", "confidence level", 100*conf);
 #ifndef NDEBUG
 		Boot_sanityCheck(boot,__FILE__,__LINE__);
 #endif
@@ -564,7 +604,7 @@ int main(int argc, char **argv) {
     // print labels and binary representation of site patterns
 	printf("# %13s %20s", "SitePat", "E[count]");
 	if(bootreps > 0)
-		printf(" %12s %12s", "loBnd", "hiBnd");
+		printf(" %15s %15s", "loBnd", "hiBnd");
 	putchar('\n');
     for(i=0; i<npat; ++i) {
         printf("%15s %20.7lf",
@@ -574,8 +614,8 @@ int main(int argc, char **argv) {
 			double lowBnd, highBnd;
 			for(j=0; j < bootreps; ++j)
 				bootvals[j] = boottab[j][i];
-			confidenceBounds(&lowBnd, &highBnd, 0.95, bootreps, bootvals);
-			printf(" %12.7lf %12.7lf", lowBnd, highBnd);
+			confidenceBounds(&lowBnd, &highBnd, conf, bootreps, bootvals);
+			printf(" %15.7lf %15.7lf", lowBnd, highBnd);
 		}
         putchar('\n');
     }

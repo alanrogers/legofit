@@ -12,6 +12,7 @@ xparse
 xbinary
 xlblndx
 xpopnode
+xpopnodetab
 xsampndx
 xsimsched
 xstrtab
@@ -20,7 +21,6 @@ xparstore
 xparkeyval
 xdiffev
 xjobqueue
-xvcfreader
 xdafreader
 xstrint
 lego

@@ -2,9 +2,9 @@
  * @file parkeyval.c
  * @author Alan R. Rogers
  * @brief Linked list associating parameter names with pointers to
- * parameter values.  
+ * parameter values.
  *
- * @copyright Copyright (c) 2016, Alan R. Rogers 
+ * @copyright Copyright (c) 2016, Alan R. Rogers
  * <rogers@anthro.utah.edu>. This file is released under the Internet
  * Systems Consortium License, which can be found in file "LICENSE".
  */
@@ -26,7 +26,7 @@ struct ParKeyVal {
 ParKeyVal  *ParKeyVal_new(const char *key, double *vptr, bool isfree,
 						  ParKeyVal *next);
 
-// Constructor. Call with next=NULL to terminate linked list.
+/// Constructor. Call with next=NULL to terminate linked list.
 ParKeyVal  *ParKeyVal_new(const char *key, double *vptr, bool isfree,
 						  ParKeyVal * next) {
     if(strlen(key) >= MAX_PARAM_NAME)
@@ -87,6 +87,7 @@ double *ParKeyVal_get(ParKeyVal * self, bool *isfree, const char *key) {
     return ParKeyVal_get(self->next, isfree, key);
 }
 
+/// Print a ParKeyVal
 void ParKeyVal_print(ParKeyVal *self, FILE *fp) {
 	if(self == NULL)
 		fprintf(fp,"NULL\n");
@@ -97,6 +98,7 @@ void ParKeyVal_print(ParKeyVal *self, FILE *fp) {
 	}
 }
 
+/// Abort if ParKeyVal fails tests
 void ParKeyVal_sanityCheck(ParKeyVal *self, const char *file,
 						   int line) {
 #ifndef NDEBUG

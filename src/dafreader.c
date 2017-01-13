@@ -1,3 +1,11 @@
+/**
+   @file dafreader.c
+   @brief Class DAFReader: read a daf file.
+
+   @copyright Copyright (c) 2016, Alan R. Rogers 
+   <rogers@anthro.utah.edu>. This file is released under the Internet
+   Systems Consortium License, which can be found in file "LICENSE".
+*/
 #include "dafreader.h"
 #include "tokenizer.h"
 #include "misc.h"
@@ -11,6 +19,7 @@
 
 int iscomment(const char *s);
 
+/// DAFReader constructor
 DAFReader *DAFReader_new(const char *fname) {
     DAFReader *self = malloc(sizeof(*self));
     CHECKMEM(self);
@@ -29,13 +38,14 @@ DAFReader *DAFReader_new(const char *fname) {
     return self;
 }
 
-// Clear all chromosome names
+/// Clear all chromosome names
 void        DAFReader_clearChromosomes(int n, DAFReader *r[n]) {
     int i;
     for(i=0; i < n; ++i)
         r[i]->chr[0] = '\0';
 }
 
+/// DAFReader destructor
 void DAFReader_free(DAFReader *self) {
     fclose(self->fp);
     free(self->fname);
@@ -43,8 +53,8 @@ void DAFReader_free(DAFReader *self) {
     free(self);
 }
 
-// Return 1 if first non-white character in string is '#';
-// return 0 otherwise.
+/// Return 1 if first non-white character in string is '#'; 0
+/// otherwise.
 int iscomment(const char *s) {
     int rval;
     while(*s != '\0' && isspace(*s))
@@ -53,8 +63,9 @@ int iscomment(const char *s) {
     return rval;
 }
 
-// Read the next snp. Return 0 on success; EOF on end of file.
-// Aborts with message if other errors occur.
+/// Read the next snp.
+/// @return 0 on success; EOF on end of file; aborts with message if
+/// other errors occur. 
 int DAFReader_next(DAFReader *self) {
     int ntokens1;
     int ntokens;
@@ -140,11 +151,13 @@ int DAFReader_next(DAFReader *self) {
     return 0;
 }
 
-// Returns 0 on success, -1 on failure
+/// Rewind daf file. 
+/// @return 0 on success; -1 on failure
 int DAFReader_rewind(DAFReader *self) {
     return fseek(self->fp, 0L, SEEK_SET);
 }
 
+/// Return const pointer to label of current chromosome.
 const char *DAFReader_chr(DAFReader *self) {
 	return self->chr;
 }
@@ -153,7 +166,7 @@ const char *DAFReader_chr(DAFReader *self) {
 #define MIN(X,Y) ((X) > (Y) ? (Y) : (X))
 
 /// Advance an array of DAFReaders to the next shared position.
-/// Return 0 on success or EOF on end of file.
+/// @return 0 on success or EOF on end of file.
 int DAFReader_multiNext(int n, DAFReader *r[n]) {
     int i, status;
     unsigned long maxnuc=0, minnuc=ULONG_MAX;
@@ -239,7 +252,8 @@ int DAFReader_multiNext(int n, DAFReader *r[n]) {
     return 0;
 }
 
-// Return 1 if ancestral and derived alleles of all readers match; 0 otherwise
+/// Return 1 if ancestral and derived alleles of all readers match; 0
+/// otherwise
 int DAFReader_allelesMatch(int n, DAFReader *r[n]) {
     int aa = *r[0]->aa;
     int da = *r[0]->da;
@@ -251,17 +265,20 @@ int DAFReader_allelesMatch(int n, DAFReader *r[n]) {
     return 1;
 }
 
+/// Print header for daf file.
 void DAFReader_printHdr(FILE *fp) {
     fprintf(fp, "%50s %5s %10s %2s %2s %8s\n",
             "file", "chr", "pos", "aa", "da", "daf");
 }
 
+/// Print current line of daf file
 void DAFReader_print(DAFReader *r, FILE *fp) {
     assert(r->fname);
     fprintf(fp,"%50s %5s %10lu %2s %2s %8.6lf\n",
             r->fname, r->chr, r->nucpos, r->aa, r->da, r->p);
 }
 
+/// Return derived allele frequency of current line of daf file.
 double      DAFReader_daf(DAFReader *r) {
 	assert(r->p >= 0.0 && r->p <= 1.0);
 	return r->p;

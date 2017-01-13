@@ -1,12 +1,16 @@
 /**
  * @file patprob.c
+ * @author Alan R. Rogers
  * @brief Run simulations to estimate site pattern probabilities.
+ *
+ * @copyright Copyright (c) 2016, Alan R. Rogers
+ * <rogers@anthro.utah.edu>. This file is released under the Internet
+ * Systems Consortium License, which can be found in file "LICENSE".
  */
 
 #include "patprob.h"
 #include "misc.h"
 #include "branchtab.h"
-#include "hashtab.h"
 #include "parse.h"
 #include "parstore.h"
 #include "binary.h"
@@ -50,7 +54,7 @@ int simfun(void *varg, void *tdata) {
 /// Construct a new SimArg by copying a template.
 SimArg    *SimArg_new(const GPTree *gptree, unsigned nreps, int doSing) {
     SimArg    *a = malloc(sizeof(SimArg));
-    checkmem(a, __FILE__, __LINE__);
+    CHECKMEM(a);
 
     a->nreps = nreps;
     a->doSing = doSing;

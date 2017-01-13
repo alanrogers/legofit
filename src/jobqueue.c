@@ -104,6 +104,7 @@ void Job_print(Job * job) {
 }
 #endif
 
+/// Construct a JobQueue.
 JobQueue   *JobQueue_new(int maxThreads, void *threadData,
                          void *(*ThreadState_new) (void *),
                          void (*ThreadState_free) (void *)) {
@@ -139,6 +140,15 @@ JobQueue   *JobQueue_new(int maxThreads, void *threadData,
     return jq;
 }
 
+/// Add a job to the queue.
+/// @param jq the JobQueue
+/// @param jobfun function to be executed. Takes two void*
+/// arguments. The first points to a structure containing data
+/// associated with this job. The second points to data associated
+/// with the thread that runs the job. For example, the 2nd argument
+/// can be used to maintain a separate random number generator within
+/// each thread.
+/// @param param pointer to structure with parameters for this job
 void JobQueue_addJob(JobQueue * jq, int (*jobfun) (void *, void *),
                      void *param) {
     assert(jq);
@@ -187,7 +197,7 @@ void JobQueue_addJob(JobQueue * jq, int (*jobfun) (void *, void *),
         // launch a new thread
         DPRINTF(("%s:%s:%d launching thread\n", __FILE__,__func__, __LINE__));
         status = pthread_create(&id, &jq->attr, threadfun, (void *) jq);
-        if(status) 
+        if(status)
             ERR(status, "create");
         ++jq->nThreads;
     }
@@ -399,6 +409,7 @@ void JobQueue_waitOnJobs(JobQueue * jq) {
         DPRINTF(("%s:%s:%d: unlocked\n", __FILE__, __func__, __LINE__));
 }
 
+/// Destroy a Job
 void Job_free(Job * job) {
     if(NULL == job)
         return;
@@ -406,6 +417,7 @@ void Job_free(Job * job) {
     free(job);
 }
 
+/// Destroy a JobQueue
 void JobQueue_free(JobQueue * jq) {
     assert(jq);
 

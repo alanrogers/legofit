@@ -1,12 +1,15 @@
 /**
  * @file gptree.c
+ * @author Alan R. Rogers
  * @brief Methods for simulating gene genealogies within a given tree
  * of populations, and allowing populations to mix and also to split.
+ * @copyright Copyright (c) 2016, Alan R. Rogers
+ * <rogers@anthro.utah.edu>. This file is released under the Internet
+ * Systems Consortium License, which can be found in file "LICENSE".
  */
 
 #include "gptree.h"
 #include "gene.h"
-#include "exopar.h"
 #include "lblndx.h"
 #include "parse.h"
 #include "parstore.h"
@@ -16,35 +19,53 @@
 #include <pthread.h>
 extern pthread_mutex_t outputLock;
 
+/// GPTree stands for Gene-Population tree. It represents a network
+/// of populations, which can split to form daughter populations or
+/// exchange genes at various points in time. The population tree
+/// is static--it does not evolve, but is specified by parsing an
+/// external file. Within the population tree, there is a gene
+/// tree. The gene tree is dynamic: it can be generated repeatedly via
+/// coalescent simulation.
 struct GPTree {
-    int nseg; // number of segments in population tree.
-    PopNode *pnv; // array of length nseg
-    PopNode *rootPop;
-    Gene *rootGene;
-    Bounds bnd;
-    ExoPar *exopar;
-    ParStore *parstore;
-    LblNdx lblndx;
-    SampNdx sndx;
+    int nseg;         // number of segments in population tree.
+    PopNode *pnv;     // array of nseg PopNode objects
+    PopNode *rootPop; // root of population tree
+    Gene *rootGene;   // root of gene tree
+    Bounds bnd;       // legal range of twoN parameters and time parameters
+    ParStore *parstore; // Fixed and free parameters
+    LblNdx lblndx;    // Index of sample labels
+    SampNdx sndx;     // Index of sample pointers into PopNode objects.
 };
 
+/// Print a description of parameters.
 void GPTree_printParStore(GPTree *self, FILE *fp) {
 	ParStore_print(self->parstore, fp);
 }
 
+/// Print a description of free parameters.
 void GPTree_printParStoreFree(GPTree *self, FILE *fp) {
 	ParStore_printFree(self->parstore, fp);
 }
 
+/// Randomly perturb all free parameters in the population tree while
+/// maintaining inequality constraints.
 void GPTree_randomize(GPTree *self, gsl_rng *rng) {
 	PopNode_randomize(self->rootPop, self->bnd, rng);
 }
 
+/// Set free parameters from an array.
+/// @param[in] n number of parameters in array, which should equal the
+/// number of free parameters in the GPTree.
+/// @param[in] x array of parameter values.
 void GPTree_setParams(GPTree *self, int n, double x[n]) {
     assert(n == ParStore_nFree(self->parstore));
     ParStore_setFreeParams(self->parstore, n, x);
 }
 
+/// Copy free parameters from GPTree into an array
+/// @param[out] n number of parameters in array, which should equal the
+/// number of free parameters in the GPTree.
+/// @param[out] x array into which parameters will be copied
 void GPTree_getParams(GPTree *self, int n, double x[n]) {
     assert(n == ParStore_nFree(self->parstore));
     ParStore_getFreeParams(self->parstore, n, x);
@@ -55,14 +76,23 @@ int GPTree_nFree(const GPTree *self) {
     return ParStore_nFree(self->parstore);
 }
 
+/// Build a gene tree by coalescent simulation and then tabulate
+/// branch lengths associated with each site pattern.
+/// @param self GPTree object
+/// @param[out] branchtab BranchTab object, which will tabulate branch
+/// lengths from this (and other) simulations.
+/// @param[inout] rng GSL random number generator
+/// @param[in] nreps number of replicate gene trees to simulate
+/// @param[in] doSing if doSing is non-zero, singleton site patterns
+/// will be tabulated.
 void GPTree_simulate(GPTree *self, BranchTab *branchtab, gsl_rng *rng,
                      unsigned long nreps, int doSing) {
     unsigned long rep;
     for(rep = 0; rep < nreps; ++rep) {
-        PopNode_clear(self->rootPop); // remove old samples 
+        PopNode_clear(self->rootPop); // remove old samples
         SampNdx_populateTree(&(self->sndx));    // add new samples
         PopNode_gaussian(self->rootPop, self->bnd,
-                         self->exopar, rng);
+                         self->parstore, rng);
 
         // coalescent simulation generates gene genealogy within
         // population tree.
@@ -79,13 +109,13 @@ void GPTree_simulate(GPTree *self, BranchTab *branchtab, gsl_rng *rng,
     }
 }
 
+/// GPTree constructor
 GPTree *GPTree_new(const char *fname, Bounds bnd) {
     GPTree *self = malloc(sizeof(GPTree));
     CHECKMEM(self);
 
     memset(self, 0, sizeof(GPTree));
     self->bnd = bnd;
-    self->exopar = ExoPar_new();
     self->parstore = ParStore_new();
     LblNdx_init(&self->lblndx);
     SampNdx_init(&self->sndx);
@@ -102,7 +132,7 @@ GPTree *GPTree_new(const char *fname, Bounds bnd) {
     CHECKMEM(ns);
 
     self->rootPop = mktree(fp, &self->sndx, &self->lblndx, self->parstore,
-                           self->exopar, &self->bnd, ns);
+                           &self->bnd, ns);
 
     fclose(fp);
     NodeStore_free(ns);
@@ -115,7 +145,7 @@ GPTree *GPTree_new(const char *fname, Bounds bnd) {
     return self;
 }
 
-/// Destructor.
+/// GPTree destructor.
 void GPTree_free(GPTree *self) {
     Gene_free(self->rootGene);
     self->rootGene = NULL;
@@ -123,7 +153,6 @@ void GPTree_free(GPTree *self) {
     self->rootPop = NULL;
     free(self->pnv);
     ParStore_free(self->parstore);
-    ExoPar_free(self->exopar);
     free(self);
 }
 
@@ -141,12 +170,10 @@ GPTree *GPTree_dup(const GPTree *old) {
 
     GPTree *new   = memdup(old, sizeof(GPTree));
     new->parstore = ParStore_dup(old->parstore);
-    new->exopar = ExoPar_dup(old->exopar);
     new->pnv      = memdup(old->pnv, old->nseg * sizeof(PopNode));
 
     assert(old->nseg == new->nseg);
     CHECKMEM(new->parstore);
-    CHECKMEM(new->exopar);
     CHECKMEM(new->pnv);
 
     new->sndx = old->sndx;
@@ -179,9 +206,8 @@ GPTree *GPTree_dup(const GPTree *old) {
         dpop = ((size_t) old->pnv) - ((size_t) new->pnv);
         spop = -1;
     }
-    
+
     SHIFT_PTR(new->rootPop, dpop, spop);
-    ExoPar_shiftPtrs(new->exopar, dpar, spar);
     for(i=0; i < old->nseg; ++i) {
         PopNode_shiftParamPtrs(&new->pnv[i], dpar, spar);
         PopNode_shiftPopNodePtrs(&new->pnv[i], dpop, spop);
@@ -239,6 +265,7 @@ int GPTree_equals(const GPTree *lhs, const GPTree *rhs) {
     return 1;
 }
 
+/// Get the LblNdx object from a GPTree
 LblNdx GPTree_getLblNdx(GPTree *self) {
     return self->lblndx;
 }

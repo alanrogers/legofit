@@ -11,7 +11,9 @@
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
+#include <gsl/gsl_rng.h>
 #include <time.h>
+#include <limits.h>
 
 #ifdef NDEBUG
 #  error "Unit tests must be compiled without -DNDEBUG flag"
@@ -32,6 +34,12 @@ int main(int argc, char **argv) {
         eprintf("usage: xparstore [-v]\n");
     }
 
+    time_t      currtime = time(NULL);
+    unsigned    baseSeed = currtime % UINT_MAX;
+    gsl_rng    *rng = gsl_rng_alloc(gsl_rng_taus);
+    CHECKMEM(rng);
+    gsl_rng_set(rng, baseSeed);
+
     Bounds bnd0 = {
         .lo_twoN = 0.0,
         .hi_twoN = 1e12,
@@ -47,6 +55,7 @@ int main(int argc, char **argv) {
     ParStore *ps = ParStore_new();
     assert(ParStore_nFixed(ps) == 0);
     assert(ParStore_nFree(ps) == 0);
+    assert(ParStore_nGaussian(ps) == 0);
 
     double val, *ptr;
 	bool isfree, isfree2;
@@ -58,18 +67,24 @@ int main(int argc, char **argv) {
 	assert(isfree == false);
     assert(ParStore_nFixed(ps) == 1);
     assert(ParStore_nFree(ps) == 0);
+    assert(ParStore_nGaussian(ps) == 0);
     assert(ParStore_getFixed(ps, 0) == val);
+    ParStore_sample(ps, ptr, val-1,val+1, rng);
+    assert(*ptr == val);
 
     val = 23.4;
-    ParStore_addFreePar(ps, val, 10.0, 30.0, "y", true);
+    ParStore_addFreePar(ps, val, 10.0, 30.0, "y");
     ptr = ParStore_findPtr(ps, &isfree, "y");
     assert(*ptr == val);
 	assert(isfree == true);
     assert(ParStore_nFixed(ps) == 1);
     assert(ParStore_nFree(ps) == 1);
+    assert(ParStore_nGaussian(ps) == 0);
     assert(ParStore_getFree(ps, 0) == val);
     assert(ParStore_loFree(ps, 0) == 10.0);
     assert(ParStore_hiFree(ps, 0) == 30.0);
+    ParStore_sample(ps, ptr, val-1,val+1, rng);
+    assert(*ptr == val);
 
     val = 88.3;
     ParStore_addFixedPar(ps, val, "w");
@@ -78,29 +93,54 @@ int main(int argc, char **argv) {
 	assert(isfree == false);
     assert(ParStore_nFixed(ps) == 2);
     assert(ParStore_nFree(ps) == 1);
+    assert(ParStore_nGaussian(ps) == 0);
     assert(ParStore_getFixed(ps, 1) == val);
+    ParStore_sample(ps, ptr, val-1,val+1, rng);
+    assert(*ptr == val);
 
     val = -23.8;
-    ParStore_addFreePar(ps, val, -100.0, 0.0, "z", true);
+    ParStore_addFreePar(ps, val, -100.0, 0.0, "z");
     ptr = ParStore_findPtr(ps, &isfree, "z");
     assert(*ptr == val);
 	assert(isfree == true);
     assert(ParStore_nFixed(ps) == 2);
     assert(ParStore_nFree(ps) == 2);
+    assert(ParStore_nGaussian(ps) == 0);
     assert(ParStore_getFree(ps, 1) == val);
     assert(ParStore_loFree(ps, 1) == -100.0);
     assert(ParStore_hiFree(ps, 1) == 0.0);
+    ParStore_sample(ps, ptr, val-1,val+1, rng);
+    assert(*ptr == val);
 
     val = 0.8;
-    ParStore_addFreePar(ps, val, 0.0, 1.0, "a", true);
+    ParStore_addFreePar(ps, val, 0.0, 1.0, "a");
     ptr = ParStore_findPtr(ps, &isfree, "a");
     assert(*ptr == val);
 	assert(isfree == true);
     assert(ParStore_nFixed(ps) == 2);
     assert(ParStore_nFree(ps) == 3);
+    assert(ParStore_nGaussian(ps) == 0);
     assert(ParStore_getFree(ps, 2) == val);
     assert(ParStore_loFree(ps, 2) == 0.0);
     assert(ParStore_hiFree(ps, 2) == 1.0);
+    ParStore_sample(ps, ptr, val-1,val+1, rng);
+    assert(*ptr == val);
+
+    double sd = 1.2;
+    val = 2.3;
+    ParStore_addGaussianPar(ps, val, sd, "gauss");
+    ptr = ParStore_findPtr(ps, &isfree, "gauss");
+    assert(*ptr = val);
+	assert(isfree == false);
+    assert(ParStore_nFixed(ps) == 2);
+    assert(ParStore_nFree(ps) == 3);
+    assert(ParStore_nGaussian(ps) == 1);
+    assert(ParStore_getGaussian(ps, 0) == val);
+    assert(*ptr == val);
+    ParStore_sample(ps, ptr, val-1,val+1, rng);
+    assert(ParStore_getGaussian(ps, 0) != val);
+    assert(*ptr != val);
+
 
     if(verbose)
         ParStore_print(ps, stdout);
@@ -140,6 +180,7 @@ int main(int argc, char **argv) {
 
     ParStore_free(ps);
     ParStore_free(ps2);
+    gsl_rng_free(rng);
     unitTstResult("ParStore", "OK");
 
     return 0;

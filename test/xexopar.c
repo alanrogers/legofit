@@ -84,9 +84,16 @@ int main(int argc, char **argv) {
         printf("after ExoPar_sample: x=%lf y=%lf z=%lf\n",
                x, y, z);
 
-    size_t offset = ((size_t) &x2) - ((size_t) &x);
-    assert(&x2 > &x);
-    ExoPar_shiftPtrs(ep, offset, 1);
+    size_t offset;
+    int sign;
+    if(&x2 > &x) {
+        offset = ((size_t) &x2) - ((size_t) &x);
+        sign = 1;
+    }else{
+        offset = ((size_t) &x) - ((size_t) &x2);
+        sign = -1;
+    }
+    ExoPar_shiftPtrs(ep, offset, sign);
 
     assert(1 == ExoPar_sample(ep, &x, 1.1, 1.2, rng));
 
@@ -101,6 +108,7 @@ int main(int argc, char **argv) {
                x2, y2, z2);
 
     ExoPar_free(ep);
+    gsl_rng_free(rng);
     unitTstResult("ExoPar", "OK");
     return 0;
 }

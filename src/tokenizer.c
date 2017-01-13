@@ -26,7 +26,7 @@
  *
  * The memory allocated by Tokenizer_new is freed by Tokenizer_free.
  *
- * @copyright Copyright (c) 2014, Alan R. Rogers 
+ * @copyright Copyright (c) 2014, Alan R. Rogers
  * <rogers@anthro.utah.edu>. This file is released under the Internet
  * Systems Consortium License, which can be found in file "LICENSE".
  */
@@ -38,25 +38,27 @@
 #include "misc.h"
 #include "tokenizer.h"
 
+/// Tokenizer constructor
 Tokenizer  *Tokenizer_new(int maxTokens) {
     Tokenizer  *t = malloc(sizeof(Tokenizer));
 
-    checkmem(t, __FILE__, __LINE__);
+    CHECKMEM(t);
 
     t->tokptr = malloc(maxTokens * sizeof(t->tokptr[0]));
-    checkmem(t->tokptr, __FILE__, __LINE__);
+    CHECKMEM(t->tokptr);
 
     t->maxTokens = maxTokens;
     return t;
 }
 
+/// Tokenizer destructor
 void Tokenizer_free(Tokenizer * t) {
     assert(t);
     free(t->tokptr);
     free(t);
 }
 
-/*
+/**
  * Turn string "buff" into an array of tokens, assuming that tokens in
  * the input string may be separated by any of the characters in
  * string "sep". Supress empty tokens. Return the number of tokens.
@@ -90,7 +92,7 @@ int Tokenizer_split(Tokenizer * t, char *buff, const char *sep) {
     return t->n;
 }
 
-/* Return pointer to token with given index */
+/// Return pointer to token with given index
 char       *Tokenizer_token(Tokenizer * t, int ndx) {
     assert(t);
     if(t->n == 0) {
@@ -104,7 +106,7 @@ char       *Tokenizer_token(Tokenizer * t, int ndx) {
     return t->tokptr[ndx];
 }
 
-/*
+/**
  * Strip extraneous chars (those list in "extraneous") from both ends
  * of each token. If the result is an empty string, this token is
  * removed from the list. The function returns the number of tokens.
@@ -146,13 +148,13 @@ int Tokenizer_strip(Tokenizer * t, const char *extraneous) {
     return t->n;
 }
 
-/* Return number of tokens */
+/// Return number of tokens
 int Tokenizer_ntokens(Tokenizer * t) {
     assert(t);
     return t->n;
 }
 
-/*
+/**
  * Search for string s among tokens. On success, return index of token.
  * On failure, return the current number of tokens. After each call,
  * the returned value should be compared with that of
@@ -170,6 +172,7 @@ int Tokenizer_find(Tokenizer * t, const char *s) {
     return t->n;
 }
 
+/// Print a summary of the information in a Tokenizer
 void Tokenizer_printSummary(const Tokenizer * tkz, FILE * ofp) {
     assert(tkz);
     assert(ofp);
@@ -178,6 +181,7 @@ void Tokenizer_printSummary(const Tokenizer * tkz, FILE * ofp) {
             "           maxTokens=%8d\n", tkz->n, tkz->maxTokens);
 }
 
+/// Print Tokenizer object
 void Tokenizer_print(const Tokenizer * tkz, FILE * ofp) {
     assert(tkz);
     assert(ofp);

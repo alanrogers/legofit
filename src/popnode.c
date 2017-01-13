@@ -1,13 +1,17 @@
 /**
  * @file popnode.c
- * @brief Class PopNode represents a single segment of a population
- * tree. These nodes are linked together into a network, which models
- * bifurcation of populations and gene flow among them.
+ * @author Alan R. Rogers
+ * @brief A single segment of a population tree.
+ *
+ * PopNode objects can be linked together into a network, which models
+ * bifurcation of populations and gene flow among them. Each PopNode
+ * knows its size and duration. It has pointers to parents and
+ * children. If it has two parents, there is also a mixing parameter,
+ * which determines what fraction of the node derives from each parent.
  */
 
 #include "popnode.h"
 #include "gene.h"
-#include "exopar.h"
 #include "misc.h"
 #include "parstore.h"
 #include <string.h>
@@ -15,6 +19,8 @@
 #include <stdbool.h>
 #include <gsl/gsl_randist.h>
 
+/// This structure allows you to allocate PopNode objects in an array
+/// and then dole them out one at a time via calls to NodeStore_alloc.
 struct NodeStore {
     int nused, len;
     PopNode *v; // not locally owned
@@ -23,8 +29,9 @@ struct NodeStore {
 static void PopNode_sanityCheck(PopNode * self, const char *file, int lineno);
 static void PopNode_randomize_r(PopNode *self, Bounds bnd, gsl_rng *rng);
 static void PopNode_gaussian_r(PopNode *self, Bounds bnd,
-                               ExoPar *ep, gsl_rng *rng);
+                               ParStore *ps, gsl_rng *rng);
 
+/// Check for errors in PopNode tree. Call this from each leaf node.
 void PopNode_sanityFromLeaf(PopNode * self, const char *file, int line) {
 #ifndef NDEBUG
     REQUIRE(self != NULL, file, line);
@@ -146,6 +153,7 @@ int PopNode_isClear(const PopNode *self) {
     return 1;
 }
 
+/// Print a PopNode and (recursively) its descendants.
 void PopNode_print(FILE * fp, PopNode * self, int indent) {
     int         i;
     for(i = 0; i < indent; ++i)
@@ -161,6 +169,7 @@ void PopNode_print(FILE * fp, PopNode * self, int indent) {
         PopNode_print(fp, self->child[i], indent + 1);
 }
 
+/// Print a PopNode but not its descendants.
 void PopNode_printShallow(PopNode * self, FILE * fp) {
     fprintf(fp, "%p twoN=%lf ntrval=(%lf,",
             self, *self->twoN, *self->start);
@@ -197,14 +206,16 @@ void PopNode_printShallow(PopNode * self, FILE * fp) {
     putc('\n', fp);
 }
 
+/// Return the number of samples in a PopNode
 int PopNode_nsamples(PopNode * self) {
     return self->nsamples;
 }
 
+/// PopNode constructor
 PopNode    *PopNode_new(double *twoN, bool twoNfree, double *start,
                         bool startFree, NodeStore *ns) {
     PopNode    *new = NodeStore_alloc(ns);
-    checkmem(new, __FILE__, __LINE__);
+    CHECKMEM(new);
 
     new->nparents = new->nchildren = new->nsamples = 0;
     new->twoN = twoN;
@@ -225,7 +236,7 @@ PopNode    *PopNode_new(double *twoN, bool twoNfree, double *start,
     return new;
 }
 
-/// Connect parent and child 
+/// Connect parent and child
 void PopNode_addChild(PopNode * parent, PopNode * child) {
     if(parent->nchildren > 1)
         eprintf("%s:%s:%d: Can't add child because parent already has %d.\n",
@@ -253,6 +264,7 @@ void PopNode_addChild(PopNode * parent, PopNode * child) {
     PopNode_sanityCheck(child, __FILE__, __LINE__);
 }
 
+/// Check sanity of PopNode
 static void PopNode_sanityCheck(PopNode * self, const char *file,
 								int lineno) {
 #ifndef NDEBUG
@@ -265,6 +277,7 @@ static void PopNode_sanityCheck(PopNode * self, const char *file,
 #endif
 }
 
+/// Add a sample to a PopNode
 void PopNode_addSample(PopNode * self, Gene * gene) {
 	assert(self!=NULL);
 	assert(gene!=NULL);
@@ -278,13 +291,19 @@ void PopNode_addSample(PopNode * self, Gene * gene) {
     PopNode_sanityCheck(self, __FILE__, __LINE__);
 }
 
+/// Connect a child PopNode to two parents.
+/// @param[inout] child pointer to the child PopNode
+/// @param[in] mPtr pointer to the gene flow variable
+/// @param[in] mixFree 1 if mPtr is a free parameter; 0 otherwise
+/// @param[inout] introgressor pointer to the introgressing parent
+/// @param[inout] native pointer to the native parent
 void PopNode_mix(PopNode * child, double *mPtr, bool mixFree,
                  PopNode * introgressor, PopNode * native) {
 
     if(introgressor->nchildren > 1)
         eprintf("%s:%s:%d:"
 				" Can't add child because introgressor already has %d.\n",
-				 __FILE__, __func__, __LINE__, introgressor->nchildren);  
+				 __FILE__, __func__, __LINE__, introgressor->nchildren);
     if(native->nchildren > 1)
         eprintf("%s:%s:%d:"
 				" Can't add child because native parent already has %d.\n",
@@ -326,13 +345,14 @@ void PopNode_mix(PopNode * child, double *mPtr, bool mixFree,
     PopNode_sanityCheck(native, __FILE__, __LINE__);
 }
 
+/// PopNode constructor
 void PopNode_newGene(PopNode * self, unsigned ndx) {
     assert(1 + self->nsamples < MAXSAMP);
     assert(ndx < 8*sizeof(tipId_t));
 
     static const tipId_t one = 1;
     Gene       *gene = Gene_new(one << ndx);
-    checkmem(gene, __FILE__, __LINE__);
+    CHECKMEM(gene);
     self->sample[self->nsamples] = gene;
     ++self->nsamples;
     PopNode_sanityCheck(self, __FILE__, __LINE__);
@@ -388,7 +408,7 @@ Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng) {
             assert(i < j);
 
             self->sample[i] = Gene_join(self->sample[i], self->sample[j]);
-            checkmem(self->sample[i], __FILE__, __LINE__);
+            CHECKMEM(self->sample[i]);
             --self->nsamples;
             if(j != self->nsamples) {
                 self->sample[j] = self->sample[self->nsamples];
@@ -481,7 +501,7 @@ static void PopNode_randomize_r(PopNode *self, Bounds bnd, gsl_rng *rng) {
             fprintf(stderr,"%s:%s:%d: bad value of nparents: %d\n",
                     __FILE__,__func__,__LINE__, self->nparents);
             exit(EXIT_FAILURE);
-	}			
+	}
 
 	if(postpone)
 		return;
@@ -551,16 +571,16 @@ static void PopNode_randomize_r(PopNode *self, Bounds bnd, gsl_rng *rng) {
 /// Reset the value of each Gaussian parameter by sampling from the
 /// relevant distribution.
 void PopNode_gaussian(PopNode *self, Bounds bnd,
-                      ExoPar *ep, gsl_rng *rng) {
+                      ParStore *ps, gsl_rng *rng) {
 	PopNode_untouch(self);
-	PopNode_gaussian_r(self, bnd, ep, rng);
+	PopNode_gaussian_r(self, bnd, ps, rng);
 }
 
 /// Traverse the population tree to reset the value of each Gaussian
 /// parameter by sampling from the relevant distribution.
 /// Call PopNode_untouch before calling this function.
 static void PopNode_gaussian_r(PopNode *self, Bounds bnd,
-                               ExoPar *ep, gsl_rng *rng) {
+                               ParStore *ps, gsl_rng *rng) {
 
 	// If parents are untouched, postpone this node.
 	bool postpone = false;
@@ -581,13 +601,13 @@ static void PopNode_gaussian_r(PopNode *self, Bounds bnd,
             fprintf(stderr,"%s:%s:%d: bad value of nparents: %d\n",
                     __FILE__,__func__,__LINE__, self->nparents);
             exit(EXIT_FAILURE);
-	}			
+	}
 
 	if(postpone)
 		return;
 
     // perturb self->twoN
-    ExoPar_sample(ep, self->twoN, bnd.lo_twoN, bnd.hi_twoN, rng);
+    ParStore_sample(ps, self->twoN, bnd.lo_twoN, bnd.hi_twoN, rng);
 
     // perturb self->start
     // hi_t is the minimum age of parents or bnd.hi_t
@@ -628,16 +648,16 @@ static void PopNode_gaussian_r(PopNode *self, Bounds bnd,
                 __FILE__,__func__,__LINE__, self->nchildren);
         exit(EXIT_FAILURE);
     }
-    ExoPar_sample(ep, self->start, lo_t, hi_t, rng);
+    ParStore_sample(ps, self->start, lo_t, hi_t, rng);
 
     // Perturb mix probability
-    ExoPar_sample(ep, self->mix, 0.0, 1.0, rng);
+    ParStore_sample(ps, self->mix, 0.0, 1.0, rng);
 
 	self->touched = true;
 
     int i;
     for(i=0; i < self->nchildren; ++i)
-        PopNode_gaussian_r(self->child[i], bnd, ep, rng);
+        PopNode_gaussian_r(self->child[i], bnd, ps, rng);
 }
 
 /// Return 1 if parameters satisfy inequality constraints, or 0 otherwise.
@@ -676,7 +696,7 @@ int PopNode_feasible(const PopNode *self, Bounds bnd) {
 	default:
 		break;
 	}
-    
+
     if(self->mix != NULL) {
 		if(*self->mix < 0.0 || *self->mix > 1.0)
 			return 0;
@@ -710,6 +730,12 @@ void PopNode_shiftPopNodePtrs(PopNode *self, size_t dp, int sign) {
         SHIFT_PTR(self->child[i], dp, sign);
 }
 
+/// Allocate a new NodeStore, which provides an interface
+/// for getting PopNode objects, one at a time, out
+/// of a previously-allocated array v.
+/// @param[in] len number of PopNode objects in array.
+/// @param[in] v array of PopNode objects
+/// @return newly-allocated NodeStore.
 NodeStore *NodeStore_new(int len, PopNode *v) {
     NodeStore *self = malloc(sizeof(NodeStore));
     CHECKMEM(self);
@@ -720,11 +746,14 @@ NodeStore *NodeStore_new(int len, PopNode *v) {
     return self;
 }
 
+/// Destructor for NodeStore
 void NodeStore_free(NodeStore *self) {
     // Does not free self->v
     free(self);
 }
 
+/// Return a pointer to an unused PopNode object
+/// within NodeStore. Abort if none are left.
 PopNode *NodeStore_alloc(NodeStore *self) {
     if(self->nused >= self->len)
         eprintf("%s:%s:%d: Ran out of PopNode objects.\n",
@@ -775,6 +804,7 @@ int         SampNdx_equals(const SampNdx *lhs, const SampNdx *rhs){
     return 1;
 }
 
+/// Check sanity of a SampNdx.
 void        SampNdx_sanityCheck(SampNdx *self, const char *file, int line) {
 #ifndef NDEBUG
     REQUIRE(self != NULL, file, line);
@@ -797,6 +827,9 @@ int SampNdx_ptrsLegal(SampNdx *self, PopNode *start, PopNode *end) {
     return 1;
 }
 
+/// Shift all pointers within SampNdx by an offset of magnitude
+/// dpop. If sign > 0, the shift is positive; otherwise it is
+/// negative.
 void SampNdx_shiftPtrs(SampNdx *self, size_t dpop, int sign) {
     int i;
     for(i=0; i < self->n; ++i)

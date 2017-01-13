@@ -62,8 +62,6 @@ BootConf   *BootConf_new(BootChr * bootchr, double confidence);
 void        BootConf_printHdr(const BootConf * bc, FILE * ofp);
 double      BootConf_lowBound(const BootConf * bc, long bin);
 double      BootConf_highBound(const BootConf * bc, long bin);
-double      BootConf_loSpecBound(const BootConf * bc, long i);
-double      BootConf_hiSpecBound(const BootConf * bc, long k);
 void        BootConf_print(const BootConf * bc, FILE * ofp);
 void        BootConf_free(BootConf * bc);
 

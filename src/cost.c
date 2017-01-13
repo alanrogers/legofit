@@ -26,7 +26,13 @@ extern pthread_mutex_t outputLock;
 #include <math.h>
 #include <gsl/gsl_rng.h>
 
+/// Calculate cost.
+/// @param[in] dim dimension of x
 /// @param[in] x vector of parameter values.
+/// @param jdata void pointer to a CostPar object, which contains
+/// exogeneous parameters of the cost function.
+/// @param tdata void pointer to a random number generator
+/// @return cost
 double costFun(int dim, double x[dim], void *jdata, void *tdata) {
     CostPar *cp = (CostPar *) jdata;
     gsl_rng *rng = (gsl_rng *) tdata;
@@ -61,6 +67,7 @@ double costFun(int dim, double x[dim], void *jdata, void *tdata) {
     return cost;
 }
 
+/// Duplicate an object of class CostPar.
 void * CostPar_dup(const void * arg) {
     assert(arg);
     const CostPar *old = (const CostPar *) arg;
@@ -77,6 +84,7 @@ void * CostPar_dup(const void * arg) {
     return new;
 }
 
+/// CostPar destructor.
 void CostPar_free(void *arg) {
     CostPar *self = (CostPar *) arg;    
     if(self)

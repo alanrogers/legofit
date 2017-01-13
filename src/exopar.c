@@ -1,3 +1,11 @@
+/**
+ * @brief Exogeneous parameters sampled from truncated normal distribution.
+ * @file exopar.c
+ * @author Alan R. Rogers
+ * @copyright Copyright (c) 2016, Alan R. Rogers
+ * <rogers@anthro.utah.edu>. This file is released under the Internet
+ * Systems Consortium License, which can be found in file "LICENSE".
+ */
 #include "exopar.h"
 #include "misc.h"
 #include "dtnorm.h"
@@ -8,17 +16,29 @@
 typedef struct ExoParList ExoParList;
 typedef struct ExoParItem ExoParItem;
 
+/// ExoParItem represents a parameter whose value will be
+/// repeatedly changed by sampling from a truncated Gaussian
+/// distribution.
 struct ExoParItem {
-    double     *ptr;            // not locally owned
-    double      mean, sd;
+    double     *ptr;       ///< Pointer to variable. Not locally owned
+    double      mean;      ///< Mean of underlying Gaussian dist.
+    double      sd;        ///< Std deviation of underlying Gaussian.
 };
 
+/// A linked list of ExoParItem objects
 struct ExoParList {
-    double     *ptr;            // not locally owned
     ExoParItem  par;
     ExoParList *next;
 };
 
+/// A container of ExoParItem objects.
+/// Initially, the container isn't frozen, and the items
+/// are maintained in a linked list, which makes it easy to add
+/// new items to the container. Later, the container can be
+/// frozen. After this, it is no longer possible to add things, and
+/// the ExoParItem objects are copied into a sorted array. The frozen
+/// array behaves like a dictionary, in which the keys are pointers
+/// and the values are ExoParItem objects.
 struct ExoPar {
     ExoParList *list;
     int         frozen;
@@ -38,6 +58,12 @@ static int  compare_ExoParItem_ExoParItem(const void *void_x,
                                           const void *void_y);
 static int  compare_dblPtr_ExoParItem(const void *void_x, const void *void_y);
 
+/// Initialize an ExoParItem object.
+/// @param [inout] ptr pointer to memory that will be controlled by
+/// this ExoParItem.
+/// @param[in] mean mean of underlying Gaussian distribution
+/// @param[in] sd standard deviation of underlying Gaussian
+/// @sideeffect Sets *ptr equal to mean
 static void ExoParItem_init(ExoParItem * self, double *ptr, double mean,
                             double sd) {
     assert(ptr);
@@ -46,6 +72,11 @@ static void ExoParItem_init(ExoParItem * self, double *ptr, double mean,
     self->sd = sd;
 }
 
+/// Set *ptr by sampling from a truncated Gaussian distribution
+/// @param[inout] self ExoParItem object to be modified
+/// @param[in] low low end of truncation interval
+/// @param[in] high high end of truncation interval
+/// @param[inout] rng GSL random number generator
 static void ExoParItem_sample(const ExoParItem * self, double low,
                               double high, gsl_rng * rng) {
     double      x;
@@ -58,8 +89,12 @@ static void ExoParItem_sample(const ExoParItem * self, double low,
 }
 
 /// Add a new link to list.
-/// ptr points to the memory occupied by the parameter; m is the mean,
-/// sd the standard deviation.
+/// @param[inout] old pointer to head of linked list
+/// @param[in] ptr points to the memory occupied by the parameter to be
+/// controlled
+/// @param[in] m the mean,
+/// @param[in] sd the standard deviation.
+/// @return pointer to new head of list
 static ExoParList *ExoParList_add(ExoParList * old, double *ptr, double m,
                                   double sd) {
     assert(ptr);
@@ -71,6 +106,7 @@ static ExoParList *ExoParList_add(ExoParList * old, double *ptr, double m,
     return new;
 }
 
+/// Free linked list
 static void ExoParList_free(ExoParList * self) {
     if(self == NULL)
         return;
@@ -88,6 +124,9 @@ static int ExoParList_size(ExoParList * self) {
     return n;
 }
 
+/// Compare two objects of type ExoParItem.
+/// @return -1, 0, or 1, to indicate that *x < *y, *x == *y, or *x >
+/// *y.
 static int compare_ExoParItem_ExoParItem(const void *void_x,
                                          const void *void_y) {
     const ExoParItem *x = (const ExoParItem *) void_x;
@@ -101,6 +140,10 @@ static int compare_ExoParItem_ExoParItem(const void *void_x,
     return 0;
 }
 
+/// Compare a double pointer to the "ptr" variable within an
+/// ExoParItem.
+/// @return -1, 0, or 1 to indicate that the double ptr is "<", "==",
+/// or ">" the pointer within the ExoParItem.
 static int compare_dblPtr_ExoParItem(const void *void_x, const void *void_y) {
     double     *const *x = (double *const *) void_x;
     const ExoParItem *y = (const ExoParItem *) void_y;
@@ -113,8 +156,8 @@ static int compare_dblPtr_ExoParItem(const void *void_x, const void *void_y) {
     return 0;
 }
 
-/// Create a new ExoPar object by coping ExoParItem values
-/// from linked list and then sorting them.
+/// Create an empty ExoPar container.
+/// @return pointer to newly-allocated ExoPar.
 ExoPar     *ExoPar_new(void) {
     ExoPar     *self = malloc(sizeof(ExoPar));
     CHECKMEM(self);
@@ -126,6 +169,9 @@ ExoPar     *ExoPar_new(void) {
     return self;
 }
 
+/// Freeze an ExoPar. This converts the internal linked list into
+/// a an array, which is sorted according to the internal pointer
+/// values. After freezing, nothing can be added to the ExoPar.
 void ExoPar_freeze(ExoPar * self) {
 
     if(self->frozen)
@@ -146,9 +192,14 @@ void ExoPar_freeze(ExoPar * self) {
 }
 
 /// If ptr is in ExoPar, then reset the value it points to with a
-/// random value generated by sampling from the normal distribution
-/// and then reflecting back and forth so that the value lies within
-/// [low, high]. Return 0 on success or 1 if ptr is not in ExoPar.
+/// random value generated by sampling from the truncated normal
+/// distribution.
+/// @param self pointer to ExoPar
+/// @param ptr memory address of the variable we will to modify
+/// @param low low end of truncation interval
+/// @param high high end of truncation interval
+/// @param rng GSL random number generator
+/// @return 0 on success or 1 if ptr is not in ExoPar.
 int ExoPar_sample(ExoPar * self, double *ptr,
                   double low, double high, gsl_rng * rng) {
     assert(self->frozen);
@@ -163,6 +214,7 @@ int ExoPar_sample(ExoPar * self, double *ptr,
     return 1;
 }
 
+/// ExoPar destructor
 void ExoPar_free(ExoPar * self) {
     if(self->frozen) {
         free(self->v);
@@ -174,9 +226,9 @@ void ExoPar_free(ExoPar * self) {
     free(self);
 }
 
-// Add an exogeneous parameter to the table.
-// ptr points to the memory occupied by the parameter; m is the mean,
-// sd the standard deviation.
+/// Add an exogeneous parameter to the table.
+/// ptr points to the memory occupied by the parameter; m is the mean,
+/// sd the standard deviation.
 void ExoPar_add(ExoPar * self, double *ptr, double m, double sd) {
     assert(ptr);
     self->list = ExoParList_add(self->list, ptr, m, sd);
@@ -193,11 +245,18 @@ ExoPar     *ExoPar_dup(const ExoPar * old) {
     new->n = old->n;
     new->frozen = old->frozen;
     new->list = NULL;
-    new->v = memdup(old->v, old->n * sizeof(old->v[0]));
-    CHECKMEM(new->v);
+    if(old->n == 0)
+        new->v = NULL;
+    else {
+        new->v = memdup(old->v, old->n * sizeof(old->v[0]));
+        CHECKMEM(new->v);
+    }
     return new;
 }
 
+/// Shift all pointers within an ExoPar
+/// @param[in] offset magnitude of shift
+/// @param[in] sign direction of shift
 void ExoPar_shiftPtrs(ExoPar * self, size_t offset, int sign) {
     if(!self->frozen)
         DIE("Can't shift pointers in an unfrozen ExoPar");

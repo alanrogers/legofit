@@ -1162,7 +1162,7 @@ SERVER_BASED_SEARCH    = NO
 # If the GENERATE_LATEX tag is set to YES (the default) Doxygen will
 # generate Latex output.
 
-GENERATE_LATEX         = YES
+GENERATE_LATEX         = NO
 
 # The LATEX_OUTPUT tag is used to specify where the LaTeX docs will be put.
 # If a relative path is entered the value of OUTPUT_DIRECTORY will be
@@ -1297,7 +1297,7 @@ RTF_EXTENSIONS_FILE    =
 # If the GENERATE_MAN tag is set to YES (the default) Doxygen will
 # generate man pages
 
-GENERATE_MAN           = YES
+GENERATE_MAN           = NO
 
 # The MAN_OUTPUT tag is used to specify where the man pages will be put.
 # If a relative path is entered the value of OUTPUT_DIRECTORY will be
@@ -1439,7 +1439,7 @@ INCLUDE_PATH           =
 # directories. If left blank, the patterns specified with FILE_PATTERNS will
 # be used.
 
-INCLUDE_FILE_PATTERNS  = 
+INCLUDE_FILE_PATTERNS  =
 
 # The PREDEFINED tag can be used to specify one or more macro names that
 # are defined before the preprocessor is started (similar to the -D option of

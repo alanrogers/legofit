@@ -1,9 +1,9 @@
 /**
  * @file branchtab.c
  * @author Alan R. Rogers
- * @brief Hash table associating key (an unsigned int whose bits encode
- * the descendants of a node in a gene tree) and value (a double
- * representing the length of the ascending branch)
+ * @brief Hash table associating key (an unsigned int encoding a site
+ * pattern) and value (a double representing the length of the
+ * ascending branch)
  *
  * @copyright Copyright (c) 2016, Alan R. Rogers 
  * <rogers@anthro.utah.edu>. This file is released under the Internet
@@ -20,15 +20,15 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-// BT_DIM must be a power of 2
+/// Dimension of hash table. Must be a power of 2
 #define BT_DIM 16u
 
-// Make sure BT_DIM is a power of 2
+/// Make sure BT_DIM is a power of 2
 #if (BT_DIM==0u || (BT_DIM & (BT_DIM-1u)))
 # error BT_DIM must be a power of 2
 #endif
 
-// A single element
+/// A single element of hash table
 typedef struct BTLink {
     struct BTLink  *next;
     tipId_t         key;
@@ -38,6 +38,7 @@ typedef struct BTLink {
 #endif
 } BTLink;
 
+/// Hash table for branch lengths.
 struct BranchTab {
 #ifndef NDEBUG
     int frozen;   // nonzero => no further changes allowed
@@ -62,10 +63,8 @@ uint32_t    tipIdHash(uint64_t key);
 #endif
 
 #if TIPID_SIZE==32
-// These hash functions are from Thomas Wang's 1997 article:
-// https://gist.github.com/badboy/6267743
-//
-// This one hashes a 32-bit integer 
+/// Hash function for a 32-bit integer. From Thomas Wang's 1997
+/// article: /// https://gist.github.com/badboy/6267743
 uint32_t tipIdHash( uint32_t key) {
    key = (key+0x7ed55d16) + (key<<12);
    key = (key^0xc761c23c) ^ (key>>19);
@@ -76,7 +75,7 @@ uint32_t tipIdHash( uint32_t key) {
    return key & (BT_DIM-1);
 }
 #elif TIPID_SIZE==64
-// This one hashes a 64-bit integer but returns 32 bits.
+/// Hash function for a 64-bit integer.
 uint32_t tipIdHash(uint64_t key) {
   key = (~key) + (key << 18); // key = (key << 18) - key - 1;
   key = key ^ (key >> 31);
@@ -90,6 +89,7 @@ uint32_t tipIdHash(uint64_t key) {
 #error "Can't compile tipIdHash function. See branchtab.c"
 #endif
 
+/// Constructor of class BTLink
 BTLink         *BTLink_new(tipId_t key, double value) {
     BTLink         *new = malloc(sizeof(*new));
     CHECKMEM(new);
@@ -135,7 +135,7 @@ int  BTLink_equals(const BTLink *lhs, const BTLink *rhs) {
     return BTLink_equals(lhs->next, rhs->next);
 }
 
-
+/// Destructor for BTLink
 void BTLink_free(BTLink * self) {
     if(self == NULL)
         return;
@@ -143,6 +143,9 @@ void BTLink_free(BTLink * self) {
     free(self);
 }
 
+/// Add a value to a BTLink object. On return, self->value
+/// equals the old value and the new one. If COST==CHISQR_COST,
+/// the function also adds the square of value to self->sqr.
 BTLink *BTLink_add(BTLink * self, tipId_t key, double value) {
     if(self == NULL || key < self->key) {
         BTLink *new = BTLink_new(key, value);
@@ -233,6 +236,7 @@ int BranchTab_equals(const BranchTab *lhs, const BranchTab *rhs) {
     return 1;
 }
 
+/// Destructor for BranchTab.
 void BranchTab_free(BranchTab * self) {
     int i;
     for(i=0; i < BT_DIM; ++i)
@@ -303,6 +307,7 @@ int BranchTab_divideBy(BranchTab *self, double denom) {
     return 0;
 }
 
+/// Print a BranchTab to standard output.
 void BranchTab_print(const BranchTab *self) {
     unsigned i;
     for(i=0; i < BT_DIM; ++i) {
@@ -323,6 +328,10 @@ void BranchTab_plusEquals(BranchTab *lhs, BranchTab *rhs) {
     }
 }
 
+/// Fill arrays key, value, and square with values in BranchTab.
+/// On return, key[i] is the id of the i'th site pattern, value[i] is
+/// the total branch length associated with that site pattern, and
+/// sqr[i] is the corresponding sum of squared branch lengths.
 void BranchTab_toArrays(BranchTab *self, unsigned n, tipId_t key[n],
 						double value[n], double sqr[n]) {
     int i, j=0;
@@ -342,8 +351,7 @@ void BranchTab_toArrays(BranchTab *self, unsigned n, tipId_t key[n],
     }
 }
 
-/// Construct by parsing an input file. Returns a pointer
-/// to a normalized BranchTab object.
+/// Construct a BranchTab by parsing an input file.
 BranchTab *BranchTab_parse(const char *fname, const LblNdx *lblndx) {
     FILE *fp = fopen(fname, "r");
     if(fp == NULL)

@@ -1,5 +1,66 @@
-#include "exopar.h"
-#include "hashtab.h"
+/**
+ * @file parse.c
+ * @brief Parse a .lgo file
+ * @author Alan R. Rogers
+ *
+ * Consider the following tree of populations:
+ *
+ *      a-------|
+ *              |ab--|
+ *      b--|bb--|    |
+ *         |         |abc--
+ *         |c--------|
+ *
+ *  t = 0  1    3    5.5     inf
+ *
+ * In this tree, a, b, c, bb, ab, and abc represent segments of the
+ * population tree.  The input file begins with a series of "segment"
+ * statements that define each of the segments in the tree. The
+ * segment statements also provide the time (backwards from the
+ * present) at which the segment starts, and the size, twoN, of the
+ * population. Optionally, it also provides the number of haploid
+ * samples observed in this segment of the tree.
+ *
+ * The statements that follow the segment statements describe how the
+ * segments are connected. The "mix" statement is used when a segment
+ * originates as a mixture of two ancestral segments. The "derive"
+ * statement is used when a segment derives from a single ancestral
+ * segment.
+ *
+ * No segment can have more than two "parents" or more than two
+ * "children".
+ *
+ * Here is input that would generate the tree above:
+ *
+ * time fixed  T0=0
+ * time free Tc=1
+ * time free Tab=3
+ * time free Tabc=5.5
+ * twoN free 2Na=100
+ * twoN fixed  2Nb=123
+ * twoN free 2Nc=213.4
+ * twoN fixed  2Nbb=32.1
+ * twoN free 2Nab=222
+ * twoN fixed  2Nabc=1.2e2
+ * mixFrac free Mc=0.8
+ * segment a   t=T0     twoN=2Na    samples=1
+ * segment b   t=T0     twoN=2Nb    samples=2
+ * segment c   t=Tc     twoN=2Nc    samples=1
+ * segment bb  t=Tc     twoN=2Nbb
+ * segment ab  t=Tab    twoN=2Nab
+ * segment abc t=Tabc   twoN=2Nabc
+ * mix    b  from bb + Mc * c
+ * derive a  from ab
+ * derive bb from ab
+ * derive ab from abc
+ * derive c  from abc
+ *
+ * @copyright Copyright (c) 2016, Alan R. Rogers
+ * <rogers@anthro.utah.edu>. This file is released under the Internet
+ * Systems Consortium License, which can be found in file "LICENSE".
+ */
+
+#include "popnodetab.h"
 #include "lblndx.h"
 #include "misc.h"
 #include "parse.h"
@@ -13,59 +74,7 @@
 #include <string.h>
 #include <stdbool.h>
 
-// Consider the following tree of populations:
-//
-//      a-------|
-//              |ab--|
-//      b--|bb--|    |
-//         |         |abc--
-//         |c--------|
-//
-//  t = 0  1    3    5.5     inf
-//
-// In this tree, a, b, c, bb, ab, and abc represent segments of the
-// population tree.  The input file begins with a series of "segment"
-// statements that define each of the segments in the tree. The
-// segment statements also provide the time (backwards from the
-// present) at which the segment starts, and the size, twoN, of the
-// population. Optionally, it also provides the number of haploid
-// samples observed in this segment of the tree.
-//
-// The statements that follow the segment statements describe how the
-// segments are connected. The "mix" statement is used when a segment
-// originates as a mixture of two ancestral segments. The "derive"
-// statement is used when a segment derives from a single ancestral
-// segment. 
-//
-// No segment can have more than two "parents" or more than two
-// "children".
-//
-// Here is input that would generate the tree above:
-//
-// time fixed  T0=0
-// time free Tc=1
-// time free Tab=3
-// time free Tabc=5.5
-// twoN free 2Na=100
-// twoN fixed  2Nb=123
-// twoN free 2Nc=213.4
-// twoN fixed  2Nbb=32.1
-// twoN free 2Nab=222 
-// twoN fixed  2Nabc=1.2e2
-// mixFrac free Mc=0.8
-// segment a   t=T0     twoN=2Na    samples=1
-// segment b   t=T0     twoN=2Nb    samples=2
-// segment c   t=Tc     twoN=2Nc    samples=1
-// segment bb  t=Tc     twoN=2Nbb
-// segment ab  t=Tab    twoN=2Nab
-// segment abc t=Tabc   twoN=2Nabc
-// mix    b  from bb + Mc * c
-// derive a  from ab
-// derive bb from ab
-// derive ab from abc
-// derive c  from abc
-
-#if 1
+/// Abort if index is out of bounds
 #  define CHECK_INDEX(ndx,n) do{                                \
         if((ndx)>=(n)){                                         \
             fprintf(stderr,"%s:%s:%d: index out of bounds\n",   \
@@ -73,50 +82,39 @@
             exit(EXIT_FAILURE);                                 \
         }                                                       \
     }while(0)
-#else
-#  define CHECK_INDEX(ndx,n)
-#endif
 
-#if 1
-#  define CHECK_NAME(s) do {                                    \
-        if((s)==NULL) {                                         \
-            fprintf(stderr, "%s:%s:%d: Null population name\n", \
-                    __FILE__,__func__,__LINE__);                \
-            exit(EXIT_FAILURE);                                 \
-        }                                                       \
-        if(strlen((s)) >= POPNAMESIZE) {                        \
-            fprintf(stderr,"%s:%s:%d:"                          \
-                    " Pop name \"%s\" is too long."             \
-                    " Max=%d.\n",                               \
-                    __FILE__,__func__,__LINE__,                 \
-                    (s), POPNAMESIZE-1);                        \
-            exit(EXIT_FAILURE);                                 \
-        }                                                       \
-    }while(0)
-#else
-#  define CHECK_NAME(s)
-#endif
-
+/// Abort with an error message about illegal input.
 #define ILLEGAL_INPUT(x) do{                                    \
         fprintf(stderr,"%s:%s:%d: Illegal input: \"%s\"\n",     \
             __FILE__,__func__,__LINE__, (x));                   \
         exit(EXIT_FAILURE);                                     \
     }while(0)
 
+/// Distinguish between parameters that describe population size,
+/// time, and gene flow.
 enum ParamType { TwoN, Time, MixFrac };
+
+/// Distinguish between parameters that free, fixed, and Gaussian.
+/// Free parameters can be changed during optimization; fixed ones
+/// never change; Gaussian ones are reset for each simulation
+/// replicate by sampling from a truncated normal distribution.
 enum ParamStatus { Free, Fixed, Gaussian };
 
 int         getDbl(double *x, Tokenizer * tkz, int i);
 int         getULong(unsigned long *x, Tokenizer * tkz, int i);
 void		parseParam(Tokenizer *tkz, enum ParamType type,
-					   ParStore *parstore, Bounds *bnd,
-                       ExoPar *exopar, bool isTimeParam);
-void        parseSegment(Tokenizer *tkz, HashTab *poptbl, SampNdx *sndx,
+					   ParStore *parstore, Bounds *bnd);
+void        parseSegment(Tokenizer *tkz, PopNodeTab *poptbl, SampNdx *sndx,
 						 LblNdx *lndx, ParStore *parstore,
                          NodeStore *ns);
-void        parseDerive(Tokenizer *tkz, HashTab *poptbl);
-void        parseMix(Tokenizer *tkz, HashTab *poptbl, ParStore *parstore);
+void        parseDerive(Tokenizer *tkz, PopNodeTab *poptbl);
+void        parseMix(Tokenizer *tkz, PopNodeTab *poptbl, ParStore *parstore);
 
+/// Interpret token i as a double.
+/// @param[out] x points to variable into which double value will be
+/// placed
+/// @param[inout] tkz points to Tokenizer
+/// @param[in] i index of token to be interpreted as a double
 int getDbl(double *x, Tokenizer * tkz, int i) {
     char       *end = NULL;
 	const char *tok = Tokenizer_token(tkz, i);
@@ -127,6 +125,12 @@ int getDbl(double *x, Tokenizer * tkz, int i) {
     return 1;                   // failure
 }
 
+/// Interpret token i as an unsigned long integer.
+/// @param[out] x points to variable into which value will be
+/// placed
+/// @param[inout] tkz points to Tokenizer
+/// @param[in] i index of token to be interpreted as an unsigned long
+/// integer.
 int getULong(unsigned long *x, Tokenizer * tkz, int i) {
     char       *end = NULL;
 
@@ -136,16 +140,18 @@ int getULong(unsigned long *x, Tokenizer * tkz, int i) {
     return 1;                   // failure
 }
 
-// twoN    fixed|free name=100
-// time    fixed|free name=100
-// mixFrac fixed|free name=100
+/// Parse a line of input defining a parameter
+/// @param[inout] tkz the Tokenizer
+/// @param[in] type the type of the current parameter: TwoN, Time, or MixFrac
+/// @param[out] parstore structure that maintains info about
+/// parameters
+/// @param[in] bnd the bounds of each type of parameter
 void		parseParam(Tokenizer *tkz, enum ParamType type,
-					   ParStore *parstore, Bounds *bnd,
-                       ExoPar *exopar, bool isTimeParam) {
+					   ParStore *parstore, Bounds *bnd) {
 	int curr=1, ntokens = Tokenizer_ntokens(tkz);
     enum ParamStatus pstat = Free;
 
-	// Read type of parameter: "fixed" or "free"
+	// Read status of parameter: "fixed" or "free"
 	{
 		char *tok;
 		CHECK_INDEX(curr, ntokens);
@@ -179,7 +185,7 @@ void		parseParam(Tokenizer *tkz, enum ParamType type,
 	double value;
     if(getDbl(&value, tkz, curr)) {
 		fflush(stdout);
-        fprintf(stderr, 
+        fprintf(stderr,
                 "%s:%s:%d:Can't parse \"%s\" as a double.\n",
 				__FILE__,__func__,__LINE__,
                 Tokenizer_token(tkz, curr));
@@ -204,7 +210,7 @@ void		parseParam(Tokenizer *tkz, enum ParamType type,
         CHECK_INDEX(curr, ntokens);
         if(getDbl(&sd, tkz, curr)) {
             fflush(stdout);
-            fprintf(stderr, 
+            fprintf(stderr,
                     "%s:%s:%d:Can't parse \"%s\" as a double.\n",
                     __FILE__,__func__,__LINE__,
                     Tokenizer_token(tkz, curr));
@@ -225,19 +231,7 @@ void		parseParam(Tokenizer *tkz, enum ParamType type,
 		ParStore_addFixedPar(parstore, value, name);
         break;
     case Gaussian:
-		ParStore_addFixedPar(parstore, value, name);
-        {
-            bool isfree;
-            double *ptr = ParStore_findPtr(parstore, &isfree, name);
-            if(ptr == NULL) {
-                fprintf(stderr,"%s:%d: Parameter \"%s\" is undefined.\n",
-                        __FILE__,__LINE__, name);
-                Tokenizer_print(tkz, stderr);
-                exit(EXIT_FAILURE);
-            }
-            assert(!isfree);
-            ExoPar_add(exopar, ptr, value, sd);
-        }
+		ParStore_addGaussianPar(parstore, value, sd, name);
         break;
     case Free:
         // Set bounds, based on type of parameter
@@ -261,7 +255,7 @@ void		parseParam(Tokenizer *tkz, enum ParamType type,
                 eprintf("%s:%s:%d: This shouldn't happen\n",
                         __FILE__,__func__,__LINE__);
             }
-            ParStore_addFreePar(parstore, value, lo, hi, name, isTimeParam);
+            ParStore_addFreePar(parstore, value, lo, hi, name);
         }
         break;
     default:
@@ -270,8 +264,17 @@ void		parseParam(Tokenizer *tkz, enum ParamType type,
     }
 }
 
-// segment a   t=0     twoN=100    samples=1
-void parseSegment(Tokenizer *tkz, HashTab *poptbl, SampNdx *sndx,
+/// Parse a line describing a segment of the population tree
+/// @param[inout] tkz the Tokenizer
+/// @param[inout] poptbl associates names of segments
+/// with pointers to them.
+/// @param[inout] sndx associates the index of each
+/// sample with the PopNode object to which it belongs.
+/// @param[inout] lndx associated index of each sample with its name
+/// @param[out] parstore structure that maintains info about
+/// parameters
+/// @param[inout] ns allocates PopNode objects
+void parseSegment(Tokenizer *tkz, PopNodeTab *poptbl, SampNdx *sndx,
 				  LblNdx *lndx, ParStore *parstore, NodeStore *ns) {
     char *popName, *tok;
     double *tPtr, *twoNptr;
@@ -330,13 +333,13 @@ void parseSegment(Tokenizer *tkz, HashTab *poptbl, SampNdx *sndx,
                      __FILE__,__func__,__LINE__,
                      Tokenizer_token(tkz, curr - 1));
         CHECK_INDEX(curr, ntokens);
-        if(getULong(&nsamples, tkz, curr)) 
+        if(getULong(&nsamples, tkz, curr))
             eprintf("%s:%s:%d: Can't parse \"%s\" as an unsigned int."
                     " Expecting value of \"samples\"\n",
                      __FILE__,__func__,__LINE__,
                      Tokenizer_token(tkz, curr - 1));
         else {
-            if(nsamples > MAXSAMP) 
+            if(nsamples > MAXSAMP)
                 eprintf("%s:%s:%d: %lu samples is too many: max is %d:\n",
                          __FILE__,__func__,__LINE__, nsamples, MAXSAMP);
             ++curr;
@@ -348,21 +351,20 @@ void parseSegment(Tokenizer *tkz, HashTab *poptbl, SampNdx *sndx,
                  __FILE__,__func__,__LINE__, Tokenizer_token(tkz,curr));
 
     assert(strlen(popName) > 0);
-    El *e = HashTab_get(poptbl, popName);
-    PopNode *thisNode = (PopNode *) El_get(e);
-    if(thisNode == NULL) {
-		// Create new node, with pointers to the relevant parameters
-        thisNode = PopNode_new(twoNptr, twoNfree, tPtr, tfree, ns);
-        El_set(e, thisNode);
-    }else
+    PopNode *thisNode = PopNode_new(twoNptr, twoNfree, tPtr, tfree, ns);
+    if(0 != PopNodeTab_insert(poptbl, popName, thisNode))
         eprintf("%s:%s:%d: duplicate \"segment %s\"\n",
                  __FILE__,__func__,__LINE__, popName);
     LblNdx_addSamples(lndx, nsamples, popName);
     SampNdx_addSamples(sndx, nsamples, thisNode);
 }
 
-// derive a from ab
-void parseDerive(Tokenizer *tkz, HashTab *poptbl) {
+/// Parse a line of input describing a parent-offspring relationship
+/// between two nodes.
+/// @param[inout] tkz the Tokenizer
+/// @param[inout] poptbl associates names of segments
+/// with pointers to them.
+void parseDerive(Tokenizer *tkz, PopNodeTab *poptbl) {
     char *childName, *parName;
     int curr=1,  ntokens = Tokenizer_ntokens(tkz);
 
@@ -378,7 +380,7 @@ void parseDerive(Tokenizer *tkz, HashTab *poptbl) {
         Tokenizer_print(tkz, stderr);
         exit(EXIT_FAILURE);
     }
-    
+
     // Read name of parent
     CHECK_INDEX(curr, ntokens);
     parName = Tokenizer_token(tkz, curr++);
@@ -388,16 +390,14 @@ void parseDerive(Tokenizer *tkz, HashTab *poptbl) {
                  __FILE__,__func__,__LINE__, Tokenizer_token(tkz,curr));
 
     assert(strlen(childName) > 0);
-    El *childEl = HashTab_get(poptbl, childName);
-    PopNode *childNode = (PopNode *) El_get(childEl);
+    PopNode *childNode = PopNodeTab_get(poptbl, childName);
     if(childNode == NULL) {
         eprintf("%s:%s:%d: child segment \"%s\" undefined\n",
                  __FILE__,__func__,__LINE__, childName);
     }
 
     assert(strlen(parName) > 0);
-    El *parEl = HashTab_get(poptbl, parName);
-    PopNode *parNode = (PopNode *) El_get(parEl);
+    PopNode *parNode = PopNodeTab_get(poptbl, parName);
     if(parNode == NULL) {
         eprintf("%s:%s:%d: parent segment \"%s\" undefined\n",
                  __FILE__,__func__,__LINE__, parName);
@@ -405,8 +405,13 @@ void parseDerive(Tokenizer *tkz, HashTab *poptbl) {
     PopNode_addChild(parNode, childNode);
 }
 
-// mix    b  from bb + 0.1 c
-void parseMix(Tokenizer *tkz, HashTab *poptbl, ParStore *parstore) {
+/// Parse a line of input describing gene flow.
+/// @param[inout] tkz the Tokenizer
+/// @param[inout] poptbl associates names of segments
+/// with pointers to them.
+/// @param[out] parstore structure that maintains info about
+/// parameters
+void parseMix(Tokenizer *tkz, PopNodeTab *poptbl, ParStore *parstore) {
     char *childName, *parName[2], *tok;
     double *mPtr;
 	bool mfree;
@@ -459,23 +464,20 @@ void parseMix(Tokenizer *tkz, HashTab *poptbl, ParStore *parstore) {
                  __FILE__,__func__,__LINE__, Tokenizer_token(tkz,curr));
 
     assert(strlen(childName) > 0);
-    El *childEl = HashTab_get(poptbl, childName);
-    PopNode *childNode = (PopNode *) El_get(childEl);
+    PopNode *childNode = PopNodeTab_get(poptbl, childName);
     if(childNode == NULL) {
         eprintf("%s:%s:%d: child segment \"%s\" undefined\n",
                  __FILE__,__func__,__LINE__, childName);
     }
 
     assert(strlen(parName[0]) > 0);
-    El *parEl0 = HashTab_get(poptbl, parName[0]);
-    PopNode *parNode0 = (PopNode *) El_get(parEl0);
+    PopNode *parNode0 = PopNodeTab_get(poptbl, parName[0]);
     if(parNode0 == NULL)
         eprintf("%s:%s:%d: parent segment \"%s\" undefined\n",
                  __FILE__,__func__,__LINE__, parName[0]);
 
     assert(strlen(parName[1]) > 0);
-    El *parEl1 = HashTab_get(poptbl, parName[1]);
-    PopNode *parNode1 = (PopNode *) El_get(parEl1);
+    PopNode *parNode1 = PopNodeTab_get(poptbl, parName[1]);
     if(parNode1 == NULL)
         eprintf("%s:%s:%d: parent segment \"%s\" undefined\n",
                  __FILE__,__func__,__LINE__, parName[1]);
@@ -483,19 +485,28 @@ void parseMix(Tokenizer *tkz, HashTab *poptbl, ParStore *parstore) {
     PopNode_mix(childNode, mPtr, mfree, parNode1, parNode0);
 }
 
+/// Parse an input file in .lgo format
+/// @param[inout] fp input file pointer
+/// @param[inout] sndx associates the index of each
+/// sample with the PopNode object to which it belongs.
+/// @param[inout] lndx associated index of each sample with its name
+/// @param[out] parstore structure that maintains info about
+/// parameters
+/// @param[in] bnd the bounds of each type of parameter
+/// @param[inout] ns allocates PopNode objects
 PopNode    *mktree(FILE * fp, SampNdx *sndx, LblNdx *lndx, ParStore *parstore,
-                   ExoPar *exopar, Bounds *bnd, NodeStore *ns) {
+                   Bounds *bnd, NodeStore *ns) {
     int         ntokens;
     char        buff[500];
     Tokenizer  *tkz = Tokenizer_new(50);
 
-    HashTab *poptbl = HashTab_new();
+    PopNodeTab *poptbl = PopNodeTab_new();
 
     while(1) {
         if(fgets(buff, sizeof(buff), fp) == NULL)
             break;
 
-        if(!strchr(buff, '\n') && !feof(fp)) 
+        if(!strchr(buff, '\n') && !feof(fp))
             eprintf("s:%s:%d: buffer overflow. buff size: %zu\n",
                     __FILE__, __func__, __LINE__, sizeof(buff));
 
@@ -513,11 +524,11 @@ PopNode    *mktree(FILE * fp, SampNdx *sndx, LblNdx *lndx, ParStore *parstore,
 
         char *tok = Tokenizer_token(tkz, 0);
 		if(0 == strcmp(tok, "twoN"))
-			parseParam(tkz, TwoN, parstore, bnd, exopar, false);
+			parseParam(tkz, TwoN, parstore, bnd);
 		else if(0 == strcmp(tok, "time"))
-			parseParam(tkz, Time, parstore, bnd, exopar, true);
+			parseParam(tkz, Time, parstore, bnd);
 		else if(0 == strcmp(tok, "mixFrac"))
-			parseParam(tkz, MixFrac, parstore, bnd, exopar, false);
+			parseParam(tkz, MixFrac, parstore, bnd);
         else if(0 == strcmp(tok, "segment"))
             parseSegment(tkz, poptbl, sndx, lndx, parstore, ns);
         else if(0 == strcmp(tok, "mix"))
@@ -528,42 +539,14 @@ PopNode    *mktree(FILE * fp, SampNdx *sndx, LblNdx *lndx, ParStore *parstore,
             ILLEGAL_INPUT(tok);
     }
 
-    // No more additions allowed to exopar.
-    ExoPar_freeze(exopar);
-
     // Make sure the tree of populations has a single root. This
-    // code iterates through all the nodes in the HashTab, and
+    // code iterates through all the nodes in the PopNodeTab, and
     // searches from each node back to the root. If all is well,
     // these searches all find the same root. Otherwise, it aborts
     // with an error.
-    PopNode    *root = NULL;
-    {
-        HashTabSeq *popseq = HashTabSeq_new(poptbl);
-        CHECKMEM(popseq);
-
-        El         *el = HashTabSeq_next(popseq);
-        while(el != NULL) {
-            PopNode    *node = El_get(el);
-            assert(node != NULL);
-
-            PopNode_sanityFromLeaf(node, __FILE__, __LINE__);
-            node = PopNode_root(node);
-            if(root == NULL)
-                root = node;
-            else {
-                if(root != node) {
-                    fprintf(stderr,
-                            "%s:%s:%d: Pop tree has multiple roots.\n",
-                            __FILE__, __func__, __LINE__);
-                    exit(EXIT_FAILURE);
-                }
-            }
-            el = HashTabSeq_next(popseq);
-        }
-        HashTabSeq_free(popseq);
-    }
+    PopNode *root = PopNodeTab_check_and_root(poptbl, __FILE__, __LINE__);
     Tokenizer_free(tkz);
-    HashTab_free(poptbl);
+    PopNodeTab_free(poptbl);
     return root;
 }
 
@@ -685,11 +668,10 @@ int main(int argc, char **argv) {
 
     PopNode  nodeVec[nseg];
     PopNode *root=NULL;
-    ExoPar *ep = ExoPar_new();
 
     {
         NodeStore *ns = NodeStore_new(nseg, nodeVec);
-        root = mktree(fp, &sndx, &lndx, parstore, ep, &bnd, ns);
+        root = mktree(fp, &sndx, &lndx, parstore, &bnd, ns);
         assert(root != NULL);
         NodeStore_free(ns);
     }
@@ -710,7 +692,6 @@ int main(int argc, char **argv) {
 	ParStore_free(parstore);
     fclose(fp);
     unlink(tstFname);
-    ExoPar_free(ep);
     return 0;
 }
 #endif

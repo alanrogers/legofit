@@ -20,17 +20,7 @@ double      perturb_ratio(double x, gsl_rng * rng);
 long double perturb_interval(long double x, long double lo, long double hi,
                              gsl_rng * rng);
 void        eprintf(const char *fmt, ...);
-void        checkmem( /*@null@ */ void *obj, const char *file, int line);
 void        printBranchTab(double tab[3][3], FILE * fp);
-void        normItab(double tab[3][3], unsigned nreps);
-void        printItab(double tab[3][3], FILE * fp);
-void        printEtab(double x10, double x20, double x21, FILE * fp);
-void        pictex(double *x, double *y, unsigned n, const char *xlbl,
-                   const char *ylbl, const char *plotheading,
-                   const char *fname);
-void        pictex_par(double *x, double *y, unsigned n, const char *xlbl,
-                       const char *ylbl, const char *plotheading,
-                       const char *fname);
 void        unitTstResult(const char *facility, const char *result);
 void        tellopt(const char *opt, const char *description);
 unsigned    Dbl_first_geq(double val, unsigned len, double v[len]);

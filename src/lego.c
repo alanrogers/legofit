@@ -1,11 +1,91 @@
 /**
- * @file lego.c
- * @brief Simulate branch lengths
- *
- * @copyright Copyright (c) 2015, 2016, Alan R. Rogers 
- * <rogers@anthro.utah.edu>. This file is released under the Internet
- * Systems Consortium License, which can be found in file "LICENSE".
- */
+@file lego.c
+@page lego
+@brief Generate site patterns by coalescent simulation
+
+# `lego`: coalescent simulations within a network of populations
+
+    usage: lego [options] input_file
+       where options may include:
+       -i <x> or --nItr <x>
+          number of iterations in simulation
+       -1 or --singletons
+          Use singleton site patterns
+       -U <x>
+          Mutations per generation per haploid genome.
+       -h or --help
+          print this message
+
+Here, "input_file" should be in @ref lgo ".lgo" format, which
+describes the history of population size, subdivision, and gene
+flow. By default (i.e. if the `-U` option is not used), the output
+looks like this:
+
+    #########################################################
+    # lego: generate site patterns by coalescent simulation #
+    #########################################################
+
+    # Program was compiled: Dec 25 2016 10:10:51
+    # Program was run: Sun Dec 25 10:13:47 2016
+
+    # cmd: ./lego -i 10000 input.lgo
+    # nreps                       : 10000
+    # input file                  : input.lgo
+    # not simulating mutations
+    # excluding singleton site patterns.
+    #       SitePat E[BranchLength]
+                x:y      39.7970280
+                x:n      38.9656878
+                y:n      40.8560014
+
+Here, the "SitePat" column labels site patterns. For example, site
+pattern xy (denoted by "x:y" in this output) refers to nocleotide
+sites at which the derived allele is present in single haploid samples
+from X and Y but not in samples from other populations. This site
+pattern arises when a mutation strikes a branch that is ancestral only
+to the samples from X and Y. The average length of this branch in
+generations appears under "E[BranchLength]".
+
+To simulate site pattern counts across an entire genome, use the `-U`
+option, whose argument give the expected number of mutations per
+generation per haploid genome. This argument should equal @f$\mu L@f$,
+where @f$\mu@f$ is the mutation rate per nucleotide site per
+generation, and @f$L@f$ is the number of nucleotide sites sequenced per
+haploid genome, including monomorphic sites but excluding those that
+fail quality control. For example, adding `-U 18` to the command above
+led to the following output:
+
+    #########################################################
+    # lego: generate site patterns by coalescent simulation #
+    #########################################################
+
+    # Program was compiled: Dec 25 2016 10:10:51
+    # Program was run: Mon Dec 26 09:31:59 2016
+
+    # cmd: ./lego -i 10000 -U 18 input.lgo
+    # nreps                       : 10000
+    # input file                  : input.lgo
+    # mutations per haploid genome: 18.000000
+    # excluding singleton site patterns.
+    #       SitePat           Count
+                x:y             770
+                x:n             713
+                y:n             677
+
+Now, the 2nd column is labeled "Count" rather than "E[BranchLength]"
+and gives the simulated count of each site pattern across the genome
+as a whole. It is calculated by sampling from a Poisson distribution
+with mean @f$\mu L b@f$, where @f$\mu@f$ and @f$L@f$ are as described
+above, and @f$b@f$ is the average branch length as reported without
+the `-U` option. This Poisson model treats nucleotide sites as
+independent, ignoring linkage disequilibrium. The counts it provides
+are correct in expectation, but their variances in repeated runs of
+the program are probably too small.
+
+@copyright Copyright (c) 2015, 2016, Alan R. Rogers
+<rogers@anthro.utah.edu>. This file is released under the Internet
+Systems Consortium License, which can be found in file "LICENSE".
+*/
 
 #include "gptree.h"
 #include "patprob.h"
@@ -48,9 +128,9 @@ int main(int argc, char **argv) {
         {NULL, 0, NULL, 0}
     };
 
-    printf("#################################################\n"
-           "# lego: estimate probabilities of site patterns #\n"
-           "#################################################\n");
+    printf("#########################################################\n"
+           "# lego: generate site patterns by coalescent simulation #\n"
+           "#########################################################\n");
     putchar('\n');
 
     int         i, j;
@@ -98,7 +178,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    // remaining option gives file name 
+    // remaining option gives file name
     switch (argc - optind) {
     case 0:
         fprintf(stderr, "Command line must specify input file\n");
@@ -119,7 +199,7 @@ int main(int argc, char **argv) {
         printf("# mutations per haploid genome: %lf\n", U);
     else
         printf("# not simulating mutations\n");
-    
+
     printf("# %s singleton site patterns.\n",
            (doSing ? "including" : "excluding"));
 
