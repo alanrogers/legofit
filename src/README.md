@@ -310,3 +310,69 @@ Using this .lgo file as input, `lego -i 10000` produces
 The program reports the mean branch length in generations of three
 site patterns. For example, "x:y" refers to the pattern in which the
 derived allele is present in the samples x and y but not in n.
+
+# Using the package
+
+## Predicting site pattern counts from assumptions about history
+
+For this purpose, you want to use the program @ref lego "lego". The
+first step is create a file in @ref lgo ".lgo" format, which describes
+the history of population size, subdivision, and gene flow. This
+format is described above. Then, you can execute `lego` by typing:
+
+    lego -i 10000 my_input_file.lgo
+
+See the @ref lego "lego" documentation for details.
+
+## Estimating parameters from genetic data
+
+This involves several programs. The first step is to generate input
+files in ".daf" format, as described above. You will need one .daf
+file for each population. See the @ref daf "daf" documentation for
+details.
+
+The next task is to tabulate site pattern counts from the various .daf
+files. See the @ref tabpat "tabpat" documentation for details. Tabpat
+will generate a small text file, with one row for each site
+pattern. If there are 4 populations in the analysis, there will be 10
+site patterns.
+
+You will also need a .lgo file, which describes the model of history
+you wish to explore. It also specifies which parameters will be
+estimated. Details are above.
+
+Finally, @ref legofit "legofit" will estimate parameters. This program
+may take several hours to run, depending on the size of the analysis
+and the number of simulation replicates used to approximate the
+objective function.
+
+To generate a bootstrap confidence interval, use the `--bootreps`
+option of @ref tabpat "tabpat". This will generate not only the
+primary output (written to standard output), but also an additional
+output file for each bootstrap replicate. For example, `--bootreps 50`
+would generate 51 output files: 1 for the normal output, and 1 for
+each bootstrap replicate.
+
+These files should each be analyzed with a separate run of
+`legofit`. If you have access to a compute cluster, these jobs can be
+run in parallel.
+
+You might be tempted to parallelize these legofit jobs on a single
+computer, using multiple threads of execution. Don't do it. A single
+legofit job makes use of all available threads, so nothing is gained
+by launching simultaneous legofit jobs on a single computer. Unless
+you have access to a compute cluster, legofit jobs should be run
+sequentially. As each job can take several hours, a full bootstrap may
+take several days.
+
+Having run `legofit` on the real data and all bootstrap replicates,
+you can use @ref bootci "bootci.py" to summarize the information in
+all the resulting output files.
+
+Finally, @ref diverg "diverg.py" can be used for comparing two sets of
+site-pattern counts or frequencies. It uses the Kullback-Leibler (KL)
+divergence to measure the discrepancy between the two
+distributions. It provides not only the overall KL divergence but also
+the contribution of each site pattern. Thus, it will tell you which
+site patterns are responsible for a poor fit between observed and
+expected site pattern frequencies.
