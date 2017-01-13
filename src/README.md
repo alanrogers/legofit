@@ -183,8 +183,8 @@ category we have already discussed. The last is "gaussian", a new
 category.  Gaussian variables are used to represent exogeneous
 parameters whose values are known only approximately. They are modeled
 as Gaussian random variables. In this case, the mean is 3788 and the
-standard deviation is 1000. The two programs, `lego` and `legofit`,
-use Monte-Carlo integration to integrate across the uncertainty in
+standard deviation is 1000. Programs `lego` and `legofit` use
+Monte-Carlo integration to integrate across the uncertainty in
 Gaussian parameters.
 
 Next, our file declares two variables that represent population sizes:

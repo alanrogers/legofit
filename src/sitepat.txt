@@ -1,4 +1,16 @@
+#########################################################
+# lego: generate site patterns by coalescent simulation #
+#########################################################
+
+# Program was compiled: Dec 31 2016 10:15:33
+# Program was run: Thu Jan 12 22:14:54 2017
+
+# cmd: lego -U 18 -i 30 input.lgo
+# nreps                       : 30
+# input file                  : input.lgo
+# mutations per haploid genome: 18.000000
+# excluding singleton site patterns.
 #       SitePat           Count
-            x:y             743
-            x:n             696
-            y:n             748
+            x:y          227852
+            x:n             663
+            y:n           17410

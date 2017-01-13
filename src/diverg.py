@@ -1,8 +1,61 @@
 #!/usr/bin/python
-# diverg.py
+
+###
+#@file diverg.py
+#@page diverg
+#@brief Compare two sets of site-pattern counts or frequencies
 #
-# This program compares the output of two runs of the lego program and summarizes
-# the difference between them using the Kullback-Leibler divergence.
+#diverg.py: compare two sets of site-pattern counts or frequencies
+#=================================================================
+#
+#This program compares two sets of site-pattern counts or frequencies
+#and summarizes the difference between them using the Kullback-Leibler
+#divergence.
+#
+#    usage: diverg.py inputfile1 inputfile2
+#           Input file name "-" means standard input.
+#           At most one input may be "-".
+#
+#Each input file should look like:
+#
+#    # SitePat           Count
+#          x:y          227852
+#          x:n             663
+#          y:n           17410
+#
+#Here, the first line is an optional comment, which is used to label
+#the columns. The first column contains site-pattern labels,
+#which consist of population labels separated by colons. The second
+#column contains the contribution of each site pattern. These need not
+#be integers. They will be normalized in the output so that they sum
+#to unity.
+#
+#This input format is also the output format of the program @ref lego
+#"lego". This makes it possible to pipe lego output into
+#diverg.py. For example, suppose we have a file called "input.lgo" in
+#@ref lgo "lgo" format, and a file called "sitepat.txt" containing
+#observed site-pattern counts such as those above. Then the command
+#
+#    lego -i 1000 input.lgo | diverg.py sitepat.txt -
+#
+#would compare the data in sitepat.txt to the output of the lego
+#command. This would produce something like the following:
+#
+#    SitePat sitepat.txt         -     KL
+#        x:y     0.92651   0.87006 -0.055 *
+#        x:n     0.00270   0.00671  0.006
+#        y:n     0.07079   0.12323  0.068 *
+#                                   0.019732
+#
+#The "sitepat.txt" column contains the data from file sitepat.txt,
+#re-expressed as relative frequencies. The "-" column summarizes the
+#lego output in the same fashion. The KL column lists contributions to
+#the Kulback-Leiebler (KL) divergence. When these contributions are
+#small, they are approximately equal to the difference between columns
+#3 and 2. Large KL contributions are marked with an asterisk. The
+#bottom entry in this column is the KL divergence, a measure of the
+#discrepancy between the two frequency distributions.
+
 from math import log
 import sys
 
@@ -20,7 +73,7 @@ def openInput(fname):
 
 if len(sys.argv) != 3:
     usage()
-fname1 = sys.argv[1]    
+fname1 = sys.argv[1]
 fname2 = sys.argv[2]
 if fname1 == fname2 == "-":
     usage()
@@ -85,5 +138,5 @@ for i in range(len(prob1)):
 
 fmt = "%%%ds %%%ds %%%ds %%9.6f" % (widpat, wid1, wid2)
 print fmt % ("", "", "", KLsum),
-    
+
 
