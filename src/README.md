@@ -4,13 +4,30 @@
 
 Lego is a computer package that uses counts of nucleotide site
 patterns to estimate the history of population size, subdivision, and
-gene flow. It works by minimizing the difference between observed and
-expected counts of "nucleotide site patterns". Site patterns are
-summary statistics that are rich in information about sizes of and
-relationships among ancestral populations but are not influenced by
-the recent population size. So what is a site pattern?
+gene flow. The package consists of the following programs
 
-## Site patterns, counts, and their expectations {#sitepat}
+* @ref daf "daf", which writes genetic data into the ".daf" format
+  that is used by @ref tabpat "tabpat".
+* @ref tabpat "tabpat", which reads ".daf" files for several
+  populations, tabulates "nucleotide site patterns" (explained below),
+  and generates moving-blocks bootstrap replicates.
+* @ref lego "lego", which predicts site pattern counts from
+  assumptions about population history.
+* @ref legofit "legofit", which estimates parameters from site pattern
+  counts.
+* @ref bootci "bootci.py", which uses multiple legofit output files
+  (one for the real data and one for each bootstrap replicate) to
+  generate bootstrap confidence intervals for estimated parameters.
+* @ref diverg "diverg.py", which compares two distributions of site
+  pattern frequencies, using the Kullback-Leibler (KL) divergence.
+
+# Nucleotide site patterns {#sitepat}
+
+These programs all operate on "nucleotide site patterns", which are
+summary statistics not influenced by the recent population size but
+rich in information about ancestral populations. This section will
+define site patterns and explain how lego tabulates their counts, and
+estimates the expectations of these counts.
 
 Consider a sample consisting of one haploid genome drawn from each of
 3 populations, *X*, *Y*, and *Z*. Suppose that, at a given nucleotide
