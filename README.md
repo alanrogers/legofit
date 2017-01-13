@@ -5,4 +5,4 @@ patterns to estimate the history of population size, subdivision, and
 gene flow.
 
 Documentation begins
-[here](https://github.com/alanrogers/lego/blob/devlp/doc/html/index.html)
+[here](http://content.csbs.utah.edu/~rogers/src/lego/index.html)
