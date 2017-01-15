@@ -219,7 +219,7 @@ int main(int argc, char **argv) {
     time_t      currtime = time(NULL);
 	unsigned long pid = (unsigned long) getpid();
     double      lo_twoN = 1.0, hi_twoN = 1e6;  // twoN bounds
-    double      lo_t = 1.0, hi_t = 1e6;        // t bounds
+    double      lo_t = 0.0, hi_t = 1e6;        // t bounds
     int         nThreads = 0;     // total number of threads
     int         doSing=0;  // nonzero means use singleton site patterns
     int         status, optndx;
