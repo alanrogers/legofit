@@ -509,7 +509,7 @@ static void PopNode_randomize_r(PopNode *self, Bounds bnd, gsl_rng *rng) {
 
     // perturb self->twoN
     if(self->twoNfree) {
-#if 0
+#if 1
         // new code
         *self->twoN = dtnorm(*self->twoN, 10000.0, bnd.lo_twoN,
                              bnd.hi_twoN, rng);
