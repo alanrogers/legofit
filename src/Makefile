@@ -1,5 +1,5 @@
 destination := $(HOME)/bin
-global_destination := /usr/local/bin
+global_destination := $(HOME)/group/bin
 opt := -DNDEBUG -O3  -finline-functions  # For full optimization
 #opt :=  -O0 -fno-inline-functions -rdynamic -DDEBUG     # For debugging
 #opt := -O3  -finline-functions  # Optimization + debugging
