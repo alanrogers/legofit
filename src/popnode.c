@@ -14,6 +14,7 @@
 #include "gene.h"
 #include "misc.h"
 #include "parstore.h"
+#include "dtnorm.h"
 #include <string.h>
 #include <float.h>
 #include <stdbool.h>
@@ -508,8 +509,15 @@ static void PopNode_randomize_r(PopNode *self, Bounds bnd, gsl_rng *rng) {
 
     // perturb self->twoN
     if(self->twoNfree) {
+#if 1
+        // new code
+        *self->twoN = dtnorm(*self->twoN, 10000.0, bnd.lo_twoN,
+                             bnd.hi_twoN, rng);
+#else
+        // old code
         *self->twoN += gsl_ran_gaussian(rng, 10000.0);
         *self->twoN = reflect(*self->twoN, bnd.lo_twoN, bnd.hi_twoN);
+#endif
     }
 
     // perturb self->start

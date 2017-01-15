@@ -37,6 +37,6 @@ typedef uint64_t tipId_t;
 #define CHISQR_COST 2
 #define SMPLCHISQR_COST 3
 #define POISSON_COST 4
-#define COST CHISQR_COST
+#define COST KL_COST
 
 #endif
