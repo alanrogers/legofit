@@ -148,6 +148,11 @@ void ThreadState_free(void *rng) {
 }
 
 void usage(void) {
+#if COST==KL_COST
+    fprintf(stderr,"usage: legofit [options] input.lgo sitepat.txt\n");
+    fprintf(stderr,"   where file input.lgo describes population history,\n"
+            "   and file sitepat.txt contains site pattern frequencies.\n");
+#else
     fprintf(stderr,"usage: legofit [options] -u <mut_rate>"
             " -n <genome_size> input.lgo sitepat.txt\n");
     fprintf(stderr,"   where <mut_rate> is the mutation rate per nucleotide\n"
@@ -155,6 +160,7 @@ void usage(void) {
             "   nucleotides per haploid genome, file input.lgo describes\n"
             "   population history, and file sitepat.txt contains site\n"
             "   pattern frequencies.\n");
+#endif
     fprintf(stderr,"Options may include:\n");
     tellopt("-M <x> or --maxFlat <x>", "termination criterion");
     tellopt("-t <x> or --threads <x>", "number of threads (default is auto)");
@@ -202,8 +208,10 @@ int main(int argc, char **argv) {
         {"stage", required_argument, 0, 'S'},
         {"maxFlat", required_argument, 0, 'M'},
         {"ptsPerDim", required_argument, 0, 'p'},
+#if COST!=KL_COST
         {"mutRate", required_argument, 0, 'u'},
         {"genomeSize", required_argument, 0, 'n'},
+#endif
         {"singletons", no_argument, 0, '1'},
         {"help", no_argument, 0, 'h'},
         {"verbose", no_argument, 0, 'v'},
@@ -231,8 +239,10 @@ int main(int argc, char **argv) {
 	double      F = 0.9;
 	double      CR = 0.8;
 	int         maxFlat = 100; // termination criterion
+#if COST!=KL_COST
     double      u = 0.0;       // mutation rate per site per generation
     long        nnuc = 0;      // number of nucleotides per haploid genome
+#endif
 	int         strategy = 1;
 	int         ptsPerDim = 10;
     int         verbose = 0;
@@ -253,8 +263,13 @@ int main(int argc, char **argv) {
 
     // command line arguments
     for(;;) {
+#if COST==KL_COST
+        i = getopt_long(argc, argv, "t:F:p:s:S:a:vx:1h",
+                        myopts, &optndx);
+#else
         i = getopt_long(argc, argv, "t:F:p:s:S:a:vx:u:n:1h",
                         myopts, &optndx);
+#endif
         if(i == -1)
             break;
         switch (i) {
@@ -305,12 +320,14 @@ int main(int argc, char **argv) {
 		case 'x':
 			CR = strtod(optarg, 0);
 			break;
+#if COST!=KL_COST
         case 'u':
             u = strtod(optarg, 0);
             break;
         case 'n':
             nnuc = strtol(optarg, NULL, 10);
             break;
+#endif
         case '1':
             doSing=1;
             break;
@@ -329,6 +346,7 @@ int main(int argc, char **argv) {
         usage();
     }
 
+#if COST!=KL_COST
     if(u==0.0) {
         fprintf(stderr,"Use -u to set mutation rate per generation.\n");
         usage();
@@ -338,6 +356,7 @@ int main(int argc, char **argv) {
         fprintf(stderr,"Use -n to set # of nucleotides per haploid genome.\n");
         usage();
     }
+#endif
 
     snprintf(lgofname, sizeof(lgofname), "%s", argv[optind]);
     assert(lgofname[0] != '\0');
@@ -384,8 +403,10 @@ int main(int argc, char **argv) {
     printf("# lgo input file     : %s\n", lgofname);
     printf("# site pat input file: %s\n", patfname);
     printf("# pts/dimension      : %d\n", ptsPerDim);
+#if COST!=KL_COST
     printf("# mut_rate/generation: %lg\n", u);
     printf("# nucleotides/genome : %ld\n", nnuc);
+#endif
     printf("# %s singleton site patterns.\n",
            (doSing ? "Including" : "Excluding"));
 #if COST==KL_COST
@@ -429,8 +450,10 @@ int main(int argc, char **argv) {
         .gptree = gptree,
         .nThreads = nThreads,
         .doSing = doSing,
+#if COST!=KL_COST
         .u = u,
         .nnuc = nnuc,
+#endif
         .simSched = simSched
     };
 
