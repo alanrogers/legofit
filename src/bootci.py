@@ -110,6 +110,8 @@ def parselegofit(fname):
     estmap = {}
 
     for line in ifile:
+        if line[0] == "#":
+            continue
         line = line.split("=")
         if len(line) != 2:
             continue
