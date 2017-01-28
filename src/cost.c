@@ -3,7 +3,7 @@
    @page cost
    @brief Calculate cost function
 
-   @copyright Copyright (c) 2016, Alan R. Rogers 
+   @copyright Copyright (c) 2016, Alan R. Rogers
    <rogers@anthro.utah.edu>. This file is released under the Internet
    Systems Consortium License, which can be found in file "LICENSE".
 */
@@ -41,7 +41,7 @@ double costFun(int dim, double x[dim], void *jdata, void *tdata) {
     DPRINTF(("%s:%d: nreps=%ld\n",__FILE__,__LINE__,nreps));
 
 	GPTree_setParams(cp->gptree, dim, x);
-	if(!GPTree_feasible(cp->gptree)) 
+	if(!GPTree_feasible(cp->gptree))
 		return HUGE_VAL;
 
     BranchTab  *prob = patprob(cp->gptree, nreps, cp->doSing, rng);
@@ -49,13 +49,16 @@ double costFun(int dim, double x[dim], void *jdata, void *tdata) {
 #if COST==KL_COST
     BranchTab_normalize(prob);
     double cost = BranchTab_KLdiverg(cp->obs, prob);
-#elif COST==CHISQR_COST   
+#elif COST==LNL_COST
+    BranchTab_normalize(prob);
+    double cost = BranchTab_negLnL(cp->obs, prob);
+#elif COST==CHISQR_COST
     double cost = BranchTab_chiSqCost(cp->obs, prob, cp->u, cp->nnuc,
                                       nreps);
-#elif COST==SMPLCHISQR_COST   
+#elif COST==SMPLCHISQR_COST
     double cost = BranchTab_smplChiSqCost(cp->obs, prob, cp->u, cp->nnuc,
                                       nreps);
-#elif COST==POISSON_COST   
+#elif COST==POISSON_COST
     double cost = BranchTab_poissonCost(cp->obs, prob, cp->u, cp->nnuc,
                                         nreps);
 #else
@@ -63,7 +66,7 @@ double costFun(int dim, double x[dim], void *jdata, void *tdata) {
 #endif
 
     BranchTab_free(prob);
-    
+
     return cost;
 }
 
@@ -86,7 +89,7 @@ void * CostPar_dup(const void * arg) {
 
 /// CostPar destructor.
 void CostPar_free(void *arg) {
-    CostPar *self = (CostPar *) arg;    
+    CostPar *self = (CostPar *) arg;
     if(self)
         free(self);
 }
