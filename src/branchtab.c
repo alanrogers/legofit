@@ -655,59 +655,45 @@ double BranchTab_KLdiverg(const BranchTab *obs, const BranchTab *expt) {
         e = expt->tab[i];
         while(o && e) {
             if(o->key < e->key) {
-                // e->value is q=0. This case blows up unless p==0.
                 p = o->value;
-                if(p != 0.0) {
-                    kl = HUGE_VAL;
-#if 0
-                    fprintf(stderr,"%s:%s:%d: missing expt for ",
-                            __FILE__,__func__,__LINE__);
-                    printBits(sizeof(o->key), &o->key, stderr);
-                    //exit(EXIT_FAILURE);
-#endif
-                    o = o->next;
-                } else {
-                    o = o->next;
-                    continue;
-                }
+                q = 0.0;
+                o = o->next;
             }else if(o->key > e->key) {
-                // o->value is p=0. For this case, note that
-                // p*log(p/q) is the log of (p^p / q^p), which -> 1 as
-                // p->0.  The log of 1 is 0, so 0 is the contribution
-                // to kl.
+                p = 0.0;
+                q = e->value;
                 e = e->next;
-                continue;
             }else {
                 assert(o->key == e->key);
                 p = o->value;
                 q = e->value;
                 e = e->next;
                 o = o->next;
+            }
+            if(p == 0.0) {
+                // Do nothing: p*log(p/q) -> 0 as p->0, regardless of
+                // q. This is because p*log(p/q) is the log of
+                // (p/q)**p, which equals 1 if p=0, no matter the value
+                // of q.
+            }else{
+                if(q==0.0)
+                    return HUGE_VAL;
                 kl += p*log(p/q);
             }
         }
         while(o) { // e->value is q=0: fail unless p=0
             p = o->value;
-            if(p != 0.0) {
-                kl = HUGE_VAL;
-#if 0
-                fprintf(stderr,"%s:%s:%d: missing expt for ",
-                        __FILE__,__func__,__LINE__);
-                printBits(sizeof(o->key), &o->key, stderr);
-                exit(EXIT_FAILURE);
-#endif
-                o = o->next;
-            } else {
-                o = o->next;
-                continue;
-            }
+            if(p != 0.0)
+                return HUGE_VAL;
+            o = o->next;
         }
         // Any remaining cases have p=0, so contribution to kl is 0.
     }
     return kl;
 }
 
-/// Negative log likelihood
+/// Negative log likelihood. Multinomial model.
+/// lnL is sum across site patterns of x*log(p), where x is an
+/// observed site pattern count and p its probability.
 double BranchTab_negLnL(const BranchTab *obs, const BranchTab *expt) {
     assert(Dbl_near(1.0, BranchTab_sum(expt)));
 
@@ -716,7 +702,7 @@ double BranchTab_negLnL(const BranchTab *obs, const BranchTab *expt) {
     double x;  // observed count
     double p;  // probability under model
     for(i=0; i < BT_DIM; ++i) {
-        BTLink *o, *e;
+        BTLink *o, *e;  // observed and expected
         o = obs->tab[i];
         e = expt->tab[i];
         while(o && e) {
@@ -736,19 +722,15 @@ double BranchTab_negLnL(const BranchTab *obs, const BranchTab *expt) {
                 o = o->next;
             }
             if(p == 0.0) {
-                if(x != 0.0) {
-                    // blows up
-                    return(HUGE_VAL);
-                }
+                if(x != 0.0)
+                    return HUGE_VAL;  // blows up
             }else
                 lnL += x*log(p);
         }
         while(o) { // e->value is p=0
             x = o->value;
-            if(x != 0.0) {
-                // blows up
-                return(HUGE_VAL);
-            }
+            if(x != 0.0)
+                return HUGE_VAL; // blows up
             o = o->next;
         }
         // Any remaining cases have x=0, so contribution to lnL is 0.
