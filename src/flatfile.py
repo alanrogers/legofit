@@ -87,7 +87,6 @@ def parselegofit(fname):
 fnames = []
 
 # Loop over command line arguments, ignoring the 0th.
-# (The 0th is just the name of the program.)
 i = 1
 while(True):
     if i >= len(sys.argv):
@@ -110,20 +109,20 @@ for i in range(len(fnames)):
 print
 
 mat = []
-parnames = []
 npar = 0
 
 for name in fnames:
     parnames2, estimates = parselegofit(name)
 
-    if npar > 0 and parnames != parnames2:
+    if npar == 0:
+        parnames = parnames2
+        npar = len(parnames)
+    elif parnames != parnames2:
         print >> sys.stderr, "Input files estimate different parameters"
         print >> sys.stderr, "  1:", parnames
         print >> sys.stderr, "  2:", parnames2
         exit(1)
 
-    parnames = parnames2
-    npar = len(parnames)
     mat.append(estimates)
 
 for name in parnames:
