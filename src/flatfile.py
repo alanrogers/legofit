@@ -69,7 +69,7 @@ def parselegofit(fname):
         if "Gaussian" in line[1]:
             value = 1.0
         else:
-            value = float(line[1].strip())
+            value = line[1].strip()
 
         if key in parmap:
             estmap[key] = value
@@ -127,11 +127,11 @@ for name in fnames:
     mat.append(estimates)
 
 for name in parnames:
-    print " %s" % name,
+    print "%s" % name,
 print
 
 for row in mat:
     for val in row:
-        print " %s" % val,
+        print "%s" % val,
     print
 
