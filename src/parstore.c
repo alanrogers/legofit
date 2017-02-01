@@ -54,13 +54,14 @@ struct ParStore {
     double      gaussianVal[MAXPAR]; // parameter values
     double      mean[MAXPAR];        // Gaussian means
     double      sd[MAXPAR];          // Gaussian standard deviations
+    Constraint *constr;
 };
 
 static int compareDblPtrs(const void *void_x, const void *void_y);
 static int compareDbls(const void *void_x, const void *void_y);
 Constraint *Constraint_new(Constraint *head, double *y, double a,
                            int n, double b[n], double *x[n]);
-void Constraint_free(Constraint *self);
+Constraint *Constraint_free(Constraint *self);
 void Constraint_set_y(Constraint *self);
 
 /// Return <0, 0, or >0, as x is <, ==, or > y.
@@ -466,10 +467,14 @@ Constraint *Constraint_new(Constraint *head, double *y, double a,
     return self;
 }
 
-void Constraint_free(Constraint *self) {
+Constraint *Constraint_free(Constraint *self) {
+    if(self==NULL)
+        return;
+    self->next = Constraint_free(self->next);
     free(self->b);
     free(self->x);
     free(self);
+    return NULL;
 }
 
 void Constraint_set_y(Constraint *self) {
@@ -478,3 +483,4 @@ void Constraint_set_y(Constraint *self) {
     for(i=0; i < self->n; ++i)
         *self->y += self->b[i] * (*self->x[i]);
 }
+
