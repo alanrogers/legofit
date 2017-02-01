@@ -32,6 +32,14 @@
 
 /// Constraint specifying one variable as a linear function of several
 /// others.
+/*
+  From Eqns. B.7-B.8 of Rogers and Bohlender, TPB, with t=lambda-zeta,
+  and mN=mD=0:
+
+  PBxy = t + 1-e^{-t/K} - K (1-e^{-t/K}) + e^{-t/K}/3
+  PBxy = t + 1-(2/3)e^{-t/K} - K (1-e^{-t/K})
+  PBxy = t + 1 - K + e^{-t/K} (K - 2/3)
+ */
 struct Constraint {
     Constraint *next;
     double *y;
