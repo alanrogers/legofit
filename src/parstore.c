@@ -59,7 +59,7 @@ struct ParStore {
 static int compareDblPtrs(const void *void_x, const void *void_y);
 static int compareDbls(const void *void_x, const void *void_y);
 Constraint *Constraint_new(Constraint *head, double *y, double a,
-                           double n, double b[n], double *x[n]);
+                           int n, double b[n], double *x[n]);
 void Constraint_free(Constraint *self);
 void Constraint_set_y(Constraint *self);
 
@@ -447,8 +447,8 @@ int         Bounds_equals(const Bounds *lhs, const Bounds *rhs) {
 }
 
 Constraint *Constraint_new(Constraint *head, double *y, double a,
-                           double n, double b[n], double *x[n]) {
-    Constraint *self = malloc(sizeof Constraint);
+                           int n, double b[n], double *x[n]) {
+    Constraint *self = malloc(sizeof(Constraint));
     CHECKMEM(self);
 
     self->b = malloc(n * sizeof(self->b[0]));
