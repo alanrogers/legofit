@@ -30,6 +30,17 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+/// Constraint specifying one variable as a linear function of several
+/// others.
+struct Constraint {
+    Constraint *next;
+    double *y;
+    int n;
+    double a;
+    double *b;
+    double **x;
+};
+
 struct ParStore {
     int         nFixed, nFree, nGaussian; // number of parameters
     double      loFree[MAXPAR]; // lower bounds
@@ -47,6 +58,10 @@ struct ParStore {
 
 static int compareDblPtrs(const void *void_x, const void *void_y);
 static int compareDbls(const void *void_x, const void *void_y);
+Constraint *Constraint_new(Constraint *head, double *y, double a,
+                           double n, double b[n], double *x[n]);
+void Constraint_free(Constraint *self);
+void Constraint_set_y(Constraint *self);
 
 /// Return <0, 0, or >0, as x is <, ==, or > y.
 static int compareDblPtrs(const void *void_x, const void *void_y) {
@@ -431,3 +446,35 @@ int         Bounds_equals(const Bounds *lhs, const Bounds *rhs) {
         && lhs->hi_t == rhs->hi_t;
 }
 
+Constraint *Constraint_new(Constraint *head, double *y, double a,
+                           double n, double b[n], double *x[n]) {
+    Constraint *self = malloc(sizeof Constraint);
+    CHECKMEM(self);
+
+    self->b = malloc(n * sizeof(self->b[0]));
+    CHECKMEM(self->b);
+
+    self->x = malloc(n * sizeof(self->x[0]));
+    CHECKMEM(self->x);
+
+    self->y = y;
+    self->n = n;
+    self->a = a;
+    memcpy(self->b, b, n * sizeof(b[0]));
+    memcpy(self->x, b, n * sizeof(x[0]));
+    self->next = head;
+    return self;
+}
+
+void Constraint_free(Constraint *self) {
+    free(self->b);
+    free(self->x);
+    free(self);
+}
+
+void Constraint_set_y(Constraint *self) {
+    int i;
+    *self->y = self->a;
+    for(i=0; i < self->n; ++i)
+        *self->y += self->b[i] * (*self->x[i]);
+}
