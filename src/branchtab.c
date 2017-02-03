@@ -5,7 +5,7 @@
  * pattern) and value (a double representing the length of the
  * ascending branch)
  *
- * @copyright Copyright (c) 2016, Alan R. Rogers 
+ * @copyright Copyright (c) 2016, Alan R. Rogers
  * <rogers@anthro.utah.edu>. This file is released under the Internet
  * Systems Consortium License, which can be found in file "LICENSE".
  */
@@ -42,7 +42,7 @@ typedef struct BTLink {
 struct BranchTab {
 #ifndef NDEBUG
     int frozen;   // nonzero => no further changes allowed
-#endif    
+#endif
     BTLink         *tab[BT_DIM];
 };
 
@@ -212,7 +212,7 @@ BranchTab    *BranchTab_dup(const BranchTab *old) {
 
 #ifndef NDEBUG
     new->frozen = old->frozen;
-#endif    
+#endif
 
     int i;
     for(i=0; i < BT_DIM; ++i)
@@ -263,7 +263,7 @@ double BranchTab_get(BranchTab * self, tipId_t key) {
 }
 
 /// Add a value to table. If key already exists, new value is added to
-/// old one.  
+/// old one.
 void BranchTab_add(BranchTab * self, tipId_t key, double value) {
     assert(!self->frozen);
     unsigned h = tipIdHash(key);
@@ -290,7 +290,7 @@ int BranchTab_divideBy(BranchTab *self, double denom) {
 #ifndef NDEBUG
     assert(!self->frozen);
     self->frozen = 1;  // you can only call this function once
-#endif    
+#endif
 
     // divide by denom
     unsigned i;
@@ -366,7 +366,7 @@ BranchTab *BranchTab_parse(const char *fname, const LblNdx *lblndx) {
     char        buff[500];
     char        lblbuff[100];
     Tokenizer  *tkz = Tokenizer_new(50);
-    
+
     while(1) {
         if(fgets(buff, sizeof(buff), fp) == NULL)
             break;
@@ -557,7 +557,7 @@ double        BranchTab_smplChiSqCost(const BranchTab *obs,
 #endif
 
 #if COST==POISSON_COST
-/// Use Poisson model to calculate negative log likelihood. 
+/// Use Poisson model to calculate negative log likelihood.
 double BranchTab_poissonCost(const BranchTab *obs, const BranchTab *expt,
                              double u, long nnuc, double n) {
     assert(expt->frozen);
@@ -625,7 +625,7 @@ int BranchTab_normalize(BranchTab *self) {
     unsigned i;
     double s = BranchTab_sum(self);
 
-    if(s==0) 
+    if(s==0)
         return 1;
 
     // divide by sum
@@ -656,57 +656,89 @@ double BranchTab_KLdiverg(const BranchTab *obs, const BranchTab *expt) {
         e = expt->tab[i];
         while(o && e) {
             if(o->key < e->key) {
-                // e->value is q=0. This case blows up unless p==0.
                 p = o->value;
-                if(p != 0.0) {
-                    kl = HUGE_VAL;
-#if 0
-                    fprintf(stderr,"%s:%s:%d: missing expt for ",
-                            __FILE__,__func__,__LINE__);
-                    printBits(sizeof(o->key), &o->key, stderr);
-                    //exit(EXIT_FAILURE);
-#endif
-                    o = o->next;
-                } else {
-                    o = o->next;
-                    continue;
-                }
+                q = 0.0;
+                o = o->next;
             }else if(o->key > e->key) {
-                // o->value is p=0. For this case, note that
-                // p*log(p/q) is the log of (p^p / q^p), which -> 1 as
-                // p->0.  The log of 1 is 0, so 0 is the contribution
-                // to kl.
+                p = 0.0;
+                q = e->value;
                 e = e->next;
-                continue;
             }else {
                 assert(o->key == e->key);
                 p = o->value;
                 q = e->value;
                 e = e->next;
                 o = o->next;
+            }
+            if(p == 0.0) {
+                // Do nothing: p*log(p/q) -> 0 as p->0, regardless of
+                // q. This is because p*log(p/q) is the log of
+                // (p/q)**p, which equals 1 if p=0, no matter the value
+                // of q.
+            }else{
+                if(q==0.0)
+                    return HUGE_VAL;
                 kl += p*log(p/q);
             }
         }
         while(o) { // e->value is q=0: fail unless p=0
             p = o->value;
-            if(p != 0.0) {
-                kl = HUGE_VAL;
-#if 0
-                fprintf(stderr,"%s:%s:%d: missing expt for ",
-                        __FILE__,__func__,__LINE__);
-                printBits(sizeof(o->key), &o->key, stderr);
-                exit(EXIT_FAILURE);
-#endif
-                o = o->next;
-            } else {
-                o = o->next;
-                continue;
-            }
+            if(p != 0.0)
+                return HUGE_VAL;
+            o = o->next;
         }
         // Any remaining cases have p=0, so contribution to kl is 0.
     }
     return kl;
 }
+
+/// Negative log likelihood. Multinomial model.
+/// lnL is sum across site patterns of x*log(p), where x is an
+/// observed site pattern count and p its probability.
+double BranchTab_negLnL(const BranchTab *obs, const BranchTab *expt) {
+    assert(Dbl_near(1.0, BranchTab_sum(expt)));
+
+    int i;
+    double lnL=0.0;
+    double x;  // observed count
+    double p;  // probability under model
+    for(i=0; i < BT_DIM; ++i) {
+        BTLink *o, *e;  // observed and expected
+        o = obs->tab[i];
+        e = expt->tab[i];
+        while(o && e) {
+            if(o->key < e->key) {
+                x = o->value;
+                p = 0.0;
+                o = o->next;
+            }else if(o->key > e->key) {
+                x = 0.0;
+                p = e->value;
+                e = e->next;
+            }else {
+                assert(o->key == e->key);
+                x = o->value;
+                p = e->value;
+                e = e->next;
+                o = o->next;
+            }
+            if(p == 0.0) {
+                if(x != 0.0)
+                    return HUGE_VAL;  // blows up
+            }else
+                lnL += x*log(p);
+        }
+        while(o) { // e->value is p=0
+            x = o->value;
+            if(x != 0.0)
+                return HUGE_VAL; // blows up
+            o = o->next;
+        }
+        // Any remaining cases have x=0, so contribution to lnL is 0.
+    }
+    return -lnL;
+}
+
 
 #ifdef TEST
 
@@ -749,7 +781,7 @@ const char *tstInput =
     "derive bb from ab\n"
     "derive ab from abc\n"
     "derive c  from abc\n";
-const char *tstPatProbInput = 
+const char *tstPatProbInput =
     "#SitePat   obs\n"
     "a:b        2.0\n"
     "a:c        1.0\n"
@@ -821,7 +853,7 @@ int main(int argc, char **argv) {
         BranchTab_print(bt);
     BranchTab_free(bt);
     GPTree_free(g);
-	unitTstResult("BranchTab", "OK");
+	unitTstResult("BranchTab", "untested");
     unlink(tstFname);
     unlink(tstPatProbFname);
 }

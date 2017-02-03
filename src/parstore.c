@@ -30,6 +30,25 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+/// Constraint specifying one variable as a linear function of several
+/// others.
+/*
+  From Eqns. B.7-B.8 of Rogers and Bohlender, TPB, with t=lambda-zeta,
+  and mN=mD=0:
+
+  PBxy = t + 1-e^{-t/K} - K (1-e^{-t/K}) + e^{-t/K}/3
+  PBxy = t + 1-(2/3)e^{-t/K} - K (1-e^{-t/K})
+  PBxy = t + 1 - K + e^{-t/K} (K - 2/3)
+ */
+struct Constraint {
+    Constraint *next;
+    double *y;
+    int n;
+    double a;
+    double *b;
+    double **x;
+};
+
 struct ParStore {
     int         nFixed, nFree, nGaussian; // number of parameters
     double      loFree[MAXPAR]; // lower bounds
@@ -43,10 +62,15 @@ struct ParStore {
     double      gaussianVal[MAXPAR]; // parameter values
     double      mean[MAXPAR];        // Gaussian means
     double      sd[MAXPAR];          // Gaussian standard deviations
+    Constraint *constr;
 };
 
 static int compareDblPtrs(const void *void_x, const void *void_y);
 static int compareDbls(const void *void_x, const void *void_y);
+Constraint *Constraint_new(Constraint *head, double *y, double a,
+                           int n, double b[n], double *x[n]);
+Constraint *Constraint_free(Constraint *self);
+void Constraint_set_y(Constraint *self);
 
 /// Return <0, 0, or >0, as x is <, ==, or > y.
 static int compareDblPtrs(const void *void_x, const void *void_y) {
@@ -429,5 +453,42 @@ int         Bounds_equals(const Bounds *lhs, const Bounds *rhs) {
         && lhs->hi_twoN == rhs->hi_twoN
         && lhs->lo_t == rhs->lo_t
         && lhs->hi_t == rhs->hi_t;
+}
+
+Constraint *Constraint_new(Constraint *head, double *y, double a,
+                           int n, double b[n], double *x[n]) {
+    Constraint *self = malloc(sizeof(Constraint));
+    CHECKMEM(self);
+
+    self->b = malloc(n * sizeof(self->b[0]));
+    CHECKMEM(self->b);
+
+    self->x = malloc(n * sizeof(self->x[0]));
+    CHECKMEM(self->x);
+
+    self->y = y;
+    self->n = n;
+    self->a = a;
+    memcpy(self->b, b, n * sizeof(b[0]));
+    memcpy(self->x, b, n * sizeof(x[0]));
+    self->next = head;
+    return self;
+}
+
+Constraint *Constraint_free(Constraint *self) {
+    if(self==NULL)
+        return;
+    self->next = Constraint_free(self->next);
+    free(self->b);
+    free(self->x);
+    free(self);
+    return NULL;
+}
+
+void Constraint_set_y(Constraint *self) {
+    int i;
+    *self->y = self->a;
+    for(i=0; i < self->n; ++i)
+        *self->y += self->b[i] * (*self->x[i]);
 }
 

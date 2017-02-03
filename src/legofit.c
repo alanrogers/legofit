@@ -50,11 +50,12 @@ as "free" (rather than "fixed" or "gaussian") in the .lgo file. It
 does this by minimizing a "cost function", which measures the
 difference between observed and expected values. Currently, the cost
 function is a Chi-square statistic. Other options are available via
-compile-time option (see `typedefs.h`). One of the alternatives,
-KL_COST, would not require the -u and -n command-line arguments. On
-the other hand, it would not provide an internal molecular clock--the
-clock would be calibrated only by the time parameters in the .lgo
-file. I don't yet know which cost function is best.
+compile-time option (see `typedefs.h`). Two of the alternatives,
+KL_COST and LNL_COST, would not require the -u and -n command-line
+arguments. On the other hand, theyq would not provide an internal
+molecular clock--the clock would be calibrated only by the time
+parameters in the .lgo file. I don't yet know which cost function is
+best.
 
 Expected counts are estimated by computer simulation, and optimization
 is done using the "differential evolution" (DE) algorithm.  The DE
@@ -148,7 +149,7 @@ void ThreadState_free(void *rng) {
 }
 
 void usage(void) {
-#if COST==KL_COST
+#if COST==KL_COST || COST==LNL_COST
     fprintf(stderr,"usage: legofit [options] input.lgo sitepat.txt\n");
     fprintf(stderr,"   where file input.lgo describes population history,\n"
             "   and file sitepat.txt contains site pattern frequencies.\n");
@@ -208,7 +209,7 @@ int main(int argc, char **argv) {
         {"stage", required_argument, 0, 'S'},
         {"maxFlat", required_argument, 0, 'M'},
         {"ptsPerDim", required_argument, 0, 'p'},
-#if COST!=KL_COST
+#if COST!=KL_COST && COST!=LNL_COST
         {"mutRate", required_argument, 0, 'u'},
         {"genomeSize", required_argument, 0, 'n'},
 #endif
@@ -239,7 +240,7 @@ int main(int argc, char **argv) {
 	double      F = 0.9;
 	double      CR = 0.8;
 	int         maxFlat = 100; // termination criterion
-#if COST!=KL_COST
+#if COST!=KL_COST && COST!=LNL_COST
     double      u = 0.0;       // mutation rate per site per generation
     long        nnuc = 0;      // number of nucleotides per haploid genome
 #endif
@@ -263,7 +264,7 @@ int main(int argc, char **argv) {
 
     // command line arguments
     for(;;) {
-#if COST==KL_COST
+#if COST==KL_COST || COST==LNL_COST
         i = getopt_long(argc, argv, "t:F:p:s:S:a:vx:1h",
                         myopts, &optndx);
 #else
@@ -320,7 +321,7 @@ int main(int argc, char **argv) {
 		case 'x':
 			CR = strtod(optarg, 0);
 			break;
-#if COST!=KL_COST
+#if COST!=KL_COST && COST!=LNL_COST
         case 'u':
             u = strtod(optarg, 0);
             break;
@@ -346,7 +347,7 @@ int main(int argc, char **argv) {
         usage();
     }
 
-#if COST!=KL_COST
+#if COST!=KL_COST && COST!=LNL_COST
     if(u==0.0) {
         fprintf(stderr,"Use -u to set mutation rate per generation.\n");
         usage();
@@ -403,7 +404,7 @@ int main(int argc, char **argv) {
     printf("# lgo input file     : %s\n", lgofname);
     printf("# site pat input file: %s\n", patfname);
     printf("# pts/dimension      : %d\n", ptsPerDim);
-#if COST!=KL_COST
+#if COST!=KL_COST && COST!=LNL_COST
     printf("# mut_rate/generation: %lg\n", u);
     printf("# nucleotides/genome : %ld\n", nnuc);
 #endif
@@ -411,6 +412,8 @@ int main(int argc, char **argv) {
            (doSing ? "Including" : "Excluding"));
 #if COST==KL_COST
     printf("# cost function      : %s\n", "KL");
+#elif COST==LNL_COST
+    printf("# cost function      : %s\n", "negLnL");
 #elif COST==CHISQR_COST
     printf("# cost function      : %s\n", "ChiSqr");
 #elif COST==SMPLCHISQR_COST
@@ -450,7 +453,7 @@ int main(int argc, char **argv) {
         .gptree = gptree,
         .nThreads = nThreads,
         .doSing = doSing,
-#if COST!=KL_COST
+#if COST!=KL_COST && COST!=LNL_COST
         .u = u,
         .nnuc = nnuc,
 #endif

@@ -8,6 +8,7 @@ typedef struct Boot Boot;
 typedef struct BootChr BootChr;
 typedef struct Bounds Bounds;
 typedef struct BranchTab BranchTab;
+typedef struct Constraint Constraint;
 typedef struct El El;
 typedef struct Gene Gene;
 typedef struct GPTree GPTree;
@@ -37,6 +38,7 @@ typedef uint64_t tipId_t;
 #define CHISQR_COST 2
 #define SMPLCHISQR_COST 3
 #define POISSON_COST 4
-#define COST KL_COST
+#define LNL_COST 5
+#define COST LNL_COST
 
 #endif
