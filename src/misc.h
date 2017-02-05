@@ -34,6 +34,7 @@ double      reflect(double x, double lo, double hi);
 char       *strlowercase(char *s);
 unsigned    strhash(const char *ss);
 int         stripchr(char *s, int c);
+char       *stripWhiteSpace(char *buff);
 
 static inline double survival(double t, double twoN);
 

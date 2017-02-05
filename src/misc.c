@@ -422,3 +422,23 @@ int stripchr(char *s, int c) {
     *p = '\0';
     return p - s;
 }
+
+/// Remove white space from beginning and end of a string.
+/// Return pointer to stripped string, which lies within the
+/// memory buffer passed as input.
+char *stripWhiteSpace(char *buff) {
+    char *s, *t;
+    s = buff;
+    while(*s!='\0' && isspace(*s))
+        ++s;
+    if(*s == '\0')
+        return s;
+    t = s;
+    while(*(t+1) != '\0')
+        ++t;
+    while(t > s && isspace(*t))
+        --t;
+    *t = '\0';
+    return s;
+}
+

@@ -30,36 +30,39 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+/// One term in a polynomial of form
+/// b*x[0]*x[1]*...*x[n-1]
+struct Term {
+    double b;
+    int n;
+    char **lbl;
+    double **x;
+    Term *next;
+};
+
 /// Constraint specifying one variable as a linear function of several
 /// others.
-/*
-  From Eqns. B.7-B.8 of Rogers and Bohlender, TPB, with t=lambda-zeta,
-  and mN=mD=0:
-
-  PBxy = t + 1-e^{-t/K} - K (1-e^{-t/K}) + e^{-t/K}/3
-  PBxy = t + 1-(2/3)e^{-t/K} - K (1-e^{-t/K})
-  PBxy = t + 1 - K + e^{-t/K} (K - 2/3)
- */
 struct Constraint {
     Constraint *next;
     double *y;
-    int n;
+    char *ylbl;
     double a;
-    double *b;
-    double **x;
+    Term *term;
 };
 
 struct ParStore {
-    int         nFixed, nFree, nGaussian; // number of parameters
+    int         nFixed, nFree, nGaussian, nConstrained; // num pars
     double      loFree[MAXPAR]; // lower bounds
     double      hiFree[MAXPAR]; // upper bounds
     char       *nameFixed[MAXPAR];  // Parameter names
     char       *nameFree[MAXPAR];   // Parameter names
-    char       *nameGaussian[MAXPAR];   // Parameter names
+    char       *nameGaussian[MAXPAR];    // Parameter names
+    char       *nameConstrained[MAXPAR]; // Parameter names
     ParKeyVal  *head;           // linked list of name/ptr pairs
     double      fixedVal[MAXPAR];   // parameter values
     double      freeVal[MAXPAR];    // parameter values
     double      gaussianVal[MAXPAR]; // parameter values
+    double      constrainedVal[MAXPAR]; // parameter values
     double      mean[MAXPAR];        // Gaussian means
     double      sd[MAXPAR];          // Gaussian standard deviations
     Constraint *constr;
@@ -67,10 +70,19 @@ struct ParStore {
 
 static int compareDblPtrs(const void *void_x, const void *void_y);
 static int compareDbls(const void *void_x, const void *void_y);
-Constraint *Constraint_new(Constraint *head, double *y, double a,
-                           int n, double b[n], double *x[n]);
-Constraint *Constraint_free(Constraint *self);
-void Constraint_set_y(Constraint *self);
+static inline int chrcount(const char *s, char c);
+
+/// Count the number of copies of character c in string s
+static inline int chrcount(const char *s, char c) {
+    if(s==NULL)
+        return 0;
+    int n=0;
+    while(*s != '\0') {
+        if(*s++ == c)
+            ++n;
+    }
+    return n;
+}
 
 /// Return <0, 0, or >0, as x is <, ==, or > y.
 static int compareDblPtrs(const void *void_x, const void *void_y) {
@@ -108,6 +120,7 @@ void ParStore_print(ParStore *self, FILE *fp) {
     for(i=0; i < self->nGaussian; ++i)
         fprintf(fp, "   %8s = Gaussian(%lf, %lf)\n", self->nameGaussian[i],
                 self->mean[i], self->sd[i]);
+    ParStore_printConstrained(self, fp);
     ParStore_printFree(self, fp);
 }
 
@@ -117,6 +130,15 @@ void ParStore_printFree(ParStore *self, FILE *fp) {
     fprintf(fp, "%5d free:\n", self->nFree);
     for(i=0; i < self->nFree; ++i)
         fprintf(fp, "   %8s = %lf\n", self->nameFree[i], self->freeVal[i]);
+}
+
+/// Print constrained parameter values
+void ParStore_printConstrained(ParStore *self, FILE *fp) {
+    int i;
+    fprintf(fp, "%5d constrained:\n", self->nConstrained);
+    for(i=0; i < self->nConstrained; ++i)
+        fprintf(fp, "   %8s = %lf\n", self->nameConstrained[i],
+                self->constrainedVal[i]);
 }
 
 /// Constructor
@@ -455,22 +477,51 @@ int         Bounds_equals(const Bounds *lhs, const Bounds *rhs) {
         && lhs->hi_t == rhs->hi_t;
 }
 
-Constraint *Constraint_new(Constraint *head, double *y, double a,
-                           int n, double b[n], double *x[n]) {
+Constraint *Constraint_new(Constraint *head, ParStore *pstore, char *str) {
     Constraint *self = malloc(sizeof(Constraint));
     CHECKMEM(self);
 
-    self->b = malloc(n * sizeof(self->b[0]));
-    CHECKMEM(self->b);
+    char *s, *token, *next = str;
 
-    self->x = malloc(n * sizeof(self->x[0]));
-    CHECKMEM(self->x);
+    // Parse dependent variable
+    token = strsep(&next, "=");
+    if(token==NULL) {
+        fprintf(stderr,"%s:%d: Bad constraint:"
+                " \"%s\"\n", __FILE__,__LINE__,next);
+        exit(EXIT_FAILURE);
+    }
+    s = stripWhiteSpace(token);
+    self->ylbl  = strdup(s);
+    ParStore_addConstrainedPar(pstore, self->ylbl);
+    self->y = ParStore_findPtr(pstore, 0, s);
+    if(self->y == NULL) {
+        fprintf(stderr,"%s:%d: there is no constrained parameter \"%s\"\n",
+                __FILE__,__LINE__,s);
+        exit(EXIT_FAILURE);
+    }
 
-    self->y = y;
-    self->n = n;
-    self->a = a;
-    memcpy(self->b, b, n * sizeof(b[0]));
-    memcpy(self->x, b, n * sizeof(x[0]));
+    // Parse y intercept
+    token = strsep(&next, "+");
+    if(token==NULL) {
+        fprintf(stderr,"%s:%d: Bad y intercept in constraint:"
+                " \"%s\"\n", __FILE__,__LINE__,next);
+        exit(EXIT_FAILURE);
+    }
+    s = stripWhiteSpace(token);
+    self->a = strtod(s, NULL);
+
+    // Parse terms of regression equation
+    self->term = NULL;
+    while(next) {
+        token = strsep(&next, "+");
+        if(token==NULL) {
+            fprintf(stderr,"%s:%d: Bad regression term:"
+                    " \"%s\"\n", __FILE__,__LINE__,next);
+            exit(EXIT_FAILURE);
+        }
+        self->term = Term_new(self->term, pstore, token);
+    }
+
     self->next = head;
     return self;
 }
@@ -488,7 +539,103 @@ Constraint *Constraint_free(Constraint *self) {
 void Constraint_set_y(Constraint *self) {
     int i;
     *self->y = self->a;
-    for(i=0; i < self->n; ++i)
-        *self->y += self->b[i] * (*self->x[i]);
+    *self->y += Term_value(self->term);
 }
 
+void Constraint_prFormula(Constraint *self, FILE *fp) {
+    if(self==NULL)
+        return;
+    fprintf(fp, "%s = %lf", self->y, self->a);
+    Term_prFormula(self->term, fp);
+    putc('\n', fp);
+    Constraint_prFormula(self->next);
+}
+
+/// Allocate a new term and initialize is using
+/// str and pstore.
+/// str should look like 1.23*name_1*name_2*...*name_n
+Term *Term_new(Term *head, ParStore *pstore, char *str) {
+    assert(str != NULL);
+    assert(strlen(str) > 0);
+
+    Term *self = malloc(sizeof(Term));
+    CHECKMEM(self);
+
+    char *s, *token, *next = str;
+
+    // parse beta, the coefficient of current term
+    token = strsep(&next, "*");
+    if(token==NULL) {
+        fprintf(stderr,"%s:%d: Bad term \"%s\"\n", __FILE__,__LINE__,str);
+        exit(EXIT_FAILURE);
+    }
+    s = stripWhiteSpace(token);
+    self->b = strtod(s, NULL);
+
+    // get dimension and allocate arrays
+    self->n = chrcount(next, '*');
+    if(next)
+        ++self->n;
+    if(self->n < 1) {
+        fprintf(stderr,"%s:%s: Each term must have at least 1 variable.\n",
+                __FILE__, __LINE__);
+        exit(EXIT_FAILURE);
+    }
+    self->lbl = malloc(self->n * sizeof(self->lbl[0]));
+    CHECKMEM(self->lbl);
+    self->x = malloc(self->n * sizeof(self->x[0]));
+    CHECKMEM(self->x);
+
+    // parse variable names
+    int i;
+    for(i=0; i < self->n; ++i) {
+        token = strsep(&next, "*");
+        assert(token != NULL);
+        s = stripWhiteSpace(token);
+        double *ptr = ParStore_findPtr(pstore, 1, s);
+        if(ptr==NULL) {
+            fprintf(stderr,"%s:%d: there is no free parameter \"%s\".\n",
+                    __FILE__, __LINE__, s);
+            exit(EXIT_FAILURE);
+        }
+        self->lbl[i] = strdup(s);
+        self->x[i] = ptr;
+    }
+
+    self->next = head;
+    return self;
+}
+
+void Term_free(self) {
+    if(self == NULL)
+        return;
+    Term_free(self->next);
+    int i;
+    for(i=0; i < self->n; ++i)
+        free(self->lbl[i]);
+    free(self->lbl);
+    free(self->x);
+    free(self);
+}
+
+/// Calculate sum of polynomial terms.
+/// Polynomial is stored as a linked list of terms.
+double Term_value(Term *self) {
+    if(self==NULL)
+        return 0.0
+    int i;
+    double v = *self->b;
+    for(i=0; i < self->n; ++i)
+        v *= *self->x[i];
+    return v + Term_value(self->next);
+}
+
+void Term_prFormula(Term *self, FILE *fp) {
+    if(self==NULL)
+        return;
+    Term_prFormula(self->next, fp);
+    fprintf(fp, " + %lf", self->b);
+    int i;
+    for(i=0; i < self->n; ++i)
+        fprintf(fp, " * %s", self->lbl[i]);
+}
