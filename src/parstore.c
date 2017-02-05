@@ -43,9 +43,6 @@ struct Term {
 /// Constraint specifying one variable as a linear function of several
 /// others.
 struct Constraint {
-    Constraint *next;
-    double *y;
-    char *ylbl;
     double a;
     Term *term;
 };
@@ -58,14 +55,14 @@ struct ParStore {
     char       *nameFree[MAXPAR];   // Parameter names
     char       *nameGaussian[MAXPAR];    // Parameter names
     char       *nameConstrained[MAXPAR]; // Parameter names
-    ParKeyVal  *head;           // linked list of name/ptr pairs
+    ParKeyVal  *pkv;           // linked list of name/ptr pairs
     double      fixedVal[MAXPAR];   // parameter values
     double      freeVal[MAXPAR];    // parameter values
     double      gaussianVal[MAXPAR]; // parameter values
     double      constrainedVal[MAXPAR]; // parameter values
     double      mean[MAXPAR];        // Gaussian means
     double      sd[MAXPAR];          // Gaussian standard deviations
-    Constraint *constr;
+    Constraint *constr[MAXPAR];      // controls constrainedVal entries
 };
 
 static int compareDblPtrs(const void *void_x, const void *void_y);
@@ -154,25 +151,32 @@ ParStore   *ParStore_new(void) {
 ParStore   *ParStore_dup(const ParStore * old) {
     assert(old);
     ParStore   *new = memdup(old, sizeof(ParStore));
-    new->head = NULL;
+    new->pkv = NULL;
 
     int         i;
     for(i = 0; i < new->nFree; ++i) {
         new->nameFree[i] = strdup(old->nameFree[i]);
-        new->head = ParKeyVal_add(new->head, new->nameFree[i],
+        new->pkv = ParKeyVal_add(new->pkv, new->nameFree[i],
                                   new->freeVal + i, true);
     }
 
     for(i = 0; i < new->nFixed; ++i) {
         new->nameFixed[i] = strdup(old->nameFixed[i]);
-        new->head = ParKeyVal_add(new->head, new->nameFixed[i],
+        new->pkv = ParKeyVal_add(new->pkv, new->nameFixed[i],
                                   new->fixedVal + i, false);
     }
 
     for(i = 0; i < new->nGaussian; ++i) {
         new->nameGaussian[i] = strdup(old->nameGaussian[i]);
-        new->head = ParKeyVal_add(new->head, new->nameGaussian[i],
+        new->pkv = ParKeyVal_add(new->pkv, new->nameGaussian[i],
                                   new->gaussianVal + i, false);
+    }
+
+    for(i = 0; i < new->nConstrained; ++i) {
+        new->nameConstrained[i] = strdup(old->nameConstrained[i]);
+        new->pkv = ParKeyVal_add(new->pkv, new->nameConstrained[i],
+                                  new->constrainedVal + i, false);
+        new->constr[i] = Constraint_dup(old->constr[i], self->pkv);
     }
     ParStore_sanityCheck(new, __FILE__, __LINE__);
     return new;
@@ -191,7 +195,7 @@ void ParStore_free(ParStore * self) {
     for(i = 0; i < self->nGaussian; ++i)
         free(self->nameGaussian[i]);
 
-    ParKeyVal_free(self->head);
+    ParKeyVal_free(self->pkv);
     free(self);
 }
 
@@ -221,7 +225,7 @@ void ParStore_addFreePar(ParStore * self, double value,
     CHECKMEM(self->nameFree[i]);
 
     // Linked list associates pointer with parameter name.
-    self->head = ParKeyVal_add(self->head, name, self->freeVal + i,
+    self->pkv = ParKeyVal_add(self->pkv, name, self->freeVal + i,
 							   true);
 }
 
@@ -247,7 +251,7 @@ void ParStore_addGaussianPar(ParStore * self, double mean, double sd,
     CHECKMEM(self->nameGaussian[i]);
 
     // Linked list associates pointer with parameter name.
-    self->head = ParKeyVal_add(self->head, name, self->gaussianVal + i,
+    self->pkv = ParKeyVal_add(self->pkv, name, self->gaussianVal + i,
 							   false);
 }
 
@@ -266,8 +270,30 @@ void ParStore_addFixedPar(ParStore * self, double value, const char *name) {
     CHECKMEM(self->nameFixed[i]);
 
     // Linked list associates pointer with parameter name.
-    self->head = ParKeyVal_add(self->head, name, self->fixedVal + i,
+    self->pkv = ParKeyVal_add(self->pkv, name, self->fixedVal + i,
 		false);
+}
+
+/// Add constrained parameter to ParStore.
+void ParStore_addConstrainedPar(ParStore * self, char *str,
+                                const char *name) {
+    int         i = self->nConstrained;
+
+    if(++self->nConstrained >= MAXPAR) {
+        fprintf(stderr, "%s:%s:%d: buffer overflow."
+                " nConstrained=%d. MAXPAR=%d."
+                " Increase MAXPAR and recompile.\n",
+                __FILE__, __func__, __LINE__, self->nConstrained, MAXPAR);
+        exit(EXIT_FAILURE);
+    }
+
+    self->nameConstrained[i] = strdup(name);
+    CHECKMEM(self->nameConstrained[i]);
+
+    self->pkv = ParKeyVal_add(self->pkv, name, self->constrainedVal + i,
+		false);
+    self->constr[i] = Constraint_new(self->pkv, str);
+    self->constrainedVal[i] = Constraint_getValue(self->constr[i]);
 }
 
 /// Return the number of fixed parameters
@@ -286,6 +312,12 @@ int ParStore_nFree(ParStore * self) {
 int ParStore_nGaussian(ParStore * self) {
     assert(self);
     return self->nGaussian;
+}
+
+/// Return the number of constrained parameters
+int ParStore_nConstrained(ParStore * self) {
+    assert(self);
+    return self->nConstrained;
 }
 
 /// Get value of i'th fixed parameter
@@ -355,7 +387,7 @@ double     *ParStore_upBounds(ParStore * self) {
 /// Return pointer associated with parameter name.
 double     *ParStore_findPtr(ParStore * self, bool *isfree,
 							 const char *name) {
-    return ParKeyVal_get(self->head, isfree, name);
+    return ParKeyVal_get(self->pkv, isfree, name);
 }
 
 void ParStore_sanityCheck(ParStore *self, const char *file, int line) {
@@ -386,7 +418,7 @@ void ParStore_sanityCheck(ParStore *self, const char *file, int line) {
         REQUIRE(NULL != s, file, line);
         REQUIRE(legalName(s), file, line);
     }
-    ParKeyVal_sanityCheck(self->head, file, line);
+    ParKeyVal_sanityCheck(self->pkv, file, line);
 #endif
 }
 
@@ -400,11 +432,16 @@ int         ParStore_equals(const ParStore *lhs, const ParStore *rhs) {
         return 0;
     if(lhs->nGaussian != rhs->nGaussian)
         return 0;
+    if(lhs->nConstrained != rhs->nConstrained)
+        return 0;
     if(0 != memcmp(lhs->fixedVal, rhs->fixedVal,
                    lhs->nFixed*sizeof(lhs->fixedVal[0])))
         return 0;
     if(0 != memcmp(lhs->freeVal, rhs->freeVal,
                    lhs->nFree*sizeof(lhs->freeVal[0])))
+        return 0;
+    if(0 != memcmp(lhs->constrainedVal, rhs->constrainedVal,
+                   lhs->nConstrained*sizeof(lhs->constrainedVal[0])))
         return 0;
     if(0 != memcmp(lhs->loFree, rhs->loFree,
                    lhs->nFree*sizeof(lhs->loFree[0])))
@@ -428,7 +465,10 @@ int         ParStore_equals(const ParStore *lhs, const ParStore *rhs) {
     for(i=0; i < lhs->nGaussian; ++i)
         if(0 != strcmp(lhs->nameGaussian[i], rhs->nameGaussian[i]))
             return 0;
-    return ParKeyVal_equals(lhs->head, rhs->head);
+    for(i=0; i < lhs->nConstrained; ++i)
+        if(0 != Constraint_equals(lhs->constr[i], rhs->constr[i]))
+            return 0;
+    return ParKeyVal_equals(lhs->pkv, rhs->pkv);
 }
 
 /// Set Gaussian parameter by sampling from a truncated Gaussian
@@ -456,6 +496,13 @@ void ParStore_sample(ParStore *self, double *ptr, double low, double high,
     assert(*ptr == self->gaussianVal[i]);
 }
 
+/// Set values of all constrained parameters
+void ParStore_constrain(ParStore *self) {
+    int i;
+    for(i=0; i < self->nConstrained; ++i)
+        self->constrainedVal[i] = Constraint_get(self->constr[i]);
+}
+
 /// Make sure Bounds object is sane.
 void Bounds_sanityCheck(Bounds * self, const char *file, int line) {
 #ifndef NDEBUG
@@ -477,28 +524,11 @@ int         Bounds_equals(const Bounds *lhs, const Bounds *rhs) {
         && lhs->hi_t == rhs->hi_t;
 }
 
-Constraint *Constraint_new(Constraint *head, ParStore *pstore, char *str) {
+Constraint *Constraint_new(ParKeyVal *pkv, char *str) {
     Constraint *self = malloc(sizeof(Constraint));
     CHECKMEM(self);
 
     char *s, *token, *next = str;
-
-    // Parse dependent variable
-    token = strsep(&next, "=");
-    if(token==NULL) {
-        fprintf(stderr,"%s:%d: Bad constraint:"
-                " \"%s\"\n", __FILE__,__LINE__,next);
-        exit(EXIT_FAILURE);
-    }
-    s = stripWhiteSpace(token);
-    self->ylbl  = strdup(s);
-    ParStore_addConstrainedPar(pstore, self->ylbl);
-    self->y = ParStore_findPtr(pstore, 0, s);
-    if(self->y == NULL) {
-        fprintf(stderr,"%s:%d: there is no constrained parameter \"%s\"\n",
-                __FILE__,__LINE__,s);
-        exit(EXIT_FAILURE);
-    }
 
     // Parse y intercept
     token = strsep(&next, "+");
@@ -519,42 +549,75 @@ Constraint *Constraint_new(Constraint *head, ParStore *pstore, char *str) {
                     " \"%s\"\n", __FILE__,__LINE__,next);
             exit(EXIT_FAILURE);
         }
-        self->term = Term_new(self->term, pstore, token);
+        self->term = Term_new(self->term, pkv, token);
     }
 
-    self->next = head;
     return self;
 }
 
 Constraint *Constraint_free(Constraint *self) {
-    if(self==NULL)
-        return;
-    self->next = Constraint_free(self->next);
-    free(self->b);
-    free(self->x);
+    assert(self != NULL);
+    Term_free(self->term);
     free(self);
     return NULL;
 }
 
-void Constraint_set_y(Constraint *self) {
+/// Return the current value of the constrained variable
+double Constraint_getValue(Constraint *self) {
     int i;
-    *self->y = self->a;
-    *self->y += Term_value(self->term);
+    double y = self->a;
+    y += Term_value(self->term);
+    return y;
 }
 
 void Constraint_prFormula(Constraint *self, FILE *fp) {
-    if(self==NULL)
-        return;
-    fprintf(fp, "%s = %lf", self->y, self->a);
+    assert(self != NULL);
+    fprintf(fp, "%lf", self->a);
     Term_prFormula(self->term, fp);
     putc('\n', fp);
-    Constraint_prFormula(self->next);
+}
+
+Constraint *Constraint_dup(Constraint *old, ParKeyVal *pkv) {
+    Constraint *new = malloc(sizeof(Constraint));
+    CHECKMEM(new);
+    new->a = old->a;
+    self->term = Term_dup(self->term, pkv);
+}
+
+int Constraint_equals(Constraint *lhs, Constraint *rhs) {
+    if(lhs->a != rhs->a)
+        return 0;
+    return Term_equals(lhs->term, rhs->term);
+}
+
+Term *Term_dup(Term *old, ParKeyVal *pkv) {
+    if(old == NULL)
+        return NULL;
+    Term *new = malloc(sizeof(Term));
+    CHECKMEM(new);
+    memcpy(new, olf, sizeof(Term));
+    new->lbl = malloc(new->n * sizeof(new->lbl[0]));
+    CHECKMEM(lbl);
+    new->x = malloc(new->n * sizeof(new->x[0]));
+    CHECKMEM(x);
+    int i;
+    for(i=0; i < new->n; ++i) {
+        new->lbl[i] = strdup(old->lbl[i]);
+        new->x[i] = ParKeyVal_get(pkv, 1, new->lbl[i]);
+        if(y == NULL) {
+            fprintf(fp,"%s:%d: no free parameter named \"%s\"\n",
+                    __FILE__,__LINE__,new->lbl[i]);
+            exit(EXIT_FAILURE);
+        }
+    }
+    new->next = Term_dup(old->next, pkv);
+    return new;
 }
 
 /// Allocate a new term and initialize is using
-/// str and pstore.
+/// str and pkv.
 /// str should look like 1.23*name_1*name_2*...*name_n
-Term *Term_new(Term *head, ParStore *pstore, char *str) {
+Term *Term_new(Term *head, ParKeyVal *pkv, char *str) {
     assert(str != NULL);
     assert(strlen(str) > 0);
 
@@ -569,18 +632,11 @@ Term *Term_new(Term *head, ParStore *pstore, char *str) {
         fprintf(stderr,"%s:%d: Bad term \"%s\"\n", __FILE__,__LINE__,str);
         exit(EXIT_FAILURE);
     }
-    s = stripWhiteSpace(token);
     self->b = strtod(s, NULL);
 
     // get dimension and allocate arrays
-    self->n = chrcount(next, '*');
-    if(next)
-        ++self->n;
-    if(self->n < 1) {
-        fprintf(stderr,"%s:%s: Each term must have at least 1 variable.\n",
-                __FILE__, __LINE__);
-        exit(EXIT_FAILURE);
-    }
+    assert(next);
+    self->n = 1 + chrcount(next, '*');
     self->lbl = malloc(self->n * sizeof(self->lbl[0]));
     CHECKMEM(self->lbl);
     self->x = malloc(self->n * sizeof(self->x[0]));
@@ -592,7 +648,7 @@ Term *Term_new(Term *head, ParStore *pstore, char *str) {
         token = strsep(&next, "*");
         assert(token != NULL);
         s = stripWhiteSpace(token);
-        double *ptr = ParStore_findPtr(pstore, 1, s);
+        double *ptr = ParKeyVal_get(pkv, 1, s);
         if(ptr==NULL) {
             fprintf(stderr,"%s:%d: there is no free parameter \"%s\".\n",
                     __FILE__, __LINE__, s);
@@ -638,4 +694,21 @@ void Term_prFormula(Term *self, FILE *fp) {
     int i;
     for(i=0; i < self->n; ++i)
         fprintf(fp, " * %s", self->lbl[i]);
+}
+
+int Term_equals(Term *lhs, Term *rhs) {
+    if(lhs==NULL && rhs==NULL)
+        return 1;
+    if(lhs==NULL || rhs==NULL)
+        return 0;
+    if(lhs->b != rhs->b)
+        return 0;
+    if(lhs->n != rhs->n)
+        return 0;
+    int i;
+    for(i=0; i < lhs->n; ++i) {
+        if(0 != strcmp(lhs->lbl[i], rhs->lbl[i]))
+            return 0;
+    }
+    return Term_equals(lhs->next, rhs->next);
 }
