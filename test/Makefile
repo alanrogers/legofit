@@ -7,7 +7,7 @@ prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
 tests := xbinary xboot xbranchtab xdafreader xdiffev xgene \
   xgptree xpopnodetab xjobqueue xlblndx xparkeyval xparse xparstore \
-  xpopnode xsimsched xstrint xdtnorm
+  xpopnode xsimsched xstrint xdtnorm xterm
 
 CC := gcc
 
@@ -54,6 +54,7 @@ test : $(tests)
 	-./xpopnodetab
 	-./xsimsched
 	-./xstrint
+	-./xterm
 	@echo "ALL UNIT TESTS WERE COMPLETED."
 
 XBINARY := xbinary.o binary.o
@@ -92,6 +93,13 @@ XPARSE := xparse.o popnodetab.o misc.o tokenizer.o gptree.o lblndx.o \
        dprintf.o dtnorm.o
 xparse : $(XPARSE)
 	$(CC) $(CFLAGS) -o $@ $(XPARSE) $(lib)
+
+xterm.o : parstore.c
+	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/parstore.c
+
+XTERM := xterm.o misc.o parkeyval.o dtnorm.o
+xterm : $(XTERM)
+	$(CC) $(CFLAGS) -o $@ $(XTERM) $(lib)
 
 xgene.o : gene.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/gene.c

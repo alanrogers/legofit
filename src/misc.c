@@ -433,10 +433,10 @@ char *stripWhiteSpace(char *buff) {
         ++s;
     if(*s == '\0')
         return s;
-    t = s;
-    while(*(t+1) != '\0')
+    t = s+1;
+    while(*t != '\0')
         ++t;
-    while(t > s && isspace(*t))
+    while(isspace(*(t-1)))
         --t;
     *t = '\0';
     return s;

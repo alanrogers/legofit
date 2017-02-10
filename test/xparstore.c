@@ -8,6 +8,7 @@
  */
 
 #include "parstore.h"
+#include "parkeyval.h"
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
@@ -52,19 +53,43 @@ int main(int argc, char **argv) {
     assert(Bounds_equals(&bnd0, &bnd1));
     unitTstResult("Bounds", "OK");
 
+    // Test Constraint
+    double x=1.0, y=1.0, z=2.0;
+    ParKeyVal *pkv = NULL;
+    pkv = ParKeyVal_add(pkv, "x", &x, Free);
+    pkv = ParKeyVal_add(pkv, "y", &y, Free);
+    pkv = ParKeyVal_add(pkv, "z", &z, Free);
+
+    char buff[100];
+    strcpy(buff, "1+1*x + 2*x*y");
+    Constraint *c = Constraint_new(pkv, buff);
+    assert(1 + 1*x + 2*x*y == Constraint_getValue(c));
+    if(verbose) {
+        printf("Constraint formula: ");
+        Constraint_prFormula(c, stdout);
+    }
+
+    double xx=1.0, yy=1.0, zz=2.0;
+    ParKeyVal *pkv2 = NULL;
+    pkv2 = ParKeyVal_add(pkv2, "x", &xx, Free);
+    pkv2 = ParKeyVal_add(pkv2, "y", &yy, Free);
+    pkv2 = ParKeyVal_add(pkv2, "z", &zz, Free);
+    Constraint *c2 = Constraint_dup(c, pkv2);
+    assert(Constraint_equals(c, c2));
+
     ParStore *ps = ParStore_new();
     assert(ParStore_nFixed(ps) == 0);
     assert(ParStore_nFree(ps) == 0);
     assert(ParStore_nGaussian(ps) == 0);
 
     double val, *ptr;
-	bool isfree, isfree2;
+    ParamStatus pstat, pstat2;
 
     val = 12.3;
     ParStore_addFixedPar(ps, val, "x");
-    ptr = ParStore_findPtr(ps, &isfree, "x");
+    ptr = ParStore_findPtr(ps, &pstat, "x");
     assert(*ptr == val);
-	assert(isfree == false);
+	assert(pstat == Fixed);
     assert(ParStore_nFixed(ps) == 1);
     assert(ParStore_nFree(ps) == 0);
     assert(ParStore_nGaussian(ps) == 0);
@@ -74,9 +99,9 @@ int main(int argc, char **argv) {
 
     val = 23.4;
     ParStore_addFreePar(ps, val, 10.0, 30.0, "y");
-    ptr = ParStore_findPtr(ps, &isfree, "y");
+    ptr = ParStore_findPtr(ps, &pstat, "y");
     assert(*ptr == val);
-	assert(isfree == true);
+	assert(pstat == Free);
     assert(ParStore_nFixed(ps) == 1);
     assert(ParStore_nFree(ps) == 1);
     assert(ParStore_nGaussian(ps) == 0);
@@ -88,9 +113,9 @@ int main(int argc, char **argv) {
 
     val = 88.3;
     ParStore_addFixedPar(ps, val, "w");
-    ptr = ParStore_findPtr(ps, &isfree, "w");
+    ptr = ParStore_findPtr(ps, &pstat, "w");
     assert(*ptr == val);
-	assert(isfree == false);
+	assert(pstat == Fixed);
     assert(ParStore_nFixed(ps) == 2);
     assert(ParStore_nFree(ps) == 1);
     assert(ParStore_nGaussian(ps) == 0);
@@ -100,9 +125,9 @@ int main(int argc, char **argv) {
 
     val = -23.8;
     ParStore_addFreePar(ps, val, -100.0, 0.0, "z");
-    ptr = ParStore_findPtr(ps, &isfree, "z");
+    ptr = ParStore_findPtr(ps, &pstat, "z");
     assert(*ptr == val);
-	assert(isfree == true);
+	assert(pstat == Free);
     assert(ParStore_nFixed(ps) == 2);
     assert(ParStore_nFree(ps) == 2);
     assert(ParStore_nGaussian(ps) == 0);
@@ -114,9 +139,9 @@ int main(int argc, char **argv) {
 
     val = 0.8;
     ParStore_addFreePar(ps, val, 0.0, 1.0, "a");
-    ptr = ParStore_findPtr(ps, &isfree, "a");
+    ptr = ParStore_findPtr(ps, &pstat, "a");
     assert(*ptr == val);
-	assert(isfree == true);
+	assert(pstat == Free);
     assert(ParStore_nFixed(ps) == 2);
     assert(ParStore_nFree(ps) == 3);
     assert(ParStore_nGaussian(ps) == 0);
@@ -129,9 +154,9 @@ int main(int argc, char **argv) {
     double sd = 1.2;
     val = 2.3;
     ParStore_addGaussianPar(ps, val, sd, "gauss");
-    ptr = ParStore_findPtr(ps, &isfree, "gauss");
+    ptr = ParStore_findPtr(ps, &pstat, "gauss");
     assert(*ptr = val);
-	assert(isfree == false);
+	assert(pstat == Gaussian);
     assert(ParStore_nFixed(ps) == 2);
     assert(ParStore_nFree(ps) == 3);
     assert(ParStore_nGaussian(ps) == 1);
@@ -159,8 +184,8 @@ int main(int argc, char **argv) {
         const char *name1 = ParStore_getNameFixed(ps, i);
         const char *name2 = ParStore_getNameFixed(ps2, i);
         assert(0 == strcmp(name1, name2));
-        size_t position1 = (size_t) ParStore_findPtr(ps, &isfree, name1);
-        size_t position2 = (size_t) ParStore_findPtr(ps2,&isfree2, name1);
+        size_t position1 = (size_t) ParStore_findPtr(ps, &pstat, name1);
+        size_t position2 = (size_t) ParStore_findPtr(ps2,&pstat2, name1);
         assert(offset == position2 - position1);
     }
 
@@ -171,8 +196,8 @@ int main(int argc, char **argv) {
         const char *name1 = ParStore_getNameFree(ps, i);
         const char *name2 = ParStore_getNameFree(ps2, i);
         assert(0 == strcmp(name1, name2));
-        size_t position1 = (size_t) ParStore_findPtr(ps, &isfree,name1);
-        size_t position2 = (size_t) ParStore_findPtr(ps2,&isfree2,name1);
+        size_t position1 = (size_t) ParStore_findPtr(ps, &pstat,name1);
+        size_t position2 = (size_t) ParStore_findPtr(ps2,&pstat2,name1);
         assert(offset == position2 - position1);
     }
     if(verbose)

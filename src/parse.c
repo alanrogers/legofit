@@ -90,16 +90,6 @@
         exit(EXIT_FAILURE);                                     \
     }while(0)
 
-/// Distinguish between parameters that describe population size,
-/// time, and gene flow.
-enum ParamType { TwoN, Time, MixFrac };
-
-/// Distinguish between parameters that free, fixed, and Gaussian.
-/// Free parameters can be changed during optimization; fixed ones
-/// never change; Gaussian ones are reset for each simulation
-/// replicate by sampling from a truncated normal distribution.
-enum ParamStatus { Free, Fixed, Gaussian };
-
 int         getDbl(double *x, Tokenizer * tkz, int i);
 int         getULong(unsigned long *x, Tokenizer * tkz, int i);
 void		parseParam(Tokenizer *tkz, enum ParamType type,
@@ -278,7 +268,7 @@ void parseSegment(Tokenizer *tkz, PopNodeTab *poptbl, SampNdx *sndx,
 				  LblNdx *lndx, ParStore *parstore, NodeStore *ns) {
     char *popName, *tok;
     double *tPtr, *twoNptr;
-	bool tfree, twoNfree;
+	ParamStatus tstat, twoNstat;
     unsigned long nsamples=0;
     int curr=1,  ntokens = Tokenizer_ntokens(tkz);
 
@@ -296,7 +286,7 @@ void parseSegment(Tokenizer *tkz, PopNodeTab *poptbl, SampNdx *sndx,
     }
     CHECK_INDEX(curr, ntokens);
     tok = Tokenizer_token(tkz, curr++);
-    tPtr = ParStore_findPtr(parstore, &tfree, tok);
+    tPtr = ParStore_findPtr(parstore, &tstat, tok);
 	if(NULL == tPtr) {
 		fprintf(stderr,"%s:%s:%d: Parameter \"%s\" is undefined\n",
 				__FILE__,__func__,__LINE__,tok);
@@ -318,7 +308,7 @@ void parseSegment(Tokenizer *tkz, PopNodeTab *poptbl, SampNdx *sndx,
     }
     CHECK_INDEX(curr, ntokens);
     tok = Tokenizer_token(tkz, curr++);
-    twoNptr = ParStore_findPtr(parstore, &twoNfree, tok);
+    twoNptr = ParStore_findPtr(parstore, &twoNstat, tok);
 	if(NULL == twoNptr) {
 		fprintf(stderr,"%s:%s:%dParameter \"%s\" is undefined\n",
 				__FILE__,__func__,__LINE__, tok);
@@ -351,7 +341,8 @@ void parseSegment(Tokenizer *tkz, PopNodeTab *poptbl, SampNdx *sndx,
                  __FILE__,__func__,__LINE__, Tokenizer_token(tkz,curr));
 
     assert(strlen(popName) > 0);
-    PopNode *thisNode = PopNode_new(twoNptr, twoNfree, tPtr, tfree, ns);
+    PopNode *thisNode = PopNode_new(twoNptr, twoNstat==Free,
+                                    tPtr, tstat==Free, ns);
     if(0 != PopNodeTab_insert(poptbl, popName, thisNode))
         eprintf("%s:%s:%d: duplicate \"segment %s\"\n",
                  __FILE__,__func__,__LINE__, popName);

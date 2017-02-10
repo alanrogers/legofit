@@ -15,9 +15,9 @@
 #include "misc.h"
 #include "parstore.h"
 #include "dtnorm.h"
+#include <stdbool.h>
 #include <string.h>
 #include <float.h>
-#include <stdbool.h>
 #include <gsl/gsl_randist.h>
 
 /// This structure allows you to allocate PopNode objects in an array

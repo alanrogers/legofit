@@ -19,9 +19,13 @@ void        ParStore_addGaussianPar(ParStore * self, double mean, double sd,
                                     const char *name);
 void        ParStore_addFixedPar(ParStore * self, double value,
                                  const char *name);
+void        ParStore_addConstrainedPar(ParStore * self, char *str,
+                                       const char *name);
+void        ParStore_constrain(ParStore *self);
 int         ParStore_nFixed(ParStore * self);
 int         ParStore_nFree(ParStore * self);
 int         ParStore_nGaussian(ParStore * self);
+int         ParStore_nConstrained(ParStore * self);
 
 double      ParStore_getFixed(ParStore * self, int i);
 double      ParStore_getFree(ParStore * self, int i);
@@ -36,7 +40,7 @@ double      ParStore_loFree(ParStore * self, int i);
 double      ParStore_hiFree(ParStore * self, int i);
 double     *ParStore_loBounds(ParStore * self);
 double     *ParStore_upBounds(ParStore * self);
-double     *ParStore_findPtr(ParStore * self, bool * isfree,
+double     *ParStore_findPtr(ParStore * self, ParamStatus *pstat,
                              const char *name);
 ParStore   *ParStore_dup(const ParStore * old);
 void        ParStore_sanityCheck(ParStore * self, const char *file, int line);
