@@ -68,6 +68,13 @@ struct ParStore {
 static int compareDblPtrs(const void *void_x, const void *void_y);
 static int compareDbls(const void *void_x, const void *void_y);
 static inline int chrcount(const char *s, char c);
+Term *Term_new(Term *head, ParKeyVal *pkv, char *str);
+Term *Term_dup(Term *old, ParKeyVal *pkv);
+void Term_free(self);
+double Term_value(Term *self);
+void Term_prFormula(Term *self, FILE *fp);
+int Term_equals(Term *lhs, Term *rhs);
+
 
 /// Count the number of copies of character c in string s
 static inline int chrcount(const char *s, char c) {
@@ -176,7 +183,7 @@ ParStore   *ParStore_dup(const ParStore * old) {
         new->nameConstrained[i] = strdup(old->nameConstrained[i]);
         new->pkv = ParKeyVal_add(new->pkv, new->nameConstrained[i],
                                   new->constrainedVal + i, false);
-        new->constr[i] = Constraint_dup(old->constr[i], self->pkv);
+        new->constr[i] = Constraint_dup(old->constr[i], new->pkv);
     }
     ParStore_sanityCheck(new, __FILE__, __LINE__);
     return new;
@@ -581,37 +588,13 @@ Constraint *Constraint_dup(Constraint *old, ParKeyVal *pkv) {
     Constraint *new = malloc(sizeof(Constraint));
     CHECKMEM(new);
     new->a = old->a;
-    self->term = Term_dup(self->term, pkv);
+    new->term = Term_dup(new->term, pkv);
 }
 
 int Constraint_equals(Constraint *lhs, Constraint *rhs) {
     if(lhs->a != rhs->a)
         return 0;
     return Term_equals(lhs->term, rhs->term);
-}
-
-Term *Term_dup(Term *old, ParKeyVal *pkv) {
-    if(old == NULL)
-        return NULL;
-    Term *new = malloc(sizeof(Term));
-    CHECKMEM(new);
-    memcpy(new, olf, sizeof(Term));
-    new->lbl = malloc(new->n * sizeof(new->lbl[0]));
-    CHECKMEM(lbl);
-    new->x = malloc(new->n * sizeof(new->x[0]));
-    CHECKMEM(x);
-    int i;
-    for(i=0; i < new->n; ++i) {
-        new->lbl[i] = strdup(old->lbl[i]);
-        new->x[i] = ParKeyVal_get(pkv, 1, new->lbl[i]);
-        if(y == NULL) {
-            fprintf(fp,"%s:%d: no free parameter named \"%s\"\n",
-                    __FILE__,__LINE__,new->lbl[i]);
-            exit(EXIT_FAILURE);
-        }
-    }
-    new->next = Term_dup(old->next, pkv);
-    return new;
 }
 
 /// Allocate a new term and initialize is using
@@ -660,6 +643,30 @@ Term *Term_new(Term *head, ParKeyVal *pkv, char *str) {
 
     self->next = head;
     return self;
+}
+
+Term *Term_dup(Term *old, ParKeyVal *pkv) {
+    if(old == NULL)
+        return NULL;
+    Term *new = malloc(sizeof(Term));
+    CHECKMEM(new);
+    memcpy(new, old, sizeof(Term));
+    new->lbl = malloc(new->n * sizeof(new->lbl[0]));
+    CHECKMEM(lbl);
+    new->x = malloc(new->n * sizeof(new->x[0]));
+    CHECKMEM(x);
+    int i;
+    for(i=0; i < new->n; ++i) {
+        new->lbl[i] = strdup(old->lbl[i]);
+        new->x[i] = ParKeyVal_get(pkv, 1, new->lbl[i]);
+        if(y == NULL) {
+            fprintf(fp,"%s:%d: no free parameter named \"%s\"\n",
+                    __FILE__,__LINE__,new->lbl[i]);
+            exit(EXIT_FAILURE);
+        }
+    }
+    new->next = Term_dup(old->next, pkv);
+    return new;
 }
 
 void Term_free(self) {
