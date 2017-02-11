@@ -478,7 +478,7 @@ int         ParStore_equals(const ParStore *lhs, const ParStore *rhs) {
         if(0 != strcmp(lhs->nameGaussian[i], rhs->nameGaussian[i]))
             return 0;
     for(i=0; i < lhs->nConstrained; ++i)
-        if(0 != Constraint_equals(lhs->constr[i], rhs->constr[i]))
+        if(!Constraint_equals(lhs->constr[i], rhs->constr[i]))
             return 0;
     return ParKeyVal_equals(lhs->pkv, rhs->pkv);
 }
