@@ -35,6 +35,7 @@ char       *strlowercase(char *s);
 unsigned    strhash(const char *ss);
 int         stripchr(char *s, int c);
 char       *stripWhiteSpace(char *buff);
+char       *nextWhitesepToken(char **str);
 
 static inline double survival(double t, double twoN);
 

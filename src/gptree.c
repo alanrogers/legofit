@@ -89,6 +89,7 @@ int GPTree_nFree(const GPTree *self) {
 void GPTree_simulate(GPTree *self, BranchTab *branchtab, gsl_rng *rng,
                      unsigned long nreps, int doSing) {
     unsigned long rep;
+    ParStore_constrain(self->parstore);
     for(rep = 0; rep < nreps; ++rep) {
         PopNode_clear(self->rootPop); // remove old samples
         SampNdx_populateTree(&(self->sndx));    // add new samples
@@ -288,6 +289,7 @@ unsigned    GPTree_nsamples(GPTree *self) {
 
 /// Are parameters within the feasible region?
 int GPTree_feasible(const GPTree *self) {
+    ParStore_constrain(self->parstore);
 	return PopNode_feasible(self->rootPop, self->bnd);
 }
 

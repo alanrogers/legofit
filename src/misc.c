@@ -442,3 +442,26 @@ char *stripWhiteSpace(char *buff) {
     return s;
 }
 
+/**
+ * Return tokens separated by 1 or more spaces and/or tabs.
+ *
+ * On entry, str should be the address of a pointer
+ * into a character string. For example:
+ *
+ *     char buff[100];
+ *     char *token, *ptr = buff;
+ *
+ *     token = nextWhitesepToken(&ptr);
+ *
+ * On return, token is NULL if no tokens are found. Otherwise, it
+ * points to the next token in the string, and *str is either NULL (if
+ * the end of the string has been reached) or points to the character
+ * immediately following the token.
+ */
+char *nextWhitesepToken(char **str) {
+    char *token;
+    do{
+        token = strsep(str, " \t\n");
+    }while(token!=NULL && *token=='\0');
+    return token;
+}

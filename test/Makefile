@@ -1,13 +1,11 @@
 vpath %.c ../src
 
-#opt := -DNDEBUG -O3  -finline-functions  # For full optimization
-opt :=  -O0 -fno-inline-functions -DDEBUG     # For debugging
-#prof := -pg -rdynamic                    # For profiling
+opt :=  -O0 -fno-inline-functions -DDEBUG
 prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
 tests := xbinary xboot xbranchtab xdafreader xdiffev xgene \
   xgptree xpopnodetab xjobqueue xlblndx xparkeyval xparse xparstore \
-  xpopnode xsimsched xstrint xdtnorm xterm
+  xpopnode xsimsched xstrint xdtnorm xterm xmisc
 
 CC := gcc
 
@@ -47,6 +45,7 @@ test : $(tests)
 	-./xgptree
 	-./xjobqueue
 	-./xlblndx
+	-./xmisc
 	-./xparkeyval
 	-./xparse
 	-./xparstore
@@ -60,6 +59,10 @@ test : $(tests)
 XBINARY := xbinary.o binary.o
 xbinary : $(XBINARY)
 	$(CC) $(CFLAGS) -o $@ $(XBINARY) $(lib)
+
+XMISC := xmisc.o misc.o
+xmisc : $(XMISC)
+	$(CC) $(CFLAGS) -o $@ $(XMISC) $(lib)
 
 XPOPNODETAB := xpopnodetab.o popnodetab.o misc.o popnode.o gene.o \
    branchtab.o lblndx.o tokenizer.o dtnorm.o binary.o \
