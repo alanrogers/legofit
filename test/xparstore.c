@@ -76,6 +76,7 @@ int main(int argc, char **argv) {
     pkv2 = ParKeyVal_add(pkv2, "z", &zz, Free);
     Constraint *c2 = Constraint_dup(c, pkv2);
     assert(Constraint_equals(c, c2));
+    unitTstResult("Constraint", "OK");
 
     ParStore *ps = ParStore_new();
     assert(ParStore_nFixed(ps) == 0);
@@ -166,6 +167,11 @@ int main(int argc, char **argv) {
     assert(ParStore_getGaussian(ps, 0) != val);
     assert(*ptr != val);
 
+    strcpy(buff, "1 + 2*y + 1*a");
+    assert(0 == ParStore_nConstrained(ps));
+    ParStore_addConstrainedPar(ps, buff, "cnstr");
+    assert(1 == ParStore_nConstrained(ps));
+    ParStore_constrain(ps);
 
     if(verbose)
         ParStore_print(ps, stdout);

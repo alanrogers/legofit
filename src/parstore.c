@@ -122,13 +122,13 @@ void ParStore_print(ParStore *self, FILE *fp) {
     int i;
     fprintf(fp, "%5d fixed:\n", self->nFixed);
     for(i=0; i < self->nFixed; ++i)
-        fprintf(fp, "   %8s = %lf\n", self->nameFixed[i], self->fixedVal[i]);
+        fprintf(fp, "   %8s = %lg\n", self->nameFixed[i], self->fixedVal[i]);
     fprintf(fp, "%5d Gaussian:\n", self->nGaussian);
     for(i=0; i < self->nGaussian; ++i)
-        fprintf(fp, "   %8s = Gaussian(%lf, %lf)\n", self->nameGaussian[i],
+        fprintf(fp, "   %8s = Gaussian(%lg, %lg)\n", self->nameGaussian[i],
                 self->mean[i], self->sd[i]);
-    ParStore_printConstrained(self, fp);
     ParStore_printFree(self, fp);
+    ParStore_printConstrained(self, fp);
 }
 
 /// Print free parameter values
@@ -136,16 +136,18 @@ void ParStore_printFree(ParStore *self, FILE *fp) {
     int i;
     fprintf(fp, "%5d free:\n", self->nFree);
     for(i=0; i < self->nFree; ++i)
-        fprintf(fp, "   %8s = %lf\n", self->nameFree[i], self->freeVal[i]);
+        fprintf(fp, "   %8s = %lg\n", self->nameFree[i], self->freeVal[i]);
 }
 
 /// Print constrained parameter values
 void ParStore_printConstrained(ParStore *self, FILE *fp) {
     int i;
     fprintf(fp, "%5d constrained:\n", self->nConstrained);
-    for(i=0; i < self->nConstrained; ++i)
-        fprintf(fp, "   %8s = %lf\n", self->nameConstrained[i],
+    for(i=0; i < self->nConstrained; ++i) {
+        fprintf(fp, "   %8s = %lg = ", self->nameConstrained[i],
                 self->constrainedVal[i]);
+        Constraint_prFormula(self->constr[i], fp);
+    }
 }
 
 /// Constructor
@@ -548,7 +550,7 @@ Constraint *Constraint_new(ParKeyVal *pkv, char *str) {
         exit(EXIT_FAILURE);
     }
     if(strchr(token, '*')) {
-        fprintf(stderr," %s:%s:%d:"
+        fprintf(stderr,"%s:%s:%d:"
                 " 1st term of formula (%s) is illegal.\n"
                 "   Should be an additive constant.\n", 
                 __FILE__, __func__, __LINE__, token);
@@ -556,6 +558,13 @@ Constraint *Constraint_new(ParKeyVal *pkv, char *str) {
     }
     s = stripWhiteSpace(token);
     self->a = strtod(s, NULL);
+
+    if(next==NULL) {
+        fprintf(stderr,"%s:%s:%d: Formula must have at least 2 terms.\n"
+                "    Got \"%s\".\n",
+                __FILE__,__func__,__LINE__, token);
+        exit(EXIT_FAILURE);
+    }
 
     // Parse terms of regression equation
     self->term = NULL;
@@ -597,7 +606,7 @@ Constraint *Constraint_dup(Constraint *old, ParKeyVal *pkv) {
     Constraint *new = malloc(sizeof(Constraint));
     CHECKMEM(new);
     new->a = old->a;
-    new->term = Term_dup(new->term, pkv);
+    new->term = Term_dup(old->term, pkv);
     return new;
 }
 
@@ -627,10 +636,20 @@ Term *Term_new(Term *head, ParKeyVal *pkv, char *str) {
         fprintf(stderr,"%s:%d: Bad term \"%s\"\n", __FILE__,__LINE__,str);
         exit(EXIT_FAILURE);
     }
+    if(strspn(token, " 0123456789.-") != strlen(token)) {
+        fprintf(stderr,"%s:%d: term must begin with a number.\n"
+                "   Can't parse \"%s\"\n",
+                __FILE__,__LINE__, token);
+        exit(EXIT_FAILURE);
+    }
     self->b = strtod(token, NULL);
 
     // get dimension and allocate arrays
-    assert(next);
+    if(next == NULL) {
+        fprintf(stderr,"%s:%d: Term (%s) has no variable.\n",
+                __FILE__,__LINE__,token);
+        exit(EXIT_FAILURE);
+    }
     self->n = 1 + chrcount(next, '*');
     self->lbl = malloc(self->n * sizeof(self->lbl[0]));
     CHECKMEM(self->lbl);
@@ -718,31 +737,20 @@ void Term_prFormula(Term *self, FILE *fp) {
 }
 
 int Term_equals(Term *lhs, Term *rhs) {
-    if(lhs==NULL && rhs==NULL) {
-        fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
+    if(lhs==NULL && rhs==NULL)
         return 1;
-    }
     if(lhs==NULL || rhs==NULL) {
-        fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
-        fprintf(stderr,"lhs=%p rhs=%p\n", lhs, rhs);
-        if(lhs)
-            Term_prFormula(lhs, stderr);
-        else 
-            Term_prFormula(rhs, stderr);
         return 0;
     }
     if(lhs->b != rhs->b) {
-        fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
         return 0;
     }
     if(lhs->n != rhs->n) {
-        fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
         return 0;
     }
     int i;
     for(i=0; i < lhs->n; ++i) {
         if(0 != strcmp(lhs->lbl[i], rhs->lbl[i])) {
-            fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
             return 0;
         }
     }

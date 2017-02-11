@@ -45,6 +45,7 @@ void GPTree_printParStore(GPTree *self, FILE *fp) {
 /// Print a description of free parameters.
 void GPTree_printParStoreFree(GPTree *self, FILE *fp) {
 	ParStore_printFree(self->parstore, fp);
+    ParStore_printConstrained(self->parstore, fp);
 }
 
 /// Randomly perturb all free parameters in the population tree while
