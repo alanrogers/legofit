@@ -509,7 +509,11 @@ int main(int argc, char **argv) {
     BranchTab_divideBy(bt, simreps);
 
     printf("Fitted parameter values\n");
+#if 0    
 	GPTree_printParStoreFree(gptree, stdout);
+#else
+	GPTree_printParStore(gptree, stdout);
+#endif
 
     // Put site patterns and branch lengths into arrays.
     unsigned npat = BranchTab_size(bt);
