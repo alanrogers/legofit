@@ -77,7 +77,7 @@ double *ParKeyVal_get(ParKeyVal * self, ParamStatus *pstat, const char *key) {
 		return NULL;
 
     int         i = strcmp(key, self->key);
-    if(i < 0)        // Failed
+    if(i < 0)       // Failed
 		return NULL;
 
     if(i == 0) { // Success

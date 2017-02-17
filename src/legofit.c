@@ -537,6 +537,7 @@ int main(int argc, char **argv) {
 
     BranchTab_free(bt);
     gsl_rng_free(rng);
+    GPTree_sanityCheck(gptree, __FILE__, __LINE__);
     GPTree_free(gptree);
     SimSched_free(simSched);
     fprintf(stderr,"legofit is finished\n");

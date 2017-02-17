@@ -255,6 +255,7 @@ int main(int argc, char **argv) {
             printf("%15s %15.7lf\n", buff2, prob[ord[j]]);
     }
 
+    GPTree_sanityCheck(gptree, __FILE__, __LINE__);
     GPTree_free(gptree);
 
     return 0;

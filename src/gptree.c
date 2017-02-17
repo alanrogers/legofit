@@ -162,13 +162,17 @@ void GPTree_free(GPTree *self) {
 GPTree *GPTree_dup(const GPTree *old) {
     assert(old);
 	assert(GPTree_feasible(old));
-    if(old->rootGene != NULL)
-        eprintf("%s:%s:%d: old->rootGene must be NULL on entry\n",
+    if(old->rootGene != NULL) {
+        fprintf(stderr,"%s:%s:%d: old->rootGene must be NULL on entry\n",
                 __FILE__,__func__,__LINE__);
-    if(!PopNode_isClear(old->rootPop))
-        eprintf("%s:%s:%d: clear GPTree of samples before call"
+        exit(EXIT_FAILURE);
+    }
+    if(!PopNode_isClear(old->rootPop)) {
+        fprintf(stderr,"%s:%s:%d: clear GPTree of samples before call"
                 " to GPTree_dup\n",
                 __FILE__,__func__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
 
     GPTree *new   = memdup(old, sizeof(GPTree));
     new->parstore = ParStore_dup(old->parstore);
@@ -232,7 +236,7 @@ GPTree *GPTree_dup(const GPTree *old) {
 }
 
 void GPTree_sanityCheck(GPTree *self, const char *file, int line) {
-#ifndef NDEBUG
+    //#ifndef NDEBUG
     REQUIRE(self->nseg > 0,                         file, line);
     REQUIRE(self->pnv != NULL,                      file, line);
     REQUIRE(self->rootPop >= self->pnv,             file, line);
@@ -240,7 +244,7 @@ void GPTree_sanityCheck(GPTree *self, const char *file, int line) {
     Bounds_sanityCheck(&self->bnd,                  file, line);
     ParStore_sanityCheck(self->parstore,            file, line);
     LblNdx_sanityCheck(&self->lblndx,               file, line);
-#endif
+    //#endif
 }
 
 /// Return 1 if two GPTree objects are equal, 0 if they differ.  Abort

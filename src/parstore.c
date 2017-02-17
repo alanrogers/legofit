@@ -403,7 +403,7 @@ double     *ParStore_findPtr(ParStore * self, ParamStatus *pstat,
 }
 
 void ParStore_sanityCheck(ParStore *self, const char *file, int line) {
-#ifndef NDEBUG
+    //#ifndef NDEBUG
     REQUIRE(self, file, line);
     REQUIRE(self->nFixed >= 0, file, line);
     REQUIRE(self->nFree >= 0, file, line);
@@ -412,26 +412,50 @@ void ParStore_sanityCheck(ParStore *self, const char *file, int line) {
     REQUIRE(self->nFree < MAXPAR, file, line);
     REQUIRE(self->nGaussian < MAXPAR, file, line);
 
-    // Make sure each name consists only of legal characters.
+    // For each name: (1) make sure it's a legal name;
+    // (2) get the pointer associated with that name,
     int i;
     char *s;
+    double *ptr;
+    ParamStatus pstat;
     for(i=0; i < self->nFixed; ++i) {
         s = self->nameFixed[i];
         REQUIRE(NULL != s, file, line);
         REQUIRE(legalName(s), file, line);
+        ptr = ParKeyVal_get(self->pkv, &pstat, s);
+        REQUIRE(ptr != NULL, file, line);
+        REQUIRE(pstat == Fixed, file, line);
+        REQUIRE(ptr == self->fixedVal+i, file, line);
     }
     for(i=0; i < self->nFree; ++i) {
         s = self->nameFree[i];
         REQUIRE(NULL != s, file, line);
         REQUIRE(legalName(s), file, line);
+        ptr = ParKeyVal_get(self->pkv, &pstat, s);
+        REQUIRE(ptr != NULL, file, line);
+        REQUIRE(pstat == Free, file, line);
+        REQUIRE(ptr == self->freeVal+i, file, line);
     }
     for(i=0; i < self->nGaussian; ++i) {
         s = self->nameGaussian[i];
         REQUIRE(NULL != s, file, line);
         REQUIRE(legalName(s), file, line);
+        ptr = ParKeyVal_get(self->pkv, &pstat, s);
+        REQUIRE(ptr != NULL, file, line);
+        REQUIRE(pstat == Gaussian, file, line);
+        REQUIRE(ptr == self->gaussianVal+i, file, line);
+    }
+    for(i=0; i < self->nConstrained; ++i) {
+        s = self->nameConstrained[i];
+        REQUIRE(NULL != s, file, line);
+        REQUIRE(legalName(s), file, line);
+        ptr = ParKeyVal_get(self->pkv, &pstat, s);
+        REQUIRE(ptr != NULL, file, line);
+        REQUIRE(pstat == Constrained, file, line);
+        REQUIRE(ptr == self->constrainedVal+i, file, line);
     }
     ParKeyVal_sanityCheck(self->pkv, file, line);
-#endif
+    //#endif
 }
 
 /// Return 1 if two ParStore objects are equal; 0 otherwise.
