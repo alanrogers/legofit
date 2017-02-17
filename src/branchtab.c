@@ -51,8 +51,8 @@ BTLink     *BTLink_add(BTLink * self, tipId_t key, double value);
 double      BTLink_get(BTLink * self, tipId_t key);
 int         BTLink_hasSingletons(BTLink * self);
 void        BTLink_free(BTLink * self);
-void        BTLink_printShallow(const BTLink * self);
-void        BTLink_print(const BTLink * self);
+void        BTLink_printShallow(const BTLink * self, FILE *fp);
+void        BTLink_print(const BTLink * self, FILE *fp);
 BTLink     *BTLink_dup(const BTLink *self);
 int         BTLink_equals(const BTLink *lhs, const BTLink *rhs);
 
@@ -182,22 +182,22 @@ int BTLink_hasSingletons(BTLink * self) {
     return BTLink_hasSingletons(self->next);
 }
 
-void BTLink_printShallow(const BTLink * self) {
+void BTLink_printShallow(const BTLink * self, FILE *fp) {
     if(self == NULL)
         return;
 #if COST==CHISQR_COST
-    printf(" [%lu, %lf, %lf]",
+    fprintf(fp, " [%lu, %lf, %lf]",
            (unsigned long) self->key, self->value, self->sumsqr);
 #else
-    printf(" [%lu, %lf]", (unsigned long) self->key, self->value);
+    fprintf(fp, " [%lu, %lf]", (unsigned long) self->key, self->value);
 #endif
 }
 
-void BTLink_print(const BTLink * self) {
+void BTLink_print(const BTLink * self, FILE *fp) {
     if(self == NULL)
         return;
-    BTLink_printShallow(self);
-    BTLink_print(self->next);
+    BTLink_printShallow(self, fp);
+    BTLink_print(self->next, fp);
 }
 
 BranchTab    *BranchTab_new(void) {
@@ -308,12 +308,12 @@ int BranchTab_divideBy(BranchTab *self, double denom) {
 }
 
 /// Print a BranchTab to standard output.
-void BranchTab_print(const BranchTab *self) {
+void BranchTab_print(const BranchTab *self, FILE *fp) {
     unsigned i;
     for(i=0; i < BT_DIM; ++i) {
-        printf("%2u:", i);
-        BTLink_print(self->tab[i]);
-        putchar('\n');
+        fprintf(fp, "%2u:", i);
+        BTLink_print(self->tab[i], fp);
+        putc('\n', fp);
     }
 }
 
@@ -832,7 +832,7 @@ int main(int argc, char **argv) {
     }
 
     if(verbose)
-        BranchTab_print(bt);
+        BranchTab_print(bt, stdout);
     BranchTab_free(bt);
 
 	Bounds   bnd = {
@@ -850,7 +850,7 @@ int main(int argc, char **argv) {
     assert(BranchTab_equals(bt, bt2));
 
     if(verbose)
-        BranchTab_print(bt);
+        BranchTab_print(bt, stdout);
     BranchTab_free(bt);
     GPTree_free(g);
 	unitTstResult("BranchTab", "untested");

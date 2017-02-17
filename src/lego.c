@@ -224,6 +224,7 @@ int main(int argc, char **argv) {
 
     BranchTab *bt = patprob(gptree, nreps, doSing, rng);
     BranchTab_divideBy(bt, (double) nreps);
+    BranchTab_print(bt, stdout);
 
     // Put site patterns and branch lengths into arrays.
     unsigned npat = BranchTab_size(bt);
