@@ -232,7 +232,7 @@ int main(int argc, char **argv) {
     double prob[npat];
     double sqr[npat];
     BranchTab_toArrays(bt, npat, pat, prob, sqr);
-	GPTree_printParStore(gptree, stdout);
+	//GPTree_printParStore(gptree, stdout);
 
     // Determine order for printing lines of output
     unsigned ord[npat];
