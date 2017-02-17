@@ -236,7 +236,7 @@ GPTree *GPTree_dup(const GPTree *old) {
 }
 
 void GPTree_sanityCheck(GPTree *self, const char *file, int line) {
-    //#ifndef NDEBUG
+#ifndef NDEBUG
     REQUIRE(self->nseg > 0,                         file, line);
     REQUIRE(self->pnv != NULL,                      file, line);
     REQUIRE(self->rootPop >= self->pnv,             file, line);
@@ -244,7 +244,7 @@ void GPTree_sanityCheck(GPTree *self, const char *file, int line) {
     Bounds_sanityCheck(&self->bnd,                  file, line);
     ParStore_sanityCheck(self->parstore,            file, line);
     LblNdx_sanityCheck(&self->lblndx,               file, line);
-    //#endif
+#endif
 }
 
 /// Return 1 if two GPTree objects are equal, 0 if they differ.  Abort

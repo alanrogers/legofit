@@ -403,7 +403,7 @@ double     *ParStore_findPtr(ParStore * self, ParamStatus *pstat,
 }
 
 void ParStore_sanityCheck(ParStore *self, const char *file, int line) {
-    //#ifndef NDEBUG
+#ifndef NDEBUG
     REQUIRE(self, file, line);
     REQUIRE(self->nFixed >= 0, file, line);
     REQUIRE(self->nFree >= 0, file, line);
@@ -455,7 +455,7 @@ void ParStore_sanityCheck(ParStore *self, const char *file, int line) {
         REQUIRE(ptr == self->constrainedVal+i, file, line);
     }
     ParKeyVal_sanityCheck(self->pkv, file, line);
-    //#endif
+#endif
 }
 
 /// Return 1 if two ParStore objects are equal; 0 otherwise.
