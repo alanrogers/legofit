@@ -28,7 +28,8 @@ struct NodeStore {
 };
 
 static void PopNode_sanityCheck(PopNode * self, const char *file, int lineno);
-static void PopNode_randomize_r(PopNode *self, Bounds bnd, gsl_rng *rng);
+static void PopNode_randomize_r(PopNode *self, Bounds bnd, ParStore *parstore,
+                                gsl_rng *rng);
 static void PopNode_gaussian_r(PopNode *self, Bounds bnd,
                                ParStore *ps, gsl_rng *rng);
 
@@ -473,14 +474,16 @@ void PopNode_free(PopNode * self) {
 
 /// Randomly perturb all free parameters in tree while maintaining
 /// inequality constraints.
-void PopNode_randomize(PopNode *self, Bounds bnd, gsl_rng *rng) {
+void PopNode_randomize(PopNode *self, Bounds bnd, ParStore *parstore,
+                       gsl_rng *rng) {
 	PopNode_untouch(self);
-	PopNode_randomize_r(self, bnd, rng);
+	PopNode_randomize_r(self, bnd, parstore, rng);
 }
 
 /// Recurse through the tree perturbing free parameters. Must call
 /// PopNode_untouch before calling this function.
-static void PopNode_randomize_r(PopNode *self, Bounds bnd, gsl_rng *rng) {
+static void PopNode_randomize_r(PopNode *self, Bounds bnd,
+                                ParStore *parstore, gsl_rng *rng) {
 
 	// If parents have been touched, then randomize this
 	// node. Otherwise, postpone.
@@ -508,17 +511,9 @@ static void PopNode_randomize_r(PopNode *self, Bounds bnd, gsl_rng *rng) {
 		return;
 
     // perturb self->twoN
-    if(self->twoNfree) {
-#if 1
-        // new code
+    if(self->twoNfree)
         *self->twoN = dtnorm(*self->twoN, 10000.0, bnd.lo_twoN,
                              bnd.hi_twoN, rng);
-#else
-        // old code
-        *self->twoN += gsl_ran_gaussian(rng, 10000.0);
-        *self->twoN = reflect(*self->twoN, bnd.lo_twoN, bnd.hi_twoN);
-#endif
-    }
 
     // perturb self->start
     if(self->startFree) {
@@ -532,11 +527,14 @@ static void PopNode_randomize_r(PopNode *self, Bounds bnd, gsl_rng *rng) {
             break;
         case 1:
 			assert(self->parent[0]->touched);
+            ParStore_constrain_ptr(parstore, self->parent[0]->start);
 			hi_t = *self->parent[0]->start;
             break;
         case 2:
 			assert(self->parent[0]->touched);
 			assert(self->parent[1]->touched);
+            ParStore_constrain_ptr(parstore, self->parent[0]->start);
+            ParStore_constrain_ptr(parstore, self->parent[1]->start);
 			hi_t = fmin(*self->parent[0]->start, *self->parent[1]->start);
             break;
         default:
@@ -551,9 +549,12 @@ static void PopNode_randomize_r(PopNode *self, Bounds bnd, gsl_rng *rng) {
         case 0:
             break;
         case 1:
+            ParStore_constrain_ptr(parstore, self->child[0]->start);
             lo_t = *self->child[0]->start;
             break;
         case 2:
+            ParStore_constrain_ptr(parstore, self->child[0]->start);
+            ParStore_constrain_ptr(parstore, self->child[1]->start);
             lo_t = fmax(*self->child[0]->start, *self->child[1]->start);
             break;
         default:
@@ -573,7 +574,7 @@ static void PopNode_randomize_r(PopNode *self, Bounds bnd, gsl_rng *rng) {
 
     int i;
     for(i=0; i < self->nchildren; ++i)
-        PopNode_randomize_r(self->child[i], bnd, rng);
+        PopNode_randomize_r(self->child[i], bnd, parstore, rng);
 }
 
 /// Reset the value of each Gaussian parameter by sampling from the
@@ -627,11 +628,14 @@ static void PopNode_gaussian_r(PopNode *self, Bounds bnd,
         break;
     case 1:
         assert(self->parent[0]->touched);
+        ParStore_constrain_ptr(ps, self->parent[0]->start);
         hi_t = *self->parent[0]->start;
         break;
     case 2:
         assert(self->parent[0]->touched);
         assert(self->parent[1]->touched);
+        ParStore_constrain_ptr(ps, self->parent[0]->start);
+        ParStore_constrain_ptr(ps, self->parent[1]->start);
         hi_t = fmin(*self->parent[0]->start, *self->parent[1]->start);
         break;
     default:
@@ -646,9 +650,12 @@ static void PopNode_gaussian_r(PopNode *self, Bounds bnd,
     case 0:
         break;
     case 1:
+        ParStore_constrain_ptr(ps, self->child[0]->start);
         lo_t = *self->child[0]->start;
         break;
     case 2:
+        ParStore_constrain_ptr(ps, self->child[0]->start);
+        ParStore_constrain_ptr(ps, self->child[1]->start);
         lo_t = fmax(*self->child[0]->start, *self->child[1]->start);
         break;
     default:

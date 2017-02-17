@@ -39,6 +39,7 @@ struct GPTree {
 
 /// Print a description of parameters.
 void GPTree_printParStore(GPTree *self, FILE *fp) {
+    ParStore_constrain(self->parstore);
 	ParStore_print(self->parstore, fp);
 }
 
@@ -51,7 +52,7 @@ void GPTree_printParStoreFree(GPTree *self, FILE *fp) {
 /// Randomly perturb all free parameters in the population tree while
 /// maintaining inequality constraints.
 void GPTree_randomize(GPTree *self, gsl_rng *rng) {
-	PopNode_randomize(self->rootPop, self->bnd, rng);
+	PopNode_randomize(self->rootPop, self->bnd, self->parstore, rng);
 }
 
 /// Set free parameters from an array.
@@ -61,6 +62,7 @@ void GPTree_randomize(GPTree *self, gsl_rng *rng) {
 void GPTree_setParams(GPTree *self, int n, double x[n]) {
     assert(n == ParStore_nFree(self->parstore));
     ParStore_setFreeParams(self->parstore, n, x);
+    ParStore_constrain(self->parstore);
 }
 
 /// Copy free parameters from GPTree into an array
@@ -161,6 +163,7 @@ void GPTree_free(GPTree *self) {
 /// Duplicate a GPTree object
 GPTree *GPTree_dup(const GPTree *old) {
     assert(old);
+    ParStore_constrain(old->parstore);
 	assert(GPTree_feasible(old));
     if(old->rootGene != NULL) {
         fprintf(stderr,"%s:%s:%d: old->rootGene must be NULL on entry\n",
@@ -231,6 +234,7 @@ GPTree *GPTree_dup(const GPTree *old) {
         pthread_mutex_unlock(&outputLock);
         exit(EXIT_FAILURE);
     }
+    ParStore_constrain(new->parstore);
 	assert(GPTree_feasible(new));
     return new;
 }

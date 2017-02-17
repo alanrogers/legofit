@@ -533,6 +533,22 @@ void ParStore_sample(ParStore *self, double *ptr, double low, double high,
     assert(*ptr == self->gaussianVal[i]);
 }
 
+/// If ptr points to a constrained parameter, then set its value.
+void ParStore_constrain_ptr(ParStore *self, double *ptr) {
+    // If ptr isn't a constrained parameter, then return immediately
+    if(ptr < self->constrainedVal
+       || ptr >= self->constrainedVal + MAXPAR)
+        return;
+
+    // index of constrained parameter
+    unsigned i = ptr - self->constrainedVal;
+    assert(i < self->nConstrained);
+
+    // set value of constrained parameter
+    self->constrainedVal[i] = Constraint_getValue(self->constr[i]);
+    assert(*ptr == self->constrainedVal[i]);
+}
+
 /// Set values of all constrained parameters
 void ParStore_constrain(ParStore *self) {
     int i;
