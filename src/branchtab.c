@@ -34,7 +34,7 @@ typedef struct BTLink {
     tipId_t         key;
     double          value;
 #if COST==CHISQR_COST
-    double          sqr;   // squares
+    double          sumsqr;   // squares
 #endif
 } BTLink;
 
@@ -98,7 +98,7 @@ BTLink         *BTLink_new(tipId_t key, double value) {
     new->key = key;
     new->value = value;
 #if COST==CHISQR_COST
-    new->sqr = value*value;
+    new->sumsqr = value*value;
 #endif
     return new;
 }
@@ -113,7 +113,7 @@ BTLink     *BTLink_dup(const BTLink *old) {
     new->key = old->key;
     new->value = old->value;
 #if COST==CHISQR_COST
-    new->sqr = old->sqr;
+    new->sumsqr = old->sumsqr;
 #endif
     new->next = BTLink_dup(old->next);
     return new;
@@ -129,7 +129,7 @@ int  BTLink_equals(const BTLink *lhs, const BTLink *rhs) {
        || lhs->value!=rhs->value)
         return 0;
 #if COST==CHISQR_COST
-    if(lhs->sqr != rhs->sqr)
+    if(lhs->sumsqr != rhs->sumsqr)
         return 0;
 #endif
     return BTLink_equals(lhs->next, rhs->next);
@@ -145,7 +145,7 @@ void BTLink_free(BTLink * self) {
 
 /// Add a value to a BTLink object. On return, self->value
 /// equals the old value and the new one. If COST==CHISQR_COST,
-/// the function also adds the square of value to self->sqr.
+/// the function also adds the square of value to self->sumsqr.
 BTLink *BTLink_add(BTLink * self, tipId_t key, double value) {
     if(self == NULL || key < self->key) {
         BTLink *new = BTLink_new(key, value);
@@ -158,7 +158,7 @@ BTLink *BTLink_add(BTLink * self, tipId_t key, double value) {
     assert(key == self->key);
     self->value += value;
 #if COST==CHISQR_COST
-    self->sqr += value*value;
+    self->sumsqr += value*value;
 #endif
     return self;
 }
@@ -187,7 +187,7 @@ void BTLink_printShallow(const BTLink * self) {
         return;
 #if COST==CHISQR_COST
     printf(" [%lu, %lf, %lf]",
-           (unsigned long) self->key, self->value, self->sqr);
+           (unsigned long) self->key, self->value, self->sumsqr);
 #else
     printf(" [%lu, %lf]", (unsigned long) self->key, self->value);
 #endif
@@ -299,7 +299,7 @@ int BranchTab_divideBy(BranchTab *self, double denom) {
         for(el = self->tab[i]; el; el = el->next) {
             el->value /= denom;
 #if COST==CHISQR_COST
-            el->sqr /= denom;
+            el->sumsqr /= denom;
 #endif
         }
     }
@@ -331,9 +331,9 @@ void BranchTab_plusEquals(BranchTab *lhs, BranchTab *rhs) {
 /// Fill arrays key, value, and square with values in BranchTab.
 /// On return, key[i] is the id of the i'th site pattern, value[i] is
 /// the total branch length associated with that site pattern, and
-/// sqr[i] is the corresponding sum of squared branch lengths.
+/// sumsqr[i] is the corresponding sum of squared branch lengths.
 void BranchTab_toArrays(BranchTab *self, unsigned n, tipId_t key[n],
-						double value[n], double sqr[n]) {
+						double value[n], double sumsqr[n]) {
     int i, j=0;
     for(i=0; i<BT_DIM; ++i) {
         BTLink *link;
@@ -344,7 +344,7 @@ void BranchTab_toArrays(BranchTab *self, unsigned n, tipId_t key[n],
             key[j] = link->key;
             value[j] = link->value;
 #if COST==CHISQR_COST
-            sqr[j] = link->sqr;
+            sumsqr[j] = link->sumsqr;
 #endif
             ++j;
         }
@@ -449,7 +449,7 @@ double        BranchTab_chiSqCost(const BranchTab *obs, const BranchTab *expt,
                 // o link missing, so obval=0.
                 obval = 0.0;
                 exval = e->value * U;
-                v = e->sqr - e->value * e->value;
+                v = e->sumsqr - e->value * e->value;
                 assert(v>=0.0);
                 v *= u*U*n/(n-1.0);
                 e = e->next;
@@ -457,7 +457,7 @@ double        BranchTab_chiSqCost(const BranchTab *obs, const BranchTab *expt,
                 assert(o->key == e->key);
                 obval = o->value;
                 exval = e->value * U;
-                v = e->sqr - e->value * e->value;
+                v = e->sumsqr - e->value * e->value;
                 assert(v>=0.0);
                 v *= u*U*n/(n-1.0);
                 e = e->next;
@@ -477,7 +477,7 @@ double        BranchTab_chiSqCost(const BranchTab *obs, const BranchTab *expt,
         obval=0.0;
         while(e) { // o link missing, so obval=0
             exval = e->value * U;
-            v = e->sqr - e->value * e->value;
+            v = e->sumsqr - e->value * e->value;
             assert(v>=0.0);
             v *= u*U*n/(n-1.0);
             diff = obval-exval;

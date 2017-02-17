@@ -528,6 +528,7 @@ void ParStore_sample(ParStore *self, double *ptr, double low, double high,
     unsigned i = ptr - self->gaussianVal;
     assert(i < self->nGaussian);
 
+    // sample from doubly-truncated normal distribution
     self->gaussianVal[i] = dtnorm(self->mean[i], self->sd[i], low, high, rng);
     assert(*ptr == self->gaussianVal[i]);
 }
