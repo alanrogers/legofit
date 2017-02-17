@@ -506,7 +506,7 @@ int main(int argc, char **argv) {
     // Get mean site pattern branch lengths
     GPTree_setParams(gptree, dim, estimate);
     BranchTab *bt = patprob(gptree, simreps, doSing, rng);
-    BranchTab_divideBy(bt, simreps);
+    BranchTab_divideBy(bt, (double) simreps);
 
     printf("Fitted parameter values\n");
 #if 0    
