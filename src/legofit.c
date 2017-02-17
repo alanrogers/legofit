@@ -507,10 +507,10 @@ int main(int argc, char **argv) {
     GPTree_setParams(gptree, dim, estimate);
     BranchTab *bt = patprob(gptree, simreps, doSing, rng);
     BranchTab_divideBy(bt, (double) simreps);
-    BranchTab_print(bt, stdout);
+    //    BranchTab_print(bt, stdout);
 
     printf("Fitted parameter values\n");
-#if 0    
+#if 1
 	GPTree_printParStoreFree(gptree, stdout);
 #else
 	GPTree_printParStore(gptree, stdout);

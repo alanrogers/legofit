@@ -224,7 +224,7 @@ int main(int argc, char **argv) {
 
     BranchTab *bt = patprob(gptree, nreps, doSing, rng);
     BranchTab_divideBy(bt, (double) nreps);
-    BranchTab_print(bt, stdout);
+    //    BranchTab_print(bt, stdout);
 
     // Put site patterns and branch lengths into arrays.
     unsigned npat = BranchTab_size(bt);
@@ -232,7 +232,6 @@ int main(int argc, char **argv) {
     double prob[npat];
     double sqr[npat];
     BranchTab_toArrays(bt, npat, pat, prob, sqr);
-
 	GPTree_printParStore(gptree, stdout);
 
     // Determine order for printing lines of output
