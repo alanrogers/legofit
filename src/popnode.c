@@ -582,6 +582,7 @@ static void PopNode_randomize_r(PopNode *self, Bounds bnd,
 void PopNode_gaussian(PopNode *self, Bounds bnd,
                       ParStore *ps, gsl_rng *rng) {
 	PopNode_untouch(self);
+    ParStore_constrain(ps);
 	PopNode_gaussian_r(self, bnd, ps, rng);
 }
 
@@ -628,14 +629,11 @@ static void PopNode_gaussian_r(PopNode *self, Bounds bnd,
         break;
     case 1:
         assert(self->parent[0]->touched);
-        ParStore_constrain_ptr(ps, self->parent[0]->start);
         hi_t = *self->parent[0]->start;
         break;
     case 2:
         assert(self->parent[0]->touched);
         assert(self->parent[1]->touched);
-        ParStore_constrain_ptr(ps, self->parent[0]->start);
-        ParStore_constrain_ptr(ps, self->parent[1]->start);
         hi_t = fmin(*self->parent[0]->start, *self->parent[1]->start);
         break;
     default:
@@ -650,12 +648,9 @@ static void PopNode_gaussian_r(PopNode *self, Bounds bnd,
     case 0:
         break;
     case 1:
-        ParStore_constrain_ptr(ps, self->child[0]->start);
         lo_t = *self->child[0]->start;
         break;
     case 2:
-        ParStore_constrain_ptr(ps, self->child[0]->start);
-        ParStore_constrain_ptr(ps, self->child[1]->start);
         lo_t = fmax(*self->child[0]->start, *self->child[1]->start);
         break;
     default:
