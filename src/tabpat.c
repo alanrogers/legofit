@@ -627,6 +627,7 @@ int main(int argc, char **argv) {
     StrInt_free(strint);
     if(logfile)
         fclose(logfile);
+    fprintf(stderr,"tabpat is finished\n");
     return 0;
 }
 

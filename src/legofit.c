@@ -113,6 +113,7 @@ Systems Consortium License, which can be found in file "LICENSE".
 #include <getopt.h>
 #include <gsl/gsl_sf_gamma.h>
 #include <limits.h>
+#include <math.h>
 #include <pthread.h>
 #include <signal.h>
 #include <stdio.h>
@@ -392,7 +393,7 @@ int main(int argc, char **argv) {
     }
 
     if(nThreads == 0)
-        nThreads = getNumCores();
+        nThreads = ceil(0.75*getNumCores());
     if(nThreads > dim*ptsPerDim)
         nThreads = dim*ptsPerDim;
 
