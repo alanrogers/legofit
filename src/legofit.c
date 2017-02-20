@@ -393,7 +393,7 @@ int main(int argc, char **argv) {
     }
 
     if(nThreads == 0)
-        nThreads = ceil(0.875*getNumCores());
+        nThreads = ceil(0.75*getNumCores());
     if(nThreads > dim*ptsPerDim)
         nThreads = dim*ptsPerDim;
 
