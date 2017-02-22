@@ -16,7 +16,7 @@ replicate into a separate file.
        where <x> and <y> are arbitrary labels, and <in1> and <in2> are input
        files in daf format. Writes to standard output. Labels may not include
        the character ":". Maximum number of input files: 32.
-    
+
     Options may include:
        -f <name> or --bootfile <name>
           Bootstrap output file basename. Def: boot.
@@ -78,8 +78,8 @@ The left column lists the site patterns that occur in the data. The
 right column gives the expected count of each site pattern. These are
 not integers, because they represent averages over all possible
 subsamples consisting of a single haploid genome from each
-population. 
-    
+population.
+
 To generate a bootstrap, use the `--bootreps` option:
 
     tabpat --bootreps 50 \
@@ -91,7 +91,7 @@ To generate a bootstrap, use the `--bootreps` option:
 This will generate not only the primary output file, `obs.txt`, but also
 50 additional files, each representing a single bootstrap
 replicate. The primary output file now has a bootstrap confidence
-interval: 
+interval:
 
     # Population labels:
     #    x = /home/rogers/daf/yri.daf
@@ -119,7 +119,7 @@ Here, `loBnd` and `hiBnd` are the limits of a 95% confidence
 interval. The bootstrap output files look like `tabpat.boot000`,
 `tabpat.boot001`, and so on.
 
-@copyright Copyright (c) 2016, Alan R. Rogers 
+@copyright Copyright (c) 2016, Alan R. Rogers
 <rogers@anthro.utah.edu>. This file is released under the Internet
 Systems Consortium License, which can be found in file "LICENSE".
 */
@@ -219,7 +219,7 @@ static void generatePatterns(int bit, int npops, Stack *stk, tipId_t pat,
     if(bit == npops) {
         // Recursion stops here. If current pattern is
         // legal, then push it onto the stack. Then return.
-        
+
         // Exclude patterns with all bits on, or all bits off.
         if(pat==0 || pat == (1ULL << npops) -1ULL)
             return;
@@ -239,7 +239,7 @@ int main(int argc, char **argv) {
     int doSing=0;       // nonzero means use singleton site patterns
     long bootreps = 0;
     double conf = 0.95; // confidence level
-    long blocksize = 300;
+    long blocksize = 600;
     StrInt *strint = StrInt_new();
     char bootfname[FILENAMESIZE] = { '\0' };
     const char *logfname = "tabpat.log";
@@ -415,7 +415,7 @@ int main(int argc, char **argv) {
 
     // Read the data to get dimensions: number of chromosomes and
     // number of snps per chromosome. Then use these dimensions to
-    // allocate a bootstrap object. 
+    // allocate a bootstrap object.
     if(bootreps > 0) {
         fprintf(stderr,"Doing 1st pass through data to get dimensions...\n");
 
