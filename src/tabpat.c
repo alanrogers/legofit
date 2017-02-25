@@ -19,7 +19,7 @@ replicate into a separate file.
 
     Options may include:
        -f <name> or --bootfile <name>
-          Bootstrap output file basename. Def: boot.
+          Bootstrap output file basename. Def: tabpat.boot.
        -r <x> or --bootreps <x>
           # of bootstrap replicates. Def: 0
        -b <x> or --blocksize <x>
@@ -171,7 +171,7 @@ static void usage(void) {
             8*sizeof(tipId_t));
 	fputs("\nOptions may include:\n", stderr);
 	tellopt("-f <name> or --bootfile <name>",
-			"Bootstrap output file basename. Def: boot.");
+			"Bootstrap output file basename. Def: tabpat.boot.");
 	tellopt("-r <x> or --bootreps <x>",
 			"# of bootstrap replicates. Def: 0");
 	tellopt("-b <x> or --blocksize <x>",
