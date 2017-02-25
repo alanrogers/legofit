@@ -239,7 +239,7 @@ int main(int argc, char **argv) {
     int doSing=0;       // nonzero means use singleton site patterns
     long bootreps = 0;
     double conf = 0.95; // confidence level
-    long blocksize = 1000;
+    long blocksize = 500;
     StrInt *strint = StrInt_new();
     char bootfname[FILENAMESIZE] = { '\0' };
     const char *logfname = "tabpat.log";
