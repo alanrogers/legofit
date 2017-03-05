@@ -103,6 +103,7 @@ void        parseSegment(char *next, PopNodeTab *poptbl, SampNdx *sndx,
 void        parseDerive(char *next, PopNodeTab *poptbl, const char *orig);
 void        parseMix(char *next, PopNodeTab *poptbl, ParStore *parstore,
                      const char *orig);
+int         get_one_line(size_t n, char buff[n], FILE *fp);
 
 /// Interpret token i as a double.
 /// @param[out] x points to variable into which double value will be
@@ -512,6 +513,34 @@ void parseMix(char *next, PopNodeTab *poptbl, ParStore *parstore,
     PopNode_mix(childNode, mPtr, mstat==Free, parNode1, parNode0);
 }
 
+// Read a line into buff; strip comments and trailing whitespace.
+// Return 0 on success; 1 on EOF.
+int get_one_line(size_t n, char buff[n], FILE *fp) {
+    if(fgets(buff, n, fp) == NULL)
+        return 1;
+
+    if(!strchr(buff, '\n') && !feof(fp)) {
+        fprintf(stderr, "%s:%d: buffer overflow. buff size: %zu\n",
+                __FILE__, __LINE__, n);
+        fprintf(stderr,"input: %s\n", buff);
+        exit(EXIT_FAILURE);
+    }
+
+    // strip trailing comments
+    char *s = strchr(buff, '#');
+    if(s)
+        *s = '\0';
+
+    // strip trailing whitespace
+    for(s=buff; *s != '\0'; ++s)
+        ;
+    while(s > buff && isspace( *(s-1) ))
+        --s;
+    *s = '\0';
+
+    return 0;
+}
+
 /// Parse an input file in .lgo format
 /// @param[inout] fp input file pointer
 /// @param[inout] sndx associates the index of each
@@ -523,26 +552,38 @@ void parseMix(char *next, PopNodeTab *poptbl, ParStore *parstore,
 /// @param[inout] ns allocates PopNode objects
 PopNode    *mktree(FILE * fp, SampNdx *sndx, LblNdx *lndx, ParStore *parstore,
                    Bounds *bnd, NodeStore *ns) {
-    char        orig[500], buff[500];
+    char        orig[500], buff[500], buff2[500];
     char        *token, *next;
 
     PopNodeTab *poptbl = PopNodeTab_new();
 
     while(1) {
-        if(fgets(buff, sizeof(buff), fp) == NULL)
+        if(1 == get_one_line(sizeof(buff), buff, fp))
             break;
 
-        if(!strchr(buff, '\n') && !feof(fp)) {
-            fprintf(stderr, "%s:%d: buffer overflow. buff size: %zu\n",
-                    __FILE__, __LINE__, sizeof(buff));
-            fprintf(stderr,"input: %s", orig);
-            exit(EXIT_FAILURE);
-        }
+        char *plus, *end;
 
-        // strip trailing comments
-        char *comment = strchr(buff, '#');
-        if(comment)
-            *comment = '\0';
+        // If line ends with "+", then append next line
+        do{
+            end = buff + strlen(buff);
+            assert(end < buff + sizeof(buff));
+            plus = strrchr(buff, '+');
+            if(plus!=NULL && 1+plus == end) {
+                // line ends with plus: append next line
+                if(1 == get_one_line(sizeof(buff2), buff2, fp)) {
+                    fprintf(stderr,"%s:%d: unexpected end of file\n",
+                            __FILE__,__LINE__);
+                    exit(EXIT_FAILURE);
+                }
+                if(strlen(buff) + strlen(buff2) >= sizeof(buff)) {
+                    fprintf(stderr,"%s:%d: "
+                            "buffer overflow on continuation line\n",
+                            __FILE__,__LINE__);
+                    exit(EXIT_FAILURE);
+                }
+                strcat(buff, buff2);
+            }
+        }while(plus!=NULL && 1+plus == end);
 
         snprintf(orig, sizeof orig, "%s", buff);
 
