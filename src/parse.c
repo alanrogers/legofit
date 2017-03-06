@@ -564,26 +564,26 @@ PopNode    *mktree(FILE * fp, SampNdx *sndx, LblNdx *lndx, ParStore *parstore,
         char *plus, *end;
 
         // If line ends with "+", then append next line
-        do{
+        while(1){
             end = buff + strlen(buff);
             assert(end < buff + sizeof(buff));
             plus = strrchr(buff, '+');
-            if(plus!=NULL && 1+plus == end) {
-                // line ends with plus: append next line
-                if(1 == get_one_line(sizeof(buff2), buff2, fp)) {
-                    fprintf(stderr,"%s:%d: unexpected end of file\n",
-                            __FILE__,__LINE__);
-                    exit(EXIT_FAILURE);
-                }
-                if(strlen(buff) + strlen(buff2) >= sizeof(buff)) {
-                    fprintf(stderr,"%s:%d: "
-                            "buffer overflow on continuation line\n",
-                            __FILE__,__LINE__);
-                    exit(EXIT_FAILURE);
-                }
-                strcat(buff, buff2);
+            if(plus==NULL || 1+plus != end)
+                break;
+            // line ends with plus: append next line
+            if(1 == get_one_line(sizeof(buff2), buff2, fp)) {
+                fprintf(stderr,"%s:%d: unexpected end of file\n",
+                        __FILE__,__LINE__);
+                exit(EXIT_FAILURE);
             }
-        }while(plus!=NULL && 1+plus == end);
+            if(strlen(buff) + strlen(buff2) >= sizeof(buff)) {
+                fprintf(stderr,"%s:%d: "
+                        "buffer overflow on continuation line\n",
+                        __FILE__,__LINE__);
+                exit(EXIT_FAILURE);
+            }
+            strcat(buff, buff2);
+        }
 
         snprintf(orig, sizeof orig, "%s", buff);
 
