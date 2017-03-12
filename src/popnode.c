@@ -476,8 +476,10 @@ void PopNode_free(PopNode * self) {
 /// inequality constraints.
 void PopNode_randomize(PopNode *self, Bounds bnd, ParStore *parstore,
                        gsl_rng *rng) {
-	PopNode_untouch(self);
-	PopNode_randomize_r(self, bnd, parstore, rng);
+    do{
+        PopNode_untouch(self);
+        PopNode_randomize_r(self, bnd, parstore, rng);
+    }while(!PopNode_feasible(self, bnd));
 }
 
 /// Recurse through the tree perturbing free parameters. Must call
