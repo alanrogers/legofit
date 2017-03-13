@@ -215,6 +215,12 @@ void ParStore_free(ParStore * self) {
 void ParStore_addFreePar(ParStore * self, double value,
                          double lo, double hi, const char *name) {
     int         i = self->nFree;
+    ParamStatus pstat;
+    if(NULL != ParKeyVal_get(self->pkv, &pstat, name)) {
+        fprintf(stderr,"%s:%d: Duplicate definition of parameter \"%s\".\n",
+                __FILE__,__LINE__, name);
+        exit(EXIT_FAILURE);
+    }
 
     if(++self->nFree >= MAXPAR) {
         fprintf(stderr, "%s:%s:%d: buffer overflow."
@@ -245,6 +251,12 @@ void ParStore_addFreePar(ParStore * self, double value,
 void ParStore_addGaussianPar(ParStore * self, double mean, double sd,
                              const char *name) {
     int         i = self->nGaussian;
+    ParamStatus pstat;
+    if(NULL != ParKeyVal_get(self->pkv, &pstat, name)) {
+        fprintf(stderr,"%s:%d: Duplicate definition of parameter \"%s\".\n",
+                __FILE__,__LINE__, name);
+        exit(EXIT_FAILURE);
+    }
 
     if(++self->nGaussian >= MAXPAR) {
         fprintf(stderr, "%s:%s:%d: buffer overflow."
@@ -270,6 +282,12 @@ void ParStore_addGaussianPar(ParStore * self, double mean, double sd,
 /// Add fixed parameter to ParStore.
 void ParStore_addFixedPar(ParStore * self, double value, const char *name) {
     int         i = self->nFixed;
+    ParamStatus pstat;
+    if(NULL != ParKeyVal_get(self->pkv, &pstat, name)) {
+        fprintf(stderr,"%s:%d: Duplicate definition of parameter \"%s\".\n",
+                __FILE__,__LINE__, name);
+        exit(EXIT_FAILURE);
+    }
 
     if(++self->nFixed >= MAXPAR)
         eprintf("%s:%s:%d: buffer overflow."
@@ -290,6 +308,12 @@ void ParStore_addFixedPar(ParStore * self, double value, const char *name) {
 void ParStore_addConstrainedPar(ParStore * self, char *str,
                                 const char *name) {
     int         i = self->nConstrained;
+    ParamStatus pstat;
+    if(NULL != ParKeyVal_get(self->pkv, &pstat, name)) {
+        fprintf(stderr,"%s:%d: Duplicate definition of parameter \"%s\".\n",
+                __FILE__,__LINE__, name);
+        exit(EXIT_FAILURE);
+    }
 
     if(++self->nConstrained >= MAXPAR) {
         fprintf(stderr, "%s:%s:%d: buffer overflow."
@@ -593,7 +617,7 @@ Constraint *Constraint_new(ParKeyVal *pkv, char *str) {
     if(strchr(token, '*')) {
         fprintf(stderr,"%s:%s:%d:"
                 " 1st term of formula (%s) is illegal.\n"
-                "   Should be an additive constant.\n", 
+                "   Should be an additive constant.\n",
                 __FILE__, __func__, __LINE__, token);
         exit(EXIT_FAILURE);
     }
@@ -831,7 +855,7 @@ int main(int argc, char **argv) {
     assert(0 == compareDblPtrs(ppx, ppx));
     assert(0 > compareDblPtrs(ppx, ppz));
     assert(0 < compareDblPtrs(ppz, ppy));
-    
+
     unitTstResult("compareDblPtrs", "OK");
 
     ParKeyVal *pkv = NULL;
