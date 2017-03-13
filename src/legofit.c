@@ -382,6 +382,10 @@ int main(int argc, char **argv) {
             .lo_t = lo_t,
             .hi_t = hi_t
     };
+
+    // Pause to give vm time to configure itself
+    sleep(2);
+
     GPTree *gptree = GPTree_new(lgofname, bnd);
 	LblNdx lblndx  = GPTree_getLblNdx(gptree);
 
