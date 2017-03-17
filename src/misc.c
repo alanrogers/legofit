@@ -108,6 +108,9 @@ void eprintf(const char *fmt, ...) {
     exit(EXIT_FAILURE);
 }
 
+/// Open file. On success, return pointer to opened file. On failure
+/// abort with an error message. The error message includes the current
+/// working directory, whether or not "name" is an absolute pathname.
 FILE *efopen(const char *restrict name, const char *restrict mode) {
     FILE *fp = fopen(name, mode);
     if(fp==NULL) {
