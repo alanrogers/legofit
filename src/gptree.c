@@ -14,6 +14,8 @@
 #include "parse.h"
 #include "parstore.h"
 #include <string.h>
+#include <errno.h>
+#include <unistd.h>
 #include <gsl/gsl_rng.h>
 
 #include <pthread.h>
@@ -124,9 +126,22 @@ GPTree *GPTree_new(const char *fname, Bounds bnd) {
     LblNdx_init(&self->lblndx);
     SampNdx_init(&self->sndx);
     FILE *fp = fopen(fname, "r");
-    if(fp == NULL)
-        eprintf("%s:%s:%d: can't open file \"%s\".\n",
-                __FILE__, __func__, __LINE__, fname);
+    if(fp == NULL) {
+        char cwd[500], errbuff[50], *bp;
+        errno=0;
+        bp = getcwd(cwd, sizeof(cwd));
+        if(bp==NULL) {
+            strerror_r(errno, errbuff, sizeof(errbuff));
+            fprintf(stderr,"%s:%d: can't open file \"%s\".\n"
+                    "   getcwd error: %s\n",
+                    __FILE__,__LINE__, fname, errbuff);
+        }else {
+            fprintf(stderr,"%s:%d: can't open file \"%s\".\n"
+                    "   in directory %s\n",
+                    __FILE__, __LINE__, fname, cwd);
+        }
+        exit(EXIT_FAILURE);
+    }
     self->nseg = countSegments(fp);
     rewind(fp);
     self->pnv = malloc(self->nseg * sizeof(self->pnv[0]));
@@ -144,6 +159,7 @@ GPTree *GPTree_new(const char *fname, Bounds bnd) {
     if(!GPTree_feasible(self)) {
         fprintf(stderr,"%s:%s:%d: file \"%s\" describes an infeasible tree.\n",
                 __FILE__,__func__,__LINE__,fname);
+        GPTree_printParStore(self, stderr);
         exit(EXIT_FAILURE);
     }
     return self;
