@@ -122,8 +122,8 @@ FILE *efopen(const char *restrict name, const char *restrict mode) {
                     "   getcwd error: %s\n",
                     __FILE__,__LINE__, name, errbuff);
         }else{
-            fprintf(stderr,"%s:%d: can't open file \"%s\"\n"
-                    "   in directory \"%s\".\n",
+            fprintf(stderr,"%s:%d: can't open file \"%s.\"\n"
+                    "   Current dir: %s\n",
                     __FILE__, __LINE__, name, cwd);
             free(cwd);
         }
