@@ -51,5 +51,15 @@ int main(int argc, char **argv) {
 
     unitTstResult("nextWhitesepToken", "OK");
 
+    FILE *fp = efopen("xmisc.c", "r");
+    fclose(fp);
+
+# if 0
+    // This should abort.
+    fp = efopen("NotThere", "r");
+#endif
+
+    unitTstResult("efopen", "OK");
+
     return 0;
 }

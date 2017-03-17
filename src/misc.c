@@ -17,6 +17,8 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
+#include <unistd.h>
 #ifdef _WIN32
 #include <windows.h>
 #elif defined(MACOS)
@@ -105,6 +107,28 @@ void eprintf(const char *fmt, ...) {
     fprintf(stderr, "\n");
     exit(EXIT_FAILURE);
 }
+
+FILE *efopen(const char *restrict name, const char *restrict mode) {
+    FILE *fp = fopen(name, mode);
+    if(fp==NULL) {
+        errno=0;
+        char errbuff[50], *cwd = getwd(NULL);
+        if(cwd==NULL) {
+            strerror_r(errno, errbuff, sizeof(errbuff));
+            fprintf(stderr,"%s:%d: can't open file \"%s\".\n"
+                    "   getcwd error: %s\n",
+                    __FILE__,__LINE__, name, errbuff);
+        }else{
+            fprintf(stderr,"%s:%d: can't open file \"%s\".\n"
+                    "   in directory %s\n",
+                    __FILE__, __LINE__, name, cwd);
+            free(cwd);
+        }
+        exit(EXIT_FAILURE);
+    }
+    return fp;
+}
+
 
 /**
  * Uniform perturbation on log scale. Log10 of new value in range

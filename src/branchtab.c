@@ -354,10 +354,7 @@ void BranchTab_toArrays(BranchTab *self, unsigned n, tipId_t key[n],
 /// Construct a BranchTab by parsing an input file.
 /// Recognizes comments, which extend from '#' to end-of-line.
 BranchTab *BranchTab_parse(const char *fname, const LblNdx *lblndx) {
-    FILE *fp = fopen(fname, "r");
-    if(fp == NULL)
-        eprintf("%s:%d: Can't read file \"%s\".\n",
-                __FILE__, __LINE__, fname);
+    FILE *fp = efopen(fname, "r");
 
     BranchTab *self = BranchTab_new();
     CHECKMEM(self);

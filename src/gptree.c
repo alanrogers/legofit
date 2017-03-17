@@ -125,23 +125,7 @@ GPTree *GPTree_new(const char *fname, Bounds bnd) {
     self->parstore = ParStore_new();
     LblNdx_init(&self->lblndx);
     SampNdx_init(&self->sndx);
-    FILE *fp = fopen(fname, "r");
-    if(fp == NULL) {
-        char cwd[500], errbuff[50], *bp;
-        errno=0;
-        bp = getcwd(cwd, sizeof(cwd));
-        if(bp==NULL) {
-            strerror_r(errno, errbuff, sizeof(errbuff));
-            fprintf(stderr,"%s:%d: can't open file \"%s\".\n"
-                    "   getcwd error: %s\n",
-                    __FILE__,__LINE__, fname, errbuff);
-        }else {
-            fprintf(stderr,"%s:%d: can't open file \"%s\".\n"
-                    "   in directory %s\n",
-                    __FILE__, __LINE__, fname, cwd);
-        }
-        exit(EXIT_FAILURE);
-    }
+    FILE *fp = efopen(fname, "r");
     self->nseg = countSegments(fp);
     rewind(fp);
     self->pnv = malloc(self->nseg * sizeof(self->pnv[0]));
