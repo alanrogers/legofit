@@ -366,7 +366,7 @@ int main(int argc, char **argv) {
 
     printf("# Population labels:\n");
     for(i=0; i<n; ++i)
-        printf("# %4s = %s\n", poplbl[i], fname[i]);
+        printf("# %4s=%s\n", poplbl[i], fname[i]);
 
 	// make sure labels are all different
 	for(i=1; i<n; ++i)
@@ -464,7 +464,8 @@ int main(int argc, char **argv) {
     long snpndx = -1;
 
 	// Iterate through daf files
-    fprintf(stderr,"Doing 2nd pass through data to tabulate patterns..\n");
+    fprintf(stderr,"Doing %s pass through data to tabulate patterns..\n",
+            bootreps>0 ? "2nd" : "single" );
     int chrndx=-1, currChr = INT_MAX;
     DAFReader_clearChromosomes(n, r);
 	while(EOF != DAFReader_multiNext(n, r)) {
