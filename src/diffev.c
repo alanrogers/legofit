@@ -808,14 +808,14 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     }
 
     JobQueue_noMoreJobs(jq);
-    if(flat < dep.maxFlat) {
-        status = 1;
-        if(verbose)
-            fputs("No convergence\n", stdout);
-    } else {
+    if(flat >= dep.maxFlat && *yspread < HUGE_VAL) {
         status = 0;
         if(verbose)
             fputs("Converged\n", stdout);
+    } else {
+        status = 1;
+        if(verbose)
+            fputs("No convergence\n", stdout);
     }
 
     // Return estimates

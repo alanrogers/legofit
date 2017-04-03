@@ -19,15 +19,17 @@
 struct ParKeyVal {
     char        key[MAX_PARAM_NAME];
     double     *valPtr; // not locally owned
-	bool       isfree;
+	ParamStatus pstat;
     ParKeyVal  *next;
 };
 
-ParKeyVal  *ParKeyVal_new(const char *key, double *vptr, bool isfree,
+ParKeyVal  *ParKeyVal_new(const char *key, double *vptr,
+                          ParamStatus pstat,
 						  ParKeyVal *next);
 
 /// Constructor. Call with next=NULL to terminate linked list.
-ParKeyVal  *ParKeyVal_new(const char *key, double *vptr, bool isfree,
+ParKeyVal  *ParKeyVal_new(const char *key, double *vptr,
+                          ParamStatus pstat,
 						  ParKeyVal * next) {
     if(strlen(key) >= MAX_PARAM_NAME)
         eprintf("%s:%s:%d: Parameter name too long. Max=%d.\n",
@@ -36,7 +38,7 @@ ParKeyVal  *ParKeyVal_new(const char *key, double *vptr, bool isfree,
     CHECKMEM(self);
     snprintf(self->key, sizeof(self->key), "%s", key);
     self->valPtr = vptr;
-	self->isfree = isfree;
+	self->pstat = pstat;
     self->next = next;
     ParKeyVal_sanityCheck(self, __FILE__, __LINE__);
     return self;
@@ -52,39 +54,38 @@ void ParKeyVal_free(ParKeyVal * self) {
 
 /// Insert a new key/pointer pair into sorted linked list.
 ParKeyVal  *ParKeyVal_add(ParKeyVal * self, const char *key,
-						  double *vptr, bool isfree) {
+						  double *vptr, ParamStatus pstat) {
     if(self == NULL)
-        return ParKeyVal_new(key, vptr, isfree, NULL);
+        return ParKeyVal_new(key, vptr, pstat, NULL);
 
     int         i = strcmp(key, self->key);
     if(i < 0)
-        return ParKeyVal_new(key, vptr, isfree, self);
+        return ParKeyVal_new(key, vptr, pstat, self);
     else if(i == 0)
         eprintf("%s:%s:%d: Duplicate key \"%s\".\n",
                 __FILE__, __func__, __LINE__, key);
 
     // else..
-    self->next = ParKeyVal_add(self->next, key, vptr, isfree);
+    self->next = ParKeyVal_add(self->next, key, vptr, pstat);
     return self;
 }
 
 /// Find key in linked list. On success, return pointer corresponding
 /// to key. On failure, return NULL.
-double *ParKeyVal_get(ParKeyVal * self, bool *isfree, const char *key) {
-
+double *ParKeyVal_get(ParKeyVal * self, ParamStatus *pstat, const char *key) {
     if(self == NULL)
 		return NULL;
 
     int         i = strcmp(key, self->key);
-    if(i < 0)        // Failed
+    if(i < 0)       // Failed
 		return NULL;
 
     if(i == 0) { // Success
-		*isfree = self->isfree;
+		*pstat = self->pstat;
 		return self->valPtr;
 	}
 
-    return ParKeyVal_get(self->next, isfree, key);
+    return ParKeyVal_get(self->next, pstat, key);
 }
 
 /// Print a ParKeyVal
@@ -92,8 +93,26 @@ void ParKeyVal_print(ParKeyVal *self, FILE *fp) {
 	if(self == NULL)
 		fprintf(fp,"NULL\n");
 	else {
-		fprintf(fp,"[%p:%s,%p,%s]->", self, self->key, self->valPtr,
-				self->isfree ? "free": "fixed");
+		fprintf(fp,"[%p:%s,%p,", self, self->key, self->valPtr);
+        switch(self->pstat) {
+        case Free:
+            fputs("Free", fp);
+            break;
+        case Fixed:
+            fputs("Fixed", fp);
+            break;
+        case Gaussian:
+            fputs("Gaussian", fp);
+            break;
+        case Constrained:
+            fputs("Constrained", fp);
+            break;
+        default:
+            fprintf(stderr,"%s:%d: Unknown ParamStat value: %d.\n",
+                    __FILE__,__LINE__,self->pstat);
+            exit(EXIT_FAILURE);
+        }
+        fputs("]->", fp);
 		ParKeyVal_print(self->next, fp);
 	}
 }
@@ -127,7 +146,7 @@ int         ParKeyVal_equals(ParKeyVal *lhs, ParKeyVal *rhs) {
     if(lhs->valPtr != NULL && rhs->valPtr != NULL) {
 		if(*lhs->valPtr != *rhs->valPtr)
 			return 0;
-		if(lhs->isfree != rhs->isfree)
+		if(lhs->pstat != rhs->pstat)
 			return 0;
 	}
     return ParKeyVal_equals(lhs->next, rhs->next);

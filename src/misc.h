@@ -20,6 +20,7 @@ double      perturb_ratio(double x, gsl_rng * rng);
 long double perturb_interval(long double x, long double lo, long double hi,
                              gsl_rng * rng);
 void        eprintf(const char *fmt, ...);
+FILE       *efopen(const char *restrict name, const char *restrict mode);
 void        printBranchTab(double tab[3][3], FILE * fp);
 void        unitTstResult(const char *facility, const char *result);
 void        tellopt(const char *opt, const char *description);
@@ -34,6 +35,8 @@ double      reflect(double x, double lo, double hi);
 char       *strlowercase(char *s);
 unsigned    strhash(const char *ss);
 int         stripchr(char *s, int c);
+char       *stripWhiteSpace(char *buff);
+char       *nextWhitesepToken(char **str);
 
 static inline double survival(double t, double twoN);
 

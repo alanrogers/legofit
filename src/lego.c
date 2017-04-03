@@ -137,7 +137,7 @@ int main(int argc, char **argv) {
     int         doSing=0;  // nonzero => use singleton site patterns
     time_t      currtime = time(NULL);
 	unsigned long pid = (unsigned long) getpid();
-    double      lo_twoN = 0.0, hi_twoN = 1e6;  // twoN bounds
+    double      lo_twoN = 1.0, hi_twoN = 1e6;  // twoN bounds
     double      lo_t = 0.0, hi_t = 1e6;        // t bounds
     double      U=0.0;          // mutations pre gen per haploid genome
     int         optndx;
@@ -224,6 +224,7 @@ int main(int argc, char **argv) {
 
     BranchTab *bt = patprob(gptree, nreps, doSing, rng);
     BranchTab_divideBy(bt, (double) nreps);
+    //BranchTab_print(bt, stdout);
 
     // Put site patterns and branch lengths into arrays.
     unsigned npat = BranchTab_size(bt);
@@ -231,6 +232,7 @@ int main(int argc, char **argv) {
     double prob[npat];
     double sqr[npat];
     BranchTab_toArrays(bt, npat, pat, prob, sqr);
+	//GPTree_printParStore(gptree, stdout);
 
     // Determine order for printing lines of output
     unsigned ord[npat];
@@ -253,6 +255,7 @@ int main(int argc, char **argv) {
             printf("%15s %15.7lf\n", buff2, prob[ord[j]]);
     }
 
+    GPTree_sanityCheck(gptree, __FILE__, __LINE__);
     GPTree_free(gptree);
 
     return 0;

@@ -66,7 +66,6 @@
 #include "parse.h"
 #include "parstore.h"
 #include "popnode.h"
-#include "tokenizer.h"
 #include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -74,51 +73,46 @@
 #include <string.h>
 #include <stdbool.h>
 
-/// Abort if index is out of bounds
-#  define CHECK_INDEX(ndx,n) do{                                \
-        if((ndx)>=(n)){                                         \
-            fprintf(stderr,"%s:%s:%d: index out of bounds\n",   \
-                    __FILE__,__func__,__LINE__);                \
-            exit(EXIT_FAILURE);                                 \
-        }                                                       \
-    }while(0)
+/// Abort if token is missing
+# define CHECK_TOKEN(tok, orig) {                                  \
+        if((tok) == NULL) {                                        \
+            fprintf(stderr, "%s:%d:"                               \
+                    " input line incomplete in .lgo file.\n",      \
+                    __FILE__,__LINE__);                            \
+            fprintf(stderr,"  input: %s", (orig));                 \
+            exit(EXIT_FAILURE);                                    \
+        }                                                          \
+    }while(0);
 
 /// Abort with an error message about illegal input.
-#define ILLEGAL_INPUT(x) do{                                    \
-        fprintf(stderr,"%s:%s:%d: Illegal input: \"%s\"\n",     \
-            __FILE__,__func__,__LINE__, (x));                   \
+#define ILLEGAL_INPUT(x,orig) do{                               \
+        fprintf(stderr,"%s:%d: Illegal input: \"%s\"\n",        \
+                __FILE__,__LINE__, (x));                        \
+        fprintf(stderr,"  input: %s", (orig));                  \
         exit(EXIT_FAILURE);                                     \
     }while(0)
 
-/// Distinguish between parameters that describe population size,
-/// time, and gene flow.
-enum ParamType { TwoN, Time, MixFrac };
-
-/// Distinguish between parameters that free, fixed, and Gaussian.
-/// Free parameters can be changed during optimization; fixed ones
-/// never change; Gaussian ones are reset for each simulation
-/// replicate by sampling from a truncated normal distribution.
-enum ParamStatus { Free, Fixed, Gaussian };
-
-int         getDbl(double *x, Tokenizer * tkz, int i);
-int         getULong(unsigned long *x, Tokenizer * tkz, int i);
-void		parseParam(Tokenizer *tkz, enum ParamType type,
-					   ParStore *parstore, Bounds *bnd);
-void        parseSegment(Tokenizer *tkz, PopNodeTab *poptbl, SampNdx *sndx,
+int         getDbl(double *x, char **next, const char *orig);
+int         getULong(unsigned long *x, char **next, const char *orig);
+void		parseParam(char *next, enum ParamType type,
+					   ParStore *parstore, Bounds *bnd,
+                       const char *orig);
+void        parseSegment(char *next, PopNodeTab *poptbl, SampNdx *sndx,
 						 LblNdx *lndx, ParStore *parstore,
-                         NodeStore *ns);
-void        parseDerive(Tokenizer *tkz, PopNodeTab *poptbl);
-void        parseMix(Tokenizer *tkz, PopNodeTab *poptbl, ParStore *parstore);
+                         NodeStore *ns, const char *orig);
+void        parseDerive(char *next, PopNodeTab *poptbl, const char *orig);
+void        parseMix(char *next, PopNodeTab *poptbl, ParStore *parstore,
+                     const char *orig);
+int         get_one_line(size_t n, char buff[n], FILE *fp);
 
 /// Interpret token i as a double.
 /// @param[out] x points to variable into which double value will be
 /// placed
-/// @param[inout] tkz points to Tokenizer
-/// @param[in] i index of token to be interpreted as a double
-int getDbl(double *x, Tokenizer * tkz, int i) {
-    char       *end = NULL;
-	const char *tok = Tokenizer_token(tkz, i);
-
+/// @param[inout] next points to unparsed portion of input line
+int getDbl(double *x, char **next, const char *orig) {
+    char *tok, *end=NULL;
+    tok = nextWhitesepToken(next);
+    CHECK_TOKEN(tok, orig);
     *x = strtod(tok, &end);
     if(end != NULL && *end == '\0')
         return 0;               // success
@@ -128,101 +122,107 @@ int getDbl(double *x, Tokenizer * tkz, int i) {
 /// Interpret token i as an unsigned long integer.
 /// @param[out] x points to variable into which value will be
 /// placed
-/// @param[inout] tkz points to Tokenizer
-/// @param[in] i index of token to be interpreted as an unsigned long
+/// @param[inout] next points to unparsed portion of input line
 /// integer.
-int getULong(unsigned long *x, Tokenizer * tkz, int i) {
-    char       *end = NULL;
-
-    *x = strtoul(Tokenizer_token(tkz, i), &end, 10);
+int getULong(unsigned long *x, char **next, const char *orig) {
+    char *tok, *end=NULL;
+    tok = nextWhitesepToken(next);
+    CHECK_TOKEN(tok, orig);
+    *x = strtoul(tok, &end, 10);
     if(end != NULL && *end == '\0')
         return 0;               // success
     return 1;                   // failure
 }
 
 /// Parse a line of input defining a parameter
-/// @param[inout] tkz the Tokenizer
+/// @param[inout] next points to unparsed portion of input line
 /// @param[in] type the type of the current parameter: TwoN, Time, or MixFrac
 /// @param[out] parstore structure that maintains info about
 /// parameters
 /// @param[in] bnd the bounds of each type of parameter
-void		parseParam(Tokenizer *tkz, enum ParamType type,
-					   ParStore *parstore, Bounds *bnd) {
-	int curr=1, ntokens = Tokenizer_ntokens(tkz);
+/// @parem[in] orig original input line
+void		parseParam(char *next, enum ParamType type,
+					   ParStore *parstore, Bounds *bnd,
+                       const char *orig) {
     enum ParamStatus pstat = Free;
 
-	// Read status of parameter: "fixed" or "free"
+	// Read status of parameter
 	{
-		char *tok;
-		CHECK_INDEX(curr, ntokens);
-		tok = Tokenizer_token(tkz, curr++);
+		char *tok = nextWhitesepToken(&next);
+        CHECK_TOKEN(tok, orig);
 		if(0 == strcmp("fixed", tok))
 			pstat = Fixed;
 		else if(0 == strcmp("free", tok))
 			pstat = Free;
         else if(0 == strcmp("gaussian", tok))
             pstat = Gaussian;
+        else if(0 == strcmp("constrained", tok))
+            pstat = Constrained;
 		else {
-			fprintf(stderr, "%s:%s:%d: got %s when expecting"
-					" \"fixed\" or \"free\".\n",
+			fprintf(stderr, "%s:%s:%d: got %s when expecting \"fixed\","
+                    " \"free\", \"gaussian\", or \"constrained\".\n",
 					__FILE__,__func__,__LINE__, tok);
-			Tokenizer_print(tkz, stderr);
+            fprintf(stderr,"input: %s", orig);
 			exit(EXIT_FAILURE);
 		}
 	}
 
-	// Read parameter name
-	char *name;
-	CHECK_INDEX(curr, ntokens);
-	name = Tokenizer_token(tkz, curr++);
-	assert(name != NULL);
-	if( !isalnum(*name) )
-		eprintf("%s:%s:%d: \"%s\" is not a legal parameter name.\n",
-				__FILE__,__func__,__LINE__, name);
-
-	// Read parameter value
-    CHECK_INDEX(curr, ntokens);
-	double value;
-    if(getDbl(&value, tkz, curr)) {
-		fflush(stdout);
-        fprintf(stderr,
-                "%s:%s:%d:Can't parse \"%s\" as a double.\n",
-				__FILE__,__func__,__LINE__,
-                Tokenizer_token(tkz, curr));
-        Tokenizer_print(tkz, stderr);
+	// Read parameter name, delimited by '='
+	char *name = strsep(&next, "=");
+    CHECK_TOKEN(name, orig);
+    name = stripWhiteSpace(name);
+	if( !isalnum(*name) ) {
+		fprintf(stderr,"%s:%d: \"%s\" is not a legal parameter name.\n",
+				__FILE__,__LINE__, name);
+        fprintf(stderr,"input: %s", orig);
         exit(EXIT_FAILURE);
     }
-    ++curr;
 
-    double sd = 0.0;
-    if(pstat == Gaussian) {
-
-        // Read string "sd"
-        char *sdstr;
-        CHECK_INDEX(curr, ntokens);
-        sdstr = Tokenizer_token(tkz, curr++);
-        assert(sdstr != NULL);
-        if( 0 != strcmp(sdstr, "sd") )
-            eprintf("%s:%s:%d: \"%s\" should be \"sd\".\n",
-                    __FILE__,__func__,__LINE__, sdstr);
-
-        // Read sd value
-        CHECK_INDEX(curr, ntokens);
-        if(getDbl(&sd, tkz, curr)) {
+    char *formula;
+    double value, sd = 0.0;
+    if(pstat == Constrained) {
+        formula = next;
+        assert(formula != NULL);
+    }else{
+        // Read parameter value
+        if(getDbl(&value, &next, orig)) {
             fflush(stdout);
             fprintf(stderr,
-                    "%s:%s:%d:Can't parse \"%s\" as a double.\n",
-                    __FILE__,__func__,__LINE__,
-                    Tokenizer_token(tkz, curr));
-            Tokenizer_print(tkz, stderr);
+                    "%s:%s:%d:Can't parse double.\n",
+                    __FILE__,__func__,__LINE__);
+            fprintf(stderr,"input: %s", orig);
             exit(EXIT_FAILURE);
         }
-        if(sd <= 0.0) {
-            fprintf(stderr,"%s:%s:%d: Warning: sd <= 0.0\n",
-                    __FILE__,__func__,__LINE__);
-            Tokenizer_print(tkz, stderr);
+
+        if(pstat == Gaussian) {
+
+            // Read string "sd"
+            char *sdstr = strsep(&next, "=");
+            CHECK_TOKEN(sdstr, orig);
+            sdstr = stripWhiteSpace(sdstr);
+            if( 0 != strcmp(sdstr, "sd") ) {
+                fprintf(stderr,"%s:%s:%d: \"%s\" should be \"sd\".\n",
+                        __FILE__,__func__,__LINE__, sdstr);
+                fprintf(stderr,"input: %s", orig);
+                exit(EXIT_FAILURE);
+            }
+
+            // Read sd value
+            if(getDbl(&sd, &next, orig)) {
+                fflush(stdout);
+                fprintf(stderr,
+                        "%s:%s:%d:Can't parse double.\n",
+                        __FILE__,__func__,__LINE__);
+                fprintf(stderr,"input: %s", orig);
+                exit(EXIT_FAILURE);
+            }
+            if(sd <= 0.0) {
+                fprintf(stderr,"%s:%s:%d: Error sd =%lg <= 0.0\n",
+                        __FILE__,__func__,__LINE__, sd);
+                fprintf(stderr,"input: %s", orig);
+                exit(EXIT_FAILURE);
+            }
         }
-        ++curr;
     }
 
 	// Allocate and initialize parameter in ParStore
@@ -232,6 +232,9 @@ void		parseParam(Tokenizer *tkz, enum ParamType type,
         break;
     case Gaussian:
 		ParStore_addGaussianPar(parstore, value, sd, name);
+        break;
+    case Constrained:
+        ParStore_addConstrainedPar(parstore, formula, name);
         break;
     case Free:
         // Set bounds, based on type of parameter
@@ -251,21 +254,18 @@ void		parseParam(Tokenizer *tkz, enum ParamType type,
                 hi = 1.0;
                 break;
             default:
-                lo = hi = 0.0;
-                eprintf("%s:%s:%d: This shouldn't happen\n",
-                        __FILE__,__func__,__LINE__);
+                DIE("This shouldn't happen");
             }
             ParStore_addFreePar(parstore, value, lo, hi, name);
         }
         break;
     default:
-        eprintf("%s:%s:%d: This shouldn't happen\n",
-                __FILE__,__func__,__LINE__);
+        DIE("This shouldn't happen");
     }
 }
 
 /// Parse a line describing a segment of the population tree
-/// @param[inout] tkz the Tokenizer
+/// @param[inout] next pointer to unparsed portion of input line
 /// @param[inout] poptbl associates names of segments
 /// with pointers to them.
 /// @param[inout] sndx associates the index of each
@@ -274,215 +274,271 @@ void		parseParam(Tokenizer *tkz, enum ParamType type,
 /// @param[out] parstore structure that maintains info about
 /// parameters
 /// @param[inout] ns allocates PopNode objects
-void parseSegment(Tokenizer *tkz, PopNodeTab *poptbl, SampNdx *sndx,
-				  LblNdx *lndx, ParStore *parstore, NodeStore *ns) {
+void parseSegment(char *next, PopNodeTab *poptbl, SampNdx *sndx,
+				  LblNdx *lndx, ParStore *parstore, NodeStore *ns,
+                       const char *orig) {
     char *popName, *tok;
     double *tPtr, *twoNptr;
-	bool tfree, twoNfree;
+	ParamStatus tstat, twoNstat;
     unsigned long nsamples=0;
-    int curr=1,  ntokens = Tokenizer_ntokens(tkz);
 
     // Read name of segment
-    CHECK_INDEX(curr, ntokens);
-    popName = Tokenizer_token(tkz, curr++);
+    popName = nextWhitesepToken(&next);
+    CHECK_TOKEN(popName, orig);
 
     // Read t
-    CHECK_INDEX(curr, ntokens);
-    if(0 != strcmp("t", Tokenizer_token(tkz, curr++))) {
+    tok = strsep(&next, "=");
+    CHECK_TOKEN(tok, orig);
+    tok = stripWhiteSpace(tok);
+    if(0 != strcmp("t", tok)) {
         fprintf(stderr, "Got %s when expecting \"t\" on input:\n",
-                Tokenizer_token(tkz, curr - 1));
-        Tokenizer_print(tkz, stderr);
+                tok);
+        fprintf(stderr,"input: %s", orig);
         exit(EXIT_FAILURE);
     }
-    CHECK_INDEX(curr, ntokens);
-    tok = Tokenizer_token(tkz, curr++);
-    tPtr = ParStore_findPtr(parstore, &tfree, tok);
+    tok = nextWhitesepToken(&next);
+    CHECK_TOKEN(tok, orig);
+    tPtr = ParStore_findPtr(parstore, &tstat, tok);
 	if(NULL == tPtr) {
 		fprintf(stderr,"%s:%s:%d: Parameter \"%s\" is undefined\n",
 				__FILE__,__func__,__LINE__,tok);
-        Tokenizer_print(tkz, stderr);
+        fprintf(stderr,"input: %s", orig);
         exit(EXIT_FAILURE);
     }
 
     // Read twoN
-	if(curr >= ntokens) {
-		fprintf(stderr, "curr=%d >= ntokens=%d\n", curr, ntokens);
-		Tokenizer_print(tkz, stderr);
-	}
-    CHECK_INDEX(curr, ntokens);
-    if(0 != strcmp("twoN", Tokenizer_token(tkz, curr++))) {
+    tok = strsep(&next, "=");
+    CHECK_TOKEN(tok, orig);
+    tok = stripWhiteSpace(tok);
+    if(0 != strcmp("twoN", tok)) {
         fprintf(stderr, "Got %s when expecting \"twoN\" on input:\n",
-                Tokenizer_token(tkz, curr - 1));
-        Tokenizer_print(tkz, stderr);
+                tok);
+        fprintf(stderr,"input: %s", orig);
         exit(EXIT_FAILURE);
     }
-    CHECK_INDEX(curr, ntokens);
-    tok = Tokenizer_token(tkz, curr++);
-    twoNptr = ParStore_findPtr(parstore, &twoNfree, tok);
+    tok = nextWhitesepToken(&next);
+    CHECK_TOKEN(tok, orig);
+    tok = stripWhiteSpace(tok);
+    twoNptr = ParStore_findPtr(parstore, &twoNstat, tok);
 	if(NULL == twoNptr) {
 		fprintf(stderr,"%s:%s:%dParameter \"%s\" is undefined\n",
 				__FILE__,__func__,__LINE__, tok);
-        Tokenizer_print(tkz, stderr);
+        fprintf(stderr,"input: %s", orig);
         exit(EXIT_FAILURE);
     }
 
     // Read (optional) number of samples
-    if(curr < ntokens) {
-        if(0 != strcmp("samples", Tokenizer_token(tkz, curr++)))
-            eprintf("%s:%s:%d: got %s when expecting \"samples\"\n",
-                     __FILE__,__func__,__LINE__,
-                     Tokenizer_token(tkz, curr - 1));
-        CHECK_INDEX(curr, ntokens);
-        if(getULong(&nsamples, tkz, curr))
-            eprintf("%s:%s:%d: Can't parse \"%s\" as an unsigned int."
+    if(next) {
+        tok = strsep(&next, "=");
+        CHECK_TOKEN(tok, orig);
+        tok = stripWhiteSpace(tok);
+        if(0 != strcmp("samples", tok)) {
+            fprintf(stderr, "%s:%s:%d: got %s when expecting \"samples\"\n",
+                     __FILE__,__func__,__LINE__, tok);
+            fprintf(stderr,"input: %s", orig);
+            exit(EXIT_FAILURE);
+        }
+        if(getULong(&nsamples, &next, orig)) {
+            fprintf(stderr, "%s:%s:%d: Can't parse unsigned int."
                     " Expecting value of \"samples\"\n",
-                     __FILE__,__func__,__LINE__,
-                     Tokenizer_token(tkz, curr - 1));
-        else {
-            if(nsamples > MAXSAMP)
-                eprintf("%s:%s:%d: %lu samples is too many: max is %d:\n",
+                    __FILE__,__func__,__LINE__);
+            fprintf(stderr,"input: %s", orig);
+            exit(EXIT_FAILURE);
+        }else {
+            if(nsamples > MAXSAMP) {
+                fprintf(stderr,
+                        "%s:%s:%d: %lu samples is too many: max is %d:\n",
                          __FILE__,__func__,__LINE__, nsamples, MAXSAMP);
-            ++curr;
+                fprintf(stderr,"input: %s", orig);
+                exit(EXIT_FAILURE);
+            }
         }
     }
 
-    if(curr < ntokens)
-        eprintf("%s:%s:%d: extra token \"%s\" at end of line\n",
-                 __FILE__,__func__,__LINE__, Tokenizer_token(tkz,curr));
+    if(next){
+        fprintf(stderr,"%s:%d: extra token(s) \"%s\" at end of line\n",
+                 __FILE__,__LINE__, next);
+        fprintf(stderr,"input: %s", orig);
+        exit(EXIT_FAILURE);
+    }
 
     assert(strlen(popName) > 0);
-    PopNode *thisNode = PopNode_new(twoNptr, twoNfree, tPtr, tfree, ns);
-    if(0 != PopNodeTab_insert(poptbl, popName, thisNode))
-        eprintf("%s:%s:%d: duplicate \"segment %s\"\n",
-                 __FILE__,__func__,__LINE__, popName);
+    PopNode *thisNode = PopNode_new(twoNptr, twoNstat==Free,
+                                    tPtr, tstat==Free, ns);
+    if(0 != PopNodeTab_insert(poptbl, popName, thisNode)) {
+        fprintf(stderr,"%s:%d: duplicate \"segment %s\"\n",
+                 __FILE__,__LINE__, popName);
+        fprintf(stderr,"input: %s", orig);
+        exit(EXIT_FAILURE);
+    }
     LblNdx_addSamples(lndx, nsamples, popName);
     SampNdx_addSamples(sndx, nsamples, thisNode);
 }
 
 /// Parse a line of input describing a parent-offspring relationship
 /// between two nodes.
-/// @param[inout] tkz the Tokenizer
+/// @param[in] next unparsed portion of input line
 /// @param[inout] poptbl associates names of segments
 /// with pointers to them.
-void parseDerive(Tokenizer *tkz, PopNodeTab *poptbl) {
-    char *childName, *parName;
-    int curr=1,  ntokens = Tokenizer_ntokens(tkz);
+void parseDerive(char *next, PopNodeTab *poptbl,
+                       const char *orig) {
+    char *childName, *parName, *tok;
 
     // Read name of child
-    CHECK_INDEX(curr, ntokens);
-    childName = Tokenizer_token(tkz, curr++);
+    childName = nextWhitesepToken(&next);
+    CHECK_TOKEN(childName, orig);
+    childName = stripWhiteSpace(childName);
 
     // Read "from"
-    CHECK_INDEX(curr, ntokens);
-    if(0 != strcmp("from", Tokenizer_token(tkz, curr++))) {
-        fprintf(stderr, "Got %s when expecting \"from\" on input:\n",
-                Tokenizer_token(tkz, curr - 1));
-        Tokenizer_print(tkz, stderr);
+    tok = nextWhitesepToken(&next);
+    CHECK_TOKEN(tok, orig);
+    if(0 != strcmp("from", tok)) {
+        fprintf(stderr, "%s:%d: Got %s when expecting \"from\" on input:\n",
+                __FILE__,__LINE__,tok);
+        fprintf(stderr,"input: %s", orig);
         exit(EXIT_FAILURE);
     }
 
     // Read name of parent
-    CHECK_INDEX(curr, ntokens);
-    parName = Tokenizer_token(tkz, curr++);
+    parName = nextWhitesepToken(&next);
+    CHECK_TOKEN(parName, orig);
+    parName = stripWhiteSpace(parName);
 
-    if(curr < ntokens)
-        eprintf("%s:%s:%d: extra token \"%s\" at end of line\n",
-                 __FILE__,__func__,__LINE__, Tokenizer_token(tkz,curr));
+    if(next) {
+        fprintf(stderr,"%s:%d: extra tokens \"%s\" at end of line\n",
+                 __FILE__,__LINE__, next);
+        fprintf(stderr,"input: %s", orig);
+        exit(EXIT_FAILURE);
+    }
 
     assert(strlen(childName) > 0);
     PopNode *childNode = PopNodeTab_get(poptbl, childName);
     if(childNode == NULL) {
-        eprintf("%s:%s:%d: child segment \"%s\" undefined\n",
-                 __FILE__,__func__,__LINE__, childName);
+        fprintf(stderr,"%s:%d: child segment \"%s\" undefined\n",
+                 __FILE__,__LINE__, childName);
+        fprintf(stderr,"input: %s", orig);
+        exit(EXIT_FAILURE);
     }
 
     assert(strlen(parName) > 0);
     PopNode *parNode = PopNodeTab_get(poptbl, parName);
     if(parNode == NULL) {
-        eprintf("%s:%s:%d: parent segment \"%s\" undefined\n",
-                 __FILE__,__func__,__LINE__, parName);
+        fprintf(stderr, "%s:%d: parent segment \"%s\" undefined\n",
+                 __FILE__,__LINE__, parName);
     }
     PopNode_addChild(parNode, childNode);
 }
 
 /// Parse a line of input describing gene flow.
-/// @param[inout] tkz the Tokenizer
+/// @param[inout] next unparsed portion of input line
 /// @param[inout] poptbl associates names of segments
 /// with pointers to them.
 /// @param[out] parstore structure that maintains info about
 /// parameters
-void parseMix(Tokenizer *tkz, PopNodeTab *poptbl, ParStore *parstore) {
+void parseMix(char *next, PopNodeTab *poptbl, ParStore *parstore,
+                       const char *orig) {
     char *childName, *parName[2], *tok;
     double *mPtr;
-	bool mfree;
-    int curr=1,  ntokens = Tokenizer_ntokens(tkz);
+	ParamStatus mstat;
 
     // Read name of child
-    CHECK_INDEX(curr, ntokens);
-    childName = Tokenizer_token(tkz, curr++);
+    childName = nextWhitesepToken(&next);
+    CHECK_TOKEN(childName, orig);
 
     // Read word "from"
-    CHECK_INDEX(curr, ntokens);
-    if(0 != strcmp("from", Tokenizer_token(tkz, curr++)))
-        eprintf("%s:%s:%d: got %s when expecting \"from\" on input:\n",
-                 __FILE__,__func__,__LINE__, Tokenizer_token(tkz, curr - 1));
-
-    // Read name of parent0
-    CHECK_INDEX(curr, ntokens);
-    parName[0] = Tokenizer_token(tkz, curr++);
-
-    // Read symbol "+"
-    CHECK_INDEX(curr, ntokens);
-    if(0 != strcmp("+", Tokenizer_token(tkz, curr++)))
-        eprintf("%s:%s:%d: got %s when expecting \"+\" on input:\n",
-                 __FILE__,__func__,__LINE__, Tokenizer_token(tkz, curr - 1));
-
-    // Read mixture fraction, mPtr
-    CHECK_INDEX(curr, ntokens);
-    CHECK_INDEX(curr, ntokens);
-    tok = Tokenizer_token(tkz, curr++);
-    mPtr = ParStore_findPtr(parstore, &mfree, tok);
-	if(NULL == mPtr) {
-		fprintf(stderr,"%s:%s:%d: Parameter \"%s\" is undefined\n",
-				__FILE__,__func__,__LINE__, tok);
-        Tokenizer_print(tkz, stderr);
+    tok = nextWhitesepToken(&next);
+    CHECK_TOKEN(tok, orig);
+    if(0 != strcmp("from", tok)) {
+        fprintf(stderr,"%s:%d: got %s when expecting \"from\" on input:\n",
+                 __FILE__,__LINE__, tok);
+        fprintf(stderr,"input: %s", orig);
         exit(EXIT_FAILURE);
     }
 
-    // Read symbol "*"
-    CHECK_INDEX(curr, ntokens);
-    if(0 != strcmp("*", Tokenizer_token(tkz, curr++)))
-        eprintf("%s:%s:%d: got %s when expecting \"*\" on input:\n",
-                 __FILE__,__func__,__LINE__, Tokenizer_token(tkz, curr - 1));
+    // Read name of parent0
+    parName[0] = strsep(&next, "+");
+    CHECK_TOKEN(parName[0], orig);
+    parName[0] = stripWhiteSpace(parName[0]);
+
+    // Read mixture fraction, mPtr
+    tok = strsep(&next, "*");
+    CHECK_TOKEN(tok, orig);
+    tok = stripWhiteSpace(tok);
+    mPtr = ParStore_findPtr(parstore, &mstat, tok);
+	if(NULL == mPtr) {
+		fprintf(stderr,"%s:%s:%d: Parameter \"%s\" is undefined\n",
+				__FILE__,__func__,__LINE__, tok);
+        fprintf(stderr,"input: %s", orig);
+        exit(EXIT_FAILURE);
+    }
 
     // Read name of parent1
-    CHECK_INDEX(curr, ntokens);
-    parName[1] = Tokenizer_token(tkz, curr++);
+    parName[1] = nextWhitesepToken(&next);
+    CHECK_TOKEN(parName[1], orig);
 
-    if(curr < ntokens)
-        eprintf("%s:%s:%d: extra token \"%s\" at end of line\n",
-                 __FILE__,__func__,__LINE__, Tokenizer_token(tkz,curr));
+    if(next) {
+        fprintf(stderr, "%s:%d: extra token \"%s\" at end of line\n",
+                 __FILE__,__LINE__, tok);
+        fprintf(stderr,"input: %s", orig);
+        exit(EXIT_FAILURE);
+    }
 
     assert(strlen(childName) > 0);
     PopNode *childNode = PopNodeTab_get(poptbl, childName);
     if(childNode == NULL) {
-        eprintf("%s:%s:%d: child segment \"%s\" undefined\n",
-                 __FILE__,__func__,__LINE__, childName);
+        fprintf(stderr, "%s:%d: child segment \"%s\" undefined\n",
+                 __FILE__,__LINE__, childName);
+        fprintf(stderr,"input: %s", orig);
+        exit(EXIT_FAILURE);
     }
 
     assert(strlen(parName[0]) > 0);
     PopNode *parNode0 = PopNodeTab_get(poptbl, parName[0]);
-    if(parNode0 == NULL)
-        eprintf("%s:%s:%d: parent segment \"%s\" undefined\n",
-                 __FILE__,__func__,__LINE__, parName[0]);
+    if(parNode0 == NULL) {
+        fprintf(stderr,"%s:%d: parent segment \"%s\" undefined\n",
+                 __FILE__,__LINE__, parName[0]);
+        fprintf(stderr,"input: %s", orig);
+        exit(EXIT_FAILURE);
+    }
 
     assert(strlen(parName[1]) > 0);
     PopNode *parNode1 = PopNodeTab_get(poptbl, parName[1]);
-    if(parNode1 == NULL)
-        eprintf("%s:%s:%d: parent segment \"%s\" undefined\n",
-                 __FILE__,__func__,__LINE__, parName[1]);
+    if(parNode1 == NULL) {
+        fprintf(stderr,"%s:%d: parent segment \"%s\" undefined\n",
+                 __FILE__,__LINE__, parName[1]);
+        fprintf(stderr,"input: %s", orig);
+        exit(EXIT_FAILURE);
+    }
 
-    PopNode_mix(childNode, mPtr, mfree, parNode1, parNode0);
+    PopNode_mix(childNode, mPtr, mstat==Free, parNode1, parNode0);
+}
+
+// Read a line into buff; strip comments and trailing whitespace.
+// Return 0 on success; 1 on EOF.
+int get_one_line(size_t n, char buff[n], FILE *fp) {
+    if(fgets(buff, n, fp) == NULL)
+        return 1;
+
+    if(!strchr(buff, '\n') && !feof(fp)) {
+        fprintf(stderr, "%s:%d: buffer overflow. buff size: %zu\n",
+                __FILE__, __LINE__, n);
+        fprintf(stderr,"input: %s\n", buff);
+        exit(EXIT_FAILURE);
+    }
+
+    // strip trailing comments
+    char *s = strchr(buff, '#');
+    if(s)
+        *s = '\0';
+
+    // strip trailing whitespace
+    for(s=buff; *s != '\0'; ++s)
+        ;
+    while(s > buff && isspace( *(s-1) ))
+        --s;
+    *s = '\0';
+
+    return 0;
 }
 
 /// Parse an input file in .lgo format
@@ -496,47 +552,61 @@ void parseMix(Tokenizer *tkz, PopNodeTab *poptbl, ParStore *parstore) {
 /// @param[inout] ns allocates PopNode objects
 PopNode    *mktree(FILE * fp, SampNdx *sndx, LblNdx *lndx, ParStore *parstore,
                    Bounds *bnd, NodeStore *ns) {
-    int         ntokens;
-    char        buff[500];
-    Tokenizer  *tkz = Tokenizer_new(50);
+    char        orig[500], buff[500], buff2[500];
+    char        *token, *next;
 
     PopNodeTab *poptbl = PopNodeTab_new();
 
     while(1) {
-        if(fgets(buff, sizeof(buff), fp) == NULL)
+        if(1 == get_one_line(sizeof(buff), buff, fp))
             break;
 
-        if(!strchr(buff, '\n') && !feof(fp))
-            eprintf("s:%s:%d: buffer overflow. buff size: %zu\n",
-                    __FILE__, __func__, __LINE__, sizeof(buff));
+        char *plus, *end;
 
-        // strip trailing comments
-        char *comment = strchr(buff, '#');
-        if(comment)
-            *comment = '\0';
+        // If line ends with "+", then append next line
+        while(1){
+            end = buff + strlen(buff);
+            assert(end < buff + sizeof(buff));
+            plus = strrchr(buff, '+');
+            if(plus==NULL || 1+plus != end)
+                break;
+            // line ends with plus: append next line
+            if(1 == get_one_line(sizeof(buff2), buff2, fp)) {
+                fprintf(stderr,"%s:%d: unexpected end of file\n",
+                        __FILE__,__LINE__);
+                exit(EXIT_FAILURE);
+            }
+            if(strlen(buff) + strlen(buff2) >= sizeof(buff)) {
+                fprintf(stderr,"%s:%d: "
+                        "buffer overflow on continuation line\n",
+                        __FILE__,__LINE__);
+                exit(EXIT_FAILURE);
+            }
+            strcat(buff, buff2);
+        }
 
-        // Tokenize. Fields are separated by spaces, tabs, or "=".
-        Tokenizer_split(tkz, buff, " \t=");
+        snprintf(orig, sizeof orig, "%s", buff);
 
-        ntokens = Tokenizer_strip(tkz, " \t=\n");
-        if(ntokens == 0)
+        // Get first whitespace-separated token
+        next = stripWhiteSpace(buff);
+        token = nextWhitesepToken(&next);
+        if(token == NULL)
             continue;
 
-        char *tok = Tokenizer_token(tkz, 0);
-		if(0 == strcmp(tok, "twoN"))
-			parseParam(tkz, TwoN, parstore, bnd);
-		else if(0 == strcmp(tok, "time"))
-			parseParam(tkz, Time, parstore, bnd);
-		else if(0 == strcmp(tok, "mixFrac"))
-			parseParam(tkz, MixFrac, parstore, bnd);
-        else if(0 == strcmp(tok, "segment"))
-            parseSegment(tkz, poptbl, sndx, lndx, parstore, ns);
-        else if(0 == strcmp(tok, "mix"))
-            parseMix(tkz, poptbl, parstore);
-        else if(0 == strcmp(tok, "derive"))
-            parseDerive(tkz, poptbl);
+		if(0 == strcmp(token, "twoN"))
+			parseParam(next, TwoN, parstore, bnd, orig);
+		else if(0 == strcmp(token, "time"))
+			parseParam(next, Time, parstore, bnd, orig);
+		else if(0 == strcmp(token, "mixFrac"))
+			parseParam(next, MixFrac, parstore, bnd, orig);
+        else if(0 == strcmp(token, "segment"))
+            parseSegment(next, poptbl, sndx, lndx, parstore, ns, orig);
+        else if(0 == strcmp(token, "mix"))
+            parseMix(next, poptbl, parstore, orig);
+        else if(0 == strcmp(token, "derive"))
+            parseDerive(next, poptbl, orig);
         else
-            ILLEGAL_INPUT(tok);
+            ILLEGAL_INPUT(token, orig);
     }
 
     // Make sure the tree of populations has a single root. This
@@ -545,24 +615,25 @@ PopNode    *mktree(FILE * fp, SampNdx *sndx, LblNdx *lndx, ParStore *parstore,
     // these searches all find the same root. Otherwise, it aborts
     // with an error.
     PopNode *root = PopNodeTab_check_and_root(poptbl, __FILE__, __LINE__);
-    Tokenizer_free(tkz);
     PopNodeTab_free(poptbl);
     return root;
 }
 
 /// Count the number of "segment" statements in input file.
 int countSegments(FILE * fp) {
-    int         ntokens, nseg=0;
-    char        buff[500];
-    Tokenizer  *tkz = Tokenizer_new(50);
+    int         nseg=0;
+    char        orig[500], buff[500];
+    char        *tok, *next;
 
     while(1) {
         if(fgets(buff, sizeof(buff), fp) == NULL)
             break;
+        next = buff;
 
         if(!strchr(buff, '\n') && !feof(fp)) {
             fprintf(stderr, "ERR@%s:%d: input buffer overflow."
                     " buff size: %zu\n", __FILE__, __LINE__, sizeof(buff));
+            fprintf(stderr,"input: %s", orig);
             exit(EXIT_FAILURE);
         }
 
@@ -571,16 +642,14 @@ int countSegments(FILE * fp) {
         if(comment)
             *comment = '\0';
 
-        Tokenizer_split(tkz, buff, " \t="); // tokenize
-        ntokens = Tokenizer_strip(tkz, " \t=\n");
-        if(ntokens == 0)
+        snprintf(orig, sizeof orig, "%s", buff);
+        tok = nextWhitesepToken(&next);
+        if(tok==NULL)
             continue;
 
-        char *tok = Tokenizer_token(tkz, 0);
 		if(0 == strcmp(tok, "segment"))
             ++nseg;
     }
-    Tokenizer_free(tkz);
     return nseg;
 }
 
@@ -611,7 +680,7 @@ const char *tstInput =
     "twoN fixed  2Nb=123\n"
     "twoN free   2Nc=213.4\n"
     "twoN fixed  2Nbb=32.1\n"
-    "twoN free   2Nab=222\n"
+    "twoN constrained 2Nab=100 + -1.2*Tab\n"
     "twoN fixed  2Nabc=1.2e2\n"
     "mixFrac free Mc=0.02\n"
     "segment a   t=T0     twoN=2Na    samples=1\n"
@@ -661,6 +730,7 @@ int main(int argc, char **argv) {
 	};
 
     int nseg = countSegments(fp);
+    fprintf(stderr,"nseg=%d\n", nseg);
     assert(6 == nseg);
     unitTstResult("countSegments", "OK");
 
@@ -685,6 +755,10 @@ int main(int argc, char **argv) {
                ParStore_nFixed(parstore));
 		printf("Used %d free parameters in \"parstore\".\n",
                ParStore_nFree(parstore));
+		printf("Used %d Gaussian parameters in \"parstore\".\n",
+               ParStore_nGaussian(parstore));
+		printf("Used %d constrained parameters in \"parstore\".\n",
+               ParStore_nConstrained(parstore));
     }
 
     unitTstResult("mktree", "needs more testing");

@@ -14,6 +14,8 @@
 #include "parse.h"
 #include "parstore.h"
 #include <string.h>
+#include <errno.h>
+#include <unistd.h>
 #include <gsl/gsl_rng.h>
 
 #include <pthread.h>
@@ -39,18 +41,20 @@ struct GPTree {
 
 /// Print a description of parameters.
 void GPTree_printParStore(GPTree *self, FILE *fp) {
+    ParStore_constrain(self->parstore);
 	ParStore_print(self->parstore, fp);
 }
 
 /// Print a description of free parameters.
 void GPTree_printParStoreFree(GPTree *self, FILE *fp) {
 	ParStore_printFree(self->parstore, fp);
+    ParStore_printConstrained(self->parstore, fp);
 }
 
 /// Randomly perturb all free parameters in the population tree while
 /// maintaining inequality constraints.
 void GPTree_randomize(GPTree *self, gsl_rng *rng) {
-	PopNode_randomize(self->rootPop, self->bnd, rng);
+	PopNode_randomize(self->rootPop, self->bnd, self->parstore, rng);
 }
 
 /// Set free parameters from an array.
@@ -60,6 +64,7 @@ void GPTree_randomize(GPTree *self, gsl_rng *rng) {
 void GPTree_setParams(GPTree *self, int n, double x[n]) {
     assert(n == ParStore_nFree(self->parstore));
     ParStore_setFreeParams(self->parstore, n, x);
+    ParStore_constrain(self->parstore);
 }
 
 /// Copy free parameters from GPTree into an array
@@ -88,6 +93,7 @@ int GPTree_nFree(const GPTree *self) {
 void GPTree_simulate(GPTree *self, BranchTab *branchtab, gsl_rng *rng,
                      unsigned long nreps, int doSing) {
     unsigned long rep;
+    ParStore_constrain(self->parstore);
     for(rep = 0; rep < nreps; ++rep) {
         PopNode_clear(self->rootPop); // remove old samples
         SampNdx_populateTree(&(self->sndx));    // add new samples
@@ -119,10 +125,7 @@ GPTree *GPTree_new(const char *fname, Bounds bnd) {
     self->parstore = ParStore_new();
     LblNdx_init(&self->lblndx);
     SampNdx_init(&self->sndx);
-    FILE *fp = fopen(fname, "r");
-    if(fp == NULL)
-        eprintf("%s:%s:%d: can't open file \"%s\".\n",
-                __FILE__, __func__, __LINE__, fname);
+    FILE *fp = efopen(fname, "r");
     self->nseg = countSegments(fp);
     rewind(fp);
     self->pnv = malloc(self->nseg * sizeof(self->pnv[0]));
@@ -140,6 +143,7 @@ GPTree *GPTree_new(const char *fname, Bounds bnd) {
     if(!GPTree_feasible(self)) {
         fprintf(stderr,"%s:%s:%d: file \"%s\" describes an infeasible tree.\n",
                 __FILE__,__func__,__LINE__,fname);
+        GPTree_printParStore(self, stderr);
         exit(EXIT_FAILURE);
     }
     return self;
@@ -159,14 +163,19 @@ void GPTree_free(GPTree *self) {
 /// Duplicate a GPTree object
 GPTree *GPTree_dup(const GPTree *old) {
     assert(old);
+    ParStore_constrain(old->parstore);
 	assert(GPTree_feasible(old));
-    if(old->rootGene != NULL)
-        eprintf("%s:%s:%d: old->rootGene must be NULL on entry\n",
+    if(old->rootGene != NULL) {
+        fprintf(stderr,"%s:%s:%d: old->rootGene must be NULL on entry\n",
                 __FILE__,__func__,__LINE__);
-    if(!PopNode_isClear(old->rootPop))
-        eprintf("%s:%s:%d: clear GPTree of samples before call"
+        exit(EXIT_FAILURE);
+    }
+    if(!PopNode_isClear(old->rootPop)) {
+        fprintf(stderr,"%s:%s:%d: clear GPTree of samples before call"
                 " to GPTree_dup\n",
                 __FILE__,__func__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
 
     GPTree *new   = memdup(old, sizeof(GPTree));
     new->parstore = ParStore_dup(old->parstore);
@@ -225,6 +234,7 @@ GPTree *GPTree_dup(const GPTree *old) {
         pthread_mutex_unlock(&outputLock);
         exit(EXIT_FAILURE);
     }
+    ParStore_constrain(new->parstore);
 	assert(GPTree_feasible(new));
     return new;
 }
@@ -287,6 +297,7 @@ unsigned    GPTree_nsamples(GPTree *self) {
 
 /// Are parameters within the feasible region?
 int GPTree_feasible(const GPTree *self) {
+    ParStore_constrain(self->parstore);
 	return PopNode_feasible(self->rootPop, self->bnd);
 }
 

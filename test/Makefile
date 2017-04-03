@@ -1,13 +1,11 @@
 vpath %.c ../src
 
-#opt := -DNDEBUG -O3  -finline-functions  # For full optimization
-opt :=  -O0 -fno-inline-functions -DDEBUG     # For debugging
-#prof := -pg -rdynamic                    # For profiling
+opt :=  -O0 -fno-inline-functions -DDEBUG
 prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
 tests := xbinary xboot xbranchtab xdafreader xdiffev xgene \
   xgptree xpopnodetab xjobqueue xlblndx xparkeyval xparse xparstore \
-  xpopnode xsimsched xstrint xdtnorm
+  xpopnode xsimsched xstrint xdtnorm xterm xmisc
 
 CC := gcc
 
@@ -47,6 +45,7 @@ test : $(tests)
 	-./xgptree
 	-./xjobqueue
 	-./xlblndx
+	-./xmisc
 	-./xparkeyval
 	-./xparse
 	-./xparstore
@@ -54,11 +53,16 @@ test : $(tests)
 	-./xpopnodetab
 	-./xsimsched
 	-./xstrint
+	-./xterm
 	@echo "ALL UNIT TESTS WERE COMPLETED."
 
 XBINARY := xbinary.o binary.o
 xbinary : $(XBINARY)
 	$(CC) $(CFLAGS) -o $@ $(XBINARY) $(lib)
+
+XMISC := xmisc.o misc.o
+xmisc : $(XMISC)
+	$(CC) $(CFLAGS) -o $@ $(XMISC) $(lib)
 
 XPOPNODETAB := xpopnodetab.o popnodetab.o misc.o popnode.o gene.o \
    branchtab.o lblndx.o tokenizer.o dtnorm.o binary.o \
@@ -92,6 +96,13 @@ XPARSE := xparse.o popnodetab.o misc.o tokenizer.o gptree.o lblndx.o \
        dprintf.o dtnorm.o
 xparse : $(XPARSE)
 	$(CC) $(CFLAGS) -o $@ $(XPARSE) $(lib)
+
+xterm.o : parstore.c
+	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/parstore.c
+
+XTERM := xterm.o misc.o parkeyval.o dtnorm.o
+xterm : $(XTERM)
+	$(CC) $(CFLAGS) -o $@ $(XTERM) $(lib)
 
 xgene.o : gene.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/gene.c

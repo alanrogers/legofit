@@ -16,14 +16,17 @@ xpopnodetab
 xsampndx
 xsimsched
 xstrtab
+xterm
 xbranchtab
 xparstore
 xparkeyval
 xdiffev
 xjobqueue
 xdafreader
+xmisc
 xstrint
 lego
+numcores
 legofit
 tabpat
 tabpat.log

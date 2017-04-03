@@ -1,11 +1,13 @@
 # Example .lgo file
 time fixed    zero=0
 twoN fixed     one=1
-time free     Txyn=25920        # archaic-modern separation time
-time fixed     Tn=1897          # time of Neanderthal admixture
-time gaussian  Txy=3788 sd=1000 # Africa-Eurasia separation time
+time gaussian Txyn=25920 sd=1000 # archaic-modern separation time
+time fixed      Tn=1897         # time of Neanderthal admixture
+time free      Txy=3788         # Africa-Eurasia separation time
 twoN free     2Nn=1000          # Neanderthal population size
-twoN free    2Nxy=10000         # early modern population size
+twoN constrained 2Nxy=10000 + # continuation line
+-1.2*Txy + # early modern population size
+   3.2*2Nn
 mixFrac free  mN=0.02           # Neanderthal admixture into y
 segment x     t=zero   twoN=one    samples=1  # Africa
 segment y     t=zero   twoN=one    samples=1  # Eurasia

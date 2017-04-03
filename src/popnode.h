@@ -55,7 +55,8 @@ int         PopNode_nsamples(PopNode * self);
 void        PopNode_shiftParamPtrs(PopNode *self, size_t dp, int sign);
 void        PopNode_shiftPopNodePtrs(PopNode *self, size_t dp, int sign);
 void        PopNode_untouch(PopNode * self);
-void        PopNode_randomize(PopNode *self, Bounds bnd, gsl_rng *rng);
+void        PopNode_randomize(PopNode *self, Bounds bnd, ParStore *parstore,
+                              gsl_rng *rng);
 void        PopNode_gaussian(PopNode *self, Bounds bnd,
                              ParStore *ps, gsl_rng *rng);
 

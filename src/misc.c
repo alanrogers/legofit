@@ -17,6 +17,8 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
+#include <unistd.h>
 #ifdef _WIN32
 #include <windows.h>
 #elif defined(MACOS)
@@ -105,6 +107,31 @@ void eprintf(const char *fmt, ...) {
     fprintf(stderr, "\n");
     exit(EXIT_FAILURE);
 }
+
+/// Open file. On success, return pointer to opened file. On failure
+/// abort with an error message. The error message includes the current
+/// working directory, whether or not "name" is an absolute pathname.
+FILE *efopen(const char *restrict name, const char *restrict mode) {
+    FILE *fp = fopen(name, mode);
+    if(fp==NULL) {
+        errno=0;
+        char errbuff[50], *cwd = getwd(NULL);
+        if(cwd==NULL) {
+            strerror_r(errno, errbuff, sizeof(errbuff));
+            fprintf(stderr,"%s:%d: can't open file \"%s\".\n"
+                    "   getcwd error: %s\n",
+                    __FILE__,__LINE__, name, errbuff);
+        }else{
+            fprintf(stderr,"%s:%d: can't open file \"%s.\"\n"
+                    "   Current dir: %s\n",
+                    __FILE__, __LINE__, name, cwd);
+            free(cwd);
+        }
+        exit(EXIT_FAILURE);
+    }
+    return fp;
+}
+
 
 /**
  * Uniform perturbation on log scale. Log10 of new value in range
@@ -421,4 +448,47 @@ int stripchr(char *s, int c) {
     }
     *p = '\0';
     return p - s;
+}
+
+/// Remove white space from beginning and end of a string.
+/// Return pointer to stripped string, which lies within the
+/// memory buffer passed as input.
+char *stripWhiteSpace(char *buff) {
+    char *s, *t;
+    s = buff;
+    while(*s!='\0' && isspace(*s))
+        ++s;
+    if(*s == '\0')
+        return s;
+    t = s+1;
+    while(*t != '\0')
+        ++t;
+    while(isspace(*(t-1)))
+        --t;
+    *t = '\0';
+    return s;
+}
+
+/**
+ * Return tokens separated by 1 or more spaces and/or tabs.
+ *
+ * On entry, str should be the address of a pointer
+ * into a character string. For example:
+ *
+ *     char buff[100];
+ *     char *token, *ptr = buff;
+ *
+ *     token = nextWhitesepToken(&ptr);
+ *
+ * On return, token is NULL if no tokens are found. Otherwise, it
+ * points to the next token in the string, and *str is either NULL (if
+ * the end of the string has been reached) or points to the character
+ * immediately following the token.
+ */
+char *nextWhitesepToken(char **str) {
+    char *token;
+    do{
+        token = strsep(str, " \t\n");
+    }while(token!=NULL && *token=='\0');
+    return token;
 }

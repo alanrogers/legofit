@@ -5,7 +5,7 @@
  * pattern) and value (a double representing the length of the
  * ascending branch)
  *
- * @copyright Copyright (c) 2016, Alan R. Rogers 
+ * @copyright Copyright (c) 2016, Alan R. Rogers
  * <rogers@anthro.utah.edu>. This file is released under the Internet
  * Systems Consortium License, which can be found in file "LICENSE".
  */
@@ -34,7 +34,7 @@ typedef struct BTLink {
     tipId_t         key;
     double          value;
 #if COST==CHISQR_COST
-    double          sqr;   // squares
+    double          sumsqr;   // squares
 #endif
 } BTLink;
 
@@ -42,7 +42,7 @@ typedef struct BTLink {
 struct BranchTab {
 #ifndef NDEBUG
     int frozen;   // nonzero => no further changes allowed
-#endif    
+#endif
     BTLink         *tab[BT_DIM];
 };
 
@@ -51,8 +51,8 @@ BTLink     *BTLink_add(BTLink * self, tipId_t key, double value);
 double      BTLink_get(BTLink * self, tipId_t key);
 int         BTLink_hasSingletons(BTLink * self);
 void        BTLink_free(BTLink * self);
-void        BTLink_printShallow(const BTLink * self);
-void        BTLink_print(const BTLink * self);
+void        BTLink_printShallow(const BTLink * self, FILE *fp);
+void        BTLink_print(const BTLink * self, FILE *fp);
 BTLink     *BTLink_dup(const BTLink *self);
 int         BTLink_equals(const BTLink *lhs, const BTLink *rhs);
 
@@ -98,7 +98,7 @@ BTLink         *BTLink_new(tipId_t key, double value) {
     new->key = key;
     new->value = value;
 #if COST==CHISQR_COST
-    new->sqr = value*value;
+    new->sumsqr = value*value;
 #endif
     return new;
 }
@@ -113,7 +113,7 @@ BTLink     *BTLink_dup(const BTLink *old) {
     new->key = old->key;
     new->value = old->value;
 #if COST==CHISQR_COST
-    new->sqr = old->sqr;
+    new->sumsqr = old->sumsqr;
 #endif
     new->next = BTLink_dup(old->next);
     return new;
@@ -129,7 +129,7 @@ int  BTLink_equals(const BTLink *lhs, const BTLink *rhs) {
        || lhs->value!=rhs->value)
         return 0;
 #if COST==CHISQR_COST
-    if(lhs->sqr != rhs->sqr)
+    if(lhs->sumsqr != rhs->sumsqr)
         return 0;
 #endif
     return BTLink_equals(lhs->next, rhs->next);
@@ -145,7 +145,7 @@ void BTLink_free(BTLink * self) {
 
 /// Add a value to a BTLink object. On return, self->value
 /// equals the old value and the new one. If COST==CHISQR_COST,
-/// the function also adds the square of value to self->sqr.
+/// the function also adds the square of value to self->sumsqr.
 BTLink *BTLink_add(BTLink * self, tipId_t key, double value) {
     if(self == NULL || key < self->key) {
         BTLink *new = BTLink_new(key, value);
@@ -158,7 +158,7 @@ BTLink *BTLink_add(BTLink * self, tipId_t key, double value) {
     assert(key == self->key);
     self->value += value;
 #if COST==CHISQR_COST
-    self->sqr += value*value;
+    self->sumsqr += value*value;
 #endif
     return self;
 }
@@ -182,22 +182,22 @@ int BTLink_hasSingletons(BTLink * self) {
     return BTLink_hasSingletons(self->next);
 }
 
-void BTLink_printShallow(const BTLink * self) {
+void BTLink_printShallow(const BTLink * self, FILE *fp) {
     if(self == NULL)
         return;
 #if COST==CHISQR_COST
-    printf(" [%lu, %lf, %lf]",
-           (unsigned long) self->key, self->value, self->sqr);
+    fprintf(fp, " [%lu, %lf, %lf]",
+           (unsigned long) self->key, self->value, self->sumsqr);
 #else
-    printf(" [%lu, %lf]", (unsigned long) self->key, self->value);
+    fprintf(fp, " [%lu, %lf]", (unsigned long) self->key, self->value);
 #endif
 }
 
-void BTLink_print(const BTLink * self) {
+void BTLink_print(const BTLink * self, FILE *fp) {
     if(self == NULL)
         return;
-    BTLink_printShallow(self);
-    BTLink_print(self->next);
+    BTLink_printShallow(self, fp);
+    BTLink_print(self->next, fp);
 }
 
 BranchTab    *BranchTab_new(void) {
@@ -212,7 +212,7 @@ BranchTab    *BranchTab_dup(const BranchTab *old) {
 
 #ifndef NDEBUG
     new->frozen = old->frozen;
-#endif    
+#endif
 
     int i;
     for(i=0; i < BT_DIM; ++i)
@@ -263,7 +263,7 @@ double BranchTab_get(BranchTab * self, tipId_t key) {
 }
 
 /// Add a value to table. If key already exists, new value is added to
-/// old one.  
+/// old one.
 void BranchTab_add(BranchTab * self, tipId_t key, double value) {
     assert(!self->frozen);
     unsigned h = tipIdHash(key);
@@ -290,7 +290,7 @@ int BranchTab_divideBy(BranchTab *self, double denom) {
 #ifndef NDEBUG
     assert(!self->frozen);
     self->frozen = 1;  // you can only call this function once
-#endif    
+#endif
 
     // divide by denom
     unsigned i;
@@ -299,7 +299,7 @@ int BranchTab_divideBy(BranchTab *self, double denom) {
         for(el = self->tab[i]; el; el = el->next) {
             el->value /= denom;
 #if COST==CHISQR_COST
-            el->sqr /= denom;
+            el->sumsqr /= denom;
 #endif
         }
     }
@@ -308,12 +308,12 @@ int BranchTab_divideBy(BranchTab *self, double denom) {
 }
 
 /// Print a BranchTab to standard output.
-void BranchTab_print(const BranchTab *self) {
+void BranchTab_print(const BranchTab *self, FILE *fp) {
     unsigned i;
     for(i=0; i < BT_DIM; ++i) {
-        printf("%2u:", i);
-        BTLink_print(self->tab[i]);
-        putchar('\n');
+        fprintf(fp, "%2u:", i);
+        BTLink_print(self->tab[i], fp);
+        putc('\n', fp);
     }
 }
 
@@ -331,9 +331,9 @@ void BranchTab_plusEquals(BranchTab *lhs, BranchTab *rhs) {
 /// Fill arrays key, value, and square with values in BranchTab.
 /// On return, key[i] is the id of the i'th site pattern, value[i] is
 /// the total branch length associated with that site pattern, and
-/// sqr[i] is the corresponding sum of squared branch lengths.
+/// sumsqr[i] is the corresponding sum of squared branch lengths.
 void BranchTab_toArrays(BranchTab *self, unsigned n, tipId_t key[n],
-						double value[n], double sqr[n]) {
+						double value[n], double sumsqr[n]) {
     int i, j=0;
     for(i=0; i<BT_DIM; ++i) {
         BTLink *link;
@@ -344,7 +344,7 @@ void BranchTab_toArrays(BranchTab *self, unsigned n, tipId_t key[n],
             key[j] = link->key;
             value[j] = link->value;
 #if COST==CHISQR_COST
-            sqr[j] = link->sqr;
+            sumsqr[j] = link->sumsqr;
 #endif
             ++j;
         }
@@ -352,11 +352,9 @@ void BranchTab_toArrays(BranchTab *self, unsigned n, tipId_t key[n],
 }
 
 /// Construct a BranchTab by parsing an input file.
+/// Recognizes comments, which extend from '#' to end-of-line.
 BranchTab *BranchTab_parse(const char *fname, const LblNdx *lblndx) {
-    FILE *fp = fopen(fname, "r");
-    if(fp == NULL)
-        eprintf("%s:%d: Can't read file \"%s\".\n",
-                __FILE__, __LINE__, fname);
+    FILE *fp = efopen(fname, "r");
 
     BranchTab *self = BranchTab_new();
     CHECKMEM(self);
@@ -365,7 +363,7 @@ BranchTab *BranchTab_parse(const char *fname, const LblNdx *lblndx) {
     char        buff[500];
     char        lblbuff[100];
     Tokenizer  *tkz = Tokenizer_new(50);
-    
+
     while(1) {
         if(fgets(buff, sizeof(buff), fp) == NULL)
             break;
@@ -448,7 +446,7 @@ double        BranchTab_chiSqCost(const BranchTab *obs, const BranchTab *expt,
                 // o link missing, so obval=0.
                 obval = 0.0;
                 exval = e->value * U;
-                v = e->sqr - e->value * e->value;
+                v = e->sumsqr - e->value * e->value;
                 assert(v>=0.0);
                 v *= u*U*n/(n-1.0);
                 e = e->next;
@@ -456,7 +454,7 @@ double        BranchTab_chiSqCost(const BranchTab *obs, const BranchTab *expt,
                 assert(o->key == e->key);
                 obval = o->value;
                 exval = e->value * U;
-                v = e->sqr - e->value * e->value;
+                v = e->sumsqr - e->value * e->value;
                 assert(v>=0.0);
                 v *= u*U*n/(n-1.0);
                 e = e->next;
@@ -476,7 +474,7 @@ double        BranchTab_chiSqCost(const BranchTab *obs, const BranchTab *expt,
         obval=0.0;
         while(e) { // o link missing, so obval=0
             exval = e->value * U;
-            v = e->sqr - e->value * e->value;
+            v = e->sumsqr - e->value * e->value;
             assert(v>=0.0);
             v *= u*U*n/(n-1.0);
             diff = obval-exval;
@@ -556,7 +554,7 @@ double        BranchTab_smplChiSqCost(const BranchTab *obs,
 #endif
 
 #if COST==POISSON_COST
-/// Use Poisson model to calculate negative log likelihood. 
+/// Use Poisson model to calculate negative log likelihood.
 double BranchTab_poissonCost(const BranchTab *obs, const BranchTab *expt,
                              double u, long nnuc, double n) {
     assert(expt->frozen);
@@ -624,7 +622,7 @@ int BranchTab_normalize(BranchTab *self) {
     unsigned i;
     double s = BranchTab_sum(self);
 
-    if(s==0) 
+    if(s==0)
         return 1;
 
     // divide by sum
@@ -655,57 +653,89 @@ double BranchTab_KLdiverg(const BranchTab *obs, const BranchTab *expt) {
         e = expt->tab[i];
         while(o && e) {
             if(o->key < e->key) {
-                // e->value is q=0. This case blows up unless p==0.
                 p = o->value;
-                if(p != 0.0) {
-                    kl = HUGE_VAL;
-#if 0
-                    fprintf(stderr,"%s:%s:%d: missing expt for ",
-                            __FILE__,__func__,__LINE__);
-                    printBits(sizeof(o->key), &o->key, stderr);
-                    //exit(EXIT_FAILURE);
-#endif
-                    o = o->next;
-                } else {
-                    o = o->next;
-                    continue;
-                }
+                q = 0.0;
+                o = o->next;
             }else if(o->key > e->key) {
-                // o->value is p=0. For this case, note that
-                // p*log(p/q) is the log of (p^p / q^p), which -> 1 as
-                // p->0.  The log of 1 is 0, so 0 is the contribution
-                // to kl.
+                p = 0.0;
+                q = e->value;
                 e = e->next;
-                continue;
             }else {
                 assert(o->key == e->key);
                 p = o->value;
                 q = e->value;
                 e = e->next;
                 o = o->next;
+            }
+            if(p == 0.0) {
+                // Do nothing: p*log(p/q) -> 0 as p->0, regardless of
+                // q. This is because p*log(p/q) is the log of
+                // (p/q)**p, which equals 1 if p=0, no matter the value
+                // of q.
+            }else{
+                if(q==0.0)
+                    return HUGE_VAL;
                 kl += p*log(p/q);
             }
         }
         while(o) { // e->value is q=0: fail unless p=0
             p = o->value;
-            if(p != 0.0) {
-                kl = HUGE_VAL;
-#if 0
-                fprintf(stderr,"%s:%s:%d: missing expt for ",
-                        __FILE__,__func__,__LINE__);
-                printBits(sizeof(o->key), &o->key, stderr);
-                exit(EXIT_FAILURE);
-#endif
-                o = o->next;
-            } else {
-                o = o->next;
-                continue;
-            }
+            if(p != 0.0)
+                return HUGE_VAL;
+            o = o->next;
         }
         // Any remaining cases have p=0, so contribution to kl is 0.
     }
     return kl;
 }
+
+/// Negative log likelihood. Multinomial model.
+/// lnL is sum across site patterns of x*log(p), where x is an
+/// observed site pattern count and p its probability.
+double BranchTab_negLnL(const BranchTab *obs, const BranchTab *expt) {
+    assert(Dbl_near(1.0, BranchTab_sum(expt)));
+
+    int i;
+    double lnL=0.0;
+    double x;  // observed count
+    double p;  // probability under model
+    for(i=0; i < BT_DIM; ++i) {
+        BTLink *o, *e;  // observed and expected
+        o = obs->tab[i];
+        e = expt->tab[i];
+        while(o && e) {
+            if(o->key < e->key) {
+                x = o->value;
+                p = 0.0;
+                o = o->next;
+            }else if(o->key > e->key) {
+                x = 0.0;
+                p = e->value;
+                e = e->next;
+            }else {
+                assert(o->key == e->key);
+                x = o->value;
+                p = e->value;
+                e = e->next;
+                o = o->next;
+            }
+            if(p == 0.0) {
+                if(x != 0.0)
+                    return HUGE_VAL;  // blows up
+            }else
+                lnL += x*log(p);
+        }
+        while(o) { // e->value is p=0
+            x = o->value;
+            if(x != 0.0)
+                return HUGE_VAL; // blows up
+            o = o->next;
+        }
+        // Any remaining cases have x=0, so contribution to lnL is 0.
+    }
+    return -lnL;
+}
+
 
 #ifdef TEST
 
@@ -748,7 +778,7 @@ const char *tstInput =
     "derive bb from ab\n"
     "derive ab from abc\n"
     "derive c  from abc\n";
-const char *tstPatProbInput = 
+const char *tstPatProbInput =
     "#SitePat   obs\n"
     "a:b        2.0\n"
     "a:c        1.0\n"
@@ -799,7 +829,7 @@ int main(int argc, char **argv) {
     }
 
     if(verbose)
-        BranchTab_print(bt);
+        BranchTab_print(bt, stdout);
     BranchTab_free(bt);
 
 	Bounds   bnd = {
@@ -817,10 +847,10 @@ int main(int argc, char **argv) {
     assert(BranchTab_equals(bt, bt2));
 
     if(verbose)
-        BranchTab_print(bt);
+        BranchTab_print(bt, stdout);
     BranchTab_free(bt);
     GPTree_free(g);
-	unitTstResult("BranchTab", "OK");
+	unitTstResult("BranchTab", "untested");
     unlink(tstFname);
     unlink(tstPatProbFname);
 }
