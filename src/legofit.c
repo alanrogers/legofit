@@ -6,12 +6,9 @@ of separations and of episodes of gene flow, and levels of gene flow.
 
 # `legofit`: estimate population history from site pattern data
 
-    usage: legofit [options] -u <mut_rate> -n <genome_size> input.lgo sitepat.txt
-       where <mut_rate> is the mutation rate per nucleotide
-       site per generation, <genome_size> is the number of
-       nucleotides per haploid genome, file input.lgo describes
-       population history, and file sitepat.txt contains site
-       pattern frequencies.
+    usage: legofit [options] input.lgo sitepat.txt
+       where file input.lgo describes population history,
+       and file sitepat.txt contains site pattern frequencies.
     Options may include:
        -M <x> or --maxFlat <x>
           termination criterion
@@ -34,28 +31,20 @@ of separations and of episodes of gene flow, and levels of gene flow.
        -h or --help
           print this message
 
-Four arguments are required:
+Two arguments are required:
 
- - `-u`, the mutation rate per nucleotide site per generation;
- - `-n`, the number of nucleotide sites sequenced, including
-    monomorphic sites but not including sites that failed quality
-    control criteria;
  - an input file in @ref lgo ".lgo" format, which describes the history
    of population size, subdivision, and gene flow;
  - a file in the format produced by @ref tabpat "tabpat", which
    provides counts of site patterns in the data.
 
 Legofit estimates the values of all the parameters that are declared
-as "free" (rather than "fixed" or "gaussian") in the .lgo file. It
-does this by minimizing a "cost function", which measures the
-difference between observed and expected values. Currently, the cost
-function is a Chi-square statistic. Other options are available via
-compile-time option (see `typedefs.h`). Two of the alternatives,
-KL_COST and LNL_COST, would not require the -u and -n command-line
-arguments. On the other hand, theyq would not provide an internal
-molecular clock--the clock would be calibrated only by the time
-parameters in the .lgo file. I don't yet know which cost function is
-best.
+as "free" (rather than "fixed", "gaussian", or "constrained") in the
+.lgo file. It does this by minimizing a "cost function", which
+measures the difference between observed and expected
+values. Currently, the cost function is the negative of composite
+likelihood.  Other options are available via compile-time option (see
+`typedefs.h`). I don't yet know which cost function is best.
 
 Expected counts are estimated by computer simulation, and optimization
 is done using the "differential evolution" (DE) algorithm.  The DE

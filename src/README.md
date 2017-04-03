@@ -206,6 +206,9 @@ standard deviation is 1000. Programs `lego` and `legofit` use
 Monte-Carlo integration to integrate across the uncertainty in
 Gaussian parameters.
 
+Although the package still supports Gaussian parameters, I don't
+recommend them, for reasons discussed below.
+
 Our measure of population size is twice the effective size of the
 population, and we define two such variables:
 
@@ -394,3 +397,29 @@ distributions. It provides not only the overall KL divergence but also
 the contribution of each site pattern. Thus, it will tell you which
 site patterns are responsible for a poor fit between observed and
 expected site pattern frequencies.
+
+# Bias in `legofit`
+
+Biases arise in `legofit` because of the constraint that a child
+population cannot be older than its parent. If the parent's age is
+fixed, then it represents an inequality constraint on the age of the
+child. If the child is only slightly younger than the parent, the
+optimizer has problems. It will propose new values for the child's
+age. Those that increase the child's age will be rejected if they
+violate the inequality constraint. Those that decrease the child's age
+do not encounter this constraint. Consequently, the optimizer is more
+likely to move away from the constraint rather than toward it. This
+biases estimates away from the constraint, whenever the true value is
+close to the constraint.
+
+The magnitude of this bias depends on the spread of the sampling
+distribution of the child's age. If that sampling distribution is
+wide, then the DE algorithm will tend to take large steps and will
+encounter the boundary constraint sooner. This generates a large
+bias. If the sampling distribution is narrow, the bias is small.
+
+This bias is exacerbated if the parent's age is modeled as a Gaussian
+variable, because then the constraint is an interval rather than a
+point, and the optimizer encounters it sooner. For this reason, I have
+not used Gaussian variables in recent work.
+
