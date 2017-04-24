@@ -690,14 +690,14 @@ int PopNode_feasible(const PopNode *self, Bounds bnd) {
 	switch(self->nparents) {
 	case 2:
 		if(*self->start > *self->parent[1]->start) {
-            fprintf(stderr,"%s FAIL: start=%lg older than parent=%lg\n",
+            fprintf(stderr,"%s FAIL: child=%lg older than parent=%lg\n",
                     __func__, *self->start, *self->parent[1]->start);
             return 0;
         }
 		// fall through
 	case 1:
 		if(*self->start > *self->parent[0]->start) {
-            fprintf(stderr,"%s FAIL: start=%lg older than parent=%lg\n",
+            fprintf(stderr,"%s FAIL: child=%lg older than parent=%lg\n",
                     __func__, *self->start, *self->parent[0]->start);
 			return 0;
         }
@@ -709,14 +709,14 @@ int PopNode_feasible(const PopNode *self, Bounds bnd) {
 	switch(self->nchildren) {
 	case 2:
 		if(*self->start < *self->child[1]->start) {
-            fprintf(stderr,"%s FAIL: start=%lg younger than child=%lg\n",
+            fprintf(stderr,"%s FAIL: parent=%lg younger than child=%lg\n",
                     __func__, *self->start, *self->child[1]->start);
 			return 0;
         }
 		// fall through
 	case 1:
 		if(*self->start < *self->child[0]->start) {
-            fprintf(stderr,"%s FAIL: start=%lg younger than child=%lg\n",
+            fprintf(stderr,"%s FAIL: parent=%lg younger than child=%lg\n",
                     __func__, *self->start, *self->child[0]->start);
 			return 0;
         }
