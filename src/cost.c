@@ -41,7 +41,7 @@ double costFun(int dim, double x[dim], void *jdata, void *tdata) {
     DPRINTF(("%s:%d: nreps=%ld\n",__FILE__,__LINE__,nreps));
 
 	GPTree_setParams(cp->gptree, dim, x);
-	if(!GPTree_feasible(cp->gptree))
+	if(!GPTree_feasible(cp->gptree, 0))
 		return HUGE_VAL;
 
     BranchTab  *prob = patprob(cp->gptree, nreps, cp->doSing, rng);
