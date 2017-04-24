@@ -140,7 +140,7 @@ GPTree *GPTree_new(const char *fname, Bounds bnd) {
     fclose(fp);
     NodeStore_free(ns);
     GPTree_sanityCheck(self, __FILE__, __LINE__);
-    if(!GPTree_feasible(self)) {
+    if(!GPTree_feasible(self, 1)) {
         fprintf(stderr,"%s:%s:%d: file \"%s\" describes an infeasible tree.\n",
                 __FILE__,__func__,__LINE__,fname);
         GPTree_printParStore(self, stderr);
@@ -164,7 +164,7 @@ void GPTree_free(GPTree *self) {
 GPTree *GPTree_dup(const GPTree *old) {
     assert(old);
     ParStore_constrain(old->parstore);
-	assert(GPTree_feasible(old));
+	assert(GPTree_feasible(old, 0));
     if(old->rootGene != NULL) {
         fprintf(stderr,"%s:%s:%d: old->rootGene must be NULL on entry\n",
                 __FILE__,__func__,__LINE__);
@@ -226,7 +226,7 @@ GPTree *GPTree_dup(const GPTree *old) {
 
     GPTree_sanityCheck(new, __FILE__, __LINE__);
     assert(GPTree_equals(old, new));
-    if(!GPTree_feasible(new)) {
+    if(!GPTree_feasible(new, 0)) {
         pthread_mutex_lock(&outputLock);
         fflush(stdout);
         dostacktrace(__FILE__,__LINE__,stderr);
@@ -235,7 +235,7 @@ GPTree *GPTree_dup(const GPTree *old) {
         exit(EXIT_FAILURE);
     }
     ParStore_constrain(new->parstore);
-	assert(GPTree_feasible(new));
+	assert(GPTree_feasible(new, 1));
     return new;
 }
 
@@ -296,9 +296,9 @@ unsigned    GPTree_nsamples(GPTree *self) {
 }
 
 /// Are parameters within the feasible region?
-int GPTree_feasible(const GPTree *self) {
+int GPTree_feasible(const GPTree *self, int verbose) {
     ParStore_constrain(self->parstore);
-	return PopNode_feasible(self->rootPop, self->bnd);
+	return PopNode_feasible(self->rootPop, self->bnd, verbose);
 }
 
 
