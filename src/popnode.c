@@ -674,23 +674,33 @@ static void PopNode_gaussian_r(PopNode *self, Bounds bnd,
 
 /// Return 1 if parameters satisfy inequality constraints, or 0 otherwise.
 int PopNode_feasible(const PopNode *self, Bounds bnd) {
-	if( *self->twoN < bnd.lo_twoN)
+	if( *self->twoN < bnd.lo_twoN || *self->twoN > bnd.hi_twoN) {
+        fprintf(stderr,"%s FAIL: twoN=%lg not in [%lg, %lg]\n",
+                __func__, *self->twoN, bnd.lo_twoN, bnd.hi_twoN);
 		return 0;
+    }
 
-	if( *self->twoN > bnd.hi_twoN)
+	if( *self->start > bnd.hi_t || *self->start < bnd.lo_t) {
+        fprintf(stderr,"%s FAIL: start=%lg not in [%lg, %lg]\n",
+                __func__, *self->start,
+                bnd.lo_t, bnd.hi_t);
 		return 0;
-
-	if( *self->start > bnd.hi_t || *self->start < bnd.lo_t)
-		return 0;
+    }
 
 	switch(self->nparents) {
 	case 2:
-		if(*self->start > *self->parent[1]->start)
-			return 0;
+		if(*self->start > *self->parent[1]->start) {
+            fprintf(stderr,"%s FAIL: start=%lg older than parent=%lg\n",
+                    __func__, *self->start, *self->parent[1]->start);
+            return 0;
+        }
 		// fall through
 	case 1:
-		if(*self->start > *self->parent[0]->start)
+		if(*self->start > *self->parent[0]->start) {
+            fprintf(stderr,"%s FAIL: start=%lg older than parent=%lg\n",
+                    __func__, *self->start, *self->parent[0]->start);
 			return 0;
+        }
 		break;
 	default:
 		break;
@@ -698,20 +708,29 @@ int PopNode_feasible(const PopNode *self, Bounds bnd) {
 
 	switch(self->nchildren) {
 	case 2:
-		if(*self->start < *self->child[1]->start)
+		if(*self->start < *self->child[1]->start) {
+            fprintf(stderr,"%s FAIL: start=%lg younger than child=%lg\n",
+                    __func__, *self->start, *self->child[1]->start);
 			return 0;
+        }
 		// fall through
 	case 1:
-		if(*self->start < *self->child[0]->start)
+		if(*self->start < *self->child[0]->start) {
+            fprintf(stderr,"%s FAIL: start=%lg younger than child=%lg\n",
+                    __func__, *self->start, *self->child[0]->start);
 			return 0;
+        }
 		break;
 	default:
 		break;
 	}
 
     if(self->mix != NULL) {
-		if(*self->mix < 0.0 || *self->mix > 1.0)
+		if(*self->mix < 0.0 || *self->mix > 1.0) {
+            fprintf(stderr,"%s FAIL: mix=%lg not in [0, 1]\n",
+                    __func__, *self->twoN);
 			return 0;
+        }
     }
 
     int i;

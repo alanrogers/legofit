@@ -13,6 +13,7 @@
 #include <ctype.h>
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_rng.h>
+#include <limits.h>
 #include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -114,18 +115,15 @@ void eprintf(const char *fmt, ...) {
 FILE *efopen(const char *restrict name, const char *restrict mode) {
     FILE *fp = fopen(name, mode);
     if(fp==NULL) {
-        errno=0;
-        char errbuff[50], *cwd = getwd(NULL);
-        if(cwd==NULL) {
-            strerror_r(errno, errbuff, sizeof(errbuff));
-            fprintf(stderr,"%s:%d: can't open file \"%s\".\n"
-                    "   getcwd error: %s\n",
-                    __FILE__,__LINE__, name, errbuff);
+        char cwd[PATH_MAX], *p;
+        p = getcwd(cwd, sizeof(cwd));
+        if(NULL == p) {
+            fprintf(stderr, "%s:%d: can't open file \"%s.\"\n",
+                    __FILE__, __LINE__, name);
         }else{
             fprintf(stderr,"%s:%d: can't open file \"%s.\"\n"
-                    "   Current dir: %s\n",
+                    "   in directory \"%s\".\n",
                     __FILE__, __LINE__, name, cwd);
-            free(cwd);
         }
         exit(EXIT_FAILURE);
     }
