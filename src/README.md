@@ -18,6 +18,9 @@ gene flow. The package consists of the following programs
 * @ref bootci "bootci.py", which uses multiple legofit output files
   (one for the real data and one for each bootstrap replicate) to
   generate bootstrap confidence intervals for estimated parameters.
+* @ref flatfile "flatfile.py", which reads a list of legofit output
+  files and writes a flat file with a row for each legofit file and a
+  column for each parameter.
 * @ref diverg "diverg.py", which compares two distributions of site
   pattern frequencies, using the Kullback-Leibler (KL) divergence.
 
@@ -387,8 +390,8 @@ sequentially. As each job can take several hours, a full bootstrap may
 take several days.
 
 Having run `legofit` on the real data and all bootstrap replicates,
-you can use @ref bootci "bootci.py" to summarize the information in
-all the resulting output files.
+you can use @ref bootci "bootci.py" and @ref flatfile "flatfile.py" to
+summarize the information in the resulting output files.
 
 Finally, @ref diverg "diverg.py" can be used for comparing two sets of
 site-pattern counts or frequencies. It uses the Kullback-Leibler (KL)
