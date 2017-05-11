@@ -17,12 +17,26 @@
 #
 #    The program writes to standard output.
 #
-#For example, the command
+#For example, suppose that s2.legofit contains estimates from the real
+#data, and estimates from bootstrap replicates are in files with names
+# s2boot0.legofit, s2boot1.legofit, and so on. Then the following command
 #
-#    flatfile.py *.legofit
+#    flatfile.py s2.legofit s2boot*.legofit
 #
-#would summarize all .legofit files in the curent directory.
+#All the legofit must estimate the same parameters.
 #
+#The output begins with two lines of comment, which begin with a sharp
+#character in column 1 and give (1) the date and time at which the
+#program was run, and (2) the names of all the input files. The output
+#then continues with (3) a row for each input file and a column for
+#each parameter. Columns are separated by a single space character. To
+#make the rows and columns pretty, try:
+#
+#    flatfile.py s2.legofit s2boot*.legofit | grep -v ^# | column -t
+#
+#The "grep" and "column" utilities are standard on Linux and OS X but
+#not on Windows.
+
 # @copyright Copyright (c) 2017, Alan R. Rogers
 # <rogers@anthro.utah.edu>. This file is released under the Internet
 # Systems Consortium License, which can be found in file "LICENSE".
