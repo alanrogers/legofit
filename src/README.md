@@ -242,7 +242,7 @@ We have one more variable to declare:
     mixFrac free  mN=0.02           # Neanderthal admixture into y
 
 The "mixFrac" command declares a "mixture fraction"--the fraction of a
-some population that drives from introgression. As above, it could
+some population that derives from introgression. As above, it could
 have been fixed, gaussian, or constrained.
 
 The next few lines of the input file declare the segments of the
