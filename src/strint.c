@@ -216,6 +216,8 @@ int main(int argc, char **argv) {
         assert(i == StrInt_get(si, key));
     }
 	errno = 0;
+    fflush(stdout);
+    fprintf(stderr,"\"Unknown chromosome\" error should follow this line.\n");
 	assert(-1 == StrInt_get(si, "notthere"));
 	assert(errno == EDOM);
 

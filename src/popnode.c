@@ -972,10 +972,11 @@ int main(int argc, char **argv) {
 		PopNode_printShallow(p0, stdout);
     }
 
+    ParStore *ps = ParStore_new();
     gsl_rng    *rng = gsl_rng_alloc(gsl_rng_taus);
     unsigned long rngseed = (unsigned long) time(NULL);
     gsl_rng_set(rng, rngseed);
-    PopNode_randomize(p1, bnd, rng);
+    PopNode_randomize(p1, bnd, ps, rng);
     gsl_rng_free(rng);
 
 	if(verbose) {
@@ -1041,6 +1042,8 @@ int main(int argc, char **argv) {
     SampNdx_sanityCheck(&sndx2, __FILE__, __LINE__);
     assert(SampNdx_equals(&sndx, &sndx2));
     assert(SampNdx_ptrsLegal(&sndx2, v2, v2+nseg));
+
+    ParStore_free(ps);
 
 	unitTstResult("SampNdx", "OK");
 
