@@ -36,39 +36,39 @@ int main(int argc, char* argv[]){
 	double x=1.0, y=2.0, z=3.0;
 	double xx=1.0, yy=2.0, zz=3.0;
 	ParKeyVal *pkv = NULL;
-	bool isfree;
+	ParamStatus pstat;
 
-	pkv = ParKeyVal_add(pkv, "y", &y, true);
-	pkv = ParKeyVal_add(pkv, "x", &x, false);
-	pkv = ParKeyVal_add(pkv, "z", &z, true);
+	pkv = ParKeyVal_add(pkv, "y", &y, Free);
+	pkv = ParKeyVal_add(pkv, "x", &x, Fixed);
+	pkv = ParKeyVal_add(pkv, "z", &z, Free);
 
 	double *ptr;
-	ptr = ParKeyVal_get(pkv, &isfree, "x");
+	ptr = ParKeyVal_get(pkv, &pstat, "x");
 	assert(ptr == &x);
-	assert(isfree == false);
+	assert(pstat == Fixed);
 	assert(*ptr == 1.0);
 
-	ptr = ParKeyVal_get(pkv, &isfree, "y");
+	ptr = ParKeyVal_get(pkv, &pstat, "y");
 	assert(ptr == &y);
-	assert(isfree == true);
+	assert(pstat == Free);
 	assert(*ptr == 2.0);
-		   
-	ptr = ParKeyVal_get(pkv, &isfree, "z");
+
+	ptr = ParKeyVal_get(pkv, &pstat, "z");
 	assert(ptr == &z);
-	assert(isfree == true);
+	assert(pstat == Free);
 	assert(*ptr == 3.0);
 
-	assert(NULL == ParKeyVal_get(pkv, &isfree, "nonexistent"));
-	assert(isfree == true);
+	assert(NULL == ParKeyVal_get(pkv, &pstat, "nonexistent"));
+	assert(pstat == Free); // should be unchanged
 
 	if(verbose)
 		ParKeyVal_print(pkv, stdout);
 
     ParKeyVal *pkv2 = NULL;
 
-	pkv2 = ParKeyVal_add(pkv2, "x", &xx, false);
-	pkv2 = ParKeyVal_add(pkv2, "z", &zz, true);
-	pkv2 = ParKeyVal_add(pkv2, "y", &yy, true);
+	pkv2 = ParKeyVal_add(pkv2, "x", &xx, Fixed);
+	pkv2 = ParKeyVal_add(pkv2, "z", &zz, Free);
+	pkv2 = ParKeyVal_add(pkv2, "y", &yy, Free);
     assert(ParKeyVal_equals(pkv, pkv2));
 	ParKeyVal_free(pkv2);
 	ParKeyVal_free(pkv);
