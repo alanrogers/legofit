@@ -7,7 +7,7 @@ opt := -DNDEBUG -O3  -finline-functions  # For full optimization
 prof :=
 incl := -I/usr/local/include -I/opt/local/include
 
-targets := lego legofit tabpat daf numcores
+targets := legosim legofit tabpat daf numcores
 pytargets := diverg.py bootci.py flatfile.py
 tests := xzeroin xbinary
 
@@ -43,11 +43,11 @@ test : $(tests)
 	-./xzeroin
 	@echo "ALL UNIT TESTS WERE COMPLETED."
 
-LEGO := lego.o patprob.o gptree.o binary.o jobqueue.o misc.o parse.o \
+LEGOSIM := legosim.o patprob.o gptree.o binary.o jobqueue.o misc.o parse.o \
   branchtab.o popnodetab.o lblndx.o tokenizer.o parstore.o parkeyval.o \
   popnode.o gene.o dprintf.o rngseed.o dtnorm.o
-lego : $(LEGO)
-	$(CC) $(CFLAGS) -o $@ $(LEGO) $(lib)
+legosim : $(LEGOSIM)
+	$(CC) $(CFLAGS) -o $@ $(LEGOSIM) $(lib)
 
 LEGOFIT := legofit.o patprob.o gptree.o binary.o jobqueue.o misc.o \
   parse.o branchtab.o popnodetab.o lblndx.o tokenizer.o parstore.o \

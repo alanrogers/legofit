@@ -30,15 +30,15 @@
 #be integers. They will be normalized in the output so that they sum
 #to unity.
 #
-#This input format is also the output format of the program @ref lego
-#"lego". This makes it possible to pipe lego output into
+#This input format is also the output format of the program @ref legosim
+#"legosim". This makes it possible to pipe legosim output into
 #diverg.py. For example, suppose we have a file called "input.lgo" in
 #@ref lgo "lgo" format, and a file called "sitepat.txt" containing
 #observed site-pattern counts such as those above. Then the command
 #
-#    lego -i 1000 input.lgo | diverg.py sitepat.txt -
+#    legosim -i 1000 input.lgo | diverg.py sitepat.txt -
 #
-#would compare the data in sitepat.txt to the output of the lego
+#would compare the data in sitepat.txt to the output of the legosim
 #command. This would produce something like the following:
 #
 #    SitePat sitepat.txt         -     KL
@@ -49,7 +49,7 @@
 #
 #The "sitepat.txt" column contains the data from file sitepat.txt,
 #re-expressed as relative frequencies. The "-" column summarizes the
-#lego output in the same fashion. The KL column lists contributions to
+#legosim output in the same fashion. The KL column lists contributions to
 #the Kulback-Leiebler (KL) divergence. When these contributions are
 #small, they are approximately equal to the difference between columns
 #3 and 2. Large KL contributions are marked with an asterisk. The
