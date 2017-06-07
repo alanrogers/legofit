@@ -314,9 +314,9 @@ root.
 
 Using this .lgo file as input, `legosim -i 10000` produces
 
-    #########################################################
+    ############################################################
     # legosim: generate site patterns by coalescent simulation #
-    #########################################################
+    ############################################################
 
     # Program was compiled: Feb 11 2017 11:38:05
     # Program was run: Sun Feb 12 11:11:35 2017
