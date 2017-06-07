@@ -1,11 +1,11 @@
 /**
-@file lego.c
-@page lego
+@file legosim.c
+@page legosim
 @brief Generate site patterns by coalescent simulation
 
-# `lego`: coalescent simulations within a network of populations
+# `legosim`: coalescent simulations within a network of populations
 
-    usage: lego [options] input_file
+    usage: legosim [options] input_file
        where options may include:
        -i <x> or --nItr <x>
           number of iterations in simulation
@@ -21,14 +21,14 @@ describes the history of population size, subdivision, and gene
 flow. By default (i.e. if the `-U` option is not used), the output
 looks like this:
 
-    #########################################################
-    # lego: generate site patterns by coalescent simulation #
-    #########################################################
+    ############################################################
+    # legosim: generate site patterns by coalescent simulation #
+    ############################################################
 
     # Program was compiled: Dec 25 2016 10:10:51
     # Program was run: Sun Dec 25 10:13:47 2016
 
-    # cmd: ./lego -i 10000 input.lgo
+    # cmd: ./legosim -i 10000 input.lgo
     # nreps                       : 10000
     # input file                  : input.lgo
     # not simulating mutations
@@ -55,14 +55,14 @@ haploid genome, including monomorphic sites but excluding those that
 fail quality control. For example, adding `-U 18` to the command above
 led to the following output:
 
-    #########################################################
-    # lego: generate site patterns by coalescent simulation #
-    #########################################################
+    ############################################################
+    # legosim: generate site patterns by coalescent simulation #
+    ############################################################
 
     # Program was compiled: Dec 25 2016 10:10:51
     # Program was run: Mon Dec 26 09:31:59 2016
 
-    # cmd: ./lego -i 10000 -U 18 input.lgo
+    # cmd: ./legosim -i 10000 -U 18 input.lgo
     # nreps                       : 10000
     # input file                  : input.lgo
     # mutations per haploid genome: 18.000000
@@ -108,7 +108,7 @@ extern unsigned long rngseed;
 void        usage(void);
 
 void usage(void) {
-    fprintf(stderr, "usage: lego [options] input_file_name\n");
+    fprintf(stderr, "usage: legosim [options] input_file_name\n");
     fprintf(stderr, "   where options may include:\n");
     tellopt("-i <x> or --nItr <x>", "number of iterations in simulation");
 	tellopt("-1 or --singletons", "Use singleton site patterns");
@@ -128,9 +128,9 @@ int main(int argc, char **argv) {
         {NULL, 0, NULL, 0}
     };
 
-    printf("#########################################################\n"
-           "# lego: generate site patterns by coalescent simulation #\n"
-           "#########################################################\n");
+    printf("############################################################\n"
+           "# legosim: generate site patterns by coalescent simulation #\n"
+           "############################################################\n");
     putchar('\n');
 
     int         i, j;

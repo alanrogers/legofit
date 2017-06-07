@@ -1,11 +1,11 @@
-#########################################################
-# lego: generate site patterns by coalescent simulation #
-#########################################################
+############################################################
+# legosim: generate site patterns by coalescent simulation #
+############################################################
 
 # Program was compiled: Dec 31 2016 10:15:33
 # Program was run: Thu Jan 12 22:14:54 2017
 
-# cmd: lego -U 18 -i 30 input.lgo
+# cmd: legosim -U 18 -i 30 input.lgo
 # nreps                       : 30
 # input file                  : input.lgo
 # mutations per haploid genome: 18.000000
