@@ -118,8 +118,18 @@ This will try to place the executables into directory "bin" in the
 user's home directory. Make sure this directory appears in your
 PATH, so that the shell can find it.
 
-To install in /usr/local/bin instead of $HOME/bin, type "sudo make
-ginstall". You'll need administrative privileges.
+There is also a facility for installing a "global" version of the code
+for other users. The first step (under unix-like operating systems) is
+to set up a "soft link" to the directory just above the target bin
+directory. Then type "sudo make ginstall". You'll need administrative
+privileges. For example, to install the software in `/usr/local/bin`:
+
+    cd                     # move into home directory
+	ln -s /usr/local group # now "group" points to `/usr/local`
+
+Then `cd` back into the `legofit` directory and type
+
+    sudo make ginstall     # install into /usr/local/bin
 
 This installation will work under unix-like operating systems, such as
 linux and Apple's osx. I haven't tried to port this software to
