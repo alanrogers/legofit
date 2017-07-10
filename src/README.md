@@ -204,27 +204,30 @@ population, the sizes of tip populations do not matter, so I set
 them all equal to "one". Next, three more time variables named "Txyn",
 "Tn", and "Txy".
 
-    time free     Txyn=25920        # archaic-modern separation time
-    time fixed     Tn=1897          # time of Neanderthal admixture
-    time gaussian  Txy=3788 sd=1000 # Africa-Eurasia separation time
+    time fixed    Tn=1897          # time of Neanderthal admixture
+    time free     Txyn=25920       # archaic-modern separation time
+    time free     Txy=3788         # Africa-Eurasia separation time
 
 The comments hint at the meanings of these variables; the values are
-in generations. The first of these variables is "free", which means
-that `legofit` will estimate its value. The second is "fixed", a
-category we have already discussed. The last is "gaussian", a new
-category.  Gaussian variables are used to represent exogeneous
-parameters whose values are known only approximately. They are modeled
-as Gaussian random variables. In this case, the mean is 3788 and the
-standard deviation is 1000. Programs `legosim` and `legofit` use
-Monte-Carlo integration to integrate across the uncertainty in
-Gaussian parameters.
+in generations. The first of these variables is "fixed" (see
+above). The other two are "free", which means that `legofit` will
+estimate its value.
 
-Although the package still supports Gaussian parameters, I don't
-recommend them, for reasons discussed below.
+It is also possible to define variables as "gaussian". For example,
+
+    time gaussian x=123 sd=10
+
+Gaussian variables are used to represent exogeneous parameters whose
+values are known only approximately. They are modeled as Gaussian
+random variables. In this case, the mean is 123 and the standard
+deviation is 10. Programs `legosim` and `legofit` use Monte-Carlo
+integration to integrate across the uncertainty in Gaussian
+parameters. Although the package still supports Gaussian parameters, I
+don't recommend them, for reasons discussed below. The Gaussian
+variable "x" defined will be ignored in what follows.
 
 Our measure of population size is twice the effective size of the
 population, and we define two such variables:
-
 
     twoN free     2Nn=1000          # archaic population size
     twoN constrained 2Nxy=10000 + -1.2*Txy # early modern population size
@@ -327,23 +330,25 @@ Using this .lgo file as input, `legosim -i 10000` produces
     ############################################################
     # legosim: generate site patterns by coalescent simulation #
     ############################################################
-
-    # Program was compiled: Feb 11 2017 11:38:05
-    # Program was run: Sun Feb 12 11:11:35 2017
-
-    # cmd: legosim -i 10000 input.lgo
-    # nreps                       : 10000
+    
+    # Program was compiled: Jun  8 2017 12:41:14
+    # Program was run: Mon Jul 10 14:06:22 2017
+    
+    # cmd: legosim -i 1000 input.lgo
+    # nreps                       : 1000
     # input file                  : input.lgo
     # not simulating mutations
     # excluding singleton site patterns.
     #       SitePat E[BranchLength]
-                x:y   17300.6263343
-                x:n       6.2055115
-                y:n     443.9389194
+                x:y   17466.0903975
+                x:n       4.3453445
+                y:n     367.5397837
 
 The program reports the mean branch length in generations of three
 site patterns. For example, "x:y" refers to the pattern in which the
-derived allele is present in the samples x and y but not in n.
+derived allele is present in the samples x and y but not in n. The 2nd
+column gives the expected length in generations of the branch on which
+mutations would generate the corresponding site pattern.
 
 # Using the package
 
