@@ -211,7 +211,7 @@ them all equal to "one". Next, three more time variables named "Txyn",
 The comments hint at the meanings of these variables; the values are
 in generations. The first of these variables is "fixed" (see
 above). The other two are "free", which means that `legofit` will
-estimate its value.
+estimate their values.
 
 It is also possible to define variables as "gaussian". For example,
 
