@@ -39,7 +39,7 @@ but not that from *Z*. If so, then this nucleotide position will be
 said to exhibit the "*xy* site pattern." We ignore cases in which the
 derived allele is present in none of the samples or in all of them.
 By default (without the `-1` argument of @ref legosim "legosim" and @ref
-legofit "legofit"), we also ignore "singleton site patterns"--those in
+legofit "legofit"), we also ignore "singleton site patterns"---those in
 which the derived allele appears only once. In other words, we
 consider only polymorphic, non-singleton site patterns. For the
 special case of the 3-population sample just described, there are only
@@ -224,7 +224,7 @@ deviation is 10. Programs `legosim` and `legofit` use Monte-Carlo
 integration to integrate across the uncertainty in Gaussian
 parameters. Although the package still supports Gaussian parameters, I
 don't recommend them, for reasons discussed below. The Gaussian
-variable "x" defined will be ignored in what follows.
+variable "x" just defined will be ignored in what follows.
 
 Our measure of population size is twice the effective size of the
 population, and we define two such variables:
@@ -238,7 +238,7 @@ Constraints are useful when analysis of bootstrap samples indicates a
 tight relationship between two or more free parameters. Constraints
 reduce the number of free parameters and allow more accurate
 estimates. In the constraint above, there are only two terms and one
-independent variable--"Txy". It is legal, however, to use any number of
+independent variable---"Txy". It is legal, however, to use any number of
 terms and independent variables. For example, we could have written
 
     twoN constrained 2Nxy=10000 + -1.2*Txy + 0.01*Txy*Txyn # OK
@@ -254,17 +254,17 @@ We have one more variable to declare:
 
     mixFrac free  mN=0.02           # Neanderthal admixture into y
 
-The "mixFrac" command declares a "mixture fraction"--the fraction of a
+The "mixFrac" command declares a "mixture fraction"---the fraction of a
 some population that derives from introgression. As above, it could
-have been fixed, gaussian, or constrained.
+have been fixed, Gaussian, or constrained.
 
 The next few lines of the input file declare the segments of the
 population network. The first of these is
 
     segment x     t=zero   twoN=one    samples=1  # Africa
 
-Here, "x" is the name of the segment, zero is the time at which it
-ends, and one is the population size. Note that "zero" and "one" are
+Here, "x" is the name of the segment, "zero" is the time at which it
+ends, and "one" is the population size. Note that "zero" and "one" are
 variables that we declared above. The "samples=1" phrase says that
 there is a genetic sample from the end of this segment. In other
 words, the date of the sample is "t=zero". If the segment has no
@@ -284,7 +284,7 @@ Segment "n" does not end at time zero, but rather at the time, Tn, of
 Neanderthal admixture. It has one sample, whose date is also Tn. This
 is a bit of a stretch, because it assumes that the Neanderthal genome
 lived at the same time as the episode of admixture. I make this
-assumption for simplicity--this is only an example. There are 3 more
+assumption for simplicity---this is only an example. There are 3 more
 segments to declare:
 
     segment y2    t=Tn     twoN=one               # pre-mig eurasia
@@ -296,7 +296,7 @@ have genetic samples.  Segment y2 represents the Eurasian population
 before the episode of admixture. Note that it ends at the same time as
 segment n. This is necessary, because we will want to mix y2 and n
 below to model gene flow. Also note that the size of xyn equals
-2Nn--the same variable we used in setting the size of segment n. This
+2Nn---the same variable we used in setting the size of segment n. This
 establishes a constraint: the sizes of XYN and N will always be equal,
 no matter how the optimizer adjusts the value of 2Nn.
 
@@ -332,17 +332,17 @@ Using this .lgo file as input, `legosim -i 10000` produces
     ############################################################
     
     # Program was compiled: Jun  8 2017 12:41:14
-    # Program was run: Mon Jul 10 14:06:22 2017
+    # Program was run: Tue Jul 11 09:18:00 2017
     
-    # cmd: legosim -i 1000 input.lgo
-    # nreps                       : 1000
+    # cmd: legosim -i 10000 input.lgo
+    # nreps                       : 10000
     # input file                  : input.lgo
     # not simulating mutations
     # excluding singleton site patterns.
     #       SitePat E[BranchLength]
-                x:y   17466.0903975
-                x:n       4.3453445
-                y:n     367.5397837
+                x:y   17493.5768947
+                x:n       5.7110115
+                y:n     467.3607849
 
 The program reports the mean branch length in generations of three
 site patterns. For example, "x:y" refers to the pattern in which the
