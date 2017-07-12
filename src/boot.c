@@ -274,7 +274,7 @@ Boot * Boot_new(int nchr, long nsnp[nchr], long nrep, int npat,
     Boot *self = malloc(sizeof(Boot));
     CHECKMEM(self);
     self->nchr = nchr;
-    self->bc = malloc(nchr * sizeof(BootChr));
+    self->bc = calloc(nchr, sizeof(BootChr *));
     CHECKMEM(self->bc);
 
     for(int i=0; i < nchr; ++i) {
