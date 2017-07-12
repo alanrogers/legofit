@@ -125,7 +125,7 @@ static void BootChr_allocArrays(BootChr * self) {
         CHECKMEM(self->start[i]);
 
         self->count[i] = calloc((unsigned long) self->npat,
-                                sizeof(self->count[0]));
+                                sizeof(self->count[i][0]));
         CHECKMEM(self->count[i]);
     }
 }
