@@ -29,39 +29,39 @@ extern pthread_mutex_t outputLock;
 /// tree. The gene tree is dynamic: it can be generated repeatedly via
 /// coalescent simulation.
 struct GPTree {
-    int nseg;         // number of segments in population tree.
-    PopNode *pnv;     // array of nseg PopNode objects
-    PopNode *rootPop; // root of population tree
-    Gene *rootGene;   // root of gene tree
-    Bounds bnd;       // legal range of twoN parameters and time parameters
-    ParStore *parstore; // Fixed and free parameters
-    LblNdx lblndx;    // Index of sample labels
-    SampNdx sndx;     // Index of sample pointers into PopNode objects.
+    int         nseg;           // number of segments in population tree.
+    PopNode    *pnv;            // array of nseg PopNode objects
+    PopNode    *rootPop;        // root of population tree
+    Gene       *rootGene;       // root of gene tree
+    Bounds      bnd;            // legal range of twoN parameters and time parameters
+    ParStore   *parstore;       // Fixed and free parameters
+    LblNdx      lblndx;         // Index of sample labels
+    SampNdx     sndx;           // Index of sample pointers into PopNode objects.
 };
 
 /// Print a description of parameters.
-void GPTree_printParStore(GPTree *self, FILE *fp) {
+void GPTree_printParStore(GPTree * self, FILE * fp) {
     ParStore_constrain(self->parstore);
-	ParStore_print(self->parstore, fp);
+    ParStore_print(self->parstore, fp);
 }
 
 /// Print a description of free parameters.
-void GPTree_printParStoreFree(GPTree *self, FILE *fp) {
-	ParStore_printFree(self->parstore, fp);
+void GPTree_printParStoreFree(GPTree * self, FILE * fp) {
+    ParStore_printFree(self->parstore, fp);
     ParStore_printConstrained(self->parstore, fp);
 }
 
 /// Randomly perturb all free parameters in the population tree while
 /// maintaining inequality constraints.
-void GPTree_randomize(GPTree *self, gsl_rng *rng) {
-	PopNode_randomize(self->rootPop, self->bnd, self->parstore, rng);
+void GPTree_randomize(GPTree * self, gsl_rng * rng) {
+    PopNode_randomize(self->rootPop, self->bnd, self->parstore, rng);
 }
 
 /// Set free parameters from an array.
 /// @param[in] n number of parameters in array, which should equal the
 /// number of free parameters in the GPTree.
 /// @param[in] x array of parameter values.
-void GPTree_setParams(GPTree *self, int n, double x[n]) {
+void GPTree_setParams(GPTree * self, int n, double x[n]) {
     assert(n == ParStore_nFree(self->parstore));
     ParStore_setFreeParams(self->parstore, n, x);
     ParStore_constrain(self->parstore);
@@ -71,13 +71,13 @@ void GPTree_setParams(GPTree *self, int n, double x[n]) {
 /// @param[out] n number of parameters in array, which should equal the
 /// number of free parameters in the GPTree.
 /// @param[out] x array into which parameters will be copied
-void GPTree_getParams(GPTree *self, int n, double x[n]) {
+void GPTree_getParams(GPTree * self, int n, double x[n]) {
     assert(n == ParStore_nFree(self->parstore));
     ParStore_getFreeParams(self->parstore, n, x);
 }
 
 /// Return number of free parameters
-int GPTree_nFree(const GPTree *self) {
+int GPTree_nFree(const GPTree * self) {
     return ParStore_nFree(self->parstore);
 }
 
@@ -90,15 +90,14 @@ int GPTree_nFree(const GPTree *self) {
 /// @param[in] nreps number of replicate gene trees to simulate
 /// @param[in] doSing if doSing is non-zero, singleton site patterns
 /// will be tabulated.
-void GPTree_simulate(GPTree *self, BranchTab *branchtab, gsl_rng *rng,
+void GPTree_simulate(GPTree * self, BranchTab * branchtab, gsl_rng * rng,
                      unsigned long nreps, int doSing) {
     unsigned long rep;
     ParStore_constrain(self->parstore);
     for(rep = 0; rep < nreps; ++rep) {
-        PopNode_clear(self->rootPop); // remove old samples
+        PopNode_clear(self->rootPop);   // remove old samples
         SampNdx_populateTree(&(self->sndx));    // add new samples
-        PopNode_gaussian(self->rootPop, self->bnd,
-                         self->parstore, rng);
+        PopNode_gaussian(self->rootPop, self->bnd, self->parstore, rng);
 
         // coalescent simulation generates gene genealogy within
         // population tree.
@@ -116,8 +115,8 @@ void GPTree_simulate(GPTree *self, BranchTab *branchtab, gsl_rng *rng,
 }
 
 /// GPTree constructor
-GPTree *GPTree_new(const char *fname, Bounds bnd) {
-    GPTree *self = malloc(sizeof(GPTree));
+GPTree     *GPTree_new(const char *fname, Bounds bnd) {
+    GPTree     *self = malloc(sizeof(GPTree));
     CHECKMEM(self);
 
     memset(self, 0, sizeof(GPTree));
@@ -125,13 +124,13 @@ GPTree *GPTree_new(const char *fname, Bounds bnd) {
     self->parstore = ParStore_new();
     LblNdx_init(&self->lblndx);
     SampNdx_init(&self->sndx);
-    FILE *fp = efopen(fname, "r");
+    FILE       *fp = efopen(fname, "r");
     self->nseg = countSegments(fp);
     rewind(fp);
     self->pnv = malloc(self->nseg * sizeof(self->pnv[0]));
     CHECKMEM(self->pnv);
 
-    NodeStore *ns = NodeStore_new(self->nseg, self->pnv);
+    NodeStore  *ns = NodeStore_new(self->nseg, self->pnv);
     CHECKMEM(ns);
 
     self->rootPop = mktree(fp, &self->sndx, &self->lblndx, self->parstore,
@@ -141,8 +140,9 @@ GPTree *GPTree_new(const char *fname, Bounds bnd) {
     NodeStore_free(ns);
     GPTree_sanityCheck(self, __FILE__, __LINE__);
     if(!GPTree_feasible(self, 1)) {
-        fprintf(stderr,"%s:%s:%d: file \"%s\" describes an infeasible tree.\n",
-                __FILE__,__func__,__LINE__,fname);
+        fprintf(stderr,
+                "%s:%s:%d: file \"%s\" describes an infeasible tree.\n",
+                __FILE__, __func__, __LINE__, fname);
         GPTree_printParStore(self, stderr);
         exit(EXIT_FAILURE);
     }
@@ -150,7 +150,7 @@ GPTree *GPTree_new(const char *fname, Bounds bnd) {
 }
 
 /// GPTree destructor.
-void GPTree_free(GPTree *self) {
+void GPTree_free(GPTree * self) {
     Gene_free(self->rootGene);
     self->rootGene = NULL;
     PopNode_clear(self->rootPop);
@@ -161,25 +161,24 @@ void GPTree_free(GPTree *self) {
 }
 
 /// Duplicate a GPTree object
-GPTree *GPTree_dup(const GPTree *old) {
+GPTree     *GPTree_dup(const GPTree * old) {
     assert(old);
     ParStore_constrain(old->parstore);
-	assert(GPTree_feasible(old, 0));
+    assert(GPTree_feasible(old, 0));
     if(old->rootGene != NULL) {
-        fprintf(stderr,"%s:%s:%d: old->rootGene must be NULL on entry\n",
-                __FILE__,__func__,__LINE__);
+        fprintf(stderr, "%s:%s:%d: old->rootGene must be NULL on entry\n",
+                __FILE__, __func__, __LINE__);
         exit(EXIT_FAILURE);
     }
     if(!PopNode_isClear(old->rootPop)) {
-        fprintf(stderr,"%s:%s:%d: clear GPTree of samples before call"
-                " to GPTree_dup\n",
-                __FILE__,__func__,__LINE__);
+        fprintf(stderr, "%s:%s:%d: clear GPTree of samples before call"
+                " to GPTree_dup\n", __FILE__, __func__, __LINE__);
         exit(EXIT_FAILURE);
     }
 
-    GPTree *new   = memdup(old, sizeof(GPTree));
+    GPTree     *new = memdup(old, sizeof(GPTree));
     new->parstore = ParStore_dup(old->parstore);
-    new->pnv      = memdup(old->pnv, old->nseg * sizeof(PopNode));
+    new->pnv = memdup(old->pnv, old->nseg * sizeof(PopNode));
 
     assert(old->nseg == new->nseg);
     CHECKMEM(new->parstore);
@@ -197,27 +196,27 @@ GPTree *GPTree_dup(const GPTree *old) {
      * sense. Ordinarily, ptr+3 means ptr + 3*sizeof(*ptr). We want it
      * to mean ptr+3*sizeof(char).
      */
-    int i, spar, spop;
-    size_t dpar, dpop;
+    int         i, spar, spop;
+    size_t      dpar, dpop;
 
     // Calculate offsets and signs
     if(new->parstore > old->parstore) {
         dpar = ((size_t) new->parstore) - ((size_t) old->parstore);
         spar = 1;
-    }else{
+    } else {
         dpar = ((size_t) old->parstore) - ((size_t) new->parstore);
         spar = -1;
     }
     if(new->pnv > old->pnv) {
         dpop = ((size_t) new->pnv) - ((size_t) old->pnv);
         spop = 1;
-    }else{
+    } else {
         dpop = ((size_t) old->pnv) - ((size_t) new->pnv);
         spop = -1;
     }
 
     SHIFT_PTR(new->rootPop, dpop, spop);
-    for(i=0; i < old->nseg; ++i) {
+    for(i = 0; i < old->nseg; ++i) {
         PopNode_shiftParamPtrs(&new->pnv[i], dpar, spar);
         PopNode_shiftPopNodePtrs(&new->pnv[i], dpop, spop);
     }
@@ -229,25 +228,26 @@ GPTree *GPTree_dup(const GPTree *old) {
     if(!GPTree_feasible(new, 0)) {
         pthread_mutex_lock(&outputLock);
         fflush(stdout);
-        dostacktrace(__FILE__,__LINE__,stderr);
-        fprintf(stderr,"%s:%d: new tree isn't feasible\n",__FILE__,__LINE__);
+        dostacktrace(__FILE__, __LINE__, stderr);
+        fprintf(stderr, "%s:%d: new tree isn't feasible\n", __FILE__,
+                __LINE__);
         pthread_mutex_unlock(&outputLock);
         exit(EXIT_FAILURE);
     }
     ParStore_constrain(new->parstore);
-	assert(GPTree_feasible(new, 1));
+    assert(GPTree_feasible(new, 1));
     return new;
 }
 
-void GPTree_sanityCheck(GPTree *self, const char *file, int line) {
+void GPTree_sanityCheck(GPTree * self, const char *file, int line) {
 #ifndef NDEBUG
-    REQUIRE(self->nseg > 0,                         file, line);
-    REQUIRE(self->pnv != NULL,                      file, line);
-    REQUIRE(self->rootPop >= self->pnv,             file, line);
+    REQUIRE(self->nseg > 0, file, line);
+    REQUIRE(self->pnv != NULL, file, line);
+    REQUIRE(self->rootPop >= self->pnv, file, line);
     REQUIRE(self->rootPop < self->pnv + self->nseg, file, line);
-    Bounds_sanityCheck(&self->bnd,                  file, line);
-    ParStore_sanityCheck(self->parstore,            file, line);
-    LblNdx_sanityCheck(&self->lblndx,               file, line);
+    Bounds_sanityCheck(&self->bnd, file, line);
+    ParStore_sanityCheck(self->parstore, file, line);
+    LblNdx_sanityCheck(&self->lblndx, file, line);
 #endif
 }
 
@@ -255,15 +255,15 @@ void GPTree_sanityCheck(GPTree *self, const char *file, int line) {
 /// with an error if the GPTree pointers are different but one or more
 /// of the internal pointers is the same.  Does not access rootPop or
 /// rootGene.
-int GPTree_equals(const GPTree *lhs, const GPTree *rhs) {
+int GPTree_equals(const GPTree * lhs, const GPTree * rhs) {
     if(lhs == rhs)
         return 0;
     if(lhs->pnv == rhs->pnv)
         eprintf("%s:%s:%d: two GPTree objects share a PopNode pointer\n",
-                __FILE__,__func__,__LINE__);
+                __FILE__, __func__, __LINE__);
     if(lhs->parstore == rhs->parstore)
         eprintf("%s:%s:%d: two GPTree objects share a ParStore pointer\n",
-                __FILE__,__func__,__LINE__);
+                __FILE__, __func__, __LINE__);
     if(!Bounds_equals(&lhs->bnd, &rhs->bnd))
         return 0;
     if(!ParStore_equals(lhs->parstore, rhs->parstore))
@@ -276,47 +276,46 @@ int GPTree_equals(const GPTree *lhs, const GPTree *rhs) {
 }
 
 /// Get the LblNdx object from a GPTree
-LblNdx GPTree_getLblNdx(GPTree *self) {
+LblNdx GPTree_getLblNdx(GPTree * self) {
     return self->lblndx;
 }
 
 /// Return pointer to array of lower bounds of free parameters
-double     *GPTree_loBounds(GPTree *self) {
+double     *GPTree_loBounds(GPTree * self) {
     return ParStore_loBounds(self->parstore);
 }
 
 /// Return pointer to array of upper bounds of free parameters
-double     *GPTree_upBounds(GPTree *self) {
+double     *GPTree_upBounds(GPTree * self) {
     return ParStore_upBounds(self->parstore);
 }
 
 /// Return number of samples.
-unsigned    GPTree_nsamples(GPTree *self) {
+unsigned GPTree_nsamples(GPTree * self) {
     return SampNdx_size(&self->sndx);
 }
 
 /// Are parameters within the feasible region?
-int GPTree_feasible(const GPTree *self, int verbose) {
+int GPTree_feasible(const GPTree * self, int verbose) {
     ParStore_constrain(self->parstore);
-	return PopNode_feasible(self->rootPop, self->bnd, verbose);
+    return PopNode_feasible(self->rootPop, self->bnd, verbose);
 }
-
 
 #ifdef TEST
 
-#include <string.h>
-#include <assert.h>
+#  include <string.h>
+#  include <assert.h>
 
-#ifdef NDEBUG
-#error "Unit tests must be compiled without -DNDEBUG flag"
-#endif
+#  ifdef NDEBUG
+#    error "Unit tests must be compiled without -DNDEBUG flag"
+#  endif
 
-#include <assert.h>
-#include <unistd.h>
+#  include <assert.h>
+#  include <unistd.h>
 
-#ifdef NDEBUG
-#error "Unit tests must be compiled without -DNDEBUG flag"
-#endif
+#  ifdef NDEBUG
+#    error "Unit tests must be compiled without -DNDEBUG flag"
+#  endif
 
 //      a-------|
 //              |ab--|
@@ -346,16 +345,14 @@ const char *tstInput =
     "segment abc t=Tabc   twoN=2Nabc\n"
     "mix    b  from bb + Mc * c\n"
     "derive a  from ab\n"
-    "derive bb from ab\n"
-    "derive ab from abc\n"
-    "derive c  from abc\n";
+    "derive bb from ab\n" "derive ab from abc\n" "derive c  from abc\n";
 int main(int argc, char **argv) {
 
-    int verbose=0;
+    int         verbose = 0;
 
     if(argc > 1) {
-        if(argc!=2 || 0!=strcmp(argv[1], "-v")) {
-            fprintf(stderr,"usage: xgptree [-v]\n");
+        if(argc != 2 || 0 != strcmp(argv[1], "-v")) {
+            fprintf(stderr, "usage: xgptree [-v]\n");
             exit(EXIT_FAILURE);
         }
         verbose = 1;
@@ -366,14 +363,14 @@ int main(int argc, char **argv) {
     fputs(tstInput, fp);
     fclose(fp);
 
-	Bounds   bnd = {
-		.lo_twoN = 0.0,
-		.hi_twoN = 1e7,
-		.lo_t = 0.0,
-		.hi_t = HUGE_VAL
-	};
-    GPTree *g = GPTree_new(fname, bnd);
-    GPTree *g2 = GPTree_dup(g);
+    Bounds      bnd = {
+        .lo_twoN = 0.0,
+        .hi_twoN = 1e7,
+        .lo_t = 0.0,
+        .hi_t = HUGE_VAL
+    };
+    GPTree     *g = GPTree_new(fname, bnd);
+    GPTree     *g2 = GPTree_dup(g);
     assert(GPTree_equals(g, g2));
 
     const LblNdx lblndx = GPTree_getLblNdx(g);
