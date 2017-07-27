@@ -59,7 +59,7 @@ SimArg    *SimArg_new(const GPTree *gptree, unsigned nreps, int doSing) {
     a->nreps = nreps;
     a->doSing = doSing;
     a->gptree = GPTree_dup(gptree);
-	assert(GPTree_feasible(a->gptree));
+	assert(GPTree_feasible(a->gptree, 0));
     a->branchtab = BranchTab_new();
 
     return a;
