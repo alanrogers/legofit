@@ -56,8 +56,9 @@ int main(int argc, char **argv) {
 
     printf("#%3s %10s %2s %2s %20s\n", "chr", "pos", "aa", "da", "daf");
     while(1) {
-        if(NULL==fgets(buff, buffsize, stdin))
+        if(NULL==fgets(buff, buffsize, stdin)) {
             break;
+        }
         if(NULL == strchr(buff, '\n') && !feof(stdin)) {
             fprintf(stderr, "%s:%d: Buffer overflow. size=%zu\n",
                     __FILE__,__LINE__, sizeof(buff));
@@ -91,17 +92,18 @@ int main(int argc, char **argv) {
         if(nref != 1 || nalt != 1 || naa != 1)
             continue;
 
-        // Skip if ref, alt, or aa are missing.
-		if(aa[0] == '.' || aa[0] == '-'
-           || ref[0] == '.' || ref[0] == '-'
-           || alt[0] == '.' || alt[0] == '-')
-			continue;
-
 #if 0
         fprintf(stderr,"  chr=%s pos=%s ref=%s alt=%s aa=%s\n",
                 chr?chr:"NULL", pos?pos:"NULL", ref?ref:"NULL",
                 alt?alt:"NULL", aa?aa:"NULL");
 #endif
+
+        // Skip if ref, alt, or aa are missing.
+		if(aa[0] == '.' || aa[0] == '-'
+           || ref[0] == '.' || ref[0] == '-'
+           || alt[0] == '.' || alt[0] == '-') {
+			continue;
+        }
 
         char alleles[10];
         strcpy(alleles, ref);
