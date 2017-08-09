@@ -207,6 +207,11 @@ void ParStore_free(ParStore * self) {
     for(i = 0; i < self->nGaussian; ++i)
         free(self->nameGaussian[i]);
 
+    for(i=0; i < self->nConstrained; ++i) {
+        free(self->nameConstrained[i]);
+        Constraint_free(self->constr[i]);
+    }
+
     ParKeyVal_free(self->pkv);
     free(self);
 }

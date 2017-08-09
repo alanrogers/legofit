@@ -90,6 +90,8 @@ void * CostPar_dup(const void * arg) {
 /// CostPar destructor.
 void CostPar_free(void *arg) {
     CostPar *self = (CostPar *) arg;
+    BranchTab_free(self->obs);
+    GPTree_free(self->gptree);
     if(self)
         free(self);
 }
