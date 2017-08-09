@@ -287,7 +287,7 @@ Boot * Boot_new(int nchr, long nsnp[nchr], long nrep, int npat,
 /// Destructor for class Boot.
 void Boot_free(Boot *self) {
     for(int i=0; i < self->nchr; ++i)
-        free(self->bc[i]);
+        BootChr_free(self->bc[i]);
     free(self->bc);
     free(self);
 }
