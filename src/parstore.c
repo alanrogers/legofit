@@ -896,6 +896,8 @@ int main(int argc, char **argv) {
     assert(Term_equals(term, term2));
     Term_free(term2);
     Term_free(term);
+    ParKeyVal_free(pkv);
+    ParKeyVal_free(pkv2);
     unitTstResult("Term", "OK");
 }
 #endif
