@@ -849,6 +849,7 @@ int main(int argc, char **argv) {
     if(verbose)
         BranchTab_print(bt, stdout);
     BranchTab_free(bt);
+    BranchTab_free(bt2);
     GPTree_free(g);
 	unitTstResult("BranchTab", "untested");
     unlink(tstFname);
