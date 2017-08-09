@@ -82,17 +82,7 @@ void Gene_free(Gene * gene) {
 #error "Unit tests must be compiled without -DNDEBUG flag"
 #endif
 
-int main(int argc, char **argv) {
-
-    int verbose=0;
-
-    if(argc > 1) {
-        if(argc!=2 || 0!=strcmp(argv[1], "-v")) {
-            fprintf(stderr,"usage: xgene [-v]\n");
-            exit(EXIT_FAILURE);
-        }
-        verbose = 1;
-    }
+int main(void) {
 
     tipId_t id1 = 1;
     Gene *g1 = Gene_new(id1);
@@ -146,6 +136,13 @@ int main(int argc, char **argv) {
 
     assert(BranchTab_size(bt) == 1);
     assert(2.0 == BranchTab_get(bt, (id1|id2)));
+
+    Gene_free(g1);
+    Gene_free(g2);
+    Gene_free(g3);
+    Gene_free(g4);
+    Gene_free(g5);
+    BranchTab_free(bt);
 
     unitTstResult("Gene", "OK");
 
