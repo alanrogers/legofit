@@ -111,7 +111,9 @@ PopNode    *PopNode_root(PopNode * self) {
     return NULL;
 }
 
-/// Remove all references to samples from tree of populations
+/// Remove all references to samples from tree of populations.
+/// Doesn't free the Gene objects, because they aren't owned by
+/// PopNode.
 void PopNode_clear(PopNode * self) {
     int         i;
     for(i = 0; i < self->nchildren; ++i)
@@ -342,7 +344,10 @@ void PopNode_mix(PopNode * child, double *mPtr, bool mixFree,
     PopNode_sanityCheck(native, __FILE__, __LINE__);
 }
 
-/// PopNode constructor
+/// PopNode constructor. Allocates a new Gene and puts it into
+/// the array within PopNode. The gene isn't owned by PopNode,
+/// however. It will eventually be freed by a recursive call to
+/// Gene_free, which will free the root Gene and all descendants.
 void PopNode_newGene(PopNode * self, unsigned ndx) {
     assert(1 + self->nsamples < MAXSAMP);
     assert(ndx < 8 * sizeof(tipId_t));
@@ -799,7 +804,8 @@ void SampNdx_init(SampNdx * self) {
 }
 
 /// Add samples for a single population. Should be called once for
-/// each sampled population.
+/// each sampled population. This justs sets a pointer and increments
+/// the count of pointers. It doesn't allocate anything.
 void SampNdx_addSamples(SampNdx * self, unsigned nsamples, PopNode * pnode) {
     unsigned    i;
     if(self->n + nsamples >= MAXSAMP)
@@ -811,7 +817,11 @@ void SampNdx_addSamples(SampNdx * self, unsigned nsamples, PopNode * pnode) {
 }
 
 /// Put samples into the gene tree. Should be done at the start of
-/// each simulation.
+/// each simulation. This allocates memory for each Gene in the sample
+/// and puts pointers to them into the PopNodes that are controlled by
+/// the SampNdx. The Gene objects aren't owned by SampNdx or
+/// PopNode. They will eventually be freed by a call to Gene_free,
+/// which recursively frees the root and all descendants.
 void SampNdx_populateTree(SampNdx * self) {
     unsigned    i;
     for(i = 0; i < self->n; ++i)
@@ -1017,6 +1027,15 @@ int main(int argc, char **argv) {
     SampNdx_populateTree(&sndx);
     assert(3 == PopNode_nsamples(pnode));
     SampNdx_sanityCheck(&sndx, __FILE__, __LINE__);
+
+    // Free Genes allocated within PopNode objects.
+    // This isn't part of the user interface. Ordinarily,
+    // Gene objects are freed recursively by a calling Gene_free on
+    // the root Gene. But we havn't linked these Genes into a tree,
+    // so I need to free them one at a time.
+    for(i=0; i < pnode->nsamples; ++i)
+        Gene_free(pnode->sample[i]);
+
     NodeStore_free(ns);
 
     SampNdx     sndx2 = {.n = 3 };
@@ -1030,12 +1049,20 @@ int main(int argc, char **argv) {
     SampNdx_addSamples(&sndx2, 1, pnode);
     SampNdx_addSamples(&sndx2, 2, pnode);
     SampNdx_populateTree(&sndx2);
-    NodeStore_free(ns2);
     SampNdx_sanityCheck(&sndx2, __FILE__, __LINE__);
     assert(SampNdx_equals(&sndx, &sndx2));
     assert(SampNdx_ptrsLegal(&sndx2, v2, v2 + nseg));
 
+    // Free Genes allocated within PopNode objects.
+    // See above for rationale.
+    for(i=0; i < pnode->nsamples; ++i)
+        Gene_free(pnode->sample[i]);
+
+    NodeStore_free(ns2);
+
     ParStore_free(ps);
+    Gene_free(g1);
+    Gene_free(g2);
 
     unitTstResult("SampNdx", "OK");
 

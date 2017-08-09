@@ -29,7 +29,7 @@ struct PopNode {
     double      *mix;            // ptr to frac of pop derived from parent[1]
     struct PopNode *parent[2];
     struct PopNode *child[2];
-    Gene       *sample[MAXSAMP];
+    Gene       *sample[MAXSAMP]; // not locally owned
     bool        twoNfree, startFree, mixFree; // true => parameter varies
     bool        touched;   // true => node has been visited during traversal
 };
