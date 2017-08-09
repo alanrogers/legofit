@@ -74,6 +74,10 @@ int main(int argc, char **argv) {
            mismatch, match+mismatch,
            100* mismatch / ((double) (match+mismatch)));
 
+    DAFReader_free(r[0]);
+    DAFReader_free(r[1]);
+    DAFReader_free(r[2]);
+
     unitTstResult("DAFReader", "untested");
     return 0;
 }
