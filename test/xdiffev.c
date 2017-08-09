@@ -254,6 +254,7 @@ int main(int argc, char *argv[]) {
         break;
     }
 
+    SimSched_free(simSched);
     gsl_rng_free(rng);
 
     return 0;
