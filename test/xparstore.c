@@ -211,7 +211,11 @@ int main(int argc, char **argv) {
 
     ParStore_free(ps);
     ParStore_free(ps2);
+    ParKeyVal_free(pkv);
+    ParKeyVal_free(pkv2);
     gsl_rng_free(rng);
+    Constraint_free(c);
+    Constraint_free(c2);
     unitTstResult("ParStore", "OK");
 
     return 0;
