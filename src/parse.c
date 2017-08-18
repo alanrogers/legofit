@@ -79,7 +79,7 @@
             fprintf(stderr, "%s:%d:"                               \
                     " input line incomplete in .lgo file.\n",      \
                     __FILE__,__LINE__);                            \
-            fprintf(stderr,"  input: %s\n", (orig));                 \
+            fprintf(stderr,"  input: %s\n", (orig));               \
             exit(EXIT_FAILURE);                                    \
         }                                                          \
     }while(0);
@@ -88,7 +88,7 @@
 #define ILLEGAL_INPUT(x,orig) do{                               \
         fprintf(stderr,"%s:%d: Illegal input: \"%s\"\n",        \
                 __FILE__,__LINE__, (x));                        \
-        fprintf(stderr,"  input: %s\n", (orig));                  \
+        fprintf(stderr,"  input: %s\n", (orig));                \
         exit(EXIT_FAILURE);                                     \
     }while(0)
 
