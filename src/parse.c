@@ -425,6 +425,8 @@ void parseDerive(char *next, PopNodeTab *poptbl,
     if(parNode == NULL) {
         fprintf(stderr, "%s:%d: parent segment \"%s\" undefined\n",
                  __FILE__,__LINE__, parName);
+        fprintf(stderr,"input: %s\n", orig);
+        exit(EXIT_FAILURE);
     }
     PopNode_addChild(parNode, childNode);
 }
