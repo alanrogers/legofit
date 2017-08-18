@@ -79,7 +79,7 @@
             fprintf(stderr, "%s:%d:"                               \
                     " input line incomplete in .lgo file.\n",      \
                     __FILE__,__LINE__);                            \
-            fprintf(stderr,"  input: %s", (orig));                 \
+            fprintf(stderr,"  input: %s\n", (orig));                 \
             exit(EXIT_FAILURE);                                    \
         }                                                          \
     }while(0);
@@ -88,7 +88,7 @@
 #define ILLEGAL_INPUT(x,orig) do{                               \
         fprintf(stderr,"%s:%d: Illegal input: \"%s\"\n",        \
                 __FILE__,__LINE__, (x));                        \
-        fprintf(stderr,"  input: %s", (orig));                  \
+        fprintf(stderr,"  input: %s\n", (orig));                  \
         exit(EXIT_FAILURE);                                     \
     }while(0)
 
@@ -162,7 +162,7 @@ void		parseParam(char *next, enum ParamType type,
 			fprintf(stderr, "%s:%s:%d: got %s when expecting \"fixed\","
                     " \"free\", \"gaussian\", or \"constrained\".\n",
 					__FILE__,__func__,__LINE__, tok);
-            fprintf(stderr,"input: %s", orig);
+            fprintf(stderr,"input: %s\n", orig);
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -174,7 +174,7 @@ void		parseParam(char *next, enum ParamType type,
 	if( !isalnum(*name) ) {
 		fprintf(stderr,"%s:%d: \"%s\" is not a legal parameter name.\n",
 				__FILE__,__LINE__, name);
-        fprintf(stderr,"input: %s", orig);
+        fprintf(stderr,"input: %s\n", orig);
         exit(EXIT_FAILURE);
     }
 
@@ -190,7 +190,7 @@ void		parseParam(char *next, enum ParamType type,
             fprintf(stderr,
                     "%s:%s:%d:Can't parse double.\n",
                     __FILE__,__func__,__LINE__);
-            fprintf(stderr,"input: %s", orig);
+            fprintf(stderr,"input: %s\n", orig);
             exit(EXIT_FAILURE);
         }
 
@@ -203,7 +203,7 @@ void		parseParam(char *next, enum ParamType type,
             if( 0 != strcmp(sdstr, "sd") ) {
                 fprintf(stderr,"%s:%s:%d: \"%s\" should be \"sd\".\n",
                         __FILE__,__func__,__LINE__, sdstr);
-                fprintf(stderr,"input: %s", orig);
+                fprintf(stderr,"input: %s\n", orig);
                 exit(EXIT_FAILURE);
             }
 
@@ -213,13 +213,13 @@ void		parseParam(char *next, enum ParamType type,
                 fprintf(stderr,
                         "%s:%s:%d:Can't parse double.\n",
                         __FILE__,__func__,__LINE__);
-                fprintf(stderr,"input: %s", orig);
+                fprintf(stderr,"input: %s\n", orig);
                 exit(EXIT_FAILURE);
             }
             if(sd <= 0.0) {
                 fprintf(stderr,"%s:%s:%d: Error sd =%lg <= 0.0\n",
                         __FILE__,__func__,__LINE__, sd);
-                fprintf(stderr,"input: %s", orig);
+                fprintf(stderr,"input: %s\n", orig);
                 exit(EXIT_FAILURE);
             }
         }
@@ -293,7 +293,7 @@ void parseSegment(char *next, PopNodeTab *poptbl, SampNdx *sndx,
     if(0 != strcmp("t", tok)) {
         fprintf(stderr, "Got %s when expecting \"t\" on input:\n",
                 tok);
-        fprintf(stderr,"input: %s", orig);
+        fprintf(stderr,"input: %s\n", orig);
         exit(EXIT_FAILURE);
     }
     tok = nextWhitesepToken(&next);
@@ -302,7 +302,7 @@ void parseSegment(char *next, PopNodeTab *poptbl, SampNdx *sndx,
 	if(NULL == tPtr) {
 		fprintf(stderr,"%s:%s:%d: Parameter \"%s\" is undefined\n",
 				__FILE__,__func__,__LINE__,tok);
-        fprintf(stderr,"input: %s", orig);
+        fprintf(stderr,"input: %s\n", orig);
         exit(EXIT_FAILURE);
     }
 
@@ -313,7 +313,7 @@ void parseSegment(char *next, PopNodeTab *poptbl, SampNdx *sndx,
     if(0 != strcmp("twoN", tok)) {
         fprintf(stderr, "Got %s when expecting \"twoN\" on input:\n",
                 tok);
-        fprintf(stderr,"input: %s", orig);
+        fprintf(stderr,"input: %s\n", orig);
         exit(EXIT_FAILURE);
     }
     tok = nextWhitesepToken(&next);
@@ -323,7 +323,7 @@ void parseSegment(char *next, PopNodeTab *poptbl, SampNdx *sndx,
 	if(NULL == twoNptr) {
 		fprintf(stderr,"%s:%s:%dParameter \"%s\" is undefined\n",
 				__FILE__,__func__,__LINE__, tok);
-        fprintf(stderr,"input: %s", orig);
+        fprintf(stderr,"input: %s\n", orig);
         exit(EXIT_FAILURE);
     }
 
@@ -335,21 +335,21 @@ void parseSegment(char *next, PopNodeTab *poptbl, SampNdx *sndx,
         if(0 != strcmp("samples", tok)) {
             fprintf(stderr, "%s:%s:%d: got %s when expecting \"samples\"\n",
                      __FILE__,__func__,__LINE__, tok);
-            fprintf(stderr,"input: %s", orig);
+            fprintf(stderr,"input: %s\n", orig);
             exit(EXIT_FAILURE);
         }
         if(getULong(&nsamples, &next, orig)) {
             fprintf(stderr, "%s:%s:%d: Can't parse unsigned int."
                     " Expecting value of \"samples\"\n",
                     __FILE__,__func__,__LINE__);
-            fprintf(stderr,"input: %s", orig);
+            fprintf(stderr,"input: %s\n", orig);
             exit(EXIT_FAILURE);
         }else {
             if(nsamples > MAXSAMP) {
                 fprintf(stderr,
                         "%s:%s:%d: %lu samples is too many: max is %d:\n",
                          __FILE__,__func__,__LINE__, nsamples, MAXSAMP);
-                fprintf(stderr,"input: %s", orig);
+                fprintf(stderr,"input: %s\n", orig);
                 exit(EXIT_FAILURE);
             }
         }
@@ -358,7 +358,7 @@ void parseSegment(char *next, PopNodeTab *poptbl, SampNdx *sndx,
     if(next){
         fprintf(stderr,"%s:%d: extra token(s) \"%s\" at end of line\n",
                  __FILE__,__LINE__, next);
-        fprintf(stderr,"input: %s", orig);
+        fprintf(stderr,"input: %s\n", orig);
         exit(EXIT_FAILURE);
     }
 
@@ -368,7 +368,7 @@ void parseSegment(char *next, PopNodeTab *poptbl, SampNdx *sndx,
     if(0 != PopNodeTab_insert(poptbl, popName, thisNode)) {
         fprintf(stderr,"%s:%d: duplicate \"segment %s\"\n",
                  __FILE__,__LINE__, popName);
-        fprintf(stderr,"input: %s", orig);
+        fprintf(stderr,"input: %s\n", orig);
         exit(EXIT_FAILURE);
     }
     LblNdx_addSamples(lndx, nsamples, popName);
@@ -395,7 +395,7 @@ void parseDerive(char *next, PopNodeTab *poptbl,
     if(0 != strcmp("from", tok)) {
         fprintf(stderr, "%s:%d: Got %s when expecting \"from\" on input:\n",
                 __FILE__,__LINE__,tok);
-        fprintf(stderr,"input: %s", orig);
+        fprintf(stderr,"input: %s\n", orig);
         exit(EXIT_FAILURE);
     }
 
@@ -407,7 +407,7 @@ void parseDerive(char *next, PopNodeTab *poptbl,
     if(next) {
         fprintf(stderr,"%s:%d: extra tokens \"%s\" at end of line\n",
                  __FILE__,__LINE__, next);
-        fprintf(stderr,"input: %s", orig);
+        fprintf(stderr,"input: %s\n", orig);
         exit(EXIT_FAILURE);
     }
 
@@ -416,7 +416,7 @@ void parseDerive(char *next, PopNodeTab *poptbl,
     if(childNode == NULL) {
         fprintf(stderr,"%s:%d: child segment \"%s\" undefined\n",
                  __FILE__,__LINE__, childName);
-        fprintf(stderr,"input: %s", orig);
+        fprintf(stderr,"input: %s\n", orig);
         exit(EXIT_FAILURE);
     }
 
@@ -451,7 +451,7 @@ void parseMix(char *next, PopNodeTab *poptbl, ParStore *parstore,
     if(0 != strcmp("from", tok)) {
         fprintf(stderr,"%s:%d: got %s when expecting \"from\" on input:\n",
                  __FILE__,__LINE__, tok);
-        fprintf(stderr,"input: %s", orig);
+        fprintf(stderr,"input: %s\n", orig);
         exit(EXIT_FAILURE);
     }
 
@@ -468,7 +468,7 @@ void parseMix(char *next, PopNodeTab *poptbl, ParStore *parstore,
 	if(NULL == mPtr) {
 		fprintf(stderr,"%s:%s:%d: Parameter \"%s\" is undefined\n",
 				__FILE__,__func__,__LINE__, tok);
-        fprintf(stderr,"input: %s", orig);
+        fprintf(stderr,"input: %s\n", orig);
         exit(EXIT_FAILURE);
     }
 
@@ -479,7 +479,7 @@ void parseMix(char *next, PopNodeTab *poptbl, ParStore *parstore,
     if(next) {
         fprintf(stderr, "%s:%d: extra token \"%s\" at end of line\n",
                  __FILE__,__LINE__, tok);
-        fprintf(stderr,"input: %s", orig);
+        fprintf(stderr,"input: %s\n", orig);
         exit(EXIT_FAILURE);
     }
 
@@ -488,7 +488,7 @@ void parseMix(char *next, PopNodeTab *poptbl, ParStore *parstore,
     if(childNode == NULL) {
         fprintf(stderr, "%s:%d: child segment \"%s\" undefined\n",
                  __FILE__,__LINE__, childName);
-        fprintf(stderr,"input: %s", orig);
+        fprintf(stderr,"input: %s\n", orig);
         exit(EXIT_FAILURE);
     }
 
@@ -497,7 +497,7 @@ void parseMix(char *next, PopNodeTab *poptbl, ParStore *parstore,
     if(parNode0 == NULL) {
         fprintf(stderr,"%s:%d: parent segment \"%s\" undefined\n",
                  __FILE__,__LINE__, parName[0]);
-        fprintf(stderr,"input: %s", orig);
+        fprintf(stderr,"input: %s\n", orig);
         exit(EXIT_FAILURE);
     }
 
@@ -506,7 +506,7 @@ void parseMix(char *next, PopNodeTab *poptbl, ParStore *parstore,
     if(parNode1 == NULL) {
         fprintf(stderr,"%s:%d: parent segment \"%s\" undefined\n",
                  __FILE__,__LINE__, parName[1]);
-        fprintf(stderr,"input: %s", orig);
+        fprintf(stderr,"input: %s\n", orig);
         exit(EXIT_FAILURE);
     }
 
@@ -633,7 +633,7 @@ int countSegments(FILE * fp) {
         if(!strchr(buff, '\n') && !feof(fp)) {
             fprintf(stderr, "ERR@%s:%d: input buffer overflow."
                     " buff size: %zu\n", __FILE__, __LINE__, sizeof(buff));
-            fprintf(stderr,"input: %s", orig);
+            fprintf(stderr,"input: %s\n", orig);
             exit(EXIT_FAILURE);
         }
 
