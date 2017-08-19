@@ -144,7 +144,7 @@ void BTLink_free(BTLink * self) {
 }
 
 /// Add a value to a BTLink object. On return, self->value
-/// equals the old value and the new one. If COST==CHISQR_COST,
+/// equals the old value plus the new one. If COST==CHISQR_COST,
 /// the function also adds the square of value to self->sumsqr.
 BTLink *BTLink_add(BTLink * self, tipId_t key, double value) {
     if(self == NULL || key < self->key) {
