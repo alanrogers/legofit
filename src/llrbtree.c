@@ -20,6 +20,14 @@ BSTNode *BSTNode_rotateLeft(BSTNode *h);
 BSTNode *BSTNode_rotateRight(BSTNode *h);
 void BSTNode_flipColors(BSTNode *h);
 
+void BSTNode_free(BSTNode *h) {
+    if(h == NULL)
+        return;
+    BSTNode_free(h->left);
+    BSTNode_free(h->right);
+    free(h);
+}
+
 val_t BSTNode_value(BSTNode *h) {
     return h->value;
 }
@@ -192,6 +200,9 @@ void BSTNode_print(BSTNode *h, FILE *fp, int indent) {
     int i;
     for(i=0; i<indent; ++i)
         fprintf(fp,"%d", i);
+
+    // This fprintf statement must be modified to reflect
+    // the definitions of bstkey_t and val_t.
     fprintf(fp, "[%u, %lf, %s]\n",
             h->key,
             h->value,
@@ -222,6 +233,7 @@ int main(int argc, char **argv) {
     if(verbose)
         BSTNode_print(root, stdout, 0);
 
+    // Search for nodes that exist. Each search should succeed.
     for(i=0; i < 100; ++i) {
         bstkey_t key = (bstkey_t) i;
         val_t value = (val_t) i;
@@ -231,10 +243,13 @@ int main(int argc, char **argv) {
         assert(BSTNode_value(found) == value);
     }
 
+    // Search for nodes that don't exist. Each search should fail.
     for(i=100; i < 110; ++i) {
         bstkey_t key = (bstkey_t) i;
         BSTNode *found = BSTNode_search(root, key);
         assert(found == NULL);
     }
+    BSTNode_free(root);
+    printf("%-26s %s\n", "BSTNode", "OK");
 }
 #endif
