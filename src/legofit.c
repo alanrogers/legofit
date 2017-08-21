@@ -491,9 +491,12 @@ int main(int argc, char **argv) {
 
     status = diffev(dim, estimate, &cost, &yspread, dep, rng);
 
-    printf("DiffEv %s. cost=%0.5lg spread=%0.5lg relspread=%e\n",
-           status==0 ? "converged" : "FAILED", cost, yspread,
-           yspread/cost);
+    printf("DiffEv %s. cost=%0.5lg spread=%0.5lg\n",
+           status==0 ? "converged" : "FAILED", cost, yspread);
+#if COST==LNL_COST
+    printf("  relspread=%e", yspread/cost);
+#endif
+    putchar('\n');
 
     // Get mean site pattern branch lengths
     GPTree_setParams(gptree, dim, estimate);
