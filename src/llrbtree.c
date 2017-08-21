@@ -37,6 +37,7 @@ BSTNode *BSTNode_new(bstkey_t key, val_t value) {
     }
     self->key = key;
     self->value = value;
+    self->color = RED;
     return self;
 }
 
@@ -190,7 +191,7 @@ void BSTNode_print(BSTNode *h, FILE *fp, int indent) {
     BSTNode_print(h->left, fp, indent+1);
     int i;
     for(i=0; i<indent; ++i)
-        putc(' ', fp);
+        fprintf(fp,"%d", i);
     fprintf(fp, "[%u, %lf, %s]\n",
             h->key,
             h->value,
