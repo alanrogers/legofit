@@ -4,8 +4,8 @@ opt :=  -O0 -fno-inline-functions -DDEBUG
 prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
 tests := xbinary xboot xbranchtab xdafreader xdiffev xgene \
-  xgptree xpopnodetab xjobqueue xlblndx xparkeyval xparse xparstore \
-  xpopnode xsimsched xstrint xdtnorm xterm xmisc
+  xgptree xpopnodetab xjobqueue xlblndx xllrbtree xparkeyval xparse \
+  xparstore xpopnode xsimsched xstrint xdtnorm xterm xmisc
 
 CC := gcc
 
@@ -45,6 +45,7 @@ test : $(tests)
 	-./xgptree
 	-./xjobqueue
 	-./xlblndx
+	-./xllrbtree
 	-./xmisc
 	-./xparkeyval
 	-./xparse
@@ -151,6 +152,13 @@ xlblndx.o : lblndx.c
 XLBLNDX := xlblndx.o misc.o parkeyval.o binary.o
 xlblndx : $(XLBLNDX)
 	$(CC) $(CFLAGS) -o $@ $(XLBLNDX) $(lib)
+
+xllrbtree.o : llrbtree.c
+	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/llrbtree.c
+
+XLLRBTREE := xllrbtree.o
+xllrbtree : $(XLLRBTREE)
+	$(CC) $(CFLAGS) -o $@ $(XLLRBTREE) $(lib)
 
 xbranchtab.o : branchtab.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/branchtab.c
