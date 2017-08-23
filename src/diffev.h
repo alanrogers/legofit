@@ -19,6 +19,7 @@ struct DiffEvPar {
     int         maxFlat;
     void       *jobData;
     SimSched   *simSched;
+    double      ytol;    // stop when yspread <= ytol
     void       *(*JobData_dup) (const void *);
     void        (*JobData_free) (void *);
     double      (*objfun) (int dim, double x[dim], void *, void *);

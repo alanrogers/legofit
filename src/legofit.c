@@ -234,6 +234,7 @@ int main(int argc, char **argv) {
     double      u = 0.0;       // mutation rate per site per generation
     long        nnuc = 0;      // number of nucleotides per haploid genome
 #endif
+    double      ytol = 1e-4;   // stop when yspread <= ytol
 	int         strategy = 1;
 	int         ptsPerDim = 10;
     int         verbose = 0;
@@ -391,6 +392,7 @@ int main(int argc, char **argv) {
     printf("#    maxFlat         : %d\n", maxFlat);
     printf("#    F               : %lf\n", F);
     printf("#    CR              : %lf\n", CR);
+    printf("#    ytol            : %lf\n", ytol);
     printf("# nthreads           : %d\n", nThreads);
     printf("# lgo input file     : %s\n", lgofname);
     printf("# site pat input file: %s\n", patfname);
@@ -472,7 +474,8 @@ int main(int argc, char **argv) {
 		.ThreadState_free = ThreadState_free,
         .initData = gptree,
         .initialize = initStateVec,
-        .simSched = simSched
+        .simSched = simSched,
+        .ytol = ytol
     };
 
     double      estimate[dim];

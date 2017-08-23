@@ -802,13 +802,22 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
             }
             if(sigstat==SIGINT)
                 break;
+#if 0
             if(stage==nstages-1 && flat==dep.maxFlat)
                 break;
+#else
+            if(stage==nstages-1 && *yspread <= dep.ytol)
+                break;
+#endif
         }
     }
 
     JobQueue_noMoreJobs(jq);
+#if 0
     if(flat >= dep.maxFlat && *yspread < HUGE_VAL) {
+#else
+    if(*yspread <= dep.ytol) {
+#endif
         status = 0;
         if(verbose)
             fputs("Converged\n", stdout);
