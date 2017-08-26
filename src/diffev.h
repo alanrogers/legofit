@@ -16,7 +16,6 @@ struct DiffEvPar {
     int         dim, ptsPerDim, refresh, strategy, nthreads, verbose;
     unsigned long seed;
     double      F, CR;
-    int         maxFlat;
     void       *jobData;
     SimSched   *simSched;
     double      ytol;    // stop when yspread <= ytol
@@ -28,7 +27,7 @@ struct DiffEvPar {
     // state variables, which are passed to each job. This is useful,
     // for example, if you want to allocate a random number generator
     // that is used sequentially by all jobs executed by a single
-    // thread. 
+    // thread.
     void       *threadData;
     void       *(*ThreadState_new) (void *);
     void        (*ThreadState_free) (void *);

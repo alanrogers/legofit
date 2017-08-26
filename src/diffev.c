@@ -670,7 +670,6 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     double      (*pold)[nPts][dim] = &c;    // old population (generation G)
     double      (*pnew)[nPts][dim] = &d;    // new population (generation G+1)
 
-    int         flat=0;    // iterations since last improvement
     double      bestSpread;
     int         stage, nstages = SimSched_nStages(simSched);
 
@@ -717,7 +716,6 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
         printState(nPts, dim, *pold, cost, imin, stdout);
         fflush(stdout);
 #endif
-        flat = 0;     // iterations since last improvement
         bestSpread = HUGE_VAL;
         long genmax = SimSched_getOptItr(simSched);
 
@@ -777,17 +775,12 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
                 bestSpread = *yspread;
             }
 
-            if(improveCost || improveSpread)
-                flat=0;
-            else
-                ++flat;
-
             // output
             if(verbose && gen % refresh == 0) {
                 // display after every refresh generations
                 fprintf(stderr,
-                        "%d:%d cost=%1.10lg yspread=%lf flat=%d\n",
-                        stage, gen, cmin, *yspread, flat);
+                        "%d:%d cost=%1.10lg yspread=%lf\n",
+                        stage, gen, cmin, *yspread);
                 fprintf(stderr, "   Best params:");
                 for(j = 0; j < dim; j++) {
                     fprintf(stderr, " %0.10lg", best[j]);
@@ -802,22 +795,13 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
             }
             if(sigstat==SIGINT)
                 break;
-#if 0
-            if(stage==nstages-1 && flat==dep.maxFlat)
-                break;
-#else
             if(stage==nstages-1 && *yspread <= dep.ytol)
                 break;
-#endif
         }
     }
 
     JobQueue_noMoreJobs(jq);
-#if 0
-    if(flat >= dep.maxFlat && *yspread < HUGE_VAL) {
-#else
     if(*yspread <= dep.ytol) {
-#endif
         status = 0;
         if(verbose)
             fputs("Converged\n", stdout);

@@ -41,7 +41,7 @@ double objFunc(int dim, double x[dim], void *jdat /* NOTUSED */ ,
         double      xi = x[i];
         sx += fabs(xi);         // summed absolute devs from zero
 #ifdef RUGGED
-        // for multiple peaks 
+        // for multiple peaks
         f = xi - floor(xi + 0.5);   // fractional part of x[i]
         sf += fabs(f);          // summed fractional dev
 #endif
@@ -57,7 +57,7 @@ double objFunc(int dim, double x[dim], void *jdat /* NOTUSED */ ,
 /// Initialize vector x. If ndx==0, simply copy the parameter vector
 /// from the argument. Otherwise, generate a random vector.
 ///
-/// For constrained optimization, make all initial vectors obey constraints. 
+/// For constrained optimization, make all initial vectors obey constraints.
 void initStateVec(int ndx, void *void_p, int n, double x[n], gsl_rng *rng){
 	assert(void_p != NULL);
     double *v = (double *) void_p; // pointer to n-vector
@@ -103,6 +103,7 @@ int main(int argc, char *argv[]) {
         {"ptsPerDim", required_argument, 0, 'p'},
         {"F", required_argument, 0, 'F'},
         {"crossOver", required_argument, 0, 'c'},
+        {"tol", required_argument, 0, 'T'},
         {"help", no_argument, 0, 'h'},
         {"verbose", no_argument, 0, 'v'},
         {NULL, 0, NULL, 0}
@@ -117,7 +118,7 @@ int main(int argc, char *argv[]) {
     int         refresh = 10;   // refresh rate
     double      F = 0.9;        // scale perturbations
     double      CR = 0.8;       // crossover prob
-	int         maxFlat = 100; // termination criterion
+    double      ytol = 1e-4;    // convergence criterion
 
     int         i;
     int         nthreads = 0;
@@ -131,7 +132,7 @@ int main(int argc, char *argv[]) {
 
     // command line arguments
     for(;;) {
-        i = getopt_long(argc, argv, "s:t:g:r:n:p:F:c:hv", myopts, &optndx);
+        i = getopt_long(argc, argv, "T:s:t:g:r:n:p:F:c:hv", myopts, &optndx);
         if(i == -1)
             break;
         switch (i) {
@@ -141,6 +142,9 @@ int main(int argc, char *argv[]) {
             break;
         case 's':
             strategy = strtol(optarg, NULL, 10);
+            break;
+        case 'T':
+            ytol = strtod(optarg, 0);
             break;
         case 't':
             nthreads = strtol(optarg, NULL, 10);
@@ -180,7 +184,7 @@ int main(int argc, char *argv[]) {
     if(argc > optind)
         usage();
 
-    
+
 	double      initVec[dim]; // initial state of point 0
     for(i = 0; i < dim; ++i)
 		initVec[i] = i;
@@ -223,7 +227,7 @@ int main(int argc, char *argv[]) {
         .seed = ((unsigned long) time(NULL))-1ul,
         .F = F,
         .CR = CR,
-        .maxFlat = maxFlat,
+        .ytol = ytol,
         .jobData = NULL,
         .JobData_dup = NULL,
         .JobData_free = NULL,
@@ -242,7 +246,7 @@ int main(int argc, char *argv[]) {
     int         status = diffev(dim, estimate, &cost, &yspread, dep, rng);
     switch (status) {
     case 0:
-        printf("DiffEv converged. cost=%0.5lg costSpread=%0.5lg\n",
+        printf("DiffEv converged. cost=%0.5lg yspread=%0.5lg\n",
                cost, yspread);
         printf("Fitted parameters:");
         for(i = 0; i < dim; ++i)

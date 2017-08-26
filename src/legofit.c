@@ -10,7 +10,7 @@ of separations and of episodes of gene flow, and levels of gene flow.
        where file input.lgo describes population history,
        and file sitepat.txt contains site pattern frequencies.
     Options may include:
-       -M <x> or --maxFlat <x>
+       -T <x> or --tol <x>
           termination criterion
        -t <x> or --threads <x>
           number of threads (default is auto)
@@ -153,7 +153,7 @@ void usage(void) {
             "   pattern frequencies.\n");
 #endif
     fprintf(stderr,"Options may include:\n");
-    tellopt("-M <x> or --maxFlat <x>", "termination criterion");
+    tellopt("-T <x> or --tol <x>", "termination criterion");
     tellopt("-t <x> or --threads <x>", "number of threads (default is auto)");
     tellopt("-F <x> or --scaleFactor <x>", "set DE scale factor");
     tellopt("-x <x> or --crossover <x>", "set DE crossover probability");
@@ -197,7 +197,7 @@ int main(int argc, char **argv) {
 		{"scaleFactor", required_argument, 0, 'F'},
         {"strategy", required_argument, 0, 's'},
         {"stage", required_argument, 0, 'S'},
-        {"maxFlat", required_argument, 0, 'M'},
+        {"tol", required_argument, 0, 'T'},
         {"ptsPerDim", required_argument, 0, 'p'},
 #if COST!=KL_COST && COST!=LNL_COST
         {"mutRate", required_argument, 0, 'u'},
@@ -229,7 +229,6 @@ int main(int argc, char **argv) {
 	// DiffEv parameters
 	double      F = 0.9;
 	double      CR = 0.8;
-	int         maxFlat = 100; // termination criterion
 #if COST!=KL_COST && COST!=LNL_COST
     double      u = 0.0;       // mutation rate per site per generation
     long        nnuc = 0;      // number of nucleotides per haploid genome
@@ -256,10 +255,10 @@ int main(int argc, char **argv) {
     // command line arguments
     for(;;) {
 #if COST==KL_COST || COST==LNL_COST
-        i = getopt_long(argc, argv, "t:F:p:s:S:a:vx:1h",
+        i = getopt_long(argc, argv, "T:t:F:p:s:S:a:vx:1h",
                         myopts, &optndx);
 #else
-        i = getopt_long(argc, argv, "t:F:p:s:S:a:vx:u:n:1h",
+        i = getopt_long(argc, argv, "T:t:F:p:s:S:a:vx:u:n:1h",
                         myopts, &optndx);
 #endif
         if(i == -1)
@@ -306,8 +305,8 @@ int main(int argc, char **argv) {
         case 'v':
             verbose = 1;
             break;
-        case 'M':
-            maxFlat = strtol(optarg, NULL, 10);
+        case 'T':
+            ytol = strtod(optarg, 0);
             break;
 		case 'x':
 			CR = strtod(optarg, 0);
@@ -389,10 +388,9 @@ int main(int argc, char **argv) {
         nThreads = dim*ptsPerDim;
 
     printf("# DE strategy        : %d\n", strategy);
-    printf("#    maxFlat         : %d\n", maxFlat);
     printf("#    F               : %lf\n", F);
     printf("#    CR              : %lf\n", CR);
-    printf("#    ytol            : %lf\n", ytol);
+    printf("#    tolerance       : %lf\n", ytol);
     printf("# nthreads           : %d\n", nThreads);
     printf("# lgo input file     : %s\n", lgofname);
     printf("# site pat input file: %s\n", patfname);
@@ -464,7 +462,6 @@ int main(int argc, char **argv) {
         .seed = ((unsigned long) time(NULL))-1ul,
         .F = F,
         .CR = CR,
-        .maxFlat = maxFlat,
 		.jobData = &costPar,
         .JobData_dup = CostPar_dup,
         .JobData_free = CostPar_free,
