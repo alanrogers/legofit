@@ -24,8 +24,6 @@
  * distinct number of DE generations and simulation
  * replicates. Convergence can occur only during the final stage.
  *
- * The criterion for convergence is new.
- *
  * Storn's documentation and license are below follow.
  *
  *        D I F F E R E N T I A L     E V O L U T I O N

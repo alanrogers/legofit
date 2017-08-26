@@ -84,7 +84,29 @@ artifacts. With high-quality modern DNA, it may one day prove
 useful. To use it, you need to generate a data set that contains
 singletons, by using the `-1` option of @\ref tabpat "tabpat".
 
-@copyright Copyright (c) 2016, Alan R. Rogers
+2017-08-26: The convergence criterion has been changed. In the
+previous code, differential evolution (DE) iterations stopped when
+neither the best objective function value nor the spread of these
+values had changed in a fixed number of iterations. That criterion was
+used in our recent paper, "Early history of Neanderthals and
+Denisovans", which was just published in PNAS.
+
+I began to notice convergence problems with models larger than
+those used in the PNAS paper. All bootstrap replicates would report
+convergence, but some yielded wild parameter estimates. In these
+outliers, the spread of objective function values was also very
+large, indicating that the algorithm had not really converged. So I
+implemented a new convergence criterion, based on the spread of
+objective function values. The iterations terminate when this
+spread falls to a pre-determined value.
+
+This new convergence criterion works best with the KL
+(Kullback-Leibler) cost function. Minimizing KL is the same as
+maximizing log composite likelihood (lnL). But KL equals zero when
+the fit is perfect. For this reason, it isn't necessary to scale
+the tolerance value to lnL.
+
+@copyright Copyright (c) 2016, 2017, Alan R. Rogers
 <rogers@anthro.utah.edu>. This file is released under the Internet
 Systems Consortium License, which can be found in file "LICENSE".
  */
