@@ -730,8 +730,6 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 
             JobQueue_waitOnJobs(jq);
 
-            int improveCost=0, improveSpread=0;
-
             // Generate a new generation, based on the old generation
             // and all the trials.
             double      cmax = -HUGE_VAL;
@@ -745,7 +743,6 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
                         cmin = trial_cost;  // reset cmin to new low.
                         imin = i;
                         assignd(dim, best, targ[i]->v);
-                        improveCost = 1;
                     }
                 } else {
                     // reject mutation: keep old value
@@ -769,7 +766,6 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 
             // Count iterations since last improvement in yspread
             if(*yspread < bestSpread) {
-                improveSpread = 1;
                 bestSpread = *yspread;
             }
 
