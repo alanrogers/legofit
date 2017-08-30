@@ -668,7 +668,6 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     double      (*pold)[nPts][dim] = &c;    // old population (generation G)
     double      (*pnew)[nPts][dim] = &d;    // new population (generation G+1)
 
-    double      bestSpread;
     int         stage, nstages = SimSched_nStages(simSched);
 
     for(stage=0;
@@ -714,7 +713,6 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
         printState(nPts, dim, *pold, cost, imin, stdout);
         fflush(stdout);
 #endif
-        bestSpread = HUGE_VAL;
         long genmax = SimSched_getOptItr(simSched);
 
         // Iteration loop
@@ -763,11 +761,6 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 
             // Difference between best and worst cost values
             *yspread = cmax - cmin;
-
-            // Count iterations since last improvement in yspread
-            if(*yspread < bestSpread) {
-                bestSpread = *yspread;
-            }
 
             // output
             if(verbose && gen % refresh == 0) {
