@@ -106,6 +106,26 @@ maximizing log composite likelihood (lnL). But KL equals zero when
 the fit is perfect. For this reason, it isn't necessary to scale
 the tolerance value to lnL.
 
+In each DE generation, the algorithm evaluates the cost function of
+each point in the swarm. The cost function measures the difference
+between observed and expected site pattern frequencies. The difference
+between the maximum and minimum cost is called the "spread". The
+algorithm stops when "spread" falls to the tolerance value,
+"ytol". This tolerance can be set on the command line with "-T" or
+"--tol" arguments. Convergence is checked only in the last stage, as
+set by "-S" or "--stage".
+
+If the algorithm fails to converge, there are several options. First,
+you can use "-S" or "--stage" to increase the maximum number of DE
+generations. For example, if the last stage is "-S 2000@2000000", you
+are allowing 2000 DE generations, in each of which each cost function
+value is estimated with 2000000 iterations. To double the allowed
+number of DE generations, change this to "-S 4000@2000000".
+
+Second, you can relax the tolerance. By default, this is 1e-4. It is
+reported in the legofit output. To double this value, use "-T 2e-4" or
+"--tol 2e-4".
+
 @copyright Copyright (c) 2016, 2017, Alan R. Rogers
 <rogers@anthro.utah.edu>. This file is released under the Internet
 Systems Consortium License, which can be found in file "LICENSE".
@@ -412,7 +432,7 @@ int main(int argc, char **argv) {
     printf("# DE strategy        : %d\n", strategy);
     printf("#    F               : %lf\n", F);
     printf("#    CR              : %lf\n", CR);
-    printf("#    tolerance       : %lf\n", ytol);
+    printf("#    tolerance       : %le\n", ytol);
     printf("# nthreads           : %d\n", nThreads);
     printf("# lgo input file     : %s\n", lgofname);
     printf("# site pat input file: %s\n", patfname);
@@ -513,7 +533,7 @@ int main(int argc, char **argv) {
 
     status = diffev(dim, estimate, &cost, &yspread, dep, rng);
 
-    printf("DiffEv %s. cost=%0.5lg spread=%0.5lg\n",
+    printf("DiffEv %s. cost=%0.5le spread=%0.5le\n",
            status==0 ? "converged" : "FAILED", cost, yspread);
 #if COST==LNL_COST
     printf("  relspread=%e", yspread/cost);
