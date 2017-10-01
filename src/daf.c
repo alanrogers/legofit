@@ -28,9 +28,9 @@ Output is in 5 columns, separated by whitespace:
 4. da, the derived allele
 5. daf, derived allele frequency
 
-Sites are rejected unless they have a single ref, alt, and ancestral
-allele. At the end of the job a summary of rejected sites is written
-to stderr.
+Sites are rejected unless they have a single ref or ancestral
+allele. Missing values are allowed for the alt allele. At the end of
+the job a summary of rejected sites is written to stderr.
 
 @copyright Copyright (c) 2016, Alan R. Rogers
 <rogers@anthro.utah.edu>. This file is released under the Internet
@@ -58,7 +58,7 @@ int main(int argc, char **argv) {
     // Keep track of the number of sites at which the number
     // of reference, alternate, or ancestral alleles differs from 0
     int zeroref=0, zeroalt=0, zeroaa=0, zerogtype=0;
-    int missref=0, missalt=0, missaa=0;
+    int missref=0, missaa=0;
     int multref=0, multalt=0, multaa=0;
     int nbad=0, ngood=0;
     int ok; // is current line acceptable
@@ -144,10 +144,6 @@ int main(int argc, char **argv) {
         }
         if(ref[0] == '.' || ref[0] == '-') {
             ++missref;
-            ok = 0;
-        }
-        if(alt[0] == '.' || alt[0] == '-') {
-            ++missalt;
             ok = 0;
         }
 
@@ -245,8 +241,6 @@ int main(int argc, char **argv) {
         fprintf(stderr,"daf: bad sites with multiple ancestral alleles: %d\n", multaa);
     if(missref)
         fprintf(stderr,"daf: bad sites with missing ref alleles: %d\n", missref);
-    if(missalt)
-        fprintf(stderr,"daf: bad sites with missing alt alleles: %d\n", missalt);
     if(missaa)
         fprintf(stderr,"daf: bad sites with missing ancestral alleles: %d\n", missaa);
 	return 0;
