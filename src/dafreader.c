@@ -139,8 +139,8 @@ int DAFReader_next(DAFReader *self) {
     // Derived allele
     snprintf(self->da, sizeof(self->da), "%s", Tokenizer_token(self->tkz, 3));
     strlowercase(self->da);
-    if(strlen(self->da) != 1 || strchr("atgc", *self->da) == NULL) {
-        fprintf(stderr,"%s:%d: Derived allele must be a single nucleotide."
+    if(strlen(self->da) != 1 || strchr("atgc.", *self->da) == NULL) {
+        fprintf(stderr,"%s:%d: Derived allele must be a single nucleotide or \".\"."
                 " Got: %s.\n", __FILE__,__LINE__, self->da);
         exit(EXIT_FAILURE);
     }
@@ -259,7 +259,9 @@ int DAFReader_allelesMatch(int n, DAFReader *r[n]) {
     int da = *r[0]->da;
     int i;
     for(i=1; i<n; ++i) {
-        if(aa != *r[i]->aa || da != *r[i]->da)
+        if(aa != *r[i]->aa)
+            return 0;
+        if(da != '.' && *r[i]->da != '.' && da != *r[i]->da)
             return 0;
     }
     return 1;
