@@ -28,8 +28,9 @@ Output is in 5 columns, separated by whitespace:
 4. da, the derived allele
 5. daf, derived allele frequency
 
-If ref, alt, or the ancestral allele consists of more than a single
-character, the site is skipped.
+Sites are rejected unless they have a single ref, alt, and ancestral
+allele. At the end of the job a summary of rejected sites is written
+to stderr.
 
 @copyright Copyright (c) 2016, Alan R. Rogers
 <rogers@anthro.utah.edu>. This file is released under the Internet
