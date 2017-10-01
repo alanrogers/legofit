@@ -54,6 +54,14 @@ int main(int argc, char **argv) {
     const int buffsize = 4096;
     char buff[buffsize];
 
+    // Keep track of the number of sites at which the number
+    // of reference, alternate, or ancestral alleles differs from 0
+    int zeroref=0, zeroalt=0, zeroaa=0, zerogtype=0;
+    int missref=0, missalt=0, missaa=0;
+    int multref=0, multalt=0, multaa=0;
+    int nbad=0, ngood=0;
+    int ok; // is current line acceptable
+
     printf("#%3s %10s %2s %2s %20s\n", "chr", "pos", "aa", "da", "daf");
     while(1) {
         if(NULL==fgets(buff, buffsize, stdin)) {
@@ -89,8 +97,38 @@ int main(int argc, char **argv) {
 		int nalt = stripchr(alt, ' '); // nalt is number of alt alleles
 		(void) stripchr(aa, ' ');
         int naa = stripchr(aa, '|');   // naa is number of ancestral alleles
-        if(nref != 1 || nalt != 1 || naa != 1)
+
+        // Skip sites at which the number of reference, alternate, or ancestral
+        // alleles differs from 1.
+        ok = 1;
+        if(nref == 0) {
+            ++zeroref;
+            ok=0;
+        }
+        if(nalt == 0) {
+            ++zeroalt;
+            ok = 0;
+        }
+        if(naa == 0) {
+            ++zeroaa;
+            ok = 0;
+        }
+        if(nref > 1) {
+            ++multref;
+            ok = 0;
+        }
+        if(nalt > 1) {
+            ++multalt;
+            ok = 0;
+        }
+        if(naa > 1) {
+            ++multaa;
+            ok = 0;
+        }
+        if(!ok) {
+            ++nbad;
             continue;
+        }
 
 #if 0
         fprintf(stderr,"  chr=%s pos=%s ref=%s alt=%s aa=%s\n",
@@ -99,9 +137,21 @@ int main(int argc, char **argv) {
 #endif
 
         // Skip if ref, alt, or aa are missing.
-		if(aa[0] == '.' || aa[0] == '-'
-           || ref[0] == '.' || ref[0] == '-'
-           || alt[0] == '.' || alt[0] == '-') {
+		if(aa[0] == '.' || aa[0] == '-') {
+            ++missaa;
+            ok = 0;
+        }
+        if(ref[0] == '.' || ref[0] == '-') {
+            ++missref;
+            ok = 0;
+        }
+        if(alt[0] == '.' || alt[0] == '-') {
+            ++missalt;
+            ok = 0;
+        }
+
+        if(!ok) {
+            ++nbad;
 			continue;
         }
 
@@ -164,8 +214,12 @@ int main(int argc, char **argv) {
 			gtype = strsep(&next, "\t");  // additional fields
 		}
 
-		if(n == 0)
+		if(n == 0) {
+            ++zerogtype;
+            ++nbad;
 			continue;
+        }else
+            ++ngood;
 
 		if( aai == 1 )
 			x = n-x;
@@ -173,5 +227,26 @@ int main(int argc, char **argv) {
 		printf("%4s %10s %2s %2c %20.18f\n",
 			   chr, pos, aa, alleles[1-aai], p);
 	}
+    fprintf(stderr,"daf: %d good sites; %d rejected\n", ngood, nbad);
+    if(zeroref)
+        fprintf(stderr,"daf: bad sites with 0 ref alleles: %d\n", zeroref);
+    if(zeroalt)
+        fprintf(stderr,"daf: bad sites with 0 alt alleles: %d\n", zeroalt);
+    if(zeroaa)
+        fprintf(stderr,"daf: bad sites with 0 ancestral alleles: %d\n", zeroaa);
+    if(zerogtype)
+        fprintf(stderr,"daf: bad sites with 0 genotypes: %d\n", zerogtype);
+    if(multref)
+        fprintf(stderr,"daf: bad sites with multiple ref alleles: %d\n", multref);
+    if(multalt)
+        fprintf(stderr,"daf: bad sites with multiple alt alleles: %d\n", multalt);
+    if(multaa)
+        fprintf(stderr,"daf: bad sites with multiple ancestral alleles: %d\n", multaa);
+    if(missref)
+        fprintf(stderr,"daf: bad sites with missing ref alleles: %d\n", missref);
+    if(missalt)
+        fprintf(stderr,"daf: bad sites with missing alt alleles: %d\n", missalt);
+    if(missaa)
+        fprintf(stderr,"daf: bad sites with missing ancestral alleles: %d\n", missaa);
 	return 0;
 }
