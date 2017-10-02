@@ -566,8 +566,10 @@ int main(int argc, char **argv) {
 		errno = 0;
 	}
 	printf("# Sites aligned across all populations: %lu\n", nsites);
-    printf("# Disagreements about ancestral allele: %lu\n", nbadaa);
-    printf("# Monomorphic sites                   : %lu\n", nfixed);
+    if(nbadaa)
+        printf("# Disagreements about ancestral allele: %lu\n", nbadaa);
+    if(nfixed)
+        printf("# Monomorphic sites                   : %lu\n", nfixed);
     printf("# Sites used                          : %lu\n",
            nsites - nbadaa - nfixed);
 

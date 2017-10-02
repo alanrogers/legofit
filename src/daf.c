@@ -137,7 +137,7 @@ int main(int argc, char **argv) {
                 alt?alt:"NULL", aa?aa:"NULL");
 #endif
 
-        // Skip if ref, alt, or aa are missing.
+        // Skip if ref or aa are missing.
 		if(aa[0] == '.' || aa[0] == '-') {
             ++missaa;
             ok = 0;
