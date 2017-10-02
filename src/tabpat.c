@@ -460,7 +460,7 @@ int main(int argc, char **argv) {
         CHECKMEM(boot);
     }
 
-	unsigned long nsnps = 0;
+	unsigned long nsites=0, nbadaa=0, nfixed=0;
     long snpndx = -1;
 
 	// Iterate through daf files
@@ -470,6 +470,7 @@ int main(int argc, char **argv) {
     DAFReader_clearChromosomes(n, r);
 	while(EOF != DAFReader_multiNext(n, r)) {
 
+		++nsites; // count sites that align across populations.
         // Skip loci at which data sets disagree about which allele
         // is derived and which ancestral.
         if(!DAFReader_allelesMatch(n, r)) {
@@ -480,6 +481,7 @@ int main(int argc, char **argv) {
                 for(i=0; i<n; ++i)
                     DAFReader_print(r[i], logfile);
             }
+            ++nbadaa;
             continue;
         }
 
@@ -521,6 +523,7 @@ int main(int argc, char **argv) {
                 for(i=0; i<n; ++i)
                     DAFReader_print(r[i], logfile);
             }
+            ++nfixed;
             continue;
         }
 
@@ -560,10 +563,13 @@ int main(int argc, char **argv) {
         if(bootreps > 0)
             Boot_sanityCheck(boot,__FILE__,__LINE__);
 #endif
-		++nsnps;
 		errno = 0;
 	}
-	printf("# Tabulated %lu SNPs\n", nsnps);
+	printf("# Sites aligned across all populations: %lu\n", nsites);
+    printf("# Disagreements about ancestral allele: %lu\n", nbadaa);
+    printf("# Monomorphic sites                   : %lu\n", nfixed);
+    printf("# Sites used                          : %lu\n",
+           nsites - nbadaa - nfixed);
 
 	// boottab[i][j] is the count of the j'th site pattern
 	// in the i'th bootstrap replicate.
