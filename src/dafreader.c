@@ -157,11 +157,6 @@ int DAFReader_rewind(DAFReader *self) {
     return fseek(self->fp, 0L, SEEK_SET);
 }
 
-/// Return const pointer to label of current chromosome.
-const char *DAFReader_chr(DAFReader *self) {
-	return self->chr;
-}
-
 #define MAX(X,Y) ((X) > (Y) ? (X) : (Y))
 #define MIN(X,Y) ((X) > (Y) ? (Y) : (X))
 

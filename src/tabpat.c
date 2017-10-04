@@ -179,6 +179,7 @@ static void usage(void) {
 	tellopt("-1 or --singletons", "Use singleton site patterns");
     tellopt("-m or --logMismatch", "log AA/DA mismatches to tabpat.log");
     tellopt("-F or --logFixed", "log fixed sites to tabpat.log");
+    tellopt("-a or --logAll", "log all sites to tabpat.log");
     tellopt("-h or --help", "Print this message");
     exit(1);
 }
@@ -243,7 +244,7 @@ int main(int argc, char **argv) {
     StrInt *strint = StrInt_new();
     char bootfname[FILENAMESIZE] = { '\0' };
     const char *logfname = "tabpat.log";
-    int logMismatch=0, logFixed=0;
+    int logMismatch=0, logFixed=0, logAll=0;
     FILE *logfile = NULL;
 
     static struct option myopts[] = {
@@ -254,6 +255,7 @@ int main(int argc, char **argv) {
         {"singletons", no_argument, 0, '1'},
         {"logMismatch", no_argument, 0, 'm'},
         {"logFixed", no_argument, 0, 'F'},
+        {"logAll", no_argument, 0, 'a'},
         {"help", no_argument, 0, 'h'},
 //        {"threads", required_argument, 0, 't'},
         {NULL, 0, NULL, 0}
@@ -261,7 +263,7 @@ int main(int argc, char **argv) {
 
     // command line arguments
     for(;;) {
-        i = getopt_long(argc, argv, "b:c:f:hr:t:mFv1", myopts, &optndx);
+        i = getopt_long(argc, argv, "ab:c:f:hr:t:mFv1", myopts, &optndx);
         if(i == -1)
             break;
         switch (i) {
@@ -303,6 +305,8 @@ int main(int argc, char **argv) {
         case 'F':
             logFixed=1;
             break;
+        case 'a':
+            logAll=1;
         default:
             usage();
         }
@@ -343,7 +347,7 @@ int main(int argc, char **argv) {
 		r[i] = DAFReader_new(fname[i]);
     }
 
-    if(logMismatch || logFixed) {
+    if(logMismatch || logFixed || logAll) {
         logfile = fopen(logfname, "w");
         if(logfile==NULL) {
             fprintf(stderr,"Can't write to file \"%s\".\n",logfname);
@@ -525,6 +529,11 @@ int main(int argc, char **argv) {
             }
             ++nfixed;
             continue;
+        }
+
+        if(logAll) {
+            fprintf(logfile, "%5s %10lu\n", DAFReader_chr(r[0]),
+                    DAFReader_nucpos(r[0]));
         }
 
 		// Contribution of current snp to each site pattern.  Inner
