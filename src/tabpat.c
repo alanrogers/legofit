@@ -307,6 +307,7 @@ int main(int argc, char **argv) {
             break;
         case 'a':
             logAll=1;
+            break;
         default:
             usage();
         }
