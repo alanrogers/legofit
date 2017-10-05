@@ -110,6 +110,7 @@ int main(int argc, char **argv) {
                 fprintf(stderr,"%s:%d: unsorted chromosomes\n",
                         __FILE__,__LINE__);
                 fprintf(stderr,"    %s > %s\n", lastchr, chr);
+                exit(1);
             }else if(diff < 0) {
                 // new chromosome
                 int status = snprintf(lastchr, sizeof lastchr, "%s", chr);
@@ -121,6 +122,15 @@ int main(int argc, char **argv) {
                 lastnucpos = 0;
             }
             assert(diff==0);
+        }else{
+            // initialize lastchr
+            int status = snprintf(lastchr, sizeof lastchr, "%s", chr);
+            if(status >= sizeof lastchr) {
+                fprintf(stderr,"%s:%d: buffer overflow\n",
+                        __FILE__,__LINE__);
+                exit(1);
+            }
+            assert(lastnucpos == 0);
         }
 
         // Check sort of nucleotice positions
