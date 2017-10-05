@@ -125,11 +125,18 @@ int main(int argc, char **argv) {
 
         // Check sort of nucleotice positions
         if(lastnucpos) {
-            if(lastnucpos >= nucpos) {
+            if(lastnucpos == nucpos) {
                 fprintf(stderr,"%s:%d: Duplicate: chr=%s pos=%lu\n",
                         __FILE__,__LINE__, chr, nucpos);
                 fprintf(stderr,"%s:%d: Previous : chr=%s pos=%lu\n",
                         __FILE__,__LINE__, lastchr, lastnucpos);
+                exit(1);
+            }else if(lastnucpos > nucpos) {
+                fprintf(stderr,"%s:%d: Missorted nucleotide positions\n",
+                        __FILE__, __LINE__);
+                fprintf(stderr,"   Current : chr=%s pos=%lu\n", chr, nucpos);
+                fprintf(stderr,"   Previous: chr=%s pos=%lu\n",
+                        lastchr, lastnucpos);
                 exit(1);
             }
         }
