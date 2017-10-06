@@ -81,6 +81,11 @@ not integers, because they represent averages over all possible
 subsamples consisting of a single haploid genome from each
 population.
 
+In the daf files used as input, chromosomes should appear in lexical
+order. Within each chromosome, nucleotides should appear in numerical
+order. There should be no duplicate (chromosome, position)
+pairs. Otherwise, the program aborts with an error.
+
 To generate a bootstrap, use the `--bootreps` option:
 
     tabpat --bootreps 50 \

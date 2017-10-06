@@ -16,10 +16,11 @@ a copy of the reference allele and 1 a copy of the derived
 allele.
 7. etc for as many columns as there are genotypes.
 
-With 1000-genomes data, this input can be generated from a vcf or
-bcf file as follows:
+This can be generated from a vcf file that includes annotations for
+ancestral alleles. If the ancestral is labelled "AA", the input for
+daf can be generated, using bcftools, as follows:
 
-    bcftools query -f '%CHROM\t%POS\t%REF\t%ALT\t%INFO/AA[\t%GT]\n' fname.bcf
+  bcftools query -f '%CHROM\t%POS\t%REF\t%ALT\t%INFO/AA[\t%GT]\n' fname.vcf.gz
 
 Output is in 5 columns, separated by whitespace:
 
@@ -28,6 +29,11 @@ Output is in 5 columns, separated by whitespace:
 3. aa, the ancestral allele
 4. da, the derived allele
 5. daf, derived allele frequency
+
+The input should not contain duplicate nucleotide sites, the
+chromosomes should be sorted in lexical order, and within each
+chromosome, the nucleotides should be in numerical order. Otherwise,
+daf will abort with an error.
 
 Sites are rejected unless they have a single ref or ancestral
 allele. Missing values are allowed for the alt allele. At the end of
