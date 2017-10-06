@@ -12,7 +12,7 @@
 #and summarizes the difference between them using the Kullback-Leibler
 #divergence.
 #
-#    usage: diverg.py inputfile1 inputfile2
+#    usage: diverg.py inputfile1 [inputfile2]
 #           Input file name "-" means standard input.
 #           At most one input may be "-".
 #
@@ -60,9 +60,10 @@ from math import log
 import sys
 
 def usage():
-    print "usage: diverg.py inputfile1 inputfile2"
+    print "usage: diverg.py inputfile1 [inputfile2]"
     print "       Input file name \"-\" means standard input."
     print "       At most one input may be \"-\"."
+    print "       If only 1 file is given, print normalized frequencies"
     exit(1)
 
 def openInput(fname):
@@ -71,14 +72,20 @@ def openInput(fname):
     else:
         return open(fname, "r")
 
-if len(sys.argv) != 3:
+dokl = False
+fname2 = None
+
+if len(sys.argv) == 3:
+    dokl = True
+    fname2 = sys.argv[2]
+elif len(sys.argv) != 2:
     usage()
 fname1 = sys.argv[1]
-fname2 = sys.argv[2]
 if fname1 == fname2 == "-":
     usage()
 f1 = openInput(fname1)
-f2 = openInput(fname2)
+if dokl:
+    f2 = openInput(fname2)
 
 pat1 = []
 prob1 = []
@@ -93,35 +100,52 @@ for line in f1:
     pat1.append(line[0])
     prob1.append(float(line[1]))
 
-for line in f2:
-    line = line.strip()
-    if len(line)==0 or line[0] == '#':
-        continue
-    line = line.split()
-    pat2.append(line[0])
-    prob2.append(float(line[1]))
+if dokl:    
+    for line in f2:
+        line = line.strip()
+        if len(line)==0 or line[0] == '#':
+            continue
+        line = line.split()
+        pat2.append(line[0])
+        prob2.append(float(line[1]))
 
-if len(pat1) != len(pat2):
-    print "Input files must have the same number of patterns,"
-    print "but file1 has %d and file2 has %d" % (len(pat1), len(pat2))
-    exit(1)
+    if len(pat1) != len(pat2):
+        print "Input files must have the same number of patterns,"
+        print "but file1 has %d and file2 has %d" % (len(pat1), len(pat2))
+        exit(1)
 
 # Find field widths
 wid1 = max(9, len(fname1))
-wid2 = max(9, len(fname2))
+if dokl:
+    wid2 = max(9, len(fname2))
+else:
+    wid2=0
 widpat=7
-for i in range(len(pat1)):
-    if pat1[i] != pat2[i]:
-        print "Mismatch in %d'th pattern." % i
-        print "  pat1=%s pat2=%s" % (pat1[i], pat2[i])
-        exit(1)
-    widpat = max(widpat, len(pat1[i]), len(pat2[i]))
+if dokl:
+    for i in range(len(pat1)):
+        if pat1[i] != pat2[i]:
+            print "Mismatch in %d'th pattern." % i
+            print "  pat1=%s pat2=%s" % (pat1[i], pat2[i])
+            exit(1)
+        widpat = max(widpat, len(pat1[i]), len(pat2[i]))
+else:
+    for i in range(len(pat1)):
+        widpat = max(widpat, len(pat1[i]))
 
 # Normalize probabilities
 s1 = sum(prob1)
-s2 = sum(prob2)
 prob1 = [z/s1 for z in prob1]
-prob2 = [z/s2 for z in prob2]
+if dokl:
+    s2 = sum(prob2)
+    prob2 = [z/s2 for z in prob2]
+
+if not dokl:
+    fmt = "%%%ds %%%ds" % (widpat, wid1)
+    print fmt % ("SitePat", fname1)
+    fmt = "%%%ds %%%d.5f" % (widpat, wid1)
+    for i in range(len(prob1)):
+        print fmt % (pat1[i], prob1[i])
+    exit(0)
 
 fmt = "%%%ds %%%ds %%%ds %%6s" % (widpat, wid1, wid2)
 print fmt % ("SitePat", fname1, fname2, "KL")

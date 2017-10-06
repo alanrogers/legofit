@@ -30,6 +30,17 @@ void        DAFReader_printHdr(FILE *fp);
 void        DAFReader_print(DAFReader *r, FILE *fp);
 int         DAFReader_rewind(DAFReader *self);
 int         DAFReader_multiNext(int n, DAFReader *r[n]);
-const char *DAFReader_chr(DAFReader *self);
+inline const char *DAFReader_chr(DAFReader *self);
+inline unsigned long DAFReader_nucpos(DAFReader *self);
 
+
+/// Return const pointer to label of current chromosome.
+inline const char *DAFReader_chr(DAFReader *self) {
+	return self->chr;
+}
+
+/// Return position of current nucleotide site
+inline unsigned long DAFReader_nucpos(DAFReader *self) {
+    return self->nucpos;
+}
 #endif

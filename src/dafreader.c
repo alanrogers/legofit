@@ -71,6 +71,7 @@ int DAFReader_next(DAFReader *self) {
     int ntokens;
     int status;
     char buff[100];
+    long unsigned prevnucpos=0UL;
 
     // Find a line of input
     while(1){
@@ -121,10 +122,24 @@ int DAFReader_next(DAFReader *self) {
         Tokenizer_printSummary(self->tkz, stderr);
         Tokenizer_print(self->tkz, stderr);
         exit(EXIT_FAILURE);
-    }
+    }else if(diff < 0) {
+        // new chromosome
+        prevnucpos = 0UL;
+    }else
+        prevnucpos = self->nucpos;
 
     // Nucleotide position
     self->nucpos = strtoul(Tokenizer_token(self->tkz, 1), NULL, 10);
+    if(prevnucpos == self->nucpos) {
+        fprintf(stderr,"%s:%d: Duplicate line in daf file. chr=%s pos=%lu\n",
+                __FILE__,__LINE__, self->chr, self->nucpos);
+        exit(1);
+    }else if(prevnucpos > self->nucpos) {
+        fprintf(stderr,"%s:%d: positions missorted chr=%s "
+                "prev=%lu curr=%lu\n",
+                __FILE__,__LINE__, self->chr, prevnucpos, self->nucpos);
+        exit(1);
+    }
 
     // Ancestral allele
     status = snprintf(self->aa, sizeof(self->aa), "%s",
@@ -139,8 +154,8 @@ int DAFReader_next(DAFReader *self) {
     // Derived allele
     snprintf(self->da, sizeof(self->da), "%s", Tokenizer_token(self->tkz, 3));
     strlowercase(self->da);
-    if(strlen(self->da) != 1 || strchr("atgc", *self->da) == NULL) {
-        fprintf(stderr,"%s:%d: Derived allele must be a single nucleotide."
+    if(strlen(self->da) != 1 || strchr("atgc.", *self->da) == NULL) {
+        fprintf(stderr,"%s:%d: Derived allele must be a single nucleotide or \".\"."
                 " Got: %s.\n", __FILE__,__LINE__, self->da);
         exit(EXIT_FAILURE);
     }
@@ -155,11 +170,6 @@ int DAFReader_next(DAFReader *self) {
 /// @return 0 on success; -1 on failure
 int DAFReader_rewind(DAFReader *self) {
     return fseek(self->fp, 0L, SEEK_SET);
-}
-
-/// Return const pointer to label of current chromosome.
-const char *DAFReader_chr(DAFReader *self) {
-	return self->chr;
 }
 
 #define MAX(X,Y) ((X) > (Y) ? (X) : (Y))
@@ -259,7 +269,9 @@ int DAFReader_allelesMatch(int n, DAFReader *r[n]) {
     int da = *r[0]->da;
     int i;
     for(i=1; i<n; ++i) {
-        if(aa != *r[i]->aa || da != *r[i]->da)
+        if(aa != *r[i]->aa)
+            return 0;
+        if(da != '.' && *r[i]->da != '.' && da != *r[i]->da)
             return 0;
     }
     return 1;

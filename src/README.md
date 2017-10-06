@@ -175,7 +175,7 @@ used here to label the columns. The columns are as follows:
 
 The lines should be sorted lexically by chromosome. Within
 chromosomes, they should be sorted in ascending numerical order of
-column 2.
+column 2. There should be no duplicate (chromosome, position) pairs.
 
 # Describing population history in an lgo file {#lgo}
 
