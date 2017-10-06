@@ -30,6 +30,14 @@ Output is in 5 columns, separated by whitespace:
 4. da, the derived allele
 5. daf, derived allele frequency
 
+The input files should include all sites in which derived alleles are
+present in any of the populations under study. For example, consider
+an analysis involving modern humans and Neanderthals. The modern human
+data must include all sites at which Neanderthals carry derived
+alleles, even if these sites do not vary among modern humans. To
+accomplish this, it is best to use whole-genome data for all
+populations.
+
 The input should not contain duplicate nucleotide sites, the
 chromosomes should be sorted in lexical order, and within each
 chromosome, the nucleotides should be in numerical order. Otherwise,

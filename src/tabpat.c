@@ -31,6 +31,8 @@ replicate into a separate file.
           log AA/DA mismatches to tabpat.log
        -F or --logFixed
           log fixed sites to tabpat.log
+       -a or --logAll
+          log all sites to tabpat.log
        -h or --help
           Print this message
 
