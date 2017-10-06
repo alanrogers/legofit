@@ -7,7 +7,7 @@ opt := -DNDEBUG -O3  -finline-functions  # For full optimization
 prof :=
 incl := -I/usr/local/include -I/opt/local/include
 
-targets := legosim legofit tabpat daf numcores asmref
+targets := legosim legofit tabpat daf numcores
 pytargets := diverg.py bootci.py flatfile.py
 tests := xzeroin xbinary
 
@@ -64,10 +64,6 @@ tabpat : $(TABPAT)
 DAF := daf.o misc.o
 daf : $(DAF)
 	$(CC) $(CFLAGS) -o $@ $(DAF) $(lib)
-
-ASMREF := asmref.o misc.o
-asmref : $(ASMREF)
-	$(CC) $(CFLAGS) -o $@ $(ASMREF) $(lib)
 
 NUMCORES := numcores.o misc.o
 numcores : $(NUMCORES)
