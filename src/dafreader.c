@@ -71,6 +71,7 @@ int DAFReader_next(DAFReader *self) {
     int ntokens;
     int status;
     char buff[100];
+    long unsigned prevnucpos=0UL;
 
     // Find a line of input
     while(1){
@@ -121,10 +122,24 @@ int DAFReader_next(DAFReader *self) {
         Tokenizer_printSummary(self->tkz, stderr);
         Tokenizer_print(self->tkz, stderr);
         exit(EXIT_FAILURE);
-    }
+    }else if(diff < 0) {
+        // new chromosome
+        prevnucpos = 0UL;
+    }else
+        prevnucpos = self->nucpos;
 
     // Nucleotide position
     self->nucpos = strtoul(Tokenizer_token(self->tkz, 1), NULL, 10);
+    if(prevnucpos == self->nucpos) {
+        fprintf(stderr,"%s:%d: Duplicate line in daf file. chr=%s pos=%lu\n",
+                __FILE__,__LINE__, self->chr, self->nucpos);
+        exit(1);
+    }else if(prevnucpos > self->nucpos) {
+        fprintf(stderr,"%s:%d: positions missorted chr=%s "
+                "prev=%lu curr=%lu\n",
+                __FILE__,__LINE__, self->chr, prevnucpos, self->nucpos);
+        exit(1);
+    }
 
     // Ancestral allele
     status = snprintf(self->aa, sizeof(self->aa), "%s",

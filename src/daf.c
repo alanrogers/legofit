@@ -77,6 +77,8 @@ int main(int argc, char **argv) {
     int         multref = 0, multalt = 0, multaa = 0;
     int         nbad = 0, ngood = 0;
     int         ok;             // is current line acceptable
+    long unsigned lastnucpos=0, nucpos;
+    char lastchr[100] = {'\0'};
 
     printf("#%3s %10s %2s %2s %20s\n", "chr", "pos", "aa", "da", "daf");
     while(1) {
@@ -108,10 +110,61 @@ int main(int argc, char **argv) {
         // strip extraneous characters
         (void) stripchr(chr, ' ');
         (void) stripchr(pos, ' ');
-        int         nref = stripchr(ref, ' ');  // nref is number of ref alleles
-        int         nalt = stripchr(alt, ' ');  // nalt is number of alt alleles
+        int         nref = stripchr(ref, ' ');  // nref: num ref alleles
+        int         nalt = stripchr(alt, ' ');  // nalt: num alt alleles
         (void) stripchr(aa, ' ');
-        int         naa = stripchr(aa, '|');    // naa is number of ancestral alleles
+        int         naa = stripchr(aa, '|');    // naa: num ancestral alleles
+        nucpos = strtoul(pos, NULL, 10);
+
+        // Check sort of chromosomes
+        if(*lastchr) {
+            int diff = strcmp(lastchr, chr);
+            if(diff > 0) {
+                // bad sort
+                fprintf(stderr,"%s:%d: unsorted chromosomes\n",
+                        __FILE__,__LINE__);
+                fprintf(stderr,"    %s > %s\n", lastchr, chr);
+                exit(1);
+            }else if(diff < 0) {
+                // new chromosome
+                int status = snprintf(lastchr, sizeof lastchr, "%s", chr);
+                if(status >= sizeof lastchr) {
+                    fprintf(stderr,"%s:%d: buffer overflow\n",
+                            __FILE__,__LINE__);
+                    exit(1);
+                }
+                lastnucpos = 0;
+            }
+            assert(diff==0);
+        }else{
+            // initialize lastchr
+            int status = snprintf(lastchr, sizeof lastchr, "%s", chr);
+            if(status >= sizeof lastchr) {
+                fprintf(stderr,"%s:%d: buffer overflow\n",
+                        __FILE__,__LINE__);
+                exit(1);
+            }
+            assert(lastnucpos == 0);
+        }
+
+        // Check sort of nucleotice positions
+        if(lastnucpos) {
+            if(lastnucpos == nucpos) {
+                fprintf(stderr,"%s:%d: Duplicate: chr=%s pos=%lu\n",
+                        __FILE__,__LINE__, chr, nucpos);
+                fprintf(stderr,"%s:%d: Previous : chr=%s pos=%lu\n",
+                        __FILE__,__LINE__, lastchr, lastnucpos);
+                exit(1);
+            }else if(lastnucpos > nucpos) {
+                fprintf(stderr,"%s:%d: Missorted nucleotide positions\n",
+                        __FILE__, __LINE__);
+                fprintf(stderr,"   Current : chr=%s pos=%lu\n", chr, nucpos);
+                fprintf(stderr,"   Previous: chr=%s pos=%lu\n",
+                        lastchr, lastnucpos);
+                exit(1);
+            }
+        }
+        lastnucpos = nucpos;
 
         // Skip sites at which the number of reference, alternate, or ancestral
         // alleles differs from 1.
