@@ -211,7 +211,7 @@ int main(int argc, char **argv) {
             ok = 0;
         }
         if(alt[0] == '.' || alt[0] == '-')
-            alt[0] = '\0';
+            alt[0] = '.';
 
         if(!ok) {
             ++nbad;
@@ -221,18 +221,18 @@ int main(int argc, char **argv) {
         char        alleles[10];
         strcpy(alleles, ref);
         strcat(alleles, alt);
-        if(strlen(alleles) > 2) {
+        if(strlen(alleles) != 2) {
             fprintf(stderr, "%s:%5d: Error. Number of alleles is %zu.\n",
                     __FILE__, __LINE__, strlen(alleles));
             exit(EXIT_FAILURE);
         }
         char       *aaptr = strchr(alleles, aa[0]); // ptr to ancestral allele
         if(aaptr == NULL) {
-	  // If alleles has only one entry, and the ancestral
-	  // allele isn't one of them, then add it.
-	  if(strlen(alleles) == 1) {
-            strcat(alleles, aa);
-            aaptr = strchr(alleles, aa[0]);
+	  // If alt=='.' and the ancestral
+	  // allele isn't reference, then set alt=aa.
+	  if(alleles[1] == '.') {
+	    alleles[1] = aa[0];
+            aaptr = alleles+1;
             assert(aaptr != NULL);
 	  }else {
 	    // skip site: there are 3 alleles
@@ -240,13 +240,14 @@ int main(int argc, char **argv) {
 	  }
         }
         int         aai = aaptr - alleles;  // index of ancestral allele
+#ifndef NDEBUG	
 	if(aai!=0 && aai!=1) {
 	  fprintf(stderr,"%s:%d: aaptr=%zu aai=%d\n",
 		  __FILE__,__LINE__, (size_t) aaptr, aai);
 	  fprintf(stderr,"%s:%d: alleles=[%s] ref=[%s] alt=[%s] aa=[%s]\n",
 		  __FILE__,__LINE__, alleles, ref, alt, aa);
-	  
 	}
+#endif
         assert(aai == 0 || aai == 1);
 
         int         x = 0, n = 0;
