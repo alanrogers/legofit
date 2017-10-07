@@ -220,8 +220,8 @@ static void Stack_push(Stack * self, tipId_t x) {
 /// Call as generatePatterns(0, npops, stk, 0); Recursive function,
 /// which generates all legal site patterns and pushes them onto a
 /// stack.
-static void generatePatterns(int bit, int npops, Stack * stk, tipId_t pat,
-                             int doSing) {
+static void
+generatePatterns(int bit, int npops, Stack * stk, tipId_t pat, int doSing) {
     assert(sizeof(tipId_t) < sizeof(unsigned long long));
     if(bit == npops) {
         // Recursion stops here. If current pattern is

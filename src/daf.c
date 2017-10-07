@@ -134,7 +134,6 @@ int main(int argc, char **argv) {
                 }
                 lastnucpos = 0;
             }
-            assert(diff==0);
         }else{
             // initialize lastchr
             int status = snprintf(lastchr, sizeof lastchr, "%s", chr);
@@ -211,6 +210,8 @@ int main(int argc, char **argv) {
             ++missref;
             ok = 0;
         }
+        if(alt[0] == '.' || alt[0] == '-')
+            alt[0] = '.';
 
         if(!ok) {
             ++nbad;
@@ -226,9 +227,27 @@ int main(int argc, char **argv) {
             exit(EXIT_FAILURE);
         }
         char       *aaptr = strchr(alleles, aa[0]); // ptr to ancestral allele
-        if(aaptr == NULL)
-            continue;
+        if(aaptr == NULL) {
+	  // If alt=='.' and the ancestral
+	  // allele isn't reference, then set alt=aa.
+	  if(alleles[1] == '.') {
+	    alleles[1] = aa[0];
+            aaptr = alleles+1;
+            assert(aaptr != NULL);
+	  }else {
+	    // skip site: there are 3 alleles
+	    continue;
+	  }
+        }
         int         aai = aaptr - alleles;  // index of ancestral allele
+#ifndef NDEBUG	
+	if(aai!=0 && aai!=1) {
+	  fprintf(stderr,"%s:%d: aaptr=%zu aai=%d\n",
+		  __FILE__,__LINE__, (size_t) aaptr, aai);
+	  fprintf(stderr,"%s:%d: alleles=[%s] ref=[%s] alt=[%s] aa=[%s]\n",
+		  __FILE__,__LINE__, alleles, ref, alt, aa);
+	}
+#endif
         assert(aai == 0 || aai == 1);
 
         int         x = 0, n = 0;
