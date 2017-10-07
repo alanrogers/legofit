@@ -1,4 +1,3 @@
-
 /**
 @file daf.c
 @page daf
@@ -135,7 +134,6 @@ int main(int argc, char **argv) {
                 }
                 lastnucpos = 0;
             }
-            assert(diff==0);
         }else{
             // initialize lastchr
             int status = snprintf(lastchr, sizeof lastchr, "%s", chr);
@@ -230,12 +228,25 @@ int main(int argc, char **argv) {
         }
         char       *aaptr = strchr(alleles, aa[0]); // ptr to ancestral allele
         if(aaptr == NULL) {
-            // If ancestral allele is not in "alleles", add it.
+	  // If alleles has only one entry, and the ancestral
+	  // allele isn't one of them, then add it.
+	  if(strlen(alleles) == 1) {
             strcat(alleles, aa);
             aaptr = strchr(alleles, aa[0]);
             assert(aaptr != NULL);
+	  }else {
+	    // skip site: there are 3 alleles
+	    continue;
+	  }
         }
         int         aai = aaptr - alleles;  // index of ancestral allele
+	if(aai!=0 && aai!=1) {
+	  fprintf(stderr,"%s:%d: aaptr=%zu aai=%d\n",
+		  __FILE__,__LINE__, (size_t) aaptr, aai);
+	  fprintf(stderr,"%s:%d: alleles=[%s] ref=[%s] alt=[%s] aa=[%s]\n",
+		  __FILE__,__LINE__, alleles, ref, alt, aa);
+	  
+	}
         assert(aai == 0 || aai == 1);
 
         int         x = 0, n = 0;
