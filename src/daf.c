@@ -1,3 +1,4 @@
+
 /**
 @file daf.c
 @page daf
@@ -76,8 +77,8 @@ int main(int argc, char **argv) {
     int         multref = 0, multalt = 0, multaa = 0;
     int         nbad = 0, ngood = 0;
     int         ok;             // is current line acceptable
-    long unsigned lastnucpos=0, nucpos;
-    char lastchr[100] = {'\0'};
+    long unsigned lastnucpos = 0, nucpos;
+    char        lastchr[100] = { '\0' };
 
     printf("#%3s %10s %2s %2s %20s\n", "chr", "pos", "aa", "da", "daf");
     while(1) {
@@ -117,29 +118,30 @@ int main(int argc, char **argv) {
 
         // Check sort of chromosomes
         if(*lastchr) {
-            int diff = strcmp(lastchr, chr);
+            int         diff = strcmp(lastchr, chr);
             if(diff > 0) {
                 // bad sort
-                fprintf(stderr,"%s:%d: unsorted chromosomes\n",
-                        __FILE__,__LINE__);
-                fprintf(stderr,"    %s > %s\n", lastchr, chr);
+                fprintf(stderr, "%s:%d: unsorted chromosomes\n",
+                        __FILE__, __LINE__);
+                fprintf(stderr, "    %s > %s\n", lastchr, chr);
                 exit(1);
-            }else if(diff < 0) {
+            } else if(diff < 0) {
                 // new chromosome
-                int status = snprintf(lastchr, sizeof lastchr, "%s", chr);
+                int         status =
+                    snprintf(lastchr, sizeof lastchr, "%s", chr);
                 if(status >= sizeof lastchr) {
-                    fprintf(stderr,"%s:%d: buffer overflow\n",
-                            __FILE__,__LINE__);
+                    fprintf(stderr, "%s:%d: buffer overflow\n",
+                            __FILE__, __LINE__);
                     exit(1);
                 }
                 lastnucpos = 0;
             }
-        }else{
+        } else {
             // initialize lastchr
-            int status = snprintf(lastchr, sizeof lastchr, "%s", chr);
+            int         status = snprintf(lastchr, sizeof lastchr, "%s", chr);
             if(status >= sizeof lastchr) {
-                fprintf(stderr,"%s:%d: buffer overflow\n",
-                        __FILE__,__LINE__);
+                fprintf(stderr, "%s:%d: buffer overflow\n",
+                        __FILE__, __LINE__);
                 exit(1);
             }
             assert(lastnucpos == 0);
@@ -148,16 +150,16 @@ int main(int argc, char **argv) {
         // Check sort of nucleotice positions
         if(lastnucpos) {
             if(lastnucpos == nucpos) {
-                fprintf(stderr,"%s:%d: Duplicate: chr=%s pos=%lu\n",
-                        __FILE__,__LINE__, chr, nucpos);
-                fprintf(stderr,"%s:%d: Previous : chr=%s pos=%lu\n",
-                        __FILE__,__LINE__, lastchr, lastnucpos);
+                fprintf(stderr, "%s:%d: Duplicate: chr=%s pos=%lu\n",
+                        __FILE__, __LINE__, chr, nucpos);
+                fprintf(stderr, "%s:%d: Previous : chr=%s pos=%lu\n",
+                        __FILE__, __LINE__, lastchr, lastnucpos);
                 exit(1);
-            }else if(lastnucpos > nucpos) {
-                fprintf(stderr,"%s:%d: Missorted nucleotide positions\n",
+            } else if(lastnucpos > nucpos) {
+                fprintf(stderr, "%s:%d: Missorted nucleotide positions\n",
                         __FILE__, __LINE__);
-                fprintf(stderr,"   Current : chr=%s pos=%lu\n", chr, nucpos);
-                fprintf(stderr,"   Previous: chr=%s pos=%lu\n",
+                fprintf(stderr, "   Current : chr=%s pos=%lu\n", chr, nucpos);
+                fprintf(stderr, "   Previous: chr=%s pos=%lu\n",
                         lastchr, lastnucpos);
                 exit(1);
             }
@@ -195,12 +197,6 @@ int main(int argc, char **argv) {
             ++nbad;
             continue;
         }
-#if 0
-        fprintf(stderr, "  chr=%s pos=%s ref=%s alt=%s aa=%s\n",
-                chr ? chr : "NULL", pos ? pos : "NULL", ref ? ref : "NULL",
-                alt ? alt : "NULL", aa ? aa : "NULL");
-#endif
-
         // Skip if ref or aa are missing.
         if(aa[0] == '.' || aa[0] == '-') {
             ++missaa;
@@ -218,9 +214,16 @@ int main(int argc, char **argv) {
             continue;
         }
 
+        // If alt is missing and aa differs from ref, then set
+        // alt equal to aa.
+        if(alt[0] == '.' && ref[0] != aa[0])
+            alt[0] = aa[0];
+
         char        alleles[10];
         strcpy(alleles, ref);
         strcat(alleles, alt);
+        assert(strlen(alleles) == 2);
+               
         if(strlen(alleles) != 2) {
             fprintf(stderr, "%s:%5d: Error. Number of alleles is %zu.\n",
                     __FILE__, __LINE__, strlen(alleles));
@@ -228,25 +231,17 @@ int main(int argc, char **argv) {
         }
         char       *aaptr = strchr(alleles, aa[0]); // ptr to ancestral allele
         if(aaptr == NULL) {
-	  // If alt=='.' and the ancestral
-	  // allele isn't reference, then set alt=aa.
-	  if(alleles[1] == '.') {
-	    alleles[1] = aa[0];
-            aaptr = alleles+1;
-            assert(aaptr != NULL);
-	  }else {
-	    // skip site: there are 3 alleles
-	    continue;
-	  }
+            // skip site: there are 3 alleles
+            continue;
         }
         int         aai = aaptr - alleles;  // index of ancestral allele
-#ifndef NDEBUG	
-	if(aai!=0 && aai!=1) {
-	  fprintf(stderr,"%s:%d: aaptr=%zu aai=%d\n",
-		  __FILE__,__LINE__, (size_t) aaptr, aai);
-	  fprintf(stderr,"%s:%d: alleles=[%s] ref=[%s] alt=[%s] aa=[%s]\n",
-		  __FILE__,__LINE__, alleles, ref, alt, aa);
-	}
+#ifndef NDEBUG
+        if(aai != 0 && aai != 1) {
+            fprintf(stderr, "%s:%d: aaptr=%zu aai=%d\n",
+                    __FILE__, __LINE__, (size_t) aaptr, aai);
+            fprintf(stderr, "%s:%d: alleles=[%s] ref=[%s] alt=[%s] aa=[%s]\n",
+                    __FILE__, __LINE__, alleles, ref, alt, aa);
+        }
 #endif
         assert(aai == 0 || aai == 1);
 
