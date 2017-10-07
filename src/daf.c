@@ -212,6 +212,8 @@ int main(int argc, char **argv) {
             ++missref;
             ok = 0;
         }
+        if(alt[0] == '.' || alt[0] == '-')
+            alt[0] = '\0';
 
         if(!ok) {
             ++nbad;
@@ -221,14 +223,18 @@ int main(int argc, char **argv) {
         char        alleles[10];
         strcpy(alleles, ref);
         strcat(alleles, alt);
-        if(strlen(alleles) != 2) {
+        if(strlen(alleles) > 2) {
             fprintf(stderr, "%s:%5d: Error. Number of alleles is %zu.\n",
                     __FILE__, __LINE__, strlen(alleles));
             exit(EXIT_FAILURE);
         }
         char       *aaptr = strchr(alleles, aa[0]); // ptr to ancestral allele
-        if(aaptr == NULL)
-            continue;
+        if(aaptr == NULL) {
+            // If ancestral allele is not in "alleles", add it.
+            strcat(alleles, aa);
+            aaptr = strchr(alleles, aa[0]);
+            assert(aaptr != NULL);
+        }
         int         aai = aaptr - alleles;  // index of ancestral allele
         assert(aai == 0 || aai == 1);
 
