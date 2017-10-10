@@ -5,7 +5,7 @@
 #  include "misc.h"
 #  include <assert.h>
 #  include <stdbool.h>
-#  define MAXPAR 50
+#  define MAXPAR 100
 
 struct Bounds {
     double      lo_twoN, hi_twoN, lo_t, hi_t;
