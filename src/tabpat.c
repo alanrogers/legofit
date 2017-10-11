@@ -376,7 +376,7 @@ int main(int argc, char **argv) {
                 exit(EXIT_FAILURE);
             }
 
-    unsigned long npat = (1UL << n) - 2;    // number of site patterns
+    unsigned long npat = (1UL << n) - 2UL;  // number of site patterns
     if(!doSing)
         npat -= n;
     printf("# %s singleton site patterns.\n",
@@ -517,7 +517,7 @@ int main(int argc, char **argv) {
         if(maxp == 0.0 || minp == 1.0) {
             if(logFixed) {
                 assert(logfile);
-                fprintf(logfile, "All p=%lf\n", maxp == 0.0 ? 0.0 : 1.0);
+                fprintf(logfile, "All p=%lf\n", p[0]);
                 DAFReader_printHdr(logfile);
                 for(i = 0; i < n; ++i)
                     DAFReader_print(r[i], logfile);
