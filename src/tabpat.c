@@ -31,6 +31,8 @@ replicate into a separate file.
           log AA/DA mismatches to tabpat.log
        -F or --logFixed
           log fixed sites to tabpat.log
+       -a or --logAll
+          log all sites to tabpat.log
        -h or --help
           Print this message
 
@@ -80,6 +82,11 @@ right column gives the expected count of each site pattern. These are
 not integers, because they represent averages over all possible
 subsamples consisting of a single haploid genome from each
 population.
+
+In the daf files used as input, chromosomes should appear in lexical
+order. Within each chromosome, nucleotides should appear in numerical
+order. There should be no duplicate (chromosome, position)
+pairs. Otherwise, the program aborts with an error.
 
 To generate a bootstrap, use the `--bootreps` option:
 
@@ -213,8 +220,8 @@ static void Stack_push(Stack * self, tipId_t x) {
 /// Call as generatePatterns(0, npops, stk, 0); Recursive function,
 /// which generates all legal site patterns and pushes them onto a
 /// stack.
-static void generatePatterns(int bit, int npops, Stack * stk, tipId_t pat,
-                             int doSing) {
+static void
+generatePatterns(int bit, int npops, Stack * stk, tipId_t pat, int doSing) {
     assert(sizeof(tipId_t) < sizeof(unsigned long long));
     if(bit == npops) {
         // Recursion stops here. If current pattern is
