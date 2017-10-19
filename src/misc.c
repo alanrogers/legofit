@@ -490,3 +490,32 @@ char *nextWhitesepToken(char **str) {
     }while(token!=NULL && *token=='\0');
     return token;
 }
+
+/// Separate string s into tokens, separated by any character
+/// in string delim. Set ptr[i] equal to the address of the i'th
+/// token. Terminate each substring with '\0' within s. Return the
+/// number of tokens. Abort if the number of substrings exceeds
+/// n. 
+int tokenize(int dim, char *token[dim], char *s, const char *delim) {
+    char *t;
+    int n=0;
+    while((t=strsep(&s, delim)) != NULL) {
+        if(n >= dim) {
+            fprintf(stderr,"%s:%d: too many alleles; max is %d\n",
+                    __FILE__,__LINE__, dim);
+            exit(1);
+        }
+        token[n] = t;
+        ++n;
+    }
+    return n;
+}
+
+/// In string s, replace instances of character a with character b. 
+void        strReplaceChr(char *s, int a, int b) {
+    while(*s != '\0') {
+        if(*s == a)
+            *s = b;
+        ++s;
+    }
+}

@@ -1,4 +1,3 @@
-
 /**
 @file daf.c
 @page daf
@@ -90,31 +89,33 @@ int main(int argc, char **argv) {
                     __FILE__, __LINE__, sizeof(buff));
             exit(EXIT_FAILURE);
         }
-        char       *chr, *pos, *ref, *alt, *aa, *gtype, *next = buff;
+        char       *chr, *pos, *reftoken, *alttoken, *aatoken;
+        char       *gtype, *next = buff;
 
         chr = strsep(&next, "\t");  // field 0
         pos = strsep(&next, "\t");  // field 1
-        ref = strsep(&next, "\t");  // field 2
-        alt = strsep(&next, "\t");  // field 3
-        aa = strsep(&next, "\t");   // field 4
+        reftoken = strsep(&next, "\t");  // field 2
+        alttoken = strsep(&next, "\t");  // field 3
+        aatoken = strsep(&next, "\t");   // field 4
 
-        if(aa == NULL) {
+        nucpos = strtoul(pos, NULL, 10);
+
+        if(aatoken == NULL) {
             fprintf(stderr, "%s:%d: Bad input line\n", __FILE__, __LINE__);
             exit(EXIT_FAILURE);
         }
         // lowercase alleles
-        strlowercase(ref);
-        strlowercase(alt);
-        strlowercase(aa);
+        strlowercase(reftoken);
+        strlowercase(alttoken);
+        strlowercase(aatoken);
 
-        // strip extraneous characters
+        // strip space characters
         (void) stripchr(chr, ' ');
         (void) stripchr(pos, ' ');
-        int         nref = stripchr(ref, ' ');  // nref: num ref alleles
-        int         nalt = stripchr(alt, ' ');  // nalt: num alt alleles
-        (void) stripchr(aa, ' ');
-        int         naa = stripchr(aa, '|');    // naa: num ancestral alleles
-        nucpos = strtoul(pos, NULL, 10);
+        (void) stripchr(reftoken, ' ');
+        (void) stripchr(alttoken, ' ');
+        (void) stripchr(aatoken, ' ');
+        (void) stripchr(aatoken, ' ');
 
         // Check sort of chromosomes
         if(*lastchr) {
@@ -166,6 +167,23 @@ int main(int argc, char **argv) {
         }
         lastnucpos = nucpos;
 
+        int maxalleles = 10, nref, nalt, naa;
+        char *ref[maxalleles];
+        char *alt[maxalleles];
+        char *aa[maxalleles];
+
+        // Replace '-' with '.' in allele tokens, so there is only
+        // one kind of missing value.
+        strReplaceChr(reftoken, '-', '.');
+        strReplaceChr(alttoken, '-', '.');
+        strReplaceChr(aatoken, '-', '.');
+
+        // REF and ALT alleles are separated by commas.
+        // Ancestral alleles are separated by "|".
+        nref = tokenize(maxalleles, ref, reftoken, ",");
+        nalt = tokenize(maxalleles, alt, alttoken, ",");
+        naa = tokenize(maxalleles, aa, aatoken, "|");
+
         // Skip sites at which the number of reference, alternate, or ancestral
         // alleles differs from 1.
         ok = 1;
@@ -198,16 +216,14 @@ int main(int argc, char **argv) {
             continue;
         }
         // Skip if ref or aa are missing.
-        if(aa[0] == '.' || aa[0] == '-') {
+        if(0==strcmp(aa[0], ".")) {
             ++missaa;
             ok = 0;
         }
-        if(ref[0] == '.' || ref[0] == '-') {
+        if(0==strcmp(ref[0], ".")) {
             ++missref;
             ok = 0;
         }
-        if(alt[0] == '.' || alt[0] == '-')
-            alt[0] = '.';
 
         if(!ok) {
             ++nbad;
@@ -216,34 +232,24 @@ int main(int argc, char **argv) {
 
         // If alt is missing and aa differs from ref, then set
         // alt equal to aa.
-        if(alt[0] == '.' && ref[0] != aa[0])
+        if(0==strcmp(alt[0], ".") && 0!=strcmp(ref[0], aa[0]))
             alt[0] = aa[0];
 
-        char        alleles[10];
-        strcpy(alleles, ref);
-        strcat(alleles, alt);
-        assert(strlen(alleles) == 2);
-               
-        if(strlen(alleles) != 2) {
-            fprintf(stderr, "%s:%5d: Error. Number of alleles is %zu.\n",
-                    __FILE__, __LINE__, strlen(alleles));
-            exit(EXIT_FAILURE);
-        }
-        char       *aaptr = strchr(alleles, aa[0]); // ptr to ancestral allele
-        if(aaptr == NULL) {
+        char        *alleles[2], **aaptr;
+        alleles[0] = ref[0];
+        alleles[1] = alt[1];
+
+        // set pointer to ancestral allele
+        if(0==strcmp(alleles[0], aa[0]))
+            aaptr = alleles;
+        else if(0==strcmp(alleles[1], aa[0]))
+            aaptr = alleles+1;
+        else {
             // skip site: there are 3 alleles
             continue;
         }
         int         aai = aaptr - alleles;  // index of ancestral allele
-#ifndef NDEBUG
-        if(aai != 0 && aai != 1) {
-            fprintf(stderr, "%s:%d: aaptr=%zu aai=%d\n",
-                    __FILE__, __LINE__, (size_t) aaptr, aai);
-            fprintf(stderr, "%s:%d: alleles=[%s] ref=[%s] alt=[%s] aa=[%s]\n",
-                    __FILE__, __LINE__, alleles, ref, alt, aa);
-        }
-#endif
-        assert(aai == 0 || aai == 1);
+        assert(aai==0 || aai==1);
 
         int         x = 0, n = 0;
         gtype = strsep(&next, "\t");    // field 5
@@ -265,9 +271,7 @@ int main(int argc, char **argv) {
                         __FILE__, __LINE__, gtype);
                 fprintf(stderr,
                         "  chr=%s pos=%s ref=%s alt=%s aa=%s gtype=%s\n",
-                        chr ? chr : "NULL", pos ? pos : "NULL",
-                        ref ? ref : "NULL", alt ? alt : "NULL",
-                        aa ? aa : "NULL", gtype ? gtype : "NULL");
+                        chr, pos, ref[0], alt[0], aa[0], gtype);
                 exit(EXIT_FAILURE);
             }
 
@@ -286,9 +290,7 @@ int main(int argc, char **argv) {
                         __FILE__, __LINE__, gtype);
                 fprintf(stderr,
                         "  chr=%s pos=%s ref=%s alt=%s aa=%s gtype=%s\n",
-                        chr ? chr : "NULL", pos ? pos : "NULL",
-                        ref ? ref : "NULL", alt ? alt : "NULL",
-                        aa ? aa : "NULL", gtype ? gtype : "NULL");
+                        chr, pos, ref[0], alt[0], aa[0], gtype);
                 exit(EXIT_FAILURE);
             }
             gtype = strsep(&next, "\t");    // additional fields
@@ -304,8 +306,8 @@ int main(int argc, char **argv) {
         if(aai == 1)
             x = n - x;
         double      p = x / ((double) n);
-        printf("%4s %10s %2s %2c %20.18f\n",
-               chr, pos, aa, alleles[1 - aai], p);
+        printf("%4s %10s %2s %2s %20.18f\n",
+               chr, pos, aa[0], alleles[1 - aai], p);
     }
     fprintf(stderr, "daf: %d good sites; %d rejected\n", ngood, nbad);
     if(zeroref)

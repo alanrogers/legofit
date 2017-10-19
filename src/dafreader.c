@@ -1,4 +1,3 @@
-
 /**
    @file dafreader.c
    @brief Class DAFReader: read a daf file.
