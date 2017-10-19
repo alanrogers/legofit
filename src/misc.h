@@ -37,6 +37,9 @@ unsigned    strhash(const char *ss);
 int         stripchr(char *s, int c);
 char       *stripWhiteSpace(char *buff);
 char       *nextWhitesepToken(char **str);
+int         tokenize(int dim, char *token[dim], char *s, const char *delim);
+void        strReplaceChr(char *s, int a, int b);
+
 
 static inline double survival(double t, double twoN);
 

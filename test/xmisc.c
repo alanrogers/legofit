@@ -61,5 +61,39 @@ int main(int argc, char **argv) {
 
     unitTstResult("efopen", "OK");
 
+    // Test tokenize
+    int n, dim=10;
+    char s[100];
+    char *tokens[dim];
+
+    strcpy(s, "aaa,bbb,c");
+    n = tokenize(dim, tokens, s, ",");
+    assert(n==3);
+    assert(strcmp(tokens[0], "aaa") == 0);
+    assert(strcmp(tokens[1], "bbb") == 0);
+    assert(strcmp(tokens[2], "c") == 0);
+    if(verbose) {
+        for(i=0; i<n; ++i)
+            printf("token[%d] = %s\n", i, tokens[i]);
+    }
+
+    strcpy(s, "aaa");
+    n = tokenize(dim, tokens, s, ",");
+    assert(n==1);
+    assert(strcmp(tokens[0], "aaa") == 0);
+    if(verbose) {
+        for(i=0; i<n; ++i)
+            printf("token[%d] = %s\n", i, tokens[i]);
+    }
+
+    unitTstResult("tokenize", "OK");
+
+    // Test strReplaceChr
+    strcpy(s, "a-b-c");
+    strReplaceChr(s, '-', '.');
+    assert(0==strcmp(s, "a.b.c"));
+
+    unitTstResult("strReplaceChr", "OK");
+
     return 0;
 }
