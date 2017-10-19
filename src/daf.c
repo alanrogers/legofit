@@ -66,7 +66,7 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
-    const int   buffsize = 4096;
+    const int   buffsize = 16384;
     char        buff[buffsize];
 
     // Keep track of the number of sites at which the number
