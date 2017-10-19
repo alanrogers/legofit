@@ -256,11 +256,14 @@ int DAFReader_multiNext(int n, DAFReader * r[n]) {
 int DAFReader_allelesMatch(int n, DAFReader * r[n]) {
     char  *aa = r[0]->aa;
     char  *da = r[0]->da;
+    int    daNotMissing = (0!=strcmp(".", da));
     int   i;
     for(i = 1; i < n; ++i) {
         if(0!=strcmp(aa, r[i]->aa))
             return 0;
-        if(0!=strcmp(da, r[i]->da))
+        if(daNotMissing
+           && 0!=strcmp(".", r[i]->da)
+           && 0!=strcmp(da, r[i]->da))
             return 0;
     }
     return 1;
