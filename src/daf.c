@@ -235,20 +235,20 @@ int main(int argc, char **argv) {
         if(0==strcmp(alt[0], ".") && 0!=strcmp(ref[0], aa[0]))
             alt[0] = aa[0];
 
-        char        *alleles[2], **aaptr;
+        char        *alleles[2];
+        int          aai;
         alleles[0] = ref[0];
-        alleles[1] = alt[1];
+        alleles[1] = alt[0];
 
-        // set pointer to ancestral allele
+        // set index of ancestral allele
         if(0==strcmp(alleles[0], aa[0]))
-            aaptr = alleles;
+            aai=0;
         else if(0==strcmp(alleles[1], aa[0]))
-            aaptr = alleles+1;
+            aai=1;
         else {
             // skip site: there are 3 alleles
             continue;
         }
-        int         aai = aaptr - alleles;  // index of ancestral allele
         assert(aai==0 || aai==1);
 
         int         x = 0, n = 0;
