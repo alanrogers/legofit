@@ -600,11 +600,12 @@ static void PopNode_gaussian_r(PopNode * self, Bounds bnd,
         postpone = false;
         break;
     case 2:
-        if(!self->parent[1]->touched) {
+        if(!self->parent[0]->touched
+           || !self->parent[1]->touched) {
             postpone = true;
             break;
         }
-        // fall through
+        break;
     case 1:
         assert(self->parent[0]->touched);
         break;
