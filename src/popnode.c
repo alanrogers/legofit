@@ -603,7 +603,6 @@ static void PopNode_gaussian_r(PopNode * self, Bounds bnd,
         if(!self->parent[0]->touched
            || !self->parent[1]->touched) {
             postpone = true;
-            break;
         }
         break;
     case 1:
