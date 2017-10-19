@@ -144,20 +144,11 @@ int DAFReader_next(DAFReader * self) {
     status = snprintf(self->aa, sizeof(self->aa), "%s",
                       Tokenizer_token(self->tkz, 2));
     strlowercase(self->aa);
-    if(strlen(self->aa) != 1 || strchr("atgc", *self->aa) == NULL) {
-        fprintf(stderr, "%s:%d: Ancestral allele must be a single nucleotide."
-                " Got: %s.\n", __FILE__, __LINE__, self->aa);
-        exit(EXIT_FAILURE);
-    }
+
     // Derived allele
     snprintf(self->da, sizeof(self->da), "%s", Tokenizer_token(self->tkz, 3));
     strlowercase(self->da);
-    if(strlen(self->da) != 1 || strchr("atgc.", *self->da) == NULL) {
-        fprintf(stderr,
-                "%s:%d: Derived allele must be a single nucleotide or \".\"."
-                " Got: %s.\n", __FILE__, __LINE__, self->da);
-        exit(EXIT_FAILURE);
-    }
+
     // Derived allele frequency
     self->p = strtod(Tokenizer_token(self->tkz, 4), NULL);
 
@@ -263,13 +254,13 @@ int DAFReader_multiNext(int n, DAFReader * r[n]) {
 /// Return 1 if ancestral and derived alleles of all readers match; 0
 /// otherwise
 int DAFReader_allelesMatch(int n, DAFReader * r[n]) {
-    int         aa = *r[0]->aa;
-    int         da = *r[0]->da;
-    int         i;
+    char  *aa = r[0]->aa;
+    char  *da = r[0]->da;
+    int   i;
     for(i = 1; i < n; ++i) {
-        if(aa != *r[i]->aa)
+        if(0!=strcmp(aa, r[i]->aa))
             return 0;
-        if(da != '.' && *r[i]->da != '.' && da != *r[i]->da)
+        if(0!=strcmp(da, r[i]->da))
             return 0;
     }
     return 1;

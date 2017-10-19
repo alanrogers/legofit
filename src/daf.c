@@ -79,7 +79,7 @@ int main(int argc, char **argv) {
     long unsigned lastnucpos = 0, nucpos;
     char        lastchr[100] = { '\0' };
 
-    printf("#%3s %10s %4s %4s %20s\n", "chr", "pos", "aa", "da", "daf");
+    printf("#%3s %10s %2s %2s %20s\n", "chr", "pos", "aa", "da", "daf");
     while(1) {
         if(NULL == fgets(buff, buffsize, stdin)) {
             break;
@@ -306,7 +306,7 @@ int main(int argc, char **argv) {
         if(aai == 1)
             x = n - x;
         double      p = x / ((double) n);
-        printf("%4s %10s %4s %4s %20.18f\n",
+        printf("%4s %10s %2s %2s %20.18f\n",
                chr, pos, aa[0], alleles[1 - aai], p);
     }
     fprintf(stderr, "daf: %d good sites; %d rejected\n", ngood, nbad);
