@@ -4,7 +4,7 @@
 #include "typedefs.h"
 #include <stdio.h>
 
-#define DAFSTRSIZE 10
+#define DAFSTRSIZE 20
 
 struct DAFReader {
     char       *fname;
