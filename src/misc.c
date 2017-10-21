@@ -523,23 +523,23 @@ void        strReplaceChr(char *s, int a, int b) {
 /// Parse token as a double. If strtod sets errno, then leave
 /// errno alone. If the token isn't a float or if there are extraneous
 /// characters at the end of the token, then set errno=EINVAL.
+/// If parseDbl sets errno, it returns 0.0.
 double parseDbl(char *token) {
     char *leftover;
     double x;
     errno=0;
     x = strtod(token, &leftover);
-    if(errno) {
-        x = 0.0;
-    }else  if(leftover==token) {
-        x=0.0;
+    if(errno) 
+        return 0.0;
+    if(leftover==token) {
         errno = EINVAL;
-    }else {
-        while(isspace(*leftover))
-            ++leftover;
-        if(*leftover != '\0') {
-            x=0.0;
-            errno = EINVAL;
-        }
+        return 0.0;
+    }
+    while(isspace(*leftover))
+        ++leftover;
+    if(*leftover != '\0') {
+        errno = EINVAL;
+        return 0.0;
     }
     return x;
 }
