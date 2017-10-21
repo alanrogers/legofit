@@ -114,7 +114,7 @@ int getDbl(double *x, char **next, const char *orig) {
     tok = nextWhitesepToken(next);
     CHECK_TOKEN(tok, orig);
     *x = strtod(tok, &end);
-    if(end != NULL && *end == '\0')
+    if(end!=tok && end != NULL && *end == '\0')
         return 0;               // success
     return 1;                   // failure
 }

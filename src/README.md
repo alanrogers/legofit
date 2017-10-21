@@ -110,7 +110,7 @@ edit the first non-comment line of src/Makefile.
 
 Then
 
-1. Cd into the src directory.
+1. cd into the src directory.
 2. Type "make".
 3. Type "make install".
 
@@ -168,9 +168,9 @@ used here to label the columns. The columns are as follows:
    pairs. Daf format doesn't care whether nucleotide positions are
    numbered beginning with 0 or with 1, provided that they are consistent
    across files in a given analysis.
-4. Ancestral allele, a single letter.
-5. Derived allele, also a single letter. Loci with 3 or more alleles
-   should be excluded.
+4. Ancestral allele.
+5. Derived allele. Indels and loci with 3 or more alleles should be
+   excluded. 
 6. Frequency of the derived allele within the sample.
 
 The lines should be sorted lexically by chromosome. Within
