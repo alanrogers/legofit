@@ -78,7 +78,6 @@ double Term_value(Term *self);
 void Term_prFormula(Term *self, FILE *fp);
 int Term_equals(Term *lhs, Term *rhs);
 
-
 /// Count the number of copies of character c in string s
 static inline int chrcount(const char *s, char c) {
     if(s==NULL)
@@ -610,7 +609,7 @@ Constraint *Constraint_new(ParKeyVal *pkv, char *str) {
     Constraint *self = malloc(sizeof(Constraint));
     CHECKMEM(self);
 
-    char *s, *token, *next = str;
+    char *token, *next = str;
 
     // Parse y intercept
     token = strsep(&next, "+");
@@ -626,8 +625,15 @@ Constraint *Constraint_new(ParKeyVal *pkv, char *str) {
                 __FILE__, __func__, __LINE__, token);
         exit(EXIT_FAILURE);
     }
-    s = stripWhiteSpace(token);
-    self->a = strtod(s, NULL);
+    errno=0;
+    self->a = parseDbl(token);
+    if(errno) {
+        char err_buff[50];
+        strerror_r(errno, err_buff, sizeof(err_buff));
+        fprintf(stderr,"%s:%d: Bad float \"%s\" (%s).\n",
+                __FILE__,__LINE__, token, err_buff);
+        exit(EXIT_FAILURE);
+    }
 
     if(next==NULL) {
         fprintf(stderr,"%s:%s:%d: Formula must have at least 2 terms.\n"
@@ -706,13 +712,15 @@ Term *Term_new(Term *head, ParKeyVal *pkv, char *str) {
         fprintf(stderr,"%s:%d: Bad term \"%s\"\n", __FILE__,__LINE__,str);
         exit(EXIT_FAILURE);
     }
-    if(strspn(token, " 0123456789.-") != strlen(token)) {
-        fprintf(stderr,"%s:%d: term must begin with a number.\n"
-                "   Can't parse \"%s\"\n",
-                __FILE__,__LINE__, token);
+    errno = 0;
+    self->b = parseDbl(token);
+    if(errno) {
+        char err_buff[50];
+        strerror_r(errno, err_buff, sizeof(err_buff));
+        fprintf(stderr,"%s:%d: Bad float \"%s\" (%s).\n",
+                __FILE__,__LINE__, token, err_buff);
         exit(EXIT_FAILURE);
     }
-    self->b = strtod(token, NULL);
 
     // get dimension and allocate arrays
     if(next == NULL) {
