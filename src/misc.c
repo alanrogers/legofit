@@ -529,15 +529,19 @@ double parseDbl(char *token) {
     double x;
     errno=0;
     x = strtod(token, &leftover);
-    if(errno) 
+    if(errno) {
+        // strdup detected a problem
         return 0.0;
+    }
     if(leftover==token) {
+        // token not interpretable as a float
         errno = EINVAL;
         return 0.0;
     }
     while(isspace(*leftover))
         ++leftover;
     if(*leftover != '\0') {
+        // extraneous characters after float
         errno = EINVAL;
         return 0.0;
     }
