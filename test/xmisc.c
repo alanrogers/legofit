@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include <errno.h>
 
 #ifdef NDEBUG
 #  error "Unit tests must be compiled without -DNDEBUG flag"
@@ -94,6 +95,40 @@ int main(int argc, char **argv) {
     assert(0==strcmp(s, "a.b.c"));
 
     unitTstResult("strReplaceChr", "OK");
+
+    // test parseDbl
+    double x;
+    strcpy(buff, " 123.4 ");
+    errno=0;
+    x = parseDbl(buff);
+    assert(errno==0);
+    assert(Dbl_near(x, 123.4));
+
+    strcpy(buff, " 123.4e1 ");
+    errno=0;
+    x = parseDbl(buff);
+    assert(errno==0);
+    assert(Dbl_near(x, 123.4e1));
+
+    strcpy(buff, " 123.4e9999 ");
+    errno=0;
+    x = parseDbl(buff);
+    assert(errno==ERANGE);
+    assert(x==0.0);
+
+    strcpy(buff, " 123.4xxxx ");
+    errno=0;
+    x = parseDbl(buff);
+    assert(errno==EINVAL);
+    assert(x==0.0);
+
+    strcpy(buff, " xxxx ");
+    errno=0;
+    x = parseDbl(buff);
+    assert(errno==EINVAL);
+    assert(x==0.0);
+    
+    unitTstResult("parseDbl", "OK");
 
     return 0;
 }
