@@ -211,7 +211,11 @@ them all equal to "one". Next, three more time variables named "Txyn",
 The comments hint at the meanings of these variables; the values are
 in generations. The first of these variables is "fixed" (see
 above). The other two are "free", which means that `legofit` will
-estimate their values.
+estimate their values. Numerical values may optionally be written in
+exponential notation. For example the last line above could have been
+written as
+
+    time free     Txy=3.788e3      # Africa-Eurasia separation time
 
 It is also possible to define variables as "gaussian". For example,
 
@@ -229,8 +233,8 @@ variable "x" just defined will be ignored in what follows.
 Our measure of population size is twice the effective size of the
 population, and we define two such variables:
 
-    twoN free     2Nn=1000          # archaic population size
-    twoN constrained 2Nxy=10000 + -1.2*Txy # early modern population size
+    twoN free         2Nn=1e3            # archaic population size
+    twoN constrained 2Nxy=1e4 + -1.2*Txy # early modern population size
 
 The first of these is a free parameter, but the second is a new
 category: "constrained". It defines "2Nxy" as a function of "Txy".
@@ -241,7 +245,7 @@ estimates. In the constraint above, there are only two terms and one
 independent variable---"Txy". It is legal, however, to use any number of
 terms and independent variables. For example, we could have written
 
-    twoN constrained 2Nxy=10000 + -1.2*Txy + 0.01*Txy*Txyn # OK
+    twoN constrained 2Nxy=1e4 + -1.2*Txy + 0.01*Txy*Txyn # OK
 
 All independent variables must be free parameters, and all must be
 defined before the constraint. The terms in the constraint must be
@@ -249,6 +253,10 @@ separated by "+". It would *not* be legal to rewrite the constraint
 as
 
     twoN constrained 2Nxy=10000 - 1.2*Txy # ERROR
+
+Because the "+" sign is used to separate terms, it is not legal to
+write a numerical constant as "1e+4". On the other hand, "1e-4" is
+fine. 
 
 We have one more variable to declare:
 
@@ -440,4 +448,3 @@ This bias is exacerbated if the parent's age is modeled as a Gaussian
 variable, because then the constraint is an interval rather than a
 point, and the optimizer encounters it sooner. For this reason, I have
 not used Gaussian variables in recent work.
-
