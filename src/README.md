@@ -256,7 +256,15 @@ as
 
 Because the "+" sign is used to separate terms, it is not legal to
 write a numerical constant as "1e+4". On the other hand, "1e-4" is
-fine. 
+fine.
+
+To spread a constraint across several lines, break the line after a
+"+" symbol. For example, the correct version of the statement above
+could be written as
+
+    twoN constrained 2Nxy=1e4 +
+	  -1.2*Txy +
+	  0.01*Txy*Txyn # Constraint spread across 3 lines.
 
 We have one more variable to declare:
 
