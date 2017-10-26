@@ -488,8 +488,8 @@ static void PopNode_randomize_r(PopNode * self, Bounds bnd,
 
     // If parents have been touched, then randomize this
     // node. Otherwise, postpone.
-    if(self->nparents==2 && !self->parent[0]->touched &&
-       !self->parent[1]->touched) {
+    if(self->nparents==2 && !(self->parent[0]->touched &&
+                             self->parent[1]->touched)) {
         // one of the two parents hasn't been touched yet, so postpone
         // the current node.
         return;
@@ -580,8 +580,8 @@ static void PopNode_gaussian_r(PopNode * self, Bounds bnd,
                                ParStore * ps, gsl_rng * rng) {
 
     // If at least one parents is untouched, postpone this node.
-    if(self->nparents==2 && !self->parent[0]->touched &&
-       !self->parent[1]->touched) {
+    if(self->nparents==2 && !(self->parent[0]->touched &&
+                             self->parent[1]->touched)) {
         // one of the two parents hasn't been touched yet, so postpone
         // the current node.
         return;
