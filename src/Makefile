@@ -1,8 +1,8 @@
 destination := $(HOME)/bin
 global_destination := $(HOME)/group/bin
-#opt := -DNDEBUG -O3  -finline-functions  # For full optimization
+opt := -DNDEBUG -O3  -finline-functions  # For full optimization
 #opt :=  -O0 -fno-inline-functions -rdynamic -DDEBUG     # For debugging
-opt := -O3  -finline-functions  # Optimization + debugging
+#opt := -O3  -finline-functions  # Optimization + debugging
 #prof := -pg -rdynamic                    # For profiling
 prof :=
 incl := -I/usr/local/include -I/opt/local/include
