@@ -494,8 +494,8 @@ static void PopNode_randomize_r(PopNode * self, Bounds bnd,
         // the current node.
         return;
     }
-    assert(self->parent[0]->touched);
-    assert(self->nparents==1 || self->parent[1]->touched);
+    assert(self->nparents==0 || self->parent[0]->touched);
+    assert(self->nparents<2 || self->parent[1]->touched);
 
     // perturb self->twoN
     if(self->twoNfree)
@@ -586,8 +586,8 @@ static void PopNode_gaussian_r(PopNode * self, Bounds bnd,
         // the current node.
         return;
     }
-    assert(self->parent[0]->touched);
-    assert(self->nparents==1 || self->parent[1]->touched);
+    assert(self->nparents==0 || self->parent[0]->touched);
+    assert(self->nparents<2 || self->parent[1]->touched);
 
     // perturb self->twoN
     ParStore_sample(ps, self->twoN, bnd.lo_twoN, bnd.hi_twoN, rng);
