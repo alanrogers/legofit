@@ -488,28 +488,12 @@ static void PopNode_randomize_r(PopNode * self, Bounds bnd,
 
     // If parents have been touched, then randomize this
     // node. Otherwise, postpone.
-    bool        postpone = false;
-    switch (self->nparents) {
-    case 0:
-        postpone = false;
-        break;
-    case 2:
-        if(!self->parent[1]->touched) {
-            postpone = true;
-            break;
-        }
-        // fall through
-    case 1:
-        assert(self->parent[0]->touched);
-        break;
-    default:
-        fprintf(stderr, "%s:%s:%d: bad value of nparents: %d\n",
-                __FILE__, __func__, __LINE__, self->nparents);
-        exit(EXIT_FAILURE);
-    }
-
-    if(postpone)
+    if(self->nparents==2 && !self->parent[0]->touched &&
+       !self->parent[1]->touched) {
+        // one of the two parents hasn't been touched yet, so postpone
+        // the current node.
         return;
+    }
 
     // perturb self->twoN
     if(self->twoNfree)
@@ -593,29 +577,13 @@ void PopNode_gaussian(PopNode * self, Bounds bnd,
 static void PopNode_gaussian_r(PopNode * self, Bounds bnd,
                                ParStore * ps, gsl_rng * rng) {
 
-    // If parents are untouched, postpone this node.
-    bool        postpone = false;
-    switch (self->nparents) {
-    case 0:
-        postpone = false;
-        break;
-    case 2:
-        if(!self->parent[0]->touched
-           || !self->parent[1]->touched) {
-            postpone = true;
-        }
-        break;
-    case 1:
-        assert(self->parent[0]->touched);
-        break;
-    default:
-        fprintf(stderr, "%s:%s:%d: bad value of nparents: %d\n",
-                __FILE__, __func__, __LINE__, self->nparents);
-        exit(EXIT_FAILURE);
-    }
-
-    if(postpone)
+    // If at least one parents is untouched, postpone this node.
+    if(self->nparents==2 && !self->parent[0]->touched &&
+       !self->parent[1]->touched) {
+        // one of the two parents hasn't been touched yet, so postpone
+        // the current node.
         return;
+    }
 
     // perturb self->twoN
     ParStore_sample(ps, self->twoN, bnd.lo_twoN, bnd.hi_twoN, rng);
