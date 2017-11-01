@@ -2,7 +2,7 @@
    @file dafreader.c
    @brief Class DAFReader: read a daf file.
 
-   @copyright Copyright (c) 2016, Alan R. Rogers 
+   @copyright Copyright (c) 2016, Alan R. Rogers
    <rogers@anthro.utah.edu>. This file is released under the Internet
    Systems Consortium License, which can be found in file "LICENSE".
 */
@@ -65,7 +65,7 @@ int iscomment(const char *s) {
 
 /// Read the next snp.
 /// @return 0 on success; EOF on end of file; aborts with message if
-/// other errors occur. 
+/// other errors occur.
 int DAFReader_next(DAFReader * self) {
     int         ntokens1;
     int         ntokens;
@@ -150,12 +150,24 @@ int DAFReader_next(DAFReader * self) {
     strlowercase(self->da);
 
     // Derived allele frequency
-    self->p = strtod(Tokenizer_token(self->tkz, 4), NULL);
+    char *token, *end;
+    token = Tokenizer_token(self->tkz, 4);
+    errno=0;
+    self->p = strtod(token, &end);
+    if(end==token)
+        errno = EINVAL;
+    if(errno) {
+        char err_buff[50];
+        strerror_r(errno, err_buff, sizeof(err_buff));
+        fprintf(stderr,"%s:%d: Bad float \"%s\" (%s); chr=%s pos=%lu\n",
+                __FILE__,__LINE__, token, err_buff, self->chr, self->nucpos);
+        exit(EXIT_FAILURE);
+    }
 
     return 0;
 }
 
-/// Rewind daf file. 
+/// Rewind daf file.
 /// @return 0 on success; -1 on failure
 int DAFReader_rewind(DAFReader * self) {
     return fseek(self->fp, 0L, SEEK_SET);

@@ -115,7 +115,6 @@ int main(int argc, char **argv) {
         (void) stripchr(reftoken, ' ');
         (void) stripchr(alttoken, ' ');
         (void) stripchr(aatoken, ' ');
-        (void) stripchr(aatoken, ' ');
 
         // Check sort of chromosomes
         if(*lastchr) {
@@ -148,7 +147,7 @@ int main(int argc, char **argv) {
             assert(lastnucpos == 0);
         }
 
-        // Check sort of nucleotice positions
+        // Check sort of nucleotide positions
         if(lastnucpos) {
             if(lastnucpos == nucpos) {
                 fprintf(stderr, "%s:%d: Duplicate: chr=%s pos=%lu\n",
