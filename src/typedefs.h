@@ -27,6 +27,7 @@ typedef struct SampNdx SampNdx;
 typedef struct StrInt StrInt;
 typedef struct Tokenizer Tokenizer;
 typedef struct DAFReader DAFReader;
+typedef struct RAFReader RAFReader;
 
 /// Distinguish between parameters that free, fixed, Gaussian, or
 /// constrained.  Free parameters can be changed during optimization;

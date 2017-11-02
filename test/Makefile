@@ -3,7 +3,7 @@ vpath %.c ../src
 opt :=  -O0 -fno-inline-functions -DDEBUG
 prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
-tests := xbinary xboot xbranchtab xdafreader xdiffev xgene \
+tests := xbinary xboot xbranchtab xdafreader xrafreader xdiffev xgene \
   xgptree xpopnodetab xjobqueue xlblndx xllrbtree xparkeyval xparse \
   xparstore xpopnode xsimsched xstrint xdtnorm xterm xmisc
 
@@ -39,6 +39,7 @@ test : $(tests)
 	-./xboot
 	-./xbranchtab
 	-./xdafreader
+	-./xrafreader
 	-./xdiffev
 	-./xdtnorm
 	-./xgene
@@ -88,6 +89,11 @@ XDAFREADER := xdafreader.o dafreader.o misc.o lblndx.o tokenizer.o binary.o \
    parkeyval.o strint.o
 xdafreader : $(XDAFREADER)
 	$(CC) $(CFLAGS) -o $@ $(XDAFREADER) $(lib)
+
+XRAFREADER := xrafreader.o rafreader.o misc.o lblndx.o tokenizer.o binary.o \
+   parkeyval.o strint.o
+xrafreader : $(XRAFREADER)
+	$(CC) $(CFLAGS) -o $@ $(XRAFREADER) $(lib)
 
 xparse.o : parse.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/parse.c
