@@ -63,9 +63,8 @@ int iscomment(const char *s) {
     return rval;
 }
 
-/// Read the next snp.
-/// @return 0 on success; EOF on end of file; aborts with message if
-/// other errors occur.
+/// Read the next site.
+/// @return 0 on success; EOF on end of file; abort on other errors.
 int DAFReader_next(DAFReader * self) {
     int         ntokens1;
     int         ntokens;
@@ -75,7 +74,7 @@ int DAFReader_next(DAFReader * self) {
 
     // Find a line of input
     while(1) {
-        if(fgets(buff, sizeof(buff), self->fp) == NULL)
+        if(fgets(buff, sizeof(buff), self->fp) == NULL) 
             return EOF;
         if(NULL == strchr(buff, '\n') && !feof(self->fp)) {
             fprintf(stderr, "%s:%d: Buffer overflow. size=%zu\n",

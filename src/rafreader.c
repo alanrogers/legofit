@@ -63,9 +63,8 @@ int iscomment(const char *s) {
     return rval;
 }
 
-/// Read the next snp.
-/// @return 0 on success; EOF on end of file; aborts with message if
-/// other errors occur.
+/// Read the next site.
+/// @return 0 on success; EOF on end of file 
 int RAFReader_next(RAFReader * self) {
     int         ntokens1;
     int         ntokens;
