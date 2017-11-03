@@ -1,7 +1,7 @@
 #ifndef EXCEPTION_INCLUDED
 #define EXCEPTION_INCLUDED
-
 #define EXCEPTION_SIZE 1000
+#include "typedefs.h"
 
 struct Exception {
     struct Exception *next;
