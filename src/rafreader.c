@@ -9,6 +9,7 @@
 #include "rafreader.h"
 #include "tokenizer.h"
 #include "misc.h"
+#include "error.h"
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
@@ -34,7 +35,8 @@ RAFReader  *RAFReader_new(const char *fname) {
     }
     self->tkz = Tokenizer_new(MAXFIELDS);
     self->snpid = -1;
-    self->p = strtod("NaN", NULL);
+    self->raf = strtod("NaN", NULL);
+    self->daf = strtod("NaN", NULL);
     return self;
 }
 
@@ -63,8 +65,12 @@ int iscomment(const char *s) {
     return rval;
 }
 
-/// Read the next site.
-/// @return 0 on success; EOF on end of file 
+/// Read the next site and set derived allele frequency (daf) within
+/// each reader.
+/// @return 0 on success, EOF on end of file, REF_ALT_MISMATCH if the
+/// ref and alt alleles are inconsistent across readers, and
+/// NO_ANCESTRAL_ALLELE if it isn't possible to call the ancestral
+/// allele. Aborts on other errors.
 int RAFReader_next(RAFReader * self) {
     int         ntokens1;
     int         ntokens;
@@ -152,7 +158,7 @@ int RAFReader_next(RAFReader * self) {
     char *token, *end;
     token = Tokenizer_token(self->tkz, 4);
     errno=0;
-    self->p = strtod(token, &end);
+    self->raf = strtod(token, &end);
     if(end==token)
         errno = EINVAL;
     if(errno) {
@@ -175,7 +181,10 @@ int RAFReader_rewind(RAFReader * self) {
 #define MAX(X,Y) ((X) > (Y) ? (X) : (Y))
 #define MIN(X,Y) ((X) > (Y) ? (Y) : (X))
 
-/// Advance an array of RAFReaders to the next shared position.
+/// Advance an array of RAFReaders to the next shared position, and
+/// set derived allele frequency within each RAFReader.
+/// @param[in] n number of RAFReader objects in array
+/// @param[in] r array of RAFReader objects. Last one should be outgroup.
 /// @return 0 on success or EOF on end of file.
 int RAFReader_multiNext(int n, RAFReader * r[n]) {
     int   i, status;
@@ -259,22 +268,44 @@ int RAFReader_multiNext(int n, RAFReader * r[n]) {
     }
     while(!onSameChr || minnuc != maxnuc);
 
+    // Make sure REF and ALT are consistent across readers
+    if(!RAFReader_allelesMatch(n, r))
+        return REF_ALT_MISMATCH;
+
+    // Set derived allele frequency
+    double ogf = r[n-1]->raf;  // freq of ref in outgroup
+    if(ogf == 0) {
+        // reference allele is derived
+        for(i=0; i<n; ++i)
+            r[i]->daf =  r[i]->raf;
+    }else if(ogf == 1.0) {
+        // alternate allele is derived
+        for(i=0; i<n; ++i)
+            r[i]->daf = 1.0-r[i]->raf;
+    }else{
+        // outgroup is polymorphic: can't call ancestral allele
+        return NO_ANCESTRAL_ALLELE;
+    }
+
     return 0;
 }
 
-/// Return 1 if ref and alt alleles of all readers match; 0
+/// Return 1 if ancestral and derived alleles of all readers match; 0
 /// otherwise
-int RAFReader_allelesMatch(int n, RAFReader * r[n]) {
+int DAFReader_allelesMatch(int n, DAFReader * r[n]) {
     char  *ref = r[0]->ref;
     char  *alt = r[0]->alt;
-    int    altNotMissing = (0!=strcmp(".", alt));
+    int    altMissing = (0==strcmp(".", alt));
     int   i;
     for(i = 1; i < n; ++i) {
         if(0!=strcmp(ref, r[i]->ref))
             return 0;
-        if(altNotMissing
-           && 0!=strcmp(".", r[i]->alt)
-           && 0!=strcmp(alt, r[i]->alt))
+        if(altMissing && 0!=strcmp(".", r[i]->alt)) {
+            altMissing=0;
+            alt = r[i]->alt;
+            continue;
+        }
+        if(!altMissing && 0!=strcmp(alt, r[i]->alt))
             return 0;
     }
     return 1;
@@ -289,12 +320,17 @@ void RAFReader_printHdr(FILE * fp) {
 /// Print current line of raf file
 void RAFReader_print(RAFReader * r, FILE * fp) {
     assert(r->fname);
-    fprintf(fp, "%50s %5s %10lu %3s %3s %8.6lf\n",
-            r->fname, r->chr, r->nucpos, r->ref, r->alt, r->p);
+    fprintf(fp, "%50s %5s %10lu %3s %3s %8.6lf %8.6lf\n",
+            r->fname, r->chr, r->nucpos, r->ref, r->alt, r->raf,
+            r->daf);
 }
 
 /// Return derived allele frequency of current line of raf file.
+double RAFReader_daf(RAFReader * r) {
+    return r->daf;
+}
+
+/// Return reference allele frequency of current line of raf file.
 double RAFReader_raf(RAFReader * r) {
-    assert(r->p >= 0.0 && r->p <= 1.0);
-    return r->p;
+    return r->raf;
 }

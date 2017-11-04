@@ -18,6 +18,23 @@
 #error "Unit tests must be compiled without -DNDEBUG flag"
 #endif
 
+const char *tstInput[3] = {"#chr\tpos\tref\talt\traf\n"
+                           "1\t1\ta\t.\t0\n"
+                           "10\t1\ta\tt\t5e-1\n"
+                           "10\t200\tg\tc\t1e0\n",
+
+                           "#chr\tpos\tref\talt\traf\n"
+                           "1\t1\ta\t.\t0.5\n"
+                           "1\t2\ta\t.\t0.5\n"
+                           "10\t1\ta\tt\t1e-1\n"
+                           "10\t200\tg\tc\t1\n",
+
+                           "#chr\tpos\tref\talt\traf\n"
+                           "1\t1\ta\t.\t0.123\n"
+                           "10\t1\ta\tt\t5e-1\n"
+                           "10\t100\ta\tt\t5e-3\n"
+                           "10\t200\tg\tc\t0.000\n"};
+
 int main(int argc, char **argv) {
 
     int         i, verbose = 0;
@@ -37,19 +54,27 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    RAFReader *r[3];
-	r[0] = RAFReader_new("altai.raf");
-	while(EOF != RAFReader_next(r[0])) {
-		//      const char *chr = RAFReader_chr(r[0]);
-        //		assert(0 == strcmp(chr, "22"));
-		if(verbose)
-			RAFReader_print(r[0], stdout);
-	}
-    RAFReader_free(r[0]);
+    const char *tst[3] = {"tst0.raf", "tst1.raf", "tst2.raf"};
+    FILE *fp[3];
+    for(i=0; i<3; ++i) {
+        fp[i] = fopen(tst[i], "w");
+        assert(fp[i]);
+        fputs(tstInput[i], fp[i]);
+        fclose(fp[i]);
+    }
 
-	r[0] = RAFReader_new("altai.raf");
-	r[1] = RAFReader_new("denisova.raf");
-	r[2] = RAFReader_new("Mgenomes3.raf");
+    RAFReader *r[3];
+    for(i=0; i<3; ++i) {
+        r[i] = RAFReader_new(tst[i]);
+        while(EOF != RAFReader_next(r[i])) {
+            if(verbose)
+                RAFReader_print(r[i], stdout);
+        }
+        RAFReader_free(r[0]);
+    }
+
+    for(i=0; i<3; ++i)
+        r[i] = RAFReader_new(tst[i]);
 
     long match=0, mismatch=0;
 	while(EOF != RAFReader_multiNext(3, r)) {
@@ -71,12 +96,14 @@ int main(int argc, char **argv) {
 	}
     printf("%ld/%ld (%lf%%) of SNPs have ref/alt alleles that don't match.\n",
            mismatch, match+mismatch,
-           100* mismatch / ((double) (match+mismatch)));
+           100*mismatch / ((double) (match+mismatch)));
 
-    RAFReader_free(r[0]);
-    RAFReader_free(r[1]);
-    RAFReader_free(r[2]);
+    for(i=0; i<3; ++i) {
+        RAFReader_free(r[i]);
+        remove(tst[i]);
+    }
 
     unitTstResult("RAFReader", "untested");
+
     return 0;
 }

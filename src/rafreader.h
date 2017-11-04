@@ -17,19 +17,21 @@ struct RAFReader {
     char alt[RAFSTRSIZE];       // alternate alleles
     char chr[RAFSTRSIZE];       // chromosome
     unsigned long nucpos;       // nucleotide position from raf file
-    double      p;              // frequency of ancestral allele
+    double      raf;            // frequency of reference allele
+    double      daf;            // frequency of derived allele
 };
 
 RAFReader  *RAFReader_new(const char *fname);
 void        RAFReader_clearChromosomes(int n, RAFReader *r[n]);
 void        RAFReader_free(RAFReader * self);
 int         RAFReader_next(RAFReader * self);
-double      RAFReader_raf(RAFReader *r);
+double      RAFReader_daf(RAFReader *r);
+double      RAFReader_raf(RAFReader * r);
 int         RAFReader_allelesMatch(int n, RAFReader *r[n]);
 void        RAFReader_printHdr(FILE *fp);
 void        RAFReader_print(RAFReader *r, FILE *fp);
 int         RAFReader_rewind(RAFReader *self);
-int         RAFReader_multiNext(int n, RAFReader *r[n]);
+int         RAFReader_multiNext(int n, RAFReader * r[n]);
 static inline const char *RAFReader_chr(RAFReader *self);
 static inline unsigned long RAFReader_nucpos(RAFReader *self);
 

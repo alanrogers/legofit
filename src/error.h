@@ -1,0 +1,7 @@
+#ifdef ERROR_INCLUDED
+#define ERROR_INCLUDED
+
+#define NO_ANCESTRAL_ALLELE 1000
+#define REF_ALT_MISMATCH 1001
+
+#endif

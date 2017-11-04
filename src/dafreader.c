@@ -74,7 +74,7 @@ int DAFReader_next(DAFReader * self) {
 
     // Find a line of input
     while(1) {
-        if(fgets(buff, sizeof(buff), self->fp) == NULL) 
+        if(fgets(buff, sizeof(buff), self->fp) == NULL)
             return EOF;
         if(NULL == strchr(buff, '\n') && !feof(self->fp)) {
             fprintf(stderr, "%s:%d: Buffer overflow. size=%zu\n",
