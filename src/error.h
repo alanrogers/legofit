@@ -1,7 +1,13 @@
 #ifdef ERROR_INCLUDED
 #define ERROR_INCLUDED
 
-#define NO_ANCESTRAL_ALLELE 1000
-#define REF_ALT_MISMATCH 1001
+// Number from 1000 to avoid conflict with errno
+enum {NO_ANCESTRAL_ALLELE=1000,
+      REF_ALT_MISMATCH,
+      BUFFER_OVERFLOW,
+      BAD_RAF_INPUT,
+      BAD_SORT};
+
+int mystrerror_r(int errnum, char *buff, size_t len);
 
 #endif

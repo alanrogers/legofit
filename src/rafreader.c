@@ -67,10 +67,8 @@ int iscomment(const char *s) {
 
 /// Read the next site and set derived allele frequency (daf) within
 /// each reader.
-/// @return 0 on success, EOF on end of file, REF_ALT_MISMATCH if the
-/// ref and alt alleles are inconsistent across readers, and
-/// NO_ANCESTRAL_ALLELE if it isn't possible to call the ancestral
-/// allele. Aborts on other errors.
+/// @return 0 on success, EOF on end of file, REF_ALT_MISMATCH,
+/// NO_ANCESTRAL_ALLELE, BUFFER_OVERFLOW, BAD_RAF_INPUT.
 int RAFReader_next(RAFReader * self) {
     int         ntokens1;
     int         ntokens;
@@ -85,7 +83,7 @@ int RAFReader_next(RAFReader * self) {
         if(NULL == strchr(buff, '\n') && !feof(self->fp)) {
             fprintf(stderr, "%s:%d: Buffer overflow. size=%zu\n",
                     __FILE__, __LINE__, sizeof(buff));
-            exit(EXIT_FAILURE);
+            return BUFFER_OVERFLOW;
         }
         if(iscomment(buff))
             continue;
@@ -102,7 +100,7 @@ int RAFReader_next(RAFReader * self) {
         fprintf(stderr, "buff: %s\n", buff);
         Tokenizer_printSummary(self->tkz, stderr);
         Tokenizer_print(self->tkz, stderr);
-        exit(EXIT_FAILURE);
+        return BAD_RAF_INPUT;
     }
 
     ++self->snpid;
@@ -116,7 +114,7 @@ int RAFReader_next(RAFReader * self) {
     if(status >= sizeof self->chr) {
         fprintf(stderr, "%s:%d: chromosome name too long: %s\n",
                 __FILE__, __LINE__, Tokenizer_token(self->tkz, 0));
-        exit(EXIT_FAILURE);
+        return BUFFER_OVERFLOW;
     }
     int         diff = strcmp(prev, self->chr);
     if(diff > 0) {
@@ -126,7 +124,7 @@ int RAFReader_next(RAFReader * self) {
                 prev, self->chr);
         Tokenizer_printSummary(self->tkz, stderr);
         Tokenizer_print(self->tkz, stderr);
-        exit(EXIT_FAILURE);
+        return BAD_SORT;
     } else if(diff < 0) {
         // new chromosome
         prevnucpos = 0UL;
@@ -138,12 +136,12 @@ int RAFReader_next(RAFReader * self) {
     if(prevnucpos == self->nucpos) {
         fprintf(stderr, "%s:%d: Duplicate line in raf file. chr=%s pos=%lu\n",
                 __FILE__, __LINE__, self->chr, self->nucpos);
-        exit(1);
+        return BAD_SORT;
     } else if(prevnucpos > self->nucpos) {
         fprintf(stderr, "%s:%d: positions missorted chr=%s "
                 "prev=%lu curr=%lu\n",
                 __FILE__, __LINE__, self->chr, prevnucpos, self->nucpos);
-        exit(1);
+        return BAD_SORT;
     }
     // Reference allele
     status = snprintf(self->ref, sizeof(self->ref), "%s",
@@ -166,7 +164,7 @@ int RAFReader_next(RAFReader * self) {
         strerror_r(errno, err_buff, sizeof(err_buff));
         fprintf(stderr,"%s:%d: Bad float \"%s\" (%s); chr=%s pos=%lu\n",
                 __FILE__,__LINE__, token, err_buff, self->chr, self->nucpos);
-        exit(EXIT_FAILURE);
+        return errno;
     }
 
     return 0;
@@ -198,13 +196,13 @@ int RAFReader_multiNext(int n, RAFReader * r[n]) {
     // chromosome values in lexical sort order, and
     // set boolean flag, onSameChr, which indicates
     // whether all readers are on same chromosome.
-    if(EOF == RAFReader_next(r[0]))
-        return EOF;
+    if(status = RAFReader_next(r[0]))
+        return status;
     imaxchr = 0;
     onSameChr = 1;
     for(i = 1; i < n; ++i) {
-        if(EOF == RAFReader_next(r[i]))
-            return EOF;
+        if(status == RAFReader_next(r[i]))
+            return status;
 
         diff = strcmp(r[i]->chr, r[imaxchr]->chr);
         if(diff > 0) {
@@ -223,8 +221,8 @@ int RAFReader_multiNext(int n, RAFReader * r[n]) {
                 if(i == imaxchr)
                     continue;
                 while((diff = strcmp(r[i]->chr, r[imaxchr]->chr)) < 0) {
-                    if(EOF == RAFReader_next(r[i]))
-                        return EOF;
+                    if(status == RAFReader_next(r[i]))
+                        return status;
                 }
                 assert(diff >= 0);
                 if(diff > 0) {
@@ -253,8 +251,8 @@ int RAFReader_multiNext(int n, RAFReader * r[n]) {
             // Increment each reader so long as we're all on the same
             // chromosome and the reader's nucpos is low.
             while(onSameChr && r[i]->nucpos < maxnuc) {
-                if(EOF == RAFReader_next(r[i]))
-                    return EOF;
+                if(status == RAFReader_next(r[i]))
+                    return status;
                 diff = strcmp(r[i]->chr, currchr);
                 if(diff != 0) {
                     // Assertion should succeed because RAFReader_next
@@ -267,6 +265,19 @@ int RAFReader_multiNext(int n, RAFReader * r[n]) {
         }
     }
     while(!onSameChr || minnuc != maxnuc);
+
+    // Make sure reference allele isn't fixed in readers, excluding
+    // the outgroup (reader n-1). If it's fixed, then we can't call
+    // the ancestral allele.
+    double minp = 1.0;
+    double maxp = 0.0;
+    for(i=0; i < n-1; ++i) {
+        double p = RAFReader_raf(r[i]);
+        minp = fmin(minp, p);
+        maxp = fmax(maxp, p);
+    }
+    if(maxp == 0.0 || minp == 1.0)
+        return NO_ANCESTRAL_ALLELE;
 
     // Make sure REF and ALT are consistent across readers
     if(!RAFReader_allelesMatch(n, r))
@@ -281,7 +292,7 @@ int RAFReader_multiNext(int n, RAFReader * r[n]) {
     }else if(ogf == 1.0) {
         // alternate allele is derived
         for(i=0; i<n; ++i)
-            r[i]->daf = 1.0-r[i]->raf;
+            r[i]->daf = 1.0 - r[i]->raf;
     }else{
         // outgroup is polymorphic: can't call ancestral allele
         return NO_ANCESTRAL_ALLELE;
