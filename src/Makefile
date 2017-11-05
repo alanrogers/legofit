@@ -7,7 +7,7 @@ opt :=  -O0 -fno-inline-functions -rdynamic -DDEBUG     # For debugging
 prof :=
 incl := -I/usr/local/include -I/opt/local/include
 
-targets := legosim legofit tabpat daf raf numcores
+targets := legosim legofit tabpat sitepat daf raf numcores
 pytargets := diverg.py bootci.py flatfile.py
 tests := xzeroin xbinary
 
@@ -60,6 +60,11 @@ TABPAT := tabpat.o misc.o binary.o lblndx.o parkeyval.o dafreader.o \
   tokenizer.o strint.o boot.o
 tabpat : $(TABPAT)
 	$(CC) $(CFLAGS) -o $@ $(TABPAT) $(lib)
+
+SITEPAT := sitepat.o misc.o binary.o lblndx.o parkeyval.o rafreader.o \
+  tokenizer.o strint.o boot.o error.o
+sitepat : $(SITEPAT)
+	$(CC) $(CFLAGS) -o $@ $(SITEPAT) $(lib)
 
 DAF := daf.o misc.o
 daf : $(DAF)

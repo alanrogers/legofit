@@ -5,7 +5,7 @@ prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
 tests := xbinary xboot xbranchtab xdafreader xrafreader xdiffev xgene \
   xgptree xpopnodetab xjobqueue xlblndx xllrbtree xparkeyval xparse \
-  xparstore xpopnode xsimsched xstrint xdtnorm xterm xmisc
+  xparstore xpopnode xsimsched xstrint xdtnorm xterm xmisc xerror
 
 CC := gcc
 
@@ -42,6 +42,7 @@ test : $(tests)
 	-./xrafreader
 	-./xdiffev
 	-./xdtnorm
+	-./xerror
 	-./xgene
 	-./xgptree
 	-./xjobqueue
@@ -75,6 +76,10 @@ xpopnodetab : $(XPOPNODETAB)
 XDTNORM := xdtnorm.o dtnorm.o
 xdtnorm : $(XDTNORM)
 	$(CC) $(CFLAGS) -o $@ $(XDTNORM) $(lib)
+
+XERROR := xerror.o error.o misc.o
+xerror : $(XERROR)
+	$(CC) $(CFLAGS) -o $@ $(XERROR) $(lib)
 
 XJOBQUEUE := xjobqueue.o jobqueue.o misc.o
 xjobqueue : $(XJOBQUEUE)
