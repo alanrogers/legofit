@@ -1,5 +1,7 @@
-#ifdef ERROR_INCLUDED
+#ifndef ERROR_INCLUDED
 #define ERROR_INCLUDED
+
+#include <stdlib.h>
 
 // Number from 1000 to avoid conflict with errno
 enum {NO_ANCESTRAL_ALLELE=1000,

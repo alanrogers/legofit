@@ -18,7 +18,7 @@ This can be generated from a vcf file as follows:
 
   bcftools query -f '%CHROM\t%POS\t%REF\t%ALT[\t%GT]\n' fname.vcf.gz
 
-Output is in 5 columns, separated by whitespace:
+Output is in 5 columns, separated by tabs:
 
 1. chromosome
 2. position of the nucleotide
@@ -76,7 +76,7 @@ int main(int argc, char **argv) {
     long unsigned lastnucpos = 0, nucpos;
     char        lastchr[100] = { '\0' };
 
-    printf("#%3s %10s %3s %3s %s\n", "chr", "pos", "ref", "alt", "raf");
+    printf("#%s\t%s\t%s\t%s\t%s\n", "chr", "pos", "ref", "alt", "raf");
     while(1) {
         if(NULL == fgets(buff, buffsize, stdin)) {
             break;
@@ -256,7 +256,7 @@ int main(int argc, char **argv) {
             ++ngood;
 
         double      p = x / ((double) n);
-        printf("%4s %10s %3s %3s %0.18g\n",
+        printf("%s\t%s\t%s\t%s\t%0.18g\n",
                chr, pos, ref[0], alt[0], p);
     }
     fprintf(stderr, "raf: %d good sites; %d rejected\n", ngood, nbad);

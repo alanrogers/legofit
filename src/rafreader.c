@@ -67,8 +67,9 @@ int iscomment(const char *s) {
 
 /// Read the next site and set derived allele frequency (daf) within
 /// each reader.
-/// @return 0 on success, EOF on end of file, REF_ALT_MISMATCH,
-/// NO_ANCESTRAL_ALLELE, BUFFER_OVERFLOW, BAD_RAF_INPUT.
+/// @return 0 on success, or else EOF, NO_ANCESTRAL_ALLELE,
+/// BUFFER_OVERFLOW, BAD_RAF_INPUT, BAD_SORT, or an errno code for
+/// failure to parse a floating-point number.
 int RAFReader_next(RAFReader * self) {
     int         ntokens1;
     int         ntokens;
@@ -81,25 +82,25 @@ int RAFReader_next(RAFReader * self) {
         if(fgets(buff, sizeof(buff), self->fp) == NULL)
             return EOF;
         if(NULL == strchr(buff, '\n') && !feof(self->fp)) {
+#ifdef NDEBUG
             fprintf(stderr, "%s:%d: Buffer overflow. size=%zu\n",
                     __FILE__, __LINE__, sizeof(buff));
+#endif
             return BUFFER_OVERFLOW;
         }
         if(iscomment(buff))
             continue;
-        ntokens1 = Tokenizer_split(self->tkz, buff, " ");
+        ntokens1 = Tokenizer_split(self->tkz, buff, "\t");
         ntokens = Tokenizer_strip(self->tkz, " \n");
         if(ntokens > 0)
             break;
     }
 
     if(ntokens != 5) {
+#ifdef NDEBUG
         fprintf(stderr, "%s:%d: Each line of .raf file must have 5 tokens,"
                 " but current line has %d.\n", __FILE__, __LINE__, ntokens);
-        fprintf(stderr, "ntokens1=%d\n", ntokens1);
-        fprintf(stderr, "buff: %s\n", buff);
-        Tokenizer_printSummary(self->tkz, stderr);
-        Tokenizer_print(self->tkz, stderr);
+#endif
         return BAD_RAF_INPUT;
     }
 
@@ -112,18 +113,21 @@ int RAFReader_next(RAFReader * self) {
     status = snprintf(self->chr, sizeof self->chr, "%s",
                       Tokenizer_token(self->tkz, 0));
     if(status >= sizeof self->chr) {
+#ifdef NDEBUG
         fprintf(stderr, "%s:%d: chromosome name too long: %s\n",
                 __FILE__, __LINE__, Tokenizer_token(self->tkz, 0));
+#endif
         return BUFFER_OVERFLOW;
     }
     int         diff = strcmp(prev, self->chr);
     if(diff > 0) {
+#ifdef NDEBUG
         fprintf(stderr, "%s:%s:%d: Chromosomes missorted in input.\n",
                 __FILE__, __func__, __LINE__);
         fprintf(stderr, "          \"%s\" precedes \"%s\".\n",
                 prev, self->chr);
-        Tokenizer_printSummary(self->tkz, stderr);
         Tokenizer_print(self->tkz, stderr);
+#endif
         return BAD_SORT;
     } else if(diff < 0) {
         // new chromosome
@@ -134,13 +138,17 @@ int RAFReader_next(RAFReader * self) {
     // Nucleotide position
     self->nucpos = strtoul(Tokenizer_token(self->tkz, 1), NULL, 10);
     if(prevnucpos == self->nucpos) {
+#ifdef NDEBUG
         fprintf(stderr, "%s:%d: Duplicate line in raf file. chr=%s pos=%lu\n",
                 __FILE__, __LINE__, self->chr, self->nucpos);
+#endif
         return BAD_SORT;
     } else if(prevnucpos > self->nucpos) {
+#ifdef NDEBUG
         fprintf(stderr, "%s:%d: positions missorted chr=%s "
                 "prev=%lu curr=%lu\n",
                 __FILE__, __LINE__, self->chr, prevnucpos, self->nucpos);
+#endif
         return BAD_SORT;
     }
     // Reference allele
@@ -162,8 +170,10 @@ int RAFReader_next(RAFReader * self) {
     if(errno) {
         char err_buff[50];
         strerror_r(errno, err_buff, sizeof(err_buff));
+#ifdef NDEBUG
         fprintf(stderr,"%s:%d: Bad float \"%s\" (%s); chr=%s pos=%lu\n",
                 __FILE__,__LINE__, token, err_buff, self->chr, self->nucpos);
+#endif
         return errno;
     }
 
@@ -196,12 +206,12 @@ int RAFReader_multiNext(int n, RAFReader * r[n]) {
     // chromosome values in lexical sort order, and
     // set boolean flag, onSameChr, which indicates
     // whether all readers are on same chromosome.
-    if(status = RAFReader_next(r[0]))
+    if( (status = RAFReader_next(r[0])) )
         return status;
     imaxchr = 0;
     onSameChr = 1;
     for(i = 1; i < n; ++i) {
-        if(status == RAFReader_next(r[i]))
+        if( (status = RAFReader_next(r[i])) )
             return status;
 
         diff = strcmp(r[i]->chr, r[imaxchr]->chr);
@@ -221,7 +231,7 @@ int RAFReader_multiNext(int n, RAFReader * r[n]) {
                 if(i == imaxchr)
                     continue;
                 while((diff = strcmp(r[i]->chr, r[imaxchr]->chr)) < 0) {
-                    if(status == RAFReader_next(r[i]))
+                    if( (status = RAFReader_next(r[i])) )
                         return status;
                 }
                 assert(diff >= 0);
@@ -251,7 +261,7 @@ int RAFReader_multiNext(int n, RAFReader * r[n]) {
             // Increment each reader so long as we're all on the same
             // chromosome and the reader's nucpos is low.
             while(onSameChr && r[i]->nucpos < maxnuc) {
-                if(status == RAFReader_next(r[i]))
+                if( (status = RAFReader_next(r[i])) )
                     return status;
                 diff = strcmp(r[i]->chr, currchr);
                 if(diff != 0) {
@@ -301,9 +311,9 @@ int RAFReader_multiNext(int n, RAFReader * r[n]) {
     return 0;
 }
 
-/// Return 1 if ancestral and derived alleles of all readers match; 0
+/// Return 1 if ref and alt alleles of all readers match; 0
 /// otherwise
-int DAFReader_allelesMatch(int n, DAFReader * r[n]) {
+int RAFReader_allelesMatch(int n, RAFReader * r[n]) {
     char  *ref = r[0]->ref;
     char  *alt = r[0]->alt;
     int    altMissing = (0==strcmp(".", alt));
@@ -324,14 +334,14 @@ int DAFReader_allelesMatch(int n, DAFReader * r[n]) {
 
 /// Print header for raf file.
 void RAFReader_printHdr(FILE * fp) {
-    fprintf(fp, "%50s %5s %10s %3s %3s %s\n",
-            "file", "chr", "pos", "ref", "alt", "raf");
+    fprintf(fp, "%30s %5s %10s %3s %3s %8s %8s\n",
+            "file", "chr", "pos", "ref", "alt", "raf", "daf");
 }
 
 /// Print current line of raf file
 void RAFReader_print(RAFReader * r, FILE * fp) {
     assert(r->fname);
-    fprintf(fp, "%50s %5s %10lu %3s %3s %8.6lf %8.6lf\n",
+    fprintf(fp, "%30s %5s %10lu %3s %3s %8.6lg %8.6lg\n",
             r->fname, r->chr, r->nucpos, r->ref, r->alt, r->raf,
             r->daf);
 }

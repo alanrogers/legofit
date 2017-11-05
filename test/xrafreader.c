@@ -9,6 +9,7 @@
 
 #include "rafreader.h"
 #include "misc.h"
+#include "error.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,26 +19,37 @@
 #error "Unit tests must be compiled without -DNDEBUG flag"
 #endif
 
-const char *tstInput[3] = {"#chr\tpos\tref\talt\traf\n"
-                           "1\t1\ta\t.\t0\n"
-                           "10\t1\ta\tt\t5e-1\n"
-                           "10\t200\tg\tc\t1e0\n",
+const char *badInput =
+    "#chr\tpos\tref\talt\traf\n"
+    "10\t1\ta\tt\t5e-1\n"
+    "1\t1\ta\t.\t0\n"
+    "10\t200\tg\tc\t1e0\n"
+    "10\t201\tg\tc\t1e99999\n"
+    "10\t202\tg\tc\t1e-99999\n" "10\t203\tg\tc\tnot-a-float\n";
 
-                           "#chr\tpos\tref\talt\traf\n"
-                           "1\t1\ta\t.\t0.5\n"
-                           "1\t2\ta\t.\t0.5\n"
-                           "10\t1\ta\tt\t1e-1\n"
-                           "10\t200\tg\tc\t1\n",
+const char *tstInput[3] = {
+    "#chr\tpos\tref\talt\traf\n"
+    "1\t1\ta\t.\t0\n"
+    "10\t1\ta\tt\t5e-1\n"
+    "10\t200\tg\tc\t1e0\n",
 
-                           "#chr\tpos\tref\talt\traf\n"
-                           "1\t1\ta\t.\t0.123\n"
-                           "10\t1\ta\tt\t5e-1\n"
-                           "10\t100\ta\tt\t5e-3\n"
-                           "10\t200\tg\tc\t0.000\n"};
+    "#chr\tpos\tref\talt\traf\n"
+    "1\t1\ta\t.\t0.5\n"
+    "1\t2\ta\t.\t0.5\n"
+    "10\t1\ta\tt\t1e-1\n"
+    "10\t200\tg\tc\t1\n",
+
+    "#chr\tpos\tref\talt\traf\n"
+    "1\t1\ta\t.\t1\n"
+    "10\t1\ta\tt\t0\n"
+    "10\t100\ta\tt\t0\n"
+    "10\t200\tg\tc\t0\n"
+};
 
 int main(int argc, char **argv) {
 
-    int         i, verbose = 0;
+    int         i, verbose = 0, status;
+    char        errbuff[200];
 
     switch (argc) {
     case 1:
@@ -54,56 +66,106 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
+    const char *badraf = "bad.raf";
+    FILE       *badfp = fopen(badraf, "w");
+    assert(badfp);
+    fputs(badInput, badfp);
+    fclose(badfp);
+    RAFReader  *rdr = RAFReader_new(badraf);
+
+    for(i=0; i<7; ++i) {
+        status = RAFReader_next(rdr);
+        if(i==0)
+            assert(status==0);
+        else if(i==1)
+            assert(status==BAD_SORT);
+        else if(i==2)
+            assert(status==0);
+        else if(i==3)
+            assert(status==ERANGE);
+        else if(i==4)
+            assert(status==ERANGE);
+        else if(i==5)
+            assert(status==EINVAL);
+        else if(i==6)
+            assert(status==EOF);
+    }while(status != EOF);
+    RAFReader_free(rdr);
+    remove(badraf);
+
     const char *tst[3] = {"tst0.raf", "tst1.raf", "tst2.raf"};
-    FILE *fp[3];
-    for(i=0; i<3; ++i) {
+    FILE *      fp[3];
+    for(i = 0; i < 3; ++i) {
         fp[i] = fopen(tst[i], "w");
         assert(fp[i]);
         fputs(tstInput[i], fp[i]);
         fclose(fp[i]);
     }
 
-    RAFReader *r[3];
-    for(i=0; i<3; ++i) {
+    RAFReader * r[3];
+    if(verbose)
+        RAFReader_printHdr(stderr);
+    for(i = 0; i < 3; ++i) {
         r[i] = RAFReader_new(tst[i]);
-        while(EOF != RAFReader_next(r[i])) {
-            if(verbose)
-                RAFReader_print(r[i], stdout);
-        }
-        RAFReader_free(r[0]);
+        do{
+            status = RAFReader_next(r[i]);
+            switch (status) {
+            case 0:
+                if(verbose)
+                    RAFReader_print(r[i], stderr);
+                break;
+            case EOF:
+                break;
+            default:
+                mystrerror_r(status, errbuff, sizeof errbuff);
+                fprintf(stderr, "%s:%d: i=%d %s\n",
+                        __FILE__,__LINE__, i, errbuff);
+                exit(1);
+            }
+        }while(status != EOF);
+        RAFReader_free(r[i]);
     }
 
-    for(i=0; i<3; ++i)
+    for(i = 0; i < 3; ++i)
         r[i] = RAFReader_new(tst[i]);
 
-    long match=0, mismatch=0;
-	while(EOF != RAFReader_multiNext(3, r)) {
-		if(verbose) {
-			fputs("#################\n", stdout);
-			for(i=0; i<3; ++i)
-				printf(" raf[%d]=%lf", i, RAFReader_raf(r[i]));
-            putchar('\n');
-		}
-        if(RAFReader_allelesMatch(3, r))
-            ++match;
-        else {
-            printf("Mismatch\n");
-            RAFReader_printHdr(stdout);
-            for(i=0; i<3; ++i)
-                RAFReader_print(r[i], stdout);
-            ++mismatch;
+    i=0;
+    do{
+        status = RAFReader_multiNext(3, r);
+        if(i==0) {
+            assert(status==0);
+            assert(0 == strcmp("1",RAFReader_chr(r[0])));
+            assert(1UL == RAFReader_nucpos(r[0]));
+            assert(1.0 == RAFReader_daf(r[0]));
+            assert(0.5 == RAFReader_daf(r[1]));
+            assert(0.0 == RAFReader_daf(r[2]));
+        }else if(i==1) {
+            assert(status==0);
+            assert(0 == strcmp("10",RAFReader_chr(r[0])));
+            assert(1UL == RAFReader_nucpos(r[0]));
+            assert(0.5 == RAFReader_daf(r[0]));
+            assert(0.1 == RAFReader_daf(r[1]));
+            assert(0.0 == RAFReader_daf(r[2]));
+        }else if(i==2) {
+            assert(status==NO_ANCESTRAL_ALLELE);
+            assert(0 == strcmp("10",RAFReader_chr(r[0])));
+            assert(200UL == RAFReader_nucpos(r[0]));
+        }else if(i==3) {
+            assert(status==EOF);
+        }else{
+            fprintf(stderr,"%s:%d: this shouldn't happen\n",
+                    __FILE__,__LINE__);
+            exit(1);
         }
-	}
-    printf("%ld/%ld (%lf%%) of SNPs have ref/alt alleles that don't match.\n",
-           mismatch, match+mismatch,
-           100*mismatch / ((double) (match+mismatch)));
-
-    for(i=0; i<3; ++i) {
+        ++i;
+    }while(status != EOF);
+        
+    for(i = 0; i < 3; ++i) {
         RAFReader_free(r[i]);
         remove(tst[i]);
     }
 
-    unitTstResult("RAFReader", "untested");
+    unitTstResult("RAFReader", "OK");
 
     return 0;
 }

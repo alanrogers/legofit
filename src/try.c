@@ -1,38 +1,16 @@
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
 #include <errno.h>
-#include <ctype.h>
 
 int main(int argc, char **argv) {
 
-    char buff[100], *leftover;
-    double x;
+    char buff[10];
+    int status, err = ENXIO;
 
-    strcpy(buff, "  1e 4000 ");
-    errno=0;
-    x = strtod(buff, &leftover);
-    if(errno) {
-        char err_buff[50];
-        strerror_r(errno, err_buff, sizeof(err_buff));
-        fprintf(stderr,"%s:%d: Can't parse \"%s\" as float (%s).\n",
-                __FILE__,__LINE__, buff, err_buff);
-    }
-    printf("x=%lf\n", x);
+    status = strerror_r(err, buff, sizeof(buff));
 
-    if(leftover==buff) {
-        fprintf(stderr,"%s:%d: Can't parse \"%s\" as float.\n",
-                __FILE__,__LINE__, buff);
-        exit(1);
-    }
-    while(isspace(*leftover))
-        ++leftover;
+    printf("status=%d\n", status);
+    printf("buff=%s\n", buff);
     
-    if(*leftover != '\0') {
-        fprintf(stderr, "%s:%d: Extra chars at end of float \"%s\"."
-                " Token=\"%s\".\n",
-                __FILE__, __LINE__, leftover, buff);
-        exit(1);
-    }
 	return 0;
 }

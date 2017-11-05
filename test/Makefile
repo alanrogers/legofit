@@ -91,7 +91,7 @@ xdafreader : $(XDAFREADER)
 	$(CC) $(CFLAGS) -o $@ $(XDAFREADER) $(lib)
 
 XRAFREADER := xrafreader.o rafreader.o misc.o lblndx.o tokenizer.o binary.o \
-   parkeyval.o strint.o
+   parkeyval.o strint.o error.o
 xrafreader : $(XRAFREADER)
 	$(CC) $(CFLAGS) -o $@ $(XRAFREADER) $(lib)
 
