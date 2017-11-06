@@ -320,12 +320,13 @@ int RAFReader_allelesMatch(int n, RAFReader * r[n]) {
     for(i = 1; i < n; ++i) {
         if(0!=strcmp(ref, r[i]->ref))
             return 0;
-        if(altMissing && 0!=strcmp(".", r[i]->alt)) {
+        int currAltMissing = (0==strcmp(".", r[i]->alt));
+        if(altMissing && !currAltMissing) {
             altMissing=0;
             alt = r[i]->alt;
             continue;
         }
-        if(!altMissing && 0!=strcmp(alt, r[i]->alt))
+        if(!altMissing && !currAltMissing && 0!=strcmp(alt, r[i]->alt))
             return 0;
     }
     return 1;
