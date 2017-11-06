@@ -71,7 +71,6 @@ int iscomment(const char *s) {
 /// BUFFER_OVERFLOW, BAD_RAF_INPUT, BAD_SORT, or an errno code for
 /// failure to parse a floating-point number.
 int RAFReader_next(RAFReader * self) {
-    int         ntokens1;
     int         ntokens;
     int         status;
     char        buff[100];
@@ -90,7 +89,7 @@ int RAFReader_next(RAFReader * self) {
         }
         if(iscomment(buff))
             continue;
-        ntokens1 = Tokenizer_split(self->tkz, buff, "\t");
+        Tokenizer_split(self->tkz, buff, "\t");
         ntokens = Tokenizer_strip(self->tkz, " \n");
         if(ntokens > 0)
             break;
