@@ -30,6 +30,7 @@ double      RAFReader_raf(RAFReader * r);
 int         RAFReader_allelesMatch(int n, RAFReader *r[n]);
 void        RAFReader_printHdr(FILE *fp);
 void        RAFReader_print(RAFReader *r, FILE *fp);
+void        RAFReader_printArray(int n, RAFReader * r[n], FILE *fp);
 int         RAFReader_rewind(RAFReader *self);
 int         RAFReader_multiNext(int n, RAFReader * r[n]);
 static inline const char *RAFReader_chr(RAFReader *self);

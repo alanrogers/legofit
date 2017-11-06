@@ -28,8 +28,8 @@ replicate into a separate file.
           Use singleton site patterns
        -m or --logMismatch
           log AA/DA mismatches to sitepat.log
-       -F or --logFixed
-          log fixed sites to sitepat.log
+       -A or --logAA
+          log sites with uncallable ancestral alleles
        -a or --logAll
           log all sites to sitepat.log
        -h or --help
@@ -185,8 +185,7 @@ static void usage(void) {
             "# of SNPs per block in moving-blocks bootstrap. Def: 0.");
     tellopt("-1 or --singletons", "Use singleton site patterns");
     tellopt("-m or --logMismatch", "log AA/DA mismatches to sitepat.log");
-    tellopt("-F or --logFixed", "log fixed sites to sitepat.log");
-    tellopt("-a or --logAll", "log all sites to sitepat.log");
+    tellopt("-A or --logAA", "log sites with uncallable ancestral allele");
     tellopt("-h or --help", "Print this message");
     exit(1);
 }
@@ -252,7 +251,7 @@ int main(int argc, char **argv) {
     char        bootfname[FILENAMESIZE] = { '\0' };
     char        errbuff[100] = { '\0' };
     const char *logfname = "sitepat.log";
-    int         logMismatch = 0, logFixed = 0, logAll = 0;
+    int         logMismatch = 0, logAA = 0;
     FILE       *logfile = NULL;
 
     static struct option myopts[] = {
@@ -262,15 +261,14 @@ int main(int argc, char **argv) {
         {"blocksize", required_argument, 0, 'b'},
         {"singletons", no_argument, 0, '1'},
         {"logMismatch", no_argument, 0, 'm'},
-        {"logFixed", no_argument, 0, 'F'},
-        {"logAll", no_argument, 0, 'a'},
+        {"logAA", no_argument, 0, 'A'},
         {"help", no_argument, 0, 'h'},
         {NULL, 0, NULL, 0}
     };
 
     // command line arguments
     for(;;) {
-        i = getopt_long(argc, argv, "ab:c:f:hr:t:mFv1", myopts, &optndx);
+        i = getopt_long(argc, argv, "b:c:f:hr:t:mAv1", myopts, &optndx);
         if(i == -1)
             break;
         switch (i) {
@@ -308,11 +306,8 @@ int main(int argc, char **argv) {
         case 'm':
             logMismatch = 1;
             break;
-        case 'F':
-            logFixed = 1;
-            break;
-        case 'a':
-            logAll = 1;
+        case 'A':
+            logAA = 1;
             break;
         default:
             usage();
@@ -360,7 +355,7 @@ int main(int argc, char **argv) {
         usage();
     }
 
-    if(logMismatch || logFixed || logAll) {
+    if(logMismatch || logAA) {
         logfile = fopen(logfname, "w");
         if(logfile == NULL) {
             fprintf(stderr, "Can't write to file \"%s\".\n", logfname);
@@ -508,10 +503,18 @@ int main(int argc, char **argv) {
         case REF_ALT_MISMATCH:
             ++nsites;
             ++nbadrefalt;
+            if(logMismatch) {
+                fprintf(logfile,"REF-ALT mismatch:\n");
+                RAFReader_printArray(n, r, logfile);
+            }
             continue;
         case NO_ANCESTRAL_ALLELE:
             ++nsites;
             ++nbadaa;
+            if(logAA) {
+                fprintf(logfile,"Uncallable AA:\n");
+                RAFReader_printArray(n, r, logfile);
+            }
             continue;
         default:
             // something wrong.
@@ -550,10 +553,6 @@ int main(int argc, char **argv) {
             q[j] = 1 - p[j];
         }
 
-        if(logAll) {
-            fprintf(logfile, "%5s %10lu\n", RAFReader_chr(r[0]),
-                    RAFReader_nucpos(r[0]));
-        }
         // Contribution of current snp to each site pattern.  Inner
         // loop considers each bit in current pattern.  If that bit is
         // on, multiply z by the derived allele frequency, p. If

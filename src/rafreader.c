@@ -346,6 +346,12 @@ void RAFReader_print(RAFReader * r, FILE * fp) {
             r->daf);
 }
 
+void RAFReader_printArray(int n, RAFReader * r[n], FILE *fp) {
+    int i;
+    for(i=0; i<n; ++i)
+        RAFReader_print(r[i], fp);
+}
+
 /// Return derived allele frequency of current line of raf file.
 double RAFReader_daf(RAFReader * r) {
     return r->daf;
