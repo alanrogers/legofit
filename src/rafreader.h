@@ -27,7 +27,7 @@ void        RAFReader_free(RAFReader * self);
 int         RAFReader_next(RAFReader * self);
 double      RAFReader_daf(RAFReader *r);
 double      RAFReader_raf(RAFReader * r);
-int         RAFReader_allelesMatch(int n, RAFReader *r[n]);
+int         RAFReader_alleleCheck(int n, RAFReader * r[n]);
 void        RAFReader_printHdr(FILE *fp);
 void        RAFReader_print(RAFReader *r, FILE *fp);
 void        RAFReader_printArray(int n, RAFReader * r[n], FILE *fp);

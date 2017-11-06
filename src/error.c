@@ -9,8 +9,11 @@ int mystrerror_r(int errnum, char *buff, size_t len) {
     case NO_ANCESTRAL_ALLELE:
         rval = snprintf(buff, len, "No ancestral allele");
         break;
-    case REF_ALT_MISMATCH:
-        rval = snprintf(buff, len, "Inconsistent REF and ALT alleles");
+    case REF_MISMATCH:
+        rval = snprintf(buff, len, "Inconsistent REF alleles");
+        break;
+    case MULTIPLE_ALT:
+        rval = snprintf(buff, len, "Multiple ALT alleles");
         break;
     case BUFFER_OVERFLOW:
         rval = snprintf(buff, len, "Buffer overflow");

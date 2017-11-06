@@ -289,8 +289,8 @@ int RAFReader_multiNext(int n, RAFReader * r[n]) {
         return NO_ANCESTRAL_ALLELE;
 
     // Make sure REF and ALT are consistent across readers
-    if(!RAFReader_allelesMatch(n, r))
-        return REF_ALT_MISMATCH;
+    if( (status = RAFReader_alleleCheck(n, r)) )
+        return status;
 
     // Set derived allele frequency
     double ogf = r[n-1]->raf;  // freq of ref in outgroup
@@ -310,9 +310,10 @@ int RAFReader_multiNext(int n, RAFReader * r[n]) {
     return 0;
 }
 
-/// Return 1 if ref and alt alleles of all readers match; 0
-/// otherwise
-int RAFReader_allelesMatch(int n, RAFReader * r[n]) {
+/// Return 0 if ref and alt alleles of all readers match; return
+/// REF_MISMATCH if there is a mismatch in REF alleles; return
+/// MULTIPLE_ALT if there is a mismatch in ALT alleles.
+int RAFReader_alleleCheck(int n, RAFReader * r[n]) {
     char  *ref = r[0]->ref;
     char  *alt = r[0]->alt;
     int    altMissing = (0==strcmp(".", alt));

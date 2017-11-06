@@ -441,8 +441,8 @@ int main(int argc, char **argv) {
             case EOF:
                 done=1;
                 continue;
-            case REF_ALT_MISMATCH:
-                continue;
+            case REF_MISMATCH:
+            case MULTIPLE_ALT:
             case NO_ANCESTRAL_ALLELE:
                 continue;
             default:
@@ -483,7 +483,7 @@ int main(int argc, char **argv) {
         CHECKMEM(boot);
     }
 
-    unsigned long nsites = 0, nbadaa = 0, nbadrefalt=0;
+    unsigned long nsites = 0, nbadaa = 0, nbadref=0, nmultalt;
     long        snpndx = -1;
 
     // Iterate through raf files
@@ -500,13 +500,17 @@ int main(int argc, char **argv) {
         case EOF:
             done=1;
             continue;
-        case REF_ALT_MISMATCH:
+        case REF_MISMATCH:
             ++nsites;
-            ++nbadrefalt;
+            ++nbadref;
             if(logMismatch) {
-                fprintf(logfile,"REF-ALT mismatch:\n");
+                fprintf(logfile,"REF mismatch:\n");
                 RAFReader_printArray(n, r, logfile);
             }
+            continue;
+        case MULTIPLE_ALT:
+            ++nsites;
+            ++nmultalt;
             continue;
         case NO_ANCESTRAL_ALLELE:
             ++nsites;
@@ -589,13 +593,15 @@ int main(int argc, char **argv) {
             Boot_sanityCheck(boot, __FILE__, __LINE__);
 #endif
     }
-    printf("# Sites aligned across all populations: %lu\n", nsites);
-    if(nbadrefalt)
-        printf("# Disagreements about ref and alt: %lu\n", nbadrefalt);
+    printf("# Aligned sites                  : %lu\n", nsites);
+    if(nbadref)
+        printf("# Disagreements about ref allele : %lu\n", nbadref);
+    if(nmultalt)
+        printf("# Sites with multiple alt alleles: %lu\n", nmultalt);
     if(nbadaa)
-        printf("# Undetermined ancestral allele: %lu\n", nbadaa);
-    printf("# Sites used                          : %lu\n",
-           nsites - nbadaa - nbadrefalt);
+        printf("# Undetermined ancestral allele  : %lu\n", nbadaa);
+    printf("# Sites used                     : %lu\n",
+           nsites - nbadaa - nbadref - nmultalt);
 
     // boottab[i][j] is the count of the j'th site pattern
     // in the i'th bootstrap replicate.
