@@ -184,7 +184,7 @@ static void usage(void) {
     tellopt("-b <x> or --blocksize <x>",
             "# of SNPs per block in moving-blocks bootstrap. Def: 0.");
     tellopt("-1 or --singletons", "Use singleton site patterns");
-    tellopt("-m or --logMismatch", "log AA/DA mismatches to sitepat.log");
+    tellopt("-m or --logMismatch", "log REF/ALT mismatches to sitepat.log");
     tellopt("-A or --logAA", "log sites with uncallable ancestral allele");
     tellopt("-h or --help", "Print this message");
     exit(1);
