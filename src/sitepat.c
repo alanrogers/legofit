@@ -353,10 +353,10 @@ int main(int argc, char **argv) {
             LblNdx_addSamples(&lndx, 1, poplbl[i]);
         r[i] = RAFReader_new(fname[i]);
     }
-    if(0 != strcmp("outgroup", fname[n-1])) {
+    if(0 != strcmp("outgroup", poplbl[n-1])) {
         fprintf(stderr,"%s:%d: last label is \"%s\""
                 " instead of \"outgroup\".\n",
-                __FILE__,__LINE__, fname[n-1]);
+                __FILE__,__LINE__, poplbl[n-1]);
         usage();
     }
 
