@@ -205,21 +205,14 @@ int RAFReader_multiNext(int n, RAFReader * r[n]) {
     // chromosome values in lexical sort order, and
     // set boolean flag, onSameChr, which indicates
     // whether all readers are on same chromosome.
-    if( (status = RAFReader_next(r[0])) ) {
-        if(status==1)
-            fprintf(stderr,"%s:%d: status=%d\n",
-                    __FILE__,__LINE__,status);
+    if( (status = RAFReader_next(r[0])) )
         return status;
-    }
+
     imaxchr = 0;
     onSameChr = 1;
     for(i = 1; i < n; ++i) {
-        if( (status = RAFReader_next(r[i])) ) {
-            if(status==1)
-                fprintf(stderr,"%s:%d: status=%d\n",
-                        __FILE__, __LINE__, status);
+        if( (status = RAFReader_next(r[i])) )
             return status;
-        }
 
         diff = strcmp(r[i]->chr, r[imaxchr]->chr);
         if(diff > 0) {
@@ -238,12 +231,8 @@ int RAFReader_multiNext(int n, RAFReader * r[n]) {
                 if(i == imaxchr)
                     continue;
                 while((diff = strcmp(r[i]->chr, r[imaxchr]->chr)) < 0) {
-                    if( (status = RAFReader_next(r[i])) ) {
-                        if(status==1)
-                            fprintf(stderr,"%s:%d: status=%d\n",
-                                    __FILE__, __LINE__, status);
+                    if( (status = RAFReader_next(r[i])) )
                         return status;
-                    }
                 }
                 assert(diff >= 0);
                 if(diff > 0) {
@@ -272,12 +261,8 @@ int RAFReader_multiNext(int n, RAFReader * r[n]) {
             // Increment each reader so long as we're all on the same
             // chromosome and the reader's nucpos is low.
             while(onSameChr && r[i]->nucpos < maxnuc) {
-                if( (status = RAFReader_next(r[i])) ) {
-                    if(status==1)
-                        fprintf(stderr,"%s:%d: status=%d\n",
-                                __FILE__, __LINE__, status);
+                if( (status = RAFReader_next(r[i])) )
                     return status;
-                }
                 diff = strcmp(r[i]->chr, currchr);
                 if(diff != 0) {
                     // Assertion should succeed because RAFReader_next
@@ -305,12 +290,8 @@ int RAFReader_multiNext(int n, RAFReader * r[n]) {
         return NO_ANCESTRAL_ALLELE;
 
     // Make sure REF and ALT are consistent across readers
-    if( (status = RAFReader_alleleCheck(n, r)) ) {
-        if(status==1)
-            fprintf(stderr,"%s:%d: status=%d\n",
-                    __FILE__, __LINE__, status);
+    if( (status = RAFReader_alleleCheck(n, r)) )
         return status;
-    }
 
     // Set derived allele frequency
     double ogf = r[n-1]->raf;  // freq of ref in outgroup
