@@ -40,6 +40,7 @@ char       *nextWhitesepToken(char **str);
 int         tokenize(int dim, char *token[dim], char *s, const char *delim);
 void        strReplaceChr(char *s, int a, int b);
 double      parseDbl(char *token);
+char        *strltrunc(char *s, int n);
 
 static inline double survival(double t, double twoN);
 

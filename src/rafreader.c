@@ -342,8 +342,16 @@ void RAFReader_printHdr(FILE * fp) {
 /// Print current line of raf file
 void RAFReader_print(RAFReader * r, FILE * fp) {
     assert(r->fname);
+    int status;
+    char buff[500];
+    status = snprintf(buff, sizeof buff, "%s", r->fname);
+    if(status >= sizeof buff) {
+        fprintf(stderr,"%s:%s:%d: buffer overflow\n",
+                __FILE__,__func__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
     fprintf(fp, "%30s %5s %10lu %3s %3s %8.6lg %8.6lg\n",
-            r->fname, r->chr, r->nucpos, r->ref, r->alt, r->raf,
+            strltrunc(buff, 30), r->chr, r->nucpos, r->ref, r->alt, r->raf,
             r->daf);
 }
 

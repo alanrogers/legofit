@@ -547,3 +547,17 @@ double parseDbl(char *token) {
     }
     return x;
 }
+
+/// Truncate string to n characters (plus terminating '\0') by
+/// removing characters from the left.
+char * strltrunc(char *s, int n) {
+    int w = strlen(s);
+    if(w <= n)
+        return s;
+
+    char *u = s, *v = s + (w-n);
+    while(*v)
+        *u++ = *v++;
+    *u = '\0';
+    return s;
+}
