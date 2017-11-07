@@ -483,7 +483,7 @@ int main(int argc, char **argv) {
         CHECKMEM(boot);
     }
 
-    unsigned long nsites = 0, nbadaa = 0, nbadref=0, nmultalt;
+    unsigned long nsites = 0, nbadaa = 0, nbadref=0, nmultalt=0;
     long        snpndx = -1;
 
     // Iterate through raf files
@@ -496,6 +496,7 @@ int main(int argc, char **argv) {
         status = RAFReader_multiNext(n, r);
         switch(status) {
         case 0:
+            ++nsites;
             break;
         case EOF:
             done=1;
@@ -527,8 +528,6 @@ int main(int argc, char **argv) {
                     __FILE__,__LINE__, errbuff);
             exit(EXIT_FAILURE);
         }
-
-        ++nsites;               // count sites that align
 
         if(bootreps > 0) {
             // chrndx is index of current chromosome
