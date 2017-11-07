@@ -494,6 +494,7 @@ int main(int argc, char **argv) {
     done=0;
     while( !done ) {
         status = RAFReader_multiNext(n, r);
+		fprintf(stderr,"%s:%d: status=%d\n", __FILE__, __LINE__, status);
         switch(status) {
         case 0:
             break;
