@@ -530,7 +530,7 @@ double parseDbl(char *token) {
     errno=0;
     x = strtod(token, &leftover);
     if(errno) {
-        // strdup detected a problem
+        // strtod detected a problem
         return 0.0;
     }
     if(leftover==token) {
