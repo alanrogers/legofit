@@ -9,7 +9,8 @@ enum {NO_ANCESTRAL_ALLELE=1000,
       MULTIPLE_ALT,
       BUFFER_OVERFLOW,
       BAD_RAF_INPUT,
-      BAD_SORT};
+      BAD_SORT,
+      BAD_CONSTRAINT};
 
 int mystrerror_r(int errnum, char *buff, size_t len);
 

@@ -9,7 +9,7 @@ typedef enum TokenType {
 } TokenType;
 
 typedef enum OpType {
-    plus, minus, times, divide
+    plus, minus, times, divide, power
 } OpType;
 
 typedef struct Token {
@@ -33,7 +33,8 @@ void Token_free(Token *self) {
     free(self)/
 }
 
-Token *Token_next(int n, char *buff, char **after, ParStore *ps) {
+Token *Token_next(int n, char *buff, char **after, ParStore *ps,
+                  int *err) {
     Token *self;
     while(isspace(*buff))
         ++buff;
@@ -43,8 +44,10 @@ Token *Token_next(int n, char *buff, char **after, ParStore *ps) {
     // Is token a number?
     errno = 0;
     double x = strtod(buff, after);
-    if(errno)
+    if(errno) {
+        *err = errno;
         return NULL;
+    }
     if(*after != buff) {
         token = Token_new();
         token->type = number;
@@ -75,12 +78,14 @@ Token *Token_next(int n, char *buff, char **after, ParStore *ps) {
             ++s;
         *after = s;
         size_t len = s - buf;
-        if(len > MAXTOKEN-1)
+        if(len > MAXTOKEN-1) {
+            *err = BUFFER_OVERFLOW;
             return NULL;
+        }
         token = Token_new();
         token->type = identifier;
         strncpy(self->str, buff, len);
-        return identifier;
+        return token;
     }
     token = Token_new();
     switch(*buff) {
@@ -103,13 +108,18 @@ Token *Token_next(int n, char *buff, char **after, ParStore *ps) {
         token->type = operator;
         token->op = divide;
         return token;
+    case '^':
+        token->type = operator;
+        token->op = exponentiate;
+        return token;
     case '(':
-        token->type = lparan;
+        token->type = lparen;
         return token;
     case ')':
-        token->type = lparan;
+        token->type = lparen;
         return token;
     }
     Token_free(token);
+    *err = BAD_CONSTRAINT;
     return NULL;
 }
