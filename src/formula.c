@@ -38,8 +38,10 @@ Token *Token_next(int n, char *buff, char **after, ParStore *ps,
     Token *self;
     while(isspace(*buff))
         ++buff;
-    if(*buff == '\0')
+    if(*buff == '\0') {
+        *err = EOF;
         return NULL;
+    }
 
     // Is token a number?
     errno = 0;
