@@ -42,6 +42,7 @@ For log = natural log uncomment the next line. */
 #include <string.h>
 #include <stdio.h>
 #include <limits.h>
+#include <errno.h>
 
 #ifndef NAN
 #define NAN (0.0/0.0)
@@ -279,8 +280,14 @@ void next_token(state * s) {
         }
 
         /* Try reading a number. */
-        if((s->next[0] >= '0' && s->next[0] <= '9') || s->next[0] == '.') {
-            s->value = strtod(s->next, (char **) &s->next);
+        char *end;
+        errno = 0;
+        s->value = strtod(s->next, &end);
+        if(errno) {
+            /* overflow or underflow */
+            s->type = TOK_ERROR;
+            s->next = end;
+        }else if(end != s->next) {
             s->type = TOK_NUMBER;
         } else {
             /* Look for a variable or builtin function call. */

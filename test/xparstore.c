@@ -53,7 +53,6 @@ int main(int argc, char **argv) {
     assert(Bounds_equals(&bnd0, &bnd1));
     unitTstResult("Bounds", "OK");
 
-    // Test Constraint
     double x=1.0, y=1.0, z=2.0;
     ParKeyVal *pkv = NULL;
     pkv = ParKeyVal_add(pkv, "x", &x, Free);
@@ -62,21 +61,13 @@ int main(int argc, char **argv) {
 
     char buff[100];
     strcpy(buff, "1+1*x + 2*x*y");
-    Constraint *c = Constraint_new(pkv, buff);
-    assert(1 + 1*x + 2*x*y == Constraint_getValue(c));
-    if(verbose) {
-        printf("Constraint formula: ");
-        Constraint_prFormula(c, stdout);
-    }
 
     double xx=1.0, yy=1.0, zz=2.0;
     ParKeyVal *pkv2 = NULL;
     pkv2 = ParKeyVal_add(pkv2, "x", &xx, Free);
     pkv2 = ParKeyVal_add(pkv2, "y", &yy, Free);
     pkv2 = ParKeyVal_add(pkv2, "z", &zz, Free);
-    Constraint *c2 = Constraint_dup(c, pkv2);
-    assert(Constraint_equals(c, c2));
-    unitTstResult("Constraint", "OK");
+    unitTstResult("ParKeyVal", "OK");
 
     ParStore *ps = ParStore_new();
     assert(ParStore_nFixed(ps) == 0);
@@ -214,8 +205,6 @@ int main(int argc, char **argv) {
     ParKeyVal_free(pkv);
     ParKeyVal_free(pkv2);
     gsl_rng_free(rng);
-    Constraint_free(c);
-    Constraint_free(c2);
     unitTstResult("ParStore", "OK");
 
     return 0;
