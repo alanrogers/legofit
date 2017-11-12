@@ -32,23 +32,23 @@
  *
  * Here is input that would generate the tree above:
  *
- * time fixed  T0=0
- * time free Tc=1
- * time free Tab=3
- * time free Tabc=5.5
- * twoN free 2Na=100
- * twoN fixed  2Nb=123
- * twoN free 2Nc=213.4
- * twoN fixed  2Nbb=32.1
- * twoN free 2Nab=222
- * twoN fixed  2Nabc=1.2e2
+ * time fixed T0=0
+ * time free  Tc=1
+ * time free  Tab=3
+ * time free  Tabc=5.5
+ * twoN free  twoNa=100
+ * twoN fixed twoNb=123
+ * twoN free  twoNc=213.4
+ * twoN fixed twoNbb=32.1
+ * twoN free  twoNab=222
+ * twoN fixed twoNabc=1.2e2
  * mixFrac free Mc=0.8
- * segment a   t=T0     twoN=2Na    samples=1
- * segment b   t=T0     twoN=2Nb    samples=2
- * segment c   t=Tc     twoN=2Nc    samples=1
- * segment bb  t=Tc     twoN=2Nbb
- * segment ab  t=Tab    twoN=2Nab
- * segment abc t=Tabc   twoN=2Nabc
+ * segment a   t=T0     twoN=twoNa    samples=1
+ * segment b   t=T0     twoN=twoNb    samples=2
+ * segment c   t=Tc     twoN=twoNc    samples=1
+ * segment bb  t=Tc     twoN=twoNbb
+ * segment ab  t=Tab    twoN=twoNab
+ * segment abc t=Tabc   twoN=twoNabc
  * mix    b  from bb + Mc * c
  * derive a  from ab
  * derive bb from ab
@@ -171,10 +171,18 @@ void		parseParam(char *next, enum ParamType type,
 	char *name = strsep(&next, "=");
     CHECK_TOKEN(name, orig);
     name = stripWhiteSpace(name);
-	if( !isalnum(*name) ) {
+    int i, ok=1;
+	if( !isalpha(name[0]) )
+        ok = 0;
+    for(i=1; ok && name[i]!='\0'; ++i) {
+        int c = name[i];
+        if( !(isalnum(c) || c=='_') )
+            ok = 0;
+    }
+    if(!ok) {
 		fprintf(stderr,"%s:%d: \"%s\" is not a legal parameter name.\n",
 				__FILE__,__LINE__, name);
-        fprintf(stderr,"input: %s\n", orig);
+        fprintf(stderr,"   input: %s\n", orig);
         exit(EXIT_FAILURE);
     }
 
@@ -678,19 +686,19 @@ const char *tstInput =
     "time free   Tc=1\n"
     "time free   Tab=3\n"
     "time free   Tabc=5.5\n"
-    "twoN free   2Na=100\n"
-    "twoN fixed  2Nb=123\n"
-    "twoN free   2Nc=213.4\n"
-    "twoN fixed  2Nbb=32.1\n"
-    "twoN constrained 2Nab=100 + -1.2*Tab\n"
-    "twoN fixed  2Nabc=1.2e2\n"
+    "twoN free   twoNa=100\n"
+    "twoN fixed  twoNb=123\n"
+    "twoN free   twoNc=213.4\n"
+    "twoN fixed  twoNbb=32.1\n"
+    "twoN constrained twoNab=100 + -1.2*Tab\n"
+    "twoN fixed  twoNabc=1.2e2\n"
     "mixFrac free Mc=0.02\n"
-    "segment a   t=T0     twoN=2Na    samples=1\n"
-    "segment b   t=T0     twoN=2Nb    samples=1\n"
-    "segment c   t=Tc     twoN=2Nc    samples=1\n"
-    "segment bb  t=Tc     twoN=2Nbb\n"
-    "segment ab  t=Tab    twoN=2Nab\n"
-    "segment abc t=Tabc   twoN=2Nabc\n"
+    "segment a   t=T0     twoN=twoNa    samples=1\n"
+    "segment b   t=T0     twoN=twoNb    samples=1\n"
+    "segment c   t=Tc     twoN=twoNc    samples=1\n"
+    "segment bb  t=Tc     twoN=twoNbb\n"
+    "segment ab  t=Tab    twoN=twoNab\n"
+    "segment abc t=Tabc   twoN=twoNabc\n"
     "mix    b  from bb + Mc * c\n"
     "derive a  from ab\n"
     "derive bb from ab\n"

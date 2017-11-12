@@ -1,7 +1,7 @@
 destination := $(HOME)/bin
 global_destination := $(HOME)/group/bin
-opt := -DNDEBUG -O3  -finline-functions  # For full optimization
-#opt :=  -O0 -fno-inline-functions -rdynamic -DDEBUG     # For debugging
+#opt := -DNDEBUG -O3  -finline-functions  # For full optimization
+opt :=  -O0 -fno-inline-functions -rdynamic -DDEBUG     # For debugging
 #opt := -O3  -finline-functions  # Optimization + debugging
 #prof := -pg -rdynamic                    # For profiling
 prof :=
@@ -45,14 +45,14 @@ test : $(tests)
 
 LEGOSIM := legosim.o patprob.o gptree.o binary.o jobqueue.o misc.o parse.o \
   branchtab.o popnodetab.o lblndx.o tokenizer.o parstore.o parkeyval.o \
-  popnode.o gene.o dprintf.o rngseed.o dtnorm.o
+  popnode.o gene.o dprintf.o rngseed.o dtnorm.o tinyexpr.o
 legosim : $(LEGOSIM)
 	$(CC) $(CFLAGS) -o $@ $(LEGOSIM) $(lib)
 
 LEGOFIT := legofit.o patprob.o gptree.o binary.o jobqueue.o misc.o \
   parse.o branchtab.o popnodetab.o lblndx.o tokenizer.o parstore.o \
   parkeyval.o popnode.o gene.o cost.o diffev.o dprintf.o rngseed.o \
-  simsched.o dtnorm.o
+  simsched.o dtnorm.o tinyexpr.o
 legofit : $(LEGOFIT)
 	$(CC) $(CFLAGS) -o $@ $(LEGOFIT) $(lib)
 

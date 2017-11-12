@@ -11,7 +11,8 @@ twoN free   twoNn=1e3          # archaic population size
 # by "+" signs, so negative terms must be entered as shown below. 
 # To spread a constraint function across several lines, break
 # the line after a "+" symbol.
-twoN constrained twoNxy=1e4 + -1.2*Txy # early modern population size
+#twoN constrained twoNxy=1e4 - 1.2*Txy # early modern population size
+twoN constrained twoNxy=exp(4 - 1.2*log(Txy)) # early modern population size
 mixFrac free  mN=0.02           # Neanderthal admixture into y
 segment x     t=zero   twoN=one    samples=1  # Africa
 segment y     t=zero   twoN=one    samples=1  # Eurasia

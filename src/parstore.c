@@ -174,7 +174,7 @@ ParStore *ParStore_dup(const ParStore * old) {
         if(new->constr[i] == NULL) {
             fprintf(stderr,"%s:%d: parse error\n", __FILE__,__LINE__);
             fprintf(stderr,"  %s\n", new->formulas[i]);
-            fprintf(stderr,"  %*s^\nError near here", status-1, "");
+            fprintf(stderr,"  %*s^\nError near here\n", status-1, "");
             exit(EXIT_FAILURE);
         }
     }
@@ -329,7 +329,7 @@ void ParStore_addConstrainedPar(ParStore * self, char *str,
     if(self->constr[i] == NULL) {
         fprintf(stderr,"%s:%d: parse error\n", __FILE__,__LINE__);
         fprintf(stderr,"  %s\n", str);
-        fprintf(stderr,"  %*s^\nError near here", status-1, "");
+        fprintf(stderr,"  %*s^\nError near here\n", status-1, "");
         exit(EXIT_FAILURE);
     }
     self->constrainedVal[i] = te_eval(self->constr[i]);

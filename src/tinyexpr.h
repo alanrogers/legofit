@@ -34,7 +34,7 @@ typedef struct te_expr {
     union {
         double value;
         const double *bound;
-        const void *function;
+        void *function;
     };
     void *parameters[1];
 } te_expr;
@@ -53,7 +53,7 @@ enum {
 
 typedef struct te_variable {
     const char *name;
-    const void *address;
+    void *address;
     int type;
     void *context;
 } te_variable;

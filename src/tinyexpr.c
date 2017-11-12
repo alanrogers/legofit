@@ -43,6 +43,7 @@ For log = natural log uncomment the next line. */
 #include <stdio.h>
 #include <limits.h>
 #include <errno.h>
+#include <ctype.h>
 
 #ifndef NAN
 #define NAN (0.0/0.0)
@@ -63,12 +64,12 @@ enum { TE_CONSTANT = 1 };
 
 typedef struct state {
     const char *start;
-    char *next;
+    const char *next;
     int         type;
     union {
         double      value;
         const double *bound;
-        const void *function;
+        void *function;
     };
     void       *context;
 
@@ -288,15 +289,14 @@ void next_token(state * s) {
             s->type = TOK_ERROR;
             s->next = end;
         }else if(end != s->next) {
+            s->next = end;
             s->type = TOK_NUMBER;
         } else {
             /* Look for a variable or builtin function call. */
-            if(s->next[0] >= 'a' && s->next[0] <= 'z') {
+            if(isalpha(*s->next)) {
                 const char *start;
                 start = s->next;
-                while((s->next[0] >= 'a' && s->next[0] <= 'z') ||
-                      (s->next[0] >= '0' && s->next[0] <= '9') ||
-                      (s->next[0] == '_'))
+                while(isalnum(*s->next) || *s->next == '_')
                     s->next++;
 
                 const te_variable *var =
@@ -619,7 +619,7 @@ static te_expr *list(state * s) {
     return ret;
 }
 
-#define TE_FUN(...) ((double(*)(__VA_ARGS__))n->function)
+#define TE_FUN(...) ((double (*) (__VA_ARGS__)) n->function)
 #define M(e) te_eval(n->parameters[e])
 
 double te_eval(const te_expr * n) {
