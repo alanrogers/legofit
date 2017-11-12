@@ -24,9 +24,6 @@ int mystrerror_r(int errnum, char *buff, size_t len) {
     case BAD_SORT:
         rval = snprintf(buff, len, "Incorrect sort");
         break;
-    case BAD_CONSTRAINT:
-        rval = snprintf(buff, len, "Illegal constraint formula");
-        break;
     default:
         status = strerror_r(errnum, buff, len);
     }

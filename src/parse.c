@@ -225,7 +225,7 @@ void		parseParam(char *next, enum ParamType type,
                 exit(EXIT_FAILURE);
             }
             if(sd <= 0.0) {
-                fprintf(stderr,"%s:%s:%d: Error sd =%lg <= 0.0\n",
+                fprintf(stderr,"%s:%s:%d: Error sd=%lg <= 0.0\n",
                         __FILE__,__func__,__LINE__, sd);
                 fprintf(stderr,"input: %s\n", orig);
                 exit(EXIT_FAILURE);

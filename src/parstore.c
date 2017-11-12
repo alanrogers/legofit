@@ -52,8 +52,6 @@ struct ParStore {
     char       *formulas[MAXPAR];    // formulas of constrained vars
 };
 
-static int compareDblPtrs(const void *void_x, const void *void_y);
-static int compareDbls(const void *void_x, const void *void_y);
 static inline int chrcount(const char *s, char c);
 
 /// Count the number of copies of character c in string s
@@ -69,14 +67,14 @@ static inline int chrcount(const char *s, char c) {
 }
 
 /// Return <0, 0, or >0, as x is <, ==, or > y.
-static int compareDblPtrs(const void *void_x, const void *void_y) {
+int compareDblPtrs(const void *void_x, const void *void_y) {
     double * const * x = (double * const *) void_x;
     double * const * y = (double * const *) void_y;
     return **x - **y;
 }
 
 /// Return <0, 0, or >0, as x is <, ==, or > y.
-static int compareDbls(const void *void_x, const void *void_y) {
+int compareDbls(const void *void_x, const void *void_y) {
     const double * x = (const double *) void_x;
     const double * y = (const double *) void_y;
     return *x - *y;
@@ -301,7 +299,7 @@ void ParStore_addFixedPar(ParStore * self, double value, const char *name) {
 }
 
 /// Add constrained parameter to ParStore.
-void ParStore_addConstrainedPar(ParStore * self, char *str,
+void ParStore_addConstrainedPar(ParStore * self, const char *str,
                                 const char *name) {
     int status, i = self->nConstrained;
     ParamStatus pstat;
@@ -369,6 +367,13 @@ double ParStore_getFixed(ParStore * self, int i) {
 double ParStore_getFree(ParStore * self, int i) {
     assert(i < self->nFree);
     return self->freeVal[i];
+}
+
+/// Get value of i'th constrained parameter
+double ParStore_getConstrained(ParStore * self, int i) {
+    assert(i < self->nConstrained);
+    self->constrainedVal[i] = te_eval(self->constr[i]);
+    return self->constrainedVal[i];
 }
 
 /// Get value of i'th Gaussian parameter
@@ -486,7 +491,7 @@ void ParStore_sanityCheck(ParStore *self, const char *file, int line) {
 }
 
 /// Return 1 if two ParStore objects are equal; 0 otherwise.
-int         ParStore_equals(const ParStore *lhs, const ParStore *rhs) {
+int         ParStore_equals(ParStore *lhs, ParStore *rhs) {
     if(lhs == rhs)
         return 1;
     if(lhs->nFixed != rhs->nFixed)
@@ -503,6 +508,8 @@ int         ParStore_equals(const ParStore *lhs, const ParStore *rhs) {
     if(0 != memcmp(lhs->freeVal, rhs->freeVal,
                    lhs->nFree*sizeof(lhs->freeVal[0])))
         return 0;
+    ParStore_constrain(rhs);
+    ParStore_constrain(lhs);
     if(0 != memcmp(lhs->constrainedVal, rhs->constrainedVal,
                    lhs->nConstrained*sizeof(lhs->constrainedVal[0])))
         return 0;
@@ -600,63 +607,3 @@ int         Bounds_equals(const Bounds *lhs, const Bounds *rhs) {
         && lhs->lo_t == rhs->lo_t
         && lhs->hi_t == rhs->hi_t;
 }
-
-#ifdef TEST
-
-#ifdef NDEBUG
-#error "Unit tests must be compiled without -DNDEBUG flag"
-#endif
-
-int main(int argc, char **argv) {
-
-    int verbose=0;
-
-    if(argc > 1) {
-        if(argc!=2 || 0!=strcmp(argv[1], "-v")) {
-            fprintf(stderr,"usage: xterm [-v]\n");
-            exit(EXIT_FAILURE);
-        }
-        verbose = 1;
-    }
-
-    double x=1.0, y=1.0, z=2.0;
-    double *px=&x, *py=&y, *pz=&z;
-    double **ppx=&px, **ppy=&py, **ppz=&pz;
-
-    assert(0 == compareDbls(px, py));
-    assert(0 == compareDbls(px, px));
-    assert(0 > compareDbls(px, pz));
-    assert(0 < compareDbls(pz, py));
-
-    unitTstResult("compareDbls", "OK");
-
-    assert(0 == compareDblPtrs(ppx, ppy));
-    assert(0 == compareDblPtrs(ppx, ppx));
-    assert(0 > compareDblPtrs(ppx, ppz));
-    assert(0 < compareDblPtrs(ppz, ppy));
-
-    unitTstResult("compareDblPtrs", "OK");
-
-    ParKeyVal *pkv = NULL;
-    pkv = ParKeyVal_add(pkv, "x", &x, Free);
-    pkv = ParKeyVal_add(pkv, "y", &y, Free);
-    pkv = ParKeyVal_add(pkv, "z", &z, Free);
-
-    ParStore *ps = ParStore_new();
-    double fixed0=99.0, fixed1=100.0;
-    ParStore_addFreePar(ps, x, 0.0, 100.0, "x");
-    ParStore_addFreePar(ps, y, 0.0, 100.0, "y");
-    ParStore_addFreePar(ps, z, 0.0, 100.0, "z");
-    ParStore_addFixedPar(ps, fixed0, 0.0, 100.0, "fixed0");
-    ParStore_addFixedPar(ps, fixed1, 0.0, 100.0, "fixed1");
-    ParStore_addConstrainedPar(ps, "exp(x+log(y+z))", "c");
-    ParStore_constrain(ps);
-    assert(2 == ParStore_nFixed(ps));
-    assert(3 == ParStore_nFree(ps));
-    assert(1 == ParStore_nConstrained(ps));
-    assert(x = ParStore_getFixed(ps, 0));
-    assert(y = ParStore_getFixed(ps, 1));
-    assert(z = ParStore_getFixed(ps, 2));
-    assert(exp(x+log(y+z)) == ParStore_getConstrained(ps, 0));
-}
-#endif

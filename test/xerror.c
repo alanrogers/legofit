@@ -23,8 +23,11 @@ int main(void) {
     assert(0 == mystrerror_r(NO_ANCESTRAL_ALLELE, buff, sizeof buff));
     assert(0 == strcmp(buff, "No ancestral allele"));
 
-    assert(0 == mystrerror_r(REF_ALT_MISMATCH, buff, sizeof buff));
-    assert(0 == strcmp(buff, "Inconsistent REF and ALT alleles"));
+    assert(0 == mystrerror_r(REF_MISMATCH, buff, sizeof buff));
+    assert(0 == strcmp(buff, "Inconsistent REF alleles"));
+    
+    assert(0 == mystrerror_r(MULTIPLE_ALT, buff, sizeof buff));
+    assert(0 == strcmp(buff, "Multiple ALT alleles"));
     
     assert(0 == mystrerror_r(BUFFER_OVERFLOW, buff, sizeof buff));
     assert(0 == strcmp(buff, "Buffer overflow"));
@@ -34,7 +37,7 @@ int main(void) {
     
     assert(0 == mystrerror_r(BAD_SORT, buff, sizeof buff));
     assert(0 == strcmp(buff, "Incorrect sort"));
-    
+
     unitTstResult("mystrerror_r", "OK");
     
     return 0;

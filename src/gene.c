@@ -137,10 +137,6 @@ int main(void) {
     assert(BranchTab_size(bt) == 1);
     assert(2.0 == BranchTab_get(bt, (id1|id2)));
 
-    Gene_free(g1);
-    Gene_free(g2);
-    Gene_free(g3);
-    Gene_free(g4);
     Gene_free(g5);
     BranchTab_free(bt);
 

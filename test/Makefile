@@ -5,7 +5,7 @@ prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
 tests := xbinary xboot xbranchtab xdafreader xrafreader xdiffev xgene \
   xgptree xpopnodetab xjobqueue xlblndx xllrbtree xparkeyval xparse \
-  xparstore xpopnode xsimsched xstrint xdtnorm xterm xmisc xerror
+  xparstore xpopnode xsimsched xstrint xdtnorm xmisc xerror
 
 CC := gcc
 
@@ -56,7 +56,6 @@ test : $(tests)
 	-./xpopnodetab
 	-./xsimsched
 	-./xstrint
-	-./xterm
 	@echo "ALL UNIT TESTS WERE COMPLETED."
 
 XBINARY := xbinary.o binary.o
@@ -69,7 +68,7 @@ xmisc : $(XMISC)
 
 XPOPNODETAB := xpopnodetab.o popnodetab.o misc.o popnode.o gene.o \
    branchtab.o lblndx.o tokenizer.o dtnorm.o binary.o \
-   parkeyval.o parstore.o
+   parkeyval.o parstore.o tinyexpr.o
 xpopnodetab : $(XPOPNODETAB)
 	$(CC) $(CFLAGS) -o $@ $(XPOPNODETAB) $(lib)
 
@@ -105,16 +104,9 @@ xparse.o : parse.c
 
 XPARSE := xparse.o popnodetab.o misc.o tokenizer.o gptree.o lblndx.o \
        branchtab.o parstore.o parkeyval.o popnode.o binary.o gene.o \
-       dprintf.o dtnorm.o
+       dprintf.o dtnorm.o tinyexpr.o
 xparse : $(XPARSE)
 	$(CC) $(CFLAGS) -o $@ $(XPARSE) $(lib)
-
-xterm.o : parstore.c
-	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/parstore.c
-
-XTERM := xterm.o misc.o parkeyval.o dtnorm.o
-xterm : $(XTERM)
-	$(CC) $(CFLAGS) -o $@ $(XTERM) $(lib)
 
 xgene.o : gene.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/gene.c
@@ -131,7 +123,7 @@ xpopnode.o : popnode.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/popnode.c
 
 XPOPNODE := xpopnode.o misc.o gene.o branchtab.o binary.o lblndx.o \
-   tokenizer.o parkeyval.o dtnorm.o parstore.o
+   tokenizer.o parkeyval.o dtnorm.o parstore.o tinyexpr.o
 xpopnode : $(XPOPNODE)
 	$(CC) $(CFLAGS) -o $@ $(XPOPNODE) $(lib)
 
@@ -142,9 +134,9 @@ xsimsched : $(XSIMSCHED)
 xgptree.o : gptree.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/gptree.c
 
-XGPTREE := xgptree.o misc.o branchtab.o parstore.o parse.o lblndx.o \
+XGPTREE := xgptree.o misc.o branchtab.o parstore.o lblndx.o \
         parkeyval.o tokenizer.o popnodetab.o gene.o popnode.o binary.o \
-        dprintf.o dtnorm.o
+        dprintf.o dtnorm.o parse.o tinyexpr.o
 xgptree : $(XGPTREE)
 	$(CC) $(CFLAGS) -o $@ $(XGPTREE) $(lib)
 
@@ -176,7 +168,7 @@ xbranchtab.o : branchtab.c
 
 XBRANCHTAB := xbranchtab.o gptree.o misc.o binary.o parstore.o popnode.o \
    gene.o lblndx.o parse.o parkeyval.o tokenizer.o popnodetab.o \
-   dprintf.o dtnorm.o
+   dprintf.o dtnorm.o tinyexpr.o
 xbranchtab : $(XBRANCHTAB)
 	$(CC) $(CFLAGS) -o $@ $(XBRANCHTAB) $(lib)
 
