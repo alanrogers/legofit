@@ -87,6 +87,8 @@ typedef struct state {
 
 void te_free_parameters(te_expr * n);
 void next_token(state * s);
+static double pi(void);
+static double e(void);
 
 static te_expr *new_expr(const int type, const te_expr * parameters[]) {
     const int   arity = ARITY(type);
@@ -139,10 +141,10 @@ void te_free(te_expr * n) {
     free(n);
 }
 
-static double pi() {
+static double pi(void) {
     return 3.14159265358979323846;
 }
-static double e() {
+static double e(void) {
     return 2.71828182845904523536;
 }
 static double fac(double a) {   /* simplest version of fac */
