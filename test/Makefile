@@ -149,7 +149,7 @@ xgptree : $(XGPTREE)
 	$(CC) $(CFLAGS) -o $@ $(XGPTREE) $(lib)
 
 XPARSTORE := xparstore.o misc.o parstore.o parkeyval.o binary.o lblndx.o \
-        dtnorm.o
+        dtnorm.o tinyexpr.o
 xparstore : $(XPARSTORE)
 	$(CC) $(CFLAGS) -o $@ $(XPARSTORE) $(lib)
 

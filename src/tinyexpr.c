@@ -62,7 +62,7 @@ enum { TE_CONSTANT = 1 };
 
 typedef struct state {
     const char *start;
-    const char *next;
+    char *next;
     int         type;
     union {
         double      value;
@@ -82,6 +82,9 @@ typedef struct state {
 #define IS_CLOSURE(TYPE) (((TYPE) & TE_CLOSURE0) != 0)
 #define ARITY(TYPE) ( ((TYPE) & (TE_FUNCTION0 | TE_CLOSURE0)) ? ((TYPE) & 0x00000007) : 0 )
 #define NEW_EXPR(type, ...) new_expr((type), (const te_expr*[]){__VA_ARGS__})
+
+void te_free_parameters(te_expr * n);
+void next_token(state * s);
 
 static te_expr *new_expr(const int type, const te_expr * parameters[]) {
     const int   arity = ARITY(type);

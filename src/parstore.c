@@ -48,7 +48,7 @@ struct ParStore {
     double      mean[MAXPAR];        // Gaussian means
     double      sd[MAXPAR];          // Gaussian standard deviations
     te_expr    *constr[MAXPAR];      // controls constrainedVal entries
-    te_variables te_pars[MAXPAR];
+    te_variable te_pars[MAXPAR];
     char       *formulas[MAXPAR];    // formulas of constrained vars
 };
 
@@ -121,9 +121,9 @@ void ParStore_printConstrained(ParStore *self, FILE *fp) {
     int i;
     fprintf(fp, "%5d constrained:\n", self->nConstrained);
     for(i=0; i < self->nConstrained; ++i) {
-        fprintf(fp, "   %8s = %lg = ", self->nameConstrained[i],
-                self->constrainedVal[i]);
-        te_print(self->constr[i], fp);
+        fprintf(fp, "   %8s = %lg = %s\n", self->nameConstrained[i],
+                self->constrainedVal[i],
+                self->formulas[i]);
     }
 }
 
@@ -139,6 +139,7 @@ ParStore *ParStore_new(void) {
 /// Duplicate a ParStore
 ParStore *ParStore_dup(const ParStore * old) {
     assert(old);
+    int status;
     ParStore   *new = memdup(old, sizeof(ParStore));
     new->pkv = NULL;
 
@@ -641,5 +642,21 @@ int main(int argc, char **argv) {
     pkv = ParKeyVal_add(pkv, "y", &y, Free);
     pkv = ParKeyVal_add(pkv, "z", &z, Free);
 
+    ParStore *ps = ParStore_new();
+    double fixed0=99.0, fixed1=100.0;
+    ParStore_addFreePar(ps, x, 0.0, 100.0, "x");
+    ParStore_addFreePar(ps, y, 0.0, 100.0, "y");
+    ParStore_addFreePar(ps, z, 0.0, 100.0, "z");
+    ParStore_addFixedPar(ps, fixed0, 0.0, 100.0, "fixed0");
+    ParStore_addFixedPar(ps, fixed1, 0.0, 100.0, "fixed1");
+    ParStore_addConstrainedPar(ps, "exp(x+log(y+z))", "c");
+    ParStore_constrain(ps);
+    assert(2 == ParStore_nFixed(ps));
+    assert(3 == ParStore_nFree(ps));
+    assert(1 == ParStore_nConstrained(ps));
+    assert(x = ParStore_getFixed(ps, 0));
+    assert(y = ParStore_getFixed(ps, 1));
+    assert(z = ParStore_getFixed(ps, 2));
+    assert(exp(x+log(y+z)) == ParStore_getConstrained(ps, 0));
 }
 #endif
