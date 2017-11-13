@@ -127,11 +127,7 @@ int main(int argc, char **argv) {
         {"help", no_argument, 0, 'h'},
         {NULL, 0, NULL, 0}
     };
-
-    printf("############################################################\n"
-           "# legosim: generate site patterns by coalescent simulation #\n"
-           "############################################################\n");
-    putchar('\n');
+    hdr("legosim: generate site patterns by coalescent simulation");
 
     int         i, j;
     int         doSing=0;  // nonzero => use singleton site patterns

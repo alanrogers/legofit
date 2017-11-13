@@ -9,6 +9,7 @@
 #include "misc.h"
 #include "binary.h"
 #include "lblndx.h"
+#include "version.h"
 #include <assert.h>
 #include <ctype.h>
 #include <gsl/gsl_randist.h>
@@ -560,4 +561,53 @@ char * strltrunc(char *s, int n) {
         *u++ = *v++;
     *u = '\0';
     return s;
+}
+
+void hdr(const char *msg) {
+    int i, wid, len1, len2, status;
+    char version[100], buff[100];
+    status = snprintf(version, sizeof(version), "version %s", VERSION);
+    if(status >= sizeof(version)) {
+        fprintf(stderr,"%s:%d: buffer overflow\n",__FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
+    len1 = strlen(msg);
+    len2 = strlen(version);
+    wid = 2 + (len1 > len2 ? len1 : len2);
+    for(i=0; i < 2 + wid; ++i)
+        putchar('#');
+    putchar('\n');
+    printf("#%s#\n", strcenter(msg, wid, buff, sizeof(buff)));
+    printf("#%s#\n", strcenter(version, wid, buff, sizeof(buff)));
+    for(i=0; i < 2 + wid; ++i)
+        putchar('#');
+    putchar('\n');
+    putchar('\n');
+}
+
+/**
+ * Center string "text" in a field of width "width". The centered string
+ * is written into the character string "buff", whose size is
+ * "buffsize".
+ */
+char       *strcenter(const char *text, unsigned width,
+                      char *buff, size_t buffsize) {
+    int         i, j, lpad = 0, rpad = 0, txtwid;
+
+    txtwid = strlen(text);
+    if(txtwid >= buffsize) {
+        snprintf(buff, buffsize, "%s", text);
+        return buff;
+    }
+    if(width > txtwid)
+        lpad = (width - txtwid) / 2;
+    rpad = width - txtwid - lpad;
+    for(i = 0; i < lpad; ++i)
+        buff[i] = ' ';
+    for(j = 0; j < txtwid; ++j)
+        buff[i + j] = text[j];
+    for(j = 0; j < rpad; ++j)
+        buff[i + txtwid + j] = ' ';
+    buff[lpad + txtwid + rpad] = '\0';
+    return buff;
 }

@@ -251,10 +251,7 @@ int main(int argc, char **argv) {
         {NULL, 0, NULL, 0}
     };
 
-    printf("########################################\n"
-           "# legofit: estimate population history #\n"
-           "########################################\n");
-    putchar('\n');
+    hdr("legofit: estimate population history");
 
     int         i, j;
     time_t      currtime = time(NULL);
