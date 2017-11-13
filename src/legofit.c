@@ -205,6 +205,7 @@ void usage(void) {
     tellopt("-p <x> or --ptsPerDim <x>", "number of DE points per free var");
 	tellopt("-1 or --singletons", "Use singleton site patterns");
     tellopt("-v or --verbose", "verbose output");
+    tellopt("--version", "Print version and exit");
     tellopt("-h or --help", "print this message");
     exit(1);
 }
@@ -248,6 +249,7 @@ int main(int argc, char **argv) {
         {"singletons", no_argument, 0, '1'},
         {"help", no_argument, 0, 'h'},
         {"verbose", no_argument, 0, 'v'},
+        {"version", no_argument, 0, 'V'},
         {NULL, 0, NULL, 0}
     };
 
@@ -344,6 +346,8 @@ int main(int argc, char **argv) {
         case 'v':
             verbose = 1;
             break;
+        case 'V':
+            return 0;
         case 'T':
             ytol = strtod(optarg, 0);
             break;

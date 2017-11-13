@@ -137,6 +137,7 @@ Systems Consortium License, which can be found in file "LICENSE".
 #include "misc.h"
 #include "strint.h"
 #include "typedefs.h"
+#include "version.h"
 #include <ctype.h>
 #include <errno.h>
 #include <getopt.h>
@@ -185,6 +186,7 @@ static void usage(void) {
     tellopt("-m or --logMismatch", "log AA/DA mismatches to tabpat.log");
     tellopt("-F or --logFixed", "log fixed sites to tabpat.log");
     tellopt("-a or --logAll", "log all sites to tabpat.log");
+    tellopt("--version", "Print version and exit");
     tellopt("-h or --help", "Print this message");
     exit(1);
 }
@@ -262,6 +264,7 @@ int main(int argc, char **argv) {
         {"logFixed", no_argument, 0, 'F'},
         {"logAll", no_argument, 0, 'a'},
         {"help", no_argument, 0, 'h'},
+        {"version", no_argument, 0, 'V'},
 //        {"threads", required_argument, 0, 't'},
         {NULL, 0, NULL, 0}
     };
@@ -297,6 +300,9 @@ int main(int argc, char **argv) {
         case 'h':
             usage();
             break;
+        case 'V':
+            printf("tabpat version %s\n", VERSION);
+            return 0;
         case 'r':
             bootreps = strtol(optarg, NULL, 10);
             break;

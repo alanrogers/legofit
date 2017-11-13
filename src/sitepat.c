@@ -138,6 +138,7 @@ Systems Consortium License, which can be found in file "LICENSE".
 #include "strint.h"
 #include "error.h"
 #include "typedefs.h"
+#include "version.h"
 #include <ctype.h>
 #include <errno.h>
 #include <getopt.h>
@@ -184,8 +185,9 @@ static void usage(void) {
     tellopt("-b <x> or --blocksize <x>",
             "# of SNPs per block in moving-blocks bootstrap. Def: 0.");
     tellopt("-1 or --singletons", "Use singleton site patterns");
-    tellopt("-m or --logMismatch", "log REF mismatches to sitepat.log");
-    tellopt("-A or --logAA", "log sites with uncallable ancestral allele");
+    tellopt("-m or --logMismatch", "Log REF mismatches to sitepat.log");
+    tellopt("-A or --logAA", "Log sites with uncallable ancestral allele");
+    tellopt("--version", "Print version and exit");
     tellopt("-h or --help", "Print this message");
     exit(1);
 }
@@ -263,6 +265,7 @@ int main(int argc, char **argv) {
         {"logMismatch", no_argument, 0, 'm'},
         {"logAA", no_argument, 0, 'A'},
         {"help", no_argument, 0, 'h'},
+        {"version", no_argument, 0, 'V'},
         {NULL, 0, NULL, 0}
     };
 
@@ -294,6 +297,9 @@ int main(int argc, char **argv) {
                 exit(EXIT_FAILURE);
             }
             break;
+        case 'V':
+            printf("sitepat version %s\n", VERSION);
+            return 0;
         case 'h':
             usage();
             break;
