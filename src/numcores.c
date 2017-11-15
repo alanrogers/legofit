@@ -10,6 +10,7 @@ void usage(void) {
     fprintf(stderr,"  where \"factor\" is a number between 0 and 1.\n");
     fprintf(stderr,"  Program prints factor times the number of cores,\n");
     fprintf(stderr,"  rounded to nearest integer.\n");
+    fprintf(stderr,"  It is an error if factor is outside of [0,1].\n");
     fprintf(stderr,"  Default: factor=1.\n");
     exit(EXIT_FAILURE);
 }
@@ -33,6 +34,8 @@ int main(int argc, char **argv) {
                     argv[1]);
             usage();
         }
+        if(factor < 0.0 || factor > 1.0)
+            usage();
         printf("%0.0lf\n", floor(0.5 + factor * getNumCores()));
         break;
     default:
