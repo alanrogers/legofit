@@ -1,16 +1,15 @@
 #include <stdio.h>
-
-double f(void);
-
-double f(void) {
-    return 0.0;
-}
+#include <limits.h>
 
 int main(void) {
 
-    const void *ptr = f;
+    long int i = LONG_MAX;
 
-    printf("%lf\n", ((double (* const)(void)) ptr)());
+    printf("max=%ld = %e\n", i, (double) i);
+
+    i += 1;
+
+    printf("max+1=%ld\n", i);
 
     return 0;
 }

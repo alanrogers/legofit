@@ -71,10 +71,10 @@ int main(int argc, char **argv) {
 
     // Keep track of the number of sites at which the number
     // of reference, alternate, or ancestral alleles differs from 0
-    int         zeroref = 0, zeroalt = 0, zeroaa = 0, zerogtype = 0;
-    int         missref = 0, missaa = 0;
-    int         multref = 0, multalt = 0, multaa = 0;
-    int         nbad = 0, ngood = 0;
+    long int         zeroref = 0, zeroalt = 0, zeroaa = 0, zerogtype = 0;
+    long int         missref = 0, missaa = 0;
+    long int         multref = 0, multalt = 0, multaa = 0;
+    long int         nbad = 0, ngood = 0;
     int         ok;             // is current line acceptable
     long unsigned lastnucpos = 0, nucpos;
     char        lastchr[100] = { '\0' };
@@ -308,31 +308,31 @@ int main(int argc, char **argv) {
         printf("%4s %10s %2s %2s %20.18f\n",
                chr, pos, aa[0], alleles[1 - aai], p);
     }
-    fprintf(stderr, "daf: %d good sites; %d rejected\n", ngood, nbad);
+    fprintf(stderr, "daf: %ld good sites; %ld rejected\n", ngood, nbad);
     if(zeroref)
-        fprintf(stderr, "daf: bad sites with 0 ref alleles: %d\n", zeroref);
+        fprintf(stderr, "daf: bad sites with 0 ref alleles: %ld\n", zeroref);
     if(zeroalt)
-        fprintf(stderr, "daf: bad sites with 0 alt alleles: %d\n", zeroalt);
+        fprintf(stderr, "daf: bad sites with 0 alt alleles: %ld\n", zeroalt);
     if(zeroaa)
-        fprintf(stderr, "daf: bad sites with 0 ancestral alleles: %d\n",
+        fprintf(stderr, "daf: bad sites with 0 ancestral alleles: %ld\n",
                 zeroaa);
     if(zerogtype)
-        fprintf(stderr, "daf: bad sites with 0 genotypes: %d\n", zerogtype);
+        fprintf(stderr, "daf: bad sites with 0 genotypes: %ld\n", zerogtype);
     if(multref)
-        fprintf(stderr, "daf: bad sites with multiple ref alleles: %d\n",
+        fprintf(stderr, "daf: bad sites with multiple ref alleles: %ld\n",
                 multref);
     if(multalt)
-        fprintf(stderr, "daf: bad sites with multiple alt alleles: %d\n",
+        fprintf(stderr, "daf: bad sites with multiple alt alleles: %ld\n",
                 multalt);
     if(multaa)
         fprintf(stderr,
-                "daf: bad sites with multiple ancestral alleles: %d\n",
+                "daf: bad sites with multiple ancestral alleles: %ld\n",
                 multaa);
     if(missref)
-        fprintf(stderr, "daf: bad sites with missing ref alleles: %d\n",
+        fprintf(stderr, "daf: bad sites with missing ref alleles: %ld\n",
                 missref);
     if(missaa)
-        fprintf(stderr, "daf: bad sites with missing ancestral alleles: %d\n",
+        fprintf(stderr, "daf: bad sites with missing ancestral alleles: %ld\n",
                 missaa);
     return 0;
 }
