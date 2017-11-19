@@ -3,13 +3,13 @@
 
 int main(void) {
 
-    long int i = LONG_MAX;
+    int i = INT_MAX;
 
-    printf("max=%ld = %e\n", i, (double) i);
+    printf("max=%d = %e\n", i, (double) i);
 
     i += 1;
 
-    printf("max+1=%ld\n", i);
+    printf("max+1=%d\n", i);
 
     return 0;
 }

@@ -192,7 +192,7 @@ int RAFReader_rewind(RAFReader * self) {
 /// set derived allele frequency within each RAFReader.
 /// @param[in] n number of RAFReader objects in array
 /// @param[in] r array of RAFReader objects. Last one should be outgroup.
-/// @return 0 on success or EOF on end of file.
+/// @return 0 on success, or one of several error codes on failure.
 int RAFReader_multiNext(int n, RAFReader * r[n]) {
     int   i, status;
     unsigned long maxnuc = 0, minnuc = ULONG_MAX;
@@ -253,7 +253,7 @@ int RAFReader_multiNext(int n, RAFReader * r[n]) {
         status = snprintf(currchr, sizeof currchr, "%s", r[0]->chr);
         if(status >= sizeof currchr) {
             fprintf(stderr, "%s:%d: buffer overflow\n", __FILE__, __LINE__);
-            exit(EXIT_FAILURE);
+            return BUFFER_OVERFLOW;
         }
         // Now get them all on the same position. Have to keep
         // checking chr in case one file moves to another chromosome.

@@ -12,6 +12,9 @@ int mystrerror_r(int errnum, char *buff, size_t len) {
     case REF_MISMATCH:
         rval = snprintf(buff, len, "Inconsistent REF alleles");
         break;
+    case ALLELE_MISMATCH:
+        rval = snprintf(buff, len, "Inconsistent alleles");
+        break;
     case MULTIPLE_ALT:
         rval = snprintf(buff, len, "Multiple ALT alleles");
         break;
@@ -19,6 +22,9 @@ int mystrerror_r(int errnum, char *buff, size_t len) {
         rval = snprintf(buff, len, "Buffer overflow");
         break;
     case BAD_RAF_INPUT:
+        rval = snprintf(buff, len, "Bad .raf input file");
+        break;
+    case BAD_DAF_INPUT:
         rval = snprintf(buff, len, "Bad .raf input file");
         break;
     case BAD_SORT:

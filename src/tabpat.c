@@ -26,8 +26,6 @@ replicate into a separate file.
           # of SNPs per block in moving-blocks bootstrap. Def: 0.
        -1 or --singletons
           Use singleton site patterns
-       -m or --logMismatch
-          log AA/DA mismatches to tabpat.log
        -F or --logFixed
           log fixed sites to tabpat.log
        -a or --logAll
@@ -138,6 +136,7 @@ Systems Consortium License, which can be found in file "LICENSE".
 #include "strint.h"
 #include "typedefs.h"
 #include "version.h"
+#include "error.h"
 #include <ctype.h>
 #include <errno.h>
 #include <getopt.h>
@@ -183,7 +182,6 @@ static void usage(void) {
     tellopt("-b <x> or --blocksize <x>",
             "# of SNPs per block in moving-blocks bootstrap. Def: 0.");
     tellopt("-1 or --singletons", "Use singleton site patterns");
-    tellopt("-m or --logMismatch", "log AA/DA mismatches to tabpat.log");
     tellopt("-F or --logFixed", "log fixed sites to tabpat.log");
     tellopt("-a or --logAll", "log all sites to tabpat.log");
     tellopt("--version", "Print version and exit");
@@ -243,15 +241,16 @@ generatePatterns(int bit, int npops, Stack * stk, tipId_t pat, int doSing) {
 }
 
 int main(int argc, char **argv) {
-    int         i, j, status, optndx;
+    int         i, j, status, optndx, done;
     int         doSing = 0;     // nonzero means use singleton site patterns
     long        bootreps = 0;
     double      conf = 0.95;    // confidence level
     long        blocksize = 500;
     StrInt     *strint = StrInt_new();
     char        bootfname[FILENAMESIZE] = { '\0' };
+    char        errbuff[100] = { '\0' };
     const char *logfname = "tabpat.log";
-    int         logMismatch = 0, logFixed = 0, logAll = 0;
+    int         logFixed = 0, logAll = 0;
     FILE       *logfile = NULL;
 
     static struct option myopts[] = {
@@ -260,7 +259,6 @@ int main(int argc, char **argv) {
         {"bootreps", required_argument, 0, 'r'},
         {"blocksize", required_argument, 0, 'b'},
         {"singletons", no_argument, 0, '1'},
-        {"logMismatch", no_argument, 0, 'm'},
         {"logFixed", no_argument, 0, 'F'},
         {"logAll", no_argument, 0, 'a'},
         {"help", no_argument, 0, 'h'},
@@ -271,7 +269,7 @@ int main(int argc, char **argv) {
 
     // command line arguments
     for(;;) {
-        i = getopt_long(argc, argv, "ab:c:f:hr:t:mFv1", myopts, &optndx);
+        i = getopt_long(argc, argv, "ab:c:f:hr:t:Fv1", myopts, &optndx);
         if(i == -1)
             break;
         switch (i) {
@@ -308,9 +306,6 @@ int main(int argc, char **argv) {
             break;
         case '1':
             doSing = 1;
-            break;
-        case 'm':
-            logMismatch = 1;
             break;
         case 'F':
             logFixed = 1;
@@ -356,7 +351,7 @@ int main(int argc, char **argv) {
         r[i] = DAFReader_new(fname[i]);
     }
 
-    if(logMismatch || logFixed || logAll) {
+    if(logFixed || logAll) {
         logfile = fopen(logfname, "w");
         if(logfile == NULL) {
             fprintf(stderr, "Can't write to file \"%s\".\n", logfname);
@@ -433,12 +428,25 @@ int main(int argc, char **argv) {
         // First pass through data sets values of
         // nchr
         // nsnp[i] {i=0..nchr-1}
-        while(EOF != DAFReader_multiNext(n, r)) {
-
-            // Skip loci at which data sets disagree about which allele
-            // is derived and which ancestral.
-            if(!DAFReader_allelesMatch(n, r))
+        done = 0;
+        while(!done) {
+            status = DAFReader_multiNext(n, r);
+            switch(status) {
+            case 0:
+                break;
+            case EOF:
+                done=1;
+                break;
+            case ALLELE_MISMATCH:
+            case NO_ANCESTRAL_ALLELE:
                 continue;
+            default:
+                // something wrong
+                mystrerror_r(status, errbuff, sizeof errbuff);
+                fprintf(stderr,"%s:%d: input error (%s)\n",
+                        __FILE__,__LINE__, errbuff);
+                exit(EXIT_FAILURE);
+            }
 
             assert(strlen(DAFReader_chr(r[0])) < sizeof prev);
             strcpy(prev, chr);
@@ -479,21 +487,28 @@ int main(int argc, char **argv) {
             bootreps > 0 ? "2nd" : "single");
     int         chrndx = -1, currChr = INT_MAX;
     DAFReader_clearChromosomes(n, r);
-    while(EOF != DAFReader_multiNext(n, r)) {
-
-        ++nsites;               // count sites that align across populations.
-        // Skip loci at which data sets disagree about which allele
-        // is derived and which ancestral.
-        if(!DAFReader_allelesMatch(n, r)) {
-            if(logMismatch) {
-                assert(logfile);
-                fprintf(logfile, "Mismatch\n");
-                DAFReader_printHdr(logfile);
-                for(i = 0; i < n; ++i)
-                    DAFReader_print(r[i], logfile);
-            }
+    done=0;
+    while(!done) {
+        status = DAFReader_multiNext(n, r);
+        switch(status) {
+        case 0:
+            ++nsites;
+            break;
+        case EOF:
+            done=1;
+            break;
+        case ALLELE_MISMATCH:
             ++nbadaa;
+            ++nsites;
             continue;
+        case NO_ANCESTRAL_ALLELE:
+            continue;
+        default:
+            // something wrong
+            mystrerror_r(status, errbuff, sizeof errbuff);
+            fprintf(stderr,"%s:%d: input error (%s)\n",
+                    __FILE__,__LINE__, errbuff);
+            exit(EXIT_FAILURE);
         }
 
         if(bootreps > 0) {
@@ -517,25 +532,10 @@ int main(int argc, char **argv) {
 #endif
         }
         // p and q are frequencies of derived and ancestral alleles
-        double      p[n], q[n], minp, maxp;
-        minp = 1.0;
-        maxp = 0.0;
+        double      p[n], q[n];
         for(j = 0; j < n; ++j) {
             p[j] = DAFReader_daf(r[j]); // derived allele freq
             q[j] = 1 - p[j];
-            minp = fmin(minp, p[j]);
-            maxp = fmax(maxp, p[j]);
-        }
-        if(maxp == 0.0 || minp == 1.0) {
-            if(logFixed) {
-                assert(logfile);
-                fprintf(logfile, "All p=%lf\n", p[0]);
-                DAFReader_printHdr(logfile);
-                for(i = 0; i < n; ++i)
-                    DAFReader_print(r[i], logfile);
-            }
-            ++nfixed;
-            continue;
         }
 
         if(logAll) {
