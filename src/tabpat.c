@@ -447,6 +447,8 @@ int main(int argc, char **argv) {
                         __FILE__,__LINE__, errbuff);
                 exit(EXIT_FAILURE);
             }
+            if(done)
+                break;
 
             assert(strlen(DAFReader_chr(r[0])) < sizeof prev);
             strcpy(prev, chr);
@@ -510,6 +512,8 @@ int main(int argc, char **argv) {
                     __FILE__,__LINE__, errbuff);
             exit(EXIT_FAILURE);
         }
+        if(done)
+            break;
 
         if(bootreps > 0) {
             // chrndx is index of current chromosome
