@@ -269,6 +269,7 @@ int main(int argc, char **argv) {
         {NULL, 0, NULL, 0}
     };
 
+    fprintf(stderr,"sitepat version %s\n", VERSION);
     // command line arguments
     for(;;) {
         i = getopt_long(argc, argv, "b:c:f:hr:t:mAv1", myopts, &optndx);
@@ -458,8 +459,6 @@ int main(int argc, char **argv) {
                         __FILE__,__LINE__, errbuff);
                 exit(EXIT_FAILURE);
             }
-            if(done)
-                break;
 
             assert(strlen(RAFReader_chr(r[0])) < sizeof prev);
             strcpy(prev, chr);
@@ -537,8 +536,6 @@ int main(int argc, char **argv) {
                     __FILE__,__LINE__, errbuff);
             exit(EXIT_FAILURE);
         }
-        if(done)
-            break;
 
         if(bootreps > 0) {
             // chrndx is index of current chromosome
