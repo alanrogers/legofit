@@ -269,7 +269,6 @@ int main(int argc, char **argv) {
         {NULL, 0, NULL, 0}
     };
 
-    fprintf(stderr,"sitepat version %s\n", VERSION);
     // command line arguments
     for(;;) {
         i = getopt_long(argc, argv, "b:c:f:hr:t:mAv1", myopts, &optndx);
@@ -382,6 +381,7 @@ int main(int argc, char **argv) {
         }
     }
 
+    printf("# sitepat version %s\n", VERSION);
     printf("# Population labels:\n");
     for(i = 0; i < n; ++i)
         printf("# %8s=%s\n", poplbl[i], fname[i]);

@@ -43,6 +43,11 @@ test : $(tests)
 	-./xzeroin
 	@echo "ALL UNIT TESTS WERE COMPLETED."
 
+version.h: FORCE
+	./mkversion.py > version.h
+
+FORCE:
+
 LEGOSIM := legosim.o patprob.o gptree.o binary.o jobqueue.o misc.o parse.o \
   branchtab.o popnodetab.o lblndx.o tokenizer.o parstore.o parkeyval.o \
   popnode.o gene.o dprintf.o rngseed.o dtnorm.o tinyexpr.o

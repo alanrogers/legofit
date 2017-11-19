@@ -267,8 +267,6 @@ int main(int argc, char **argv) {
         {NULL, 0, NULL, 0}
     };
 
-    fprintf(stderr,"tabpat version %s\n", VERSION);
-
     // command line arguments
     for(;;) {
         i = getopt_long(argc, argv, "ab:c:f:hr:t:Fv1", myopts, &optndx);
@@ -372,6 +370,7 @@ int main(int argc, char **argv) {
         }
     }
 
+    printf("# tabpat version %s\n", VERSION);
     printf("# Population labels:\n");
     for(i = 0; i < n; ++i)
         printf("# %4s=%s\n", poplbl[i], fname[i]);

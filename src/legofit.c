@@ -129,7 +129,7 @@ reported in the legofit output. To double this value, use "-T 2e-4" or
 @copyright Copyright (c) 2016, 2017, Alan R. Rogers
 <rogers@anthro.utah.edu>. This file is released under the Internet
 Systems Consortium License, which can be found in file "LICENSE".
- */
+*/
 
 #include "branchtab.h"
 #include "cost.h"
