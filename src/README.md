@@ -408,6 +408,13 @@ Segments cannot have more than two parents or more than two
 children. All segments should descend, eventually, from a single
 root.
 
+The site patterns printed refer only to the segments that contain
+samples, and the sort order of site patterns is determined by the
+order in which segments are listed in the .lgo file. In the file
+discussed above, there are three segments with samples, and these are
+in order "x", "y", "n". For this reason, the output will contain a
+site pattern labeled "x:y:n" rather than, say, "x:n:y".
+
 Using this .lgo file as input, `legosim -i 10000` produces
 
     ############################################################
@@ -499,6 +506,18 @@ distributions. It provides not only the overall KL divergence but also
 the contribution of each site pattern. Thus, it will tell you which
 site patterns are responsible for a poor fit between observed and
 expected site pattern frequencies.
+
+## Sort order of site patterns
+
+The sort order of site patterns is determined by the order of command
+line arguments to @ref tabpat "tabpat" and @ref sitepat "sitepat", and
+by the order in which segments are defined in the .lgo file. For
+example, if "x" precedes "y", then we get a site pattern labeled "xy"
+rather than "yx". These inputs should be ordered consistently in
+tabpat, sitepat, and .lgo, for otherwise it will be hard to compare
+observed site pattern frequencies with those predicted by @ref legosim
+"legosim" or @ref legofit "legofit". I recommend arranging them in the
+order that populations labels appear in your figures.
 
 # Bias in `legofit`
 

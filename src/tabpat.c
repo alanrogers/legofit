@@ -50,7 +50,10 @@ putting the results into `obs.txt`.
 Here, "x", "y", "n", and "d" are labels that will be used to identify
 site patterns in the output. For example, site pattern "x:y" refers to
 the pattern in which the derived allele is present haploid samples
-from "x" and "y" but not on those from other populations.
+from "x" and "y" but not on those from other populations. The order of
+the command-line arguments determines the order in which labels are
+sorted on output. Given the command line above, we would get a site
+pattern labeled "x:y:d" rather than, say, "y:x:d".
 
 The output looks like this:
 
