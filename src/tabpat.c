@@ -502,10 +502,9 @@ int main(int argc, char **argv) {
             done=1;
             continue;
         case ALLELE_MISMATCH:
+        case NO_ANCESTRAL_ALLELE:
             ++nbadaa;
             ++nsites;
-            continue;
-        case NO_ANCESTRAL_ALLELE:
             continue;
         default:
             // something wrong
@@ -585,7 +584,7 @@ int main(int argc, char **argv) {
     }
     printf("# Sites aligned across all populations: %lu\n", nsites);
     if(nbadaa)
-        printf("# Disagreements about ancestral allele: %lu\n", nbadaa);
+        printf("# Disagreements about alleles         : %lu\n", nbadaa);
     if(nfixed)
         printf("# Monomorphic sites                   : %lu\n", nfixed);
     printf("# Sites used                          : %lu\n",
