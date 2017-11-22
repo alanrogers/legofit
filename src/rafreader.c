@@ -281,7 +281,7 @@ int RAFReader_multiNext(int n, RAFReader * r[n]) {
     // the ancestral allele. 
     double minp=1.0, maxp=0.0;
     for(i=0; i < n-1; ++i) {
-        double p = RAFReader_daf(r[i]); // derived allele freq
+        double p = RAFReader_daf(r[i]); // reference allele freq
         minp = fmin(minp, p);
         maxp = fmax(maxp, p);
     }
