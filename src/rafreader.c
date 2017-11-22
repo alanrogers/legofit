@@ -273,15 +273,15 @@ int RAFReader_multiNext(int n, RAFReader * r[n]) {
                 }
             }
         }
-    }
-    while(!onSameChr || minnuc != maxnuc);
+    }while(!onSameChr || minnuc != maxnuc);
 
     // Make sure reference allele isn't fixed in readers, excluding
     // the outgroup (reader n-1). If it's fixed, then we can't call
     // the ancestral allele. 
-    double minp=1.0, maxp=0.0;
-    for(i=0; i < n-1; ++i) {
-        double p = RAFReader_daf(r[i]); // reference allele freq
+    double maxp, minp;
+    maxp = minp = RAFReader_raf(r[0]);
+    for(i=1; i < n-1; ++i) {
+        double p = RAFReader_raf(r[i]); // reference allele freq
         minp = fmin(minp, p);
         maxp = fmax(maxp, p);
     }
@@ -294,7 +294,7 @@ int RAFReader_multiNext(int n, RAFReader * r[n]) {
 
     // Set derived allele frequency
     double ogf = r[n-1]->raf;  // freq of ref in outgroup
-    if(ogf == 0) {
+    if(ogf == 0.0) {
         // reference allele is derived
         for(i=0; i<n; ++i)
             r[i]->daf =  r[i]->raf;
@@ -361,12 +361,13 @@ void RAFReader_printArray(int n, RAFReader * r[n], FILE *fp) {
         RAFReader_print(r[i], fp);
 }
 
+/// Return reference allele frequency of current line of raf file.
+double RAFReader_raf(RAFReader * r) {
+    return r->raf;
+}
+
 /// Return derived allele frequency of current line of raf file.
 double RAFReader_daf(RAFReader * r) {
     return r->daf;
 }
 
-/// Return reference allele frequency of current line of raf file.
-double RAFReader_raf(RAFReader * r) {
-    return r->raf;
-}

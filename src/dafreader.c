@@ -263,8 +263,9 @@ int DAFReader_multiNext(int n, DAFReader * r[n]) {
 
     // Make sure reference allele isn't fixed in readers. If it's
     // fixed, then we can't call the ancestral allele.
-    double minp=1.0, maxp=0.0;
-    for(i=0; i < n; ++i) {
+    double maxp, minp;
+    maxp = minp = DAFReader_daf(r[0]);
+    for(i=1; i < n; ++i) {
         double p = DAFReader_daf(r[i]); // derived allele freq
         minp = fmin(minp, p);
         maxp = fmax(maxp, p);
