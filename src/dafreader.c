@@ -261,16 +261,15 @@ int DAFReader_multiNext(int n, DAFReader * r[n]) {
     }
     while(!onSameChr || minnuc != maxnuc);
 
-    // Make sure reference allele isn't fixed in readers, excluding
-    // the outgroup (reader n-1). If it's fixed, then we can't call
-    // the ancestral allele.
-    int fixed=1;
-    double p0 = DAFReader_daf(r[0]);
-    for(i=1; i < n-1; ++i) {
-        if( p0 !=  DAFReader_daf(r[i]))
-            fixed = 0;
+    // Make sure reference allele isn't fixed in readers. If it's
+    // fixed, then we can't call the ancestral allele.
+    double minp=1.0, maxp=0.0;
+    for(i=0; i < n; ++i) {
+        double p = DAFReader_daf(r[i]); // derived allele freq
+        minp = fmin(minp, p);
+        maxp = fmax(maxp, p);
     }
-    if(fixed)
+    if(maxp == 0.0 || minp == 1.0)
         return NO_ANCESTRAL_ALLELE;
 
     if(!DAFReader_allelesMatch(n, r))

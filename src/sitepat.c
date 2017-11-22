@@ -564,7 +564,7 @@ int main(int argc, char **argv) {
         double      p[m], q[m];
         for(j = 0; j < m; ++j) {
             p[j] = RAFReader_daf(r[j]); // derived allele freq
-            q[j] = 1 - p[j];
+            q[j] = 1.0 - p[j];
         }
 
         // Contribution of current snp to each site pattern.  Inner

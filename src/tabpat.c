@@ -535,10 +535,10 @@ int main(int argc, char **argv) {
 #endif
         }
         // p and q are frequencies of derived and ancestral alleles
-        double      p[n], q[n];
+        double p[n], q[n];
         for(j = 0; j < n; ++j) {
             p[j] = DAFReader_daf(r[j]); // derived allele freq
-            q[j] = 1 - p[j];
+            q[j] = 1.0 - p[j];
         }
 
         if(logAll) {

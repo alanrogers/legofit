@@ -278,14 +278,14 @@ int RAFReader_multiNext(int n, RAFReader * r[n]) {
 
     // Make sure reference allele isn't fixed in readers, excluding
     // the outgroup (reader n-1). If it's fixed, then we can't call
-    // the ancestral allele.
-    int fixed=1;
-    double p0 = RAFReader_raf(r[0]);
-    for(i=1; i < n-1; ++i) {
-        if( p0 !=  RAFReader_raf(r[i]))
-            fixed = 0;
+    // the ancestral allele. 
+    double minp=1.0, maxp=0.0;
+    for(i=0; i < n-1; ++i) {
+        double p = RAFReader_daf(r[i]); // derived allele freq
+        minp = fmin(minp, p);
+        maxp = fmax(maxp, p);
     }
-    if(fixed)
+    if(maxp == 0.0 || minp == 1.0)
         return NO_ANCESTRAL_ALLELE;
 
     // Make sure REF and ALT are consistent across readers
