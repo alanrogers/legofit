@@ -366,6 +366,14 @@ Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng) {
     double      x;
     double      end = (NULL == self->end ? HUGE_VAL : *self->end);
 
+    // Make sure interval is sane.
+    if(isnan(end)) {
+        fprintf(stderr,"%s:%d: end of interval is NaN.\n",
+                __FILE__,__LINE__);
+        PopNode_printShallow(self, stderr);
+        exit(1);
+    }
+
     if(self->child[0])
         (void) PopNode_coalesce(self->child[0], rng);
     if(self->child[1])

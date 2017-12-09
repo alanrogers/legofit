@@ -11,6 +11,7 @@
 #  include <gsl/gsl_rng.h>
 
 static inline int Dbl_near(double x, double y);
+static inline int Dbl_equals_allowNonfinite(double x, double y);
 int         compareLongs(const void *void_x, const void *void_y);
 int         compareDoubles(const void *void_x, const void *void_y);
 int         getNumCores(void);
@@ -94,6 +95,27 @@ static inline double survival(double t, double twoN);
 /// equal to 8*DBL_EPSILON.
 static inline int Dbl_near(double x, double y) {
     return fabs(x - y) <= fmax(fabs(x), fabs(y)) * 8.0 * DBL_EPSILON;
+}
+
+/// Return 1 if x==y, 0 otherwise. Unlike the standard comparison,
+/// this one returns 1 if both values are nan, if both are positive infinity,
+/// or if both are negative infinity.
+static inline int Dbl_equals_allowNonfinite(double x, double y) {
+    if(x == y)
+        return 1;
+
+    int xtype = fpclassify(x);
+    int ytype = fpclassify(y);
+
+    if(xtype==FP_NAN && ytype==FP_NAN)
+        return 1;
+    if(xtype==FP_INFINITE && ytype==FP_INFINITE) {
+        if(x>0.0 && y>0.0)
+            return 1;
+        if(x<0.0 && y<0.0)
+            return 1;
+    }
+    return 0;
 }
 
 /// survival fuction

@@ -266,8 +266,10 @@ int GPTree_equals(const GPTree * lhs, const GPTree * rhs) {
                 __FILE__, __func__, __LINE__);
     if(!Bounds_equals(&lhs->bnd, &rhs->bnd))
         return 0;
-    if(!ParStore_equals(lhs->parstore, rhs->parstore))
+    if(!ParStore_equals(lhs->parstore, rhs->parstore)) {
+        fprintf(stderr,"%s:%d: !ParStore_equals\n",__FILE__,__LINE__);
         return 0;
+    }
     if(!LblNdx_equals(&lhs->lblndx, &rhs->lblndx))
         return 0;
     if(!SampNdx_equals(&lhs->sndx, &rhs->sndx))

@@ -331,6 +331,12 @@ void ParStore_addConstrainedPar(ParStore * self, const char *str,
         exit(EXIT_FAILURE);
     }
     self->constrainedVal[i] = te_eval(self->constr[i]);
+    if(isnan(self->constrainedVal[i])) {
+        fprintf(stderr,"%s:%d: constraint returned NaN\n",
+                __FILE__,__LINE__);
+        fprintf(stderr,"   formula: %s\n", self->formulas[i]);
+        exit(EXIT_FAILURE);
+    }
 }
 
 /// Return the number of fixed parameters
@@ -373,6 +379,12 @@ double ParStore_getFree(ParStore * self, int i) {
 double ParStore_getConstrained(ParStore * self, int i) {
     assert(i < self->nConstrained);
     self->constrainedVal[i] = te_eval(self->constr[i]);
+    if(isnan(self->constrainedVal[i])) {
+        fprintf(stderr,"%s:%d: constraint returned NaN\n",
+                __FILE__,__LINE__);
+        fprintf(stderr,"   formula: %s\n", self->formulas[i]);
+        exit(EXIT_FAILURE);
+    }
     return self->constrainedVal[i];
 }
 
@@ -494,47 +506,61 @@ void ParStore_sanityCheck(ParStore *self, const char *file, int line) {
 int         ParStore_equals(ParStore *lhs, ParStore *rhs) {
     if(lhs == rhs)
         return 1;
-    if(lhs->nFixed != rhs->nFixed)
+    if(lhs->nFixed != rhs->nFixed) {
         return 0;
-    if(lhs->nFree != rhs->nFree)
+    }
+    if(lhs->nFree != rhs->nFree) {
         return 0;
-    if(lhs->nGaussian != rhs->nGaussian)
+    }
+    if(lhs->nGaussian != rhs->nGaussian) {
         return 0;
-    if(lhs->nConstrained != rhs->nConstrained)
+    }
+    if(lhs->nConstrained != rhs->nConstrained) {
         return 0;
+    }
     if(0 != memcmp(lhs->fixedVal, rhs->fixedVal,
-                   lhs->nFixed*sizeof(lhs->fixedVal[0])))
+                   lhs->nFixed*sizeof(lhs->fixedVal[0]))) {
         return 0;
+    }
     if(0 != memcmp(lhs->freeVal, rhs->freeVal,
-                   lhs->nFree*sizeof(lhs->freeVal[0])))
+                   lhs->nFree*sizeof(lhs->freeVal[0]))) {
         return 0;
+    }
     ParStore_constrain(rhs);
     ParStore_constrain(lhs);
     if(0 != memcmp(lhs->constrainedVal, rhs->constrainedVal,
-                   lhs->nConstrained*sizeof(lhs->constrainedVal[0])))
+                   lhs->nConstrained*sizeof(lhs->constrainedVal[0]))) {
         return 0;
+    }
     if(0 != memcmp(lhs->loFree, rhs->loFree,
-                   lhs->nFree*sizeof(lhs->loFree[0])))
+                   lhs->nFree*sizeof(lhs->loFree[0]))) {
         return 0;
+    }
     if(0 != memcmp(lhs->hiFree, rhs->hiFree,
-                   lhs->nFree*sizeof(lhs->hiFree[0])))
+                   lhs->nFree*sizeof(lhs->hiFree[0]))) {
         return 0;
+    }
     if(0 != memcmp(lhs->mean, rhs->mean,
-                   lhs->nGaussian*sizeof(lhs->mean[0])))
+                   lhs->nGaussian*sizeof(lhs->mean[0]))) {
         return 0;
+    }
     if(0 != memcmp(lhs->sd, rhs->sd,
-                   lhs->nGaussian*sizeof(lhs->sd[0])))
+                   lhs->nGaussian*sizeof(lhs->sd[0]))) {
         return 0;
+    }
     int i;
     for(i=0; i < lhs->nFixed; ++i)
-        if(0 != strcmp(lhs->nameFixed[i], rhs->nameFixed[i]))
+        if(0 != strcmp(lhs->nameFixed[i], rhs->nameFixed[i])){
             return 0;
+        }
     for(i=0; i < lhs->nFree; ++i)
-        if(0 != strcmp(lhs->nameFree[i], rhs->nameFree[i]))
+        if(0 != strcmp(lhs->nameFree[i], rhs->nameFree[i])) {
             return 0;
+        }
     for(i=0; i < lhs->nGaussian; ++i)
-        if(0 != strcmp(lhs->nameGaussian[i], rhs->nameGaussian[i]))
+        if(0 != strcmp(lhs->nameGaussian[i], rhs->nameGaussian[i])) {
             return 0;
+        }
     return ParKeyVal_equals(lhs->pkv, rhs->pkv);
 }
 
@@ -577,14 +603,27 @@ void ParStore_constrain_ptr(ParStore *self, double *ptr) {
 
     // set value of constrained parameter
     self->constrainedVal[i] = te_eval(self->constr[i]);
+    if(isnan(self->constrainedVal[i])) {
+        fprintf(stderr,"%s:%d: constraint returned NaN\n",
+                __FILE__,__LINE__);
+        fprintf(stderr,"   formula: %s\n", self->formulas[i]);
+        exit(EXIT_FAILURE);
+    }
     assert(*ptr == self->constrainedVal[i]);
 }
 
 /// Set values of all constrained parameters
 void ParStore_constrain(ParStore *self) {
     int i;
-    for(i=0; i < self->nConstrained; ++i)
+    for(i=0; i < self->nConstrained; ++i) {
         self->constrainedVal[i] = te_eval(self->constr[i]);
+        if(isnan(self->constrainedVal[i])) {
+            fprintf(stderr,"%s:%d: constraint returned NaN\n",
+                    __FILE__,__LINE__);
+            fprintf(stderr,"   formula: %s\n", self->formulas[i]);
+            exit(EXIT_FAILURE);
+        }
+    }
 }
 
 /// Make sure Bounds object is sane.
