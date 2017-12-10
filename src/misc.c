@@ -468,6 +468,13 @@ char *stripWhiteSpace(char *buff) {
     return s;
 }
 
+const char *stripLeadingWhiteSpace(const char *buff) {
+    const char *s = buff;
+    while(*s!='\0' && isspace(*s))
+        ++s;
+    return s;
+}
+
 /**
  * Return tokens separated by 1 or more spaces and/or tabs.
  *
@@ -496,7 +503,7 @@ char *nextWhitesepToken(char **str) {
 /// in string delim. Set ptr[i] equal to the address of the i'th
 /// token. Terminate each substring with '\0' within s. Return the
 /// number of tokens. Abort if the number of substrings exceeds
-/// n. 
+/// n.
 int tokenize(int dim, char *token[dim], char *s, const char *delim) {
     char *t;
     int n=0;
@@ -512,7 +519,7 @@ int tokenize(int dim, char *token[dim], char *s, const char *delim) {
     return n;
 }
 
-/// In string s, replace instances of character a with character b. 
+/// In string s, replace instances of character a with character b.
 void        strReplaceChr(char *s, int a, int b) {
     while(*s != '\0') {
         if(*s == a)

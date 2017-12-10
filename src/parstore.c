@@ -32,6 +32,19 @@
 #include <stdbool.h>
 #include <assert.h>
 
+// Set value of i'th constraint. Abort with an error message if result is
+// NaN.
+#define SET_CONSTR(i) do {                                              \
+        self->constrainedVal[(i)] = te_eval(self->constr[(i)]);         \
+        if(isnan(self->constrainedVal[(i)])) {                          \
+            fprintf(stderr,"%s:%d: constraint returned NaN\n",          \
+                    __FILE__,__LINE__);                                 \
+            fprintf(stderr,"formula: %s = %s\n",                        \
+                    self->nameConstrained[(i)], self->formulas[(i)]);   \
+            exit(EXIT_FAILURE);                                         \
+        }                                                               \
+    }while(0)
+
 struct ParStore {
     int         nFixed, nFree, nGaussian, nConstrained; // num pars
     double      loFree[MAXPAR]; // lower bounds
@@ -317,7 +330,7 @@ void ParStore_addConstrainedPar(ParStore * self, const char *str,
         exit(EXIT_FAILURE);
     }
 
-    self->formulas[i] = strdup(str);
+    self->formulas[i] = strdup(stripLeadingWhiteSpace(str));
     self->nameConstrained[i] = strdup(name);
     CHECKMEM(self->nameConstrained[i]);
 
@@ -330,13 +343,7 @@ void ParStore_addConstrainedPar(ParStore * self, const char *str,
         fprintf(stderr,"  %*s^\nError near here\n", status-1, "");
         exit(EXIT_FAILURE);
     }
-    self->constrainedVal[i] = te_eval(self->constr[i]);
-    if(isnan(self->constrainedVal[i])) {
-        fprintf(stderr,"%s:%d: constraint returned NaN\n",
-                __FILE__,__LINE__);
-        fprintf(stderr,"   formula: %s\n", self->formulas[i]);
-        exit(EXIT_FAILURE);
-    }
+    SET_CONSTR(i);
 }
 
 /// Return the number of fixed parameters
@@ -378,13 +385,7 @@ double ParStore_getFree(ParStore * self, int i) {
 /// Get value of i'th constrained parameter
 double ParStore_getConstrained(ParStore * self, int i) {
     assert(i < self->nConstrained);
-    self->constrainedVal[i] = te_eval(self->constr[i]);
-    if(isnan(self->constrainedVal[i])) {
-        fprintf(stderr,"%s:%d: constraint returned NaN\n",
-                __FILE__,__LINE__);
-        fprintf(stderr,"   formula: %s\n", self->formulas[i]);
-        exit(EXIT_FAILURE);
-    }
+    SET_CONSTR(i);
     return self->constrainedVal[i];
 }
 
@@ -602,13 +603,7 @@ void ParStore_constrain_ptr(ParStore *self, double *ptr) {
     assert(i < self->nConstrained);
 
     // set value of constrained parameter
-    self->constrainedVal[i] = te_eval(self->constr[i]);
-    if(isnan(self->constrainedVal[i])) {
-        fprintf(stderr,"%s:%d: constraint returned NaN\n",
-                __FILE__,__LINE__);
-        fprintf(stderr,"   formula: %s\n", self->formulas[i]);
-        exit(EXIT_FAILURE);
-    }
+    SET_CONSTR(i);
     assert(*ptr == self->constrainedVal[i]);
 }
 
@@ -616,13 +611,7 @@ void ParStore_constrain_ptr(ParStore *self, double *ptr) {
 void ParStore_constrain(ParStore *self) {
     int i;
     for(i=0; i < self->nConstrained; ++i) {
-        self->constrainedVal[i] = te_eval(self->constr[i]);
-        if(isnan(self->constrainedVal[i])) {
-            fprintf(stderr,"%s:%d: constraint returned NaN\n",
-                    __FILE__,__LINE__);
-            fprintf(stderr,"   formula: %s\n", self->formulas[i]);
-            exit(EXIT_FAILURE);
-        }
+        SET_CONSTR(i);
     }
 }
 
