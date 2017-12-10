@@ -21,7 +21,7 @@ void        ParStore_addFixedPar(ParStore * self, double value,
                                  const char *name);
 void        ParStore_addConstrainedPar(ParStore * self, const char *str,
                                        const char *name);
-void        ParStore_constrain(ParStore *self);
+int         ParStore_constrain(ParStore *self);
 void        ParStore_constrain_ptr(ParStore *self, double *ptr);
 int         ParStore_nFixed(ParStore * self);
 int         ParStore_nFree(ParStore * self);

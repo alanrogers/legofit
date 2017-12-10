@@ -542,7 +542,11 @@ int main(int argc, char **argv) {
     putchar('\n');
 
     // Get mean site pattern branch lengths
-    GPTree_setParams(gptree, dim, estimate);
+    if(GPTree_setParams(gptree, dim, estimate)) {
+        fprintf(stderr,"%s:%d: free params violate constraints\n",
+                __FILE__,__LINE__);
+        exit(1);
+    }
     BranchTab *bt = patprob(gptree, simreps, doSing, rng);
     BranchTab_divideBy(bt, (double) simreps);
     //    BranchTab_print(bt, stdout);

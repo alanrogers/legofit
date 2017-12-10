@@ -41,6 +41,7 @@
                     __FILE__,__LINE__);                                 \
             fprintf(stderr,"formula: %s = %s\n",                        \
                     self->nameConstrained[(i)], self->formulas[(i)]);   \
+            ParStore_printFree(self, stderr);                           \
             exit(EXIT_FAILURE);                                         \
         }                                                               \
     }while(0)
@@ -527,8 +528,14 @@ int         ParStore_equals(ParStore *lhs, ParStore *rhs) {
                    lhs->nFree*sizeof(lhs->freeVal[0]))) {
         return 0;
     }
-    ParStore_constrain(rhs);
-    ParStore_constrain(lhs);
+    if(ParStore_constrain(lhs)) {
+        fprintf(stderr,"%s:%d: free parameters violate constraints\n",
+                __FILE__,__LINE__);
+    }
+    if(ParStore_constrain(rhs)) {
+        fprintf(stderr,"%s:%d: free parameters violate constraints\n",
+                __FILE__,__LINE__);
+    }
     if(0 != memcmp(lhs->constrainedVal, rhs->constrainedVal,
                    lhs->nConstrained*sizeof(lhs->constrainedVal[0]))) {
         return 0;
@@ -607,12 +614,20 @@ void ParStore_constrain_ptr(ParStore *self, double *ptr) {
     assert(*ptr == self->constrainedVal[i]);
 }
 
-/// Set values of all constrained parameters
-void ParStore_constrain(ParStore *self) {
+/// First check to see that free parameters obey boundary constraints.
+/// If not, then return 1. Otherwise, set values of all constrained
+/// parameters and return 0.
+int ParStore_constrain(ParStore *self) {
     int i;
+    for(i=0; i < self->nFree; ++i) {
+        if(self->freeVal[i] < self->loFree[i]
+           || self->freeVal[i] > self->hiFree[i])
+            return 1;
+    }
     for(i=0; i < self->nConstrained; ++i) {
         SET_CONSTR(i);
     }
+    return 0;
 }
 
 /// Make sure Bounds object is sane.
