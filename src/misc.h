@@ -37,7 +37,6 @@ char       *strlowercase(char *s);
 unsigned    strhash(const char *ss);
 int         stripchr(char *s, int c);
 char       *stripWhiteSpace(char *buff);
-const char *stripLeadingWhiteSpace(const char *buff);
 char       *nextWhitesepToken(char **str);
 int         tokenize(int dim, char *token[dim], char *s, const char *delim);
 void        strReplaceChr(char *s, int a, int b);

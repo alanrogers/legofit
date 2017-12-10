@@ -330,7 +330,7 @@ void ParStore_addConstrainedPar(ParStore * self, const char *str,
         exit(EXIT_FAILURE);
     }
 
-    self->formulas[i] = strdup(stripLeadingWhiteSpace(str));
+    self->formulas[i] = strdup(str);
     self->nameConstrained[i] = strdup(name);
     CHECKMEM(self->nameConstrained[i]);
 

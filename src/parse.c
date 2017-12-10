@@ -189,7 +189,7 @@ void		parseParam(char *next, enum ParamType type,
     char *formula;
     double value, sd = 0.0;
     if(pstat == Constrained) {
-        formula = next;
+        formula = stripWhiteSpace(next);
         assert(formula != NULL);
     }else{
         // Read parameter value

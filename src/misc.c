@@ -468,13 +468,6 @@ char *stripWhiteSpace(char *buff) {
     return s;
 }
 
-const char *stripLeadingWhiteSpace(const char *buff) {
-    const char *s = buff;
-    while(*s!='\0' && isspace(*s))
-        ++s;
-    return s;
-}
-
 /**
  * Return tokens separated by 1 or more spaces and/or tabs.
  *
