@@ -6,19 +6,20 @@ twoN fixed     one=1
 time free     Txyn=25920       # archaic-modern separation time
 time fixed    Tn=1897          # time of Neanderthal admixture
 time free     Txy=3788         # Africa-Eurasia separation time
-twoN free     2Nn=1e3          # archaic population size
+twoN free   twoNn=1e3          # archaic population size
 # For constrained variables, the terms of the formula are separated
 # by "+" signs, so negative terms must be entered as shown below. 
 # To spread a constraint function across several lines, break
 # the line after a "+" symbol.
-twoN constrained 2Nxy=1e4 + -1.2*Txy # early modern population size
+#twoN constrained twoNxy=1e4 - 1.2*Txy # early modern population size
+twoN constrained twoNxy=exp(4 - 1.2*log(Txy)) # early modern population size
 mixFrac free  mN=0.02           # Neanderthal admixture into y
 segment x     t=zero   twoN=one    samples=1  # Africa
 segment y     t=zero   twoN=one    samples=1  # Eurasia
-segment n     t=Tn     twoN=2Nn    samples=1  # Neanderthal
+segment n     t=Tn     twoN=twoNn    samples=1  # Neanderthal
 segment y2    t=Tn     twoN=one               # pre-mig eurasia
-segment xy    t=Txy    twoN=2Nxy              # early modern
-segment xyn   t=Txyn   twoN=2Nn               # ancestral
+segment xy    t=Txy    twoN=twoNxy              # early modern
+segment xyn   t=Txyn   twoN=twoNn               # ancestral
 mix    y  from y2 + mN * n      # y is a mixture of y2 and n
 derive x  from xy               # x is child of xy
 derive y2 from xy               # y2 is child of xy

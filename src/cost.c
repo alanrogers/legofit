@@ -40,7 +40,8 @@ double costFun(int dim, double x[dim], void *jdata, void *tdata) {
     long nreps = SimSched_getSimReps(cp->simSched);
     DPRINTF(("%s:%d: nreps=%ld\n",__FILE__,__LINE__,nreps));
 
-	GPTree_setParams(cp->gptree, dim, x);
+	if(GPTree_setParams(cp->gptree, dim, x))
+        return HUGE_VAL;
 	if(!GPTree_feasible(cp->gptree, 0))
 		return HUGE_VAL;
 

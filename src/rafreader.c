@@ -1,12 +1,12 @@
 /**
-   @file dafreader.c
-   @brief Class DAFReader: read a daf file.
+   @file rafreader.c
+   @brief Class RAFReader: read a raf file.
 
    @copyright Copyright (c) 2016, Alan R. Rogers
    <rogers@anthro.utah.edu>. This file is released under the Internet
    Systems Consortium License, which can be found in file "LICENSE".
 */
-#include "dafreader.h"
+#include "rafreader.h"
 #include "tokenizer.h"
 #include "misc.h"
 #include "error.h"
@@ -18,13 +18,13 @@
 
 #define MAXFIELDS 5
 
-int         iscomment(const char *s);
+int iscomment(const char *s);
 
-/// DAFReader constructor
-DAFReader  *DAFReader_new(const char *fname) {
-    DAFReader  *self = malloc(sizeof(*self));
+/// RAFReader constructor
+RAFReader *RAFReader_new(const char *fname) {
+    RAFReader *self = malloc(sizeof(*self));
     CHECKMEM(self);
-    memset(self, 0, sizeof(DAFReader));
+    memset(self, 0, sizeof(RAFReader));
     self->fname = strdup(fname);
     CHECKMEM(self->fname);
     self->fp = fopen(self->fname, "r");
@@ -35,19 +35,20 @@ DAFReader  *DAFReader_new(const char *fname) {
     }
     self->tkz = Tokenizer_new(MAXFIELDS);
     self->snpid = -1;
-    self->p = strtod("NaN", NULL);
+    self->raf = strtod("NaN", NULL);
+    self->daf = strtod("NaN", NULL);
     return self;
 }
 
 /// Clear all chromosome names
-void DAFReader_clearChromosomes(int n, DAFReader * r[n]) {
-    int         i;
+void RAFReader_clearChromosomes(int n, RAFReader * r[n]) {
+    int i;
     for(i = 0; i < n; ++i)
         r[i]->chr[0] = '\0';
 }
 
-/// DAFReader destructor
-void DAFReader_free(DAFReader * self) {
+/// RAFReader destructor
+void RAFReader_free(RAFReader * self) {
     fclose(self->fp);
     free(self->fname);
     Tokenizer_free(self->tkz);
@@ -57,20 +58,22 @@ void DAFReader_free(DAFReader * self) {
 /// Return 1 if first non-white character in string is '#'; 0
 /// otherwise.
 int iscomment(const char *s) {
-    int         rval;
+    int rval;
     while(*s != '\0' && isspace(*s))
         ++s;
     rval = (*s == '#');
     return rval;
 }
 
-/// Read the next site.
-/// @return 0 on success; EOF on end of file; abort on other errors.
-int DAFReader_next(DAFReader * self) {
-    int         ntokens1;
-    int         ntokens;
-    int         status;
-    char        buff[100];
+/// Read the next site and set derived allele frequency (daf) within
+/// each reader.
+/// @return 0 on success, or else EOF, NO_ANCESTRAL_ALLELE,
+/// BUFFER_OVERFLOW, BAD_RAF_INPUT, BAD_SORT, or an errno code for
+/// failure to parse a floating-point number.
+int RAFReader_next(RAFReader * self) {
+    int ntokens;
+    int status;
+    char buff[100];
     long unsigned prevnucpos = 0UL;
 
     // Find a line of input
@@ -78,49 +81,52 @@ int DAFReader_next(DAFReader * self) {
         if(fgets(buff, sizeof(buff), self->fp) == NULL)
             return EOF;
         if(NULL == strchr(buff, '\n') && !feof(self->fp)) {
+#ifdef NDEBUG
             fprintf(stderr, "%s:%d: Buffer overflow. size=%zu\n",
                     __FILE__, __LINE__, sizeof(buff));
+#endif
             return BUFFER_OVERFLOW;
         }
         if(iscomment(buff))
             continue;
-        ntokens1 = Tokenizer_split(self->tkz, buff, " ");
+        Tokenizer_split(self->tkz, buff, "\t");
         ntokens = Tokenizer_strip(self->tkz, " \n");
         if(ntokens > 0)
             break;
     }
 
     if(ntokens != 5) {
-        fprintf(stderr, "%s:%d: Each line of .daf file must have 5 tokens,"
+#ifdef NDEBUG
+        fprintf(stderr, "%s:%d: Each line of .raf file must have 5 tokens,"
                 " but current line has %d.\n", __FILE__, __LINE__, ntokens);
-        fprintf(stderr, "ntokens1=%d\n", ntokens1);
-        fprintf(stderr, "buff: %s\n", buff);
-        Tokenizer_printSummary(self->tkz, stderr);
-        Tokenizer_print(self->tkz, stderr);
-        return BAD_DAF_INPUT;
+#endif
+        return BAD_RAF_INPUT;
     }
 
     ++self->snpid;
 
     // Chromosome
-    char        prev[DAFSTRSIZE];
+    char prev[RAFSTRSIZE];
     assert(sizeof prev == sizeof self->chr);
     memcpy(prev, self->chr, sizeof prev);
     status = snprintf(self->chr, sizeof self->chr, "%s",
                       Tokenizer_token(self->tkz, 0));
     if(status >= sizeof self->chr) {
+#ifdef NDEBUG
         fprintf(stderr, "%s:%d: chromosome name too long: %s\n",
                 __FILE__, __LINE__, Tokenizer_token(self->tkz, 0));
+#endif
         return BUFFER_OVERFLOW;
     }
-    int         diff = strcmp(prev, self->chr);
+    int diff = strcmp(prev, self->chr);
     if(diff > 0) {
+#ifdef NDEBUG
         fprintf(stderr, "%s:%s:%d: Chromosomes missorted in input.\n",
                 __FILE__, __func__, __LINE__);
         fprintf(stderr, "          \"%s\" precedes \"%s\".\n",
                 prev, self->chr);
-        Tokenizer_printSummary(self->tkz, stderr);
         Tokenizer_print(self->tkz, stderr);
+#endif
         return BAD_SORT;
     } else if(diff < 0) {
         // new chromosome
@@ -131,72 +137,82 @@ int DAFReader_next(DAFReader * self) {
     // Nucleotide position
     self->nucpos = strtoul(Tokenizer_token(self->tkz, 1), NULL, 10);
     if(prevnucpos == self->nucpos) {
-        fprintf(stderr, "%s:%d: Duplicate line in daf file. chr=%s pos=%lu\n",
+#ifdef NDEBUG
+        fprintf(stderr, "%s:%d: Duplicate line in raf file. chr=%s pos=%lu\n",
                 __FILE__, __LINE__, self->chr, self->nucpos);
+#endif
         return BAD_SORT;
     } else if(prevnucpos > self->nucpos) {
+#ifdef NDEBUG
         fprintf(stderr, "%s:%d: positions missorted chr=%s "
                 "prev=%lu curr=%lu\n",
                 __FILE__, __LINE__, self->chr, prevnucpos, self->nucpos);
+#endif
         return BAD_SORT;
     }
-    // Ancestral allele
-    status = snprintf(self->aa, sizeof(self->aa), "%s",
+    // Reference allele
+    status = snprintf(self->ref, sizeof(self->ref), "%s",
                       Tokenizer_token(self->tkz, 2));
-    strlowercase(self->aa);
+    strlowercase(self->ref);
 
-    // Derived allele
-    snprintf(self->da, sizeof(self->da), "%s", Tokenizer_token(self->tkz, 3));
-    strlowercase(self->da);
+    // Alternate allele
+    snprintf(self->alt, sizeof(self->alt), "%s",
+             Tokenizer_token(self->tkz, 3));
+    strlowercase(self->alt);
 
-    // Derived allele frequency
+    // Reference allele frequency
     char *token, *end;
     token = Tokenizer_token(self->tkz, 4);
-    errno=0;
-    self->p = strtod(token, &end);
-    if(end==token)
+    errno = 0;
+    self->raf = strtod(token, &end);
+    if(end == token)
         errno = EINVAL;
     if(errno) {
         char err_buff[50];
         strerror_r(errno, err_buff, sizeof(err_buff));
-        fprintf(stderr,"%s:%d: Bad float \"%s\" (%s); chr=%s pos=%lu\n",
-                __FILE__,__LINE__, token, err_buff, self->chr, self->nucpos);
+#ifdef NDEBUG
+        fprintf(stderr, "%s:%d: Bad float \"%s\" (%s); chr=%s pos=%lu\n",
+                __FILE__, __LINE__, token, err_buff, self->chr, self->nucpos);
+#endif
         return errno;
     }
 
     return 0;
 }
 
-/// Rewind daf file.
+/// Rewind raf file.
 /// @return 0 on success; -1 on failure
-int DAFReader_rewind(DAFReader * self) {
+int RAFReader_rewind(RAFReader * self) {
     return fseek(self->fp, 0L, SEEK_SET);
 }
 
 #define MAX(X,Y) ((X) > (Y) ? (X) : (Y))
 #define MIN(X,Y) ((X) > (Y) ? (Y) : (X))
 
-/// Advance an array of DAFReaders to the next shared position.
-/// @return 0 on success or EOF on end of file.
-int DAFReader_multiNext(int n, DAFReader * r[n]) {
-    int   i, status;
+/// Advance an array of RAFReaders to the next shared position, and
+/// set derived allele frequency within each RAFReader.
+/// @param[in] n number of RAFReader objects in array
+/// @param[in] r array of RAFReader objects. Last one should be outgroup.
+/// @return 0 on success, or one of several error codes on failure.
+int RAFReader_multiNext(int n, RAFReader * r[n]) {
+    int i, status;
     unsigned long maxnuc = 0, minnuc = ULONG_MAX;
-    int   imaxchr;   // index of reader with maximum chromosome position
-    int   onSameChr; // indicates whether all readers are on same chromosome.
-    int   diff;
-    char  currchr[DAFSTRSIZE] = { '\0' }; // current chromosome
+    int imaxchr;                // index of reader with maximum chromosome position
+    int onSameChr;              // indicates whether all readers are on same chromosome.
+    int diff;
+    char currchr[RAFSTRSIZE] = { '\0' };    // current chromosome
 
     // Set index, imaxchr, of reader with maximum
     // chromosome values in lexical sort order, and
     // set boolean flag, onSameChr, which indicates
     // whether all readers are on same chromosome.
-    if( (status = DAFReader_next(r[0])) )
+    if((status = RAFReader_next(r[0])))
         return status;
 
     imaxchr = 0;
     onSameChr = 1;
     for(i = 1; i < n; ++i) {
-        if( (status = DAFReader_next(r[i])) )
+        if((status = RAFReader_next(r[i])))
             return status;
 
         diff = strcmp(r[i]->chr, r[imaxchr]->chr);
@@ -216,7 +232,7 @@ int DAFReader_multiNext(int n, DAFReader * r[n]) {
                 if(i == imaxchr)
                     continue;
                 while((diff = strcmp(r[i]->chr, r[imaxchr]->chr)) < 0) {
-                    if( (status = DAFReader_next(r[i])) )
+                    if((status = RAFReader_next(r[i])))
                         return status;
                 }
                 assert(diff >= 0);
@@ -246,11 +262,11 @@ int DAFReader_multiNext(int n, DAFReader * r[n]) {
             // Increment each reader so long as we're all on the same
             // chromosome and the reader's nucpos is low.
             while(onSameChr && r[i]->nucpos < maxnuc) {
-                if( (status = DAFReader_next(r[i])) )
+                if((status = RAFReader_next(r[i])))
                     return status;
                 diff = strcmp(r[i]->chr, currchr);
                 if(diff != 0) {
-                    // Assertion should succeed because DAFReader_next
+                    // Assertion should succeed because RAFReader_next
                     // guarantees that chromosomes are in sort order.
                     assert(diff > 0);
                     onSameChr = 0;
@@ -258,60 +274,100 @@ int DAFReader_multiNext(int n, DAFReader * r[n]) {
                 }
             }
         }
-    }
-    while(!onSameChr || minnuc != maxnuc);
+    } while(!onSameChr || minnuc != maxnuc);
 
-    // Make sure reference allele isn't fixed in readers. If it's
-    // fixed, then we can't call the ancestral allele.
+    // Make sure reference allele isn't fixed in readers, excluding
+    // the outgroup (reader n-1). If it's fixed, then we can't call
+    // the ancestral allele. 
     double maxp, minp;
-    maxp = minp = DAFReader_daf(r[0]);
-    for(i=1; i < n; ++i) {
-        double p = DAFReader_daf(r[i]); // derived allele freq
+    maxp = minp = RAFReader_raf(r[0]);
+    for(i = 1; i < n - 1; ++i) {
+        double p = RAFReader_raf(r[i]); // reference allele freq
         minp = fmin(minp, p);
         maxp = fmax(maxp, p);
     }
     if(maxp == 0.0 || minp == 1.0)
         return NO_ANCESTRAL_ALLELE;
 
-    if(!DAFReader_allelesMatch(n, r))
-        return ALLELE_MISMATCH;
+    // Make sure REF and ALT are consistent across readers
+    if((status = RAFReader_alleleCheck(n, r)))
+        return status;
+
+    // Set derived allele frequency
+    double ogf = r[n - 1]->raf; // freq of ref in outgroup
+    if(ogf == 0.0) {
+        // reference allele is derived
+        for(i = 0; i < n; ++i)
+            r[i]->daf = r[i]->raf;
+    } else if(ogf == 1.0) {
+        // alternate allele is derived
+        for(i = 0; i < n; ++i)
+            r[i]->daf = 1.0 - r[i]->raf;
+    } else {
+        // outgroup is polymorphic: can't call ancestral allele
+        return NO_ANCESTRAL_ALLELE;
+    }
 
     return 0;
 }
 
-/// Return 1 if ancestral and derived alleles of all readers match; 0
-/// otherwise
-int DAFReader_allelesMatch(int n, DAFReader * r[n]) {
-    char  *aa = r[0]->aa;
-    char  *da = r[0]->da;
-    int    daNotMissing = (0!=strcmp(".", da));
-    int   i;
+/// Return 0 if ref and alt alleles of all readers match; return
+/// REF_MISMATCH if there is a mismatch in REF alleles; return
+/// MULTIPLE_ALT if there is a mismatch in ALT alleles.
+int RAFReader_alleleCheck(int n, RAFReader * r[n]) {
+    char *ref = r[0]->ref;
+    char *alt = r[0]->alt;
+    int altMissing = (0 == strcmp(".", alt));
+    int i;
     for(i = 1; i < n; ++i) {
-        if(0!=strcmp(aa, r[i]->aa))
-            return 0;
-        if(daNotMissing
-           && 0!=strcmp(".", r[i]->da)
-           && 0!=strcmp(da, r[i]->da))
-            return 0;
+        if(0 != strcmp(ref, r[i]->ref))
+            return REF_MISMATCH;
+        int currAltMissing = (0 == strcmp(".", r[i]->alt));
+        if(altMissing && !currAltMissing) {
+            altMissing = 0;
+            alt = r[i]->alt;
+            continue;
+        }
+        if(!altMissing && !currAltMissing && 0 != strcmp(alt, r[i]->alt))
+            return MULTIPLE_ALT;
     }
-    return 1;
+    return 0;
 }
 
-/// Print header for daf file.
-void DAFReader_printHdr(FILE * fp) {
-    fprintf(fp, "%50s %5s %10s %2s %2s %8s\n",
-            "file", "chr", "pos", "aa", "da", "daf");
+/// Print header for raf file.
+void RAFReader_printHdr(FILE * fp) {
+    fprintf(fp, "%30s %5s %10s %3s %3s %8s %8s\n",
+            "file", "chr", "pos", "ref", "alt", "raf", "daf");
 }
 
-/// Print current line of daf file
-void DAFReader_print(DAFReader * r, FILE * fp) {
+/// Print current line of raf file
+void RAFReader_print(RAFReader * r, FILE * fp) {
     assert(r->fname);
-    fprintf(fp, "%50s %5s %10lu %2s %2s %8.6lf\n",
-            r->fname, r->chr, r->nucpos, r->aa, r->da, r->p);
+    int status;
+    char buff[500];
+    status = snprintf(buff, sizeof buff, "%s", r->fname);
+    if(status >= sizeof buff) {
+        fprintf(stderr, "%s:%s:%d: buffer overflow\n",
+                __FILE__, __func__, __LINE__);
+        exit(EXIT_FAILURE);
+    }
+    fprintf(fp, "%30s %5s %10lu %3s %3s %8.6lg %8.6lg\n",
+            strltrunc(buff, 30), r->chr, r->nucpos, r->ref, r->alt, r->raf,
+            r->daf);
 }
 
-/// Return derived allele frequency of current line of daf file.
-double DAFReader_daf(DAFReader * r) {
-    assert(r->p >= 0.0 && r->p <= 1.0);
-    return r->p;
+void RAFReader_printArray(int n, RAFReader * r[n], FILE * fp) {
+    int i;
+    for(i = 0; i < n; ++i)
+        RAFReader_print(r[i], fp);
+}
+
+/// Return reference allele frequency of current line of raf file.
+double RAFReader_raf(RAFReader * r) {
+    return r->raf;
+}
+
+/// Return derived allele frequency of current line of raf file.
+double RAFReader_daf(RAFReader * r) {
+    return r->daf;
 }

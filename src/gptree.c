@@ -41,7 +41,8 @@ struct GPTree {
 
 /// Print a description of parameters.
 void GPTree_printParStore(GPTree * self, FILE * fp) {
-    ParStore_constrain(self->parstore);
+    if(ParStore_constrain(self->parstore))
+        fprintf(fp,"Warning: free parameters violate constraints\n");
     ParStore_print(self->parstore, fp);
 }
 
@@ -61,10 +62,10 @@ void GPTree_randomize(GPTree * self, gsl_rng * rng) {
 /// @param[in] n number of parameters in array, which should equal the
 /// number of free parameters in the GPTree.
 /// @param[in] x array of parameter values.
-void GPTree_setParams(GPTree * self, int n, double x[n]) {
+int GPTree_setParams(GPTree * self, int n, double x[n]) {
     assert(n == ParStore_nFree(self->parstore));
     ParStore_setFreeParams(self->parstore, n, x);
-    ParStore_constrain(self->parstore);
+    return ParStore_constrain(self->parstore);
 }
 
 /// Copy free parameters from GPTree into an array
@@ -93,7 +94,10 @@ int GPTree_nFree(const GPTree * self) {
 void GPTree_simulate(GPTree * self, BranchTab * branchtab, gsl_rng * rng,
                      unsigned long nreps, int doSing) {
     unsigned long rep;
-    ParStore_constrain(self->parstore);
+    if(ParStore_constrain(self->parstore)) {
+        fprintf(stderr,"%s:%d: free parameters violate constraints\n",
+                __FILE__,__LINE__);
+    }
     for(rep = 0; rep < nreps; ++rep) {
         PopNode_clear(self->rootPop);   // remove old samples
         SampNdx_populateTree(&(self->sndx));    // add new samples
@@ -163,7 +167,10 @@ void GPTree_free(GPTree * self) {
 /// Duplicate a GPTree object
 GPTree     *GPTree_dup(const GPTree * old) {
     assert(old);
-    ParStore_constrain(old->parstore);
+    if(ParStore_constrain(old->parstore)) {
+        fprintf(stderr,"%s:%d: free parameters violate constraints\n",
+                __FILE__,__LINE__);
+    }
     assert(GPTree_feasible(old, 0));
     if(old->rootGene != NULL) {
         fprintf(stderr, "%s:%s:%d: old->rootGene must be NULL on entry\n",
@@ -234,7 +241,10 @@ GPTree     *GPTree_dup(const GPTree * old) {
         pthread_mutex_unlock(&outputLock);
         exit(EXIT_FAILURE);
     }
-    ParStore_constrain(new->parstore);
+    if(ParStore_constrain(new->parstore)) {
+        fprintf(stderr,"%s:%d: free parameters violate constraints\n",
+                __FILE__,__LINE__);
+    }
     assert(GPTree_feasible(new, 1));
     return new;
 }
@@ -266,8 +276,10 @@ int GPTree_equals(const GPTree * lhs, const GPTree * rhs) {
                 __FILE__, __func__, __LINE__);
     if(!Bounds_equals(&lhs->bnd, &rhs->bnd))
         return 0;
-    if(!ParStore_equals(lhs->parstore, rhs->parstore))
+    if(!ParStore_equals(lhs->parstore, rhs->parstore)) {
+        fprintf(stderr,"%s:%d: !ParStore_equals\n",__FILE__,__LINE__);
         return 0;
+    }
     if(!LblNdx_equals(&lhs->lblndx, &rhs->lblndx))
         return 0;
     if(!SampNdx_equals(&lhs->sndx, &rhs->sndx))
@@ -297,7 +309,8 @@ unsigned GPTree_nsamples(GPTree * self) {
 
 /// Are parameters within the feasible region?
 int GPTree_feasible(const GPTree * self, int verbose) {
-    ParStore_constrain(self->parstore);
+    if(ParStore_constrain(self->parstore))
+        return 0;
     return PopNode_feasible(self->rootPop, self->bnd, verbose);
 }
 
@@ -330,19 +343,19 @@ const char *tstInput =
     "time free   Tc=1\n"
     "time free   Tab=3\n"
     "time free   Tabc=5.5\n"
-    "twoN free   2Na=100\n"
-    "twoN fixed  2Nb=123\n"
-    "twoN free   2Nc=213.4\n"
-    "twoN fixed  2Nbb=32.1\n"
-    "twoN free   2Nab=222\n"
-    "twoN fixed  2Nabc=1.2e2\n"
+    "twoN free   twoNa=100\n"
+    "twoN fixed  twoNb=123\n"
+    "twoN free   twoNc=213.4\n"
+    "twoN fixed  twoNbb=32.1\n"
+    "twoN free   twoNab=222\n"
+    "twoN fixed  twoNabc=1.2e2\n"
     "mixFrac free Mc=0.02\n"
-    "segment a   t=T0     twoN=2Na    samples=1\n"
-    "segment b   t=T0     twoN=2Nb    samples=1\n"
-    "segment c   t=Tc     twoN=2Nc    samples=1\n"
-    "segment bb  t=Tc     twoN=2Nbb\n"
-    "segment ab  t=Tab    twoN=2Nab\n"
-    "segment abc t=Tabc   twoN=2Nabc\n"
+    "segment a   t=T0     twoN=twoNa    samples=1\n"
+    "segment b   t=T0     twoN=twoNb    samples=1\n"
+    "segment c   t=Tc     twoN=twoNc    samples=1\n"
+    "segment bb  t=Tc     twoN=twoNbb\n"
+    "segment ab  t=Tab    twoN=twoNab\n"
+    "segment abc t=Tabc   twoN=twoNabc\n"
     "mix    b  from bb + Mc * c\n"
     "derive a  from ab\n"
     "derive bb from ab\n" "derive ab from abc\n" "derive c  from abc\n";

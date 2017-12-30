@@ -129,7 +129,7 @@ reported in the legofit output. To double this value, use "-T 2e-4" or
 @copyright Copyright (c) 2016, 2017, Alan R. Rogers
 <rogers@anthro.utah.edu>. This file is released under the Internet
 Systems Consortium License, which can be found in file "LICENSE".
- */
+*/
 
 #include "branchtab.h"
 #include "cost.h"
@@ -205,6 +205,7 @@ void usage(void) {
     tellopt("-p <x> or --ptsPerDim <x>", "number of DE points per free var");
 	tellopt("-1 or --singletons", "Use singleton site patterns");
     tellopt("-v or --verbose", "verbose output");
+    tellopt("--version", "Print version and exit");
     tellopt("-h or --help", "print this message");
     exit(1);
 }
@@ -248,13 +249,11 @@ int main(int argc, char **argv) {
         {"singletons", no_argument, 0, '1'},
         {"help", no_argument, 0, 'h'},
         {"verbose", no_argument, 0, 'v'},
+        {"version", no_argument, 0, 'V'},
         {NULL, 0, NULL, 0}
     };
 
-    printf("########################################\n"
-           "# legofit: estimate population history #\n"
-           "########################################\n");
-    putchar('\n');
+    hdr("legofit: estimate population history");
 
     int         i, j;
     time_t      currtime = time(NULL);
@@ -347,6 +346,8 @@ int main(int argc, char **argv) {
         case 'v':
             verbose = 1;
             break;
+        case 'V':
+            return 0;
         case 'T':
             ytol = strtod(optarg, 0);
             break;
@@ -541,7 +542,11 @@ int main(int argc, char **argv) {
     putchar('\n');
 
     // Get mean site pattern branch lengths
-    GPTree_setParams(gptree, dim, estimate);
+    if(GPTree_setParams(gptree, dim, estimate)) {
+        fprintf(stderr,"%s:%d: free params violate constraints\n",
+                __FILE__,__LINE__);
+        exit(1);
+    }
     BranchTab *bt = patprob(gptree, simreps, doSing, rng);
     BranchTab_divideBy(bt, (double) simreps);
     //    BranchTab_print(bt, stdout);

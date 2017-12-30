@@ -132,22 +132,29 @@ void ParKeyVal_sanityCheck(ParKeyVal *self, const char *file,
 int         ParKeyVal_equals(ParKeyVal *lhs, ParKeyVal *rhs) {
     if(lhs == NULL && rhs == NULL)
         return 1;
-    if(lhs == NULL && rhs != NULL)
-            return 0;
-    if(lhs != NULL && rhs == NULL)
-            return 0;
+    if(lhs == NULL && rhs != NULL) {
+        return 0;
+    }
+    if(lhs != NULL && rhs == NULL) {
+        return 0;
+    }
     assert(lhs != NULL && rhs != NULL);
-    if(0 != strcmp(lhs->key, rhs->key))
+    if(0 != strcmp(lhs->key, rhs->key)) {
         return 0;
-    if(lhs->valPtr == NULL && rhs->valPtr != NULL)
+    }
+    if(lhs->valPtr == NULL && rhs->valPtr != NULL) {
         return 0;
-    if(lhs->valPtr != NULL && rhs->valPtr == NULL)
+    }
+    if(lhs->valPtr != NULL && rhs->valPtr == NULL) {
         return 0;
+    }
     if(lhs->valPtr != NULL && rhs->valPtr != NULL) {
-		if(*lhs->valPtr != *rhs->valPtr)
+        if(!Dbl_equals_allowNonfinite(*lhs->valPtr, *rhs->valPtr)) {
 			return 0;
-		if(lhs->pstat != rhs->pstat)
+        }
+		if(lhs->pstat != rhs->pstat) {
 			return 0;
+        }
 	}
     return ParKeyVal_equals(lhs->next, rhs->next);
 }

@@ -10,6 +10,7 @@ typedef struct Bounds Bounds;
 typedef struct BranchTab BranchTab;
 typedef struct Constraint Constraint;
 typedef struct El El;
+typedef struct Exception Exception;
 typedef struct Gene Gene;
 typedef struct GPTree GPTree;
 typedef struct HashTab HashTab;
@@ -27,6 +28,7 @@ typedef struct SampNdx SampNdx;
 typedef struct StrInt StrInt;
 typedef struct Tokenizer Tokenizer;
 typedef struct DAFReader DAFReader;
+typedef struct RAFReader RAFReader;
 
 /// Distinguish between parameters that free, fixed, Gaussian, or
 /// constrained.  Free parameters can be changed during optimization;

@@ -114,6 +114,7 @@ void usage(void) {
 	tellopt("-1 or --singletons", "Use singleton site patterns");
     tellopt("-U <x>", "Mutations per generation per haploid genome.");
     tellopt("-h or --help", "print this message");
+    tellopt("--version", "print version and exit");
     exit(1);
 }
 
@@ -125,13 +126,10 @@ int main(int argc, char **argv) {
         {"mutations", required_argument, 0, 'U'},
         {"singletons", no_argument, 0, '1'},
         {"help", no_argument, 0, 'h'},
+        {"version", no_argument, 0, 'V'},
         {NULL, 0, NULL, 0}
     };
-
-    printf("############################################################\n"
-           "# legosim: generate site patterns by coalescent simulation #\n"
-           "############################################################\n");
-    putchar('\n');
+    hdr("legosim: generate site patterns by coalescent simulation");
 
     int         i, j;
     int         doSing=0;  // nonzero => use singleton site patterns
@@ -172,6 +170,8 @@ int main(int argc, char **argv) {
         case '1':
             doSing=1;
             break;
+        case 'V':
+            return 0;
         case 'h':
         default:
             usage();

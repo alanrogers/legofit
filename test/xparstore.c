@@ -53,8 +53,24 @@ int main(int argc, char **argv) {
     assert(Bounds_equals(&bnd0, &bnd1));
     unitTstResult("Bounds", "OK");
 
-    // Test Constraint
     double x=1.0, y=1.0, z=2.0;
+    double *px=&x, *py=&y, *pz=&z;
+    double **ppx=&px, **ppy=&py, **ppz=&pz;
+
+    assert(0 == compareDbls(px, py));
+    assert(0 == compareDbls(px, px));
+    assert(0 > compareDbls(px, pz));
+    assert(0 < compareDbls(pz, py));
+
+    unitTstResult("compareDbls", "OK");
+
+    assert(0 == compareDblPtrs(ppx, ppy));
+    assert(0 == compareDblPtrs(ppx, ppx));
+    assert(0 > compareDblPtrs(ppx, ppz));
+    assert(0 < compareDblPtrs(ppz, ppy));
+
+    unitTstResult("compareDblPtrs", "OK");
+
     ParKeyVal *pkv = NULL;
     pkv = ParKeyVal_add(pkv, "x", &x, Free);
     pkv = ParKeyVal_add(pkv, "y", &y, Free);
@@ -62,30 +78,44 @@ int main(int argc, char **argv) {
 
     char buff[100];
     strcpy(buff, "1+1*x + 2*x*y");
-    Constraint *c = Constraint_new(pkv, buff);
-    assert(1 + 1*x + 2*x*y == Constraint_getValue(c));
-    if(verbose) {
-        printf("Constraint formula: ");
-        Constraint_prFormula(c, stdout);
-    }
 
     double xx=1.0, yy=1.0, zz=2.0;
     ParKeyVal *pkv2 = NULL;
     pkv2 = ParKeyVal_add(pkv2, "x", &xx, Free);
     pkv2 = ParKeyVal_add(pkv2, "y", &yy, Free);
     pkv2 = ParKeyVal_add(pkv2, "z", &zz, Free);
-    Constraint *c2 = Constraint_dup(c, pkv2);
-    assert(Constraint_equals(c, c2));
-    unitTstResult("Constraint", "OK");
+    unitTstResult("ParKeyVal", "OK");
 
     ParStore *ps = ParStore_new();
     assert(ParStore_nFixed(ps) == 0);
     assert(ParStore_nFree(ps) == 0);
     assert(ParStore_nGaussian(ps) == 0);
+    ParStore_free(ps);
 
     double val, *ptr;
     ParamStatus pstat, pstat2;
 
+    ps = ParStore_new();
+    double fixed0=99.0, fixed1=100.0;
+    ParStore_addFreePar(ps, x, 0.0, 100.0, "x");
+    ParStore_addFreePar(ps, y, 0.0, 100.0, "y");
+    ParStore_addFreePar(ps, z, 0.0, 100.0, "z");
+    ParStore_addFixedPar(ps, fixed0, "fixed0");
+    ParStore_addFixedPar(ps, fixed1, "fixed1");
+    ParStore_addConstrainedPar(ps, "exp(x+log(y+z))", "c");
+    ParStore_constrain(ps);
+    assert(2 == ParStore_nFixed(ps));
+    assert(3 == ParStore_nFree(ps));
+    assert(1 == ParStore_nConstrained(ps));
+    assert(x = ParStore_getFree(ps, 0));
+    assert(y = ParStore_getFree(ps, 1));
+    assert(z = ParStore_getFree(ps, 2));
+    assert(fixed0 = ParStore_getFixed(ps, 0));
+    assert(fixed1 = ParStore_getFixed(ps, 1));
+    assert(exp(x+log(y+z)) == ParStore_getConstrained(ps, 0));
+    ParStore_free(ps);
+
+    ps = ParStore_new();
     val = 12.3;
     ParStore_addFixedPar(ps, val, "x");
     ptr = ParStore_findPtr(ps, &pstat, "x");
@@ -214,8 +244,6 @@ int main(int argc, char **argv) {
     ParKeyVal_free(pkv);
     ParKeyVal_free(pkv2);
     gsl_rng_free(rng);
-    Constraint_free(c);
-    Constraint_free(c2);
     unitTstResult("ParStore", "OK");
 
     return 0;

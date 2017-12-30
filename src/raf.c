@@ -1,7 +1,7 @@
 /**
-@file daf.c
-@page daf
-@brief Calculate derived allele frequency, daf.
+@file raf.c
+@page raf
+@brief Calculate reference allele frequency, raf.
 
 Input file should consist of tab-separated columns:
 
@@ -9,25 +9,22 @@ Input file should consist of tab-separated columns:
 2. position
 3. reference allele
 4. alternate alleles
-5. ancestral allele
-6. genotype in format "0/1" or "0|1", where 0 represents
+5. genotype in format "0/1" or "0|1", where 0 represents
 a copy of the reference allele and 1 a copy of the derived
 allele.
-7. etc for as many columns as there are genotypes.
+6. etc for as many columns as there are genotypes.
 
-This can be generated from a vcf file that includes annotations for
-ancestral alleles. If the ancestral is labelled "AA", the input for
-daf can be generated, using bcftools, as follows:
+This can be generated from a vcf file as follows:
 
-  bcftools query -f '%CHROM\t%POS\t%REF\t%ALT\t%INFO/AA[\t%GT]\n' fname.vcf.gz
+  bcftools query -f '%CHROM\t%POS\t%REF\t%ALT[\t%GT]\n' fname.vcf.gz
 
-Output is in 5 columns, separated by whitespace:
+Output is in 5 columns, separated by tabs:
 
 1. chromosome
 2. position of the nucleotide
-3. aa, the ancestral allele
-4. da, the derived allele
-5. daf, derived allele frequency
+3. ref, the reference allele
+4. alt, the alternate allele
+5. raf, reference allele frequency
 
 The input files should include all sites at which derived alleles are
 present in any of the populations under study. For example, consider
@@ -40,13 +37,13 @@ populations.
 The input should not contain duplicate nucleotide sites, the
 chromosomes should be sorted in lexical order, and within each
 chromosome, the nucleotides should be in numerical order. Otherwise,
-daf will abort with an error.
+raf will abort with an error.
 
-Sites are rejected unless they have a single ref or ancestral
-allele. Missing values are allowed for the alt allele. At the end of
-the job a summary of rejected sites is written to stderr.
+Sites are rejected unless they have a single ref. Missing values are
+allowed for the alt allele. At the end of the job a summary of
+rejected sites is written to stderr.
 
-@copyright Copyright (c) 2016, Alan R. Rogers
+@copyright Copyright (c) 2017, Alan R. Rogers
 <rogers@anthro.utah.edu>. This file is released under the Internet
 Systems Consortium License, which can be found in file "LICENSE".
 */
@@ -60,7 +57,7 @@ Systems Consortium License, which can be found in file "LICENSE".
 int main(int argc, char **argv) {
 
     if(argc != 1) {
-        fprintf(stderr, "Usage: daf\n");
+        fprintf(stderr, "Usage: raf\n");
         fprintf(stderr, "       Reads standard input;"
                 " writes to standard output.\n");
         exit(EXIT_FAILURE);
@@ -70,16 +67,16 @@ int main(int argc, char **argv) {
     char        buff[buffsize];
 
     // Keep track of the number of sites at which the number
-    // of reference, alternate, or ancestral alleles differs from 0
-    long int         zeroref = 0, zeroalt = 0, zeroaa = 0, zerogtype = 0;
-    long int         missref = 0, missaa = 0;
-    long int         multref = 0, multalt = 0, multaa = 0;
+    // of reference or alternate alleles differs from 0
+    long int         zeroref = 0, zeroalt = 0, zerogtype = 0;
+    long int         missref = 0;
+    long int         multref = 0, multalt = 0;
     long int         nbad = 0, ngood = 0;
     int         ok;             // is current line acceptable
     long unsigned lastnucpos = 0, nucpos;
     char        lastchr[100] = { '\0' };
 
-    printf("#%3s %10s %2s %2s %20s\n", "chr", "pos", "aa", "da", "daf");
+    printf("#%s\t%s\t%s\t%s\t%s\n", "chr", "pos", "ref", "alt", "raf");
     while(1) {
         if(NULL == fgets(buff, buffsize, stdin)) {
             break;
@@ -89,32 +86,25 @@ int main(int argc, char **argv) {
                     __FILE__, __LINE__, sizeof(buff));
             exit(EXIT_FAILURE);
         }
-        char       *chr, *pos, *reftoken, *alttoken, *aatoken;
+        char       *chr, *pos, *reftoken, *alttoken;
         char       *gtype, *next = buff;
 
         chr = strsep(&next, "\t");  // field 0
         pos = strsep(&next, "\t");  // field 1
         reftoken = strsep(&next, "\t");  // field 2
         alttoken = strsep(&next, "\t");  // field 3
-        aatoken = strsep(&next, "\t");   // field 4
 
         nucpos = strtoul(pos, NULL, 10);
 
-        if(aatoken == NULL) {
-            fprintf(stderr, "%s:%d: Bad input line\n", __FILE__, __LINE__);
-            exit(EXIT_FAILURE);
-        }
         // lowercase alleles
         strlowercase(reftoken);
         strlowercase(alttoken);
-        strlowercase(aatoken);
 
         // strip space characters
         (void) stripchr(chr, ' ');
         (void) stripchr(pos, ' ');
         (void) stripchr(reftoken, ' ');
         (void) stripchr(alttoken, ' ');
-        (void) stripchr(aatoken, ' ');
 
         // Check sort of chromosomes
         if(*lastchr) {
@@ -166,24 +156,20 @@ int main(int argc, char **argv) {
         }
         lastnucpos = nucpos;
 
-        int maxalleles = 10, nref, nalt, naa;
+        int maxalleles = 10, nref, nalt;
         char *ref[maxalleles];
         char *alt[maxalleles];
-        char *aa[maxalleles];
 
         // Replace '-' with '.' in allele tokens, so there is only
         // one kind of missing value.
         strReplaceChr(reftoken, '-', '.');
         strReplaceChr(alttoken, '-', '.');
-        strReplaceChr(aatoken, '-', '.');
 
         // REF and ALT alleles are separated by commas.
-        // Ancestral alleles are separated by "|".
         nref = tokenize(maxalleles, ref, reftoken, ",");
         nalt = tokenize(maxalleles, alt, alttoken, ",");
-        naa = tokenize(maxalleles, aa, aatoken, "|");
 
-        // Skip sites at which the number of reference, alternate, or ancestral
+        // Skip sites at which the number of reference or alternate
         // alleles differs from 1.
         ok = 1;
         if(nref == 0) {
@@ -194,10 +180,6 @@ int main(int argc, char **argv) {
             ++zeroalt;
             ok = 0;
         }
-        if(naa == 0) {
-            ++zeroaa;
-            ok = 0;
-        }
         if(nref > 1) {
             ++multref;
             ok = 0;
@@ -206,19 +188,11 @@ int main(int argc, char **argv) {
             ++multalt;
             ok = 0;
         }
-        if(naa > 1) {
-            ++multaa;
-            ok = 0;
-        }
         if(!ok) {
             ++nbad;
             continue;
         }
-        // Skip if ref or aa are missing.
-        if(0==strcmp(aa[0], ".")) {
-            ++missaa;
-            ok = 0;
-        }
+        // Skip if ref is missing.
         if(0==strcmp(ref[0], ".")) {
             ++missref;
             ok = 0;
@@ -229,29 +203,8 @@ int main(int argc, char **argv) {
             continue;
         }
 
-        // If alt is missing and aa differs from ref, then set
-        // alt equal to aa.
-        if(0==strcmp(alt[0], ".") && 0!=strcmp(ref[0], aa[0]))
-            alt[0] = aa[0];
-
-        char        *alleles[2];
-        int          aai;
-        alleles[0] = ref[0];
-        alleles[1] = alt[0];
-
-        // set index of ancestral allele
-        if(0==strcmp(alleles[0], aa[0]))
-            aai=0;
-        else if(0==strcmp(alleles[1], aa[0]))
-            aai=1;
-        else {
-            // skip site: there are 3 alleles
-            continue;
-        }
-        assert(aai==0 || aai==1);
-
         int         x = 0, n = 0;
-        gtype = strsep(&next, "\t");    // field 5
+        gtype = strsep(&next, "\t");    // field 4
 
         while(gtype != NULL) {
             //# gtype is a string like "0|1" or "0/1".
@@ -259,18 +212,18 @@ int main(int argc, char **argv) {
             case '.':
                 break;
             case '0':
+                ++x;
                 ++n;
                 break;
             case '1':
-                ++x;
                 ++n;
                 break;
             default:
                 fprintf(stderr, "%s:%d: Bad genotype: %s\n",
                         __FILE__, __LINE__, gtype);
                 fprintf(stderr,
-                        "  chr=%s pos=%s ref=%s alt=%s aa=%s gtype=%s\n",
-                        chr, pos, ref[0], alt[0], aa[0], gtype);
+                        "  chr=%s pos=%s ref=%s alt=%s gtype=%s\n",
+                        chr, pos, ref[0], alt[0], gtype);
                 exit(EXIT_FAILURE);
             }
 
@@ -278,18 +231,18 @@ int main(int argc, char **argv) {
             case '.':
                 break;
             case '0':
+                ++x;
                 ++n;
                 break;
             case '1':
-                ++x;
                 ++n;
                 break;
             default:
                 fprintf(stderr, "%s:%d: Bad genotype: %s\n",
                         __FILE__, __LINE__, gtype);
                 fprintf(stderr,
-                        "  chr=%s pos=%s ref=%s alt=%s aa=%s gtype=%s\n",
-                        chr, pos, ref[0], alt[0], aa[0], gtype);
+                        "  chr=%s pos=%s ref=%s alt=%s gtype=%s\n",
+                        chr, pos, ref[0], alt[0], gtype);
                 exit(EXIT_FAILURE);
             }
             gtype = strsep(&next, "\t");    // additional fields
@@ -302,37 +255,25 @@ int main(int argc, char **argv) {
         } else
             ++ngood;
 
-        if(aai == 1)
-            x = n - x;
         double      p = x / ((double) n);
-        printf("%4s %10s %2s %2s %20.18f\n",
-               chr, pos, aa[0], alleles[1 - aai], p);
+        printf("%s\t%s\t%s\t%s\t%0.18g\n",
+               chr, pos, ref[0], alt[0], p);
     }
-    fprintf(stderr, "daf: %ld good sites; %ld rejected\n", ngood, nbad);
+    fprintf(stderr, "raf: %ld good sites; %ld rejected\n", ngood, nbad);
     if(zeroref)
-        fprintf(stderr, "daf: bad sites with 0 ref alleles: %ld\n", zeroref);
+        fprintf(stderr, "raf: bad sites with 0 ref alleles: %ld\n", zeroref);
     if(zeroalt)
-        fprintf(stderr, "daf: bad sites with 0 alt alleles: %ld\n", zeroalt);
-    if(zeroaa)
-        fprintf(stderr, "daf: bad sites with 0 ancestral alleles: %ld\n",
-                zeroaa);
+        fprintf(stderr, "raf: bad sites with 0 alt alleles: %ld\n", zeroalt);
     if(zerogtype)
-        fprintf(stderr, "daf: bad sites with 0 genotypes: %ld\n", zerogtype);
+        fprintf(stderr, "raf: bad sites with 0 genotypes: %ld\n", zerogtype);
     if(multref)
-        fprintf(stderr, "daf: bad sites with multiple ref alleles: %ld\n",
+        fprintf(stderr, "raf: bad sites with multiple ref alleles: %ld\n",
                 multref);
     if(multalt)
-        fprintf(stderr, "daf: bad sites with multiple alt alleles: %ld\n",
+        fprintf(stderr, "raf: bad sites with multiple alt alleles: %ld\n",
                 multalt);
-    if(multaa)
-        fprintf(stderr,
-                "daf: bad sites with multiple ancestral alleles: %ld\n",
-                multaa);
     if(missref)
-        fprintf(stderr, "daf: bad sites with missing ref alleles: %ld\n",
+        fprintf(stderr, "raf: bad sites with missing ref alleles: %ld\n",
                 missref);
-    if(missaa)
-        fprintf(stderr, "daf: bad sites with missing ancestral alleles: %ld\n",
-                missaa);
     return 0;
 }

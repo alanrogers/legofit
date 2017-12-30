@@ -7,7 +7,7 @@ opt := -DNDEBUG -O3  -finline-functions  # For full optimization
 prof :=
 incl := -I/usr/local/include -I/opt/local/include
 
-targets := legosim legofit tabpat daf numcores
+targets := legosim legofit tabpat sitepat daf raf numcores
 pytargets := diverg.py bootci.py flatfile.py
 tests := xzeroin xbinary
 
@@ -43,27 +43,39 @@ test : $(tests)
 	-./xzeroin
 	@echo "ALL UNIT TESTS WERE COMPLETED."
 
+version.h:
+	./mkversion.py > version.h
+
 LEGOSIM := legosim.o patprob.o gptree.o binary.o jobqueue.o misc.o parse.o \
   branchtab.o popnodetab.o lblndx.o tokenizer.o parstore.o parkeyval.o \
-  popnode.o gene.o dprintf.o rngseed.o dtnorm.o
+  popnode.o gene.o dprintf.o rngseed.o dtnorm.o tinyexpr.o
 legosim : $(LEGOSIM)
 	$(CC) $(CFLAGS) -o $@ $(LEGOSIM) $(lib)
 
 LEGOFIT := legofit.o patprob.o gptree.o binary.o jobqueue.o misc.o \
   parse.o branchtab.o popnodetab.o lblndx.o tokenizer.o parstore.o \
   parkeyval.o popnode.o gene.o cost.o diffev.o dprintf.o rngseed.o \
-  simsched.o dtnorm.o
+  simsched.o dtnorm.o tinyexpr.o
 legofit : $(LEGOFIT)
 	$(CC) $(CFLAGS) -o $@ $(LEGOFIT) $(lib)
 
 TABPAT := tabpat.o misc.o binary.o lblndx.o parkeyval.o dafreader.o \
-  tokenizer.o strint.o boot.o
+  tokenizer.o strint.o boot.o error.o
 tabpat : $(TABPAT)
 	$(CC) $(CFLAGS) -o $@ $(TABPAT) $(lib)
+
+SITEPAT := sitepat.o misc.o binary.o lblndx.o parkeyval.o rafreader.o \
+  tokenizer.o strint.o boot.o error.o
+sitepat : $(SITEPAT)
+	$(CC) $(CFLAGS) -o $@ $(SITEPAT) $(lib)
 
 DAF := daf.o misc.o
 daf : $(DAF)
 	$(CC) $(CFLAGS) -o $@ $(DAF) $(lib)
+
+RAF := raf.o misc.o
+raf : $(RAF)
+	$(CC) $(CFLAGS) -o $@ $(RAF) $(lib)
 
 NUMCORES := numcores.o misc.o
 numcores : $(NUMCORES)

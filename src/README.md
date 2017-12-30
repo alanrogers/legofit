@@ -6,9 +6,14 @@ Legofit is a computer package that uses counts of nucleotide site
 patterns to estimate the history of population size, subdivision, and
 gene flow. The package consists of the following programs
 
-* @ref daf "daf", which writes genetic data into the ".daf" format
-  that is used by @ref tabpat "tabpat".
+* @ref daf "daf", which writes genetic data into the ".daf" format,
+  which is used by @ref tabpat "tabpat".
 * @ref tabpat "tabpat", which reads ".daf" files for several
+  populations, tabulates "nucleotide site patterns" (explained below),
+  and generates moving-blocks bootstrap replicates.
+* @ref raf "raf", which writes genetic data into the ".raf" format,
+  which is used by @ref sitepat "sitepat".
+* @ref sitepat "sitepat", which reads ".raf" files for several
   populations, tabulates "nucleotide site patterns" (explained below),
   and generates moving-blocks bootstrap replicates.
 * @ref legosim "legosim", which predicts site pattern counts from
@@ -146,12 +151,38 @@ to test the source file `boot.c`.  To run all unit tests, type
 
 # Genetic input data
 
-Before doing data analysis with `legofit`, you must generate data files
-in "daf" format. Such files end with ".daf", which stands for "derived
-allele frequency. See the @ref daf "daf" command for instructions on
-translating from "vcf" or "bcf" format into "daf".
+Before doing data analysis with `legofit`, you must generate data
+files in one of two formats: "daf" (for derived allele frequency), or
+"raf" (for reference allele frequency). The first of these
+alternatives requires input data in which the ancestral allele has
+been previously called. The second ("raf") does not. Instead, the
+program @ref sitepat "sitepat" uses an outgroup sequence to call
+ancestral alleles on the fly.
 
-The "daf" file is very simple and looks like this:
+## daf format
+
+This was the only input data format in early versions of the legofit
+package. We began moving away from it when we realized that, under
+certain circumstances, it can introduce bias. To understand why,
+suppose we have data from 4 populations, A, B, C, and D. Suppose
+further that D has received gene flow from an unobserved population,
+which is distantly related to the 4 observed populations. This gene
+flow will introduce derived alleles into D, but at these sites A, B,
+and C will be fixed for the ancestral allele. If ancestral allele
+calls are based only on A, B, and C, then no ancestral allele calls
+will be available for sites at which derived alleles have been
+introduced into D. The gene flow into D will therefore be
+undetectable. To avoid such problems, it is best to call ancestral
+alleles during the process of tabulating site patterns, using the
+programs @ref raf "raf" and @ref sitepat "sitepat". Nonetheless, we
+retain @ref daf "daf" and @ref tabpat "tabpat" for backwards
+compatibility.
+
+The suffix "daf" stands for "derived allele frequency. See the @ref
+daf "daf" command for instructions on translating from "vcf" or "bcf"
+format into "daf".
+
+The "daf" file is simple and looks like this:
 
     #chr        pos aa da                  daf
        1     752566  g  a 0.835294117647058854
@@ -170,8 +201,41 @@ used here to label the columns. The columns are as follows:
    across files in a given analysis.
 4. Ancestral allele.
 5. Derived allele. Indels and loci with 3 or more alleles should be
-   excluded. 
+   excluded.
 6. Frequency of the derived allele within the sample.
+
+The lines should be sorted lexically by chromosome. Within
+chromosomes, they should be sorted in ascending numerical order of
+column 2. There should be no duplicate (chromosome, position) pairs.
+
+## raf format
+
+The suffix "raf" stands for "reference allele frequency". See the @ref
+raf "raf" command for instructions on translating from "vcf" or "bcf"
+format into "raf".
+
+The "raf" file is simple and looks like this:
+
+    #chr  pos    ref  alt raf
+    1     752566 g    .   0.835294117647058854
+    1     754192 a    g   0.858823529411764652
+    1     755225 t    a   0.000000000000000000
+    1     755228 t    .   0.000000000000000000
+    1     765437 g    .   0.000000000000000000
+
+The columns are separated by tabs.  The first line (beginning with
+"#") is an optional comment, which is used here to label the
+columns. The columns are as follows:
+
+1. Character strings that label chromosomes or scaffolds.
+2. Position of the site on the chromosome or scaffold, measured in base
+   pairs. Daf format doesn't care whether nucleotide positions are
+   numbered beginning with 0 or with 1, provided that they are consistent
+   across files in a given analysis.
+4. Reference allele.
+5. Alternate allele. Indels and loci with 3 or more alleles should be
+   excluded.
+6. Frequency of the reference allele within the sample.
 
 The lines should be sorted lexically by chromosome. Within
 chromosomes, they should be sorted in ascending numerical order of
@@ -198,10 +262,13 @@ whose names are "zero" and "one"
 
 The first is a "time" variable, which I will use for the tips of
 branches, where time equals 0. I declare it "fixed", which means that
-it will not change. The second is a "twoN" variable, which represents
-twice the size of a population. When there is only one sample per
-population, the sizes of tip populations do not matter, so I set
-them all equal to "one". Next, three more time variables named "Txyn",
+it will not change. Variable names must begin with a
+letter. Subsequent characters may be letters, digits, or underscores.
+The second variable declaration begins with "twoN", which indicates
+that this variable refers to haploid population size--twice twice the
+size of the diploid population. When there is only one sample per
+population, the sizes of tip populations don't matter, so I set them
+all equal to "one". Next, three more time variables named "Txyn",
 "Tn", and "Txy".
 
     time fixed    Tn=1897          # time of Neanderthal admixture
@@ -233,11 +300,11 @@ variable "x" just defined will be ignored in what follows.
 Our measure of population size is twice the effective size of the
 population, and we define two such variables:
 
-    twoN free         2Nn=1e3            # archaic population size
-    twoN constrained 2Nxy=1e4 + -1.2*Txy # early modern population size
+    twoN free         twoNn=1e3            # archaic population size
+    twoN constrained twoNxy=1e4 - 1.2*Txy # early modern population size
 
 The first of these is a free parameter, but the second is a new
-category: "constrained". It defines "2Nxy" as a function of "Txy".
+category: "constrained". It defines "twoNxy" as a function of "Txy".
 Constraints are useful when analysis of bootstrap samples indicates a
 tight relationship between two or more free parameters. Constraints
 reduce the number of free parameters and allow more accurate
@@ -245,24 +312,24 @@ estimates. In the constraint above, there are only two terms and one
 independent variable---"Txy". It is legal, however, to use any number of
 terms and independent variables. For example, we could have written
 
-    twoN constrained 2Nxy=1e4 + -1.2*Txy + 0.01*Txy*Txyn # OK
+    twoN constrained twoNxy=1e4 - 1.2*Txy + 0.01*Txy*Txyn # OK
 
 All independent variables must be free parameters, and all must be
-defined before the constraint. The terms in the constraint must be
-separated by "+". It would *not* be legal to rewrite the constraint
-as
+defined before the constraint. The parser can recognize complex
+mathematical expressions and knows about the standard mathematical
+functions. The y'th power of x can be written either as "x^y" or as
+"pow(x,y)". The natural log can be written either as "log" or as
+"ln". Parentheses are allowed, and operators have the usual
+precedence. For example, the following lines are equivalent:
 
-    twoN constrained 2Nxy=10000 - 1.2*Txy # ERROR
-
-Because the "+" sign is used to separate terms, it is not legal to
-write a numerical constant as "1e+4". On the other hand, "1e-4" is
-fine.
+    twoN constrained x=exp(a)*pow(b,y)
+    twoN constrained x=e^a*b^y
+    twoN constrained x=exp(a + y*log(b))
 
 To spread a constraint across several lines, break the line after a
-"+" symbol. For example, the correct version of the statement above
-could be written as
+"+" symbol. For example,
 
-    twoN constrained 2Nxy=1e4 +
+    twoN constrained twoNxy=1e4 +
 	  -1.2*Txy +
 	  0.01*Txy*Txyn # Constraint spread across 3 lines.
 
@@ -294,7 +361,7 @@ The next two lines are similar, and define two other terminal
 populations:
 
     segment y     t=zero   twoN=one    samples=1  # Eurasia
-    segment n     t=Tn     twoN=2Nn    samples=1  # Neanderthal
+    segment n     t=Tn     twoN=twoNn  samples=1  # Neanderthal
 
 Segment "n" does not end at time zero, but rather at the time, Tn, of
 Neanderthal admixture. It has one sample, whose date is also Tn. This
@@ -304,17 +371,17 @@ assumption for simplicity---this is only an example. There are 3 more
 segments to declare:
 
     segment y2    t=Tn     twoN=one               # pre-mig eurasia
-    segment xy    t=Txy    twoN=2Nxy              # early modern
-    segment xyn   t=Txyn   twoN=2Nn               # ancestral
+    segment xy    t=Txy    twoN=twoNxy            # early modern
+    segment xyn   t=Txyn   twoN=twoNn             # ancestral
 
 These segments don't have a "samples" component, because none of them
 have genetic samples.  Segment y2 represents the Eurasian population
 before the episode of admixture. Note that it ends at the same time as
 segment n. This is necessary, because we will want to mix y2 and n
 below to model gene flow. Also note that the size of xyn equals
-2Nn---the same variable we used in setting the size of segment n. This
+twoNn---the same variable we used in setting the size of segment n. This
 establishes a constraint: the sizes of XYN and N will always be equal,
-no matter how the optimizer adjusts the value of 2Nn.
+no matter how the optimizer adjusts the value of twoNn.
 
 The rest of the .lgo file defines relationships between segments. This
 involves two statements: "mix" and "derive". Consider the mix
@@ -341,15 +408,22 @@ Segments cannot have more than two parents or more than two
 children. All segments should descend, eventually, from a single
 root.
 
+The site patterns printed refer only to the segments that contain
+samples, and the sort order of site patterns is determined by the
+order in which segments are listed in the .lgo file. In the file
+discussed above, there are three segments with samples, and these are
+in order "x", "y", "n". For this reason, the output will contain a
+site pattern labeled "x:y:n" rather than, say, "x:n:y".
+
 Using this .lgo file as input, `legosim -i 10000` produces
 
     ############################################################
     # legosim: generate site patterns by coalescent simulation #
     ############################################################
-    
+
     # Program was compiled: Jun  8 2017 12:41:14
     # Program was run: Tue Jul 11 09:18:00 2017
-    
+
     # cmd: legosim -i 10000 input.lgo
     # nreps                       : 10000
     # input file                  : input.lgo
@@ -382,13 +456,14 @@ See the @ref legosim "legosim" documentation for details.
 ## Estimating parameters from genetic data
 
 This involves several programs. The first step is to generate input
-files in ".daf" format, as described above. You will need one .daf
-file for each population. See the @ref daf "daf" documentation for
-details.
+files in ".daf" or ".raf" format, as described above. You will need
+one .daf or .raf file for each population. For .raf, you will in
+addition need a .raf file for an outgroup population. See the
+documentation of @ref daf "daf" and @ref raf "raf" for details.
 
-The next task is to tabulate site pattern counts from the various .daf
-files. See the @ref tabpat "tabpat" documentation for details. Tabpat
-will generate a small text file, with one row for each site
+The next task is to tabulate site pattern counts. For details, see
+@ref tabpat "tabpat" or @ref sitepat "sitepat". Either of these
+programs will generate a small text file, with one row for each site
 pattern. If there are 4 populations in the analysis, there will be 10
 site patterns.
 
@@ -402,11 +477,11 @@ and the number of simulation replicates used to approximate the
 objective function.
 
 To generate a bootstrap confidence interval, use the `--bootreps`
-option of @ref tabpat "tabpat". This will generate not only the
-primary output (written to standard output), but also an additional
-output file for each bootstrap replicate. For example, `--bootreps 50`
-would generate 51 output files: 1 for the normal output, and 1 for
-each bootstrap replicate.
+option of @ref tabpat "tabpat" or @ref sitepat "sitepat". This will
+generate not only the primary output (written to standard output), but
+also an additional output file for each bootstrap replicate. For
+example, `--bootreps 50` would generate 51 output files: 1 for the
+normal output, and 1 for each bootstrap replicate.
 
 These files should each be analyzed with a separate run of
 `legofit`. If you have access to a compute cluster, these jobs can be
@@ -432,7 +507,21 @@ the contribution of each site pattern. Thus, it will tell you which
 site patterns are responsible for a poor fit between observed and
 expected site pattern frequencies.
 
+## Sort order of site patterns
+
+The sort order of site patterns is determined by the order of command
+line arguments to @ref tabpat "tabpat" and @ref sitepat "sitepat", and
+by the order in which segments are defined in the .lgo file. For
+example, if "x" precedes "y", then we get a site pattern labeled "xy"
+rather than "yx". These inputs should be ordered consistently in
+tabpat, sitepat, and .lgo, for otherwise it will be hard to compare
+observed site pattern frequencies with those predicted by @ref legosim
+"legosim" or @ref legofit "legofit". I recommend arranging them in the
+order that populations labels appear in your figures.
+
 # Bias in `legofit`
+
+## Biases arising from constraints
 
 Biases arise in `legofit` because of the constraint that a child
 population cannot be older than its parent. If the parent's age is
@@ -456,3 +545,19 @@ This bias is exacerbated if the parent's age is modeled as a Gaussian
 variable, because then the constraint is an interval rather than a
 point, and the optimizer encounters it sooner. For this reason, I have
 not used Gaussian variables in recent work.
+
+## Bias arising from selection of variant sites
+
+Genetic data are often restricted to sites that are polymorphic within
+some group of samples. For example, the 1000-Genomes Project
+distributes files containing genotypes that are polymorphic within
+modern humans. These data do not include sites at which the derived
+allele is present only in Neanderthals and/or Denisovans. An analysis
+using such data would be biased, because it would undercount the
+corresponding site patterns.
+
+To avoid this bias, it is best to work with complete genomes rather
+than just the variant sites. Alternatively, one could call variant
+sites jointly using all genomes to be included in the analysis.
+
+

@@ -9,6 +9,7 @@
 #include "misc.h"
 #include "binary.h"
 #include "lblndx.h"
+#include "version.h"
 #include <assert.h>
 #include <ctype.h>
 #include <gsl/gsl_randist.h>
@@ -495,7 +496,7 @@ char *nextWhitesepToken(char **str) {
 /// in string delim. Set ptr[i] equal to the address of the i'th
 /// token. Terminate each substring with '\0' within s. Return the
 /// number of tokens. Abort if the number of substrings exceeds
-/// n. 
+/// n.
 int tokenize(int dim, char *token[dim], char *s, const char *delim) {
     char *t;
     int n=0;
@@ -511,7 +512,7 @@ int tokenize(int dim, char *token[dim], char *s, const char *delim) {
     return n;
 }
 
-/// In string s, replace instances of character a with character b. 
+/// In string s, replace instances of character a with character b.
 void        strReplaceChr(char *s, int a, int b) {
     while(*s != '\0') {
         if(*s == a)
@@ -530,7 +531,7 @@ double parseDbl(char *token) {
     errno=0;
     x = strtod(token, &leftover);
     if(errno) {
-        // strdup detected a problem
+        // strtod detected a problem
         return 0.0;
     }
     if(leftover==token) {
@@ -546,4 +547,67 @@ double parseDbl(char *token) {
         return 0.0;
     }
     return x;
+}
+
+/// Truncate string to n characters (plus terminating '\0') by
+/// removing characters from the left.
+char * strltrunc(char *s, int n) {
+    int w = strlen(s);
+    if(w <= n)
+        return s;
+
+    char *u = s, *v = s + (w-n);
+    while(*v)
+        *u++ = *v++;
+    *u = '\0';
+    return s;
+}
+
+void hdr(const char *msg) {
+    int i, wid, len1, len2, status;
+    char version[100], buff[100];
+    status = snprintf(version, sizeof(version), "version %s", VERSION);
+    if(status >= sizeof(version)) {
+        fprintf(stderr,"%s:%d: buffer overflow\n",__FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
+    len1 = strlen(msg);
+    len2 = strlen(version);
+    wid = 2 + (len1 > len2 ? len1 : len2);
+    for(i=0; i < 2 + wid; ++i)
+        putchar('#');
+    putchar('\n');
+    printf("#%s#\n", strcenter(msg, wid, buff, sizeof(buff)));
+    printf("#%s#\n", strcenter(version, wid, buff, sizeof(buff)));
+    for(i=0; i < 2 + wid; ++i)
+        putchar('#');
+    putchar('\n');
+    putchar('\n');
+}
+
+/**
+ * Center string "text" in a field of width "width". The centered string
+ * is written into the character string "buff", whose size is
+ * "buffsize".
+ */
+char       *strcenter(const char *text, unsigned width,
+                      char *buff, size_t buffsize) {
+    int         i, j, lpad = 0, rpad = 0, txtwid;
+
+    txtwid = strlen(text);
+    if(txtwid >= buffsize) {
+        snprintf(buff, buffsize, "%s", text);
+        return buff;
+    }
+    if(width > txtwid)
+        lpad = (width - txtwid) / 2;
+    rpad = width - txtwid - lpad;
+    for(i = 0; i < lpad; ++i)
+        buff[i] = ' ';
+    for(j = 0; j < txtwid; ++j)
+        buff[i + j] = text[j];
+    for(j = 0; j < rpad; ++j)
+        buff[i + txtwid + j] = ' ';
+    buff[lpad + txtwid + rpad] = '\0';
+    return buff;
 }

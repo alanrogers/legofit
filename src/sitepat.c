@@ -1,56 +1,58 @@
 /**
-@file tabpat.c
-@page tabpat
-@brief Tabulate site pattern frequencies from .daf files.
+@file sitepat.c
+@page sitepat
+@brief Tabulate site pattern frequencies from .raf files.
 
-# Tabpat: tabulates site patterns
+# Sitepat: tabulates site patterns
 
-Tabpat reads data in .daf format and tabulates counts of nucleotide
+Sitepat reads data in .raf format and tabulates counts of nucleotide
 site patterns, writing the result to standard output. Optionally, it
 also calculates a moving-blocks bootstrap, writing each bootstrap
 replicate into a separate file.
 
 # Usage
 
-    Usage: tabpat [options] <x>=<in1> <y>=<in2> ...
+    Usage: sitepat [options] <x>=<in1> <y>=<in2> ...
        where <x> and <y> are arbitrary labels, and <in1> and <in2> are input
-       files in daf format. Writes to standard output. Labels may not include
+       files in raf format. Writes to standard output. Labels may not include
        the character ":". Maximum number of input files: 32.
 
     Options may include:
        -f <name> or --bootfile <name>
-          Bootstrap output file basename. Def: tabpat.boot.
+          Bootstrap output file basename. Def: sitepat.boot.
        -r <x> or --bootreps <x>
           # of bootstrap replicates. Def: 0
        -b <x> or --blocksize <x>
           # of SNPs per block in moving-blocks bootstrap. Def: 0.
        -1 or --singletons
           Use singleton site patterns
-       -F or --logFixed
-          log fixed sites to tabpat.log
+       -m or --logMismatch
+          log AA/DA mismatches to sitepat.log
+       -A or --logAA
+          log sites with uncallable ancestral alleles
        -a or --logAll
-          log all sites to tabpat.log
+          log all sites to sitepat.log
        -h or --help
           Print this message
 
 # Example
 
-Before running `tabpat`, use @ref daf "daf" to convert the input data
-into daf format. Let us assume you have done this, and that directory
-~/daf contains a separate daf file for each population. We want to
-compare 4 populations, whose .daf files are `yri.daf`, `ceu.daf`,
-`altai.daf`, and `denisova.daf`. The following command will do this,
+Before running `sitepat`, use @ref raf "raf" to convert the input data
+into raf format. Let us assume you have done this, and that directory
+~/raf contains a separate raf file for each population. We want to
+compare 4 populations, whose .raf files are `yri.raf`, `ceu.raf`,
+`altai.raf`, and `denisova.raf`. The following command will do this,
 putting the results into `obs.txt`.
 
-    tabpat x=~/daf/yri.daf \
-           y=~/daf/ceu.daf \
-           n=~/daf/altai.daf \
-           d=~/daf/denisova.daf > obs.txt
+    sitepat x=~/raf/yri.raf \
+           y=~/raf/ceu.raf \
+           n=~/raf/altai.raf \
+           d=~/raf/denisova.raf > obs.txt
 
 Here, "x", "y", "n", and "d" are labels that will be used to identify
 site patterns in the output. For example, site pattern "x:y" refers to
 the pattern in which the derived allele is present haploid samples
-from "x" and "y" but not on those from other populations. The order of
+from "x" and "y" but not on those from other populations.  The order of
 the command-line arguments determines the order in which labels are
 sorted on output. Given the command line above, we would get a site
 pattern labeled "x:y:d" rather than, say, "y:x:d".
@@ -58,10 +60,10 @@ pattern labeled "x:y:d" rather than, say, "y:x:d".
 The output looks like this:
 
     # Population labels:
-    #    x = /home/rogers/daf/yri.daf
-    #    y = /home/rogers/daf/ceu.daf
-    #    n = /home/rogers/daf/altai.daf
-    #    d = /home/rogers/daf/denisova.daf
+    #    x = /home/rogers/raf/yri.raf
+    #    y = /home/rogers/raf/ceu.raf
+    #    n = /home/rogers/raf/altai.raf
+    #    d = /home/rogers/raf/denisova.raf
     # Excluding singleton site patterns.
     # Number of site patterns: 10
     # Tabulated 12327755 SNPs
@@ -83,18 +85,18 @@ not integers, because they represent averages over all possible
 subsamples consisting of a single haploid genome from each
 population.
 
-In the daf files used as input, chromosomes should appear in lexical
+In the raf files used as input, chromosomes should appear in lexical
 order. Within each chromosome, nucleotides should appear in numerical
 order. There should be no duplicate (chromosome, position)
 pairs. Otherwise, the program aborts with an error.
 
 To generate a bootstrap, use the `--bootreps` option:
 
-    tabpat --bootreps 50 \
-           x=~/daf/yri.daf \
-           y=~/daf/ceu.daf \
-           n=~/daf/altai.daf \
-           d=~/daf/denisova.daf > obs.txt
+    sitepat --bootreps 50 \
+           x=~/raf/yri.raf \
+           y=~/raf/ceu.raf \
+           n=~/raf/altai.raf \
+           d=~/raf/denisova.raf > obs.txt
 
 This will generate not only the primary output file, `obs.txt`, but also
 50 additional files, each representing a single bootstrap
@@ -102,14 +104,14 @@ replicate. The primary output file now has a bootstrap confidence
 interval:
 
     # Population labels:
-    #    x = /home/rogers/daf/yri.daf
-    #    y = /home/rogers/daf/ceu.daf
-    #    n = /home/rogers/daf/altai.daf
-    #    d = /home/rogers/daf/denisova.daf
+    #    x = /home/rogers/raf/yri.raf
+    #    y = /home/rogers/raf/ceu.raf
+    #    n = /home/rogers/raf/altai.raf
+    #    d = /home/rogers/raf/denisova.raf
     # Excluding singleton site patterns.
     # Number of site patterns: 10
     # Tabulated 12327755 SNPs
-    # bootstrap output file = tabpat.boot
+    # bootstrap output file = sitepat.boot
     # confidence level = 95%
     #       SitePat             E[count]          loBnd          hiBnd
                 x:y       340952.4592501 338825.6604586 342406.6670816
@@ -124,8 +126,8 @@ interval:
               y:n:d       100311.4411513  99292.9839140 101163.3457462
 
 Here, `loBnd` and `hiBnd` are the limits of a 95% confidence
-interval. The bootstrap output files look like `tabpat.boot000`,
-`tabpat.boot001`, and so on.
+interval. The bootstrap output files look like `sitepat.boot000`,
+`sitepat.boot001`, and so on.
 
 @copyright Copyright (c) 2016, Alan R. Rogers
 <rogers@anthro.utah.edu>. This file is released under the Internet
@@ -134,12 +136,12 @@ Systems Consortium License, which can be found in file "LICENSE".
 
 #include "binary.h"
 #include "boot.h"
-#include "dafreader.h"
+#include "rafreader.h"
 #include "misc.h"
 #include "strint.h"
+#include "error.h"
 #include "typedefs.h"
 #include "version.h"
-#include "error.h"
 #include <ctype.h>
 #include <errno.h>
 #include <getopt.h>
@@ -168,25 +170,26 @@ static void generatePatterns(int bit, int npops, Stack * stk, tipId_t pat,
                              int doSing);
 
 const char *useMsg =
-    "\nUsage: tabpat [options] <x>=<in1> <y>=<in2> ...\n"
-    "   where <x> and <y> are arbitrary labels, and <in1> and <in2> are input\n"
-    "   files in daf format. Writes to standard output."
-    " Labels may not include\n" "   the character \":\".";
+    "\nUsage: sitepat [options] <x>=<in_1> <y>=<in_2> ... outgroup=<in_K>\n"
+    "   where <x> and <y> are arbitrary labels, and <in_i> are input\n"
+    "   files in raf format. Writes to standard output."
+    " Labels may not include\n"
+    "   the character \":\". Final label must be \"outgroup\".\n";
 
 /// Print usage message and die.
 static void usage(void) {
     fputs(useMsg, stderr);
-    fprintf(stderr, " Maximum number of input files: %lu.\n",
+    fprintf(stderr, " Maximum number of input files: %lu plus outgroup.\n",
             8 * sizeof(tipId_t));
     fputs("\nOptions may include:\n", stderr);
     tellopt("-f <name> or --bootfile <name>",
-            "Bootstrap output file basename. Def: tabpat.boot.");
+            "Bootstrap output file basename. Def: sitepat.boot.");
     tellopt("-r <x> or --bootreps <x>", "# of bootstrap replicates. Def: 0");
     tellopt("-b <x> or --blocksize <x>",
             "# of SNPs per block in moving-blocks bootstrap. Def: 0.");
     tellopt("-1 or --singletons", "Use singleton site patterns");
-    tellopt("-F or --logFixed", "log fixed sites to tabpat.log");
-    tellopt("-a or --logAll", "log all sites to tabpat.log");
+    tellopt("-m or --logMismatch", "Log REF mismatches to sitepat.log");
+    tellopt("-A or --logAA", "Log sites with uncallable ancestral allele");
     tellopt("--version", "Print version and exit");
     tellopt("-h or --help", "Print this message");
     exit(1);
@@ -252,8 +255,8 @@ int main(int argc, char **argv) {
     StrInt     *strint = StrInt_new();
     char        bootfname[FILENAMESIZE] = { '\0' };
     char        errbuff[100] = { '\0' };
-    const char *logfname = "tabpat.log";
-    int         logFixed = 0, logAll = 0;
+    const char *logfname = "sitepat.log";
+    int         logMismatch = 0, logAA = 0;
     FILE       *logfile = NULL;
 
     static struct option myopts[] = {
@@ -262,17 +265,16 @@ int main(int argc, char **argv) {
         {"bootreps", required_argument, 0, 'r'},
         {"blocksize", required_argument, 0, 'b'},
         {"singletons", no_argument, 0, '1'},
-        {"logFixed", no_argument, 0, 'F'},
-        {"logAll", no_argument, 0, 'a'},
+        {"logMismatch", no_argument, 0, 'm'},
+        {"logAA", no_argument, 0, 'A'},
         {"help", no_argument, 0, 'h'},
         {"version", no_argument, 0, 'V'},
-//        {"threads", required_argument, 0, 't'},
         {NULL, 0, NULL, 0}
     };
 
     // command line arguments
     for(;;) {
-        i = getopt_long(argc, argv, "ab:c:f:hr:t:Fv1", myopts, &optndx);
+        i = getopt_long(argc, argv, "b:c:f:hr:t:mAv1", myopts, &optndx);
         if(i == -1)
             break;
         switch (i) {
@@ -298,23 +300,23 @@ int main(int argc, char **argv) {
                 exit(EXIT_FAILURE);
             }
             break;
+        case 'V':
+            printf("sitepat version %s\n", VERSION);
+            return 0;
         case 'h':
             usage();
             break;
-        case 'V':
-            printf("tabpat version %s\n", VERSION);
-            return 0;
         case 'r':
             bootreps = strtol(optarg, NULL, 10);
             break;
         case '1':
             doSing = 1;
             break;
-        case 'F':
-            logFixed = 1;
+        case 'm':
+            logMismatch = 1;
             break;
-        case 'a':
-            logAll = 1;
+        case 'A':
+            logAA = 1;
             break;
         default:
             usage();
@@ -323,6 +325,7 @@ int main(int argc, char **argv) {
 
     // remaining options: input files
     int         n = argc - optind;  // number of input files
+    int         m = n-1;            // number excluding outgroup
     if(n == 0)
         usage();
 
@@ -330,18 +333,18 @@ int main(int argc, char **argv) {
     char       *fname[n];
     LblNdx      lndx;
     LblNdx_init(&lndx);
-    DAFReader  *r[n];
+    RAFReader  *r[n];
 
     // Number of inputs can't exceed number of bits in an object of
     // type tipId_t.
-    if(n > 8 * sizeof(tipId_t)) {
+    if(m > 8 * sizeof(tipId_t)) {
         fprintf(stderr, "Error: %d input files. Max is %lu.\n",
-                n, 8 * sizeof(tipId_t));
+                n, 8*sizeof(tipId_t) + 1);
         usage();
     }
     // Parse remaining arguments, each of which should be of form
     // x=foo, where x is an arbitrary label and foo is the name of an
-    // input file.
+    // input file. Last label must be "outgroup".
     for(i = 0; i < n; ++i) {
         fname[i] = poplbl[i] = argv[i + optind];
         (void) strsep(fname + i, "=");
@@ -350,20 +353,28 @@ int main(int argc, char **argv) {
            || strlen(poplbl[i]) == 0
            || strlen(fname[i]) == 0 || strchr(poplbl[i], ':') != NULL)
             usage();
-        LblNdx_addSamples(&lndx, 1, poplbl[i]);
-        r[i] = DAFReader_new(fname[i]);
+        if(i < m)
+            LblNdx_addSamples(&lndx, 1, poplbl[i]);
+        r[i] = RAFReader_new(fname[i]);
+    }
+    if(0 != strcmp("outgroup", poplbl[n-1])) {
+        fprintf(stderr,"%s:%d: last label is \"%s\""
+                " instead of \"outgroup\".\n",
+                __FILE__,__LINE__, poplbl[n-1]);
+        usage();
     }
 
-    if(logFixed || logAll) {
+    if(logMismatch || logAA) {
         logfile = fopen(logfname, "w");
         if(logfile == NULL) {
             fprintf(stderr, "Can't write to file \"%s\".\n", logfname);
             exit(EXIT_FAILURE);
         }
     }
+
     // Default boot file name
     if(bootfname[0] == '\0') {
-        const char *defName = "tabpat.boot";
+        const char *defName = "sitepat.boot";
         status = snprintf(bootfname, sizeof bootfname, "%s", defName);
         if(status >= sizeof bootfname) {
             fprintf(stderr, "%s:%d: ERR: Filename %s is too large."
@@ -373,10 +384,10 @@ int main(int argc, char **argv) {
         }
     }
 
-    printf("# tabpat version %s\n", VERSION);
+    printf("# sitepat version %s\n", VERSION);
     printf("# Population labels:\n");
     for(i = 0; i < n; ++i)
-        printf("# %4s=%s\n", poplbl[i], fname[i]);
+        printf("# %8s=%s\n", poplbl[i], fname[i]);
 
     // make sure labels are all different
     for(i = 1; i < n; ++i)
@@ -387,9 +398,9 @@ int main(int argc, char **argv) {
                 exit(EXIT_FAILURE);
             }
 
-    unsigned long npat = (1UL << n) - 2UL;  // number of site patterns
+    unsigned long npat = (1UL << m) - 2UL;  // number of site patterns
     if(!doSing)
-        npat -= n;
+        npat -= m;
     printf("# %s singleton site patterns.\n",
            (doSing ? "Including" : "Excluding"));
     printf("# Number of site patterns: %lu\n", npat);
@@ -404,8 +415,7 @@ int main(int argc, char **argv) {
         Stack      *stk = Stack_new(npat, pat);
 
         // Put site patterns into array "pat".
-        generatePatterns(0, n, stk, 0, doSing);
-
+        generatePatterns(0, m, stk, 0, doSing);
         Stack_free(stk);
     }
 
@@ -419,7 +429,7 @@ int main(int argc, char **argv) {
     // Used by bootstrap
     Boot       *boot = NULL;
     int         nchr = 0;
-    char        prev[DAFSTRSIZE], chr[DAFSTRSIZE] = { '\0' };
+    char        prev[RAFSTRSIZE], chr[RAFSTRSIZE] = { '\0' };
     long        nsnp[MAXCHR];
     memset(nsnp, 0, sizeof nsnp);
 
@@ -432,29 +442,30 @@ int main(int argc, char **argv) {
         // First pass through data sets values of
         // nchr
         // nsnp[i] {i=0..nchr-1}
-        done = 0;
+        done=0;
         while(!done) {
-            status = DAFReader_multiNext(n, r);
+            status = RAFReader_multiNext(n, r);
             switch(status) {
             case 0:
                 break;
             case EOF:
                 done=1;
                 continue;
-            case ALLELE_MISMATCH:
+            case REF_MISMATCH:
+            case MULTIPLE_ALT:
             case NO_ANCESTRAL_ALLELE:
                 continue;
             default:
-                // something wrong
+                // something wrong.
                 mystrerror_r(status, errbuff, sizeof errbuff);
                 fprintf(stderr,"%s:%d: input error (%s)\n",
                         __FILE__,__LINE__, errbuff);
                 exit(EXIT_FAILURE);
             }
 
-            assert(strlen(DAFReader_chr(r[0])) < sizeof prev);
+            assert(strlen(RAFReader_chr(r[0])) < sizeof prev);
             strcpy(prev, chr);
-            strcpy(chr, DAFReader_chr(r[0]));
+            strcpy(chr, RAFReader_chr(r[0]));
             int         diff = strcmp(prev, chr);
             if(diff != 0) {
                 StrInt_insert(strint, chr, nchr);
@@ -465,7 +476,7 @@ int main(int argc, char **argv) {
         }
 
         for(i = 0; i < n; ++i) {
-            status = DAFReader_rewind(r[i]);
+            status = RAFReader_rewind(r[i]);
             if(status) {
                 fprintf(stderr, "%s:%d: ERR: can't rewind input stream.\n",
                         __FILE__, __LINE__);
@@ -483,17 +494,17 @@ int main(int argc, char **argv) {
         CHECKMEM(boot);
     }
 
-    unsigned long nsites = 0, nbadaa = 0, nfixed = 0;
+    unsigned long nsites = 0, nbadaa = 0, nbadref=0, nmultalt=0;
     long        snpndx = -1;
 
-    // Iterate through daf files
+    // Iterate through raf files
     fprintf(stderr, "Doing %s pass through data to tabulate patterns..\n",
             bootreps > 0 ? "2nd" : "single");
     int         chrndx = -1, currChr = INT_MAX;
-    DAFReader_clearChromosomes(n, r);
+    RAFReader_clearChromosomes(n, r);
     done=0;
-    while(!done) {
-        status = DAFReader_multiNext(n, r);
+    while( !done ) {
+        status = RAFReader_multiNext(n, r);
         switch(status) {
         case 0:
             ++nsites;
@@ -501,13 +512,28 @@ int main(int argc, char **argv) {
         case EOF:
             done=1;
             continue;
-        case ALLELE_MISMATCH:
-        case NO_ANCESTRAL_ALLELE:
-            ++nbadaa;
+        case REF_MISMATCH:
             ++nsites;
+            ++nbadref;
+            if(logMismatch) {
+                fprintf(logfile,"REF mismatch:\n");
+                RAFReader_printArray(n, r, logfile);
+            }
+            continue;
+        case MULTIPLE_ALT:
+            ++nsites;
+            ++nmultalt;
+            continue;
+        case NO_ANCESTRAL_ALLELE:
+            ++nsites;
+            ++nbadaa;
+            if(logAA) {
+                fprintf(logfile,"Uncallable AA:\n");
+                RAFReader_printArray(n, r, logfile);
+            }
             continue;
         default:
-            // something wrong
+            // something wrong.
             mystrerror_r(status, errbuff, sizeof errbuff);
             fprintf(stderr,"%s:%d: input error (%s)\n",
                     __FILE__,__LINE__, errbuff);
@@ -517,11 +543,11 @@ int main(int argc, char **argv) {
         if(bootreps > 0) {
             // chrndx is index of current chromosome
             errno = 0;
-            chrndx = StrInt_get(strint, DAFReader_chr(r[0]));
+            chrndx = StrInt_get(strint, RAFReader_chr(r[0]));
             if(errno) {
                 fprintf(stderr,
                         "%s:%d: ERR: missing index for chromosome: %s\n",
-                        __FILE__, __LINE__, DAFReader_chr(r[0]));
+                        __FILE__, __LINE__, RAFReader_chr(r[0]));
                 exit(EXIT_FAILURE);
             }
             if(chrndx != currChr) {
@@ -535,16 +561,12 @@ int main(int argc, char **argv) {
 #endif
         }
         // p and q are frequencies of derived and ancestral alleles
-        double p[n], q[n];
-        for(j = 0; j < n; ++j) {
-            p[j] = DAFReader_daf(r[j]); // derived allele freq
+        double      p[m], q[m];
+        for(j = 0; j < m; ++j) {
+            p[j] = RAFReader_daf(r[j]); // derived allele freq
             q[j] = 1.0 - p[j];
         }
 
-        if(logAll) {
-            fprintf(logfile, "%5s %10lu\n", DAFReader_chr(r[0]),
-                    DAFReader_nucpos(r[0]));
-        }
         // Contribution of current snp to each site pattern.  Inner
         // loop considers each bit in current pattern.  If that bit is
         // on, multiply z by the derived allele frequency, p. If
@@ -554,7 +576,7 @@ int main(int argc, char **argv) {
         for(i = 0; i < npat; ++i) {
             tipId_t     pattern = pat[i];
             double      z = 1.0;
-            for(j = 0; j < n; ++j) {
+            for(j = 0; j < m; ++j) {
                 if(pattern & 1u)
                     z *= p[j];
                 else
@@ -565,7 +587,7 @@ int main(int argc, char **argv) {
                 fprintf(stderr, "%s:%d nonfinite z=%lf\n",
                         __FILE__, __LINE__, z);
                 fprintf(stderr, "   pattern=%d\n", pat[i]);
-                for(j = 0; j < n; ++j)
+                for(j = 0; j < m; ++j)
                     fprintf(stderr, "   %d: p=%lf q=%lf\n", j, p[j], q[j]);
             }
             assert(0 == (pattern & 1));
@@ -580,15 +602,16 @@ int main(int argc, char **argv) {
         if(bootreps > 0)
             Boot_sanityCheck(boot, __FILE__, __LINE__);
 #endif
-        errno = 0;
     }
-    printf("# Sites aligned across all populations: %lu\n", nsites);
+    printf("# Aligned sites                  : %lu\n", nsites);
+    if(nbadref)
+        printf("# Disagreements about ref allele : %lu\n", nbadref);
+    if(nmultalt)
+        printf("# Sites with multiple alt alleles: %lu\n", nmultalt);
     if(nbadaa)
-        printf("# Disagreements about alleles         : %lu\n", nbadaa);
-    if(nfixed)
-        printf("# Monomorphic sites                   : %lu\n", nfixed);
-    printf("# Sites used                          : %lu\n",
-           nsites - nbadaa - nfixed);
+        printf("# Undetermined ancestral allele  : %lu\n", nbadaa);
+    printf("# Sites used                     : %lu\n",
+           nsites - nbadaa - nbadref - nmultalt);
 
     // boottab[i][j] is the count of the j'th site pattern
     // in the i'th bootstrap replicate.
@@ -644,12 +667,12 @@ int main(int argc, char **argv) {
     }
 
     for(i = 0; i < n; ++i)
-        DAFReader_free(r[i]);
+        RAFReader_free(r[i]);
     if(bootreps > 0)
         Boot_free(boot);
     StrInt_free(strint);
     if(logfile)
         fclose(logfile);
-    fprintf(stderr, "tabpat is finished\n");
+    fprintf(stderr, "sitepat is finished\n");
     return 0;
 }

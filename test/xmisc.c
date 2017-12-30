@@ -130,5 +130,16 @@ int main(int argc, char **argv) {
     
     unitTstResult("parseDbl", "OK");
 
+    strcpy(buff, "abcdefghijklmn");
+    assert(0 == strcmp("lmn", strltrunc(buff, 3)));
+
+    strcpy(buff, "abc");
+    assert(0 == strcmp("abc", strltrunc(buff, 3)));
+
+    strcpy(buff, "abc");
+    assert(0 == strcmp("abc", strltrunc(buff, 4)));
+
+    unitTstResult("strltrunc", "OK");
+
     return 0;
 }
