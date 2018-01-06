@@ -25,6 +25,101 @@ struct ScrmReader {
     FILE *fp;
 };
 
+int *countSamples(size_t bsize, char buff[bsize], int *npops);
+
+// On input, buff should contain a string representing the scrm command line,
+// and nsamples should point to an int.
+//
+// The function returns a newly-allocated array of ints, whose dimension
+// is *npops, the number of populations specified on the scrm command line.
+// The i'th entry in this array is the haploid sample size of population i.
+//
+// On error, the function returns NULL.
+int *countSamples(size_t bsize, char buff[bsize], int *npops) {
+    Tokenizer *tkz = Tokenizer_new(bsize/2);
+    Tokenizer_split(tkz, buff, " ");
+    int ntokens = Tokenizer_strip(tkz, " \n");
+
+    if(strcmp("scrm", Tokenizer_token(tkz, 0)) != 0) {
+        fprintf(stderr,"%s:%d: input file is not scrm output\n",
+                __FILE__,__LINE__);
+        return NULL;
+    }
+
+    int i, j, npops=0;
+    long h;
+    char *token, *end;
+    int *nsamples = NULL;
+
+    // Read through tokens, looking for -I and -eI. Use these arguments
+    // to set npops and nsamples.
+    for(i=1; i < ntokens; ++i) {
+        token = Tokenizer_token(tkz, i);
+        if(strcmp("-I", token) == 0) {
+            token = Tokenizer_token(tkz, i+1);
+            if(npops == 0) {
+                // set npops and allocate nsamples
+                npops = strtol(token, NULL, 10);
+                nsamples = malloc(npops * sizeof(nsamples[0]));
+                CHECKMEM(nsamples);
+                memset(nsamples, 0, npops * sizeof(nsamples[0]));
+            }else{
+                // check for consistency
+                int npops2 = strtol(token, NULL, 10);
+                if(npops != npops2) {
+                    fprintf(stderr,"%s:%d: ERR: inconsistent population count:"
+                            " %d != %d\n",
+                            __FILE__,__LINE__,npops, npops2);
+                    if(nsamples==NULL)
+                        fprintf("%s:%d: ERR: nsamples==NULL.\n",
+                                __FILE__,__LINE__);
+                    else
+                        free(nsamples);
+                    return NULL;
+                }
+            }
+            // increment samples
+            for(j=0; j < npops; ++j) {
+                token = Tokenizer_token(tkz, i+2+j);
+                nsamples[j] += strtol(token, NULL, 10);
+            }
+            i += npops;
+        }else if(strcmp("-eI", token) == 0) {
+            if(npops == 0) {
+                // count populations and allocate nsamples
+                for(j=i+2; j<ntokens; ++j) {
+                    token = Tokenizer_token(tkz, j);
+                    h = strtol(token, &end, 10);
+                    if(end==token) // token isn't an integer
+                        break;
+                    else           // token is an integer
+                        ++npops;
+                }
+                assert(nsamples == NULL);
+                if(npops == 0) {
+                    fprintf(stderr,"%s:%d: npops is zero\n",
+                            __FILE__,__LINE__);
+                    return NULL;
+                }
+                nsamples = malloc(npops * sizeof(nsamples[0]));
+                CHECKMEM(nsamples);
+                memset(nsamples, 0, npops * sizeof(nsamples[0]));
+            }
+            // increment nsamples
+            assert(npops > 0);
+            assert(*nsamples != NULL);
+            for(j=0; j<npops; ++j) {
+                token = Tokenizer_token(tkz, i+2+j);
+                h = strtol(token, &end, 10);
+                assert(end != token);
+                self->nsamples[j] += h;
+            }
+            i += npops;
+        }
+    }
+    return nsamples;
+}
+
 // Allocate and initialize a new ScrmReader from input stream.
 ScrmReader *ScrmReader_new(FILE *fp) {
     // buffer is large, because scrm command lines can be long
@@ -45,88 +140,9 @@ ScrmReader *ScrmReader_new(FILE *fp) {
     memset(self, 0, sizeof ScrmReader);
     self->fp = fp;
 
-    Tokenizer *tkz = Tokenizer_new((sizeof buff)/2);
-    Tokenizer_split(tkz, buff, " ");
-    int ntokens = Tokenizer_strip(tkz, " \n");
+    self->npops = countSamples(sizeof buff, buff, &self->nsamples);
 
-    if(strcmp("scrm", Tokenizer_token(tkz, 0)) != 0) {
-        fprintf(stderr,"%s:%d: input file is not scrm output\n",
-                __FILE__,__LINE__);
-        free(self);
-        exit(EXIT_FAILURE);
-    }
-
-    int i, j, npops;
-    long h;
-    char *token, *end;
-
-    // 
-    for(i=1; i < ntokens; ++i) {
-        token = Tokenizer_token(tkz, i);
-        if(strcmp("-I", token) == 0) {
-            token = Tokenizer_token(tkz, i+1);
-            if(self->npops == 0) {
-                // set npops and allocate nsamples
-                self->npops = strtol(token, NULL, 10);
-                self->nsamples = malloc(self->npops * sizeof(int));
-                CHECKMEM(self->nsamples);
-                for(j=0; j < self->npops; ++j) {
-                    token = Tokenizer_token(tkz, i+2+j);
-                    self->nsamples[j] = strtol(token, NULL, 10);
-                }
-            }else{
-                // check for consistency and increment nsamples
-                npops = strtol(token, NULL, 10);
-                if(npops != self->npops) {
-                    fprintf(stderr,"%s:%d: inconsistent population count:"
-                            " %d != %d\n",
-                            __FILE__,__LINE__,npops, self->npops);
-                    exit(EXIT_FAILURE);
-                }
-                for(j=0; j < self->npops; ++j) {
-                    token = Tokenizer_token(tkz, i+2+j);
-                    self->nsamples[j] += strtol(token, NULL, 10);
-                }
-            }
-            i += self->npops;
-        }else if(strcmp("-eI", token) == 0) {
-            if(self->npops == 0) {
-                // count populations and allocate nsamples
-                for(j=i+2; j<ntokens; ++j) {
-                    token = Tokenizer_token(tkz, j);
-                    h = strtol(token, &end, 10);
-                    if(end==token) // token isn't an integer
-                        break;
-                    else           // token is an integer
-                        ++self->npops;
-                }
-                assert(self->nsamples == NULL);
-                if(self->npops == 0) {
-                    fprintf(stderr,"%s:%d: npops is zero\n",
-                            __FILE__,__LINE__);
-                    exit(EXIT_FAILURE);
-                }
-                self->nsamples = malloc(self->npops * sizeof(int));
-                for(j=0; j<self->npops; ++j) {
-                    token = Tokenizer_token(tkz, i+2+j);
-                    h = strtol(token, &end, 10);
-                    assert(end != token);
-                    self->nsamples[j] = h;
-                }
-            }else{
-                // increment nsamples
-                assert(self->npops > 0);
-                assert(self->nsamples == NULL);
-                for(j=0; j<self->npops; ++j) {
-                    token = Tokenizer_token(tkz, i+2+j);
-                    h = strtol(token, &end, 10);
-                    assert(end != token);
-                    self->nsamples[j] += h;
-                }
-            }
-        }
-    }
-    
+    return npops;
 }
 
 // Rewind input and reset chr and nucpos. Doesn't work
