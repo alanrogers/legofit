@@ -20,6 +20,7 @@ double      perturb_ratio_w(double x, double w, gsl_rng * rng);
 double      perturb_ratio(double x, gsl_rng * rng);
 long double perturb_interval(long double x, long double lo, long double hi,
                              gsl_rng * rng);
+int         removeZeroes(int dim, unsigned x[dim]);
 void        eprintf(const char *fmt, ...);
 FILE       *efopen(const char *restrict name, const char *restrict mode);
 void        printBranchTab(double tab[3][3], FILE * fp);
@@ -45,6 +46,7 @@ char       *strltrunc(char *s, int n);
 void        hdr(const char *msg);
 char       *strcenter(const char *text, unsigned width,
                       char *buff, size_t buffsize);
+int         readline(int dim, char buff[dim], FILE *fp);
 
 static inline double survival(double t, double twoN);
 

@@ -2,9 +2,13 @@
 #define SCRMREADER_H
 
 #include "typedefs.h"
+#include <stdio.h>
 
 // constructor
 ScrmReader *ScrmReader_new(FILE *fp);
+
+// destructor
+void ScrmReader_free(ScrmReader *self);
 
 // Rewind input and reset chr and nucpos. Doesn't work
 // if input is stdin.
