@@ -202,7 +202,7 @@ int ScrmReader_rewind(ScrmReader *self) {
 // Move ScrmReader to next nucleotide site.
 int ScrmReader_next(ScrmReader *self) {
     char buff[8192];
-    int status, ntokens;
+    int status;
     status = readline(sizeof(buff), buff, self->fp);
     if(status)
         return status;
@@ -221,7 +221,7 @@ int ScrmReader_next(ScrmReader *self) {
     }else
         ++self->nucpos;
     Tokenizer_split(self->tkz, buff, " ");
-    ntokens = Tokenizer_strip(self->tkz, " \n");
+    Tokenizer_strip(self->tkz, " \n");
 
     // calculate derived allele frequency w/i each pop
     double nderived;
