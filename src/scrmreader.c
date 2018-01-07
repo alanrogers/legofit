@@ -19,16 +19,16 @@ struct ScrmReader {
 
     // Independent replicates in scrm output appear as separate
     // chromosomes, which are labelled by unsigned integers.
-    unsigned chr;
+    int chr;
 
     // Position values in scrm output are ignored. Instead, ScrmReader
     // returns positions as a sequence of unsigned integers.
-    unsigned long nucpos;
+    long nucpos;
     Tokenizer *tkz;
     FILE *fp;
 };
 
-unsigned *countSamples(Tokenizer *tkz, int *npops);
+unsigned *countSamples(Tokenizer *tkz, int *npops, int *transpose);
 int readuntil(int n, const char *str, int dim, char buff[dim], FILE *fp);
 
 // destructor
@@ -48,7 +48,9 @@ void ScrmReader_free(ScrmReader *self) {
 // The i'th entry in this array is the haploid sample size of population i.
 //
 // On error, the function returns NULL.
-unsigned *countSamples(Tokenizer *tkz, int *npops) {
+unsigned *countSamples(Tokenizer *tkz, int *npops, int *transpose) {
+
+    *transpose = 0;
 
     if(strcmp("scrm", Tokenizer_token(tkz, 0)) != 0) {
         fprintf(stderr,"%s:%d: input file is not scrm output\n",
@@ -100,7 +102,8 @@ unsigned *countSamples(Tokenizer *tkz, int *npops) {
             }
             // advance to last argument of -I or -eI
             i += 1 + *npops;
-        }
+        }else if(0 == strcmp(token, "-transpose-segsites"))
+            *transpose = 1;
     }
     // Remove populations with zero samples
     *npops = removeZeroes(*npops, nsamples);
@@ -139,7 +142,16 @@ ScrmReader *ScrmReader_new(FILE *fp) {
     Tokenizer_split(self->tkz, buff, " ");
     Tokenizer_strip(self->tkz, " \n");
 
-    self->nsamples = countSamples(self->tkz, &self->npops);
+    int transpose;
+    self->nsamples = countSamples(self->tkz, &self->npops, &transpose);
+    if(!transpose) {
+        fprintf(stderr,"%s:%d: -transpose-segsites missing from scrm cmd\n",
+                __FILE__,__LINE__);
+        Tokenizer_free(self->tkz);
+        free(self->nsamples);
+        free(self);
+        return NULL;
+    }
 
     unsigned tot = 0;
     for(i=0; i < self->npops; ++i) {
@@ -154,27 +166,11 @@ ScrmReader *ScrmReader_new(FILE *fp) {
         return NULL;
     }
 
-    // read to line beginning with "position"
-    status = readuntil(strlen("position"), "position", sizeof(buff), buff, fp);
-    if(status) {
-        free(self->nsamples);
-        ScrmReader_free(self);
-        return NULL;
-    }
-
     // allocate daf array
     self->daf = malloc(self->npops * sizeof(self->daf[0]));
     CHECKMEM(self->daf);
 
-    // read 1st line of data
-    status = ScrmReader_next(self);
-    if(status) {
-        free(self->nsamples);
-        free(self->daf);
-        ScrmReader_free(self);
-        return NULL;
-    }
-    self->chr = self->nucpos = 0;
+    self->chr = self->nucpos = -1;
     return self;
 }
 
@@ -193,23 +189,13 @@ int readuntil(int n, const char *str, int dim, char buff[dim], FILE *fp) {
 // Rewind input and reset chr and nucpos. Doesn't work
 // if input is stdin.
 int ScrmReader_rewind(ScrmReader *self) {
-    int status;
-    char buff[8192];
     assert(self->fp != stdin);
     errno = 0;
     rewind(self->fp);
     if(errno)
         return errno;
-   // read to line beginning with "position"
-    status = readuntil(strlen("position"), "position", sizeof(buff), buff,
-                       self->fp);
-    if(status) 
-        return status;
 
-    status = ScrmReader_next(self);
-    if(status) 
-        return status;
-    self->chr = self->nucpos = 0;
+    self->chr = self->nucpos = -1;
     return 0;
 }
 
@@ -220,7 +206,7 @@ int ScrmReader_next(ScrmReader *self) {
     status = readline(sizeof(buff), buff, self->fp);
     if(status)
         return status;
-    if(strlen(stripWhiteSpace(buff)) == 0) {
+    if(self->chr == -1 || strlen(stripWhiteSpace(buff)) == 0) {
         // new chromosome
         status = readuntil(strlen("position"), "position", sizeof(buff), buff,
                            self->fp);
@@ -289,6 +275,8 @@ int ScrmReader_nsamples(ScrmReader *self, int i) {
 // Return frequency of derived allele in sample from population i.
 double ScrmReader_daf(ScrmReader *self, int i) {
     assert(i < self->npops);
+    assert(self->chr >= 0);
+    assert(self->nucpos >= 0);
     return self->daf[i];
 }
 
@@ -318,7 +306,7 @@ int main(int argc, char **argv) {
         }
         verbose = 1;
     }
-    int i, npops=0; 
+    int i, npops=0, transpose; 
     char buff[1000];
     unsigned *nsamples;
     Tokenizer *tkz = Tokenizer_new(sizeof(buff)/2);
@@ -327,12 +315,17 @@ int main(int argc, char **argv) {
     strcpy(buff, cmd);
     Tokenizer_split(tkz, buff, " ");
     Tokenizer_strip(tkz, " \n");
-    nsamples = countSamples(tkz, &npops);
+    nsamples = countSamples(tkz, &npops, &transpose);
     if(verbose) {
         printf("countSamples returned: npops=%d; nsamples =", npops);
         for(i=0; i < npops; ++i)
             printf(" %u", nsamples[i]);
         putchar('\n');
+    }
+    if(!transpose) {
+        fprintf(stderr,"%s:%d: -transpose-segsites missing from scrm cmd\n",
+                __FILE__,__LINE__);
+        exit(1);
     }
 
     unitTstResult("countSamples", "OK");
@@ -354,14 +347,19 @@ int main(int argc, char **argv) {
 
     rewind(fp);
     ScrmReader *r = ScrmReader_new(fp);
-    assert(0 == ScrmReader_chr(r));
-    assert(0 == ScrmReader_nucpos(r));
+    assert(-1 == ScrmReader_chr(r));
+    assert(-1 == ScrmReader_nucpos(r));
     int np = ScrmReader_npops(r);
     assert(np == 4);
     assert(6 == ScrmReader_nsamples(r, 0));
     assert(6 == ScrmReader_nsamples(r, 1));
     assert(4 == ScrmReader_nsamples(r, 2));
     assert(2 == ScrmReader_nsamples(r, 3));
+
+    status = ScrmReader_next(r);
+    assert(status==0);
+    assert(0 == ScrmReader_chr(r));
+    assert(0 == ScrmReader_nucpos(r));
     // 0 0 0 0 0 0 | 0 0 0 0 0 0 | 0 0 0 0 | 1 1
     assert(0.0 == ScrmReader_daf(r, 0));
     assert(0.0 == ScrmReader_daf(r, 1));
@@ -417,6 +415,12 @@ int main(int argc, char **argv) {
     status = ScrmReader_rewind(r);
     if(status) {
         fprintf(stderr,"%s:%d: ScrmReader_rewind returned %d\n",
+                __FILE__,__LINE__,status);
+    }
+
+    status = ScrmReader_next(r);
+    if(status) {
+        fprintf(stderr,"%s:%d: ScrmReader_next returned %d\n",
                 __FILE__,__LINE__,status);
     }
 

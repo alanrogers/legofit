@@ -258,7 +258,7 @@ int main(int argc, char **argv) {
 
     // command line arguments
     for(;;) {
-        i = getopt_long(argc, argv, "ab:c:f:hi:r:t:Fv", myopts, &optndx);
+        i = getopt_long(argc, argv, "ab:c:hi:r:t:Fv", myopts, &optndx);
         if(i == -1)
             break;
         switch (i) {
@@ -432,14 +432,6 @@ int main(int argc, char **argv) {
         // nsnp[i] {i=0..nchr-1}
         done = 0;
         while(!done) {
-            prev = chr;
-            chr = ScrmReader_chr(r);
-            if(prev != chr) {
-                nsnp[nchr] = 1;
-                ++nchr;
-            } else
-                ++nsnp[nchr - 1];
-
             status = ScrmReader_next(r);
             switch(status) {
             case 0:
@@ -457,6 +449,14 @@ int main(int argc, char **argv) {
                         __FILE__,__LINE__, errbuff);
                 exit(EXIT_FAILURE);
             }
+
+            prev = chr;
+            chr = ScrmReader_chr(r);
+            if(prev != chr) {
+                nsnp[nchr] = 1;
+                ++nchr;
+            } else
+                ++nsnp[nchr - 1];
         }
 
         status = ScrmReader_rewind(r);
@@ -485,6 +485,27 @@ int main(int argc, char **argv) {
     int         chrndx = -1, currChr = INT_MAX;
     done=0;
     while(!done) {
+        status = ScrmReader_next(r);
+        switch(status) {
+        case 0:
+            ++nsites;
+            break;
+        case EOF:
+            done=1;
+            continue;
+        case ALLELE_MISMATCH:
+        case NO_ANCESTRAL_ALLELE:
+            ++nbadaa;
+            ++nsites;
+            continue;
+        default:
+            // something wrong
+            mystrerror_r(status, errbuff, sizeof errbuff);
+            fprintf(stderr,"%s:%d: input error (%s)\n",
+                    __FILE__,__LINE__, errbuff);
+            exit(EXIT_FAILURE);
+        }
+
         if(bootreps > 0) {
             // chrndx is index of current chromosome
             chrndx = ScrmReader_chr(r);
@@ -545,33 +566,13 @@ int main(int argc, char **argv) {
         if(bootreps > 0)
             Boot_sanityCheck(boot, __FILE__, __LINE__);
 #endif
-        status = ScrmReader_next(r);
-        switch(status) {
-        case 0:
-            ++nsites;
-            break;
-        case EOF:
-            done=1;
-            continue;
-        case ALLELE_MISMATCH:
-        case NO_ANCESTRAL_ALLELE:
-            ++nbadaa;
-            ++nsites;
-            continue;
-        default:
-            // something wrong
-            mystrerror_r(status, errbuff, sizeof errbuff);
-            fprintf(stderr,"%s:%d: input error (%s)\n",
-                    __FILE__,__LINE__, errbuff);
-            exit(EXIT_FAILURE);
-        }
     }
     printf("# Nucleotide sites: %lu\n", nsites);
     if(nbadaa)
-        printf("# Disagreements about alleles         : %lu\n", nbadaa);
+        printf("# Disagreements about alleles: %lu\n", nbadaa);
     if(nfixed)
-        printf("# Monomorphic sites                   : %lu\n", nfixed);
-    printf("# Sites used                          : %lu\n",
+        printf("# Monomorphic sites: %lu\n", nfixed);
+    printf("# Sites used: %lu\n",
            nsites - nbadaa - nfixed);
 
     // boottab[i][j] is the count of the j'th site pattern
