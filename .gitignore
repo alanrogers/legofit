@@ -29,11 +29,13 @@ xjobqueue
 xdafreader
 xrafreader
 xmisc
+xscrmreader
 xstrint
 legosim
 numcores
 legofit
 tabpat
+scrmpat
 sitepat
 tabpat.log
 daf

@@ -13,6 +13,7 @@
 #include <string.h>
 #include <assert.h>
 #include <errno.h>
+#include <unistd.h>
 
 #ifdef NDEBUG
 #  error "Unit tests must be compiled without -DNDEBUG flag"
@@ -161,8 +162,9 @@ int main(int argc, char **argv) {
     fputs("123456789", fp);
     fclose(fp);
 
+    const char *tmpfile = "xmisc.tmp";
     int status;
-    fp=fopen("xmisc.tmp", "r");
+    fp=fopen(tmpfile, "r");
     status = readline(5, buff, fp);
     assert(status == BUFFER_OVERFLOW);
     rewind(fp);
@@ -179,5 +181,6 @@ int main(int argc, char **argv) {
     
     unitTstResult("readline", "OK");
 
+    unlink(tmpfile);
     return 0;
 }
