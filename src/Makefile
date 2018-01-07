@@ -69,6 +69,11 @@ SITEPAT := sitepat.o misc.o binary.o lblndx.o parkeyval.o rafreader.o \
 sitepat : $(SITEPAT)
 	$(CC) $(CFLAGS) -o $@ $(SITEPAT) $(lib)
 
+SCRMPAT := scrmpat.o misc.o binary.o lblndx.o parkeyval.o scrmreader.o \
+  tokenizer.o boot.o error.o
+scrmpat : $(SCRMPAT)
+	$(CC) $(CFLAGS) -o $@ $(SCRMPAT) $(lib)
+
 DAF := daf.o misc.o
 daf : $(DAF)
 	$(CC) $(CFLAGS) -o $@ $(DAF) $(lib)

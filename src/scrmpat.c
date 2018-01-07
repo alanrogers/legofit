@@ -121,7 +121,7 @@ Systems Consortium License, which can be found in file "LICENSE".
 #include "binary.h"
 #include "boot.h"
 #include "misc.h"
-#include "strint.h"
+#include "scrmreader.h"
 #include "typedefs.h"
 #include "version.h"
 #include "error.h"
@@ -236,7 +236,6 @@ int main(int argc, char **argv) {
     long        bootreps = 0;
     double      conf = 0.95;    // confidence level
     long        blocksize = 500;
-    StrInt     *strint = StrInt_new();
     char        bootfname[FILENAMESIZE] = { '\0' };
     char        errbuff[100] = { '\0' };
     const char *logfname = "scrmpat.log";
@@ -332,7 +331,7 @@ int main(int argc, char **argv) {
     // Parse remaining arguments, each of which should be an arbitrary
     // label.
     for(i = 0; i < n; ++i) {
-        fname[i] = poplbl[i] = argv[i + optind];
+        poplbl[i] = argv[i + optind];
         if(poplbl[i] == NULL
            || strlen(poplbl[i]) == 0
            || strchr(poplbl[i], ':') != NULL)
@@ -348,7 +347,7 @@ int main(int argc, char **argv) {
         }
     }
     if(ifp==stdin && (bootreps>0 || bootfname[0] != '\0')) {
-        fprintf(stderr, "%s:%s: Can't do bootstrap when input is stdin.\n",
+        fprintf(stderr, "%s:%d: Can't do bootstrap when input is stdin.\n",
                 __FILE__,__LINE__);
         exit(EXIT_FAILURE);
     }
@@ -365,9 +364,10 @@ int main(int argc, char **argv) {
     }
 
     printf("# scrmpat version %s\n", VERSION);
-    printf("# Population labels:\n");
+    printf("# Population labels:");
     for(i = 0; i < n; ++i)
-        printf("# %4s=%s\n", poplbl[i], fname[i]);
+        printf(" %s", poplbl[i]);
+    putchar('\n');
 
     // make sure labels are all different
     for(i = 1; i < n; ++i)
@@ -410,9 +410,16 @@ int main(int argc, char **argv) {
     // Used by bootstrap
     Boot       *boot = NULL;
     int         nchr = 0;
-    char        prev[DAFSTRSIZE], chr[DAFSTRSIZE] = { '\0' };
+    unsigned    prev, chr=0;
     long        nsnp[MAXCHR];
     memset(nsnp, 0, sizeof nsnp);
+
+    ScrmReader *r=ScrmReader_new(ifp);
+    if(r == NULL) {
+        fprintf(stderr,"%s:%d: Can't read scrm output\n",
+                __FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
 
     // Read the data to get dimensions: number of chromosomes and
     // number of snps per chromosome. Then use these dimensions to
@@ -425,7 +432,15 @@ int main(int argc, char **argv) {
         // nsnp[i] {i=0..nchr-1}
         done = 0;
         while(!done) {
-            status = DAFReader_multiNext(n, r);
+            prev = chr;
+            chr = ScrmReader_chr(r);
+            if(prev != chr) {
+                nsnp[nchr] = 1;
+                ++nchr;
+            } else
+                ++nsnp[nchr - 1];
+
+            status = ScrmReader_next(r);
             switch(status) {
             case 0:
                 break;
@@ -442,28 +457,15 @@ int main(int argc, char **argv) {
                         __FILE__,__LINE__, errbuff);
                 exit(EXIT_FAILURE);
             }
-
-            assert(strlen(DAFReader_chr(r[0])) < sizeof prev);
-            strcpy(prev, chr);
-            strcpy(chr, DAFReader_chr(r[0]));
-            int         diff = strcmp(prev, chr);
-            if(diff != 0) {
-                StrInt_insert(strint, chr, nchr);
-                nsnp[nchr] = 1;
-                ++nchr;
-            } else
-                ++nsnp[nchr - 1];
         }
 
-        for(i = 0; i < n; ++i) {
-            status = DAFReader_rewind(r[i]);
-            if(status) {
-                fprintf(stderr, "%s:%d: ERR: can't rewind input stream.\n",
-                        __FILE__, __LINE__);
-                fprintf(stderr, "  If --bootreps > 0, inputs must be"
-                        " files, not pipes.\n");
-                exit(EXIT_FAILURE);
-            }
+        status = ScrmReader_rewind(r);
+        if(status) {
+            fprintf(stderr, "%s:%d: ERR: can't rewind input stream.\n",
+                    __FILE__, __LINE__);
+            fprintf(stderr, "  If --bootreps > 0, inputs must be"
+                    " files, not pipes.\n");
+            exit(EXIT_FAILURE);
         }
 
         // Allocate Boot structure
@@ -477,44 +479,15 @@ int main(int argc, char **argv) {
     unsigned long nsites = 0, nbadaa = 0, nfixed = 0;
     long        snpndx = -1;
 
-    // Iterate through daf files
+    // Read data
     fprintf(stderr, "Doing %s pass through data to tabulate patterns..\n",
             bootreps > 0 ? "2nd" : "single");
     int         chrndx = -1, currChr = INT_MAX;
-    DAFReader_clearChromosomes(n, r);
     done=0;
     while(!done) {
-        status = DAFReader_multiNext(n, r);
-        switch(status) {
-        case 0:
-            ++nsites;
-            break;
-        case EOF:
-            done=1;
-            continue;
-        case ALLELE_MISMATCH:
-        case NO_ANCESTRAL_ALLELE:
-            ++nbadaa;
-            ++nsites;
-            continue;
-        default:
-            // something wrong
-            mystrerror_r(status, errbuff, sizeof errbuff);
-            fprintf(stderr,"%s:%d: input error (%s)\n",
-                    __FILE__,__LINE__, errbuff);
-            exit(EXIT_FAILURE);
-        }
-
         if(bootreps > 0) {
             // chrndx is index of current chromosome
-            errno = 0;
-            chrndx = StrInt_get(strint, DAFReader_chr(r[0]));
-            if(errno) {
-                fprintf(stderr,
-                        "%s:%d: ERR: missing index for chromosome: %s\n",
-                        __FILE__, __LINE__, DAFReader_chr(r[0]));
-                exit(EXIT_FAILURE);
-            }
+            chrndx = ScrmReader_chr(r);
             if(chrndx != currChr) {
                 currChr = chrndx;
                 snpndx = 0;
@@ -528,13 +501,13 @@ int main(int argc, char **argv) {
         // p and q are frequencies of derived and ancestral alleles
         double p[n], q[n];
         for(j = 0; j < n; ++j) {
-            p[j] = DAFReader_daf(r[j]); // derived allele freq
+            p[j] = ScrmReader_daf(r,j); // derived allele freq
             q[j] = 1.0 - p[j];
         }
 
         if(logAll) {
-            fprintf(logfile, "%5s %10lu\n", DAFReader_chr(r[0]),
-                    DAFReader_nucpos(r[0]));
+            fprintf(logfile, "%5u %10lu\n", ScrmReader_chr(r),
+                    ScrmReader_nucpos(r));
         }
         // Contribution of current snp to each site pattern.  Inner
         // loop considers each bit in current pattern.  If that bit is
@@ -566,14 +539,34 @@ int main(int argc, char **argv) {
                 assert(chrndx >= 0);
                 Boot_add(boot, chrndx, snpndx, i, z);
             }
+
         }
 #ifndef NDEBUG
         if(bootreps > 0)
             Boot_sanityCheck(boot, __FILE__, __LINE__);
 #endif
-        errno = 0;
+        status = ScrmReader_next(r);
+        switch(status) {
+        case 0:
+            ++nsites;
+            break;
+        case EOF:
+            done=1;
+            continue;
+        case ALLELE_MISMATCH:
+        case NO_ANCESTRAL_ALLELE:
+            ++nbadaa;
+            ++nsites;
+            continue;
+        default:
+            // something wrong
+            mystrerror_r(status, errbuff, sizeof errbuff);
+            fprintf(stderr,"%s:%d: input error (%s)\n",
+                    __FILE__,__LINE__, errbuff);
+            exit(EXIT_FAILURE);
+        }
     }
-    printf("# Sites aligned across all populations: %lu\n", nsites);
+    printf("# Nucleotide sites: %lu\n", nsites);
     if(nbadaa)
         printf("# Disagreements about alleles         : %lu\n", nbadaa);
     if(nfixed)
@@ -634,11 +627,9 @@ int main(int argc, char **argv) {
         putchar('\n');
     }
 
-    for(i = 0; i < n; ++i)
-        DAFReader_free(r[i]);
+    ScrmReader_free(r);
     if(bootreps > 0)
         Boot_free(boot);
-    StrInt_free(strint);
     if(logfile)
         fclose(logfile);
     fprintf(stderr, "scrmpat is finished\n");
