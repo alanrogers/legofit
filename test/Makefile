@@ -5,7 +5,7 @@ prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
 tests := xbinary xboot xbranchtab xdafreader xrafreader xdiffev xgene \
   xgptree xpopnodetab xjobqueue xlblndx xllrbtree xparkeyval xparse \
-  xparstore xpopnode xsimsched xstrint xdtnorm xmisc xerror
+  xparstore xpopnode xscrmreader xsimsched xstrint xdtnorm xmisc xerror
 
 CC := gcc
 
@@ -54,6 +54,7 @@ test : $(tests)
 	-./xparstore
 	-./xpopnode
 	-./xpopnodetab
+	-./xscrmreader
 	-./xsimsched
 	-./xstrint
 	@echo "ALL UNIT TESTS WERE COMPLETED."
@@ -98,6 +99,13 @@ XRAFREADER := xrafreader.o rafreader.o misc.o lblndx.o tokenizer.o binary.o \
    parkeyval.o strint.o error.o
 xrafreader : $(XRAFREADER)
 	$(CC) $(CFLAGS) -o $@ $(XRAFREADER) $(lib)
+
+xscrmreader.o : scrmreader.c
+	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/scrmreader.c
+
+XSCRMREADER := xscrmreader.o misc.o tokenizer.o 
+xscrmreader : $(XSCRMREADER)
+	$(CC) $(CFLAGS) -o $@ $(XSCRMREADER) $(lib)
 
 xparse.o : parse.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/parse.c
