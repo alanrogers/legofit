@@ -3,7 +3,6 @@
 core
 depend
 raf
-version.h
 xboot
 xdtnorm
 xexopar
