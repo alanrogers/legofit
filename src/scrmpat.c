@@ -401,7 +401,7 @@ int main(int argc, char **argv) {
     }
 
     // Sort site patterns. Major sort is by number of "on" bits,
-    // so that doubleton patterns come first, then tripletons, ets.
+    // so that singleton patterns come first, then doubletons, etc.
     // Secondary sort is by order in which labels are listed
     // on the command line.
     qsort(pat, (size_t) npat, sizeof(pat[0]), compare_tipId);
