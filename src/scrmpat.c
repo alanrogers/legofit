@@ -45,7 +45,7 @@ bootstrap, writing each bootstrap replicate into a separate file.
 should include the option `-transpost-segsites`. Let us assume you
 have done this, that file `foo.scrm` contains the output simulated
 by `scrm`, and that these simulated data included genotypes referring
-to four populations, labelled "x", "y", "n", and "d". The `scrmpat`
+to four populations, labeled "x", "y", "n", and "d". The `scrmpat`
 command woule look like this:
 ~/daf contains a separate daf file for each population. We want to
 compare 4 populations, whose .daf files are `yri.daf`, `ceu.daf`,
@@ -313,7 +313,7 @@ int main(int argc, char **argv) {
     }
 
     // remaining options: population labels
-    int         n = argc - optind;  // number of input files
+    int         n = argc - optind;  // number of population labels
     if(n == 0)
         usage();
 
@@ -418,6 +418,13 @@ int main(int argc, char **argv) {
     if(r == NULL) {
         fprintf(stderr,"%s:%d: Can't read scrm output\n",
                 __FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
+    if(n != ScrmReader_sampleDim(r)) {
+        fprintf(stderr,"%s:%d:"
+                " Number (%d) of labels != dimension (%d) of sample array\n"
+                "in scrm output.\n",
+                __FILE__,__LINE__,n,ScrmReader_sampleDim(r));
         exit(EXIT_FAILURE);
     }
 

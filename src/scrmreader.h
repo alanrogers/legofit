@@ -23,8 +23,8 @@ unsigned ScrmReader_chr(ScrmReader *self);
 // Return current nucleotide position.
 unsigned long ScrmReader_nucpos(ScrmReader *self);
 
-// Return number of populations.
-int ScrmReader_npops(ScrmReader *self);
+// Return the dimension of the array of samples
+int ScrmReader_sampleDim(ScrmReader *self);
 
 // Return number of samples from population i.
 int ScrmReader_nsamples(ScrmReader *self, int i);

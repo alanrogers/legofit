@@ -12,8 +12,15 @@
 #include <string.h>
 #include <errno.h>
 
+typedef struct FIFOstack FIFOstack;
+
+struct FIFOstack {
+    struct FIFOstack *next;
+    unsigned value;
+};
+
 struct ScrmReader {
-    int npops;
+    int sampleDim;
     unsigned *nsamples;
     double *daf;
 
@@ -28,8 +35,54 @@ struct ScrmReader {
     FILE *fp;
 };
 
-unsigned *countSamples(Tokenizer *tkz, int *npops, int *transpose);
+unsigned *countSamples(Tokenizer *tkz, int *sampleDim, int *transpose);
 int readuntil(int n, const char *str, int dim, char buff[dim], FILE *fp);
+FIFOstack *FIFOstack_push(FIFOstack *prev, unsigned val);
+FIFOstack *FIFOstack_pop(FIFOstack *self, unsigned *value);
+int FIFOstack_length(FIFOstack *self);
+
+// Push a value onto the tail of the stack. Return pointer to new
+// head. Example:
+// 
+// FIFOstack *stack=NULL;
+// stack = FIFOstack_push(stack, 1u);
+// stack = FIFOstack_push(stack, 2u);
+FIFOstack *FIFOstack_push(FIFOstack *self, unsigned value) {
+    if(self != NULL) {
+        self->next = FIFOstack_push(self->next, value);
+        return self;
+    }
+    FIFOstack *new = malloc(sizeof(FIFOstack));
+    CHECKMEM(new);
+    new->value = value;
+    new->next = NULL;
+    return new;
+}
+
+// Pop a value off the head of the stack. Return pointer to new
+// head. Example:
+// 
+// FIFOstack *stack=NULL;
+// stack = FIFOstack_push(stack, 1u);
+// stack = FIFOstack_push(stack, 2u);
+//
+// unsigned x;
+// stack = FIFOstack_pop(stack, &x);  // x=1
+// stack = FIFOstack_pop(stack, &x);  // x=2
+FIFOstack *FIFOstack_pop(FIFOstack *self, unsigned *value) {
+    if(self==NULL)
+        return NULL;
+    *value = self->value;
+    FIFOstack *next = self->next;
+    free(self);
+    return next;
+}
+
+int FIFOstack_length(FIFOstack *self) {
+    if(self==NULL)
+        return 0;
+    return 1 + FIFOstack_length(self->next);
+}
 
 // destructor
 void ScrmReader_free(ScrmReader *self) {
@@ -44,11 +97,11 @@ void ScrmReader_free(ScrmReader *self) {
 // scrm command line, and nsamples should point to an int.
 //
 // The function returns a newly-allocated array of ints, whose dimension
-// is *npops, the number of populations specified on the scrm command line.
+// is *sampleDim, the number of populations specified on the scrm command line.
 // The i'th entry in this array is the haploid sample size of population i.
 //
 // On error, the function returns NULL.
-unsigned *countSamples(Tokenizer *tkz, int *npops, int *transpose) {
+unsigned *countSamples(Tokenizer *tkz, int *sampleDim, int *transpose) {
 
     *transpose = 0;
 
@@ -61,52 +114,71 @@ unsigned *countSamples(Tokenizer *tkz, int *npops, int *transpose) {
     int i, j;
     long unsigned h;
     char *token, *end;
-    unsigned *nsamples = NULL;
+    FIFOstack **fifo=NULL;  // array of FIFOstack objects, one per population
     int ntokens = Tokenizer_ntokens(tkz);
-
-    *npops=0;
+    int npops=0;
 
     // Read through tokens, looking for -I and -eI. Use these arguments
-    // to set npops and nsamples.
+    // to set npops and array of fifo stacks.
     for(i=1; i < ntokens; ++i) {
         token = Tokenizer_token(tkz, i);
         if(strcmp("-I", token) == 0 || strcmp("-eI", token) == 0) {
-            if(*npops == 0) {
+            if(npops == 0) {
                 // count populations and allocate nsamples
-                assert(nsamples == NULL);
+                assert(fifo == NULL);
                 for(j=i+2; j<ntokens; ++j) {
                     token = Tokenizer_token(tkz, j);
                     h = strtoul(token, &end, 10);
                     if(end==token) // token isn't an integer
                         break;
                     else           // token is an integer
-                        ++*npops;
+                        ++npops;
                 }
-                if(*npops == 0) {
+                if(npops == 0) {
                     fprintf(stderr,"%s:%d: npops is zero\n",
                             __FILE__,__LINE__);
                     return NULL;
                 }
-                nsamples = malloc(*npops * sizeof(nsamples[0]));
-                CHECKMEM(nsamples);
-                memset(nsamples, 0, *npops * sizeof(nsamples[0]));
+                fifo = malloc(npops * sizeof(fifo[0]));
+                CHECKMEM(fifo);
+                memset(fifo, 0, npops * sizeof(fifo[0]));
             }
-            // increment nsamples
-            assert(*npops > 0);
-            assert(nsamples != NULL);
-            for(j=0; j < *npops; ++j) {
+            // increment fifo stacks
+            assert(npops > 0);
+            assert(fifo != NULL);
+            for(j=0; j < npops; ++j) {
                 token = Tokenizer_token(tkz, i+2+j);
                 h = strtoul(token, &end, 10);
                 assert(end != token);
-                nsamples[j] += h;
+                if(h>0)
+                    fifo[j] = FIFOstack_push(fifo[j], h);
             }
             // advance to last argument of -I or -eI
-            i += 1 + *npops;
+            i += 1 + npops;
         }else if(0 == strcmp(token, "-transpose-segsites"))
             *transpose = 1;
     }
-    // Remove populations with zero samples
-    *npops = removeZeroes(*npops, nsamples);
+
+    *sampleDim=0;
+    for(j=0; j < npops; ++j)
+        *sampleDim += FIFOstack_length(fifo[j]);
+    assert(*sampleDim > 0);
+    unsigned *nsamples = malloc(*sampleDim * sizeof(nsamples[0]));
+    CHECKMEM(nsamples);
+    for(i=j=0; i < npops; ++i) {
+        unsigned n;
+        while(fifo[i]) {
+            fifo[i] = FIFOstack_pop(fifo[i], &n);
+            nsamples[j++] = n;
+        }
+    }
+    assert(j == *sampleDim);
+#ifndef NDEBUG
+    for(i=0; i < npops; ++i)
+        assert(fifo[i] == NULL);
+#endif
+    free(fifo);
+
     return nsamples;
 }
 
@@ -143,7 +215,7 @@ ScrmReader *ScrmReader_new(FILE *fp) {
     Tokenizer_strip(self->tkz, " \n");
 
     int transpose;
-    self->nsamples = countSamples(self->tkz, &self->npops, &transpose);
+    self->nsamples = countSamples(self->tkz, &self->sampleDim, &transpose);
     if(!transpose) {
         fprintf(stderr,"%s:%d: -transpose-segsites missing from scrm cmd\n",
                 __FILE__,__LINE__);
@@ -154,7 +226,7 @@ ScrmReader *ScrmReader_new(FILE *fp) {
     }
 
     unsigned tot = 0;
-    for(i=0; i < self->npops; ++i) {
+    for(i=0; i < self->sampleDim; ++i) {
         tot += self->nsamples[i];
     }
     unsigned tot2 = strtoul(Tokenizer_token(self->tkz, 1), NULL, 10);
@@ -167,7 +239,7 @@ ScrmReader *ScrmReader_new(FILE *fp) {
     }
 
     // allocate daf array
-    self->daf = malloc(self->npops * sizeof(self->daf[0]));
+    self->daf = malloc(self->sampleDim * sizeof(self->daf[0]));
     CHECKMEM(self->daf);
 
     self->chr = self->nucpos = -1;
@@ -228,7 +300,7 @@ int ScrmReader_next(ScrmReader *self) {
     int pop, i;
     int start=2;   // skip 1st two columns
     char *token, *end;
-    for(pop=0; pop < self->npops; ++pop) {
+    for(pop=0; pop < self->sampleDim; ++pop) {
         nderived = 0.0;
         for(i=start; i < start + self->nsamples[pop]; ++i) {
             if(i >= Tokenizer_ntokens(self->tkz)) {
@@ -262,19 +334,19 @@ unsigned long ScrmReader_nucpos(ScrmReader *self) {
 }
 
 // Return number of populations.
-int ScrmReader_npops(ScrmReader *self) {
-    return self->npops;
+int ScrmReader_sampleDim(ScrmReader *self) {
+    return self->sampleDim;
 }
 
 // Return number of samples from population i.
 int ScrmReader_nsamples(ScrmReader *self, int i) {
-    assert(i < self->npops);
+    assert(i < self->sampleDim);
     return self->nsamples[i];
 }
 
 // Return frequency of derived allele in sample from population i.
 double ScrmReader_daf(ScrmReader *self, int i) {
-    assert(i < self->npops);
+    assert(i < self->sampleDim);
     assert(self->chr >= 0);
     assert(self->nucpos >= 0);
     return self->daf[i];
@@ -286,6 +358,7 @@ double ScrmReader_daf(ScrmReader *self, int i) {
 #    error "Unit tests must be compiled without -DNDEBUG flag"
 #  endif
 
+// nsamples = [6, 6, 2, 2, 2]
 const char *cmd = "scrm 18 2 -l 100r -t 1.35351 -r 0.966782 1000"
     " -transpose-segsites -SC abs -I 5 6 6 0 0 0 -eI 0.0192475 0 0 2 0 0"
     " -eI 0.00561032 0 0 2 0 0 -eI 0.0117678 0 0 0 2 0 -n 1 2.0687"
@@ -306,30 +379,53 @@ int main(int argc, char **argv) {
         }
         verbose = 1;
     }
-    int i, npops=0, transpose; 
+
+    // test FIFOstack
+    FIFOstack *stack = NULL;
+    stack = FIFOstack_push(stack, 1u);
+    stack = FIFOstack_push(stack, 2u);
+    assert(2 == FIFOstack_length(stack));
+    unsigned x=0;
+    stack = FIFOstack_pop(stack, &x);
+    assert(1u == x);
+    assert(1 == FIFOstack_length(stack));
+    stack = FIFOstack_pop(stack, &x);
+    assert(2u == x);
+    assert(0 == FIFOstack_length(stack));
+    unitTstResult("FIFOstack", "OK");
+
+    int i, sampleDim=0, transpose; 
     char buff[1000];
     unsigned *nsamples;
     Tokenizer *tkz = Tokenizer_new(sizeof(buff)/2);
     CHECKMEM(tkz);
 
+    // test countSamples
     strcpy(buff, cmd);
     Tokenizer_split(tkz, buff, " ");
     Tokenizer_strip(tkz, " \n");
-    nsamples = countSamples(tkz, &npops, &transpose);
+    nsamples = countSamples(tkz, &sampleDim, &transpose);
     if(verbose) {
-        printf("countSamples returned: npops=%d; nsamples =", npops);
-        for(i=0; i < npops; ++i)
+        printf("countSamples returned: sampleDim=%d; nsamples =", sampleDim);
+        for(i=0; i < sampleDim; ++i)
             printf(" %u", nsamples[i]);
         putchar('\n');
     }
+    printf("sampleDim=%d\n", sampleDim);
+    assert(sampleDim == 5);
+    assert(nsamples[0] == 6);
+    assert(nsamples[1] == 6);
+    assert(nsamples[2] == 2);
+    assert(nsamples[3] == 2);
+    assert(nsamples[4] == 2);
     if(!transpose) {
         fprintf(stderr,"%s:%d: -transpose-segsites missing from scrm cmd\n",
                 __FILE__,__LINE__);
         exit(1);
     }
-
     unitTstResult("countSamples", "OK");
 
+    // test readuntil
     FILE *fp = fopen("output.scrm", "r");
     int status;
     assert(fp);
@@ -345,26 +441,29 @@ int main(int argc, char **argv) {
     }
     unitTstResult("readuntil", "OK");
 
+    // test scrmreader
     rewind(fp);
     ScrmReader *r = ScrmReader_new(fp);
     assert(-1 == ScrmReader_chr(r));
     assert(-1 == ScrmReader_nucpos(r));
-    int np = ScrmReader_npops(r);
-    assert(np == 4);
+    int np = ScrmReader_sampleDim(r);
+    assert(np == 5);
     assert(6 == ScrmReader_nsamples(r, 0));
     assert(6 == ScrmReader_nsamples(r, 1));
-    assert(4 == ScrmReader_nsamples(r, 2));
+    assert(2 == ScrmReader_nsamples(r, 2));
     assert(2 == ScrmReader_nsamples(r, 3));
+    assert(2 == ScrmReader_nsamples(r, 4));
 
     status = ScrmReader_next(r);
     assert(status==0);
     assert(0 == ScrmReader_chr(r));
     assert(0 == ScrmReader_nucpos(r));
-    // 0 0 0 0 0 0 | 0 0 0 0 0 0 | 0 0 0 0 | 1 1
+    // 0 0 0 0 0 0 | 0 0 0 0 0 0 | 0 0 | 0 0 | 1 1
     assert(0.0 == ScrmReader_daf(r, 0));
     assert(0.0 == ScrmReader_daf(r, 1));
     assert(0.0 == ScrmReader_daf(r, 2));
-    assert(1.0 == ScrmReader_daf(r, 3));
+    assert(0.0 == ScrmReader_daf(r, 3));
+    assert(1.0 == ScrmReader_daf(r, 4));
     if(verbose) {
         for(i=0; i<np; ++i)
             printf("daf[%d]=%g\n", i, ScrmReader_daf(r, i));
@@ -378,11 +477,12 @@ int main(int argc, char **argv) {
     }
     assert(0 == ScrmReader_chr(r));
     assert(1 == ScrmReader_nucpos(r));
-    // 1 1 1 1 1 1 | 1 1 1 1 0 1 | 1 1 1 1 | 1 1
+    // 1 1 1 1 1 1 | 1 1 1 1 0 1 | 1 1 | 1 1 | 1 1
     assert(1.0 == ScrmReader_daf(r, 0));
     assert(5.0/6.0 == ScrmReader_daf(r, 1));
     assert(1.0 == ScrmReader_daf(r, 2));
     assert(1.0 == ScrmReader_daf(r, 3));
+    assert(1.0 == ScrmReader_daf(r, 4));
 
     status = ScrmReader_next(r);
     if(status) {
@@ -392,11 +492,12 @@ int main(int argc, char **argv) {
     }
     assert(1 == ScrmReader_chr(r));
     assert(0 == ScrmReader_nucpos(r));
-    // 1 0 0 1 1 0 | 1 1 1 1 1 0 | 0 0 0 0 | 0 0
+    // 1 0 0 1 1 0 | 1 1 1 1 1 0 | 0 0 | 0 0 | 0 0
     assert(3.0/6.0 == ScrmReader_daf(r, 0));
     assert(5.0/6.0 == ScrmReader_daf(r, 1));
     assert(0.0 == ScrmReader_daf(r, 2));
     assert(0.0 == ScrmReader_daf(r, 3));
+    assert(0.0 == ScrmReader_daf(r, 4));
         
     status = ScrmReader_next(r);
     if(status) {
@@ -406,11 +507,12 @@ int main(int argc, char **argv) {
     }
     assert(1 == ScrmReader_chr(r));
     assert(1 == ScrmReader_nucpos(r));
-    // 0 0 0 0 0 1 | 0 0 0 0 0 0 | 0 0 0 0 | 0 0
+    // 0 0 0 0 0 1 | 0 0 0 0 0 0 | 0 0 | 0 0 | 0 0
     assert(1.0/6.0 == ScrmReader_daf(r, 0));
     assert(0.0 == ScrmReader_daf(r, 1));
     assert(0.0 == ScrmReader_daf(r, 2));
     assert(0.0 == ScrmReader_daf(r, 3));
+    assert(0.0 == ScrmReader_daf(r, 4));
 
     status = ScrmReader_rewind(r);
     if(status) {
@@ -426,17 +528,19 @@ int main(int argc, char **argv) {
 
     assert(0 == ScrmReader_chr(r));
     assert(0 == ScrmReader_nucpos(r));
-    np = ScrmReader_npops(r);
-    assert(np == 4);
+    np = ScrmReader_sampleDim(r);
+    assert(np == 5);
     assert(6 == ScrmReader_nsamples(r, 0));
     assert(6 == ScrmReader_nsamples(r, 1));
-    assert(4 == ScrmReader_nsamples(r, 2));
+    assert(2 == ScrmReader_nsamples(r, 2));
     assert(2 == ScrmReader_nsamples(r, 3));
-    // 0 0 0 0 0 0 | 0 0 0 0 0 0 | 0 0 0 0 | 1 1
+    assert(2 == ScrmReader_nsamples(r, 4));
+    // 0 0 0 0 0 0 | 0 0 0 0 0 0 | 0 0 | 0 0 | 1 1
     assert(0.0 == ScrmReader_daf(r, 0));
     assert(0.0 == ScrmReader_daf(r, 1));
     assert(0.0 == ScrmReader_daf(r, 2));
-    assert(1.0 == ScrmReader_daf(r, 3));
+    assert(0.0 == ScrmReader_daf(r, 3));
+    assert(1.0 == ScrmReader_daf(r, 4));
     if(verbose) {
         for(i=0; i<np; ++i)
             printf("daf[%d]=%g\n", i, ScrmReader_daf(r, i));
