@@ -40,6 +40,7 @@ unsigned *countSamples(Tokenizer *tkz, int *sampleDim, int *transpose);
 int readuntil(int n, const char *str, int dim, char buff[dim], FILE *fp);
 FIFOstack *FIFOstack_push(FIFOstack *prev, unsigned val);
 FIFOstack *FIFOstack_pop(FIFOstack *self, unsigned *value);
+FIFOstack *FIFOstack_free(FIFOstack *self);
 int FIFOstack_length(FIFOstack *self);
 
 // Push a value onto the tail of the stack. Return pointer to new
@@ -85,6 +86,15 @@ int FIFOstack_length(FIFOstack *self) {
     return 1 + FIFOstack_length(self->next);
 }
 
+FIFOstack *FIFOstack_free(FIFOstack *self) {
+    if(self) {
+        self->next = FIFOstack_free(self->next);
+        free(self);
+    }
+    return NULL;
+}
+
+
 // destructor
 void ScrmReader_free(ScrmReader *self) {
     assert(self);
@@ -112,7 +122,7 @@ unsigned *countSamples(Tokenizer *tkz, int *sampleDim, int *transpose) {
         return NULL;
     }
 
-    int i, j;
+    int i, j, k;
     long h;
     char *token, *end;
     FIFOstack **fifo=NULL;  // array of FIFOstack objects, one per population
@@ -150,7 +160,15 @@ unsigned *countSamples(Tokenizer *tkz, int *sampleDim, int *transpose) {
             for(j=0; j < npops; ++j) {
                 token = Tokenizer_token(tkz, i+2+j);
                 h = strtol(token, &end, 10);
-                assert(end != token && h>=0);
+                if(end == token || h < 0) {
+                    fprintf(stderr,"%s:%d: read \"%s\" when"
+                            " expecting a sample size\n",
+                            __FILE__, __LINE__, token);
+                    for(k=0; k<npops; ++k)
+                        fifo[k] = FIFOstack_free(fifo[k]);
+                    free(fifo);
+                    return NULL;
+                }
                 if(h>0)
                     fifo[j] = FIFOstack_push(fifo[j], (unsigned) h);
             }
@@ -393,6 +411,12 @@ int main(int argc, char **argv) {
     stack = FIFOstack_pop(stack, &x);
     assert(2u == x);
     assert(0 == FIFOstack_length(stack));
+
+    stack = NULL;
+    stack = FIFOstack_push(stack, 1u);
+    stack = FIFOstack_push(stack, 2u);
+    stack = FIFOstack_free(stack);
+    assert(stack == NULL);
     unitTstResult("FIFOstack", "OK");
 
     int i, sampleDim=0, transpose; 
