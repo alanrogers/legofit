@@ -21,7 +21,7 @@
 #include <stdio.h>
 
 /// Dimension of hash table. Must be a power of 2
-#define BT_DIM 16u
+#define BT_DIM 256u
 
 /// Make sure BT_DIM is a power of 2
 #if (BT_DIM==0u || (BT_DIM & (BT_DIM-1u)))
@@ -72,7 +72,7 @@ uint32_t tipIdHash( uint32_t key) {
    key = (key+0xd3a2646c) ^ (key<<9);
    key = (key+0xfd7046c5) + (key<<3);
    key = (key^0xb55a4f09) ^ (key>>16);
-   return key & (BT_DIM-1);
+   return key;
 }
 #elif TIPID_SIZE==64
 /// Hash function for a 64-bit integer.
@@ -83,7 +83,7 @@ uint32_t tipIdHash(uint64_t key) {
   key = key ^ (key >> 11);
   key = key + (key << 6);
   key = key ^ (key >> 22);
-  return (uint32_t) (key  & (BT_DIM-1));
+  return (uint32_t) key;
 }
 #else
 #error "Can't compile tipIdHash function. See branchtab.c"
@@ -256,7 +256,7 @@ int BranchTab_hasSingletons(BranchTab * self) {
 
 /// Return value corresponding to key, or nan if no value is found.
 double BranchTab_get(BranchTab * self, tipId_t key) {
-    unsigned h = tipIdHash(key);
+    unsigned h = tipIdHash(key) & (BT_DIM-1u);
     assert(h < BT_DIM);
     assert(self);
     return BTLink_get(self->tab[h], key);
@@ -266,7 +266,7 @@ double BranchTab_get(BranchTab * self, tipId_t key) {
 /// old one.
 void BranchTab_add(BranchTab * self, tipId_t key, double value) {
     assert(!self->frozen);
-    unsigned h = tipIdHash(key);
+    unsigned h = tipIdHash(key) & (BT_DIM-1u);
     assert(h < BT_DIM);
     assert(self);
     self->tab[h] = BTLink_add(self->tab[h], key, value);

@@ -196,7 +196,7 @@ static void Stack_free(Stack * stk) {
     free(stk);
 }
 
-/// Add an entry to the stack, checking bounds.
+/// Add an entry to the tail of the stack, checking bounds.
 static void Stack_push(Stack * self, tipId_t x) {
     if(self->nused == self->dim) {
         fprintf(stderr, "%s:%s:%d ERR: buffer overflow\n",
