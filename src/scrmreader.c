@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <stdlib.h>
 
 typedef struct FIFOstack FIFOstack;
 
@@ -112,7 +113,7 @@ unsigned *countSamples(Tokenizer *tkz, int *sampleDim, int *transpose) {
     }
 
     int i, j;
-    long unsigned h;
+    long h;
     char *token, *end;
     FIFOstack **fifo=NULL;  // array of FIFOstack objects, one per population
     int ntokens = Tokenizer_ntokens(tkz);
@@ -128,10 +129,10 @@ unsigned *countSamples(Tokenizer *tkz, int *sampleDim, int *transpose) {
                 assert(fifo == NULL);
                 for(j=i+2; j<ntokens; ++j) {
                     token = Tokenizer_token(tkz, j);
-                    h = strtoul(token, &end, 10);
-                    if(end==token) // token isn't an integer
+                    h = strtol(token, &end, 10);
+                    if(end==token || h < 0) // token isn't a nonnegative int
                         break;
-                    else           // token is an integer
+                    else           // token is a nonnegative int
                         ++npops;
                 }
                 if(npops == 0) {
@@ -148,10 +149,10 @@ unsigned *countSamples(Tokenizer *tkz, int *sampleDim, int *transpose) {
             assert(fifo != NULL);
             for(j=0; j < npops; ++j) {
                 token = Tokenizer_token(tkz, i+2+j);
-                h = strtoul(token, &end, 10);
-                assert(end != token);
+                h = strtol(token, &end, 10);
+                assert(end != token && h>=0);
                 if(h>0)
-                    fifo[j] = FIFOstack_push(fifo[j], h);
+                    fifo[j] = FIFOstack_push(fifo[j], (unsigned) h);
             }
             // advance to last argument of -I or -eI
             i += 1 + npops;
@@ -411,7 +412,6 @@ int main(int argc, char **argv) {
             printf(" %u", nsamples[i]);
         putchar('\n');
     }
-    printf("sampleDim=%d\n", sampleDim);
     assert(sampleDim == 5);
     assert(nsamples[0] == 6);
     assert(nsamples[1] == 6);
