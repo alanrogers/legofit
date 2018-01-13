@@ -21,7 +21,7 @@
 #include <stdio.h>
 
 /// Dimension of hash table. Must be a power of 2
-#define BT_DIM 256u
+#define BT_DIM 128u
 
 /// Make sure BT_DIM is a power of 2
 #if (BT_DIM==0u || (BT_DIM & (BT_DIM-1u)))
@@ -57,33 +57,18 @@ BTLink     *BTLink_dup(const BTLink *self);
 int         BTLink_equals(const BTLink *lhs, const BTLink *rhs);
 
 #if TIPID_SIZE==32
-uint32_t    tipIdHash(uint32_t key);
+static inline uint32_t tipIdHash(uint32_t key);
 #elif TIPID_SIZE==64
-uint32_t    tipIdHash(uint64_t key);
+static inline uint32_t tipIdHash(uint64_t key);
 #endif
 
 #if TIPID_SIZE==32
-/// Hash function for a 32-bit integer. From Thomas Wang's 1997
-/// article: /// https://gist.github.com/badboy/6267743
-uint32_t tipIdHash( uint32_t key) {
-   key = (key+0x7ed55d16) + (key<<12);
-   key = (key^0xc761c23c) ^ (key>>19);
-   key = (key+0x165667b1) + (key<<5);
-   key = (key+0xd3a2646c) ^ (key<<9);
-   key = (key+0xfd7046c5) + (key<<3);
-   key = (key^0xb55a4f09) ^ (key>>16);
-   return key;
+static inline uint32_t tipIdHash( uint32_t key) {
+    return uint32Hash(key);
 }
 #elif TIPID_SIZE==64
-/// Hash function for a 64-bit integer.
-uint32_t tipIdHash(uint64_t key) {
-  key = (~key) + (key << 18); // key = (key << 18) - key - 1;
-  key = key ^ (key >> 31);
-  key = key * 21; // key = (key + (key << 2)) + (key << 4);
-  key = key ^ (key >> 11);
-  key = key + (key << 6);
-  key = key ^ (key >> 22);
-  return (uint32_t) key;
+static inline uint64_t tipIdHash( uint64_t key) {
+    return uint64Hash(key);
 }
 #else
 #error "Can't compile tipIdHash function. See branchtab.c"

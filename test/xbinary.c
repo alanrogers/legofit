@@ -95,5 +95,11 @@ int main(void) {
     printBits(sizeof(r64), &r64, stdout);
     putchar('\n');
 
+    uint32_t key32 = 1234u;
+    printf("32-bit key %u -> hash %u\n", key32, uint32Hash(key32));
+
+    uint64_t key64 = 1234u;
+    printf("64-bit key %lu -> hash %u\n", key64, uint64Hash(key64));
+
     return 0;
 }
