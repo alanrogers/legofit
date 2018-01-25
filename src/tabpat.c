@@ -458,6 +458,11 @@ int main(int argc, char **argv) {
             int         diff = strcmp(prev, chr);
             if(diff != 0) {
                 StrInt_insert(strint, chr, nchr);
+                if(nchr >= MAXCHR) {
+                    fprintf(stderr,"%s:%d: too many chromosomes. max=%d\n",
+                            __FILE__,__LINE__, MAXCHR);
+                    exit(EXIT_FAILURE);
+                }
                 nsnp[nchr] = 1;
                 ++nchr;
             } else
