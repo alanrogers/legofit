@@ -410,7 +410,7 @@ int main(int argc, char **argv) {
     // Used by bootstrap
     Boot       *boot = NULL;
     int         nchr = 0;
-    unsigned    prev, chr=0;
+    unsigned    prev, chr=UINT_MAX;
     long        nsnp[MAXCHR];
     memset(nsnp, 0, sizeof nsnp);
 
@@ -484,12 +484,12 @@ int main(int argc, char **argv) {
     }
 
     unsigned long nsites = 0, nbadaa = 0, nfixed = 0;
-    long        snpndx = -1;
+    long snpndx = -1;
 
     // Read data
     fprintf(stderr, "Doing %s pass through data to tabulate patterns..\n",
             bootreps > 0 ? "2nd" : "single");
-    int         chrndx = -1, currChr = INT_MAX;
+    int chrndx = -1, currChr = INT_MAX;
     done=0;
     while(!done) {
         status = ScrmReader_next(r);
@@ -640,6 +640,8 @@ int main(int argc, char **argv) {
         Boot_free(boot);
     if(logfile)
         fclose(logfile);
+    if(ifp!=stdin)
+        fclose(ifp);
     fprintf(stderr, "scrmpat is finished\n");
     return 0;
 }
