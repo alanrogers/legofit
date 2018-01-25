@@ -135,7 +135,7 @@ Systems Consortium License, which can be found in file "LICENSE".
 #include <string.h>
 #include <time.h>
 
-#define MAXCHR 24               // maximum number of chromosomes
+#define MAXCHR 2000               // maximum number of chromosomes
 
 typedef struct Stack Stack;
 
@@ -460,6 +460,11 @@ int main(int argc, char **argv) {
             prev = chr;
             chr = ScrmReader_chr(r);
             if(prev != chr) {
+                if(nchr >= MAXCHR) {
+                    fprintf(stderr,"%s:%d: too many chromosomes. max=%d\n",
+                            __FILE__,__LINE__, MAXCHR);
+                    exit(EXIT_FAILURE);
+                }
                 nsnp[nchr] = 1;
                 ++nchr;
             } else
