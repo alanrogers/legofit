@@ -29,7 +29,7 @@ warn := \
  -Wundef \
  -Wwrite-strings
 
-CFLAGS := -ggdb -std=gnu99 $(warn) $(incl) $(opt) $(prof) $(osargs)
+CFLAGS := -g -std=gnu99 $(warn) $(incl) $(opt) $(prof) $(osargs)
 
 lib := -L/usr/local/lib -lgsl -lgslcblas -lpthread -lm
 
