@@ -12,16 +12,11 @@ bootstrap, writing each bootstrap replicate into a separate file.
 
 # Usage
 
-    Usage: scrmpat [options] <x> <y> ... <z> where <x> and <y> are
-       arbitrary labels, which refer to the populations in the input
-       data. The number and order of these labels must agree with
-       those specified on the scrm command line (using scrm arguments
-       -I and/or -eI). Labels may not include the character
-       ":". Maximum number of input files: 32. Writes to standard
-       output.
-
-       Bootstrap output is available only if input comes from a file
-       rather than from standard input.
+    Usage: scrmpat [options] <x> <y> ...
+      where <x>, <y>, etc. are arbitrary labels, whose number and order
+      must agree with that of the populations specified in the scrm command
+      line (using scrm arguments -I and -eI). Labels may not include the
+      character ":". Writes to standard output. Max number of input files: 32.
 
     Options may include:
        --infile <name>
@@ -36,6 +31,8 @@ bootstrap, writing each bootstrap replicate into a separate file.
           log fixed sites to scrmpat.log
        -a or --logAll
           log all sites to scrmpat.log
+       --version
+          Print version and exit
        -h or --help
           Print this message
 
@@ -46,13 +43,23 @@ should include the option `-transpost-segsites`. Let us assume you
 have done this, that file `foo.scrm` contains the output simulated
 by `scrm`, and that these simulated data included genotypes referring
 to four populations, labeled "x", "y", "n", and "d". The `scrmpat`
-command woule look like this:
-~/daf contains a separate daf file for each population. We want to
-compare 4 populations, whose .daf files are `yri.daf`, `ceu.daf`,
-`altai.daf`, and `denisova.daf`. The following command will do this,
-putting the results into `obs.txt`.
+command would look like this:
 
     scrmpat --infile foo.scrm x y n d
+
+`scrmpat`'s notion of a "population" differs from that of `scrm`, in
+that `scrmpat` treats samples of different ages as separate
+populations, even if they reside in the same population on the `scrm`
+command line. For example, consider the following `scrm` command line:
+
+    scrm 3 -I 2 1 1 -eI 0.5 0 1
+
+This specifies three haploid samples distributed across two
+populations. The `-I` argument says that each population has a
+sample at time 0. The `-eI` argument says that, in addition,
+population 2 has a sample at time 0.5. All three samples would be
+treated as separate populations by `scrmpat`. Thus, the `scrmpat`
+command line should list three labels, as in "scrmpat x y z".
 
 In the output, site pattern "x:y" refers to
 the pattern in which the derived allele is present haploid samples
@@ -63,6 +70,8 @@ pattern labeled "x:y:d" rather than, say, "y:x:d".
 
 The output looks like this:
 
+    # scrmpat version 1.3
+    # Population labels: x y n d
     # Number of site patterns: 10
     # Tabulated 12327755 SNPs
     #       SitePat             E[count]
@@ -154,15 +163,15 @@ static void generatePatterns(int bit, int npops, Stack * stk, tipId_t pat,
 
 const char *useMsg =
     "\nUsage: scrmpat [options] <x> <y> ...\n"
-    "   where <x> and <y> are arbitrary labels, whose number and order must\n"
-    "   agree with that of the populations specified in the scrm command.\n"
-    "   Writes to standard output. Labels may not include\n"
-    "   the character \":\".";
+    "  where <x>, <y>, etc. are arbitrary labels, whose number and order\n"
+    "  must agree with that of the populations specified in the scrm command\n"
+    "  line (using scrm arguments -I and -eI). Labels may not include the\n"
+    "  character \":\". Writes to standard output.";
 
 /// Print usage message and die.
 static void usage(void) {
     fputs(useMsg, stderr);
-    fprintf(stderr, " Maximum number of input files: %lu.\n",
+    fprintf(stderr, " Max number of input files: %lu.\n",
             8 * sizeof(tipId_t));
     fputs("\nOptions may include:\n", stderr);
     tellopt("--infile <name>",
