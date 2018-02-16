@@ -73,7 +73,7 @@ int iscomment(const char *s) {
 int RAFReader_next(RAFReader * self) {
     int ntokens;
     int status;
-    char buff[100];
+    char buff[1024];
     long unsigned prevnucpos = 0UL;
 
     // Find a line of input

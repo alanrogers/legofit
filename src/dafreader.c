@@ -70,7 +70,7 @@ int DAFReader_next(DAFReader * self) {
     int         ntokens1;
     int         ntokens;
     int         status;
-    char        buff[100];
+    char        buff[1024];
     long unsigned prevnucpos = 0UL;
 
     // Find a line of input
