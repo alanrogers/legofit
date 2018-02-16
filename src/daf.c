@@ -74,6 +74,7 @@ int main(int argc, char **argv) {
     long int         zeroref = 0, zeroalt = 0, zeroaa = 0, zerogtype = 0;
     long int         missref = 0, missaa = 0;
     long int         multref = 0, multalt = 0, multaa = 0;
+    long int         indelref=0, indelalt=0, indelaa=0;
     long int         nbad = 0, ngood = 0;
     int         ok;             // is current line acceptable
     long unsigned lastnucpos = 0, nucpos;
@@ -214,6 +215,25 @@ int main(int argc, char **argv) {
             ++nbad;
             continue;
         }
+
+        // Skip if ref, alt or aa are indels
+        if(strlen(ref[0]) != 1) {
+            ++indelref;
+            ok=0;
+        }
+        if(strlen(alt[0]) != 1) {
+            ++indelalt;
+            ok=0;
+        }
+        if(strlen(aa[0]) != 1) {
+            ++indelaa;
+            ok=0;
+        }
+        if(!ok) {
+            ++nbad;
+            continue;
+        }
+
         // Skip if ref or aa are missing.
         if(0==strcmp(aa[0], ".")) {
             ++missaa;
@@ -328,6 +348,18 @@ int main(int argc, char **argv) {
         fprintf(stderr,
                 "daf: bad sites with multiple ancestral alleles: %ld\n",
                 multaa);
+    if(indelref)
+        fprintf(stderr,
+                "daf: bad sites with ref allele an indel: %ld\n",
+                indelref);
+    if(indelalt)
+        fprintf(stderr,
+                "daf: bad sites with alt allele an indel: %ld\n",
+                indelalt);
+    if(indelaa)
+        fprintf(stderr,
+                "daf: bad sites with ancestral allele an indel: %ld\n",
+                indelaa);
     if(missref)
         fprintf(stderr, "daf: bad sites with missing ref alleles: %ld\n",
                 missref);
