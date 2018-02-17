@@ -619,8 +619,11 @@ int main(int argc, char **argv) {
                 DIE("buffer overflow in snprintf");
 
             FILE       *fp = fopen(buff, "w");
-            if(fp == NULL)
-                DIE("bad fopen");
+            if(fp == NULL) {
+                fprintf(stderr,"%s:%d: can't open \"%s\" for output.\n",
+                        __FILE__,__LINE__,buff);
+                exit(EXIT_FAILURE);
+            }
             fprintf(fp, "# %13s %20s", "SitePat", "E[count]\n");
             for(i = 0; i < npat; ++i) {
                 fprintf(fp, "%15s %20.7lf\n",
