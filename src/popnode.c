@@ -344,10 +344,10 @@ void PopNode_mix(PopNode * child, double *mPtr, bool mixFree,
     PopNode_sanityCheck(native, __FILE__, __LINE__);
 }
 
-/// PopNode constructor. Allocates a new Gene and puts it into
-/// the array within PopNode. The gene isn't owned by PopNode,
-/// however. It will eventually be freed by a recursive call to
-/// Gene_free, which will free the root Gene and all descendants.
+/// Allocates a new Gene and puts it into the array within
+/// PopNode. The gene isn't owned by PopNode, however. It will
+/// eventually be freed by a recursive call to Gene_free, which will
+/// free the root Gene and all descendants.
 void PopNode_newGene(PopNode * self, unsigned ndx) {
     assert(1 + self->nsamples < MAXSAMP);
     assert(ndx < 8 * sizeof(tipId_t));
