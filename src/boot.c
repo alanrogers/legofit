@@ -46,7 +46,6 @@ long LInt_div_round(long num, long denom);
 static void BootChr_allocArrays(BootChr * self);
 
 /// Divide num by denom and round the result to the nearest integer.
-/// @return an structure of type ldiv_t.
 long LInt_div_round(long num, long denom) {
     assert(denom != 0L);
     ldiv_t quotrem = ldiv(num, denom);
@@ -89,7 +88,7 @@ BootChr *BootChr_new(long nsnp, long nrep, int npat, long blocksize,
     self->npat = npat;
     self->nblock = LInt_div_round(nsnp, blocksize);
 
-    // Block positions are uniform on [0, nsnp-blocksize+1).
+    // Block start positions are uniform on [0, nsnp-blocksize+1).
     unsigned long endpos;
     endpos = nsnp - self->blocksize + 1;
 
