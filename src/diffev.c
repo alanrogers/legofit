@@ -547,17 +547,21 @@ static inline void TaskArg_setArray(TaskArg * self, int dim, double v[dim]) {
     self->cost = -1.0;
 }
 
-/// Print current state
+/// Print current state. Current optimal point is printed first
 void printState(int nPts, int nPar, double par[nPts][nPar],
                 double cost[nPts], int imin, FILE *fp) {
     int i, j;
     fprintf(fp,"# %-12s %s...\n", "cost", "param values");
+    fprintf(fp, "@ %12.10lf", cost[imin]);
+    for(j=0; j < nPar; ++j)
+        fprintf(fp, " %0.10lf", par[imin][j]);
+    putchar('\n');
     for(i=0; i < nPts; ++i) {
+        if(i == imin)
+            continue;
         fprintf(fp, "@ %12.10lf", cost[i]);
         for(j=0; j < nPar; ++j)
             fprintf(fp, " %0.10lf", par[i][j]);
-        if(i == imin)
-            fprintf(fp, " <- best");
         putchar('\n');
     }
 }
