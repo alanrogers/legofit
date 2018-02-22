@@ -552,10 +552,14 @@ void printState(int nPts, int nPar, double par[nPts][nPar],
                 double cost[nPts], int imin, FILE *fp) {
     int i, j;
     fprintf(fp,"# %-12s %s...\n", "cost", "param values");
+
+    // print current optimum
     fprintf(fp, "@ %12.10lf", cost[imin]);
     for(j=0; j < nPar; ++j)
         fprintf(fp, " %0.10lf", par[imin][j]);
     putchar('\n');
+
+    // print everything else
     for(i=0; i < nPts; ++i) {
         if(i == imin)
             continue;
