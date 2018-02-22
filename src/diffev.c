@@ -551,11 +551,11 @@ static inline void TaskArg_setArray(TaskArg * self, int dim, double v[dim]) {
 void printState(int nPts, int nPar, double par[nPts][nPar],
                 double cost[nPts], int imin, FILE *fp) {
     int i, j;
-    fprintf(fp,"%10s %s...\n", "cost", "param values");
+    fprintf(fp,"# %-12s %s...\n", "cost", "param values");
     for(i=0; i < nPts; ++i) {
-        fprintf(fp, "%10.6lf", cost[i]);
+        fprintf(fp, "@ %12.10lf", cost[i]);
         for(j=0; j < nPar; ++j)
-            fprintf(fp, " %lf", par[i][j]);
+            fprintf(fp, " %0.10lf", par[i][j]);
         if(i == imin)
             fprintf(fp, " <- best");
         putchar('\n');
@@ -699,7 +699,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
                     " No initial points have finite values.\n"
                     " Try increasing simulation replicates in stage %d.\n"
                     " Current value: simReps=%ld\n"
-                    " See -S argument to legofit.\n",
+                    " See -S argument of legofit.\n",
                     __FILE__,__LINE__, stage,
                     SimSched_getSimReps(simSched));
             exit(EXIT_FAILURE);
@@ -737,8 +737,8 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
                     // accept mutation
                     cost[i] = trial_cost;
                     assignd(dim, (*pnew)[i], targ[i]->v);
-                    if(trial_cost < cmin) { // Was this a new minimum? If so,
-                        cmin = trial_cost;  // reset cmin to new low.
+                    if(trial_cost < cmin) { // New minimum. 
+                        cmin = trial_cost;  // Reset cmin and imin.
                         imin = i;
                         assignd(dim, best, targ[i]->v);
                     }
@@ -787,6 +787,10 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
         }
     }
 
+#if 1
+    // For each point, print cost and parameter vector
+    printState(nPts, dim, *pold, cost, imin, stdout);
+#endif
     JobQueue_noMoreJobs(jq);
     if(*yspread <= dep.ytol) {
         status = 0;
