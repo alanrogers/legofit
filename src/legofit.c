@@ -24,6 +24,8 @@ of separations and of episodes of gene flow, and levels of gene flow.
           add stage with <g> generations and <r> simulation reps
        -p <x> or --ptsPerDim <x>
           number of DE points per free var
+       --stateFile <filename>
+          write final state of optimizer to file
        -1 or --singletons
           Use singleton site patterns
        -v or --verbose
@@ -91,14 +93,14 @@ values had changed in a fixed number of iterations. That criterion was
 used in our recent paper, "Early history of Neanderthals and
 Denisovans", which was just published in PNAS.
 
-I began to notice convergence problems with models larger than
-those used in the PNAS paper. All bootstrap replicates would report
-convergence, but some yielded wild parameter estimates. In these
-outliers, the spread of objective function values was also very
+I began to notice convergence problems with models larger than those
+used in the August 2017 PNAS paper. All bootstrap replicates would
+report convergence, but some yielded wild parameter estimates. In
+these outliers, the spread of objective function values was also very
 large, indicating that the algorithm had not really converged. So I
 implemented a new convergence criterion, based on the spread of
-objective function values. The iterations terminate when this
-spread falls to a pre-determined value.
+objective function values. The iterations terminate when this spread
+falls to a pre-determined value.
 
 This new convergence criterion works best with the KL
 (Kullback-Leibler) cost function. Minimizing KL is the same as
@@ -126,7 +128,14 @@ Second, you can relax the tolerance. By default, this is 1e-4. It is
 reported in the legofit output. To double this value, use "-T 2e-4" or
 "--tol 2e-4".
 
-@copyright Copyright (c) 2016, 2017, Alan R. Rogers
+The option "--stateFile" is used to define an output file for the
+final state of the optimizer. This output file contains a row for each
+point in the swarm of points maintained by diffev.c. In each row, the
+first entry is the value of the cost function at that point. The
+remaining entries give the parameter values in the same order in which
+they are printed by legofit.
+
+@copyright Copyright (c) 2016, 2017, 2018, Alan R. Rogers
 <rogers@anthro.utah.edu>. This file is released under the Internet
 Systems Consortium License, which can be found in file "LICENSE".
 **/
@@ -203,6 +212,7 @@ void usage(void) {
     tellopt("-S <g>@<r> or --stage <g>@<r>",
             "add stage with <g> generations and <r> simulation reps");
     tellopt("-p <x> or --ptsPerDim <x>", "number of DE points per free var");
+    tellopt("--stateFile <filename>", "write final state of optimizer to file");
 	tellopt("-1 or --singletons", "Use singleton site patterns");
     tellopt("-v or --verbose", "verbose output");
     tellopt("--version", "Print version and exit");
@@ -247,6 +257,7 @@ int main(int argc, char **argv) {
         {"genomeSize", required_argument, 0, 'n'},
 #endif
         {"singletons", no_argument, 0, '1'},
+        {"stateFile", required_argument, 0, 'y'},
         {"help", no_argument, 0, 'h'},
         {"verbose", no_argument, 0, 'v'},
         {"version", no_argument, 0, 'V'},
@@ -266,6 +277,8 @@ int main(int argc, char **argv) {
     long        simreps = 1000000;
     char        lgofname[200] = { '\0' };
     char        patfname[200] = { '\0' };
+    char        statefname[200] = { '\0' };
+    FILE       *stateFile = NULL;
 
 	// DiffEv parameters
 	double      F = 0.9;
@@ -362,6 +375,20 @@ int main(int argc, char **argv) {
             nnuc = strtol(optarg, NULL, 10);
             break;
 #endif
+        case 'y':
+            status=snprintf(statefname, sizeof(statefname), "%s", optarg);
+            if(status >= sizeof(statefname)) {
+                fprintf(stderr,"%s:%d: buffer overflow\n",
+                        __FILE__,__LINE__);
+                exit(EXIT_FAILURE);
+            }
+            stateFile = fopen(statefname, "w");
+            if(stateFile==NULL) {
+                fprintf(stderr,"%s:%d: can't open \"%s\" for output.\n",
+                        __FILE__,__LINE__, statefname);
+                exit(EXIT_FAILURE);
+            }
+            break;
         case '1':
             doSing=1;
             break;
@@ -438,6 +465,8 @@ int main(int argc, char **argv) {
     printf("# lgo input file     : %s\n", lgofname);
     printf("# site pat input file: %s\n", patfname);
     printf("# pts/dimension      : %d\n", ptsPerDim);
+    if(stateFile)
+        printf("# output state file  : %s\n", statefname);
 #if COST!=KL_COST && COST!=LNL_COST
     printf("# mut_rate/generation: %lg\n", u);
     printf("# nucleotides/genome : %ld\n", nnuc);
@@ -515,7 +544,8 @@ int main(int argc, char **argv) {
         .initData = gptree,
         .initialize = initStateVec,
         .simSched = simSched,
-        .ytol = ytol
+        .ytol = ytol,
+        .stateFile = stateFile
     };
 
     double      estimate[dim];
@@ -585,6 +615,8 @@ int main(int argc, char **argv) {
     GPTree_free(gptree);
     SimSched_free(simSched);
     fprintf(stderr,"legofit is finished\n");
+    if(stateFile)
+        fclose(stateFile);
 
     return 0;
 }

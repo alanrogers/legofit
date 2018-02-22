@@ -551,22 +551,22 @@ static inline void TaskArg_setArray(TaskArg * self, int dim, double v[dim]) {
 void printState(int nPts, int nPar, double par[nPts][nPar],
                 double cost[nPts], int imin, FILE *fp) {
     int i, j;
-    fprintf(fp,"# %-12s %s...\n", "cost", "param values");
+    fprintf(fp,"# %-10s %s...\n", "cost", "param values");
 
     // print current optimum
-    fprintf(fp, "@ %12.10lf", cost[imin]);
+    fprintf(fp, "%12.10lf", cost[imin]);
     for(j=0; j < nPar; ++j)
         fprintf(fp, " %0.10lf", par[imin][j]);
-    putchar('\n');
+    putc('\n', fp);
 
     // print everything else
     for(i=0; i < nPts; ++i) {
         if(i == imin)
             continue;
-        fprintf(fp, "@ %12.10lf", cost[i]);
+        fprintf(fp, "%12.10lf", cost[i]);
         for(j=0; j < nPar; ++j)
             fprintf(fp, " %0.10lf", par[i][j]);
-        putchar('\n');
+        putc('\n', fp);
     }
 }
 
@@ -797,7 +797,8 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 
 #if 1
     // For each point, print cost and parameter vector
-    printState(nPts, dim, *pold, cost, imin, stdout);
+    if(dep.stateFile)
+        printState(nPts, dim, *pold, cost, imin, dep.stateFile);
 #endif
     JobQueue_noMoreJobs(jq);
     if(*yspread <= dep.ytol) {

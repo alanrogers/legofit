@@ -33,6 +33,7 @@ struct DiffEvPar {
     void        (*ThreadState_free) (void *);
     void       *initData;
     void        (*initialize)(int, void *, int, double *, gsl_rng *rng);
+    FILE       *stateFile;
 };
 
 int         diffev(int dim, double estimate[dim], double *loCost,
