@@ -179,6 +179,10 @@ long BootChr_multiplicity(const BootChr * self, long snpndx, long rep) {
     assert(snpndx - self->start[rep][lndx] < self->blocksize);
 
     // hndx is index of first block not containing snp
+    // First line below searches the sub-array beginning with
+    // entry lndx. This returns an index into the sub-array.
+    // The second line adds lndx to generate an index into the full
+    // array.  
     hndx = long_first_geq(snpndx + 1, self->start[rep] + lndx,
                           self->nblock - lndx);
     hndx += lndx;
