@@ -621,7 +621,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
            DiffEvPar dep, gsl_rng * rng) {
 
     int         i, j;           // counting variables
-    int         imin;           // index to member with lowest energy
+    int         imin = INT_MAX; // index to member with lowest energy
     int         gen;
     SimSched   *simSched = dep.simSched;
     const int   refresh = dep.refresh;
@@ -797,7 +797,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 
 #if 1
     // For each point, print cost and parameter vector
-    if(dep.stateFile)
+    if(dep.stateFile && imin < INT_MAX)
         printState(nPts, dim, *pold, cost, imin, dep.stateFile);
 #endif
     JobQueue_noMoreJobs(jq);
