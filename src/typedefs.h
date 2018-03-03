@@ -26,6 +26,7 @@ typedef struct PopNodeTab PopNodeTab;
 typedef struct ScrmReader ScrmReader;
 typedef struct SimSched SimSched;
 typedef struct SampNdx SampNdx;
+typedef struct State State;
 typedef struct StrInt StrInt;
 typedef struct Tokenizer Tokenizer;
 typedef struct DAFReader DAFReader;

@@ -5,7 +5,8 @@ prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
 tests := xbinary xboot xbranchtab xdafreader xrafreader xdiffev xgene \
   xgptree xpopnodetab xjobqueue xlblndx xllrbtree xparkeyval xparse \
-  xparstore xpopnode xscrmreader xsimsched xstrint xdtnorm xmisc xerror
+  xparstore xpopnode xscrmreader xsimsched xstrint xdtnorm xmisc xerror \
+  xstate
 
 CC := gcc
 
@@ -56,6 +57,7 @@ test : $(tests)
 	-./xpopnodetab
 	-./xscrmreader
 	-./xsimsched
+	-./xstate
 	-./xstrint
 	@echo "ALL UNIT TESTS WERE COMPLETED."
 
@@ -66,6 +68,10 @@ xbinary : $(XBINARY)
 XMISC := xmisc.o misc.o
 xmisc : $(XMISC)
 	$(CC) $(CFLAGS) -o $@ $(XMISC) $(lib)
+
+XSTATE := xstate.o misc.o state.o
+xstate : $(XSTATE)
+	$(CC) $(CFLAGS) -o $@ $(XSTATE) $(lib)
 
 XPOPNODETAB := xpopnodetab.o popnodetab.o misc.o popnode.o gene.o \
    branchtab.o lblndx.o tokenizer.o dtnorm.o binary.o \
@@ -103,7 +109,7 @@ xrafreader : $(XRAFREADER)
 xscrmreader.o : scrmreader.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/scrmreader.c
 
-XSCRMREADER := xscrmreader.o misc.o tokenizer.o 
+XSCRMREADER := xscrmreader.o misc.o tokenizer.o
 xscrmreader : $(XSCRMREADER)
 	$(CC) $(CFLAGS) -o $@ $(XSCRMREADER) $(lib)
 
