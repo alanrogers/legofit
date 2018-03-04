@@ -29,6 +29,16 @@ void State_setCost(State *self, int ndx, double cost) {
     self->cost[ndx] = cost;
 }
 
+double State_getCost(State *self, int ndx) {
+    if(ndx >= self->npts) {
+        fprintf(stderr,"%s:%d: index out of bounds\n",
+                __FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
+    return self->cost[ndx];
+}
+
+
 // Set state vector with index "ndx" equal to vector x.
 void State_setVector(State *self, int ndx, int dim, double x[dim]) {
     if(dim != self->npar || ndx >= self->npts) {
@@ -106,15 +116,14 @@ State *State_read(FILE *fp) {
             }
         }
     }
-    if(0) {
-    fail:
-        fprintf(stderr,"%s:%d: Can't read state file\n",
-                __FILE__,__LINE__);
-        if(self)
-            State_free(self);
-        return NULL;
-    }
     return self;
+
+ fail:
+    fprintf(stderr,"%s:%d: Can't read state file\n",
+            __FILE__,__LINE__);
+    if(self)
+        State_free(self);
+    return NULL;
 }
 
 // Print State object to a file
@@ -126,21 +135,20 @@ int State_print(State *self, FILE *fp) {
         goto fail;
 
     for(i=0; i < self->npts; ++i) {
-        status = fprintf(fp, "%0.18lf", self->cost[i]);
+        status = fprintf(fp, "%0.18lg", self->cost[i]);
         if(status == 0)
             goto fail;
         for(j=0; j < self->npar; ++j) {
-            status = fprintf(fp, " %0.18lf", self->s[i][j]);
+            status = fprintf(fp, " %0.18lg", self->s[i][j]);
             if(status == 0)
                 goto fail;
         }
         putc('\n', fp);
     }
-    if(0) {
-    fail:
-        fprintf(stderr,"%s:%d: Can't write state file\n",
-                __FILE__,__LINE__);
-        return EIO;
-    }
     return 0;
+
+ fail:
+    fprintf(stderr,"%s:%d: Can't write state file\n",
+            __FILE__,__LINE__);
+    return EIO;
 }

@@ -13,5 +13,6 @@ int    State_print(State *self, FILE *fp);
 void   State_setVector(State *self, int ndx, int dim, double x[dim]);
 int    State_getVector(State *self, int ndx, int dim, double x[dim]);
 void   State_setCost(State *self, int ndx, double cost);
+double State_getCost(State *self, int ndx);
 
 #endif

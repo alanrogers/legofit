@@ -91,8 +91,8 @@ XJOBQUEUE := xjobqueue.o jobqueue.o misc.o
 xjobqueue : $(XJOBQUEUE)
 	$(CC) $(CFLAGS) -o $@ $(XJOBQUEUE) $(lib)
 
-XDIFFEV := xdiffev.o diffev.o misc.o binary.o lblndx.o jobqueue.o parkeyval.o \
-  simsched.o
+XDIFFEV := xdiffev.o diffev.o binary.o lblndx.o jobqueue.o parkeyval.o \
+  simsched.o state.o misc.o
 xdiffev : $(XDIFFEV)
 	$(CC) $(CFLAGS) -o $@ $(XDIFFEV) $(lib)
 

@@ -40,21 +40,14 @@ int main(int argc, char **argv) {
     const int npts=3, npar=2;
     int i, status;
     double x[npts][npar] = {{1.0, 2.0}, {3.0,4.0}, {5.0, 6.0}};
+    double c[npts] = {0.01, 0.02, 0.03};
     State *s = State_new(npts, npar);
     CHECKMEM(s);
+    assert(npts == State_npoints(s));
+    assert(npar == State_nparameters(s));
     for(i=0; i < npts; ++i) {
-        status = State_setVector(s, i, npar, x[i]);
-        switch(status) {
-        case 0:
-            break;
-        case EINVAL:
-            fprintf(stderr,"%s:%d: Dimension mismatch in State_setVector\n",
-                    __FILE__,__LINE__);
-            exit(1);
-        default:
-            fprintf(stderr,"%s:%d: Unknown error\n", __FILE__,__LINE__);
-            exit(1);
-        }
+        State_setVector(s, i, npar, x[i]);
+        State_setCost(s, i, c[i]);
     }
 
     FILE *fp = fopen(fname, "w");
@@ -85,6 +78,7 @@ int main(int argc, char **argv) {
     for(i=0; i<npts; ++i) {
         State_getVector(s, i, npar, y);
         assert(0 == memcmp(y, x[i], npar*sizeof(y[0])));
+        assert(c[i] == State_getCost(s, i));
     }
 
     unitTstResult("State", "OK");
