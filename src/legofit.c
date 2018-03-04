@@ -24,7 +24,7 @@ of separations and of episodes of gene flow, and levels of gene flow.
           add stage with <g> generations and <r> simulation reps
        -p <x> or --ptsPerDim <x>
           number of DE points per free var
-       --stateFile <filename>
+       --stateOut <filename>
           write final state of optimizer to file
        -1 or --singletons
           Use singleton site patterns
@@ -128,7 +128,7 @@ Second, you can relax the tolerance. By default, this is 1e-4. It is
 reported in the legofit output. To double this value, use "-T 2e-4" or
 "--tol 2e-4".
 
-The option "--stateFile" is used to define an output file for the
+The option "--stateOut" is used to define an output file for the
 final state of the optimizer. This output file contains a row for each
 point in the swarm of points maintained by diffev.c. In each row, the
 first entry is the value of the cost function at that point. The
@@ -148,6 +148,7 @@ Systems Consortium License, which can be found in file "LICENSE".
 #include "parstore.h"
 #include "patprob.h"
 #include "simsched.h"
+#include "state.h"
 #include <assert.h>
 #include <float.h>
 #include <getopt.h>
@@ -210,7 +211,9 @@ void usage(void) {
     tellopt("-S <g>@<r> or --stage <g>@<r>",
             "add stage with <g> generations and <r> simulation reps");
     tellopt("-p <x> or --ptsPerDim <x>", "number of DE points per free var");
-    tellopt("--stateFile <filename>", "write final state of optimizer to file");
+    tellopt("--stateIn <filename>",
+            "read initial state of optimizer from file");
+    tellopt("--stateOut <filename>", "write final state of optimizer to file");
 	tellopt("-1 or --singletons", "Use singleton site patterns");
     tellopt("-v or --verbose", "verbose output");
     tellopt("--version", "Print version and exit");
@@ -237,7 +240,8 @@ int main(int argc, char **argv) {
         {"genomeSize", required_argument, 0, 'n'},
 #endif
         {"singletons", no_argument, 0, '1'},
-        {"stateFile", required_argument, 0, 'y'},
+        {"stateIn", required_argument, 0, 'z'},
+        {"stateOut", required_argument, 0, 'y'},
         {"help", no_argument, 0, 'h'},
         {"verbose", no_argument, 0, 'v'},
         {"version", no_argument, 0, 'V'},
@@ -257,8 +261,10 @@ int main(int argc, char **argv) {
     long        simreps = 1000000;
     char        lgofname[200] = { '\0' };
     char        patfname[200] = { '\0' };
-    char        statefname[200] = { '\0' };
-    FILE       *stateFile = NULL;
+    char        stateOutName[200] = { '\0' };
+    char        stateInName[200] = { '\0' };
+    FILE       *stateOut = NULL;
+    FILE       *stateIn = NULL;
 
 	// DiffEv parameters
 	double      F = 0.9;
@@ -271,7 +277,7 @@ int main(int argc, char **argv) {
 	int         strategy = 1;
 	int         ptsPerDim = 10;
     int         verbose = 0;
-    SimSched    *simSched = SimSched_new();
+    SimSched   *simSched = SimSched_new();
 
 #if defined(__DATE__) && defined(__TIME__)
     printf("# Program was compiled: %s %s\n", __DATE__, __TIME__);
@@ -356,16 +362,30 @@ int main(int argc, char **argv) {
             break;
 #endif
         case 'y':
-            status=snprintf(statefname, sizeof(statefname), "%s", optarg);
-            if(status >= sizeof(statefname)) {
+            status=snprintf(stateOutName, sizeof(stateOutName), "%s", optarg);
+            if(status >= sizeof(stateOutName)) {
                 fprintf(stderr,"%s:%d: buffer overflow\n",
                         __FILE__,__LINE__);
                 exit(EXIT_FAILURE);
             }
-            stateFile = fopen(statefname, "w");
-            if(stateFile==NULL) {
+            stateOut = fopen(stateOutName, "w");
+            if(stateOut==NULL) {
                 fprintf(stderr,"%s:%d: can't open \"%s\" for output.\n",
-                        __FILE__,__LINE__, statefname);
+                        __FILE__,__LINE__, stateOutName);
+                exit(EXIT_FAILURE);
+            }
+            break;
+        case 'z':
+            status=snprintf(stateInName, sizeof(stateInName), "%s", optarg);
+            if(status >= sizeof(stateInName)) {
+                fprintf(stderr,"%s:%d: buffer overflow\n",
+                        __FILE__,__LINE__);
+                exit(EXIT_FAILURE);
+            }
+            stateIn = fopen(stateInName, "r");
+            if(stateIn==NULL) {
+                fprintf(stderr,"%s:%d: can't open \"%s\" for output.\n",
+                        __FILE__,__LINE__, stateOutName);
                 exit(EXIT_FAILURE);
             }
             break;
@@ -425,17 +445,40 @@ int main(int argc, char **argv) {
     GPTree *gptree = GPTree_new(lgofname, bnd);
 	LblNdx lblndx  = GPTree_getLblNdx(gptree);
 
+    gsl_rng    *rng = gsl_rng_alloc(gsl_rng_taus);
+    gsl_rng_set(rng, rngseed);
+	rngseed = (rngseed == ULONG_MAX ? 0 : rngseed+1);
+
     int dim = GPTree_nFree(gptree); // number of free parameters
     if(dim == 0) {
         fprintf(stderr,"Error@%s:%d: no free parameters\n",
                 __FILE__,__LINE__);
         exit(EXIT_FAILURE);
     }
+    int npts = dim*ptsPerDim;
+
+    // DiffEv state array is a matrix with a row for each point
+    // and a column for each parameter.
+    State *state;
+    if(stateIn) {
+        // read State from file
+        state = State_read(stateIn);
+        CHECKMEM(state);
+    }else{
+        // de novo State
+        state = State_new(npts, dim);
+        CHECKMEM(state);
+        for(i=0; i < npts; ++i) {
+            double x[dim];
+            initStateVec(i, gptree, dim, x, rng);
+            State_setVector(state, i, dim, x);
+        }
+    }
 
     if(nThreads == 0)
         nThreads = ceil(0.75*getNumCores());
-    if(nThreads > dim*ptsPerDim)
-        nThreads = dim*ptsPerDim;
+    if(nThreads > npts)
+        nThreads = npts;
 
     printf("# DE strategy        : %d\n", strategy);
     printf("#    F               : %lf\n", F);
@@ -444,9 +487,12 @@ int main(int argc, char **argv) {
     printf("# nthreads           : %d\n", nThreads);
     printf("# lgo input file     : %s\n", lgofname);
     printf("# site pat input file: %s\n", patfname);
-    printf("# pts/dimension      : %d\n", ptsPerDim);
-    if(stateFile)
-        printf("# output state file  : %s\n", statefname);
+    printf("# free parameters    : %d\n", dim);
+    printf("# pts/parameter      : %d\n", ptsPerDim);
+    if(stateIn)
+        printf("# input state file   : %s\n", stateInName);
+    if(stateOut)
+        printf("# output state file  : %s\n", stateOutName);
 #if COST!=KL_COST && COST!=LNL_COST
     printf("# mut_rate/generation: %lg\n", u);
     printf("# nucleotides/genome : %ld\n", nnuc);
@@ -521,19 +567,13 @@ int main(int argc, char **argv) {
 		.threadData = NULL,
 		.ThreadState_new = ThreadState_new,
 		.ThreadState_free = ThreadState_free,
-        .initData = gptree,
-        .initialize = initStateVec,
+        .state = state,
         .simSched = simSched,
         .ytol = ytol,
-        .stateFile = stateFile
     };
 
     double      estimate[dim];
     double      cost, yspread;
-
-    gsl_rng    *rng = gsl_rng_alloc(gsl_rng_taus);
-    gsl_rng_set(rng, rngseed);
-	rngseed = (rngseed == ULONG_MAX ? 0 : rngseed+1);
 
     printf("Initial parameter values\n");
 	GPTree_printParStore(gptree, stdout);
@@ -588,6 +628,11 @@ int main(int argc, char **argv) {
         printf("%15s %10.7lf\n", buff2, brlen[ord[j]]);
     }
 
+    if(stateOut) {
+        State_print(state, stateOut);
+        fclose(stateOut);
+    }
+
     BranchTab_free(bt);
     BranchTab_free(obs);
     gsl_rng_free(rng);
@@ -595,8 +640,6 @@ int main(int argc, char **argv) {
     GPTree_free(gptree);
     SimSched_free(simSched);
     fprintf(stderr,"legofit is finished\n");
-    if(stateFile)
-        fclose(stateFile);
 
     return 0;
 }

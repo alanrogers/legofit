@@ -45,8 +45,7 @@ struct GPTree {
 /// points, one of which is the same as the values in the input
 /// file. This allows you to improve on existing estimates without
 /// starting from scratch each time.
-void initStateVec(int ndx, void *void_p, int n, double x[n], gsl_rng *rng){
-    GPTree *gpt = (GPTree *) void_p;
+void initStateVec(int ndx, GPTree *gpt, int n, double x[n], gsl_rng *rng){
     if(ndx == 0)
         GPTree_getParams(gpt, n, x);
     else {

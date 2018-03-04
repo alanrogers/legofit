@@ -10,7 +10,8 @@ State *State_new(int npts, int npar);
 void   State_free(State *self);
 State *State_read(FILE *fp);
 int    State_print(State *self, FILE *fp);
-int    State_setVector(State *self, int ndx, int dim, double x[dim]);
+void   State_setVector(State *self, int ndx, int dim, double x[dim]);
 int    State_getVector(State *self, int ndx, int dim, double x[dim]);
+void   State_setCost(State *self, int ndx, double cost);
 
 #endif

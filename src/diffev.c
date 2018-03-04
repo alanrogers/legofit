@@ -663,7 +663,8 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 
     // Initialize array of points
     for(i = 0; i < nPts; ++i) {
-        (*dep.initialize)(i, dep.initData, dim, c[i], rng);
+        status=State_getVector(dep.state, i, dim, c[i]);
+        assert(status==0);
         if(dep.jobData) {
             jobData[i] = (*dep.JobData_dup)(dep.jobData);
             CHECKMEM(jobData[i]);
@@ -745,7 +746,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
                     // accept mutation
                     cost[i] = trial_cost;
                     assignd(dim, (*pnew)[i], targ[i]->v);
-                    if(trial_cost < cmin) { // New minimum. 
+                    if(trial_cost < cmin) { // New minimum.
                         cmin = trial_cost;  // Reset cmin and imin.
                         imin = i;
                         assignd(dim, best, targ[i]->v);
@@ -795,11 +796,6 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
         }
     }
 
-#if 1
-    // For each point, print cost and parameter vector
-    if(dep.stateFile && imin < INT_MAX)
-        printState(nPts, dim, *pold, cost, imin, dep.stateFile);
-#endif
     JobQueue_noMoreJobs(jq);
     if(*yspread <= dep.ytol) {
         status = 0;
@@ -814,6 +810,10 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     // Return estimates
     *loCost = cmin;
     memcpy(estimate, best, dim * sizeof(estimate[0]));
+    for(i=0; i < nPts; ++i) {
+        State_setCost(dep.state, i, cost[i]);
+        State_setVector(dep.state, i, dim, (*pold)[i]);
+    }
 
     // Free memory
     for(i = 0; i < nPts; ++i) {
