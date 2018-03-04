@@ -1,7 +1,9 @@
 #include "state.h"
 #include "error.h"
+#include "misc.h"
 #include <assert.h>
 #include <stdlib.h>
+#include <string.h>
 #include <errno.h>
 
 struct State {
@@ -48,8 +50,8 @@ State *State_new(int npts, int npar) {
     self->npar = npar;
     self->s = malloc(npts * sizeof(self->s[0]));
     CHECKMEM(self->s);
-    for(i=0; i < npar; ++i) {
-        self->s[i] = malloc(npar * sizeof(self->s[0][0]));
+    for(i=0; i < npts; ++i) {
+        self->s[i] = malloc(npar * sizeof(double));
         CHECKMEM(self->s[i]);
     }
     return self;
@@ -67,7 +69,7 @@ void State_free(State *self) {
 // Construct a new State object by reading a file
 State *State_read(FILE *fp) {
     int i, j, npts, npar, status;
-    status = fscanf(stderr, "%d%d", &npts, &npar);
+    status = fscanf(fp, "%d %d", &npts, &npar);
     if(status != 2) {
         fprintf(stderr,"%s:%d: Can't read dimensions in state file\n",
                 __FILE__,__LINE__);
@@ -78,7 +80,7 @@ State *State_read(FILE *fp) {
 
     for(i=0; i < npts; ++i) {
         for(j=0; j < npar; ++j) {
-            status = fscanf(stderr, "%lf", self->s[i]+j);
+            status = fscanf(fp, "%lf", self->s[i]+j);
             if(status != 1) {
                 fprintf(stderr,"%s:%d:"
                         " Can't read value (%d,%d) in state file\n",
@@ -112,4 +114,5 @@ int State_print(State *self, FILE *fp) {
         }
         putc('\n', fp);
     }
+    return 0;
 }

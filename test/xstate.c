@@ -73,6 +73,7 @@ int main(int argc, char **argv) {
 
     State_free(s);
 
+    fclose(fp);
     fp = fopen(fname, "r");
     assert(fp);
     s = State_read(fp);
