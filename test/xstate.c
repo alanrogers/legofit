@@ -39,7 +39,7 @@ int main(int argc, char **argv) {
     const char *fname = "xstate.tmp";
     const int npts=3, npar=2;
     int i, status;
-    double x[npts][npar] = {{1.0, 2.0}, {3.0,4.0}, {5.0, 6.0}};
+    double x[npts][npar] = {{1.0, 2.0}, {3.0, 4.0}, {5.0, 6.0}};
     double c[npts] = {0.01, 0.02, 0.03};
     State *s = State_new(npts, npar);
     CHECKMEM(s);

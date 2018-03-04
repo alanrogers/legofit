@@ -128,13 +128,32 @@ State *State_read(FILE *fp) {
 
 // Print State object to a file
 int State_print(State *self, FILE *fp) {
-    int i, j, status;
+    int i, j, status, imin=0;
+
+    // find index of minimum cost
+    for(i=1; i < self->npts; ++i)
+        if(self->cost[i] < self->cost[imin])
+            imin = i;
 
     status = fprintf(fp, "%d %d\n", self->npts, self->npar);
     if(status==0)
         goto fail;
 
+    // print point with minimum cost first
+    status = fprintf(fp, "%0.18lg", self->cost[imin]);
+    if(status == 0)
+        goto fail;
+    for(j=0; j < self->npar; ++j) {
+        status = fprintf(fp, " %0.18lg", self->s[imin][j]);
+        if(status == 0)
+            goto fail;
+    }
+    putc('\n', fp);
+
+    // print remainint lines
     for(i=0; i < self->npts; ++i) {
+        if(i == imin)
+            continue;
         status = fprintf(fp, "%0.18lg", self->cost[i]);
         if(status == 0)
             goto fail;
