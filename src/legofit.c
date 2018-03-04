@@ -1,3 +1,4 @@
+
 /**
 @file legofit.c
 @page legofit
@@ -167,42 +168,43 @@ extern pthread_mutex_t seedLock;
 extern unsigned long rngseed;
 extern volatile sig_atomic_t sigstat;
 
-void        usage(void);
-void       *ThreadState_new(void *notused);
-void        ThreadState_free(void *rng);
+void usage(void);
+void *ThreadState_new(void *notused);
+void ThreadState_free(void *rng);
 
 void *ThreadState_new(void *notused) {
-	// Lock seed, initialize random number generator, increment seed,
-	// and unlock.
-    gsl_rng    *rng = gsl_rng_alloc(gsl_rng_taus);
+    // Lock seed, initialize random number generator, increment seed,
+    // and unlock.
+    gsl_rng *rng = gsl_rng_alloc(gsl_rng_taus);
 
-	pthread_mutex_lock(&seedLock);
+    pthread_mutex_lock(&seedLock);
     gsl_rng_set(rng, rngseed);
-	rngseed = (rngseed == ULONG_MAX ? 0 : rngseed+1);
-	pthread_mutex_unlock(&seedLock);
+    rngseed = (rngseed == ULONG_MAX ? 0 : rngseed + 1);
+    pthread_mutex_unlock(&seedLock);
 
     return rng;
 }
 
 void ThreadState_free(void *rng) {
-    gsl_rng_free( (gsl_rng *) rng );
+    gsl_rng_free((gsl_rng *) rng);
 }
 
 void usage(void) {
 #if COST==KL_COST || COST==LNL_COST
-    fprintf(stderr,"usage: legofit [options] input.lgo sitepat.txt\n");
-    fprintf(stderr,"   where file input.lgo describes population history,\n"
+    fprintf(stderr, "usage: legofit [options] input.lgo sitepat.txt\n");
+    fprintf(stderr, "   where file input.lgo describes population history,\n"
             "   and file sitepat.txt contains site pattern frequencies.\n");
 #else
-    fprintf(stderr,"usage: legofit [options] -u <mut_rate>"
+    fprintf(stderr, "usage: legofit [options] -u <mut_rate>"
             " -n <genome_size> input.lgo sitepat.txt\n");
-    fprintf(stderr,"   where <mut_rate> is the mutation rate per nucleotide\n"
+    fprintf(stderr,
+            "   where <mut_rate> is the mutation rate per nucleotide\n"
             "   site per generation, <genome_size> is the number of\n"
             "   nucleotides per haploid genome, file input.lgo describes\n"
             "   population history, and file sitepat.txt contains site\n"
             "   pattern frequencies.\n");
 #endif
-    fprintf(stderr,"Options may include:\n");
+    fprintf(stderr, "Options may include:\n");
     tellopt("-T <x> or --tol <x>", "termination criterion");
     tellopt("-t <x> or --threads <x>", "number of threads (default is auto)");
     tellopt("-F <x> or --scaleFactor <x>", "set DE scale factor");
@@ -213,8 +215,9 @@ void usage(void) {
     tellopt("-p <x> or --ptsPerDim <x>", "number of DE points per free var");
     tellopt("--stateIn <filename>",
             "read initial state of optimizer from file");
-    tellopt("--stateOut <filename>", "write final state of optimizer to file");
-	tellopt("-1 or --singletons", "Use singleton site patterns");
+    tellopt("--stateOut <filename>",
+            "write final state of optimizer to file");
+    tellopt("-1 or --singletons", "Use singleton site patterns");
     tellopt("-v or --verbose", "verbose output");
     tellopt("--version", "Print version and exit");
     tellopt("-h or --help", "print this message");
@@ -229,8 +232,8 @@ int main(int argc, char **argv) {
     static struct option myopts[] = {
         /* {char *name, int has_arg, int *flag, int val} */
         {"threads", required_argument, 0, 't'},
-		{"crossover", required_argument, 0, 'x'},
-		{"scaleFactor", required_argument, 0, 'F'},
+        {"crossover", required_argument, 0, 'x'},
+        {"scaleFactor", required_argument, 0, 'F'},
         {"strategy", required_argument, 0, 's'},
         {"stage", required_argument, 0, 'S'},
         {"tol", required_argument, 0, 'T'},
@@ -250,34 +253,34 @@ int main(int argc, char **argv) {
 
     hdr("legofit: estimate population history");
 
-    int         i, j;
-    time_t      currtime = time(NULL);
-	unsigned long pid = (unsigned long) getpid();
-    double      lo_twoN = 1.0, hi_twoN = 1e7;  // twoN bounds
-    double      lo_t = 0.0, hi_t = 1e7;        // t bounds
-    int         nThreads = 0;     // total number of threads
-    int         doSing=0;  // nonzero means use singleton site patterns
-    int         status, optndx;
-    long        simreps = 1000000;
-    char        lgofname[200] = { '\0' };
-    char        patfname[200] = { '\0' };
-    char        stateOutName[200] = { '\0' };
-    char        stateInName[200] = { '\0' };
-    FILE       *stateOut = NULL;
-    FILE       *stateIn = NULL;
+    int i, j;
+    time_t currtime = time(NULL);
+    unsigned long pid = (unsigned long) getpid();
+    double lo_twoN = 1.0, hi_twoN = 1e7;    // twoN bounds
+    double lo_t = 0.0, hi_t = 1e7;  // t bounds
+    int nThreads = 0;           // total number of threads
+    int doSing = 0;             // nonzero means use singleton site patterns
+    int status, optndx;
+    long simreps = 1000000;
+    char lgofname[200] = { '\0' };
+    char patfname[200] = { '\0' };
+    char stateOutName[200] = { '\0' };
+    char stateInName[200] = { '\0' };
+    FILE *stateOut = NULL;
+    FILE *stateIn = NULL;
 
-	// DiffEv parameters
-	double      F = 0.9;
-	double      CR = 0.8;
+    // DiffEv parameters
+    double F = 0.9;
+    double CR = 0.8;
 #if COST!=KL_COST && COST!=LNL_COST
-    double      u = 0.0;       // mutation rate per site per generation
-    long        nnuc = 0;      // number of nucleotides per haploid genome
+    double u = 0.0;             // mutation rate per site per generation
+    long nnuc = 0;              // number of nucleotides per haploid genome
 #endif
-    double      ytol = 1e-4;   // stop when yspread <= ytol
-	int         strategy = 1;
-	int         ptsPerDim = 10;
-    int         verbose = 0;
-    SimSched   *simSched = SimSched_new();
+    double ytol = 1e-4;         // stop when yspread <= ytol
+    int strategy = 1;
+    int ptsPerDim = 10;
+    int verbose = 0;
+    SimSched *simSched = SimSched_new();
 
 #if defined(__DATE__) && defined(__TIME__)
     printf("# Program was compiled: %s %s\n", __DATE__, __TIME__);
@@ -290,13 +293,12 @@ int main(int argc, char **argv) {
     putchar('\n');
     fflush(stdout);
 
-	rngseed = currtime^pid;
+    rngseed = currtime ^ pid;
 
     // command line arguments
     for(;;) {
 #if COST==KL_COST || COST==LNL_COST
-        i = getopt_long(argc, argv, "T:t:F:p:s:S:a:vx:1h",
-                        myopts, &optndx);
+        i = getopt_long(argc, argv, "T:t:F:p:s:S:a:vx:1h", myopts, &optndx);
 #else
         i = getopt_long(argc, argv, "T:t:F:p:s:S:a:vx:u:n:1h",
                         myopts, &optndx);
@@ -311,36 +313,34 @@ int main(int argc, char **argv) {
         case 't':
             nThreads = strtol(optarg, NULL, 10);
             break;
-		case 'F':
-			F = strtod(optarg, 0);
-			break;
+        case 'F':
+            F = strtod(optarg, 0);
+            break;
         case 'p':
             ptsPerDim = strtol(optarg, NULL, 10);
             break;
-		case 's':
-			strategy = strtol(optarg, NULL, 10);
+        case 's':
+            strategy = strtol(optarg, NULL, 10);
             break;
-		case 'S':
-            {
-                // Add a stage to simSched.
-                char b[20], *g, *r;
-                status = snprintf(b, sizeof b, "%s", optarg);
-                if(status >= sizeof b) {
-                    fprintf(stderr,"%s:%d: buffer overflow reading arg %s\n",
-                            __FILE__,__LINE__,optarg);
-                    exit(EXIT_FAILURE);
-                }
-                g = r = b;
-                (void) strsep(&r, "@");
-                if(r==NULL
-                   || strlen(r) == 0
-                   || strlen(g) == 0)
-                    usage();
-                long stageGen = strtol(g, NULL, 10);
-                long stageRep  = strtol(r, NULL, 10);
-                simreps = stageRep;
-                SimSched_append(simSched, stageGen, stageRep);
+        case 'S':
+        {
+            // Add a stage to simSched.
+            char b[20], *g, *r;
+            status = snprintf(b, sizeof b, "%s", optarg);
+            if(status >= sizeof b) {
+                fprintf(stderr, "%s:%d: buffer overflow reading arg %s\n",
+                        __FILE__, __LINE__, optarg);
+                exit(EXIT_FAILURE);
             }
+            g = r = b;
+            (void) strsep(&r, "@");
+            if(r == NULL || strlen(r) == 0 || strlen(g) == 0)
+                usage();
+            long stageGen = strtol(g, NULL, 10);
+            long stageRep = strtol(r, NULL, 10);
+            simreps = stageRep;
+            SimSched_append(simSched, stageGen, stageRep);
+        }
             break;
         case 'v':
             verbose = 1;
@@ -350,9 +350,9 @@ int main(int argc, char **argv) {
         case 'T':
             ytol = strtod(optarg, 0);
             break;
-		case 'x':
-			CR = strtod(optarg, 0);
-			break;
+        case 'x':
+            CR = strtod(optarg, 0);
+            break;
 #if COST!=KL_COST && COST!=LNL_COST
         case 'u':
             u = strtod(optarg, 0);
@@ -362,41 +362,42 @@ int main(int argc, char **argv) {
             break;
 #endif
         case 'y':
-            status=snprintf(stateOutName, sizeof(stateOutName), "%s", optarg);
+            status =
+                snprintf(stateOutName, sizeof(stateOutName), "%s", optarg);
             if(status >= sizeof(stateOutName)) {
-                fprintf(stderr,"%s:%d: buffer overflow\n",
-                        __FILE__,__LINE__);
+                fprintf(stderr, "%s:%d: buffer overflow\n",
+                        __FILE__, __LINE__);
                 exit(EXIT_FAILURE);
             }
             stateOut = fopen(stateOutName, "w");
-            if(stateOut==NULL) {
-                fprintf(stderr,"%s:%d: can't open \"%s\" for output.\n",
-                        __FILE__,__LINE__, stateOutName);
+            if(stateOut == NULL) {
+                fprintf(stderr, "%s:%d: can't open \"%s\" for output.\n",
+                        __FILE__, __LINE__, stateOutName);
                 exit(EXIT_FAILURE);
             }
             break;
         case 'z':
-            status=snprintf(stateInName, sizeof(stateInName), "%s", optarg);
+            status = snprintf(stateInName, sizeof(stateInName), "%s", optarg);
             if(status >= sizeof(stateInName)) {
-                fprintf(stderr,"%s:%d: buffer overflow\n",
-                        __FILE__,__LINE__);
+                fprintf(stderr, "%s:%d: buffer overflow\n",
+                        __FILE__, __LINE__);
                 exit(EXIT_FAILURE);
             }
             stateIn = fopen(stateInName, "r");
-            if(stateIn==NULL) {
-                fprintf(stderr,"%s:%d: can't open \"%s\" for output.\n",
-                        __FILE__,__LINE__, stateOutName);
+            if(stateIn == NULL) {
+                fprintf(stderr, "%s:%d: can't open \"%s\" for output.\n",
+                        __FILE__, __LINE__, stateOutName);
                 exit(EXIT_FAILURE);
             }
             break;
         case '1':
-            doSing=1;
+            doSing = 1;
             break;
         case 'h':
             usage();
             break;
         default:
-            fprintf(stderr,"Can't parse option %c\n", i);
+            fprintf(stderr, "Can't parse option %c\n", i);
             usage();
         }
     }
@@ -406,22 +407,22 @@ int main(int argc, char **argv) {
         fprintf(stderr, "Command line must specify 2 input files.\n");
         usage();
     }
-
 #if COST!=KL_COST && COST!=LNL_COST
-    if(u==0.0) {
-        fprintf(stderr,"Use -u to set mutation rate per generation.\n");
+    if(u == 0.0) {
+        fprintf(stderr, "Use -u to set mutation rate per generation.\n");
         usage();
     }
 
-    if(nnuc==0) {
-        fprintf(stderr,"Use -n to set # of nucleotides per haploid genome.\n");
+    if(nnuc == 0) {
+        fprintf(stderr,
+                "Use -n to set # of nucleotides per haploid genome.\n");
         usage();
     }
 #endif
 
     snprintf(lgofname, sizeof(lgofname), "%s", argv[optind]);
     assert(lgofname[0] != '\0');
-    snprintf(patfname, sizeof(patfname), "%s", argv[optind+1]);
+    snprintf(patfname, sizeof(patfname), "%s", argv[optind + 1]);
     assert(patfname[0] != '\0');
 
     // Default simulation schedule.
@@ -436,26 +437,26 @@ int main(int argc, char **argv) {
     SimSched_print(simSched, stdout);
 
     Bounds bnd = {
-            .lo_twoN = lo_twoN,
-            .hi_twoN = hi_twoN,
-            .lo_t = lo_t,
-            .hi_t = hi_t
+        .lo_twoN = lo_twoN,
+        .hi_twoN = hi_twoN,
+        .lo_t = lo_t,
+        .hi_t = hi_t
     };
 
     GPTree *gptree = GPTree_new(lgofname, bnd);
-	LblNdx lblndx  = GPTree_getLblNdx(gptree);
+    LblNdx lblndx = GPTree_getLblNdx(gptree);
 
-    gsl_rng    *rng = gsl_rng_alloc(gsl_rng_taus);
+    gsl_rng *rng = gsl_rng_alloc(gsl_rng_taus);
     gsl_rng_set(rng, rngseed);
-	rngseed = (rngseed == ULONG_MAX ? 0 : rngseed+1);
+    rngseed = (rngseed == ULONG_MAX ? 0 : rngseed + 1);
 
     int dim = GPTree_nFree(gptree); // number of free parameters
     if(dim == 0) {
-        fprintf(stderr,"Error@%s:%d: no free parameters\n",
-                __FILE__,__LINE__);
+        fprintf(stderr, "Error@%s:%d: no free parameters\n",
+                __FILE__, __LINE__);
         exit(EXIT_FAILURE);
     }
-    int npts = dim*ptsPerDim;
+    int npts = dim * ptsPerDim;
 
     // DiffEv state array is a matrix with a row for each point
     // and a column for each parameter.
@@ -464,11 +465,11 @@ int main(int argc, char **argv) {
         // read State from file
         state = State_read(stateIn);
         CHECKMEM(state);
-    }else{
+    } else {
         // de novo State
         state = State_new(npts, dim);
         CHECKMEM(state);
-        for(i=0; i < npts; ++i) {
+        for(i = 0; i < npts; ++i) {
             double x[dim];
             initStateVec(i, gptree, dim, x, rng);
             State_setVector(state, i, dim, x);
@@ -476,7 +477,7 @@ int main(int argc, char **argv) {
     }
 
     if(nThreads == 0)
-        nThreads = ceil(0.75*getNumCores());
+        nThreads = ceil(0.75 * getNumCores());
     if(nThreads > npts)
         nThreads = npts;
 
@@ -517,18 +518,18 @@ int main(int argc, char **argv) {
     BranchTab *obs = BranchTab_parse(patfname, &lblndx);
     if(doSing) {
         if(!BranchTab_hasSingletons(obs)) {
-            fprintf(stderr,"%s:%d: Command line includes singletons "
+            fprintf(stderr, "%s:%d: Command line includes singletons "
                     "(-1 or --singletons)\n"
                     "    but none are present in \"%s\".\n",
-                    __FILE__,__LINE__, patfname);
+                    __FILE__, __LINE__, patfname);
             exit(EXIT_FAILURE);
         }
-    }else{
+    } else {
         if(BranchTab_hasSingletons(obs)) {
-            fprintf(stderr,"%s:%d: Command line excludes singletons "
+            fprintf(stderr, "%s:%d: Command line excludes singletons "
                     "(neither -1 nor --singletons)\n"
                     "    but singletons are present in \"%s\".\n",
-                    __FILE__,__LINE__, patfname);
+                    __FILE__, __LINE__, patfname);
             exit(EXIT_FAILURE);
         }
     }
@@ -550,33 +551,33 @@ int main(int argc, char **argv) {
     };
 
     // parameters for Differential Evolution
-    DiffEvPar   dep = {
+    DiffEvPar dep = {
         .dim = dim,
         .ptsPerDim = ptsPerDim,
-        .refresh = 2,  // how often to print a line of output
+        .refresh = 2,           // how often to print a line of output
         .strategy = strategy,
         .nthreads = nThreads,
         .verbose = verbose,
-        .seed = ((unsigned long) time(NULL))-1ul,
+        .seed = ((unsigned long) time(NULL)) - 1ul,
         .F = F,
         .CR = CR,
-		.jobData = &costPar,
+        .jobData = &costPar,
         .JobData_dup = CostPar_dup,
         .JobData_free = CostPar_free,
         .objfun = costFun,
-		.threadData = NULL,
-		.ThreadState_new = ThreadState_new,
-		.ThreadState_free = ThreadState_free,
+        .threadData = NULL,
+        .ThreadState_new = ThreadState_new,
+        .ThreadState_free = ThreadState_free,
         .state = state,
         .simSched = simSched,
         .ytol = ytol,
     };
 
-    double      estimate[dim];
-    double      cost, yspread;
+    double estimate[dim];
+    double cost, yspread;
 
     printf("Initial parameter values\n");
-	GPTree_printParStore(gptree, stdout);
+    GPTree_printParStore(gptree, stdout);
 
     // Flush just before diffev so output file will be as complete as
     // possible while diffev is running.
@@ -585,16 +586,16 @@ int main(int argc, char **argv) {
     status = diffev(dim, estimate, &cost, &yspread, dep, rng);
 
     printf("DiffEv %s. cost=%0.5le spread=%0.5le\n",
-           status==0 ? "converged" : "FAILED", cost, yspread);
+           status == 0 ? "converged" : "FAILED", cost, yspread);
 #if COST==LNL_COST
-    printf("  relspread=%e", yspread/cost);
+    printf("  relspread=%e", yspread / cost);
 #endif
     putchar('\n');
 
     // Get mean site pattern branch lengths
     if(GPTree_setParams(gptree, dim, estimate)) {
-        fprintf(stderr,"%s:%d: free params violate constraints\n",
-                __FILE__,__LINE__);
+        fprintf(stderr, "%s:%d: free params violate constraints\n",
+                __FILE__, __LINE__);
         exit(1);
     }
     BranchTab *bt = patprob(gptree, simreps, doSing, rng);
@@ -603,9 +604,9 @@ int main(int argc, char **argv) {
 
     printf("Fitted parameter values\n");
 #if 1
-	GPTree_printParStoreFree(gptree, stdout);
+    GPTree_printParStoreFree(gptree, stdout);
 #else
-	GPTree_printParStore(gptree, stdout);
+    GPTree_printParStore(gptree, stdout);
 #endif
 
     // Put site patterns and branch lengths into arrays.
@@ -620,9 +621,9 @@ int main(int argc, char **argv) {
     orderpat(npat, ord, pat);
 
     printf("#%14s %10s\n", "SitePat", "BranchLen");
-    char        buff[100];
+    char buff[100];
     for(j = 0; j < npat; ++j) {
-        char        buff2[100];
+        char buff2[100];
         snprintf(buff2, sizeof(buff2), "%s",
                  patLbl(sizeof(buff), buff, pat[ord[j]], &lblndx));
         printf("%15s %10.7lf\n", buff2, brlen[ord[j]]);
@@ -639,7 +640,7 @@ int main(int argc, char **argv) {
     GPTree_sanityCheck(gptree, __FILE__, __LINE__);
     GPTree_free(gptree);
     SimSched_free(simSched);
-    fprintf(stderr,"legofit is finished\n");
+    fprintf(stderr, "legofit is finished\n");
 
     return 0;
 }
