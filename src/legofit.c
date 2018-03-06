@@ -475,7 +475,11 @@ int main(int argc, char **argv) {
         state = State_readList(stateInNames, npts,
                                GPTree_nFree(gptree));
         CHECKMEM(state);
-        npts = State_npoints(state);
+        if(npts != State_npoints(state)) {
+            fprintf(stderr, "Revising npts from %d to %d\n",
+                    npts, State_npoints(state));
+            npts = State_npoints(state);
+        }
     } else {
         // de novo State
         state = State_new(npts, dim);
