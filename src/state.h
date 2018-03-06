@@ -4,6 +4,9 @@
 #include "typedefs.h"
 #include <stdio.h>
 
+NameList *NameList_append(NameList *self, const char *name);
+void   NameList_free(NameList *self);
+int    NameList_size(NameList *self);
 int    State_npoints(State *self);
 int    State_nparameters(State *self);
 State *State_new(int npts, int npar);
@@ -14,5 +17,6 @@ void   State_setVector(State *self, int ndx, int dim, double x[dim]);
 int    State_getVector(State *self, int ndx, int dim, double x[dim]);
 void   State_setCost(State *self, int ndx, double cost);
 double State_getCost(State *self, int ndx);
+State *State_readList(NameList *list);
 
 #endif

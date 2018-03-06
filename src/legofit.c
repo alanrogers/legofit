@@ -1,4 +1,3 @@
-
 /**
 @file legofit.c
 @page legofit
@@ -25,12 +24,16 @@ of separations and of episodes of gene flow, and levels of gene flow.
           add stage with <g> generations and <r> simulation reps
        -p <x> or --ptsPerDim <x>
           number of DE points per free var
+       --stateIn <filename>
+          read initial state of optimizer from file
        --stateOut <filename>
           write final state of optimizer to file
        -1 or --singletons
           Use singleton site patterns
        -v or --verbose
           verbose output
+       --version
+          Print version and exit
        -h or --help
           print this message
 

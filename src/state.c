@@ -6,11 +6,40 @@
 #include <string.h>
 #include <errno.h>
 
+struct NameList {
+    char *name;
+    struct NameList *next;
+};
+
 struct State {
     int npts, npar; // numbers of points and parameters
     double *cost;   // cost[i] is cost function at i'th point
     double **s;     // s[i][j]=value of j'th param at i'th point
 };
+
+NameList *NameList_append(NameList *self, const char *name) {
+    if(self == NULL) {
+        self = malloc(sizeof(NameList));
+        CHECKMEM(self);
+        self->name = strdup(name);
+        self->next = NULL;
+    }else
+        self->next = NameList_append(self->next, name);
+    return self;
+}
+
+void NameList_free(NameList *self) {
+    if(self == NULL)
+        return;
+    NameList_free(self->next);
+    free(self);
+}
+
+int NameList_size(NameList *self) {
+    if(self==0)
+        return 0;
+    return 1 + NameList_size(self->next);
+}
 
 int State_npoints(State *self) {
     return self->npts;
@@ -150,7 +179,7 @@ int State_print(State *self, FILE *fp) {
     }
     putc('\n', fp);
 
-    // print remainint lines
+    // print remaining lines
     for(i=0; i < self->npts; ++i) {
         if(i == imin)
             continue;
@@ -170,4 +199,67 @@ int State_print(State *self, FILE *fp) {
     fprintf(stderr,"%s:%d: Can't write state file\n",
             __FILE__,__LINE__);
     return EIO;
+}
+
+State *State_readList(NameList *list) {
+    int nstates = NameList_size(list);
+    if(nstates==0)
+        return NULL;
+
+    State *state[nstates];
+    NameList *node;
+    int i, j, k, npts=-1, npar;
+
+    for(i=0, node=list; i<nstates; ++i, node=node->next) {
+
+        // Create a State object from each file name in list.
+        FILE *fp = fopen(node->name, "r");
+        state[i] = State_read(fp);
+        CHECKMEM(state[i]);
+        fclose(fp);
+
+        // Make sure dimensions are compatible.
+        if(npts < 0) {
+            npts = State_npoints(state[i]);
+            npar = State_nparameters(state[i]);
+        }else{
+            if(npts != State_npoints(state[i])
+               || npar != State_nparameters(state[i])) {
+                fprintf(stderr,"%s:%s:%d:"
+                        " input state file \"%s\" has"
+                        " incompatible dimensions.\n",
+                        __FILE__,__func__,__LINE__,
+                        node->name);
+                exit(EXIT_FAILURE);
+            }
+        }
+    }
+
+    State *self = State_new(npts, npar);
+    CHECKMEM(self);
+
+    // Figure out how many points to take from each State object.
+    // The goal is to take nearly equal numbers.
+    div_t qr = div(npts, nstates);
+    int npoints[nstates];
+    int total=0; // for debugging
+    for(i=0; i < nstates; ++i) {
+        npoints[i] = qr.quot;
+        if(i < qr.rem)
+            ++npoints[i];
+        total += npoints[i];  // for debugging
+    }
+    assert(total == npts);
+
+    // Set vectors; free pointers in vector "state".
+    k = 0; // index into self->s
+    for(i=0; i < nstates; ++i) {
+        for(j=0; j < npoints[i]; ++j) {
+            State_setCost(self, k, state[i]->cost[j]);
+            State_setVector(self, k, npar, state[i]->s[j]);
+            ++k;
+        }
+        State_free(state[i]);
+    }
+    return self;
 }

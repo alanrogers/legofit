@@ -16,6 +16,7 @@ typedef struct GPTree GPTree;
 typedef struct HashTab HashTab;
 typedef struct HashTabSeq HashTabSeq;
 typedef struct LblNdx LblNdx;
+typedef struct NameList NameList;
 typedef struct NodeStore NodeStore;
 typedef enum   ParamStatus ParamStatus;
 typedef enum   ParamType ParamType;
