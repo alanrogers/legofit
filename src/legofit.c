@@ -58,10 +58,8 @@ algorithm maintains a swarm of points, each at a different set of
 parameter values. The objective function is evaluated at these points
 in a multithreaded job queue, so the program runs fasted on a machine
 with lots of cores. You can set the number of threads using the `-t`
-argument. By default, the program uses as many threads as there are
-processors on the machine---usually the number of hypercores. The
-optimal number of threads is usually somewhat smaller that this
-default.
+argument. By default, the program uses 3/4 as many threads as there
+are processors on the machine---usually the number of hypercores.
 
 The DE algorithm can be tuned via command line arguments `-F`, `-x`,
 `-s`, and `-p`. Details regarding these choices can be found in
@@ -81,6 +79,32 @@ objective function. The `-S` argument can be given several times to
 set up a simulation schedule with several stages. The algorithm is
 allowed to converge only during the final stage. I am currently using
 a 2-stage schedule: `-S 1000@10000 -S `1000@2000000`.
+
+By default, the initial swarm of points consists of one point
+representing the parameter values in the .lgo file, plus other points
+scattered randomly throughout the feasible region of parameter
+space. The total number of points defaults to 10 times the number of free
+parameters. To change this number, see the --ptsPerDim option.
+
+The initial swarm of points can also be specified using the
+`--stateIn` option. This reads a file specifying the initial state of
+the swarm of points maintained by DE. The number of points and the
+number of free parameters should agree with the values implied by the
+.lgo file and the --ptsPerDim option. The format of this file is as
+described below for the `--stateOut` option.
+
+The `--stateIn` option may be given more than once, each time with a
+different input file. When more than one file is given, Legofit
+constructs the initial swarm of points by combining points from all
+input files.
+
+The option `--stateOut` is used to define an output file for the final
+state of the optimizer. This output file begins with a row giving the
+number of points and the number of free parameters. After that, there
+is a row for each point in the swarm of points maintained by
+diffev.c. In each row, the first entry is the value of the cost
+function at that point. The remaining entries give the free parameter
+values in the same order in which they are printed by legofit.
 
 The `-1` option tells legofit to use singleton site patterns--patterns
 in which the derived allele is present in only a single sample. This
@@ -131,13 +155,6 @@ number of DE generations, change this to "-S 4000@2000000".
 Second, you can relax the tolerance. By default, this is 1e-4. It is
 reported in the legofit output. To double this value, use "-T 2e-4" or
 "--tol 2e-4".
-
-The option "--stateOut" is used to define an output file for the
-final state of the optimizer. This output file contains a row for each
-point in the swarm of points maintained by diffev.c. In each row, the
-first entry is the value of the cost function at that point. The
-remaining entries give the parameter values in the same order in which
-they are printed by legofit.
 
 @copyright Copyright (c) 2016, 2017, 2018, Alan R. Rogers
 <rogers@anthro.utah.edu>. This file is released under the Internet

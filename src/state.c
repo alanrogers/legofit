@@ -23,8 +23,14 @@ NameList *NameList_append(NameList *self, const char *name) {
         CHECKMEM(self);
         self->name = strdup(name);
         self->next = NULL;
-    }else
+    }else {
+        if(0 == strcmp(name, self->name)) {
+            fprintf(stderr, "%s:%d: state file \"%s\" listed multiple times.\n",
+                    __FILE__,__LINE__,name);
+            exit(EXIT_FAILURE);
+        }
         self->next = NameList_append(self->next, name);
+    }
     return self;
 }
 
