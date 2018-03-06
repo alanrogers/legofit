@@ -480,6 +480,13 @@ int main(int argc, char **argv) {
                     npts, State_npoints(state));
             npts = State_npoints(state);
         }
+
+        // Set gptree parameters from state array, so that
+        // initial parameter values, as printed, will represent
+        // one of the vectors in the state array.
+        double x[dim];
+        State_getVector(state, 0, dim, x);
+        GPTree_setParams(gptree, dim, x);
     } else {
         // de novo State
         state = State_new(npts, dim);
