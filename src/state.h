@@ -7,6 +7,7 @@
 NameList *NameList_append(NameList *self, const char *name);
 void   NameList_free(NameList *self);
 int    NameList_size(NameList *self);
+void   NameList_print(NameList *self, FILE *fp);
 int    State_npoints(State *self);
 int    State_nparameters(State *self);
 State *State_new(int npts, int npar);

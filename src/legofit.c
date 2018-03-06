@@ -25,7 +25,7 @@ of separations and of episodes of gene flow, and levels of gene flow.
        -p <x> or --ptsPerDim <x>
           number of DE points per free var
        --stateIn <filename>
-          read initial state of optimizer from file
+          read initial state of optimizer from file. Option may be repeated.
        --stateOut <filename>
           write final state of optimizer to file
        -1 or --singletons
@@ -217,9 +217,9 @@ void usage(void) {
             "add stage with <g> generations and <r> simulation reps");
     tellopt("-p <x> or --ptsPerDim <x>", "number of DE points per free var");
     tellopt("--stateIn <filename>",
-            "read initial state of optimizer from file");
+            "read initial state from file. Option may be repeated.");
     tellopt("--stateOut <filename>",
-            "write final state of optimizer to file");
+            "write final state to file");
     tellopt("-1 or --singletons", "Use singleton site patterns");
     tellopt("-v or --verbose", "verbose output");
     tellopt("--version", "Print version and exit");
@@ -268,9 +268,8 @@ int main(int argc, char **argv) {
     char lgofname[200] = { '\0' };
     char patfname[200] = { '\0' };
     char stateOutName[200] = { '\0' };
-    char stateInName[200] = { '\0' };
+    NameList *stateInNames = NULL;
     FILE *stateOut = NULL;
-    FILE *stateIn = NULL;
 
     // DiffEv parameters
     double F = 0.9;
@@ -380,18 +379,8 @@ int main(int argc, char **argv) {
             }
             break;
         case 'z':
-            status = snprintf(stateInName, sizeof(stateInName), "%s", optarg);
-            if(status >= sizeof(stateInName)) {
-                fprintf(stderr, "%s:%d: buffer overflow\n",
-                        __FILE__, __LINE__);
-                exit(EXIT_FAILURE);
-            }
-            stateIn = fopen(stateInName, "r");
-            if(stateIn == NULL) {
-                fprintf(stderr, "%s:%d: can't open \"%s\" for output.\n",
-                        __FILE__, __LINE__, stateOutName);
-                exit(EXIT_FAILURE);
-            }
+            stateInNames = NameList_append(stateInNames, optarg);
+            CHECKMEM(stateInNames);
             break;
         case '1':
             doSing = 1;
@@ -464,9 +453,9 @@ int main(int argc, char **argv) {
     // DiffEv state array is a matrix with a row for each point
     // and a column for each parameter.
     State *state;
-    if(stateIn) {
+    if(stateInNames) {
         // read State from file
-        state = State_read(stateIn);
+        state = State_readList(stateInNames);
         CHECKMEM(state);
     } else {
         // de novo State
@@ -493,8 +482,11 @@ int main(int argc, char **argv) {
     printf("# site pat input file: %s\n", patfname);
     printf("# free parameters    : %d\n", dim);
     printf("# pts/parameter      : %d\n", ptsPerDim);
-    if(stateIn)
-        printf("# input state file   : %s\n", stateInName);
+    if(stateInNames) {
+        printf("# input state file(s):");
+        NameList_print(stateInNames, stdout);
+        putchar('\n');
+    }
     if(stateOut)
         printf("# output state file  : %s\n", stateOutName);
 #if COST!=KL_COST && COST!=LNL_COST

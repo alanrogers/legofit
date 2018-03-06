@@ -41,6 +41,13 @@ int NameList_size(NameList *self) {
     return 1 + NameList_size(self->next);
 }
 
+void NameList_print(NameList *self, FILE *fp) {
+    if(self==NULL)
+        return;
+    fprintf(fp, " %s", self->name);
+    NameList_print(self->next, fp);
+}
+
 int State_npoints(State *self) {
     return self->npts;
 }
