@@ -249,9 +249,6 @@ State *State_readList(NameList *list, int npts, int npar) {
     if(total < npts)
         npts = total;
 
-    // Number of points to skip
-    int skip = total - npts;
-
     State *self = State_new(npts, npar);
     CHECKMEM(self);
 
