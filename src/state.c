@@ -214,14 +214,14 @@ int State_print(State *self, FILE *fp) {
     return EIO;
 }
 
-State *State_readList(NameList *list) {
+State *State_readList(NameList *list, int npts, int npar) {
     int nstates = NameList_size(list);
     if(nstates==0)
         return NULL;
 
     State *state[nstates];
     NameList *node;
-    int i, j, k, npts=-1, npar;
+    int i, j, k;
 
     for(i=0, node=list; i<nstates; ++i, node=node->next) {
 
@@ -232,21 +232,25 @@ State *State_readList(NameList *list) {
         fclose(fp);
 
         // Make sure dimensions are compatible.
-        if(npts < 0) {
-            npts = State_npoints(state[i]);
-            npar = State_nparameters(state[i]);
-        }else{
-            if(npts != State_npoints(state[i])
-               || npar != State_nparameters(state[i])) {
-                fprintf(stderr,"%s:%s:%d:"
-                        " input state file \"%s\" has"
-                        " incompatible dimensions.\n",
-                        __FILE__,__func__,__LINE__,
-                        node->name);
-                exit(EXIT_FAILURE);
-            }
+        if(npar != State_nparameters(state[i])) {
+            fprintf(stderr,"%s:%s:%d:"
+                    " input state file \"%s\" has"
+                    " incompatible dimensions.\n",
+                    __FILE__,__func__,__LINE__,
+                    node->name);
+            exit(EXIT_FAILURE);
         }
     }
+
+    // Make sure we're not asking for more points than exist
+    int total=0;
+    for(i=0; i < nstates; ++i)
+        total += State_npoints(state[i]);
+    if(total < npts)
+        npts = total;
+
+    // Number of points to skip
+    int skip = total - npts;
 
     State *self = State_new(npts, npar);
     CHECKMEM(self);
@@ -255,14 +259,32 @@ State *State_readList(NameList *list) {
     // The goal is to take nearly equal numbers.
     div_t qr = div(npts, nstates);
     int npoints[nstates];
-    int total=0; // for debugging
+    int avail[nstates];
+    int got=0;
+
+    // 1st pass: roughly equal number of points per input file
     for(i=0; i < nstates; ++i) {
+        avail[i] = State_npoints(state[i]);
         npoints[i] = qr.quot;
         if(i < qr.rem)
             ++npoints[i];
-        total += npoints[i];  // for debugging
+
+        if(npoints[i] > avail[i])
+            npoints[i] = avail[i];
+        got += npoints[i];
     }
-    assert(total == npts);
+
+    // additional passes: fill in missing points
+    while(got < npts) {
+        for(i=0; i < nstates; ++i) {
+            if(npoints[i] < avail[i]) {
+                ++npoints[i];
+                ++got;
+            }
+            if(got == npts)
+                break;
+        }
+    }
 
     // Set vectors; free pointers in vector "state".
     k = 0; // index into self->s

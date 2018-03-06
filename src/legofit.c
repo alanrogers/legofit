@@ -88,10 +88,10 @@ parameters. To change this number, see the --ptsPerDim option.
 
 The initial swarm of points can also be specified using the
 `--stateIn` option. This reads a file specifying the initial state of
-the swarm of points maintained by DE. The number of points and the
-number of free parameters should agree with the values implied by the
-.lgo file and the --ptsPerDim option. The format of this file is as
-described below for the `--stateOut` option.
+the swarm of points maintained by DE. The format of this file is as
+described below for the `--stateOut` option. The number of free
+parameters in each `--stateIn` file should be as specified in the .lgo
+file. The number of points in the files may differ.
 
 The `--stateIn` option may be given more than once, each time with a
 different input file. When more than one file is given, Legofit
@@ -472,8 +472,10 @@ int main(int argc, char **argv) {
     State *state;
     if(stateInNames) {
         // read State from file
-        state = State_readList(stateInNames);
+        state = State_readList(stateInNames, npts,
+                               GPTree_nFree(gptree));
         CHECKMEM(state);
+        npts = State_npoints(state);
     } else {
         // de novo State
         state = State_new(npts, dim);
@@ -498,7 +500,7 @@ int main(int argc, char **argv) {
     printf("# lgo input file     : %s\n", lgofname);
     printf("# site pat input file: %s\n", patfname);
     printf("# free parameters    : %d\n", dim);
-    printf("# pts/parameter      : %d\n", ptsPerDim);
+    printf("# points in DE swarm : %d\n", npts);
     if(stateInNames) {
         printf("# input state file(s):");
         NameList_print(stateInNames, stdout);
