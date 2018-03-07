@@ -128,5 +128,6 @@ int main(int argc, char **argv) {
     unitTstResult("State", "OK");
 
     unlink(fname);
+    unlink(fname2);
     return 0;
 }
