@@ -504,9 +504,9 @@ int main(int argc, char **argv) {
         nThreads = npts;
 
     printf("# DE strategy        : %d\n", strategy);
-    printf("#    F               : %lf\n", F);
-    printf("#    CR              : %lf\n", CR);
-    printf("#    tolerance       : %le\n", ytol);
+    printf("#    F               : %lg\n", F);
+    printf("#    CR              : %lg\n", CR);
+    printf("#    tolerance       : %lg\n", ytol);
     printf("# nthreads           : %d\n", nThreads);
     printf("# lgo input file     : %s\n", lgofname);
     printf("# site pat input file: %s\n", patfname);
