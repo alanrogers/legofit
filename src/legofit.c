@@ -197,6 +197,7 @@ Systems Consortium License, which can be found in file "LICENSE".
 
 extern pthread_mutex_t seedLock;
 extern unsigned long rngseed;
+extern volatile sig_atomic_t sigstat;
 
 void usage(void);
 void *ThreadState_new(void *notused);
@@ -621,6 +622,9 @@ int main(int argc, char **argv) {
     fflush(stdout);
 
     status = diffev(dim, estimate, &cost, &yspread, dep, rng);
+
+    if(sigstat == SIGINT)
+        printf("Job terminated early in reponse to signal.\n");
 
     printf("DiffEv %s. cost=%0.5le spread=%0.5le\n",
            status == 0 ? "converged" : "FAILED", cost, yspread);
