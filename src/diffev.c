@@ -184,6 +184,11 @@ void sighandle(int signo) {
     sigstat = signo;
 }
 
+/// SIGTERM is translated to SIGINT
+void handleSIGTERM(int signo) {
+    sigstat = SIGINT;
+}
+
 // Strategies.
 // We have tried to come up with a sensible
 // naming-convention: DE/x/y/z
@@ -680,7 +685,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     int         stage, nstages = SimSched_nStages(simSched);
 
     for(stage=0;
-        sigstat==0 && stage < nstages;
+        sigstat!=SIGINT && stage < nstages;
         ++stage, SimSched_next(simSched)) {
 
         // The number of simulation replicates changes with each
@@ -772,8 +777,10 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
             *yspread = cmax - cmin;
 
             // output
-            if(verbose && gen % refresh == 0) {
+            if((verbose && gen % refresh == 0)
+               || sigstat==SIGUSR1) {
                 // display after every refresh generations
+                fflush(stdout);
                 fprintf(stderr,
                         "%d:%d cost=%1.10lg yspread=%lf\n",
                         stage, gen, cmin, *yspread);
@@ -784,10 +791,8 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
                         putc(',', stderr);
                 }
                 putc('\n', stderr);
-#if 0
-                printState(nPts, dim, *pold, cost, imin, stdout);
-#endif
-                fflush(stdout);
+                if(sigstat==SIGUSR1)
+                    sigstat=0;
             }
             if(sigstat==SIGINT)
                 break;
