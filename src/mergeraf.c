@@ -79,7 +79,6 @@ int main(int argc, char **argv) {
             continue;
         case REF_MISMATCH:
         case MULTIPLE_ALT:
-        case NO_ANCESTRAL_ALLELE:
             continue;
         default:
             // something wrong.

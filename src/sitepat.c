@@ -453,6 +453,20 @@ int main(int argc, char **argv) {
                 continue;
             case REF_MISMATCH:
             case MULTIPLE_ALT:
+                continue;
+            default:
+                // something wrong.
+                mystrerror_r(status, errbuff, sizeof errbuff);
+                fprintf(stderr,"%s:%d: input error (%s)\n",
+                        __FILE__,__LINE__, errbuff);
+                exit(EXIT_FAILURE);
+            }
+
+            // Set derived allele frequence in each reader
+            status = RAFReader_findDaf(n, r);
+            switch(status) {
+            case 0:
+                break;
             case NO_ANCESTRAL_ALLELE:
                 continue;
             default:

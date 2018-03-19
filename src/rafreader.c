@@ -284,6 +284,21 @@ int RAFReader_multiNext(int n, RAFReader * r[n]) {
         }
     } while(!onSameChr || minnuc != maxnuc);
 
+    // Make sure REF and ALT are consistent across readers
+    if((status = RAFReader_alleleCheck(n, r)))
+        return status;
+
+    return 0;
+}
+
+/// Set derived allele frequency within each RAFReader.
+/// @param[in] n number of RAFReader objects in array
+/// @param[in] r array of RAFReader objects. Last one should be outgroup.
+/// @return 0 on success, or one of several error codes on failure.
+int RAFReader_findDaf(int n, RAFReader * r[n]) {
+
+    int i, status;
+    
     // Make sure reference allele isn't fixed in readers, excluding
     // the outgroup (reader n-1). If it's fixed, then we can't call
     // the ancestral allele. 
@@ -318,6 +333,7 @@ int RAFReader_multiNext(int n, RAFReader * r[n]) {
 
     return 0;
 }
+
 
 /// Return 0 if ref and alt alleles of all readers match; return
 /// REF_MISMATCH if there is a mismatch in REF alleles; return
