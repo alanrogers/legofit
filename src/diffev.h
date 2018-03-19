@@ -4,6 +4,7 @@
 #  define MAXDIM  35
 
 #  include "typedefs.h"
+#  include "state.h"
 #  include <assert.h>
 #  include <stdbool.h>
 #  include <gsl/gsl_rng.h>
@@ -31,13 +32,13 @@ struct DiffEvPar {
     void       *threadData;
     void       *(*ThreadState_new) (void *);
     void        (*ThreadState_free) (void *);
-    void       *initData;
-    void        (*initialize)(int, void *, int, double *, gsl_rng *rng);
+    State      *state;
 };
 
 int         diffev(int dim, double estimate[dim], double *loCost,
                    double *yspread, DiffEvPar dep, gsl_rng * rng);
 const char *diffEvStrategyLbl(int i);
 void        sighandle(int signo);
+void        handleSIGTERM(int signo);
 
 #endif

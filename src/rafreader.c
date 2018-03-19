@@ -73,7 +73,7 @@ int iscomment(const char *s) {
 int RAFReader_next(RAFReader * self) {
     int ntokens;
     int status;
-    char buff[100];
+    char buff[1024];
     long unsigned prevnucpos = 0UL;
 
     // Find a line of input
@@ -91,6 +91,14 @@ int RAFReader_next(RAFReader * self) {
             continue;
         Tokenizer_split(self->tkz, buff, "\t");
         ntokens = Tokenizer_strip(self->tkz, " \n");
+        if( ntokens == 5) {
+            // reference allele must be a single nucleotide
+            if(1 != strlen(Tokenizer_token(self->tkz, 2)))
+                continue;
+            // alternate allele must be a single nucleotide
+            if(1 != strlen(Tokenizer_token(self->tkz, 3)))
+                continue;
+        }
         if(ntokens > 0)
             break;
     }

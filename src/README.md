@@ -6,27 +6,29 @@ Legofit is a computer package that uses counts of nucleotide site
 patterns to estimate the history of population size, subdivision, and
 gene flow. The package consists of the following programs
 
-* @ref daf "daf", which writes genetic data into the ".daf" format,
+* @ref daf "daf" writes genetic data into the ".daf" format,
   which is used by @ref tabpat "tabpat".
-* @ref tabpat "tabpat", which reads ".daf" files for several
+* @ref tabpat "tabpat" reads ".daf" files for several
   populations, tabulates "nucleotide site patterns" (explained below),
   and generates moving-blocks bootstrap replicates.
-* @ref raf "raf", which writes genetic data into the ".raf" format,
+* @ref raf "raf" writes genetic data into the ".raf" format,
   which is used by @ref sitepat "sitepat".
-* @ref sitepat "sitepat", which reads ".raf" files for several
+* @ref sitepat "sitepat" reads ".raf" files for several
   populations, tabulates "nucleotide site patterns" (explained below),
   and generates moving-blocks bootstrap replicates.
-* @ref legosim "legosim", which predicts site pattern counts from
+* @ref scrmpat "scrmpat" tabulates site patterns from output generated
+  by the `scrm` coalescent simulator.
+* @ref legosim "legosim" predicts site pattern counts from
   assumptions about population history.
-* @ref legofit "legofit", which estimates parameters from site pattern
+* @ref legofit "legofit" estimates parameters from site pattern
   counts.
-* @ref bootci "bootci.py", which uses multiple legofit output files
+* @ref bootci "bootci.py" uses multiple legofit output files
   (one for the real data and one for each bootstrap replicate) to
   generate bootstrap confidence intervals for estimated parameters.
-* @ref flatfile "flatfile.py", which reads a list of legofit output
+* @ref flatfile "flatfile.py" reads a list of legofit output
   files and writes a flat file with a row for each legofit file and a
   column for each parameter.
-* @ref diverg "diverg.py", which compares two distributions of site
+* @ref diverg "diverg.py" compares two distributions of site
   pattern frequencies, using the Kullback-Leibler (KL) divergence.
 
 # Nucleotide site patterns {#sitepat}
@@ -452,6 +454,21 @@ format is described above. Then, you can execute `legosim` by typing:
     legosim -i 10000 my_input_file.lgo
 
 See the @ref legosim "legosim" documentation for details.
+
+## Simulating site patterns
+
+The preferred approach is to do simulations using
+[scrm](https://scrm.github.io/), a software package written by Paul
+R. Staab, Sha Zhu, Dirk Metzler and Gerton Lunter. It does coalescent
+simulations with linkage and recombination. Our own program @ref
+scrmpat "scrmpat" tabulates site pattern frequencies from `scrm`
+output.
+
+For less sophisticated simulations, use the `-U` option of @ref
+legosim "legosim". This assumes free recombination between nucleotide
+sites. This is not ideal, because it ignores genetic linkage, but it
+reads the same input files as `legosim`, is very fast, and generates
+output in the form of site pattern frequencies.
 
 ## Estimating parameters from genetic data
 

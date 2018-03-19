@@ -39,6 +39,23 @@ struct GPTree {
     SampNdx     sndx;           // Index of sample pointers into PopNode objects.
 };
 
+/// Initialize vector x. If ndx==0, simply copy the parameter vector
+/// from the GPTree object. Otherwise, randomize the GPTree first.
+/// This ensures that differential evolution starts with a set of
+/// points, one of which is the same as the values in the input
+/// file. This allows you to improve on existing estimates without
+/// starting from scratch each time.
+void initStateVec(int ndx, GPTree *gpt, int n, double x[n], gsl_rng *rng){
+    if(ndx == 0)
+        GPTree_getParams(gpt, n, x);
+    else {
+        GPTree *g2 = GPTree_dup(gpt);
+        GPTree_randomize(g2, rng);
+        GPTree_getParams(g2, n, x);
+        GPTree_free(g2);
+    }
+}
+
 /// Print a description of parameters.
 void GPTree_printParStore(GPTree * self, FILE * fp) {
     if(ParStore_constrain(self->parstore))

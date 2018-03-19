@@ -1,6 +1,6 @@
 #include "diffev.h"
-#include "misc.h"
 #include "simsched.h"
+#include "state.h"
 #include <getopt.h>
 #include <limits.h>
 #include <math.h>
@@ -11,10 +11,19 @@
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 
+#  define   CHECKMEM(x) do {                                \
+        if((x)==NULL) {                                     \
+            fprintf(stderr, "%s:%s:%d: allocation error\n", \
+                    __FILE__,__func__,__LINE__);            \
+            exit(EXIT_FAILURE);                             \
+        }                                                   \
+    } while(0)
+
 void        usage(void);
 double      objFunc(int dim, double x[dim], void *jdat, void *tdat);
 void        initStateVec(int ndx, void *void_p, int n, double x[n],
                          gsl_rng *rng);
+void prOpt(const char *opt, const char *description);
 
 #define RUGGED
 
@@ -72,22 +81,29 @@ void initStateVec(int ndx, void *void_p, int n, double x[n], gsl_rng *rng){
 
 #undef RUGGED
 
+/// Describe an option. For use in "usage" functions.
+/// @param[in] opt Name of option.
+/// @param[in] description Description of option.
+void prOpt(const char *opt, const char *description) {
+    fprintf(stderr, "   %s\n      %s\n", opt, description);
+    return;
+}
+
 /// Print usage message and exit.
 void usage(void) {
     fprintf(stderr, "usage: diffev [options]\n");
     fprintf(stderr, "   where options may include:\n");
 
     /* misc */
-    tellopt("-s <method> or --strategy <method>", "strategy");
-    tellopt("-g <x> or --genmax <x>", "max generations");
-    tellopt("-r <x> or --refresh <x>", "refresh interval");
-    tellopt("-n or --nParam", " number of parameters");
-    tellopt("-p <x> or --ptsPerDim <x>", "points per dimension");
-    tellopt("-F <x> or --F <x>", "DE weight factor");
-    tellopt("-c <x> or --crossOver <x>", "crossover probability");
-    tellopt("-t <x> or --threads <x>", "number of threads (default is auto)");
-    tellopt("-v or --verbose", "more output");
-    tellopt("-h or --help", "print this message");
+    prOpt("-s <method> or --strategy <method>", "strategy");
+    prOpt("-g <x> or --genmax <x>", "max generations");
+    prOpt("-r <x> or --refresh <x>", "refresh interval");
+    prOpt("-n or --nParam", " number of parameters");
+    prOpt("-p <x> or --ptsPerDim <x>", "points per dimension");
+    prOpt("-F <x> or --F <x>", "DE weight factor");
+    prOpt("-c <x> or --crossOver <x>", "crossover probability");
+    prOpt("-v or --verbose", "more output");
+    prOpt("-h or --help", "print this message");
     exit(1);
 }
 
@@ -96,7 +112,6 @@ int main(int argc, char *argv[]) {
     static struct option myopts[] = {
         /* {char *name, int has_arg, int *flag, int val} */
         {"strategy", required_argument, 0, 's'},
-        {"threads", required_argument, 0, 't'},
         {"genmax", required_argument, 0, 'g'},
         {"refresh", required_argument, 0, 'r'},
         {"nParam", required_argument, 0, 'n'},
@@ -121,7 +136,7 @@ int main(int argc, char *argv[]) {
     double      ytol = 1e-4;    // convergence criterion
 
     int         i;
-    int         nthreads = 0;
+    int         nthreads = 2;
     time_t      currtime = time(NULL);
     unsigned    baseSeed = currtime % UINT_MAX;
     gsl_rng    *rng = gsl_rng_alloc(gsl_rng_taus);
@@ -132,7 +147,7 @@ int main(int argc, char *argv[]) {
 
     // command line arguments
     for(;;) {
-        i = getopt_long(argc, argv, "T:s:t:g:r:n:p:F:c:hv", myopts, &optndx);
+        i = getopt_long(argc, argv, "T:s:g:r:n:p:F:c:hv", myopts, &optndx);
         if(i == -1)
             break;
         switch (i) {
@@ -145,9 +160,6 @@ int main(int argc, char *argv[]) {
             break;
         case 'T':
             ytol = strtod(optarg, 0);
-            break;
-        case 't':
-            nthreads = strtol(optarg, NULL, 10);
             break;
         case 'g':
             genmax = strtol(optarg, NULL, 10);
@@ -191,27 +203,45 @@ int main(int argc, char *argv[]) {
 
     nPts = ptsPerDim * dim;
 
-    if(nthreads == 0)
-        nthreads = getNumCores();
-
     printf("Using up to %d threads\n", nthreads);
 
-    // Check inputs
-    if(dim <= 0)
-        eprintf("%s:%d:Err dim=%d, should be > 0\n", __FILE__, __LINE__, dim);
-    if(nPts <= 0)
-        eprintf("%s:%d:Err nPts=%d, should be > 0\n", __FILE__, __LINE__,
-                nPts);
+    State *state = State_new(nPts, dim);
+    CHECKMEM(state);
+    for(i=0; i < nPts; ++i) {
+        double x[dim];
+        initStateVec(i, initVec, dim, x, rng);
+        State_setVector(state, i, dim, x);
+    }
 
-    if((CR < 0) || (CR > 1.0))
-        eprintf("%s:%d:Err CR=%f, should be in [0,1]\n", __FILE__, __LINE__,
+    // Check inputs
+    if(dim <= 0) {
+        fprintf(stderr,
+                "%s:%d:Err dim=%d, should be > 0\n", __FILE__, __LINE__, dim);
+        exit(1);
+    }
+    if(nPts <= 0) {
+        fprintf(stderr,
+                "%s:%d:Err nPts=%d, should be > 0\n", __FILE__, __LINE__,
+                nPts);
+        exit(1);
+    }
+
+    if((CR < 0) || (CR > 1.0)) {
+        fprintf(stderr,
+                "%s:%d:Err CR=%f, should be in [0,1]\n", __FILE__, __LINE__,
                 CR);
-    if(refresh <= 0)
-        eprintf("%s:%d:Err refresh=%d, should be > 0\n",
+        exit(1);
+    }
+    if(refresh <= 0) {
+        fprintf(stderr,"%s:%d:Err refresh=%d, should be > 0\n",
                 __FILE__, __LINE__, refresh);
-    if(genmax <= 0)
-        eprintf("%s:%d:Err genmax=%d, should be > 0\n",
+        exit(1);
+    }
+    if(genmax <= 0) {
+        fprintf(stderr,"%s:%d:Err genmax=%d, should be > 0\n",
                 __FILE__, __LINE__, genmax);
+        exit(1);
+    }
 
     printf("Strategy: %s\n", diffEvStrategyLbl(strategy));
     printf("nPts=%d F=%-4.2lg CR=%-4.2lg\n", nPts, F, CR);
@@ -235,9 +265,8 @@ int main(int argc, char *argv[]) {
         .threadData = NULL,
         .ThreadState_new = NULL,
         .ThreadState_free = NULL,
-		.initData = initVec,
-		.initialize = initStateVec,
-        .simSched = simSched
+        .simSched = simSched,
+		.state = state
     };
 
     double      estimate[dim];

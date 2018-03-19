@@ -71,6 +71,7 @@ int main(int argc, char **argv) {
     long int         zeroref = 0, zeroalt = 0, zerogtype = 0;
     long int         missref = 0;
     long int         multref = 0, multalt = 0;
+    long int         indelref=0, indelalt=0;
     long int         nbad = 0, ngood = 0;
     int         ok;             // is current line acceptable
     long unsigned lastnucpos = 0, nucpos;
@@ -192,6 +193,21 @@ int main(int argc, char **argv) {
             ++nbad;
             continue;
         }
+
+        // Skip if ref or alt are indels
+        if(strlen(ref[0]) != 1) {
+            ++indelref;
+            ok=0;
+        }
+        if(strlen(alt[0]) != 1) {
+            ++indelalt;
+            ok=0;
+        }
+        if(!ok) {
+            ++nbad;
+            continue;
+        }
+
         // Skip if ref is missing.
         if(0==strcmp(ref[0], ".")) {
             ++missref;
@@ -272,6 +288,14 @@ int main(int argc, char **argv) {
     if(multalt)
         fprintf(stderr, "raf: bad sites with multiple alt alleles: %ld\n",
                 multalt);
+    if(indelref)
+        fprintf(stderr,
+                "raf: bad sites with ref allele an indel: %ld\n",
+                indelref);
+    if(indelalt)
+        fprintf(stderr,
+                "raf: bad sites with alt allele an indel: %ld\n",
+                indelalt);
     if(missref)
         fprintf(stderr, "raf: bad sites with missing ref alleles: %ld\n",
                 missref);

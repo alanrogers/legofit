@@ -2,7 +2,7 @@
  * @file xbinary.c
  * @brief Test file binary.c
  *
- * @copyright Copyright (c) 2014, Alan R. Rogers 
+ * @copyright Copyright (c) 2014, Alan R. Rogers
  * <rogers@anthro.utah.edu>. This file is released under the Internet
  * Systems Consortium License, which can be found in file "LICENSE".
  */
@@ -94,6 +94,12 @@ int main(void) {
     printf("r64:");
     printBits(sizeof(r64), &r64, stdout);
     putchar('\n');
+
+    uint32_t key32 = 1234u;
+    printf("32-bit key %u -> hash %u\n", key32, uint32Hash(key32));
+
+    uint64_t key64 = 1234u;
+    printf("64-bit key %llu -> hash %u\n", key64, uint64Hash(key64));
 
     return 0;
 }

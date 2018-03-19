@@ -10,6 +10,7 @@
 #include "binary.h"
 #include "lblndx.h"
 #include "version.h"
+#include "error.h"
 #include <assert.h>
 #include <ctype.h>
 #include <gsl/gsl_randist.h>
@@ -610,4 +611,56 @@ char       *strcenter(const char *text, unsigned width,
         buff[i + txtwid + j] = ' ';
     buff[lpad + txtwid + rpad] = '\0';
     return buff;
+}
+
+/**
+ * Remove zeroes from an array of unsigned ints by sliding positive
+ * entries to the left. Return number of non-zero entries. This
+ * function doesn't re-allocate the array. It just moves zeroes to the
+ * end.
+ */
+int removeZeroes(int dim, unsigned x[dim]) {
+    int i, j;
+    i=j=0;
+    while(i < dim) {
+        if(x[j] > 0) {
+            // ++ or  0+
+            ++i;
+            ++j;
+        }else if(x[i]==0 && x[j]==0) {
+            // 00
+            ++i;
+        }else if(x[i] > 0 && x[j] == 0) {
+            // +0
+            assert(i > j);
+            x[j] = x[i];
+            x[i] = 0;
+            ++i;
+            ++j;
+        }
+    }
+    while(j<dim && x[j]>0)
+        ++j;
+    return j;
+}
+
+/// Read a line of input into buff.
+/// Return EOF or BUFFER_OVERFLOW on failure; 0 on success.
+int readline(int dim, char buff[dim], FILE *fp) {
+    if(fgets(buff, dim, fp) == NULL)
+        return EOF;
+
+    if(NULL == strchr(buff, '\n')) {
+        if(feof(fp))
+            return 0;
+        int c = fgetc(fp);
+        if(c == EOF)
+            return 0;
+        else {
+            ungetc(c, fp);
+            return BUFFER_OVERFLOW;
+        }
+    }
+
+    return 0;
 }

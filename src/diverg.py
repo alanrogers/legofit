@@ -147,9 +147,9 @@ if not dokl:
         print fmt % (pat1[i], prob1[i])
     exit(0)
 
-fmt = "%%%ds %%%ds %%%ds %%6s" % (widpat, wid1, wid2)
+fmt = "%%%ds %%%ds %%%ds %%7s" % (widpat, wid1, wid2)
 print fmt % ("SitePat", fname1, fname2, "KL")
-fmt = "%%%ds %%%d.5f %%%d.5f %%6.3f" % (widpat, wid1, wid2)
+fmt = "%%%ds %%%d.5f %%%d.5f %%7.4f" % (widpat, wid1, wid2)
 
 KLsum = 0.0
 for i in range(len(prob1)):

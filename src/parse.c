@@ -182,7 +182,9 @@ void		parseParam(char *next, enum ParamType type,
     if(!ok) {
 		fprintf(stderr,"%s:%d: \"%s\" is not a legal parameter name.\n",
 				__FILE__,__LINE__, name);
-        fprintf(stderr,"   input: %s\n", orig);
+        fprintf(stderr," Legal names consist of a letter followed by"
+                " letters, digits, and underscores.\n");
+        fprintf(stderr," Input: %s\n", orig);
         exit(EXIT_FAILURE);
     }
 

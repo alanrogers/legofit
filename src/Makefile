@@ -1,14 +1,14 @@
 destination := $(HOME)/bin
 global_destination := $(HOME)/group/bin
 opt := -DNDEBUG -O3  -finline-functions  # For full optimization
-#opt :=  -O0 -fno-inline-functions -rdynamic -DDEBUG     # For debugging
+#opt := -O0 -fno-inline-functions -rdynamic -DDEBUG     # For debugging
 #opt := -O3  -finline-functions  # Optimization + debugging
 #prof := -pg -rdynamic                    # For profiling
 prof :=
 incl := -I/usr/local/include -I/opt/local/include
 
-targets := legosim legofit tabpat sitepat daf raf numcores
-pytargets := diverg.py bootci.py flatfile.py
+targets := legosim legofit tabpat sitepat scrmpat daf raf numcores
+pytargets := diverg.py bootci.py flatfile.py axt2raf.py
 tests := xzeroin xbinary
 
 CC := gcc
@@ -43,9 +43,6 @@ test : $(tests)
 	-./xzeroin
 	@echo "ALL UNIT TESTS WERE COMPLETED."
 
-version.h:
-	./mkversion.py > version.h
-
 LEGOSIM := legosim.o patprob.o gptree.o binary.o jobqueue.o misc.o parse.o \
   branchtab.o popnodetab.o lblndx.o tokenizer.o parstore.o parkeyval.o \
   popnode.o gene.o dprintf.o rngseed.o dtnorm.o tinyexpr.o
@@ -55,7 +52,7 @@ legosim : $(LEGOSIM)
 LEGOFIT := legofit.o patprob.o gptree.o binary.o jobqueue.o misc.o \
   parse.o branchtab.o popnodetab.o lblndx.o tokenizer.o parstore.o \
   parkeyval.o popnode.o gene.o cost.o diffev.o dprintf.o rngseed.o \
-  simsched.o dtnorm.o tinyexpr.o
+  simsched.o dtnorm.o tinyexpr.o state.o
 legofit : $(LEGOFIT)
 	$(CC) $(CFLAGS) -o $@ $(LEGOFIT) $(lib)
 
@@ -68,6 +65,11 @@ SITEPAT := sitepat.o misc.o binary.o lblndx.o parkeyval.o rafreader.o \
   tokenizer.o strint.o boot.o error.o
 sitepat : $(SITEPAT)
 	$(CC) $(CFLAGS) -o $@ $(SITEPAT) $(lib)
+
+SCRMPAT := scrmpat.o misc.o binary.o lblndx.o parkeyval.o scrmreader.o \
+  tokenizer.o boot.o error.o
+scrmpat : $(SCRMPAT)
+	$(CC) $(CFLAGS) -o $@ $(SCRMPAT) $(lib)
 
 DAF := daf.o misc.o
 daf : $(DAF)
@@ -107,5 +109,4 @@ include depend
 
 .SUFFIXES:
 .SUFFIXES: .c .o
-.PHONY: clean
 

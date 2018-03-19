@@ -5,7 +5,8 @@ prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
 tests := xbinary xboot xbranchtab xdafreader xrafreader xdiffev xgene \
   xgptree xpopnodetab xjobqueue xlblndx xllrbtree xparkeyval xparse \
-  xparstore xpopnode xsimsched xstrint xdtnorm xmisc xerror
+  xparstore xpopnode xscrmreader xsimsched xstrint xdtnorm xmisc xerror \
+  xstate
 
 CC := gcc
 
@@ -54,7 +55,9 @@ test : $(tests)
 	-./xparstore
 	-./xpopnode
 	-./xpopnodetab
+	-./xscrmreader
 	-./xsimsched
+	-./xstate
 	-./xstrint
 	@echo "ALL UNIT TESTS WERE COMPLETED."
 
@@ -65,6 +68,10 @@ xbinary : $(XBINARY)
 XMISC := xmisc.o misc.o
 xmisc : $(XMISC)
 	$(CC) $(CFLAGS) -o $@ $(XMISC) $(lib)
+
+XSTATE := xstate.o misc.o state.o
+xstate : $(XSTATE)
+	$(CC) $(CFLAGS) -o $@ $(XSTATE) $(lib)
 
 XPOPNODETAB := xpopnodetab.o popnodetab.o misc.o popnode.o gene.o \
    branchtab.o lblndx.o tokenizer.o dtnorm.o binary.o \
@@ -84,8 +91,8 @@ XJOBQUEUE := xjobqueue.o jobqueue.o misc.o
 xjobqueue : $(XJOBQUEUE)
 	$(CC) $(CFLAGS) -o $@ $(XJOBQUEUE) $(lib)
 
-XDIFFEV := xdiffev.o diffev.o misc.o binary.o lblndx.o jobqueue.o parkeyval.o \
-  simsched.o
+XDIFFEV := xdiffev.o diffev.o binary.o lblndx.o jobqueue.o parkeyval.o \
+  simsched.o state.o misc.o
 xdiffev : $(XDIFFEV)
 	$(CC) $(CFLAGS) -o $@ $(XDIFFEV) $(lib)
 
@@ -98,6 +105,13 @@ XRAFREADER := xrafreader.o rafreader.o misc.o lblndx.o tokenizer.o binary.o \
    parkeyval.o strint.o error.o
 xrafreader : $(XRAFREADER)
 	$(CC) $(CFLAGS) -o $@ $(XRAFREADER) $(lib)
+
+xscrmreader.o : scrmreader.c
+	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/scrmreader.c
+
+XSCRMREADER := xscrmreader.o misc.o tokenizer.o
+xscrmreader : $(XSCRMREADER)
+	$(CC) $(CFLAGS) -o $@ $(XSCRMREADER) $(lib)
 
 xparse.o : parse.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/parse.c

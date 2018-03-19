@@ -131,3 +131,27 @@ int num1bits(tipId_t x) {
     }
     return n;
 }
+
+/// Hash function for a 32-bit integer. From Thomas Wang's 1997
+/// article: 
+/// https://gist.github.com/badboy/6267743
+uint32_t uint32Hash( uint32_t key) {
+   key = (key+0x7ed55d16) + (key<<12);
+   key = (key^0xc761c23c) ^ (key>>19);
+   key = (key+0x165667b1) + (key<<5);
+   key = (key+0xd3a2646c) ^ (key<<9);
+   key = (key+0xfd7046c5) + (key<<3);
+   key = (key^0xb55a4f09) ^ (key>>16);
+   return key;
+}
+
+/// Hash function for a 64-bit integer.
+uint32_t uint64Hash(uint64_t key) {
+  key = (~key) + (key << 18); // key = (key << 18) - key - 1;
+  key = key ^ (key >> 31);
+  key = key * 21; // key = (key + (key << 2)) + (key << 4);
+  key = key ^ (key >> 11);
+  key = key + (key << 6);
+  key = key ^ (key >> 22);
+  return (uint32_t) key;
+}
