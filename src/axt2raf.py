@@ -15,7 +15,7 @@ where <inputfile> is in axt format. Writes to standard output.
     print >> sys.stderr, msg
     exit(1)
 
-# For converting from negative strant to positive strand
+# For converting from negative strand to positive strand
 nucleotides = "atgc"
 complements = "tacg"
 trtab = maketrans(nucleotides, complements)
@@ -24,7 +24,7 @@ class SortError(Exception):
    """ Exception for unsorted input """
    pass
 
-class Align:
+class Alignment:
     def __init__(self):
         self.initialized = False
 
@@ -63,10 +63,7 @@ class Align:
 
         n = len(sA)
         assert n == len(sB)
-        gaps = 0
-        for i in range(n):
-            if sA[i]=="-" or sB[i]=="-":
-                gaps += 1
+        gaps = sA.count("-")
         n -= gaps
         self.ref = n * [None]
         self.alt = n * [None]
@@ -76,11 +73,13 @@ class Align:
         # j indexes sA and sB
         i = j = 0
         while i < n:
-            if sA[j] in "atgc" and sB[j] in "atgc":
+            if sA[j] != "-":
                 self.ref[i] = sA[j]
                 if sA[j] == sB[j]:
                     self.alt[i] = "."
                     self.raf[i] = 1.0
+                elif sB[j] == "-":
+                    self.alt[i] = "-" # deletion in sB
                 else:
                     self.alt[i] = sB[j]
                     self.raf[i] = 0.0
@@ -92,12 +91,13 @@ class Align:
 
     # Print alignment
     def pr(self):
-        print "# Alignment %d: [%d, %d)" % \
-            (self.alignment, self.start, self.end)
+        #print "# Alignment %d: [%d, %d)" % \
+        #    (self.alignment, self.start, self.end)
         pos = self.start
         for i in range(len(self.ref)):
-            print "%s\t%d\t%s\t%s\t%f" % (self.chr, pos, self.ref[i],\
-                                              self.alt[i], self.raf[i])
+            if self.alt[i] != "-":   # omit deletions
+                print "%s\t%d\t%s\t%s\t%f" % (self.chr, pos, self.ref[i],\
+                                                  self.alt[i], self.raf[i])
             pos = pos + 1
         self.initialized = False
         return self
@@ -105,9 +105,9 @@ class Align:
     # Define "+=" operator, which merges two alignments
     def __iadd__(self, other):
         if not self.initialized:
-            raise ValueError, "Align object not initialized"
+            raise ValueError, "Alignment not initialized"
         if not other.initialized:
-            raise ValueError, "Align object not initialized"
+            raise ValueError, "Alignment not initialized"
         if self.chr != other.chr:
             raise ValueError, "Chromosomes don't match"
         if self.start > other.start:
@@ -147,8 +147,8 @@ except:
     print >> sys.stderr, "Can't open input file \"%s\"" % sys.argv[1]
     exit(1)
 
-a = Align()
-b = Align()
+a = Alignment()
+b = Alignment()
 
 a.read(f)
 if a.initialized == False:
