@@ -45,12 +45,48 @@ class Alignment:
             return self
         sA = sA.strip().lower()
         sB = sB.strip().lower()
+        lenA = len(sA)
+        lenB = len(sB)
 
         self.alignment = int(line[0])
         self.chr=line[1]
-        self.start = int(line[2]) # start position
-        self.end = int(line[3])+1 # 1 past last position
+        self.start = int(line[2]) # start position, seq A
+        self.end = int(line[3])+1 # 1 past last position, seq A
 
+        # lengths of seqA and seqB should match
+        if lenA != lenB:
+            sys.stdout.flush()
+            print >> sys.stderr, \
+                "length mismatch in alignment %d" \
+                % self.alignment
+            print >> sys.stderr, "lenA=%d but lenB=%d" \
+                % (lenA, lenB)
+            exit(1)
+
+        # After omitting gaps, length of seqA should match header
+        netA = lenA - sA.count("-")
+        if netA != self.end - self.start:
+            sys.stdout.flush()
+            print >> sys.stderr, \
+                "non-gap length mismatch: seqA and header in alignment %d" \
+                % self.alignment
+            print >> sys.stderr, "header=%d but netA=%d" \
+                % (self.end - self.start, netA)
+            exit(1)
+
+        # After omitting gaps, length of seqB should match header
+        netB = lenB - sB.count("-")
+        startB = int(line[5])     # start, seq B
+        endB = int(line[6])+1     # end, seq B
+        if netB != endB - startB:
+            sys.stdout.flush()
+            print >> sys.stderr, \
+                "non-gap length mismatch: seqB and header in alignment %d" \
+                % self.alignment
+            print >> sys.stderr, "header=%d but netB=%d" \
+                % (endB - startB, netA)
+            exit(1)
+            
         # If we're on the negative strand, then translate
         # sA and sB by complementing each nucleotide.
         # See definition of trtab above.
@@ -61,18 +97,15 @@ class Alignment:
 
         self.qual = int(line[8])
 
-        n = len(sA)
-        assert n == len(sB)
-        gaps = sA.count("-")
-        n -= gaps
-        self.ref = n * [None]
-        self.alt = n * [None]
-        self.raf = n * [None]
+        # netA is length of output vectors
+        self.ref = netA * [None]
+        self.alt = netA * [None]
+        self.raf = netA * [None]
 
         # i indexes ref, alt, and p
         # j indexes sA and sB
         i = j = 0
-        while i < n:
+        while i < netA:
             if sA[j] != "-":
                 self.ref[i] = sA[j]
                 if sA[j] == sB[j]:
@@ -80,6 +113,8 @@ class Alignment:
                     self.raf[i] = 1.0
                 elif sB[j] == "-":
                     self.alt[i] = "-" # deletion in sB
+                elif sB[j] == "n":
+                    self.alt[i] = sB[j]
                 else:
                     self.alt[i] = sB[j]
                     self.raf[i] = 0.0
@@ -95,7 +130,8 @@ class Alignment:
         #    (self.alignment, self.start, self.end)
         pos = self.start
         for i in range(len(self.ref)):
-            if self.alt[i] != "-":   # omit deletions
+            # omit deletions and missing values
+            if self.alt[i] not in "-n" and self.ref[i] not in "-n":
                 print "%s\t%d\t%s\t%s\t%f" % (self.chr, pos, self.ref[i],\
                                                   self.alt[i], self.raf[i])
             pos = pos + 1
