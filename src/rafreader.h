@@ -35,11 +35,22 @@ int         RAFReader_rewind(RAFReader *self);
 int         RAFReader_multiNext(int n, RAFReader * r[n]);
 static inline const char *RAFReader_chr(RAFReader *self);
 static inline unsigned long RAFReader_nucpos(RAFReader *self);
-
+static inline const char *RAFReader_ref(RAFReader *self);
+static inline const char *RAFReader_alt(RAFReader *self);
 
 /// Return const pointer to label of current chromosome.
 static inline const char *RAFReader_chr(RAFReader *self) {
 	return self->chr;
+}
+
+/// Return const pointer to label of current reference allele
+static inline const char *RAFReader_ref(RAFReader *self) {
+	return self->ref;
+}
+
+/// Return const pointer to label of current alternate allele
+static inline const char *RAFReader_alt(RAFReader *self) {
+	return self->alt;
 }
 
 /// Return position of current nucleotide site
