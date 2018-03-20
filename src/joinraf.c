@@ -1,9 +1,9 @@
 /**
-@file mergeraf.c
-@page mergeraf
+@file joinraf.c
+@page joinraf
 @brief Merge two or more raf files
 
-# Mergeraf: merge two or more raf files
+# Joinraf: merge two or more raf files
 
 Sitepat reads several files in .raf format and prints a single raf file
 to standard output. The output includes only those positions at which
@@ -38,7 +38,7 @@ Systems Consortium License, which can be found in file "LICENSE".
 static void usage(void);
 
 const char *useMsg =
-    "\nUsage: mergeraf <in_1> <in_2> ...\n"
+    "\nUsage: joinraf <in_1> <in_2> ...\n"
     "   where <in_i> are input files in raf format."
     "   Writes to standard output.\n";
 
@@ -63,7 +63,7 @@ int main(int argc, char **argv) {
     for(i = 0; i < n; ++i)
         r[i] = RAFReader_new(argv[i+1]);
 
-    printf("# mergeraf version %s\n", VERSION);
+    printf("# joinraf version %s\n", VERSION);
 
     // Iterate through raf files
     printf("#%s\t%s\t%s\t%s\t%s\n", "chr", "pos", "ref", "alt", "raf");
@@ -79,7 +79,6 @@ int main(int argc, char **argv) {
             continue;
         case REF_MISMATCH:
         case MULTIPLE_ALT:
-        case NO_ANCESTRAL_ALLELE:
             continue;
         default:
             // something wrong.

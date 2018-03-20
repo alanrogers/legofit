@@ -33,6 +33,7 @@ void        RAFReader_print(RAFReader *r, FILE *fp);
 void        RAFReader_printArray(int n, RAFReader * r[n], FILE *fp);
 int         RAFReader_rewind(RAFReader *self);
 int         RAFReader_multiNext(int n, RAFReader * r[n]);
+int         RAFReader_findDaf(int n, RAFReader * r[n]);
 static inline const char *RAFReader_chr(RAFReader *self);
 static inline unsigned long RAFReader_nucpos(RAFReader *self);
 static inline const char *RAFReader_ref(RAFReader *self);

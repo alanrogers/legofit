@@ -37,6 +37,8 @@ class Alignment:
                 return self
             line = line.strip().split()
             if len(line) > 0:
+                if line[0] == "#": 
+                    continue
                 break
         sA=f.readline()
         sB=f.readline()
