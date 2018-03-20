@@ -132,6 +132,8 @@ int main(int argc, char **argv) {
     i=0;
     do{
         status = RAFReader_multiNext(3, r);
+        if(status==0)
+            status = RAFReader_findDaf(3, r);
         if(i==0) {
             assert(status==0);
             assert(0 == strcmp("1",RAFReader_chr(r[0])));
@@ -159,7 +161,7 @@ int main(int argc, char **argv) {
         }
         ++i;
     }while(status != EOF);
-        
+
     for(i = 0; i < 3; ++i) {
         RAFReader_free(r[i]);
         remove(tst[i]);
