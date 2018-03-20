@@ -164,7 +164,7 @@ int main(int argc, char **argv) {
 
     for(i = 0; i < 3; ++i) {
         RAFReader_free(r[i]);
-        remove(tst[i]);
+        //remove(tst[i]);
     }
 
     unitTstResult("RAFReader", "OK");

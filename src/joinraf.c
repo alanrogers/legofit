@@ -5,7 +5,7 @@
 
 # Joinraf: merge two or more raf files
 
-Sitepat reads several files in .raf format and prints a single raf file
+Joinraf reads several files in .raf format and prints a single raf file
 to standard output. The output includes only those positions at which
 chromosome, position, ref, and alt match in all the input
 files. (Missing values in alt are allowed.) In the output file, the
@@ -67,7 +67,6 @@ int main(int argc, char **argv) {
 
     // Iterate through raf files
     printf("#%s\t%s\t%s\t%s\t%s\n", "chr", "pos", "ref", "alt", "raf");
-    RAFReader_clearChromosomes(n, r);
     done=0;
     while( !done ) {
         status = RAFReader_multiNext(n, r);
