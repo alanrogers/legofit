@@ -32,14 +32,14 @@ class Alignment:
         while True:
             # read until we get a non-blank line
             line=f.readline()
-            if line == '':
+            if line == '':    # end of file
                 self.initialized = False
                 return self
-            line = line.strip().split()
-            if len(line) > 0:
-                if line[0] == "#": 
-                    continue
-                break
+            line = line.strip()
+            if len(line)==0 or line[0] == "#":  # blank line or comment
+                continue
+            break             # non-blank, non-comment
+        line = line.split()
         sA=f.readline()
         sB=f.readline()
         if sB == '':
@@ -88,7 +88,7 @@ class Alignment:
             print >> sys.stderr, "header=%d but netB=%d" \
                 % (endB - startB, netA)
             exit(1)
-            
+
         # If we're on the negative strand, then translate
         # sA and sB by complementing each nucleotide.
         # See definition of trtab above.
