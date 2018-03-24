@@ -64,9 +64,8 @@ are processors on the machine---usually the number of hypercores.
 The DE algorithm can be tuned via command line arguments `-F`, `-x`,
 `-s`, and `-p`. Details regarding these choices can be found in
 "Differential evolution: a practical approach to global optimization",
-by Price, Storn, and Lampinen. I don't yet know what is best, but I'm
-currently using `-s 2` and `-s 4`, with default values of the other
-options.
+by Price, Storn, and Lampinen. We've had good results with `-s 2`, `-F
+0.3`, and `-x 0.8`, so these became the defaults as of version 1.15.
 
 During the first few hundred generations of the DE algorithm, the
 swarm of points adapts to the objective function. During this initial
@@ -302,14 +301,14 @@ int main(int argc, char **argv) {
     FILE *stateOut = NULL;
 
     // DiffEv parameters
-    double F = 0.9;
+    double F = 0.3;
     double CR = 0.8;
 #if COST!=KL_COST && COST!=LNL_COST
     double u = 0.0;             // mutation rate per site per generation
     long nnuc = 0;              // number of nucleotides per haploid genome
 #endif
     double ytol = 1e-4;         // stop when yspread <= ytol
-    int strategy = 1;
+    int strategy = 2;
     int ptsPerDim = 10;
     int verbose = 0;
     SimSched *simSched = SimSched_new();
