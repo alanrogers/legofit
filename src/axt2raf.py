@@ -3,13 +3,26 @@ from string import maketrans
 import sys
 import datetime
 
+# External variables
+minlen = 1
+minqual = 0
+
 # Print usage message and abort
 def usage():
     msg = \
         """
-usage: axt2raf.py <inputfile>
+axt2raf: convert axt format to raf format.
 
-where <inputfile> is in axt format. Writes to standard output.
+usage: axt2raf.py [options] [inputfile]
+where options may include:
+
+   -minlen <x>  : set min alignment length to <x> base pairs
+   -minqual <x> : set min alignment quality to <x>
+
+Program reads from "inputfile" if provided, or otherwise from
+standard input. Input should be in axt format.
+
+Writes to standard output.
 """
     sys.stdout.flush()
     print >> sys.stderr, msg
@@ -66,8 +79,9 @@ class Alignment:
             exit(1)
 
         # After omitting gaps, length of seqA should match header
+        self.length = self.end - self.start
         netA = lenA - sA.count("-")
-        if netA != self.end - self.start:
+        if netA != self.length:
             sys.stdout.flush()
             print >> sys.stderr, \
                 "non-gap length mismatch: seqA and header in alignment %d" \
@@ -128,8 +142,13 @@ class Alignment:
 
     # Print alignment
     def pr(self):
-        #print "# Alignment %d: [%d, %d)" % \
-        #    (self.alignment, self.start, self.end)
+        #print "# Alignment %d: [%d, %d) len=%d qual=%d" % \
+        #    (self.alignment, self.start, self.end, self.length, self.qual)
+
+        # Filter
+        if self.length < minlen or self.qual < minqual:
+            return self
+
         pos = self.start
         for i in range(len(self.ref)):
             # omit deletions and missing values
@@ -175,15 +194,31 @@ def overlap(a, b):
     else:
         return False
 
-if len(sys.argv) != 2:
-    usage()
-
-try:
-    f=open(sys.argv[1])
-except:
-    sys.stdout.flush()
-    print >> sys.stderr, "Can't open input file \"%s\"" % sys.argv[1]
-    exit(1)
+f = sys.stdin
+i = 1
+while i < len(sys.argv):
+    if sys.argv[i] == "-minlen":
+        i += 1
+        if i == len(sys.argv):
+            usage();
+        minlen = int(sys.argv[i])
+    elif sys.argv[i] == "-minqual":
+        i += 1
+        if i == len(sys.argv):
+            usage();
+        minqual = int(sys.argv[i])
+    elif sys.argv[i][0] == "-":
+        usage()
+    else:
+        if f != sys.stdin:
+            usage()
+        try:
+            f=open(sys.argv[i])
+        except:
+            sys.stdout.flush()
+            print >> sys.stderr, "Can't open input file \"%s\"" % sys.argv[i]
+            exit(1)
+    i += 1
 
 a = Alignment()
 b = Alignment()
