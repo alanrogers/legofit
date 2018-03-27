@@ -57,6 +57,7 @@ class Alignment:
         sB=f.readline()
         if sB == '':
             self.initialized = False # signal end of file
+            self.reject = True
             return self
         sA = sA.strip().lower()
         sB = sB.strip().lower()
@@ -113,6 +114,12 @@ class Alignment:
 
         self.qual = int(line[8])
 
+        # Filter
+        if self.length < minlen or self.qual < minqual:
+            self.reject = True
+        else:
+            self.reject = False
+
         # netA is length of output vectors
         self.ref = netA * [None]
         self.alt = netA * [None]
@@ -146,7 +153,7 @@ class Alignment:
         #    (self.alignment, self.start, self.end, self.length, self.qual)
 
         # Filter
-        if self.length < minlen or self.qual < minqual:
+        if self.reject:
             self.initialized = False
             return self
 
@@ -178,6 +185,10 @@ class Alignment:
         if other.end < self.end:
             # other is nested within self: do nothing
             return self
+        if other.reject:
+            return self
+        if self.reject:
+            return other
         else:
             n = other.start - self.start
             self.ref = self.ref[0:n] + other.ref
