@@ -147,6 +147,7 @@ class Alignment:
 
         # Filter
         if self.length < minlen or self.qual < minqual:
+            self.initialized = False
             return self
 
         pos = self.start
