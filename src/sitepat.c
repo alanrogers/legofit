@@ -554,6 +554,21 @@ int main(int argc, char **argv) {
             exit(EXIT_FAILURE);
         }
 
+        // Set derived allele frequence in each reader
+        status = RAFReader_findDaf(n, r);
+        switch(status) {
+        case 0:
+            break;
+        case NO_ANCESTRAL_ALLELE:
+            continue;
+        default:
+            // something wrong.
+            mystrerror_r(status, errbuff, sizeof errbuff);
+            fprintf(stderr,"%s:%d: input error (%s)\n",
+                    __FILE__,__LINE__, errbuff);
+            exit(EXIT_FAILURE);
+        }
+
         if(bootreps > 0) {
             // chrndx is index of current chromosome
             errno = 0;
@@ -574,7 +589,7 @@ int main(int argc, char **argv) {
             assert(snpndx < nsnp[chrndx]);
 #endif
         }
-        RAFReader_findDaf(n, r);
+
         // p and q are frequencies of derived and ancestral alleles
         double      p[m], q[m];
         for(j = 0; j < m; ++j) {
