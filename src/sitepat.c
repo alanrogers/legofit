@@ -574,6 +574,7 @@ int main(int argc, char **argv) {
             assert(snpndx < nsnp[chrndx]);
 #endif
         }
+        RAFReader_findDaf(n, r);
         // p and q are frequencies of derived and ancestral alleles
         double      p[m], q[m];
         for(j = 0; j < m; ++j) {
