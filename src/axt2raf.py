@@ -105,11 +105,10 @@ class Alignment:
             exit(1)
 
         # If we're on the negative strand, then translate
-        # sA and sB by complementing each nucleotide.
+        # sB (but not sA) by complementing each nucleotide.
         # See definition of trtab above.
         strand = line[7]
         if strand == "-":
-            sA = sA.translate(trtab)
             sB = sB.translate(trtab)
 
         self.qual = int(line[8])
