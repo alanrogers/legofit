@@ -376,7 +376,7 @@ int main(int argc, char **argv) {
     printf("# tabpat version %s\n", VERSION);
     printf("# Population labels:\n");
     for(i = 0; i < n; ++i)
-        printf("# %4s=%s\n", poplbl[i], fname[i]);
+        printf("#   %s=%s\n", poplbl[i], fname[i]);
 
     // make sure labels are all different
     for(i = 1; i < n; ++i)
