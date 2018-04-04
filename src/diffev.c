@@ -622,8 +622,8 @@ void *getStratFun(int strategy) {
 }
 
 /// The diffev optimizer.
-int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
-           DiffEvPar dep, gsl_rng * rng) {
+DEStatus diffev(int dim, double estimate[dim], double *loCost, double *yspread,
+                DiffEvPar dep, gsl_rng * rng) {
 
     int         i, j;           // counting variables
     int         imin = INT_MAX; // index to member with lowest energy
@@ -638,6 +638,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 
     int         nPts = dep.dim * dep.ptsPerDim;
     int         status;
+    DEStatus    destat = Running;
     int         ndx[nPts];
     for(i = 0; i < nPts; ++i)
         ndx[i] = i;
@@ -794,8 +795,10 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
                 if(sigstat==SIGUSR1)
                     sigstat=0;
             }
-            if(sigstat==SIGINT)
+            if(sigstat==SIGINT) {
+                destat = Interrupted;
                 break;
+            }
             if(stage==nstages-1 && *yspread <= dep.ytol)
                 break;
         }
@@ -803,13 +806,16 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 
     JobQueue_noMoreJobs(jq);
     if(*yspread <= dep.ytol) {
-        status = 0;
+        destat = ReachedGoal;
         if(verbose)
-            fputs("Converged\n", stdout);
+            fputs("ReachedGoal\n", stderr);
+    } else if(destat==Interrupted) {
+        if(verbose)
+            fputs("Interrupted\n", stderr);
     } else {
-        status = 1;
+        destat = FinishedIterations;
         if(verbose)
-            fputs("No convergence\n", stdout);
+            fputs("FinishedIterations\n", stderr);
     }
 
     // Return estimates
@@ -830,7 +836,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     }
     JobQueue_free(jq);
 
-    return status;
+    return destat;
 }
 
 /// Choose at random k distinct integers from array of n, placing

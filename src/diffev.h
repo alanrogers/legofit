@@ -12,6 +12,15 @@
 typedef struct TaskArg TaskArg;
 typedef struct DiffEv DiffEv;
 typedef struct DiffEvPar DiffEvPar;
+typedef enum   DEStatus DEStatus;
+
+// DE sets its status to Running on entry. If status still equals
+// Running on return, something is wrong.
+// On return, status should equal one of the following:
+//  ReachedGoal: DE stopped because yspread <= ytol
+//  FinishedIterations: DE stopped after completing all iterations
+//  Interrupted: DE stopped on a signal (SIGINT or SIGTERM)
+enum DEStatus {ReachedGoal, FinishedIterations, Interrupted, Running};
 
 struct DiffEvPar {
     int         dim, ptsPerDim, refresh, strategy, nthreads, verbose;
@@ -35,8 +44,8 @@ struct DiffEvPar {
     State      *state;
 };
 
-int         diffev(int dim, double estimate[dim], double *loCost,
-                   double *yspread, DiffEvPar dep, gsl_rng * rng);
+DEStatus diffev(int dim, double estimate[dim], double *loCost,
+                double *yspread, DiffEvPar dep, gsl_rng * rng);
 const char *diffEvStrategyLbl(int i);
 void        sighandle(int signo);
 void        handleSIGTERM(int signo);

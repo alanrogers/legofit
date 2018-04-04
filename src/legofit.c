@@ -620,13 +620,25 @@ int main(int argc, char **argv) {
     // possible while diffev is running.
     fflush(stdout);
 
-    status = diffev(dim, estimate, &cost, &yspread, dep, rng);
+    DEStatus destat = diffev(dim, estimate, &cost, &yspread, dep, rng);
 
-    if(sigstat == SIGINT)
-        printf("Job terminated early in reponse to signal.\n");
+    const char *whyDEstopped;
+    switch(destat) {
+    case ReachedGoal:
+        whyDEstopped = "reached_goal";
+        break;
+    case FinishedIterations:
+        whyDEstopped = "finished_iterations";
+        break;
+    case Interrupted:
+        whyDEstopped = "was_interrupted";
+        break;
+    default:
+        whyDEstopped = "stopped_for_an_unknown_reason";
+    }
 
     printf("DiffEv %s. cost=%0.5le spread=%0.5le\n",
-           status == 0 ? "converged" : "FAILED", cost, yspread);
+           whyDEstopped, cost, yspread);
 #if COST==LNL_COST
     printf("  relspread=%e", yspread / cost);
 #endif
