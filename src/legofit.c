@@ -117,8 +117,8 @@ singletons, by using the `-1` option of @\ref tabpat "tabpat".
 previous code, differential evolution (DE) iterations stopped when
 neither the best objective function value nor the spread of these
 values had changed in a fixed number of iterations. That criterion was
-used in our recent paper, "Early history of Neanderthals and
-Denisovans", which was just published in PNAS.
+used in our PNAS paper, "Early history of Neanderthals and
+Denisovans".
 
 I began to notice convergence problems with models larger than those
 used in the August 2017 PNAS paper. All bootstrap replicates would
