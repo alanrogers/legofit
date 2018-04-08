@@ -140,7 +140,7 @@ int main(int argc, char **argv) {
             exit(EXIT_FAILURE);
         }
         fprintf(stderr,"writing to %s\n", ofname);
-        fprintf(ofp[i], "#%3s %10s %2s %2s %20s\n",
+        fprintf(ofp[i], "#%3s %10s %2s %2s %s\n",
                 "chr", "pos", "aa", "da", "daf");
     }
 
@@ -210,7 +210,7 @@ int main(int argc, char **argv) {
                 derived = RAFReader_alt(r[j]);
                 ancestral = RAFReader_ref(r[j]);
             }
-            fprintf(ofp[j], "%4s %10lu %2s %2s %20.18f\n",
+            fprintf(ofp[j], "%4s %10lu %2s %2s %0.18g\n",
                     RAFReader_chr(r[j]),
                     RAFReader_nucpos(r[j]),
                     ancestral, derived, daf);

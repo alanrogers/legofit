@@ -29,12 +29,12 @@ const char *badInput =
 
 const char *tstInput[3] = {
     "#chr\tpos\tref\talt\traf\n"
-    "1\t1\ta\t.\t0\n"
+    "1\t1\ta\tt\t0\n"
     "10\t1\ta\tt\t5e-1\n"
     "10\t200\tg\tc\t1e0\n",
 
     "#chr\tpos\tref\talt\traf\n"
-    "1\t1\ta\t.\t0.5\n"
+    "1\t1\ta\tt\t0.5\n"
     "1\t2\ta\t.\t0.5\n"
     "10\t1\ta\tt\t1e-1\n"
     "10\t200\tg\tc\t1\n",
