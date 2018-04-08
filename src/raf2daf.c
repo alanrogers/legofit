@@ -47,10 +47,11 @@ Systems Consortium License, which can be found in file "LICENSE".
 static void usage(void);
 
 const char *useMsg =
-    "\nUsage: raf2daf [options] <in_1> <in_2> ... \n"
+    "\nUsage: raf2daf [options] <in_1> <in_2> <in_3>... \n"
     "   where <in_i> are input files in raf format, the last of which\n"
     "   should be the outgroup. Output daf files have names like those\n"
-    "   of input files but with raf changed to daf.";
+    "   of input files but with raf changed to daf. At least 3 input\n"
+    "   files are required";
 
 /// Print usage message and die.
 static void usage(void) {
@@ -102,8 +103,10 @@ int main(int argc, char **argv) {
     // remaining options: input files
     int         n = argc - optind;  // number of input files
     int         m = n-1;            // number excluding outgroup
-    if(m < 2)
+    if(m < 2) {
+        fprintf(stderr,"At least 3 input files are required\n");
         usage();
+    }
 
     char       *ifname[n];
     FILE       *ofp[m];
@@ -149,7 +152,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    printf("# raf2daf version %s\n", VERSION);
+    printf("raf2daf version %s\n", VERSION);
 
     unsigned long nsites = 0, nbadaa = 0, nbadref=0, nmultalt=0;
 
@@ -213,14 +216,14 @@ int main(int argc, char **argv) {
                     ancestral, derived, daf);
         }
     }
-    printf("# Aligned sites                  : %lu\n", nsites);
+    printf("Aligned sites                  : %lu\n", nsites);
     if(nbadref)
-        printf("# Disagreements about ref allele : %lu\n", nbadref);
+        printf("Disagreements about ref allele : %lu\n", nbadref);
     if(nmultalt)
-        printf("# Sites with multiple alt alleles: %lu\n", nmultalt);
+        printf("Sites with multiple alt alleles: %lu\n", nmultalt);
     if(nbadaa)
-        printf("# Undetermined ancestral allele  : %lu\n", nbadaa);
-    printf("# Sites used                     : %lu\n",
+        printf("Undetermined ancestral allele  : %lu\n", nbadaa);
+    printf("Sites used                     : %lu\n",
            nsites - nbadaa - nbadref - nmultalt);
 
     for(i = 0; i < n; ++i)
