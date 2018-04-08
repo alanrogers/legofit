@@ -94,7 +94,6 @@ int main(int argc, char **argv) {
         case 'A':
             logAA = 1;
             break;
-        case 'h':
         default:
             usage();
         }
@@ -103,7 +102,7 @@ int main(int argc, char **argv) {
     // remaining options: input files
     int         n = argc - optind;  // number of input files
     int         m = n-1;            // number excluding outgroup
-    if(n == 0)
+    if(m < 2)
         usage();
 
     char       *ifname[n];
