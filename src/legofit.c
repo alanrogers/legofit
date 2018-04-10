@@ -552,9 +552,9 @@ int main(int argc, char **argv) {
 #endif
 
     // Observed site pattern frequencies
-    BranchTab *obs = BranchTab_parse(patfname, &lblndx);
+    BranchTab *rawObs = BranchTab_parse(patfname, &lblndx);
     if(doSing) {
-        if(!BranchTab_hasSingletons(obs)) {
+        if(!BranchTab_hasSingletons(rawObs)) {
             fprintf(stderr, "%s:%d: Command line includes singletons "
                     "(-1 or --singletons)\n"
                     "    but none are present in \"%s\".\n",
@@ -562,7 +562,7 @@ int main(int argc, char **argv) {
             exit(EXIT_FAILURE);
         }
     } else {
-        if(BranchTab_hasSingletons(obs)) {
+        if(BranchTab_hasSingletons(rawObs)) {
             fprintf(stderr, "%s:%d: Command line excludes singletons "
                     "(neither -1 nor --singletons)\n"
                     "    but singletons are present in \"%s\".\n",
@@ -570,6 +570,7 @@ int main(int argc, char **argv) {
             exit(EXIT_FAILURE);
         }
     }
+    BranchTab *obs = BranchTab_dup(rawObs);
 #if COST==KL_COST
     BranchTab_normalize(obs);
 #endif
@@ -622,6 +623,23 @@ int main(int argc, char **argv) {
 
     DEStatus destat = diffev(dim, estimate, &cost, &yspread, dep, rng);
 
+    // Get mean site pattern branch lengths
+    if(GPTree_setParams(gptree, dim, estimate)) {
+        fprintf(stderr, "%s:%d: free params violate constraints\n",
+                __FILE__, __LINE__);
+        exit(1);
+    }
+    BranchTab *bt = patprob(gptree, simreps, doSing, rng);
+    BranchTab_divideBy(bt, (double) simreps);
+    //    BranchTab_print(bt, stdout);
+
+    // Calculate AIC
+    BranchTab *prob = BranchTab_dup(bt);
+    BranchTab_normalize(prob);
+    double negLnL = BranchTab_negLnL(rawObs, prob);
+    double aic = 2.0*negLnL + 2.0*GPTree_nFree(gptree);
+    BranchTab_free(prob);
+
     const char *whyDEstopped;
     switch(destat) {
     case ReachedGoal:
@@ -637,22 +655,12 @@ int main(int argc, char **argv) {
         whyDEstopped = "stopped_for_an_unknown_reason";
     }
 
-    printf("DiffEv %s. cost=%0.5le spread=%0.5le\n",
+    printf("DiffEv %s. cost=%0.5le spread=%0.5le",
            whyDEstopped, cost, yspread);
 #if COST==LNL_COST
     printf("  relspread=%e", yspread / cost);
 #endif
-    putchar('\n');
-
-    // Get mean site pattern branch lengths
-    if(GPTree_setParams(gptree, dim, estimate)) {
-        fprintf(stderr, "%s:%d: free params violate constraints\n",
-                __FILE__, __LINE__);
-        exit(1);
-    }
-    BranchTab *bt = patprob(gptree, simreps, doSing, rng);
-    BranchTab_divideBy(bt, (double) simreps);
-    //    BranchTab_print(bt, stdout);
+    printf(" AIC=%0.15g\n", aic);
 
     printf("Fitted parameter values\n");
 #if 1
@@ -687,6 +695,7 @@ int main(int argc, char **argv) {
     }
 
     BranchTab_free(bt);
+    BranchTab_free(rawObs);
     BranchTab_free(obs);
     gsl_rng_free(rng);
     GPTree_sanityCheck(gptree, __FILE__, __LINE__);
