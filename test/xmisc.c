@@ -8,10 +8,12 @@
  */
 
 #include "misc.h"
+#include "error.h"
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
 #include <errno.h>
+#include <unistd.h>
 
 #ifdef NDEBUG
 #  error "Unit tests must be compiled without -DNDEBUG flag"
@@ -59,6 +61,7 @@ int main(int argc, char **argv) {
     // This should abort.
     fp = efopen("NotThere", "r");
 #endif
+    fclose(fp);
 
     unitTstResult("efopen", "OK");
 
@@ -141,5 +144,43 @@ int main(int argc, char **argv) {
 
     unitTstResult("strltrunc", "OK");
 
+    unsigned y[] = {0, 0, 1, 0, 0, 0, 2, 0, 0, 3, 0, 0};
+    dim = (int) (sizeof(y)/sizeof(y[0]));
+    dim = removeZeroes(dim, y);
+    assert(dim == 3);
+    for(i=0; i < dim; ++i) {
+        if(verbose)
+            printf("%u ", y[i]);
+        assert(y[i] == i+1u);
+    }
+    if(verbose)
+        putchar('\n');
+    unitTstResult("removeZeroes", "OK");
+
+    fp = fopen("xmisc.tmp", "w");
+    assert(fp);
+    fputs("123456789", fp);
+    fclose(fp);
+
+    const char *tmpfile = "xmisc.tmp";
+    int status;
+    fp=fopen(tmpfile, "r");
+    status = readline(5, buff, fp);
+    assert(status == BUFFER_OVERFLOW);
+    rewind(fp);
+
+    status = readline(9, buff, fp);
+    assert(status == BUFFER_OVERFLOW);
+    rewind(fp);
+
+    status = readline(10, buff, fp);
+    assert(status == 0);
+
+    status = readline(10, buff, fp);
+    assert(status == EOF);
+    
+    unitTstResult("readline", "OK");
+
+    unlink(tmpfile);
     return 0;
 }

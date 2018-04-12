@@ -70,7 +70,7 @@ int DAFReader_next(DAFReader * self) {
     int         ntokens1;
     int         ntokens;
     int         status;
-    char        buff[100];
+    char        buff[1024];
     long unsigned prevnucpos = 0UL;
 
     // Find a line of input
@@ -86,6 +86,14 @@ int DAFReader_next(DAFReader * self) {
             continue;
         ntokens1 = Tokenizer_split(self->tkz, buff, " ");
         ntokens = Tokenizer_strip(self->tkz, " \n");
+        if( ntokens == 5) {
+            // ancestral allele must be a single nucleotide
+            if(1 != strlen(Tokenizer_token(self->tkz, 2)))
+                continue;
+            // derived allele must be a single nucleotide
+            if(1 != strlen(Tokenizer_token(self->tkz, 3)))
+                continue;
+        }
         if(ntokens > 0)
             break;
     }

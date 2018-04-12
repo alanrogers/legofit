@@ -1,0 +1,27 @@
+# Header: to be ignored
+# Header: to be ignored
+# Header: to be ignored
+# Header: to be ignored
+0 chr22 001 004  chrUn 401 404 + 473100
+G--ATC
+gat--G
+
+1 chr22 002 003  chr22 402 403 + 93819
+A-A
+-AT
+
+2 chr22 005 007 chr22 505 507 + 93819
+CTC-
+CT-A
+
+3 chr22 007 009 chrUn 607 609 + 473100
+G-AT
+ga-a
+
+4 chr22 10 11 chrUn 100 101 + 473100
+GA
+ga
+
+5 chr23 13 17 chr17 101 104 - 473100
+GATna
+at-tn

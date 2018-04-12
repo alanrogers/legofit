@@ -184,6 +184,11 @@ void sighandle(int signo) {
     sigstat = signo;
 }
 
+/// SIGTERM is translated to SIGINT
+void handleSIGTERM(int signo) {
+    sigstat = SIGINT;
+}
+
 // Strategies.
 // We have tried to come up with a sensible
 // naming-convention: DE/x/y/z
@@ -547,18 +552,26 @@ static inline void TaskArg_setArray(TaskArg * self, int dim, double v[dim]) {
     self->cost = -1.0;
 }
 
-/// Print current state
+/// Print current state. Current optimal point is printed first
 void printState(int nPts, int nPar, double par[nPts][nPar],
                 double cost[nPts], int imin, FILE *fp) {
     int i, j;
-    fprintf(fp,"%10s %s...\n", "cost", "param values");
+    fprintf(fp,"# %-10s %s...\n", "cost", "param values");
+
+    // print current optimum
+    fprintf(fp, "%12.10lf", cost[imin]);
+    for(j=0; j < nPar; ++j)
+        fprintf(fp, " %0.10lf", par[imin][j]);
+    putc('\n', fp);
+
+    // print everything else
     for(i=0; i < nPts; ++i) {
-        fprintf(fp, "%10.6lf", cost[i]);
-        for(j=0; j < nPar; ++j)
-            fprintf(fp, " %lf", par[i][j]);
         if(i == imin)
-            fprintf(fp, " <- best");
-        putchar('\n');
+            continue;
+        fprintf(fp, "%12.10lf", cost[i]);
+        for(j=0; j < nPar; ++j)
+            fprintf(fp, " %0.10lf", par[i][j]);
+        putc('\n', fp);
     }
 }
 
@@ -609,11 +622,11 @@ void *getStratFun(int strategy) {
 }
 
 /// The diffev optimizer.
-int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
-           DiffEvPar dep, gsl_rng * rng) {
+DEStatus diffev(int dim, double estimate[dim], double *loCost, double *yspread,
+                DiffEvPar dep, gsl_rng * rng) {
 
     int         i, j;           // counting variables
-    int         imin;           // index to member with lowest energy
+    int         imin = INT_MAX; // index to member with lowest energy
     int         gen;
     SimSched   *simSched = dep.simSched;
     const int   refresh = dep.refresh;
@@ -625,6 +638,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 
     int         nPts = dep.dim * dep.ptsPerDim;
     int         status;
+    DEStatus    destat = Running;
     int         ndx[nPts];
     for(i = 0; i < nPts; ++i)
         ndx[i] = i;
@@ -655,7 +669,8 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 
     // Initialize array of points
     for(i = 0; i < nPts; ++i) {
-        (*dep.initialize)(i, dep.initData, dim, c[i], rng);
+        status=State_getVector(dep.state, i, dim, c[i]);
+        assert(status==0);
         if(dep.jobData) {
             jobData[i] = (*dep.JobData_dup)(dep.jobData);
             CHECKMEM(jobData[i]);
@@ -671,7 +686,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     int         stage, nstages = SimSched_nStages(simSched);
 
     for(stage=0;
-        sigstat==0 && stage < nstages;
+        sigstat!=SIGINT && stage < nstages;
         ++stage, SimSched_next(simSched)) {
 
         // The number of simulation replicates changes with each
@@ -699,7 +714,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
                     " No initial points have finite values.\n"
                     " Try increasing simulation replicates in stage %d.\n"
                     " Current value: simReps=%ld\n"
-                    " See -S argument to legofit.\n",
+                    " See -S argument of legofit.\n",
                     __FILE__,__LINE__, stage,
                     SimSched_getSimReps(simSched));
             exit(EXIT_FAILURE);
@@ -737,8 +752,8 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
                     // accept mutation
                     cost[i] = trial_cost;
                     assignd(dim, (*pnew)[i], targ[i]->v);
-                    if(trial_cost < cmin) { // Was this a new minimum? If so,
-                        cmin = trial_cost;  // reset cmin to new low.
+                    if(trial_cost < cmin) { // New minimum.
+                        cmin = trial_cost;  // Reset cmin and imin.
                         imin = i;
                         assignd(dim, best, targ[i]->v);
                     }
@@ -763,8 +778,10 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
             *yspread = cmax - cmin;
 
             // output
-            if(verbose && gen % refresh == 0) {
+            if((verbose && gen % refresh == 0)
+               || sigstat==SIGUSR1) {
                 // display after every refresh generations
+                fflush(stdout);
                 fprintf(stderr,
                         "%d:%d cost=%1.10lg yspread=%lf\n",
                         stage, gen, cmin, *yspread);
@@ -775,13 +792,13 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
                         putc(',', stderr);
                 }
                 putc('\n', stderr);
-#if 0
-                printState(nPts, dim, *pold, cost, imin, stdout);
-#endif
-                fflush(stdout);
+                if(sigstat==SIGUSR1)
+                    sigstat=0;
             }
-            if(sigstat==SIGINT)
+            if(sigstat==SIGINT) {
+                destat = Interrupted;
                 break;
+            }
             if(stage==nstages-1 && *yspread <= dep.ytol)
                 break;
         }
@@ -789,18 +806,25 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
 
     JobQueue_noMoreJobs(jq);
     if(*yspread <= dep.ytol) {
-        status = 0;
+        destat = ReachedGoal;
         if(verbose)
-            fputs("Converged\n", stdout);
+            fputs("ReachedGoal\n", stderr);
+    } else if(destat==Interrupted) {
+        if(verbose)
+            fputs("Interrupted\n", stderr);
     } else {
-        status = 1;
+        destat = FinishedIterations;
         if(verbose)
-            fputs("No convergence\n", stdout);
+            fputs("FinishedIterations\n", stderr);
     }
 
     // Return estimates
     *loCost = cmin;
     memcpy(estimate, best, dim * sizeof(estimate[0]));
+    for(i=0; i < nPts; ++i) {
+        State_setCost(dep.state, i, cost[i]);
+        State_setVector(dep.state, i, dim, (*pold)[i]);
+    }
 
     // Free memory
     for(i = 0; i < nPts; ++i) {
@@ -812,7 +836,7 @@ int diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     }
     JobQueue_free(jq);
 
-    return status;
+    return destat;
 }
 
 /// Choose at random k distinct integers from array of n, placing

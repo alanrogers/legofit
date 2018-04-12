@@ -2,8 +2,8 @@
 *~
 core
 depend
+doc
 raf
-version.h
 xboot
 xdtnorm
 xexopar
@@ -19,6 +19,7 @@ xpopnode
 xpopnodetab
 xsampndx
 xsimsched
+xstate
 xstrtab
 xterm
 xbranchtab
@@ -29,11 +30,14 @@ xjobqueue
 xdafreader
 xrafreader
 xmisc
+xscrmreader
 xstrint
+joinraf
 legosim
 numcores
 legofit
 tabpat
+scrmpat
 sitepat
 tabpat.log
 daf

@@ -18,52 +18,51 @@
 /// Contains the all data involved in a moving blocks bootstrap of
 /// a single chromosome.
 struct BootChr {
-    long        blocksize;  ///< number of SNPs per block
-    long        nrep;       ///< number of bootstrap replicates 
-    long        nsnp;       ///< number of snps
-    long        nblock;     ///< number of blocks
-    int         npat;       ///< number of site patterns
-    double    **count;      ///< count[i][j]: j'th site pattern in i'th rep
-    long      **start;      ///< start[i][j] = start of j'th block in i'th rep
+    long blocksize;             ///< number of SNPs per block
+    long nrep;                  ///< number of bootstrap replicates 
+    long nsnp;                  ///< number of snps
+    long nblock;                ///< number of blocks
+    int npat;                   ///< number of site patterns
+    double **count;             ///< count[i][j]: j'th site pattern in i'th rep
+    long **start;               ///< start[i][j] = start of j'th block in i'th rep
 };
 
 /// An array of BootChr pointers.
 struct Boot {
-    int nchr;               ///< number of chromosomes
-    BootChr **bc;           ///< bc[i]: bootstrap for i'th chromosome
+    int nchr;                   ///< number of chromosomes
+    BootChr **bc;               ///< bc[i]: bootstrap for i'th chromosome
 };
 
 /// Contains the data for a bootstrap confidence interval.
 struct BootConf {
-    long        nrep;       ///< repetitions
-    long        blocksize;  ///< nucleotide positions per block
-    double      confidence; ///< size of confidence region
-    double     *low, *high; ///< confidence bounds
+    long nrep;                  ///< repetitions
+    long blocksize;             ///< nucleotide positions per block
+    double confidence;          ///< size of confidence region
+    double *low, *high;         ///< confidence bounds
 };
 
 long LInt_div_round(long num, long denom);
 static void BootChr_allocArrays(BootChr * self);
 
 /// Divide num by denom and round the result to the nearest integer.
-/// @return an structure of type ldiv_t.
 long LInt_div_round(long num, long denom) {
-        assert(denom != 0L);
-        ldiv_t quotrem = ldiv(num, denom);
-        if(2L * quotrem.rem > denom)
-                return 1L + quotrem.quot;
-        return quotrem.quot;
+    assert(denom != 0L);
+    ldiv_t quotrem = ldiv(num, denom);
+    if(2L * quotrem.rem > denom)
+        return 1L + quotrem.quot;
+    return quotrem.quot;
 }
 
 /// Return a blocksize that is as close as possible to lengthWanted
 /// while still making length*nblock close to nsnp.
 long adjustBlockLength(long lengthWanted, int nsnp) {
-	long nblock = LInt_div_round(nsnp, lengthWanted);
-	return LInt_div_round(nsnp, nblock);
+    long nblock = LInt_div_round(nsnp, lengthWanted);
+    return LInt_div_round(nsnp, nblock);
 }
 
 /// Constructor for class BootChr.
-BootChr       *BootChr_new(long nsnp, long nrep, int npat, long blocksize,
-                           gsl_rng * rng) {
+BootChr *BootChr_new(long nsnp, long nrep, int npat, long blocksize,
+                     gsl_rng * rng) {
     long i, j;
     assert(blocksize > 0);
     if(nrep == 0)
@@ -79,16 +78,16 @@ BootChr       *BootChr_new(long nsnp, long nrep, int npat, long blocksize,
         exit(1);
     }
 
-    BootChr       *self = malloc(sizeof(BootChr));
+    BootChr *self = malloc(sizeof(BootChr));
     CHECKMEM(self);
 
     self->nsnp = nsnp;
     self->nrep = nrep;
-	self->blocksize = adjustBlockLength(blocksize, nsnp);
+    self->blocksize = adjustBlockLength(blocksize, nsnp);
     self->npat = npat;
     self->nblock = LInt_div_round(nsnp, blocksize);
 
-    // Block positions are uniform on [0, nsnp-blocksize+1).
+    // Block start positions are uniform on [0, nsnp-blocksize+1).
     unsigned long endpos;
     endpos = nsnp - self->blocksize + 1;
 
@@ -111,7 +110,7 @@ BootChr       *BootChr_new(long nsnp, long nrep, int npat, long blocksize,
 /// Allocate BootChr's arrays.
 static void BootChr_allocArrays(BootChr * self) {
 
-    long        i;
+    long i;
 
     self->start = calloc((unsigned long) self->nrep, sizeof(self->start[0]));
     CHECKMEM(self->start);
@@ -132,7 +131,7 @@ static void BootChr_allocArrays(BootChr * self) {
 
 #ifndef NDEBUG
 void BootChr_sanityCheck(const BootChr * self, const char *file, int line) {
-    long        i, j;
+    long i, j;
     REQUIRE(self->blocksize > 0, file, line);
     REQUIRE(self->blocksize < 100000, file, line);
     REQUIRE(self != NULL, file, line);
@@ -145,7 +144,7 @@ void BootChr_sanityCheck(const BootChr * self, const char *file, int line) {
     REQUIRE(self->start != NULL, file, line);
 
     unsigned long endpos = self->nsnp - self->blocksize + 1;
-    long        prev;
+    long prev;
 
     for(i = 0; i < self->nrep; ++i) {
         REQUIRE(self->count[i] != NULL, file, line);
@@ -166,7 +165,7 @@ void BootChr_sanityCheck(const BootChr * self, const char *file, int line) {
 /// How many copies of snp with index snpndx are present in a given
 /// repetition (rep)? 
 long BootChr_multiplicity(const BootChr * self, long snpndx, long rep) {
-    long        lndx, hndx, lowtarget;
+    long lndx, hndx, lowtarget;
 
     assert(snpndx < self->nsnp);
 
@@ -180,12 +179,16 @@ long BootChr_multiplicity(const BootChr * self, long snpndx, long rep) {
     assert(snpndx - self->start[rep][lndx] < self->blocksize);
 
     // hndx is index of first block not containing snp
+    // First line below searches the sub-array beginning with
+    // entry lndx. This returns an index into the sub-array.
+    // The second line adds lndx to generate an index into the full
+    // array.  
     hndx = long_first_geq(snpndx + 1, self->start[rep] + lndx,
                           self->nblock - lndx);
     hndx += lndx;
 
     assert(hndx == 0
-             || self->start[rep][hndx - 1] - snpndx < self->blocksize);
+           || self->start[rep][hndx - 1] - snpndx < self->blocksize);
 
     return hndx - lndx;
 }
@@ -200,8 +203,8 @@ long BootChr_multiplicity(const BootChr * self, long snpndx, long rep) {
 void BootChr_add(BootChr * self, long snpndx, int pat, double z) {
     assert(pat < self->npat);
     assert(snpndx < self->nsnp);
-	if(!(z >= 0))
-		fprintf(stderr,"%s:%s:%d: z=%lf\n", __FILE__,__func__,__LINE__,z);
+    if(!(z >= 0))
+        fprintf(stderr, "%s:%s:%d: z=%lf\n", __FILE__, __func__, __LINE__, z);
     assert(z >= 0.0);
     for(register int rep = 0; rep < self->nrep; ++rep) {
 
@@ -209,7 +212,7 @@ void BootChr_add(BootChr * self, long snpndx, int pat, double z) {
         // in the current bootstrap replicate.
         register long w = BootChr_multiplicity(self, snpndx, rep);
 
-        self->count[rep][pat] += w*z;
+        self->count[rep][pat] += w * z;
     }
 }
 
@@ -264,20 +267,20 @@ void BootChr_aggregate(BootChr * self, int rep, int npat, double count[npat]) {
     assert(self);
     assert(npat == self->npat);
     int j;
-    for(j=0; j < self->npat; ++j)
+    for(j = 0; j < self->npat; ++j)
         count[j] += self->count[rep][j];
 }
 
 /// Constructor for class Boot.
-Boot * Boot_new(int nchr, long nsnp[nchr], long nrep, int npat,
-                long blocksize, gsl_rng *rng) {
+Boot *Boot_new(int nchr, long nsnp[nchr], long nrep, int npat,
+               long blocksize, gsl_rng * rng) {
     Boot *self = malloc(sizeof(Boot));
     CHECKMEM(self);
     self->nchr = nchr;
     self->bc = calloc(nchr, sizeof(BootChr *));
     CHECKMEM(self->bc);
 
-    for(int i=0; i < nchr; ++i) {
+    for(int i = 0; i < nchr; ++i) {
         self->bc[i] = BootChr_new(nsnp[i], nrep, npat, blocksize, rng);
         CHECKMEM(self->bc[i]);
     }
@@ -285,8 +288,8 @@ Boot * Boot_new(int nchr, long nsnp[nchr], long nrep, int npat,
 }
 
 /// Destructor for class Boot.
-void Boot_free(Boot *self) {
-    for(int i=0; i < self->nchr; ++i)
+void Boot_free(Boot * self) {
+    for(int i = 0; i < self->nchr; ++i)
         BootChr_free(self->bc[i]);
     free(self->bc);
     free(self);
@@ -300,7 +303,7 @@ void Boot_free(Boot *self) {
  * @param [in] pat The index of the current site pattern.
  * @param [in] z the contribution of the snp to the site pattern.
  */
-void Boot_add(Boot *self, int chr, long snpndx, int pat, double z) {
+void Boot_add(Boot * self, int chr, long snpndx, int pat, double z) {
     BootChr_add(self->bc[chr], snpndx, pat, z);
 }
 
@@ -312,24 +315,23 @@ void Boot_add(Boot *self, int chr, long snpndx, int pat, double z) {
 /// @param [out] count An array of doubles. The function will add to
 /// count[i] the contribution of site pattern i in bootstrap replicate
 /// rep. 
-void Boot_aggregate(Boot * self, int rep, int npat,
-                    double count[npat]) {
-	int i;
+void Boot_aggregate(Boot * self, int rep, int npat, double count[npat]) {
+    int i;
 #ifndef NDEBUG
-	for(i=0; i<npat; ++i)
-		if(!(count[i] == 0.0)) {
-			fprintf(stderr,"%s:%d: count argument not initialized in %s.\n",
-					__FILE__,__LINE__, __func__);
-			exit(EXIT_FAILURE);
-		}
+    for(i = 0; i < npat; ++i)
+        if(!(count[i] == 0.0)) {
+            fprintf(stderr, "%s:%d: count argument not initialized in %s.\n",
+                    __FILE__, __LINE__, __func__);
+            exit(EXIT_FAILURE);
+        }
 #endif
-    for(i=0; i < self->nchr; ++i)
+    for(i = 0; i < self->nchr; ++i)
         BootChr_aggregate(self->bc[i], rep, npat, count);
 }
 
 #ifndef NDEBUG
 void Boot_sanityCheck(const Boot * self, const char *file, int line) {
-    for(int i=0; i < self->nchr; ++i)
+    for(int i = 0; i < self->nchr; ++i)
         BootChr_sanityCheck(self->bc[i], file, line);
 }
 #endif
@@ -339,9 +341,9 @@ void Boot_sanityCheck(const Boot * self, const char *file, int line) {
 double interpolate(double p, double *v, long len) {
     if(len == 0)
         return strtod("NAN", 0);
-    long        i, j;
-    double      w;
-    double      goal = p * (len - 1);
+    long i, j;
+    double w;
+    double goal = p * (len - 1);
 
     i = floor(goal);
     j = ceil(goal);
@@ -379,7 +381,7 @@ double interpolate(double p, double *v, long len) {
  */
 void confidenceBounds(double *lowBnd, double *highBnd, double confidence,
                       long len, double v[len]) {
-    double      tailProb = (1.0 - confidence) / 2.0;
+    double tailProb = (1.0 - confidence) / 2.0;
 
     qsort(v, (size_t) len, sizeof(v[0]), compareDoubles);
     *lowBnd = interpolate(tailProb, v, len);
@@ -388,7 +390,7 @@ void confidenceBounds(double *lowBnd, double *highBnd, double confidence,
 
 /// Print a BootChr object
 void BootChr_print(const BootChr * self, FILE * ofp) {
-    long        rep, j;
+    long rep, j;
 
     fprintf(ofp,
             "BootChr_print: nsnp=%ld nrep=%ld blocksize=%ld nblock=%ld\n",
@@ -412,12 +414,13 @@ void BootChr_print(const BootChr * self, FILE * ofp) {
 }
 
 #ifndef NDEBUG
+
 /** For debugging BootChr_multiplicity */
 unsigned BootChr_multiplicity_slow(BootChr * self, long snp, long rep) {
-    unsigned    i, n = 0;
+    unsigned i, n = 0;
 
     for(i = 0; i < self->nblock; ++i) {
-        long        distance = snp - self->start[rep][i];
+        long distance = snp - self->start[rep][i];
 
         if(distance < 0)
             break;
@@ -427,4 +430,3 @@ unsigned BootChr_multiplicity_slow(BootChr * self, long snp, long rep) {
     return n;
 }
 #endif
-

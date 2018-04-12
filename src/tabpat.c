@@ -376,7 +376,7 @@ int main(int argc, char **argv) {
     printf("# tabpat version %s\n", VERSION);
     printf("# Population labels:\n");
     for(i = 0; i < n; ++i)
-        printf("# %4s=%s\n", poplbl[i], fname[i]);
+        printf("#   %s=%s\n", poplbl[i], fname[i]);
 
     // make sure labels are all different
     for(i = 1; i < n; ++i)
@@ -458,6 +458,11 @@ int main(int argc, char **argv) {
             int         diff = strcmp(prev, chr);
             if(diff != 0) {
                 StrInt_insert(strint, chr, nchr);
+                if(nchr >= MAXCHR) {
+                    fprintf(stderr,"%s:%d: too many chromosomes. max=%d\n",
+                            __FILE__,__LINE__, MAXCHR);
+                    exit(EXIT_FAILURE);
+                }
                 nsnp[nchr] = 1;
                 ++nchr;
             } else
@@ -614,8 +619,11 @@ int main(int argc, char **argv) {
                 DIE("buffer overflow in snprintf");
 
             FILE       *fp = fopen(buff, "w");
-            if(fp == NULL)
-                DIE("bad fopen");
+            if(fp == NULL) {
+                fprintf(stderr,"%s:%d: can't open \"%s\" for output.\n",
+                        __FILE__,__LINE__,buff);
+                exit(EXIT_FAILURE);
+            }
             fprintf(fp, "# %13s %20s", "SitePat", "E[count]\n");
             for(i = 0; i < npat; ++i) {
                 fprintf(fp, "%15s %20.7lf\n",

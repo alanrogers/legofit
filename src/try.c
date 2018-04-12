@@ -1,15 +1,14 @@
 #include <stdio.h>
-#include <limits.h>
-
 int main(void) {
 
-    int i = INT_MAX;
-
-    printf("max=%d = %e\n", i, (double) i);
-
-    i += 1;
-
-    printf("max+1=%d\n", i);
+    double x;
+    int status;
+    while(1) {
+        status = scanf("%lf", &x);
+        if(status != 1)
+            break;
+        printf("%g\n", x);
+    }
 
     return 0;
 }
