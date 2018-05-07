@@ -6,7 +6,7 @@ incl := -I/usr/local/include -I/opt/local/include -I../src
 tests := xbinary xboot xbranchtab xdafreader xrafreader xdiffev xgene \
   xgptree xpopnodetab xjobqueue xlblndx xllrbtree xparkeyval xparse \
   xparstore xpopnode xscrmreader xsimsched xstrint xdtnorm xmisc xerror \
-  xstate
+  xstate xwraparound
 
 CC := gcc
 
@@ -59,6 +59,7 @@ test : $(tests)
 	-./xsimsched
 	-./xstate
 	-./xstrint
+	-./xwraparound
 	@echo "ALL UNIT TESTS WERE COMPLETED."
 
 XBINARY := xbinary.o binary.o
@@ -68,6 +69,10 @@ xbinary : $(XBINARY)
 XMISC := xmisc.o misc.o
 xmisc : $(XMISC)
 	$(CC) $(CFLAGS) -o $@ $(XMISC) $(lib)
+
+XWRAPAROUND := xwraparound.o wraparound.o
+xwraparound : $(XWRAPAROUND)
+	$(CC) $(CFLAGS) -o $@ $(XWRAPAROUND) $(lib)
 
 XSTATE := xstate.o misc.o state.o
 xstate : $(XSTATE)

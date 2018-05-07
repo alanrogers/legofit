@@ -1,4 +1,4 @@
-#include "ringbuf.h"
+#include "wraparound.h"
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -11,48 +11,46 @@ int main(int argc, char **argv) {
         break;
     case 2:
         if(strncmp(argv[1], "-v", 2) != 0) {
-            fprintf(stderr, "usage: xringbuf [-v]\n");
+            fprintf(stderr, "usage: xwraparound [-v]\n");
             exit(EXIT_FAILURE);
         }
         verbose = 1;
         break;
     default:
-        fprintf(stderr, "usage: xringbuf [-v]\n");
+        fprintf(stderr, "usage: xwraparound [-v]\n");
         exit(EXIT_FAILURE);
     }
 
-    RingBuf *rb = RingBuf_new();
+    unsigned totsize = 8;
+    Wraparound *w = Wraparound_new(totsize);
 
-    assert(RingBuf_empty(rb));
-    assert(!RingBuf_full(rb));
-    RingBuf_pushHead(rb, 0u);
-    assert(!RingBuf_empty(rb));
-    assert(!RingBuf_full(rb));
-    assert(0 == RingBuf_popTail(rb));
-    assert(RingBuf_empty(rb));
-    assert(!RingBuf_full(rb));
-    for(u=0u; u < 2*RBUF_SIZE; ++u)
-        RingBuf_pushHead(rb, u);
-    assert(RingBuf_full(rb));
+    assert(0 == Wraparound_size(w));
+    Wraparound_push(w, 0u);
+    assert(0 != Wraparound_size(w));
+    assert(0 == Wraparound_pop(w));
+    assert(0 == Wraparound_size(w));
+    for(u=0u; u < 2*totsize; ++u)
+        Wraparound_push(w, u);
+    assert(totsize == Wraparound_size(w));
 
-    for(i=0; i < RBUF_SIZE/2; ++i)
-        (void) RingBuf_popTail(rb);
-    assert(!RingBuf_full(rb));
+    for(i=0; i < totsize/2; ++i)
+        (void) Wraparound_pop(w);
+    assert(0 != Wraparound_size(w));
+    assert(totsize != Wraparound_size(w));
     
-    for(u=0u; u < RBUF_SIZE/2u; ++u)
-        RingBuf_pushHead(rb, u);
-    assert(RingBuf_full(rb));
+    for(u=0u; u < totsize/2u; ++u)
+        Wraparound_push(w, u);
+    assert(totsize == Wraparound_size(w));
 
     if(verbose) {
-        printf("Popping RingBuf:\n");
-        RingBuf_print(rb, stdout);
-        while(!RingBuf_empty(rb)) {
-            printf("%u\n", RingBuf_popTail(rb));
-        }
+        printf("Popping Wraparound:\n");
+        Wraparound_print(w, stdout);
+        while(0 != Wraparound_size(w))
+            printf("%u\n", Wraparound_pop(w));
     }
 
-    RingBuf_free(rb);
+    Wraparound_free(w);
     
-    printf("RingBuf OK\n");
+    printf("Wraparound OK\n");
     return 0;
 }
