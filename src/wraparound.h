@@ -15,11 +15,9 @@ struct  Wraparound {
 
 Wraparound *Wraparound_new(unsigned totsize);
 void     Wraparound_free(Wraparound *self);
-int      Wraparound_empty (const Wraparound *self);
-int      Wraparound_full  (const Wraparound *self);
 unsigned Wraparound_size  (const Wraparound *self);
 void     Wraparound_push(Wraparound *self, const unsigned char c);
-void     Wraparound_clear (Wraparound *self);
+unsigned Wraparound_pop(Wraparound *self);
 void     Wraparound_print(Wraparound *self, FILE *fp);
 
 #endif

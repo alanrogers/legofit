@@ -7,7 +7,7 @@
 #include <stdlib.h>
 
 Wraparound *Wraparound_new(unsigned totsize) {
-    if(totsize==0 || (totsize & (totsize - 1))) {
+    if(totsize==0u || (totsize & (totsize - 1u))) {
         fprintf(stderr,"%s:%s:%d: totsize=%u; must be power of 2\n",
                 __FILE__,__func__,__LINE__, totsize);
         exit(0);
@@ -26,14 +26,6 @@ Wraparound *Wraparound_new(unsigned totsize) {
 
 void Wraparound_free(Wraparound *self) {
     free(self);
-}
-
-int Wraparound_empty (const Wraparound *self) {
-    return (0==self->cursize);
-}
-
-int Wraparound_full (const Wraparound *self) {
-    return (self->cursize == self->totsize);
 }
 
 // Return the number of items in the buffer.
@@ -60,10 +52,6 @@ void Wraparound_push(Wraparound *self, const unsigned char c) {
     self->curpos = (self->curpos + 1u) & (self->totsize - 1u);
     if(self->cursize != self->totsize)
         ++self->cursize;
-}
-
-void Wraparound_clear (Wraparound *self) {
-  self->curpos = self->cursize = 0;
 }
 
 void Wraparound_print(Wraparound *self, FILE *fp) {
