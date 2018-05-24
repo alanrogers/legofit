@@ -10,3 +10,5 @@ Documentation begins [here](http://content.csbs.utah.edu/~rogers/src/legofit/ind
 =======
 
 This branch will implement Composite Likelihood Information Criterion or CLIC into Legofit.  This will assist the software in model selection, as currently this can only be done easily with models that are nested.
+
+*This README subsection should be removed before or just after merge*
