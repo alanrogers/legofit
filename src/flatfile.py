@@ -147,7 +147,7 @@ if transpose:
     ncols = len(fnames)
     print "param",
     for j in range(ncols):
-        print fnames[i],
+        print fnames[j],
     print
     for i in range(nrows):
         print parnames[i],
