@@ -143,12 +143,16 @@ for name in fnames:
     mat.append(estimates)
 
 if transpose:
-    nrows = len(parnames)
+    nrows = npar
     ncols = len(fnames)
+    print "param",
+    for j in range(ncols):
+        print fnames[i],
+    print
     for i in range(nrows):
-        print parname[i],
+        print parnames[i],
         for j in range(ncols):
-            print mat[j][i]
+            print mat[j][i],
         print
 else:    
     for name in parnames:
