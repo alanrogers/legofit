@@ -99,6 +99,7 @@ def parselegofit(fname):
     return (parnames, estimates)
 
 fnames = []
+transpose = False
 
 # Loop over command line arguments, ignoring the 0th.
 i = 1
@@ -107,6 +108,8 @@ while(True):
         break
     elif sys.argv[i]=="-h" or sys.argv[i]=="--help":
         usage("")
+    elif sys.argv[i]=="-t" or sys.argv[i]=="--transpose":
+        transpose = True
     elif sys.argv[i][0] == "-":
         usage("Unknown argument: %s" % sys.argv[i])
     else:
@@ -139,12 +142,21 @@ for name in fnames:
 
     mat.append(estimates)
 
-for name in parnames:
-    print "%s" % name,
-print
-
-for row in mat:
-    for val in row:
-        print "%s" % val,
+if transpose:
+    nrows = len(parnames)
+    ncols = len(fnames)
+    for i in range(nrows):
+        print parname[i],
+        for j in range(ncols):
+            print mat[j][i]
+        print
+else:    
+    for name in parnames:
+        print "%s" % name,
     print
+
+    for row in mat:
+        for val in row:
+            print "%s" % val,
+        print
 
