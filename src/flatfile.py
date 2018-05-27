@@ -13,6 +13,7 @@
 #    estimate the same parameters
 #    Options may include:
 #
+#      -t     or --transpose    Rows are parameters rather than data sets.
 #      -h     or --help         Print this message.
 #
 #    The program writes to standard output.
@@ -56,6 +57,7 @@ usage: flatfile.py [options] <file1> <file2> ...
 where the "file" arguments files are legofit output files
 Options may include:
 
+  -t     or --transpose    Rows are parameters rather than data sets.
   -h     or --help         Print this message.
 
 The program writes to standard output.
