@@ -9,8 +9,7 @@
 #
 #    usage: flatfile.py [options] <file1> <file2> ...
 #
-#    where <file*> files are legofit output files, which must each
-#    estimate the same parameters
+#    where <file*> files are legofit output files.
 #    Options may include:
 #
 #      -t     or --transpose    Rows are parameters rather than data sets.
