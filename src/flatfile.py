@@ -24,7 +24,7 @@
 #
 #    flatfile.py s2.legofit s2boot*.legofit
 #
-#All the legofit must estimate the same parameters.
+#Parameters that are missing from a .legofit file will print as "None".
 #
 #The output begins with two lines of comment, which begin with a sharp
 #character in column 1 and give (1) the date and time at which the
