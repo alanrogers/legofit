@@ -127,21 +127,41 @@ for i in range(len(fnames)):
 print
 
 mat = []
-npar = 0
+parnames = []
+allnames = set([])
 
+# Make arrays. Data sets in rows, parameters in columns.
+# Rows may not be same length, because different data sets
+# may have different parameters.
 for name in fnames:
     parnames2, estimates = parselegofit(name)
-
-    if npar == 0:
-        parnames = parnames2
-        npar = len(parnames)
-    elif parnames != parnames2:
-        print >> sys.stderr, "Input files estimate different parameters"
-        print >> sys.stderr, "  1:", parnames
-        print >> sys.stderr, "  2:", parnames2
-        exit(1)
-
     mat.append(estimates)
+    parnames.append(parnames2)
+    allnames |= set(parnames2)
+
+allnames = sorted(list(allnames))
+npar = len(allnames)
+nfile = len(fnames)
+
+# mat2 is like mat, but is rectangular, with missing parameters
+# set equal to None.
+mat2 = nfile*[None]
+for i in range(nfile):
+    mat2[i] = [None for j in range(npar)]
+    k = 0
+    for j in range(npar):
+        if allnames[j] in parnames[i]:
+            if parnames[i][k] != allnames[j]:
+                print "ERR: parnames[i][k] != allnames[j]"
+                print i, k, j
+                print parnames[i][k], allnames[j]
+                print parnames[i]
+                print allnames
+                sys.exit(1)
+            mat2[i][j] = mat[i][k]
+            k += 1
+        else:
+            mat2[i][j] = None
 
 if transpose:
     nrows = npar
@@ -151,16 +171,16 @@ if transpose:
         print fnames[j],
     print
     for i in range(nrows):
-        print parnames[i],
+        print allnames[i],
         for j in range(ncols):
-            print mat[j][i],
+            print mat2[j][i],
         print
 else:    
-    for name in parnames:
+    for name in allnames:
         print "%s" % name,
     print
 
-    for row in mat:
+    for row in mat2:
         for val in row:
             print "%s" % val,
         print
