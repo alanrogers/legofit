@@ -43,7 +43,7 @@
      size++;                         //add one to size
    }
    for(int i = size; i > 0; i--){
-     *(buffer)+size-1 = (char)((data%10)+'0');   //place data in array
+     *(buffer+size-1) = (char)((data%10)+'0');   //place data in array
      data /= 10;
    }
    return buffer;        //return
@@ -57,17 +57,23 @@
    return str;
  }
 
- double** get_fit_param_array(char* title, double** array, int num_files, int num_params){
-   char file_base[100];
+
+/*
+  Creates a double array with the first dimension being number of files,
+  and the second being number number of paramaters.  This is used as a
+  file parser
+*/
+ double** get_fit_param_array(char* title, int num_files, int num_params){
+   char file_base[100];                       //declare vars
    strcpy(file_base, title);
    strcat(file_base, "boot");
    char file_num[5];
    char file_name[20];
    FILE* f;
 
-   array = (double**) malloc(num_files * sizeof(double*));
+   double ** array = (double**) malloc(num_files * sizeof(double*));
 
-   for (int i = 0; i < num_files; i++){
+   for (int i = 0; i < num_files; i++){             //go through each file
      tri_cat(file_base, itoa(i, file_num), ".legofit", file_name);
      if(f = fopen(file_name, "r")){
 
@@ -76,18 +82,13 @@
 
        array[i] = (double*) malloc(num_params * sizeof(double));
 
-       do {
+       do {                                       //fscanf until past DiffEv
          fscanf(f, "%s", input);
        } while(strcmp(input, "DiffEv") != 0);
 
-       while(fscanf(f, "%s", input)){
-         printf("%s\n",input);
+       while(fscanf(f, "%s", input)){             //find and place data into array
          if(strcmp(input, "=") == 0){
-           printf("set:");
            fscanf(f, "%lf", &array[i][param_num]);
-           printf("%u\n", array);
-           printf("%u\n", array[i]);
-           printf("%lf\n", array[i][param_num]);
            param_num++;
            if(param_num >= num_params){
              break;
@@ -99,6 +100,7 @@
        printf("Error, invalid file name\n");
      }
    }
+
    return array;
  }
 
@@ -106,7 +108,7 @@
   Takes the start of the string and finds how many of that file you have, then
   sends that information to get_fit_param_array and returns its result
 */
- double** get_fit_param_array_num_unkown(char* title, double** array, int num_params){
+ double** get_fit_param_array_num_unkown(char* title, int num_params){
    int num_files = 0;
    char file_base[100];
    strcpy(file_base, title);
@@ -119,7 +121,7 @@
      num_files++;
    }
 
-   return get_fit_param_array(title, array, num_files, num_params);
+   return get_fit_param_array(title, num_files, num_params);
  }
 
  int main(){
@@ -127,13 +129,13 @@
    int a = 1;
    int b = 9;
 
-   get_fit_param_array("s1", array, a, b);
+   array = get_fit_param_array("s1", a, b);
 
    for (int i = 0; i < a; i++){
      for (int j = 0; j < b; j++){
-       printf("%u\n", array);
-       printf("%u\n", array[i]);
-       // printf("%lf\n", array[i][j]);
+       printf("%zu\n", array);
+       printf("%zu\n", array[i]);
+       printf("%lf\n", array[i][j]);
      }
    }
 
