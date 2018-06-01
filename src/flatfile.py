@@ -134,6 +134,9 @@ allnames = set([])
 # may have different parameters.
 for name in fnames:
     parnames2, estimates = parselegofit(name)
+    if len(parnames2) == 0:
+        print >> sys.stderr, "ERR: file %s has no parameters" % name
+        sys.exit(1)
     mat.append(estimates)
     parnames.append(parnames2)
     allnames |= set(parnames2)
@@ -172,15 +175,21 @@ if transpose:
     for i in range(nrows):
         print allnames[i],
         for j in range(ncols):
-            print mat2[j][i],
+            if mat2[j][i] == None:
+                print "NA",
+            else:
+                print mat2[j][i],
         print
-else:    
+else:
     for name in allnames:
         print "%s" % name,
     print
 
     for row in mat2:
         for val in row:
-            print "%s" % val,
+            if val == None:
+                print "NA",
+            else:
+                print "%s" % val,
         print
 
