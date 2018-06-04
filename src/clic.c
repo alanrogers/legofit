@@ -74,11 +74,8 @@
    double** array = (double**) malloc(num_files * sizeof(double*));
 
    for (int i = 0; i < num_files; i++){             //go through each file
-     printf("%s\n", file_base);
      itoa(i, file_num);
-     printf("%s\n", file_num);
      tri_cat(file_base, itoa(i, file_num), ".legofit", file_name);
-     printf("%s\n", file_name);
      if(f = fopen(file_name, "r")){
 
        char input[100];
