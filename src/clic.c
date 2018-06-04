@@ -67,14 +67,18 @@
    char file_base[100];                       //declare vars
    strcpy(file_base, title);
    strcat(file_base, "boot");
-   char file_num[5];
+   char file_num[5] = "\0\0\0\0\0";
    char file_name[20];
    FILE* f;
 
-   double ** array = (double**) malloc(num_files * sizeof(double*));
+   double** array = (double**) malloc(num_files * sizeof(double*));
 
    for (int i = 0; i < num_files; i++){             //go through each file
+     printf("%s\n", file_base);
+     itoa(i, file_num);
+     printf("%s\n", file_num);
      tri_cat(file_base, itoa(i, file_num), ".legofit", file_name);
+     printf("%s\n", file_name);
      if(f = fopen(file_name, "r")){
 
        char input[100];
@@ -124,8 +128,31 @@
    return get_fit_param_array(title, num_files, num_params);
  }
 
+
+ /*
+    Takes an array of paramaters and returns a matrix of covariences
+    NOTE: This flips the array and the matrix goes from having the first
+    index be the file to the second (and third) index being the file.
+ */
+ double*** make_covar_matrix(double** array, int files, int params){
+
+   double*** covar_matrix = (double***) malloc(files * sizeof(double**));
+
+   for (int i = 0; i < params; i++){
+     covar_matrix[i] = (double**) malloc(files * sizeof(double*));
+     for (int j = 0; j < files; j++){
+       covar_matrix[i][j] = (double*) malloc(files * sizeof(double));
+       for (int k = 0; k < files; k++){
+         covar_matrix[i][j][k] = (array[j][i] * array[k][i]);
+       }
+     }
+   }
+   return covar_matrix;
+ }
+
  int main(){
    double** array;
+   double*** c_matrix;
    int a = 1;
    int b = 9;
 
@@ -136,6 +163,18 @@
        printf("%zu\n", array);
        printf("%zu\n", array[i]);
        printf("%lf\n", array[i][j]);
+     }
+   }
+
+   c_matrix = make_covar_matrix(array, 1, 9);
+
+   for (int i = 0; i < b; i++){
+     printf("Matrix of param number %d\n", i);
+     for (int j = 0; j < a; j++){
+       for (int k = 0; k < a; k++){
+         printf("%f ", c_matrix[i][j][k]);
+       }
+       printf("\n");
      }
    }
 
