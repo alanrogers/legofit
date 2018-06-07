@@ -11,4 +11,6 @@ double** get_fit_param_array_num_unkown(char* title, int num_params);
 
 double*** make_covar_matrix(double** array, int files, int params);
 
+double KL_to_likelihood(double KL, double* p_matrix, int p_matrix_size, double c, double sum);
+
 #endif

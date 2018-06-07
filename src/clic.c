@@ -10,6 +10,7 @@
  #include <stdio.h>
  #include <stdlib.h>
  #include <string.h>
+ #include <math.h>
  #include "clic.h"
 
 
@@ -145,6 +146,22 @@
      }
    }
    return covar_matrix;
+ }
+
+ double KL_to_likelihood(double KL, double* p_matrix, int p_matrix_size, double c, double sum){
+   double likelihood;
+   double p_lnp_sum = 0;
+
+   for (int i = 0; i < p_matrix_size; i++){
+     p_lnp_sum += (p_matrix[i] * log(p_matrix[i]));
+   }
+
+   likelihood = KL - p_lnp_sum;
+   likelihood = c - likelihood;         //c + the negative of likelihood
+   likelihood = likelihood * sum;
+   likelihood = pow(M_E, likelihood);
+
+   return likelihood;
  }
 
  int main(){
