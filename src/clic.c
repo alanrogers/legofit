@@ -36,50 +36,24 @@
  }
 
 /*
-  Puts an int (data) into a string (buffer)
-*/
- char* itoa(int data, char* buffer){
-   int temp = data;      //copy data
-   int size = 1;         //base string size
-   while ((int)(temp/10) != 0){      //while there is still stuff in temp
-     temp /= 10;                     //divide temp by 10
-     size++;                         //add one to size
-   }
-   for(int i = size; i > 0; i--){
-     *(buffer+size-1) = (char)((data%10)+'0');   //place data in array
-     data /= 10;
-   }
-   return buffer;        //return
- }
-
- //very basic method, turns three strings into one
- char* tri_cat(char* a, char* b, char* c, char* str){
-   strcpy(str,a);
-   strcat(str,b);
-   strcat(str,c);
-   return str;
- }
-
-
-/*
   Parse legofit output.
   Creates a double array with the first dimension being number of files,
   and the second being number number of paramaters.  This is used as a
   file parser
 */
  double** get_fit_param_array(char* title, int num_files, int num_params){
-   char file_base[100];                       //declare vars
-   strcpy(file_base, title);
-   strcat(file_base, "boot");
-   char file_num[5] = "\0\0\0\0\0";
-   char file_name[20];
+   char file_base[100];
+   char file_name[200];
+
+   snprintf(file_base, 200, "%sboot",title);
+
    FILE* f;
 
    double** array = (double**) malloc(num_files * sizeof(double*));
 
    for (int i = 0; i < num_files; i++){             //go through each file
-     itoa(i, file_num);
-     tri_cat(file_base, itoa(i, file_num), ".legofit", file_name);
+     snprintf(file_name, 200, "%sboot%d.legofit", file_base, i);
+
      if(f = fopen(file_name, "r")){
 
        char input[100];
@@ -115,14 +89,14 @@
 */
  double** get_fit_param_array_num_unkown(char* title, int num_params){
    int num_files = 0;
-   char file_base[100];
-   strcpy(file_base, title);
-   strcat(file_base, "boot");
-   char file_num[5];
-   char file_name[20];
+
+   char file_name[200];
    FILE* f;
 
-   while (f = fopen(tri_cat(file_base, itoa(num_files, file_num), ".legofit", file_name), "r")){
+   snprintf(file_name, 200, "%sboot%d.legofit",title, num_files);
+
+   while (f = fopen(file_name, "r")){
+      snprintf(file_name, 200, "%sboot%d.legofit",title, num_files);
      num_files++;
    }
 
