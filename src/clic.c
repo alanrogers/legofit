@@ -1,3 +1,4 @@
+#define NDEBUG
 /**
  * @file clic.c
  * @author Daniel R. Tabin
@@ -22,6 +23,7 @@
                   double** m2, int m2_rows, int m2_cols,
                   double** results){
    int i, j, k;
+
    for (i = 0; i < m1_rows; i++){         //go through each row
      for(j = 0; j < m2_cols; j++){        //go through each coloumn
        int x = 0;
@@ -50,7 +52,7 @@
    return buffer;        //return
  }
 
-  //very basic method, turns tree strings into one
+ //very basic method, turns three strings into one
  char* tri_cat(char* a, char* b, char* c, char* str){
    strcpy(str,a);
    strcat(str,b);
@@ -60,6 +62,7 @@
 
 
 /*
+  Parse legofit output.
   Creates a double array with the first dimension being number of files,
   and the second being number number of paramaters.  This is used as a
   file parser
@@ -128,7 +131,7 @@
 
 
  /*
-    Takes an array of paramaters and returns a matrix of covariences
+    Takes an array of paramaters and returns a matrix of covariances
     NOTE: This flips the array and the matrix goes from having the first
     index be the file to the second (and third) index being the file.
  */
@@ -148,7 +151,8 @@
    return covar_matrix;
  }
 
- double KL_to_likelihood(double KL, double* p_matrix, int p_matrix_size, double c, double sum){
+ double KL_to_likelihood(double KL, double* p_matrix, int p_matrix_size,
+                         double c, double sum){
    double likelihood;
    double p_lnp_sum = 0;
 
@@ -163,6 +167,12 @@
 
    return likelihood;
  }
+
+#ifdef TEST
+
+#ifdef NDEBUG
+#error "Unit tests must be compiled without -DNDEBUG flag"
+#endif
 
  int main(){
    double** array;
@@ -194,3 +204,5 @@
 
    printf("done\n");
  }
+
+#endif

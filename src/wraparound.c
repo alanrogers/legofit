@@ -33,6 +33,13 @@ unsigned Wraparound_size(const Wraparound *self) {
     return self->cursize;
 }
 
+void Wraparound_push(Wraparound *self, const unsigned char c) {
+    self->buf[self->curpos] = c;
+    self->curpos = (self->curpos + 1u) & (self->totsize - 1u);
+    if(self->cursize != self->totsize)
+        ++self->cursize;
+}
+
 unsigned Wraparound_pop(Wraparound *self) {
     unsigned c;
     if (self->cursize != 0)  {
@@ -45,13 +52,6 @@ unsigned Wraparound_pop(Wraparound *self) {
         exit(1);
     }
     return c;
-}
-
-void Wraparound_push(Wraparound *self, const unsigned char c) {
-    self->buf[self->curpos] = c;
-    self->curpos = (self->curpos + 1u) & (self->totsize - 1u);
-    if(self->cursize != self->totsize)
-        ++self->cursize;
 }
 
 void Wraparound_print(Wraparound *self, FILE *fp) {

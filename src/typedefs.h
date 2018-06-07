@@ -22,6 +22,8 @@ typedef enum   ParamStatus ParamStatus;
 typedef enum   ParamType ParamType;
 typedef struct ParKeyVal ParKeyVal;
 typedef struct ParStore ParStore;
+typedef struct Point Point;
+typedef struct PointBuff PointBuff;
 typedef struct PopNode PopNode;
 typedef struct PopNodeTab PopNodeTab;
 typedef struct ScrmReader ScrmReader;
