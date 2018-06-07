@@ -54,29 +54,29 @@
    for (int i = 0; i < num_files; i++){             //go through each file
      snprintf(file_name, 200, "%sboot%d.legofit", file_base, i);
 
-     if(f = fopen(file_name, "r")){
+     f = fopen(file_name, "r");
+     if(f == NULL){
+       printf("Error, invalid file name\n");
+       exit(EXIT_FAILURE);
+     }
 
-       char input[100];
-       int param_num = 0;
+     char input[100];
+     int param_num = 0;
 
-       array[i] = (double*) malloc(num_params * sizeof(double));
+     array[i] = (double*) malloc(num_params * sizeof(double));
 
-       do {                                       //fscanf until past DiffEv
-         fscanf(f, "%s", input);
-       } while(strcmp(input, "DiffEv") != 0);
+     do {                                       //fscanf until past DiffEv
+       fscanf(f, "%s", input);
+     } while(strcmp(input, "DiffEv") != 0);
 
-       while(fscanf(f, "%s", input)){             //find and place data into array
-         if(strcmp(input, "=") == 0){
-           fscanf(f, "%lf", &array[i][param_num]);
-           param_num++;
-           if(param_num >= num_params){
-             break;
-           }
+     while(fscanf(f, "%s", input)){             //find and place data into array
+       if(strcmp(input, "=") == 0){
+         fscanf(f, "%lf", &array[i][param_num]);
+         param_num++;
+         if(param_num >= num_params){
+           break;
          }
        }
-     }
-     else{
-       printf("Error, invalid file name\n");
      }
    }
 
@@ -95,7 +95,7 @@
 
    snprintf(file_name, 200, "%sboot%d.legofit",title, num_files);
 
-   while (f = fopen(file_name, "r")){
+   while ((f = fopen(file_name, "r"))){
       snprintf(file_name, 200, "%sboot%d.legofit",title, num_files);
      num_files++;
    }
