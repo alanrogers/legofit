@@ -45,14 +45,14 @@
    char file_base[100];
    char file_name[200];
 
-   snprintf(file_base, 200, "%sboot",title);
+   snprintf(file_base, size_of(file_base), "%sboot",title);
 
    FILE* f;
 
    double** array = (double**) malloc(num_files * sizeof(double*));
 
    for (int i = 0; i < num_files; i++){             //go through each file
-     snprintf(file_name, 200, "%sboot%d.legofit", file_base, i);
+     snprintf(file_name, size_of(file_name), "%sboot%d.legofit", file_base, i);
 
      f = fopen(file_name, "r");
      if(f == NULL){
@@ -93,10 +93,10 @@
    char file_name[200];
    FILE* f;
 
-   snprintf(file_name, 200, "%sboot%d.legofit",title, num_files);
+   snprintf(file_name, size_of(file_name), "%sboot%d.legofit",title, num_files);
 
    while ((f = fopen(file_name, "r"))){
-      snprintf(file_name, 200, "%sboot%d.legofit",title, num_files);
+      snprintf(file_name, size_of(file_name), "%sboot%d.legofit",title, num_files);
      num_files++;
    }
 
