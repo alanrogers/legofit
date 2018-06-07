@@ -154,7 +154,8 @@
      for (int j = 0; j < params; j++){
        covar_sum = 0;
        for (int k = 0; k < files; k++){
-         covar_sum += (array[k][j]) - param_averages[j]) * (array[k][i]) - param_averages[i]);
+         covar_sum += (array[k][j]) - param_averages[j])
+           * (array[k][i]) - param_averages[i]);
        }
        covar_matrix[i][j] = (covar_sum/files);
      }
