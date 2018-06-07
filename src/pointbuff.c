@@ -1,7 +1,8 @@
 /**
- * @file point.c
- * @brief Class Point. Represents a point in parameter space, together with
- * its associated cost value.
+ * @file pointbuff.c
+ * @brief Class PointBuff. A buffer into which one can push points,
+ * which consist of a vector of parameter values and an associated
+ * cost value.
  * @author Alan R. Rogers
  * @copyright Copyright (c) 2018, Alan R. Rogers
  * <rogers@anthro.utah.edu>. This file is released under the Internet
