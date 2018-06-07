@@ -6,7 +6,7 @@ incl := -I/usr/local/include -I/opt/local/include -I../src
 tests := xbinary xboot xbranchtab xclic xdafreader xrafreader xdiffev xgene \
   xgptree xpopnodetab xjobqueue xlblndx xllrbtree xparkeyval xparse \
   xparstore xpopnode xscrmreader xsimsched xstrint xdtnorm xmisc xerror \
-  xstate xwraparound
+  xstate xwraparound xpointbuff
 
 CC := gcc
 
@@ -54,6 +54,7 @@ test : $(tests)
 	-./xparkeyval
 	-./xparse
 	-./xparstore
+	-./xpointbuff
 	-./xpopnode
 	-./xpopnodetab
 	-./xscrmreader
@@ -96,6 +97,10 @@ xerror : $(XERROR)
 XJOBQUEUE := xjobqueue.o jobqueue.o misc.o
 xjobqueue : $(XJOBQUEUE)
 	$(CC) $(CFLAGS) -o $@ $(XJOBQUEUE) $(lib)
+
+XPOINTBUFF := xpointbuff.o misc.o pointbuff.o
+xpointbuff : $(XPOINTBUFF)
+	$(CC) $(CFLAGS) -o $@ $(XPOINTBUFF) $(lib)
 
 XDIFFEV := xdiffev.o diffev.o binary.o lblndx.o jobqueue.o parkeyval.o \
   simsched.o state.o misc.o

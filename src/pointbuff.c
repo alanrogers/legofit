@@ -8,7 +8,7 @@
  * <rogers@anthro.utah.edu>. This file is released under the Internet
  * Systems Consortium License, which can be found in file "LICENSE".
  */
-#include "point.h"
+#include "pointbuff.h"
 #include "misc.h"
 #include <assert.h>
 #include <stdio.h>
@@ -34,23 +34,33 @@ static inline void Point_set(Point *self, double cost, int n, double par[n]);
 static inline double Point_get(Point *self, int n, double par[n]);
 
 static inline void Point_set(Point *self, double cost, int n, double par[n]) {
-    assert(n == self->nPar);
     self->cost = cost;
-    memcpy(self->par, par, self->nPar*sizeof(par[0]));
+    memcpy(self->par, par, n*sizeof(par[0]));
 }
 
 static inline double Point_get(Point *self, int n, double par[n]) {
-    assert(n == self->nPar);
-    memcpy(par, self->par, self->nPar*sizeof(par[0]));
-    return cost;
+    memcpy(par, self->par, n*sizeof(par[0]));
+    return self->cost;
 }
 
 PointBuff *PointBuff_new(unsigned npar, unsigned totpts) {
+    if(npar == 0) {
+        fprintf(stderr,"%s:%d: can't allocate a PointBuff with 0 parameters\n",
+                __FILE__, __LINE__);
+        exit(EXIT_FAILURE);
+    }
+    if(totpts == 0) {
+        fprintf(stderr,"%s:%d: can't allocate a PointBuff with 0 points\n",
+                __FILE__, __LINE__);
+        exit(EXIT_FAILURE);
+    }
     size_t pointSize = sizeof(Point) + (npar-1)*sizeof(double);
-    unsigned buffsize = totpts*pointSize;
+
+    printf("sizeof(Point)=%zu pointSize = %zu\n",
+           sizeof(Point), pointSize);
 
     // Using struct hack.
-    size_t size = sizeof(PointBuff) + buffsize - 1;
+    size_t size = sizeof(PointBuff) + totpts*pointSize - 1;
     PointBuff *self = malloc(size);
     if(self==NULL)
         return NULL;
@@ -58,13 +68,14 @@ PointBuff *PointBuff_new(unsigned npar, unsigned totpts) {
     self->nPar = npar;
     self->pointSize = pointSize;
     self->end = ((size_t) self) + size;
-    self->curPtr = &self->buff[0];
+    self->curPtr = (size_t) self->buf;
+    printf("Initialized curPtr=%zu end=%zu\n", self->curPtr, self->end);
     self->curpts = 0;
     self->totpts = totpts;
     return self;
 }
 
-void PointBuff_free(Wraparound *self) {
+void PointBuff_free(PointBuff *self) {
     free(self);
 }
 
@@ -80,8 +91,13 @@ void PointBuff_push(PointBuff *self, double cost, int n,
     Point_set(pt, cost, n, param);
 
     self->curPtr += self->pointSize;
-    if(self->curPtr == self->end)
-        self->curPtr = &self->buf[0];
+    if(self->curPtr >= self->end) {
+        printf("wrapping: diff=-%zu\n", self->curPtr - self->end);
+        self->curPtr = (size_t) self->buf;
+    }else{
+        printf("diff=%zu\n", self->end - self->curPtr);
+    }
+    printf("curPtr=%zu end=%zu\n", self->curPtr, self->end);
     assert(self->curPtr < self->end);
     if(self->curpts != self->totpts)
         ++self->curpts;
@@ -99,7 +115,8 @@ double PointBuff_pop(PointBuff *self, int n, double param[n]) {
     }
 
     // Move to last filled position in buffer.
-    self->curPtr = &self->buf[0] + self->pointSize*(self->curpts - 1);
+    self->curPtr = (size_t) self->buf;
+    self->curPtr += self->pointSize*(self->curpts - 1);
 
     // Decrement number of points
     --self->curpts;
