@@ -172,8 +172,6 @@
 
    for (int i = 0; i < a; i++){
      for (int j = 0; j < b; j++){
-       printf("%zu\n", array);
-       printf("%zu\n", array[i]);
        printf("%lf\n", array[i][j]);
      }
    }
@@ -181,13 +179,10 @@
    c_matrix = make_covar_matrix(array, 1, 9);
 
    for (int i = 0; i < b; i++){
-     printf("Matrix of param number %d\n", i);
      for (int j = 0; j < a; j++){
-       for (int k = 0; k < a; k++){
-         printf("%f ", c_matrix[i][j][k]);
-       }
-       printf("\n");
+       printf("%f ", c_matrix[i][j]);
      }
+     printf("\n");
    }
 
    printf("done\n");
