@@ -137,14 +137,14 @@
  */
  double** make_covar_matrix(double** array, int files, int params){
    double[params] param_averages;
-   int covar_sum;
+   double covar_sum;
 
    for(int i = 0; i < params; i++){
      param_averages[i] = 0;
      for (int j = 0; j < files; j++){
-       param_averages += array[j][i];
+       param_averages[i] += array[j][i];
      }
-     param_averages /= files;
+     param_averages[i] /= files;
    }
 
    double** covar_matrix = (double**) malloc(params * sizeof(double*));
