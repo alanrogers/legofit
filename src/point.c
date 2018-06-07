@@ -14,87 +14,48 @@
 #include <stdlib.h>
 #include <string.h>
 
-int nPar = 0;
-static size_t pointSize = 0;
-pthread_mutex_t pointLock;
-
 struct Point {
     double cost;
     double par[1]; // array of nPar parameter values, using struct hack
 };
 
 struct PointBuff {
+    unsigned nPar;
+    size_t pointSize;
     unsigned totpts;     // max number of points
     unsigned curpts;     // current number of entries in buffer
-    unsigned buffbytes;  // number of bytes allocated in self->buf
     size_t curPtr;       // address where the next push will be stored
     size_t end;          // address just beyond end of PointBuff
     unsigned char buf[1]; // using struct hack
 };
 
-void Point_setNPar(int npar) {
-    int status;
+static inline void Point_set(Point *self, double cost, int n, double par[n]);
+static inline double Point_get(Point *self, int n, double par[n]);
 
-    status = pthread_mutex_lock(&pointLock);
-    if(status)
-        ERR(status, "lock");
-
-    if(pointSize != 0) {
-        fprintf(stderr, "%s:%d: %s can only be called once.\n",
-                __FILE__,__LINE__,__func__);
-        exit(EXIT_FAILURE);
-    }
-    nPar = npar;
-    pointSize = sizeof(Point) + (npar-1)*sizeof(double);
-
-    status = pthread_mutex_unlock(&pointLock);
-    if(status)
-        ERR(status, "unlock");
-}
-
-Point *Point_new(void) {
-    if(pointSize == 0) {
-        fprintf(stderr,"%s:%d: must call Point_setNPar before %s\n",
-                __FILE__,__LINE__,__func__);
-        exit(EXIT_FAILURE);
-    }
-    assert(nPar > 0);
-    Point *self = malloc(pointSize);
-    CHECKMEM(self);
-    return self;
-}
-
-void Point_free(Point *self) {
-    free(self);
-}
-
-void Point_set(Point *self, double cost, double *par) {
-    assert(nPar > 0);
+static inline void Point_set(Point *self, double cost, int n, double par[n]) {
+    assert(n == self->nPar);
     self->cost = cost;
-    memcpy(self->par, nPar, nPar*sizeof(par[0]));
+    memcpy(self->par, par, self->nPar*sizeof(par[0]));
 }
 
-double Point_get(Point *self, double *par) {
-    assert(nPar > 0);
-    memcpy(par, self->par, nPar*sizeof(par[0]));
+static inline double Point_get(Point *self, int n, double par[n]) {
+    assert(n == self->nPar);
+    memcpy(par, self->par, self->nPar*sizeof(par[0]));
     return cost;
 }
 
-PointBuff *PointBuff_new(unsigned totpts) {
-    if(pointSize == 0) {
-        fprintf(stderr,"%s:%d: must call Point_setNPar before %s\n",
-                __FILE__,__LINE__,__func__);
-        exit(EXIT_FAILURE);
-    }
-
-    self->buffbytes = totpts*pointsize;
+PointBuff *PointBuff_new(unsigned npar, unsigned totpts) {
+    size_t pointSize = sizeof(Point) + (npar-1)*sizeof(double);
+    unsigned buffsize = totpts*pointSize;
 
     // Using struct hack.
-    size_t size = sizeof(PointBuff) + self->buffbytes - 1;
+    size_t size = sizeof(PointBuff) + buffsize - 1;
     PointBuff *self = malloc(size);
     if(self==NULL)
         return NULL;
 
+    self->nPar = npar;
+    self->pointSize = pointSize;
     self->end = ((size_t) self) + size;
     self->curPtr = &self->buff[0];
     self->curpts = 0;
@@ -113,12 +74,11 @@ unsigned PointBuff_size(const PointBuff *self) {
 
 void PointBuff_push(PointBuff *self, double cost, int n,
                     double param[n]) {
+    assert(n == self->nPar);
     Point *pt = (Point *) self->curPtr;
-    assert(n == nPar);
-    pt->cost = cost;
-    memcpy(pt->par, param, nPar*sizeof(double));
+    Point_set(pt, cost, n, param);
 
-    self->curPtr += pointSize;
+    self->curPtr += self->pointSize;
     if(self->curPtr == self->end)
         self->curPtr = &self->buf[0];
     assert(self->curPtr < self->end);
@@ -130,6 +90,7 @@ void PointBuff_push(PointBuff *self, double cost, int n,
 // value of cost, and remove the Point from which these values came
 // from PointBuff.
 double PointBuff_pop(PointBuff *self, int n, double param[n]) {
+    assert(n == self->nPar);
     if(self->curpts == 0) {
         fprintf(stderr,"%s:%d: can't pop an empty PointBufff\n",
                 __FILE__, __LINE__);
@@ -137,13 +98,12 @@ double PointBuff_pop(PointBuff *self, int n, double param[n]) {
     }
 
     // Move to last filled position in buffer.
-    self->curPtr = &self->buf[0] + pointSize*(self->curpts - 1);
+    self->curPtr = &self->buf[0] + self->pointSize*(self->curpts - 1);
 
     // Decrement number of points
     --self->curpts;
 
     // Return the point that has now been vacated
     Point *pt = (Point *) self->curPtr;
-    memcpy(param, pt->par, nPar*sizeof(double));
-    return pt->cost;
+    return Point_get(pt, self->nPar, param);
 }

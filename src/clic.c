@@ -140,7 +140,7 @@
    int covar_sum;
 
    for(int i = 0; i < params; i++){
-     param_averages[params] = 0;
+     param_averages[i] = 0;
      for (int j = 0; j < files; j++){
        param_averages += array[j][i];
      }
