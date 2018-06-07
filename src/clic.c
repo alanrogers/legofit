@@ -1,4 +1,3 @@
-#define NDEBUG
 /**
  * @file clic.c
  * @author Daniel R. Tabin
@@ -45,19 +44,19 @@
    char file_base[100];
    char file_name[200];
 
-   snprintf(file_base, size_of(file_base), "%sboot",title);
+   snprintf(file_base, sizeof(file_base), "%sboot",title);
 
    FILE* f;
 
    double** array = (double**) malloc(num_files * sizeof(double*));
 
    for (int i = 0; i < num_files; i++){             //go through each file
-     snprintf(file_name, size_of(file_name), "%sboot%d.legofit", file_base, i);
+     snprintf(file_name, sizeof(file_name), "%sboot%d.legofit", file_base, i);
 
      f = fopen(file_name, "r");
      if(f == NULL){
-       printf("Error, invalid file name\n");
-       exit(EXIT_FAILURE);
+         fprintf(stderr, "Error, invalid file name: %s\n", file_name);
+         exit(EXIT_FAILURE);
      }
 
      char input[100];
@@ -93,10 +92,10 @@
    char file_name[200];
    FILE* f;
 
-   snprintf(file_name, size_of(file_name), "%sboot%d.legofit",title, num_files);
+   snprintf(file_name, sizeof(file_name), "%sboot%d.legofit",title, num_files);
 
    while ((f = fopen(file_name, "r"))){
-      snprintf(file_name, size_of(file_name), "%sboot%d.legofit",title, num_files);
+      snprintf(file_name, sizeof(file_name), "%sboot%d.legofit",title, num_files);
      num_files++;
    }
 
@@ -167,8 +166,9 @@
    double** c_matrix;
    int a = 1;
    int b = 9;
+   char buff[5] = "s1";
 
-   array = get_fit_param_array("s1", a, b);
+   array = get_fit_param_array(buff, a, b);
 
    for (int i = 0; i < a; i++){
      for (int j = 0; j < b; j++){

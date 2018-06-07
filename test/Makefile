@@ -115,6 +115,10 @@ xrafreader : $(XRAFREADER)
 xclic.o : clic.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/clic.c
 
+XCLIC := xclic.o
+xclic : $(XCLIC)
+	$(CC) $(CFLAGS) -o $@ $(XCLIC) $(lib)
+
 xscrmreader.o : scrmreader.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/scrmreader.c
 
