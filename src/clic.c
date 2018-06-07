@@ -135,35 +135,48 @@
     NOTE: This flips the array and the matrix goes from having the first
     index be the file to the second (and third) index being the file.
  */
- double*** make_covar_matrix(double** array, int files, int params){
+ double** make_covar_matrix(double** array, int files, int params){
+   double[params] param_averages;
+   int covar_sum;
 
-   double*** covar_matrix = (double***) malloc(files * sizeof(double**));
-
-   for (int i = 0; i < params; i++){
-     covar_matrix[i] = (double**) malloc(files * sizeof(double*));
+   for(int i = 0; i < params; i++){
+     param_averages[params] = 0;
      for (int j = 0; j < files; j++){
-       covar_matrix[i][j] = (double*) malloc(files * sizeof(double));
+       param_averages += array[j][i];
+     }
+     param_averages /= files;
+   }
+
+   double** covar_matrix = (double**) malloc(params * sizeof(double*));
+
+   for(int i = 0; i < params; i++){
+     covar_matrix[i] = (double*) malloc(params * sizeof(double));
+     for (int j = 0; j < params; j++){
+       covar_sum = 0;
        for (int k = 0; k < files; k++){
-         covar_matrix[i][j][k] = (array[j][i] * array[k][i]);
+         covar_sum += (array[k][j]) - param_averages[j]) * (array[k][i]) - param_averages[i]);
        }
+       covar_matrix[i][j] = (covar_sum/files);
      }
    }
+
    return covar_matrix;
  }
 
- double KL_to_likelihood(double KL, double* p_matrix, int p_matrix_size,
-                         double c, double sum){
+/*
+  Takes KL and converts it to the natural log of likelihood
+*/
+
+ double KL_to_lnL(double KL, double* p_matrix, int p_matrix_size, double sum){
    double likelihood;
-   double p_lnp_sum = 0;
+   double entropy = 0;
 
    for (int i = 0; i < p_matrix_size; i++){
-     p_lnp_sum += (p_matrix[i] * log(p_matrix[i]));
+     entropy += (p_matrix[i] * log(p_matrix[i]));
    }
 
-   likelihood = KL - p_lnp_sum;
-   likelihood = c - likelihood;         //c + the negative of likelihood
+   likelihood = entropy - KL;
    likelihood = likelihood * sum;
-   likelihood = pow(M_E, likelihood);
 
    return likelihood;
  }
@@ -176,7 +189,7 @@
 
  int main(){
    double** array;
-   double*** c_matrix;
+   double** c_matrix;
    int a = 1;
    int b = 9;
 
