@@ -6,6 +6,7 @@ doc
 raf
 raf2daf
 xboot
+xclic
 xdtnorm
 xexopar
 xhashtab
@@ -13,6 +14,7 @@ xerror
 xgene
 xgptree
 xparse
+xpointbuff
 xbinary
 xlblndx
 xllrbtree

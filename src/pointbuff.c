@@ -27,7 +27,7 @@ struct PointBuff {
     unsigned curpts;     // current number of entries in buffer
     size_t curPtr;       // address where the next push will be stored
     size_t end;          // address just beyond end of PointBuff
-    unsigned char buf[1]; // using struct hack
+    size_t buf[1];       // using struct hack
 };
 
 static inline void Point_set(Point *self, double cost, int n, double par[n]);
@@ -56,20 +56,17 @@ PointBuff *PointBuff_new(unsigned npar, unsigned totpts) {
     }
     size_t pointSize = sizeof(Point) + (npar-1)*sizeof(double);
 
-    printf("sizeof(Point)=%zu pointSize = %zu\n",
-           sizeof(Point), pointSize);
-
     // Using struct hack.
-    size_t size = sizeof(PointBuff) + totpts*pointSize - 1;
-    PointBuff *self = malloc(size);
+    size_t pbsize = sizeof(PointBuff) + totpts*pointSize - 1;
+    PointBuff *self = malloc(pbsize);
     if(self==NULL)
         return NULL;
 
     self->nPar = npar;
     self->pointSize = pointSize;
-    self->end = ((size_t) self) + size;
+    self->end = ((size_t) self->buf) + totpts*pointSize;
+    assert(self->end <= ((size_t) self) + pbsize);
     self->curPtr = (size_t) self->buf;
-    printf("Initialized curPtr=%zu end=%zu\n", self->curPtr, self->end);
     self->curpts = 0;
     self->totpts = totpts;
     return self;
@@ -92,12 +89,8 @@ void PointBuff_push(PointBuff *self, double cost, int n,
 
     self->curPtr += self->pointSize;
     if(self->curPtr >= self->end) {
-        printf("wrapping: diff=-%zu\n", self->curPtr - self->end);
         self->curPtr = (size_t) self->buf;
-    }else{
-        printf("diff=%zu\n", self->end - self->curPtr);
     }
-    printf("curPtr=%zu end=%zu\n", self->curPtr, self->end);
     assert(self->curPtr < self->end);
     if(self->curpts != self->totpts)
         ++self->curpts;
