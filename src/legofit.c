@@ -180,6 +180,7 @@ Systems Consortium License, which can be found in file "LICENSE".
 #include "patprob.h"
 #include "simsched.h"
 #include "state.h"
+#include "pointbuff.h"
 #include <assert.h>
 #include <float.h>
 #include <getopt.h>
@@ -588,6 +589,16 @@ int main(int argc, char **argv) {
         .simSched = simSched
     };
 
+    // Number of parameters in quadratic model used to estimate
+    // Hessian matrix: 1 intercept
+    // dim linear terms
+    // dim squared terms
+    // (dim*(dim-1))/2 cross product terms
+    unsigned nQuadPar = 1 + 2*dim + (dim*(dim-1))/2;
+
+    // Number of points to use in fitting quadratic model
+    unsigned nQuadPts = 2*nQuadPar;
+
     // parameters for Differential Evolution
     DiffEvPar dep = {
         .dim = dim,
@@ -609,6 +620,7 @@ int main(int argc, char **argv) {
         .state = state,
         .simSched = simSched,
         .ytol = ytol,
+        .pb = PointBuff_new(dim, nQuadPts)
     };
 
     double estimate[dim];
@@ -663,11 +675,7 @@ int main(int argc, char **argv) {
     printf(" AIC=%0.15g\n", aic);
 
     printf("Fitted parameter values\n");
-#if 1
     GPTree_printParStoreFree(gptree, stdout);
-#else
-    GPTree_printParStore(gptree, stdout);
-#endif
 
     // Put site patterns and branch lengths into arrays.
     unsigned npat = BranchTab_size(bt);
@@ -694,6 +702,40 @@ int main(int argc, char **argv) {
         fclose(stateOut);
     }
 
+#if COST==KL_COST || COST==LNL_COST
+    double S = BranchTab_sum(rawObs); // sum of site pattern counts
+    double entropy = BranchTab_entropy(obs); // -sum p ln(p)
+    if(nQuadPts != PointBuff_size(dep.pb)) {
+        fprintf(stderr,"Warning@%s:%d: expecting %u points; got %u\n",
+                __FILE__,__LINE__, nQuadPts, PointBuff_size(dep.pb));
+    }
+    const char *qfname = "points.txt";
+    FILE *qfp = fopen(qfname, "w");
+    if(qfp == NULL) {
+        fprintf(stderr,"%s:%d: can't read file %s\n",
+                __FILE__,__LINE__,qfname);
+        qfp = stdout;
+    }
+    while(0 != PointBuff_size(dep.pb)) {
+        double lnL, par[dim];
+        cost = PointBuff_pop(dep.pb, dim, par);
+#  if COST==KL_COST
+        // cost is Kullback-Leibler divergence
+        lnL = -S*(cost + entropy);
+#  else
+        // cost is negLnL
+        lnL = -cost;
+#  endif
+        fprintf(qfp, "%0.18lg", lnL);
+        for(i=0; i < dim; ++i)
+            fprintf(qfp, " %0.18lg", par[i]);
+        putc('\n', qfp);
+    }
+    if(qfp != stdout)
+        fclose(qfp);
+#endif
+
+    PointBuff_free(dep.pb);
     BranchTab_free(bt);
     BranchTab_free(rawObs);
     BranchTab_free(obs);
@@ -701,6 +743,7 @@ int main(int argc, char **argv) {
     GPTree_sanityCheck(gptree, __FILE__, __LINE__);
     GPTree_free(gptree);
     SimSched_free(simSched);
+
     fprintf(stderr, "legofit is finished\n");
 
     return 0;

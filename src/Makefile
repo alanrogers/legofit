@@ -53,7 +53,7 @@ legosim : $(LEGOSIM)
 LEGOFIT := legofit.o patprob.o gptree.o binary.o jobqueue.o misc.o \
   parse.o branchtab.o popnodetab.o lblndx.o tokenizer.o parstore.o \
   parkeyval.o popnode.o gene.o cost.o diffev.o dprintf.o rngseed.o \
-  simsched.o dtnorm.o tinyexpr.o state.o
+  simsched.o dtnorm.o tinyexpr.o state.o pointbuff.o
 legofit : $(LEGOFIT)
 	$(CC) $(CFLAGS) -o $@ $(LEGOFIT) $(lib)
 
