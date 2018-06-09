@@ -754,7 +754,6 @@ int main(int argc, char **argv) {
 #  else
     lnL = -cost;
 #  endif
-
     fprintf(qfp, "%0.18lg", lnL);
     for(i=0; i < dim; ++i)
         fprintf(qfp, " %0.18lg", estimate[i]);
