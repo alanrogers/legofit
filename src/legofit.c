@@ -767,7 +767,7 @@ int main(int argc, char **argv) {
         c = PointBuff_pop(dep.pb, dim, par);
 
         // Is current point the estimate? If so, skip it.
-        int is_estimate=1;  // boolean
+        int is_estimate=1;
         if(c != cost)
             is_estimate=0;
         for(i=0; is_estimate && i < dim; ++i) {
@@ -778,11 +778,9 @@ int main(int argc, char **argv) {
             continue;
 
 #  if COST==KL_COST
-        // cost is Kullback-Leibler divergence
-        lnL = -S*(c + entropy);
+        lnL = -S*(c + entropy); // Kullback-Leibler cost function
 #  else
-        // cost is negLnL
-        lnL = -c;
+        lnL = -c;               // negLnL cost function
 #  endif
         fprintf(qfp, "%0.18lg", lnL);
         for(i=0; i < dim; ++i)
