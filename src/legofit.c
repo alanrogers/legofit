@@ -401,6 +401,10 @@ int main(int argc, char **argv) {
                         __FILE__, __LINE__);
                 exit(EXIT_FAILURE);
             }
+            if( access( stateOutName, F_OK ) != -1 ) {
+                // file already exists
+                fprintf(stderr, "Warning: overwriting file %s\n", stateOutName);
+            }
             stateOut = fopen(stateOutName, "w");
             if(stateOut == NULL) {
                 fprintf(stderr, "%s:%d: can't open \"%s\" for output.\n",
@@ -726,13 +730,31 @@ int main(int argc, char **argv) {
     if(nQuadPts != PointBuff_size(dep.pb)) {
         fprintf(stderr,"Warning@%s:%d: expecting %u points; got %u\n",
                 __FILE__,__LINE__, nQuadPts, PointBuff_size(dep.pb));
+        nQuadPts = PointBuff_size(dep.pb);
     }
+
+    // Warn if output file already exists
+    if( access( qfname, F_OK ) != -1 )
+        fprintf(stderr, "Warning: overwriting file %s\n", qfname);
+
     FILE *qfp = fopen(qfname, "w");
     if(qfp == NULL) {
-        fprintf(stderr,"%s:%d: can't read file %s\n",
+        fprintf(stderr,"%s:%d: can't write file %s: using stdout\n",
                 __FILE__,__LINE__,qfname);
         qfp = stdout;
     }
+
+    // First line contains dimensions. Each row contains dim+1 values:
+    // first lnL, then dim parameter values.
+    fprintf(qfp, "%u %d\n", nQuadPts, dim);
+
+    // header
+    fprintf(qfp, "%s", "lnL");
+    for(i=0; i < dim; ++i)
+        fprintf(qfp, " %s", GPTree_getNameFree(gptree, i));
+    putc('\n', qfp);
+
+    // print contents of PointBuff
     while(0 != PointBuff_size(dep.pb)) {
         double lnL, par[dim];
         cost = PointBuff_pop(dep.pb, dim, par);

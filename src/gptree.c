@@ -69,6 +69,12 @@ void GPTree_printParStoreFree(GPTree * self, FILE * fp) {
     ParStore_printConstrained(self->parstore, fp);
 }
 
+/// Return pointer to name of i'th free parameter
+const char *GPTree_getNameFree(GPTree * self, int i) {
+    return ParStore_getNameFree(self->parstore, i);
+}
+
+
 /// Randomly perturb all free parameters in the population tree while
 /// maintaining inequality constraints.
 void GPTree_randomize(GPTree * self, gsl_rng * rng) {
