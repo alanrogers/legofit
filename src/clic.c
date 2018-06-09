@@ -2,7 +2,7 @@
  * @file clic.c
  * @author Daniel R. Tabin
  * @brief Functions for Composite Likelihood Information Criterion.
- * @copyright Copyright (c) 2016, Alan R. Rogers
+ * @copyright Copyright (c) 2018, Alan R. Rogers
  * <rogers@anthro.utah.edu>. This file is released under the Internet
  * Systems Consortium License, which can be found in file "LICENSE".
  */
@@ -13,6 +13,7 @@
  #include <math.h>
  #include "clic.h"
 
+void usage(void)
 
 /*
  Matrix multiplier.  Takes two matricies of doubles m1 and m2 and their sizes,
@@ -142,26 +143,41 @@
 */
 
  double KL_to_lnL(double KL, double* p_matrix, int p_matrix_size, double sum){
-   double likelihood;
-   double entropy = 0;
+   double lnL;
+   double entropy = 0.0;
 
    for (int i = 0; i < p_matrix_size; i++){
-     entropy += (p_matrix[i] * log(p_matrix[i]));
+     entropy -= (p_matrix[i] * log(p_matrix[i]));
    }
 
-   likelihood = entropy - KL;
-   likelihood = likelihood * sum;
+   lnL = -sum*(entropy + KL);
 
-   return likelihood;
+   return lnL;
  }
 
-#ifdef TEST
+const char *usageMsg =
+     "usage: clic <file.pts> <boot1.legofit> <boot2.legofit> ...\n"
+     "  where file.pts is the .pts file produced by legofit with the real\n"
+     "  data, and each \"boot\" file is the legofit output from one bootstrap\n"
+     "  replicate. Must include .pts file and at least 2 boostrap files.\n";
 
-#ifdef NDEBUG
-#error "Unit tests must be compiled without -DNDEBUG flag"
-#endif
+void usage(void) {
+    fputs(usageMsg, stderr);
+    exit(EXIT_FAILURE);
+}
 
- int main(){
+int main(int argc, char **argv){
+    int i, j;
+
+    // Command line arguments specify file names
+    if(argc < 4)
+        usage();
+    const char *ptsfname = argv[1];
+    int nboot = argc-2;  // number of bootstrap files
+    const char *bootfname[nboot];
+    for(i=0; i < nboot; ++i)
+        bootfname[i] = argv[i+2];
+
    double** array;
    double** c_matrix;
    int a = 1;
@@ -188,4 +204,3 @@
    printf("done\n");
  }
 
-#endif
