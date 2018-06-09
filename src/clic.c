@@ -85,26 +85,6 @@ StrDblStack *StrDblStack_pop(StrDblStack *self, StrDbl *strdbl) {
     return next;
 }
 
-/*
- Matrix multiplier.  Takes two matricies of doubles m1 and m2 and their sizes,
- as well as a results matrix, where the results go.
-*/
- void matrix_mult(double** m1, int m1_rows, int m1_cols,
-                  double** m2, int m2_rows, int m2_cols,
-                  double** results){
-   int i, j, k;
-
-   for (i = 0; i < m1_rows; i++){         //go through each row
-     for(j = 0; j < m2_cols; j++){        //go through each coloumn
-       int x = 0;
-       for (k = 0; k < m2_rows; k++){
-         x += (m1[i][k] * m2[k][j]);      //calculate what goes there
-       }
-       results[i][j] = x;                 //put it in results
-     }
-   }
- }
-
 int StrDblStack_length(StrDblStack *self) {
     if(self==NULL)
         return 0;
@@ -181,6 +161,26 @@ StrDblStack *parseLegofit(const char *fname) {
     }
     return stack;
 }
+
+/*
+ Matrix multiplier.  Takes two matricies of doubles m1 and m2 and their sizes,
+ as well as a results matrix, where the results go.
+*/
+ void matrix_mult(double** m1, int m1_rows, int m1_cols,
+                  double** m2, int m2_rows, int m2_cols,
+                  double** results){
+   int i, j, k;
+
+   for (i = 0; i < m1_rows; i++){         //go through each row
+     for(j = 0; j < m2_cols; j++){        //go through each coloumn
+       int x = 0;
+       for (k = 0; k < m2_rows; k++){
+         x += (m1[i][k] * m2[k][j]);      //calculate what goes there
+       }
+       results[i][j] = x;                 //put it in results
+     }
+   }
+ }
 
 #if 0
 /*
