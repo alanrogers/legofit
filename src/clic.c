@@ -340,12 +340,12 @@ int main(int argc, char **argv){
     // replicates; columns are parameters.
     int npar = StrDblStack_length(stack[0]);
     char *parname[npar];
-    double bootdat[nfiles][npar];
+    double datmat[nfiles][npar];
     for(i=0; i < nfiles; ++i) {
         for(j=0; j < npar; ++j) {
             StrDbl strdbl;
             stack[i] = StrDblStack_pop(stack[i], &strdbl);
-            bootdat[i][j] = strdbl.val;
+            datmat[i][j] = strdbl.val;
             if(i==0)
                 parname[j] = strdup(strdbl.str);
         }
@@ -358,13 +358,13 @@ int main(int argc, char **argv){
     putchar('\n');
     for(i=0; i<nfiles; ++i) {
         for(j=0; j < npar; ++j)
-            printf(" %lg", bootdat[i][j]);
+            printf(" %lg", datmat[i][j]);
         putchar('\n');
     }
 
     // Make covariance matrix
     double c_matrix[npar][npar];
-    make_covar_matrix(nfiles, npar, bootdat, c_matrix);
+    make_covar_matrix(nfiles, npar, datmat, c_matrix);
 
     // Print it
     for (j = 0; j < npar; j++)
