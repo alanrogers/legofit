@@ -649,13 +649,6 @@ int main(int argc, char **argv) {
     BranchTab_divideBy(bt, (double) simreps);
     //    BranchTab_print(bt, stdout);
 
-    // Calculate AIC
-    BranchTab *prob = BranchTab_dup(bt);
-    BranchTab_normalize(prob);
-    double negLnL = BranchTab_negLnL(rawObs, prob);
-    double aic = 2.0*negLnL + 2.0*GPTree_nFree(gptree);
-    BranchTab_free(prob);
-
     const char *whyDEstopped;
     switch(destat) {
     case ReachedGoal:
@@ -676,7 +669,6 @@ int main(int argc, char **argv) {
 #if COST==LNL_COST
     printf("  relspread=%e", yspread / cost);
 #endif
-    printf(" AIC=%0.15g\n", aic);
 
     printf("Fitted parameter values\n");
     GPTree_printParStoreFree(gptree, stdout);
@@ -754,16 +746,43 @@ int main(int argc, char **argv) {
         fprintf(qfp, " %s", GPTree_getNameFree(gptree, i));
     putc('\n', qfp);
 
-    // print contents of PointBuff
+    double lnL;
+
+    // print estimate first
+#  if COST==KL_COST
+    lnL = -S*(cost + entropy);
+#  else
+    lnL = -cost;
+#  endif
+
+    fprintf(qfp, "%0.18lg", lnL);
+    for(i=0; i < dim; ++i)
+        fprintf(qfp, " %0.18lg", estimate[i]);
+    putc('\n', qfp);
+
+    // print contents of PointBuff, omitting any that exactly
+    // equal the point estimate
     while(0 != PointBuff_size(dep.pb)) {
-        double lnL, par[dim];
-        cost = PointBuff_pop(dep.pb, dim, par);
+        double c, par[dim];
+        c = PointBuff_pop(dep.pb, dim, par);
+
+        // Is current point the estimate? If so, skip it.
+        int is_estimate=1;  // boolean
+        if(c != cost)
+            is_estimate=0;
+        for(i=0; is_estimate && i < dim; ++i) {
+            if(par[i] != estimate[i])
+                is_estimate = 0;
+        }
+        if(is_estimate)
+            continue;
+
 #  if COST==KL_COST
         // cost is Kullback-Leibler divergence
-        lnL = -S*(cost + entropy);
+        lnL = -S*(c + entropy);
 #  else
         // cost is negLnL
-        lnL = -cost;
+        lnL = -c;
 #  endif
         fprintf(qfp, "%0.18lg", lnL);
         for(i=0; i < dim; ++i)
