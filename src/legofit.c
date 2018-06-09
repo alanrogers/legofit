@@ -702,6 +702,24 @@ int main(int argc, char **argv) {
         fclose(stateOut);
     }
 
+    // Construct name for output file to which we will write
+    // points for use in estimating Hessian matrix.
+    char qfname[200];
+    {
+        char a[200], b[200];
+        strcpy(a, lgofname);
+        strcpy(b, patfname);
+        char *chrptr = strrchr(a, '.');
+        if(chrptr)
+            *chrptr = '\0';
+        chrptr = strrchr(b, '.');
+        if(chrptr)
+            *chrptr = '\0';
+        status=snprintf(qfname, sizeof qfname, "%s-%s.txt", a, b);
+        if(status >= sizeof qfname)
+            DIE("buffer overflow");
+    }
+
 #if COST==KL_COST || COST==LNL_COST
     double S = BranchTab_sum(rawObs); // sum of site pattern counts
     double entropy = BranchTab_entropy(obs); // -sum p ln(p)
@@ -709,7 +727,6 @@ int main(int argc, char **argv) {
         fprintf(stderr,"Warning@%s:%d: expecting %u points; got %u\n",
                 __FILE__,__LINE__, nQuadPts, PointBuff_size(dep.pb));
     }
-    const char *qfname = "points.txt";
     FILE *qfp = fopen(qfname, "w");
     if(qfp == NULL) {
         fprintf(stderr,"%s:%d: can't read file %s\n",
@@ -731,8 +748,11 @@ int main(int argc, char **argv) {
             fprintf(qfp, " %0.18lg", par[i]);
         putc('\n', qfp);
     }
-    if(qfp != stdout)
+    if(qfp != stdout) {
         fclose(qfp);
+        fprintf(stderr,"%d points written to file %s\n",
+                nQuadPts, qfname);
+    }
 #endif
 
     PointBuff_free(dep.pb);
