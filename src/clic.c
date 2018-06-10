@@ -8,6 +8,7 @@
  */
 
  #include "clic.h"
+ #include "hessian.h"
  #include "misc.h"
  #include <stdio.h>
  #include <stdlib.h>
@@ -376,6 +377,8 @@ int main(int argc, char **argv){
         }
         printf("\n");
     }
+
+    Hessian hesobj = hessian(ptsfname);
     return 0;
  }
 

@@ -57,7 +57,7 @@ LEGOFIT := legofit.o patprob.o gptree.o binary.o jobqueue.o misc.o \
 legofit : $(LEGOFIT)
 	$(CC) $(CFLAGS) -o $@ $(LEGOFIT) $(lib)
 
-CLIC := clic.o misc.o
+CLIC := clic.o misc.o hessian.o
 clic : $(CLIC)
 	$(CC) $(CFLAGS) -o $@ $(CLIC) $(lib)
 
