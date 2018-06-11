@@ -4,7 +4,7 @@ opt :=  -O0 -fno-inline-functions -DDEBUG
 prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
 tests := xbinary xboot xbranchtab xclic xdafreader xrafreader xdiffev xgene \
-  xgptree xpopnodetab xjobqueue xlblndx xllrbtree xparkeyval xparse \
+  xgptree xhessian xpopnodetab xjobqueue xlblndx xllrbtree xparkeyval xparse \
   xparstore xpopnode xscrmreader xsimsched xstrint xdtnorm xmisc xerror \
   xstate xwraparound xpointbuff
 
@@ -47,6 +47,7 @@ test : $(tests)
 	-./xerror
 	-./xgene
 	-./xgptree
+	-./xhessian
 	-./xjobqueue
 	-./xlblndx
 	-./xllrbtree
@@ -93,6 +94,10 @@ xdtnorm : $(XDTNORM)
 XERROR := xerror.o error.o misc.o
 xerror : $(XERROR)
 	$(CC) $(CFLAGS) -o $@ $(XERROR) $(lib)
+
+XHESSIAN := xhessian.o misc.o hessian.o
+xhessian : $(XHESSIAN)
+	$(CC) $(CFLAGS) -o $@ $(XHESSIAN) $(lib)
 
 XJOBQUEUE := xjobqueue.o jobqueue.o misc.o
 xjobqueue : $(XJOBQUEUE)
