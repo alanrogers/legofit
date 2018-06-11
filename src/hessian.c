@@ -126,6 +126,7 @@ Hessian hessian(const char *fname) {
     // Construct return value
     Hessian rval = {
         .npar = npar,
+        .lnL = gsl_vector_get(lnL, 0),
         .hessian = hessian
     };
     rval.parname = malloc(npar * sizeof(char *));

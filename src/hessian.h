@@ -5,8 +5,9 @@
 typedef struct Hessian Hessian;
 
 struct Hessian {
-    int npar;
-    char **parname;
+    int npar;            // number of parameters
+    double lnL;          // log likelihood of estimate
+    char **parname;      // array of pointers to parameter names
     gsl_matrix *hessian;
 };
 

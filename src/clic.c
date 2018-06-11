@@ -7,14 +7,16 @@
  * Systems Consortium License, which can be found in file "LICENSE".
  */
 
- #include "clic.h"
- #include "hessian.h"
- #include "misc.h"
- #include <stdio.h>
- #include <stdlib.h>
- #include <assert.h>
- #include <string.h>
- #include <math.h>
+#include "clic.h"
+#include "hessian.h"
+#include "misc.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <assert.h>
+#include <string.h>
+#include <math.h>
+#include <gsl/gsl_matrix.h>
+#include <gsl/gsl_blas.h>
 
 typedef struct StrDblStack StrDblStack;
 typedef struct StrDbl StrDbl;
@@ -40,7 +42,7 @@ void         StrDblStack_print(StrDblStack *self, FILE *fp);
 int          StrDblStack_compare(StrDblStack *lhs, StrDblStack *rhs);
 StrDblStack *parseLegofit(const char *fname);
 void make_covar_matrix(int nfiles, int npar, double array[nfiles][npar],
-                       double cov[npar][npar]);
+                       gsl_matrix *cov);
 
 // Push a value onto the tail of the stack. Return pointer to new
 // head. Example:
@@ -257,7 +259,9 @@ StrDblStack *parseLegofit(const char *fname) {
    columns of "array".
  */
 void make_covar_matrix(int nfiles, int npar, double array[nfiles][npar],
-                       double cov[npar][npar]){
+                       gsl_matrix *cov){
+    assert(npar == cov->size1);
+    assert(npar == cov->size2);
     double param_averages[npar];
     double covar_sum;
     int i, j, k;
@@ -277,7 +281,7 @@ void make_covar_matrix(int nfiles, int npar, double array[nfiles][npar],
                 covar_sum += (array[k][j] - param_averages[j])
                     * (array[k][i] - param_averages[i]);
             }
-            cov[i][j] = (covar_sum/nfiles);
+            gsl_matrix_set(cov, i, j, covar_sum/nfiles);
         }
     }
 }
@@ -364,7 +368,7 @@ int main(int argc, char **argv){
     }
 
     // Make covariance matrix
-    double c_matrix[npar][npar];
+    gsl_matrix *c_matrix = gsl_matrix_alloc(npar,npar);
     make_covar_matrix(nfiles, npar, datmat, c_matrix);
 
     // Print it
@@ -373,7 +377,7 @@ int main(int argc, char **argv){
     putchar('\n');
     for (i = 0; i < npar; i++){
         for (j = 0; j < npar; j++){
-            printf(" %8.2lg", c_matrix[i][j]);
+            printf(" %8.2lg", gsl_matrix_get(c_matrix, i, j));
         }
         printf("\n");
     }
@@ -381,6 +385,7 @@ int main(int argc, char **argv){
     Hessian hesobj = hessian(ptsfname);
     gsl_matrix *H = hesobj.hessian;
     char **Hparname = hesobj.parname;
+    double lnL = hesobj.lnL;
 
     // Do the two sets of parameters match? (One from bootstrap files,
     // the other from pts file.)
@@ -398,7 +403,29 @@ int main(int argc, char **argv){
         exit(EXIT_FAILURE);
     }
 
+    // allocate matrix to hold product H*c_matrix
+    gsl_matrix *HC = gsl_matrix_alloc(npar,npar);
+
+    // form matrix product HC = H*c_matrix
+    gsl_blas_dgemm(CblasNoTrans, // don't transpose H
+                   CblasNoTrans, // don't transpose C
+                   1.0,          // scalar
+                   H,            // Hermitian matrix
+                   c_matrix,     // covariance matrix
+                   0.0,          // scalar
+                   HC            // product
+                   );
+
+    double trace=0.0;
+    for(i=0; i<npar; ++i)
+        trace += gsl_matrix_get(HC, i, i);
+
+    double clic = 2.0*(lnL - trace);
+
+    printf("CLIC: %0.8lg\n", clic);
+
     gsl_matrix_free(H);
+    gsl_matrix_free(HC);
     for(i=0; i<npar; ++i)
         free(Hparname[i]);
     free(Hparname);
