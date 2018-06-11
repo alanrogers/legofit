@@ -111,15 +111,16 @@ Hessian hessian(const char *fname) {
     // Construct Hessian matrix
     gsl_matrix *hessian = gsl_matrix_alloc(npar, npar);
     for(j=0; j<npar; ++j) {
-        for(k=j; k<npar; ++j) {
+        for(k=j; k<npar; ++k) {
             int col = 1 + npar + offset[k] + j;
             double b;
             b = gsl_vector_get(beta, col);
             if(k == j)
                 b *= 2;  // 2nd derivative of b*x^2 is 2*b
             gsl_matrix_set(hessian, j, k, b);
-            if(j != k)
+            if(j != k) {
                 gsl_matrix_set(hessian, k, j, b);
+            }
         }
     }
 
