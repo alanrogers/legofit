@@ -379,6 +379,19 @@ int main(int argc, char **argv){
     }
 
     Hessian hesobj = hessian(ptsfname);
+    gsl_matrix *H = hesobj.hessian;
+    char **Hparname = hesobj.parname;
+    if(hesobj.npar != npar) {
+        fprintf(stderr,"%s:%d: mismatch between number of parameters"
+                " in files %s and %s\n", __FILE__,__LINE__,
+                ptsfname, bootfname[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    gsl_matrix_free(H);
+    for(i=0; i<npar; ++i)
+        free(Hparname[i]);
+    free(Hparname);
     return 0;
  }
 
