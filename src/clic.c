@@ -387,11 +387,9 @@ int main(int argc, char **argv){
     int mismatch = 0;
     if(hesobj.npar != npar)
         mismatch=1;
-    for(i=0; i<npar; ++i) {
-        if(0 != strcmp(parname[i], Hparname[i])) {
+    for(i=0; mismatch==0 && i<npar; ++i) {
+        if(0 != strcmp(parname[i], Hparname[i]))
             mismatch=1;
-            break;
-        }
     }
     if(mismatch) {
         fprintf(stderr,"%s:%d: mismatch between parameters"
