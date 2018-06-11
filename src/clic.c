@@ -381,8 +381,20 @@ int main(int argc, char **argv){
     Hessian hesobj = hessian(ptsfname);
     gsl_matrix *H = hesobj.hessian;
     char **Hparname = hesobj.parname;
-    if(hesobj.npar != npar) {
-        fprintf(stderr,"%s:%d: mismatch between number of parameters"
+
+    // Do the two sets of parameters match? (One from bootstrap files,
+    // the other from pts file.)
+    int mismatch = 0;
+    if(hesobj.npar != npar)
+        mismatch=1;
+    for(i=0; i<npar; ++i) {
+        if(0 != strcmp(parname[i], Hparname[i])) {
+            mismatch=1;
+            break;
+        }
+    }
+    if(mismatch) {
+        fprintf(stderr,"%s:%d: mismatch between parameters"
                 " in files %s and %s\n", __FILE__,__LINE__,
                 ptsfname, bootfname[0]);
         exit(EXIT_FAILURE);
