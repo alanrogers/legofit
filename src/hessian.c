@@ -108,6 +108,7 @@ Hessian hessian(const char *fname) {
                 status, gsl_strerror(status));
         exit(EXIT_FAILURE);
     }
+    fprintf(stderr, "%s: chisq=%lg\n", chisq);
 
     // Construct Hessian matrix
     gsl_matrix *hessian = gsl_matrix_alloc(npar, npar);
