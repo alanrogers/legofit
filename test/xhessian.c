@@ -32,7 +32,7 @@ double quadsurf(int dim, double dat[dim], int offset[dim], int nterms,
 }
 
 int main(void) {
-    int i,j,k, dim = 20, nrows=1000;
+    int i,j,k, dim = 20, nrows=10000;
     int nterms = 1 + dim + (dim*(dim+1))/2;
     const char *fname = "xhessian.tmp";
     gsl_rng *rng = gsl_rng_alloc(gsl_rng_taus);
