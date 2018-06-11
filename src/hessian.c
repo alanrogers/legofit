@@ -19,7 +19,8 @@ Hessian hessian(const char *fname) {
 
     int i, j, k, nfiles, npar;
     fscanf(fp, "%d %d", &nfiles, &npar);
-    printf("reading %d rows of %d numbers\n", nfiles, npar+1);
+    fprintf(stderr, "%s: reading %d rows of %d numbers\n",
+            __func__, nfiles, npar+1);
 
     // read names of parameters
     char buff[500], parname[npar][50];
