@@ -21,7 +21,7 @@ int main(int argc, char **argv){
     StrDbl* temp = NULL;
     char buff[200] = {'t', 'e', 's', 't', '\0'};
 
-    f = fopen("output.txt", "w");
+    f = fopen("xstrdblstck_output.txt", "w");
 
     StrDblStack_print(a,f);
 
