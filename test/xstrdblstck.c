@@ -58,5 +58,7 @@ int main(int argc, char **argv){
 
     assert(StrDblStack_compare(c,d) != 0);
 
+    fclose(f);
+
     return 0;
 }
