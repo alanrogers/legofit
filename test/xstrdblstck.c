@@ -63,8 +63,8 @@ int main(int argc, char **argv){
     assert(StrDblStack_compare(a,b) == 0);
     assert(StrDblStack_length(a) == 0);
 
-    c = parseLegofit("s1boot.legofit");
-    d = parseLegofit("s1boot.legofit");
+    c = parseLegofit("s1boot0.legofit");
+    d = parseLegofit("s1boot0.legofit");
 
     assert(StrDblStack_compare(c,d) == 0);
 
