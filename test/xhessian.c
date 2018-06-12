@@ -1,7 +1,9 @@
 #include "hessian.h"
+#include "misc.h"
 #include <stdio.h>
 #include <math.h>
 #include <time.h>
+#include <string.h>
 #include <unistd.h>
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
@@ -31,29 +33,40 @@ double quadsurf(int dim, double dat[dim], int offset[dim], int nterms,
     return z + gsl_ran_gaussian(rng, sigma);
 }
 
-int main(void) {
-    int i,j,k, dim = 20, nrows=10000;
+int main(int argc, char **argv) {
+    int i,j,k, dim = 10, nrows=1000, verbose=0;
     int nterms = 1 + dim + (dim*(dim+1))/2;
     const char *fname = "xhessian.tmp";
     gsl_rng *rng = gsl_rng_alloc(gsl_rng_taus);
     gsl_rng_set(rng, time(NULL));
-    double sigma=0.05;
+    double sigma=0.01;
+
+	switch (argc) {
+    case 1:
+        break;
+    case 2:
+        if(strncmp(argv[1], "-v", 2) != 0) {
+            fprintf(stderr, "usage: xhessian [-v]\n");
+            exit(EXIT_FAILURE);
+        }
+        verbose = 1;
+        break;
+    default:
+        fprintf(stderr, "usage: xhessian [-v]\n");
+        exit(EXIT_FAILURE);
+    }
 
     double tru[nterms];
     int offset[dim];
-    tru[0] = 0.0;
-    for(i=0; i<dim; ++i) {
+    for(i=0; i<=dim; ++i) {
         offset[i] = (i*(i+1))/2;
         tru[1+i] = 0.0;
     }
 
     for(j=0; j<dim; ++j) {
         for(k=j; k<dim; ++k)
-            tru[1+dim + offset[k]+j] = -1.0/sqrt(1.0+j+k);
+            tru[1+dim + offset[k]+j] = gsl_ran_flat(rng, -1.0, 1.0);
     }
-
-    for(i=0; i<nterms; ++i)
-        printf("tru[%2d]=%lg\n", i, tru[i]);
 
     // Make data file
     double dat[dim];
@@ -88,11 +101,9 @@ int main(void) {
     Hessian hesobj = hessian(fname);
     gsl_matrix *H = hesobj.hessian;
     char **Hparname = hesobj.parname;
-    double lnL = hesobj.lnL;
+    //double lnL = hesobj.lnL;
 
-    printf("lnL=%lg\n", lnL);
-
-    double x, ex, err;
+    double x, ex, err, abserr, maxabserr = 0.0;
     for(i=0; i<dim; ++i) {
         for(j=i; j<dim; ++j) {
             x = gsl_matrix_get(H, i, j);
@@ -100,15 +111,27 @@ int main(void) {
             if(i==j)
                 x /= 2.0;
             err = x - ex;
-            printf("[%d,%d]: x=%0.5lf Ex=%0.5lf err=%lg\n",
-                   i, j, x, ex, err);
+            abserr = fabs(err);
+            if(abserr > maxabserr)
+                maxabserr = abserr;
+            if(verbose)
+                printf("[%d,%d]: x=%0.5lf Ex=%0.5lf err=%lg\n",
+                       i, j, x, ex, err);
         }
     }
+    double threshold=0.004;
+    int ok = (maxabserr <= threshold);
+    if(verbose || !ok)
+        printf("max absolute error: %lg\n", maxabserr);
 
     gsl_matrix_free(H);
     for(i=0; i<dim; ++i)
         free(Hparname[i]);
     free(Hparname);
+    gsl_rng_free(rng);
     unlink(fname);
+
+    unitTstResult("Hessian", (ok ? "OK" : "FAILED"));
+
     return 0;
 }

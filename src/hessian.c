@@ -19,8 +19,6 @@ Hessian hessian(const char *fname) {
 
     int i, j, k, nfiles, npar;
     fscanf(fp, "%d %d", &nfiles, &npar);
-    fprintf(stderr, "%s: reading %d rows of %d numbers\n",
-            __func__, nfiles, npar+1);
 
     // read names of parameters
     char buff[500], parname[npar][50];
@@ -28,7 +26,6 @@ Hessian hessian(const char *fname) {
     assert(0 == strcmp(buff, "lnL"));
     for(i=0; i<npar; ++i) {
         fscanf(fp, "%s", parname[i]);
-        printf("parname[%d] = %s\n", i, parname[i]);
     }
 
     // read data
@@ -108,7 +105,6 @@ Hessian hessian(const char *fname) {
                 status, gsl_strerror(status));
         exit(EXIT_FAILURE);
     }
-    fprintf(stderr, "%s: chisq=%lg\n", __func__, chisq);
 
     // Construct Hessian matrix
     gsl_matrix *hessian = gsl_matrix_alloc(npar, npar);
