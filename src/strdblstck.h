@@ -12,6 +12,18 @@
 typedef struct StrDblStack StrDblStack;
 typedef struct StrDbl StrDbl;
 
+struct StrDbl {
+    char str[100];
+    double val;
+};
+
+// A FIFO stack. New values are pushed onto the tail. Old ones are
+// popped off of the head.
+struct StrDblStack {
+    struct StrDblStack *next;
+    struct StrDbl strdbl;
+};
+
 StrDblStack *StrDblStack_push(StrDblStack *prev, char *str, double val);
 StrDblStack *StrDblStack_pop(StrDblStack *self, StrDbl *strdbl);
 StrDblStack *StrDblStack_free(StrDblStack *self);

@@ -104,42 +104,6 @@
  }
 #endif
 
- /*
-   On input, nfiles and npar are the number of rows and columns in
-   the input data matrix "array". The npar X npar matrix "cov" should
-   be allocated in the calling function.
-
-   On return, cov[i][j] is the covariance between the i'th and j'th
-   columns of "array".
- */
-void make_covar_matrix(int nfiles, int npar, double array[nfiles][npar],
-                       gsl_matrix *cov){
-    assert(npar == cov->size1);
-    assert(npar == cov->size2);
-    double param_averages[npar];
-    double covar_sum;
-    int i, j, k;
-
-    for(i = 0; i < npar; i++){
-        param_averages[i] = 0;
-        for (j = 0; j < nfiles; j++){
-            param_averages[i] += array[j][i];
-        }
-        param_averages[i] /= nfiles;
-    }
-
-    for(i = 0; i < npar; i++){
-        for (j = 0; j < npar; j++){
-            covar_sum = 0;
-            for (k = 0; k < nfiles; k++){
-                covar_sum += (array[k][j] - param_averages[j])
-                    * (array[k][i] - param_averages[i]);
-            }
-            gsl_matrix_set(cov, i, j, covar_sum/nfiles);
-        }
-    }
-}
-
 /*
   Takes KL and converts it to the natural log of likelihood
 */
