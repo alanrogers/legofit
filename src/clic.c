@@ -420,7 +420,15 @@ int main(int argc, char **argv){
     for(i=0; i<npar; ++i)
         trace += gsl_matrix_get(HC, i, i);
 
-    double clic = 2.0*(lnL - trace);
+    /*
+      This is the information criterion of Varin, Cristiano and
+      Vidoni, Paolo. 2005. A note on composite likelihood inference
+      and model selection. Biometrika 92(3):519-528. Eqn 5, p 523.
+
+      Note that "trace" should be negative at a local maximum, so clic
+      will be smaller than lnL.
+     */
+    double clic = lnL + trace;
 
     printf("CLIC: %0.8lg\n", clic);
 
