@@ -16,8 +16,7 @@ StrDblStack *StrDblStack_push(StrDblStack *self, const char *str, double val) {
     StrDblStack *new = malloc(sizeof(StrDblStack));
     CHECKMEM(new);
     new->strdbl.val = val;
-    int status = snprintf(new->strdbl.str, sizeof(new->strdbl.str),
-                          "%s", str);
+    int status = snprintf(new->strdbl.str, sizeof(new->strdbl.str), "%s", str);
     if(status > sizeof(new->strdbl.str)) {
         fprintf(stderr, "%s:%d: buffer overflow\n", __FILE__, __LINE__);
         exit(EXIT_FAILURE);
