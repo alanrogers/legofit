@@ -16,50 +16,90 @@ int main(int argc, char **argv){
     StrDblStack* c = NULL;
     StrDblStack* d = NULL;
 
-    FILE* f;
+    StrDbl temp;
 
-    StrDbl* temp = NULL;
+    bool verbose = 0;
 
-    f = fopen("xstrdblstck_output.txt", "w");
-
-    StrDblStack_print(a,f);
+	  switch (argc) {
+    case 1:
+        break;
+    case 2:
+        if(strncmp(argv[1], "-v", 2) != 0) {
+            fprintf(stderr, "usage: xstrdblstck [-v]\n");
+            exit(EXIT_FAILURE);
+        }
+        verbose = 1;
+        break;
+    default:
+        fprintf(stderr, "usage: xstrdblstck [-v]\n");
+        exit(EXIT_FAILURE);
+    }
 
     assert(StrDblStack_compare(a,b) == 0);
     assert(StrDblStack_length(a) == 0);
 
-    a = StrDblStack_push(a, "test.a", 1.0);
+    a = StrDblStack_push(a, "test", 1.0);
 
-    fprintf(stderr,"Stack a:\n");
-    StrDblStack_print(a,stderr);
-    fprintf(stderr,"Stack b:\n");
-    StrDblStack_print(b,stderr);
+    if(verbose){
+      fprintf(stderr,"Stack a:\n");
+      StrDblStack_print(a,stderr);
+      fprintf(stderr,"Stack b:\n");
+      StrDblStack_print(b,stderr);
+    }
 
     assert(StrDblStack_compare(a,b) != 0);
     assert(StrDblStack_length(a) == 1);
 
-    StrDblStack_pop(a, temp);
-    StrDblStack_pop(a, temp);
+    a = StrDblStack_pop(a, &temp);
+    a = StrDblStack_pop(a, &temp);
+
+    if(verbose){
+      fprintf(stderr,"Stack a:\n");
+      StrDblStack_print(a,stderr);
+      fprintf(stderr,"Stack b:\n");
+      StrDblStack_print(b,stderr);
+    }
 
     assert(StrDblStack_compare(a,b) == 0);
     assert(StrDblStack_length(a) == 0);
 
-    c = parseLegofit("s1boot.legofit");
-    d = parseLegofit("s1boot.legofit");
+    c = parseLegofit("s1boot0.legofit");
+    d = parseLegofit("s1boot0.legofit");
 
     assert(StrDblStack_compare(c,d) == 0);
 
-    c = StrDblStack_push(c, buff, 1);
+    if(verbose){
+      fprintf(stderr,"Stack c:\n");
+      StrDblStack_print(c,stderr);
+      fprintf(stderr,"Stack d:\n");
+      StrDblStack_print(d,stderr);
+    }
+
+    c = StrDblStack_push(c, "test", 1);
+
+    if(verbose){
+      fprintf(stderr,"Stack c:\n");
+      StrDblStack_print(c,stderr);
+      fprintf(stderr,"Stack d:\n");
+      StrDblStack_print(d,stderr);
+    }
 
     assert(StrDblStack_compare(c,d) != 0);
 
-    StrDblStack_print(c,f);
 
-    StrDblStack_pop(c, temp);
-    StrDblStack_pop(d, temp);
+    c = StrDblStack_pop(c, &temp);
+    d = StrDblStack_pop(d, &temp);
 
     assert(StrDblStack_compare(c,d) != 0);
 
-    fclose(f);
+    if(verbose){
+      fprintf(stderr,"Stack c:\n");
+      StrDblStack_print(c,stderr);
+      fprintf(stderr,"Stack d:\n");
+      StrDblStack_print(d,stderr);
+    }
+
+    printf("All tests completed\n");
 
     return 0;
 }
