@@ -601,7 +601,7 @@ int main(int argc, char **argv) {
     unsigned nQuadPar = 1 + 2*dim + (dim*(dim-1))/2;
 
     // Number of points to use in fitting quadratic model
-    unsigned nQuadPts = 2*nQuadPar;
+    unsigned nQuadPts = 100*nQuadPar;
 
     // parameters for Differential Evolution
     DiffEvPar dep = {
