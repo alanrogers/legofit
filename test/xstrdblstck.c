@@ -18,6 +18,8 @@ int main(int argc, char **argv){
 
     StrDbl* temp = NULL;
 
+    FILE* f;
+
     bool verbose = 0;
 
 	  switch (argc) {
@@ -34,9 +36,9 @@ int main(int argc, char **argv){
         fprintf(stderr, "usage: xstrdblstck [-v]\n");
         exit(EXIT_FAILURE);
     }
+
     if(verbose){
       f = fopen("xstrdblstck_output.txt", "w");
-      FILE* f;
     }
 
     StrDblStack_print(a,f);
@@ -81,7 +83,7 @@ int main(int argc, char **argv){
       StrDblStack_print(d,stderr);
     }
 
-    c = StrDblStack_push(c, buff, 1);
+    c = StrDblStack_push(c, "test", 1);
 
     if(verbose){
       fprintf(stderr,"Stack c:\n");
@@ -107,7 +109,7 @@ int main(int argc, char **argv){
       fclose(f);
     }
 
-    printf("All tests completed\n", );
+    printf("All tests completed\n");
 
     return 0;
 }
