@@ -7,7 +7,6 @@
  * Systems Consortium License, which can be found in file "LICENSE".
  */
 
-#include "clic.h"
 #include "hessian.h"
 #include "strdblstck.h"
 #include "misc.h"
