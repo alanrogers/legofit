@@ -217,8 +217,8 @@ XSTRINT := xstrint.o misc.o binary.o lblndx.o parkeyval.o
 xstrint : $(XSTRINT)
 	$(CC) $(CFLAGS) -o $@ $(XSTRINT) $(lib)
 
-XSTRDBLSTCK := xstrdblstck.o strdblstck.o
-xstrdblstck : $(XSTRINTDBLSTCK)
+XSTRDBLSTCK := xstrdblstck.o strdblstck.o misc.o
+xstrdblstck : $(XSTRDBLSTCK)
 	$(CC) $(CFLAGS) -o $@ $(XSTRDBLSTCK) $(lib)
 
 # Make dependencies file

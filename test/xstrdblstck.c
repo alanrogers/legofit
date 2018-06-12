@@ -9,11 +9,18 @@
 
 #include "clic.h"
 #include "strdblstck.h"
+#include "misc.h"
 
 int main(int argc, char **argv){
-    StrDblStack *a, *b, *c, *d;
+    StrDblStack* a = NULL;
+    StrDblStack* b = NULL;
+    StrDblStack* c = NULL;
+    StrDblStack* d = NULL;
+
     FILE* f;
-    StrDbl* temp;
+
+    StrDbl* temp = NULL;
+    char buff[200] = {'t', 'e', 's', 't', '\0'};
 
     f = fopen("output.txt", "w");
 
@@ -22,7 +29,7 @@ int main(int argc, char **argv){
     assert(StrDblStack_compare(a,b) == 0);
     assert(StrDblStack_length(a) == 0);
 
-    StrDblStack_push(a,"test",1);
+    StrDblStack_push(a, buff, 1);
 
     assert(StrDblStack_compare(a,b) != 0);
     assert(StrDblStack_length(a) == 1);
@@ -38,7 +45,7 @@ int main(int argc, char **argv){
 
     assert(StrDblStack_compare(c,d) == 0);
 
-    StrDblStack_push(c,"test",1);
+    StrDblStack_push(c, buff, 1);
 
     assert(StrDblStack_compare(c,d) != 0);
 
