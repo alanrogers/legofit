@@ -1,5 +1,5 @@
 /**
- * @file clic.c
+ * @file xstrdblstck.c
  * @author Daniel R. Tabin
  * @brief Unit tests for clic
  * @copyright Copyright (c) 2018, Alan R. Rogers

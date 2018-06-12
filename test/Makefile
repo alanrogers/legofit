@@ -5,7 +5,7 @@ prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
 tests := xbinary xboot xbranchtab xclic xdafreader xrafreader xdiffev xgene \
   xgptree xhessian xpopnodetab xjobqueue xlblndx xllrbtree xparkeyval xparse \
-  xparstore xpopnode xscrmreader xsimsched xstrint xdtnorm xmisc xerror \
+  xparstore xpopnode xscrmreader xsimsched xstrdblstck xstrint xdtnorm xmisc xerror \
   xstate xwraparound xpointbuff
 
 CC := gcc
@@ -62,6 +62,7 @@ test : $(tests)
 	-./xsimsched
 	-./xstate
 	-./xstrint
+	-./xstrdblstck
 	-./xwraparound
 	@echo "ALL UNIT TESTS WERE COMPLETED."
 
@@ -216,6 +217,10 @@ XSTRINT := xstrint.o misc.o binary.o lblndx.o parkeyval.o
 xstrint : $(XSTRINT)
 	$(CC) $(CFLAGS) -o $@ $(XSTRINT) $(lib)
 
+XSTRDBLSTCK := xstrdblstck.o strdblstck.o
+xstrdblstck : $(XSTRINTDBLSTCK)
+	$(CC) $(CFLAGS) -o $@ $(XSTRDBLSTCK) $(lib)
+
 # Make dependencies file
 depend : *.c
 	echo '#Automatically generated dependency info' > depend
@@ -229,4 +234,3 @@ include depend
 .SUFFIXES:
 .SUFFIXES: .c .o
 .PHONY: clean
-

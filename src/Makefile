@@ -57,7 +57,7 @@ LEGOFIT := legofit.o patprob.o gptree.o binary.o jobqueue.o misc.o \
 legofit : $(LEGOFIT)
 	$(CC) $(CFLAGS) -o $@ $(LEGOFIT) $(lib)
 
-CLIC := clic.o misc.o hessian.o
+CLIC := clic.o misc.o hessian.o strdblstck.o
 clic : $(CLIC)
 	$(CC) $(CFLAGS) -o $@ $(CLIC) $(lib)
 
@@ -122,4 +122,3 @@ include depend
 
 .SUFFIXES:
 .SUFFIXES: .c .o
-
