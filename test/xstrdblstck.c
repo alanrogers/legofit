@@ -16,9 +16,7 @@ int main(int argc, char **argv){
     StrDblStack* c = NULL;
     StrDblStack* d = NULL;
 
-    StrDbl* temp = NULL;
-
-    FILE* f;
+    StrDbl temp;
 
     bool verbose = 0;
 
@@ -37,12 +35,6 @@ int main(int argc, char **argv){
         exit(EXIT_FAILURE);
     }
 
-    if(verbose){
-      f = fopen("xstrdblstck_output.txt", "w");
-    }
-
-    StrDblStack_print(a,f);
-
     assert(StrDblStack_compare(a,b) == 0);
     assert(StrDblStack_length(a) == 0);
 
@@ -58,8 +50,8 @@ int main(int argc, char **argv){
     assert(StrDblStack_compare(a,b) != 0);
     assert(StrDblStack_length(a) == 1);
 
-    a = StrDblStack_pop(a, temp);
-    a = StrDblStack_pop(a, temp);
+    a = StrDblStack_pop(a, &temp);
+    a = StrDblStack_pop(a, &temp);
 
     if(verbose){
       fprintf(stderr,"Stack a:\n");
@@ -95,8 +87,8 @@ int main(int argc, char **argv){
     assert(StrDblStack_compare(c,d) != 0);
 
 
-    c = StrDblStack_pop(c, temp);
-    d = StrDblStack_pop(d, temp);
+    c = StrDblStack_pop(c, &temp);
+    d = StrDblStack_pop(d, &temp);
 
     assert(StrDblStack_compare(c,d) != 0);
 
@@ -105,8 +97,6 @@ int main(int argc, char **argv){
       StrDblStack_print(c,stderr);
       fprintf(stderr,"Stack d:\n");
       StrDblStack_print(d,stderr);
-
-      fclose(f);
     }
 
     printf("All tests completed\n");

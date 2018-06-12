@@ -32,12 +32,13 @@ StrDblStack *StrDblStack_push(StrDblStack *self, const char *str, double val) {
 // stack = StrDblStack_push(stack, "name1", 1.0);
 // stack = StrDblStack_push(stack, "name2", 2.0);
 //
-// StrDbl x;
+// StrDbl x;            NOTE: Make sure this is not NULL
 // stack = StrDblStack_pop(stack, &x);  // x={"name1", 1.0}
 // stack = StrDblStack_pop(stack, &x);  // x={"name2", 2.0}
 StrDblStack *StrDblStack_pop(StrDblStack *self, StrDbl *strdbl) {
     if(self==NULL)
         return NULL;
+    assert(strdbl != NULL);
     strdbl->val = self->strdbl.val;
     strcpy(strdbl->str, self->strdbl.str);
     StrDblStack *next = self->next;
@@ -90,7 +91,7 @@ int StrDblStack_compare(StrDblStack *lhs, StrDblStack *rhs) {
 StrDblStack *parseLegofit(const char *fname) {
     FILE *fp = fopen(fname, "r");
     if(fp==NULL) {
-        fprintf(stderr,"%s:%d: can's read file \"%s\"\n",
+        fprintf(stderr,"%s:%d: can't read file \"%s\"\n",
                 __FILE__,__LINE__,fname);
         exit(EXIT_FAILURE);
     }
