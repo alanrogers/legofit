@@ -115,7 +115,7 @@ int main(int argc, char **argv) {
             if(abserr > maxabserr)
                 maxabserr = abserr;
             if(verbose)
-                printf("[%d,%d]: x=%0.5lf Ex=%0.5lf err=%lg\n",
+                printf("[%d,%d]: x=%8.5lf Ex=%8.5lf err=%lg\n",
                        i, j, x, ex, err);
         }
     }
