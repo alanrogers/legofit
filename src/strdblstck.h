@@ -24,7 +24,7 @@ struct StrDblStack {
     struct StrDbl strdbl;
 };
 
-StrDblStack *StrDblStack_push(StrDblStack *prev, char *str, double val);
+StrDblStack *StrDblStack_push(StrDblStack *prev, const char *str, double val);
 StrDblStack *StrDblStack_pop(StrDblStack *self, StrDbl *strdbl);
 StrDblStack *StrDblStack_free(StrDblStack *self);
 int          StrDblStack_length(StrDblStack *self);

@@ -8,7 +8,7 @@
 // StrDblStack *stack=NULL;
 // stack = StrDblStack_push(stack, "name1", 1.0);
 // stack = StrDblStack_push(stack, "name2", 2.0);
-StrDblStack *StrDblStack_push(StrDblStack *self, char *str, double val) {
+StrDblStack *StrDblStack_push(StrDblStack *self, const char *str, double val) {
     if(self != NULL) {
         self->next = StrDblStack_push(self->next, str, val);
         return self;

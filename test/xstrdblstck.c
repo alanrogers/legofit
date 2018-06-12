@@ -19,7 +19,6 @@ int main(int argc, char **argv){
     FILE* f;
 
     StrDbl* temp = NULL;
-    char buff[200] = {'t', 'e', 's', 't', '\0'};
 
     f = fopen("xstrdblstck_output.txt", "w");
 
@@ -28,10 +27,12 @@ int main(int argc, char **argv){
     assert(StrDblStack_compare(a,b) == 0);
     assert(StrDblStack_length(a) == 0);
 
-    StrDblStack_push(a, buff, 1);
+    a = StrDblStack_push(a, "test.a", 1.0);
 
-    StrDblStack_print(a,f);
-    StrDblStack_print(b,f);
+    fprintf(stderr,"Stack a:\n");
+    StrDblStack_print(a,stderr);
+    fprintf(stderr,"Stack b:\n");
+    StrDblStack_print(b,stderr);
 
     assert(StrDblStack_compare(a,b) != 0);
     assert(StrDblStack_length(a) == 1);
@@ -47,7 +48,7 @@ int main(int argc, char **argv){
 
     assert(StrDblStack_compare(c,d) == 0);
 
-    StrDblStack_push(c, buff, 1);
+    c = StrDblStack_push(c, buff, 1);
 
     assert(StrDblStack_compare(c,d) != 0);
 
