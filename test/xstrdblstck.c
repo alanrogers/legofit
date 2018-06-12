@@ -30,6 +30,9 @@ int main(int argc, char **argv){
 
     StrDblStack_push(a, buff, 1);
 
+    StrDblStack_print(a,f);
+    StrDblStack_print(b,f);
+
     assert(StrDblStack_compare(a,b) != 0);
     assert(StrDblStack_length(a) == 1);
 
