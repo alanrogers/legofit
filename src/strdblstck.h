@@ -30,7 +30,8 @@ StrDblStack *StrDblStack_free(StrDblStack *self);
 int          StrDblStack_length(StrDblStack *self);
 void         StrDblStack_print(StrDblStack *self, FILE *fp);
 int          StrDblStack_compare(StrDblStack *lhs, StrDblStack *rhs);
-StrDblStack *parseLegofit(const char *fname);
+StrDblStack *parseLegofit_CLIC(const char *fname);
+StrDblStack *parseLegofit_BEPE(const char *fname);
 void make_covar_matrix(int nfiles, int npar, double array[nfiles][npar],
                       gsl_matrix *cov);
 

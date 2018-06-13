@@ -1,3 +1,12 @@
+/**
+ * @file strdblstck.c
+ * @author Daniel R. Tabin and Alan R. Rogers
+ * @brief Functions for Composite Likelihood Information Criterion.
+ * @copyright Copyright (c) 2018, Alan R. Rogers
+ * <rogers@anthro.utah.edu>. This file is released under the Internet
+ * Systems Consortium License, which can be found in file "LICENSE".
+ */
+
 #include "hessian.h"
 #include "misc.h"
 #include "strdblstck.h"
@@ -86,9 +95,10 @@ int StrDblStack_compare(StrDblStack *lhs, StrDblStack *rhs) {
     return 0;
 }
 
-// Parse a legofit output file. Return an object of type StrDblStack,
-// which contains the number of parameters, their names, and their values.
-StrDblStack *parseLegofit(const char *fname) {
+// Parse a legofit output file for CLIC. Return an object of type
+// StrDblStack, which contains the number of parameters, their names,
+// and their values.
+StrDblStack *parseLegofit_CLIC(const char *fname) {
     FILE *fp = fopen(fname, "r");
     if(fp==NULL) {
         fprintf(stderr,"%s:%d: can't read file \"%s\"\n",
@@ -99,10 +109,10 @@ StrDblStack *parseLegofit(const char *fname) {
     int got_fitted=0;
     StrDblStack *stack=NULL;
     while(1) {
-        if(NULL == fgets(buff, sizeof buff, fp)) {
+        if(fgets(buff, sizeof buff, fp) == NULL) {
             break;
         }
-        if(NULL == strchr(buff, '\n') && !feof(stdin)) {
+        if(strchr(buff, '\n') == NULL && !feof(stdin)) {
             fprintf(stderr, "%s:%d: Buffer overflow. size=%zu\n",
                     __FILE__, __LINE__, sizeof(buff));
             exit(EXIT_FAILURE);
@@ -114,6 +124,44 @@ StrDblStack *parseLegofit(const char *fname) {
         }
         char *valstr = buff;
         char *name = strsep(&valstr, "=");
+        if(name==NULL || valstr==NULL)
+            continue;
+        name = stripWhiteSpace(name);
+        valstr = stripWhiteSpace(valstr);
+        stack=StrDblStack_push(stack, name, strtod(valstr, NULL) );
+    }
+    return stack;
+}
+
+// Parse a legofit output file for BEPE. Return an object of type
+// StrDblStack, which contains the number of parameters, their names,
+// and their values.
+StrDblStack *parseLegofit_BEPE(const char *fname) {
+    FILE *fp = fopen(fname, "r");
+    if(fp==NULL) {
+        fprintf(stderr,"%s:%d: can't read file \"%s\"\n",
+                __FILE__,__LINE__,fname);
+        exit(EXIT_FAILURE);
+    }
+    char buff[500];
+    int got_fitted=0;
+    StrDblStack *stack=NULL;
+    while(1) {
+        if(fgets(buff, sizeof buff, fp) == NULL) {
+            break;
+        }
+        if(strchr(buff, '\n') == NULL && !feof(stdin)) {
+            fprintf(stderr, "%s:%d: Buffer overflow. size=%zu\n",
+                    __FILE__, __LINE__, sizeof(buff));
+            exit(EXIT_FAILURE);
+        }
+        if(!got_fitted) {
+            if(0 == strncmp("BranchLen", buff, 6))
+                got_fitted=1;
+            continue;
+        }
+        char *valstr = buff;
+        char *name = strsep(&valstr, " ");
         if(name==NULL || valstr==NULL)
             continue;
         name = stripWhiteSpace(name);
