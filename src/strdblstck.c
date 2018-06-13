@@ -136,6 +136,8 @@ StrDblStack *parseLegofit_CLIC(const char *fname) {
 // Parse a legofit output file for BEPE. Return an object of type
 // StrDblStack, which contains the number of parameters, their names,
 // and their values.
+// NOTE: This function may be deleted as it may be equivilent to
+// parseData_BEPE More testing is needed to find out
 StrDblStack *parseLegofit_BEPE(const char *fname) {
     FILE *fp = fopen(fname, "r");
     if(fp==NULL) {
@@ -159,6 +161,51 @@ StrDblStack *parseLegofit_BEPE(const char *fname) {
             char* no_spaces_buff = stripInternalWhiteSpace(buff);
             if(strncmp("#SitePatBranchLen", no_spaces_buff, 17) == 0)
                 got_branchLen=true;
+            else{
+            }
+            continue;
+        }
+
+        char* temp = buff;
+        char* name = strtok_r(temp, " ", &temp);
+        char* valstr = strtok_r(temp, " ", &temp);
+
+        if(name==NULL || valstr==NULL)
+            continue;
+        name = stripWhiteSpace(name);
+        valstr = stripWhiteSpace(valstr);
+        stack=StrDblStack_push(stack, name, strtod(valstr, NULL) );
+    }
+    return stack;
+}
+
+// Parse a data file for BEPE. Return an object of type
+// StrDblStack, which contains the number of parameters, their names,
+// and their values.
+
+StrDblStack *parseData_BEPE(const char *fname) {
+    FILE *fp = fopen(fname, "r");
+    if(fp==NULL) {
+        fprintf(stderr,"%s:%d: can't read file \"%s\"\n",
+                __FILE__,__LINE__,fname);
+        exit(EXIT_FAILURE);
+    }
+    char buff[500];
+    bool got_sitepat = false;
+    StrDblStack *stack=NULL;
+    while(1) {
+        if(fgets(buff, sizeof buff, fp) == NULL) {
+            break;
+        }
+        if(strchr(buff, '\n') == NULL && !feof(stdin)) {
+            fprintf(stderr, "%s:%d: Buffer overflow. size=%zu\n",
+                    __FILE__, __LINE__, sizeof(buff));
+            exit(EXIT_FAILURE);
+        }
+        if(!got_sitepat) {
+            char* no_spaces_buff = stripInternalWhiteSpace(buff);
+            if(strncmp("#SitePat", no_spaces_buff, 8) == 0)
+                got_sitepat=true;
             else{
             }
             continue;
