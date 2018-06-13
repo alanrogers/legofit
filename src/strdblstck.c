@@ -118,7 +118,7 @@ StrDblStack *parseLegofit_CLIC(const char *fname) {
             exit(EXIT_FAILURE);
         }
         if(!got_fitted) {
-            if(0 == strncmp("Fitted", buff, 6))
+            if(strncmp("Fitted", buff, 6) == 0)
                 got_fitted=1;
             continue;
         }
@@ -144,7 +144,7 @@ StrDblStack *parseLegofit_BEPE(const char *fname) {
         exit(EXIT_FAILURE);
     }
     char buff[500];
-    int got_fitted=0;
+    bool got_branchLen = false;
     StrDblStack *stack=NULL;
     while(1) {
         if(fgets(buff, sizeof buff, fp) == NULL) {
@@ -155,9 +155,11 @@ StrDblStack *parseLegofit_BEPE(const char *fname) {
                     __FILE__, __LINE__, sizeof(buff));
             exit(EXIT_FAILURE);
         }
-        if(!got_fitted) {
-            if(0 == strncmp("BranchLen", buff, 6))
-                got_fitted=1;
+        if(!got_branchLen) {
+            if(strncmp("#       SitePat  BranchLen", buff, 26) == 0)
+                got_branchLen=true;
+            else{
+            }
             continue;
         }
         char *valstr = buff;
