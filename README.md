@@ -9,6 +9,6 @@ Documentation begins [here](http://content.csbs.utah.edu/~rogers/src/legofit/ind
 
 =======
 
-This branch will implement BEPE into Legofit.  This will, in conjunction with CLIC, assist the software in model selection, as before the addition of CLIC this could only be done easily with models that are nested.
+This branch will implement bootstrap estimates of prediction error, or BEPE, into Legofit.  This will, in conjunction with CLIC, assist the software in model selection, as before the addition of CLIC this could only be done easily with models that are nested.
 
 *This README subsection should be removed before or just after merge*
