@@ -156,7 +156,8 @@ StrDblStack *parseLegofit_BEPE(const char *fname) {
             exit(EXIT_FAILURE);
         }
         if(!got_branchLen) {
-            if(strncmp("#       SitePat  BranchLen", buff, 26) == 0)
+            char* no_spaces_buff = stripInternalWhiteSpace(buff);
+            if(strncmp("#SitePatBranchLen", no_spaces_buff, 17) == 0)
                 got_branchLen=true;
             else{
             }
