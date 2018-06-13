@@ -15,6 +15,8 @@ int main(int argc, char **argv){
     StrDblStack* b = NULL;
     StrDblStack* c = NULL;
     StrDblStack* d = NULL;
+    StrDblStack* e = NULL;
+    StrDblStack* f = NULL;
 
     StrDbl temp;
 
@@ -97,6 +99,42 @@ int main(int argc, char **argv){
       StrDblStack_print(c,stderr);
       fprintf(stderr,"Stack d:\n");
       StrDblStack_print(d,stderr);
+    }
+
+    e = parseLegofit_BEPE("s1boot0.legofit");
+    f = parseLegofit_BEPE("s1boot0.legofit");
+
+    assert(StrDblStack_compare(e,f) == 0);
+
+    if(verbose){
+      fprintf(stderr,"Stack e:\n");
+      StrDblStack_print(e,stderr);
+      fprintf(stderr,"Stack f:\n");
+      StrDblStack_print(f,stderr);
+    }
+
+    e = StrDblStack_push(e, "test", 1);
+
+    if(verbose){
+      fprintf(stderr,"Stack e:\n");
+      StrDblStack_print(e,stderr);
+      fprintf(stderr,"Stack f:\n");
+      StrDblStack_print(f,stderr);
+    }
+
+    assert(StrDblStack_compare(e,f) != 0);
+
+
+    e = StrDblStack_pop(e, &temp);
+    f = StrDblStack_pop(f, &temp);
+
+    assert(StrDblStack_compare(e,f) != 0);
+
+    if(verbose){
+      fprintf(stderr,"Stack e:\n");
+      StrDblStack_print(e,stderr);
+      fprintf(stderr,"Stack f:\n");
+      StrDblStack_print(f,stderr);
     }
 
     printf("All tests completed\n");
