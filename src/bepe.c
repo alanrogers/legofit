@@ -27,7 +27,6 @@ const char *usageMsg =
  }
 
 int main(int argc, char **argv){
-  int i;
   // Command line arguments specify file names
   if(argc < 4)
       usage();
@@ -36,9 +35,9 @@ int main(int argc, char **argv){
   int nfiles = ((argc-5)/2);  // number of bootstrap files
   const char *legofname[nfiles];
   const char *datafname[nfiles];
-  for(i=0; i < nfiles; ++i)
+  for(int i = 0; i < nfiles; ++i)
       datafname[i] = argv[i+4];
-  for(i=0; i < nfiles; ++i)
+  for(int i = 0; i < nfiles; ++i)
       legofname[i] = argv[i+5+nfiles];
 
   // Read bootstrap files into an array of FIFO stacks
@@ -47,7 +46,7 @@ int main(int argc, char **argv){
 
   StrDblStack* real_stack = parseLegofit_BEPE(realfName);
 
-  for(i=0; i < nfiles; ++i) {
+  for(int i = 0; i < nfiles; ++i) {
       if(StrDblStack_compare(real_stack, lego_stack[i]) ||
          StrDblStack_compare(real_stack, data_stack[i])) {
           fprintf(stderr, "%s:%d: inconsistent parameters in"
