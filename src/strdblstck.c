@@ -164,9 +164,8 @@ StrDblStack *parseLegofit_BEPE(const char *fname) {
         }
 
         char* temp = buff;
-
-        char* valstr = strtok_r(temp, " ", &temp);
         char* name = strtok_r(temp, " ", &temp);
+        char* valstr = strtok_r(temp, " ", &temp);
 
         if(name==NULL || valstr==NULL)
             continue;
