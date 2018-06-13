@@ -162,13 +162,16 @@ StrDblStack *parseLegofit_BEPE(const char *fname) {
             }
             continue;
         }
-        char *valstr = buff;
-        char *name = strsep(&valstr, " ");
+
+        char* valstr = strtok(buff, " ");
+        char* name = strtok(NULL, " ");
+
         if(name==NULL || valstr==NULL)
             continue;
         name = stripWhiteSpace(name);
         valstr = stripWhiteSpace(valstr);
         stack=StrDblStack_push(stack, name, strtod(valstr, NULL) );
+        printf("Name: %s, Val: %s\n", name, valstr);
     }
     return stack;
 }
