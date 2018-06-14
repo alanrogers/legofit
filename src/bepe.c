@@ -16,7 +16,7 @@ void usage(void);
 //vars
 
 const char *usageMsg =
-    "usage: bepe -d <real_data> -D <bootdata_1> <bootdata_2> ..."
+    "usage: bepe <real_data> <bootdata_1> <bootdata_2> ..."
     " -L <boot1.legofit> <boot2.legofit> ...\n"
     "  where real_data is the real data,\n"
     "  each \"bootdata_\" file is the legofit output from one bootstrap"
@@ -32,18 +32,18 @@ const char *usageMsg =
 
 int main(int argc, char **argv){
   // Command line arguments specify file names
-  if(argc < 7)
+  if(argc < 5)
       usage();
 
-  const char *realfName = argv[2];
-  int nfiles = ((argc-5)/2);  // number of bootstrap files
+  const char *realfName = argv[1];
+  int nfiles = ((argc-2)/2);  // number of bootstrap files
   const char *legofname[nfiles];
   const char *datafname[nfiles];
 
   for(int i = 0; i < nfiles; ++i)
-      datafname[i] = argv[i+4];
+      datafname[i] = argv[i+2];
   for(int i = 0; i < nfiles; ++i)
-      legofname[i] = argv[i+5+nfiles];
+      legofname[i] = argv[i+3+nfiles];
 
   // Read bootstrap files into an arrays of FIFO queues
   StrDblStack* data_stack[nfiles];
@@ -51,20 +51,10 @@ int main(int argc, char **argv){
 
   StrDblStack* real_stack = parseLegofit_BEPE(realfName);
 
-  printf("real stack\n");
-  StrDblStack_print(real_stack, stderr);
 
   for(int i = 0; i < nfiles; ++i) {
-      printf("%s\n", legofname[i]);
-      printf("%s\n", datafname[i]);
       lego_stack[i] = parseLegofit_BEPE(legofname[i]);
       data_stack[i] = parseLegofit_BEPE(datafname[i]);
-
-      printf("data stack\n");
-      StrDblStack_print(data_stack[i], stderr);
-
-      printf("lego stack\n");
-      StrDblStack_print(lego_stack[i], stderr);
 
       if(StrDblStack_compare(real_stack, lego_stack[i]) ||
          StrDblStack_compare(real_stack, data_stack[i])) {
@@ -91,21 +81,20 @@ int main(int argc, char **argv){
   StrDblStack* temp_d = real_stack;
 
   for (int i = 0; i < nfiles; ++i){
-    printf("i: %u\n", i);
     temp_L = lego_stack[i];
     for (int j = 0; j < nfiles; ++j){
-      printf("j: %u\n", j);
       temp_D = data_stack[i];
       for (int k = 0; k < nfiles; ++k){
-        printf("k: %u\n", k);
         if(j == 0){
           real_msd += pow((temp_L->strdbl.val
                           - temp_d->strdbl.val),2);
           temp_d = temp_d->next;
+          printf("%lf\n", real_msd);
         }
         boot_msd += pow((temp_L->strdbl.val
                         - temp_D->strdbl.val),2);
         temp_D = temp_D->next;
+        printf("%lf\n", boot_msd);
       }
     }
   }
