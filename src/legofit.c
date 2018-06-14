@@ -180,6 +180,7 @@ Systems Consortium License, which can be found in file "LICENSE".
 #include "patprob.h"
 #include "simsched.h"
 #include "state.h"
+#include "pointbuff.h"
 #include <assert.h>
 #include <float.h>
 #include <getopt.h>
@@ -400,6 +401,10 @@ int main(int argc, char **argv) {
                         __FILE__, __LINE__);
                 exit(EXIT_FAILURE);
             }
+            if( access( stateOutName, F_OK ) != -1 ) {
+                // file already exists
+                fprintf(stderr, "Warning: overwriting file %s\n", stateOutName);
+            }
             stateOut = fopen(stateOutName, "w");
             if(stateOut == NULL) {
                 fprintf(stderr, "%s:%d: can't open \"%s\" for output.\n",
@@ -588,6 +593,16 @@ int main(int argc, char **argv) {
         .simSched = simSched
     };
 
+    // Number of parameters in quadratic model used to estimate
+    // Hessian matrix: 1 intercept
+    // dim linear terms
+    // dim squared terms
+    // (dim*(dim-1))/2 cross product terms
+    unsigned nQuadPar = 1 + 2*dim + (dim*(dim-1))/2;
+
+    // Number of points to use in fitting quadratic model
+    unsigned nQuadPts = 100*nQuadPar;
+
     // parameters for Differential Evolution
     DiffEvPar dep = {
         .dim = dim,
@@ -609,6 +624,7 @@ int main(int argc, char **argv) {
         .state = state,
         .simSched = simSched,
         .ytol = ytol,
+        .pb = PointBuff_new(dim, nQuadPts)
     };
 
     double estimate[dim];
@@ -633,13 +649,6 @@ int main(int argc, char **argv) {
     BranchTab_divideBy(bt, (double) simreps);
     //    BranchTab_print(bt, stdout);
 
-    // Calculate AIC
-    BranchTab *prob = BranchTab_dup(bt);
-    BranchTab_normalize(prob);
-    double negLnL = BranchTab_negLnL(rawObs, prob);
-    double aic = 2.0*negLnL + 2.0*GPTree_nFree(gptree);
-    BranchTab_free(prob);
-
     const char *whyDEstopped;
     switch(destat) {
     case ReachedGoal:
@@ -660,14 +669,9 @@ int main(int argc, char **argv) {
 #if COST==LNL_COST
     printf("  relspread=%e", yspread / cost);
 #endif
-    printf(" AIC=%0.15g\n", aic);
 
     printf("Fitted parameter values\n");
-#if 1
     GPTree_printParStoreFree(gptree, stdout);
-#else
-    GPTree_printParStore(gptree, stdout);
-#endif
 
     // Put site patterns and branch lengths into arrays.
     unsigned npat = BranchTab_size(bt);
@@ -694,6 +698,102 @@ int main(int argc, char **argv) {
         fclose(stateOut);
     }
 
+    // Construct name for output file to which we will write
+    // points for use in estimating Hessian matrix.
+    char qfname[200];
+    {
+        char a[200], b[200];
+        strcpy(a, lgofname);
+        strcpy(b, patfname);
+        char *chrptr = strrchr(a, '.');
+        if(chrptr)
+            *chrptr = '\0';
+        chrptr = strrchr(b, '.');
+        if(chrptr)
+            *chrptr = '\0';
+        status=snprintf(qfname, sizeof qfname, "%s-%s.txt", a, b);
+        if(status >= sizeof qfname)
+            DIE("buffer overflow");
+    }
+
+#if COST==KL_COST || COST==LNL_COST
+    double S = BranchTab_sum(rawObs); // sum of site pattern counts
+    double entropy = BranchTab_entropy(obs); // -sum p ln(p)
+    if(nQuadPts != PointBuff_size(dep.pb)) {
+        fprintf(stderr,"Warning@%s:%d: expecting %u points; got %u\n",
+                __FILE__,__LINE__, nQuadPts, PointBuff_size(dep.pb));
+        nQuadPts = PointBuff_size(dep.pb);
+    }
+
+    // Warn if output file already exists
+    if( access( qfname, F_OK ) != -1 )
+        fprintf(stderr, "Warning: overwriting file %s\n", qfname);
+
+    FILE *qfp = fopen(qfname, "w");
+    if(qfp == NULL) {
+        fprintf(stderr,"%s:%d: can't write file %s: using stdout\n",
+                __FILE__,__LINE__,qfname);
+        qfp = stdout;
+    }
+
+    // First line contains dimensions. Each row contains dim+1 values:
+    // first lnL, then dim parameter values.
+    fprintf(qfp, "%u %d\n", nQuadPts, dim);
+
+    // header
+    fprintf(qfp, "%s", "lnL");
+    for(i=0; i < dim; ++i)
+        fprintf(qfp, " %s", GPTree_getNameFree(gptree, i));
+    putc('\n', qfp);
+
+    double lnL;
+
+    // print estimate first
+#  if COST==KL_COST
+    lnL = -S*(cost + entropy);
+#  else
+    lnL = -cost;
+#  endif
+    fprintf(qfp, "%0.18lg", lnL);
+    for(i=0; i < dim; ++i)
+        fprintf(qfp, " %0.18lg", estimate[i]);
+    putc('\n', qfp);
+
+    // print contents of PointBuff, omitting any that exactly
+    // equal the point estimate
+    while(0 != PointBuff_size(dep.pb)) {
+        double c, par[dim];
+        c = PointBuff_pop(dep.pb, dim, par);
+
+        // Is current point the estimate? If so, skip it.
+        int is_estimate=1;
+        if(c != cost)
+            is_estimate=0;
+        for(i=0; is_estimate && i < dim; ++i) {
+            if(par[i] != estimate[i])
+                is_estimate = 0;
+        }
+        if(is_estimate)
+            continue;
+
+#  if COST==KL_COST
+        lnL = -S*(c + entropy); // Kullback-Leibler cost function
+#  else
+        lnL = -c;               // negLnL cost function
+#  endif
+        fprintf(qfp, "%0.18lg", lnL);
+        for(i=0; i < dim; ++i)
+            fprintf(qfp, " %0.18lg", par[i]);
+        putc('\n', qfp);
+    }
+    if(qfp != stdout) {
+        fclose(qfp);
+        fprintf(stderr,"%d points written to file %s\n",
+                nQuadPts, qfname);
+    }
+#endif
+
+    PointBuff_free(dep.pb);
     BranchTab_free(bt);
     BranchTab_free(rawObs);
     BranchTab_free(obs);
@@ -701,6 +801,7 @@ int main(int argc, char **argv) {
     GPTree_sanityCheck(gptree, __FILE__, __LINE__);
     GPTree_free(gptree);
     SimSched_free(simSched);
+
     fprintf(stderr, "legofit is finished\n");
 
     return 0;

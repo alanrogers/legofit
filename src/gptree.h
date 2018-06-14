@@ -23,6 +23,7 @@ void        GPTree_getParams(GPTree *self, int n, double x[n]);
 void        GPTree_randomize(GPTree *self, gsl_rng *rng);
 void        GPTree_printParStore(GPTree *self, FILE *fp);
 void        GPTree_printParStoreFree(GPTree *self, FILE *fp);
+const char *GPTree_getNameFree(GPTree * self, int i);
 int         GPTree_feasible(const GPTree *self, int verbose);
 void        initStateVec(int ndx, GPTree *gpt, int n, double x[n],
                          gsl_rng *rng);

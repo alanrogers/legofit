@@ -42,6 +42,7 @@ struct DiffEvPar {
     void       *(*ThreadState_new) (void *);
     void        (*ThreadState_free) (void *);
     State      *state;
+    PointBuff  *pb;
 };
 
 DEStatus diffev(int dim, double estimate[dim], double *loCost,

@@ -2,10 +2,12 @@
 *~
 core
 depend
+clic
 doc
 raf
 raf2daf
 xboot
+xclic
 xdtnorm
 xexopar
 xhashtab
@@ -13,6 +15,7 @@ xerror
 xgene
 xgptree
 xparse
+xpointbuff
 xbinary
 xlblndx
 xllrbtree
@@ -26,6 +29,7 @@ xterm
 xbranchtab
 xparstore
 xparkeyval
+xpointbuff
 xdiffev
 xjobqueue
 xdafreader

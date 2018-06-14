@@ -3,10 +3,10 @@ vpath %.c ../src
 opt :=  -O0 -fno-inline-functions -DDEBUG
 prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
-tests := xbinary xboot xbranchtab xdafreader xrafreader xdiffev xgene \
-  xgptree xpopnodetab xjobqueue xlblndx xllrbtree xparkeyval xparse \
-  xparstore xpopnode xscrmreader xsimsched xstrint xdtnorm xmisc xerror \
-  xstate xwraparound
+tests := xbinary xboot xbranchtab xclic xdafreader xrafreader xdiffev xgene \
+  xgptree xhessian xpopnodetab xjobqueue xlblndx xllrbtree xparkeyval xparse \
+  xparstore xpopnode xscrmreader xsimsched xstrdblstck xstrint xdtnorm xmisc xerror \
+  xstate xwraparound xpointbuff
 
 CC := gcc
 
@@ -39,6 +39,7 @@ test : $(tests)
 	-./xbinary
 	-./xboot
 	-./xbranchtab
+	-./xclic
 	-./xdafreader
 	-./xrafreader
 	-./xdiffev
@@ -46,6 +47,7 @@ test : $(tests)
 	-./xerror
 	-./xgene
 	-./xgptree
+	-./xhessian
 	-./xjobqueue
 	-./xlblndx
 	-./xllrbtree
@@ -53,12 +55,14 @@ test : $(tests)
 	-./xparkeyval
 	-./xparse
 	-./xparstore
+	-./xpointbuff
 	-./xpopnode
 	-./xpopnodetab
 	-./xscrmreader
 	-./xsimsched
 	-./xstate
 	-./xstrint
+	-./xstrdblstck
 	-./xwraparound
 	@echo "ALL UNIT TESTS WERE COMPLETED."
 
@@ -92,9 +96,17 @@ XERROR := xerror.o error.o misc.o
 xerror : $(XERROR)
 	$(CC) $(CFLAGS) -o $@ $(XERROR) $(lib)
 
+XHESSIAN := xhessian.o misc.o hessian.o
+xhessian : $(XHESSIAN)
+	$(CC) $(CFLAGS) -o $@ $(XHESSIAN) $(lib)
+
 XJOBQUEUE := xjobqueue.o jobqueue.o misc.o
 xjobqueue : $(XJOBQUEUE)
 	$(CC) $(CFLAGS) -o $@ $(XJOBQUEUE) $(lib)
+
+XPOINTBUFF := xpointbuff.o misc.o pointbuff.o
+xpointbuff : $(XPOINTBUFF)
+	$(CC) $(CFLAGS) -o $@ $(XPOINTBUFF) $(lib)
 
 XDIFFEV := xdiffev.o diffev.o binary.o lblndx.o jobqueue.o parkeyval.o \
   simsched.o state.o misc.o
@@ -110,6 +122,13 @@ XRAFREADER := xrafreader.o rafreader.o misc.o lblndx.o tokenizer.o binary.o \
    parkeyval.o strint.o error.o
 xrafreader : $(XRAFREADER)
 	$(CC) $(CFLAGS) -o $@ $(XRAFREADER) $(lib)
+
+xclic.o : clic.c
+	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/clic.c
+
+XCLIC := xclic.o
+xclic : $(XCLIC)
+	$(CC) $(CFLAGS) -o $@ $(XCLIC) $(lib)
 
 xscrmreader.o : scrmreader.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/scrmreader.c
@@ -198,6 +217,10 @@ XSTRINT := xstrint.o misc.o binary.o lblndx.o parkeyval.o
 xstrint : $(XSTRINT)
 	$(CC) $(CFLAGS) -o $@ $(XSTRINT) $(lib)
 
+XSTRDBLSTCK := xstrdblstck.o strdblstck.o misc.o
+xstrdblstck : $(XSTRDBLSTCK)
+	$(CC) $(CFLAGS) -o $@ $(XSTRDBLSTCK) $(lib)
+
 # Make dependencies file
 depend : *.c
 	echo '#Automatically generated dependency info' > depend
@@ -211,4 +234,3 @@ include depend
 .SUFFIXES:
 .SUFFIXES: .c .o
 .PHONY: clean
-

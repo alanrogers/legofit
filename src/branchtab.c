@@ -601,6 +601,21 @@ double BranchTab_sum(const BranchTab *self) {
     return s;
 }
 
+/// Return negative of sum of p*ln(p)
+double BranchTab_entropy(const BranchTab *self) {
+    assert(Dbl_near(1.0, BranchTab_sum(self)));
+    unsigned i;
+    double entropy=0.0;
+
+    for(i = 0; i < BT_DIM; ++i) {
+        BTLink *el;
+        for(el = self->tab[i]; el; el = el->next)
+            entropy -= el->value * log(el->value);
+    }
+
+    return entropy;
+}
+
 /// Divide all values by their sum. Return 0
 /// on success, or 1 on failure.
 int BranchTab_normalize(BranchTab *self) {
@@ -812,6 +827,15 @@ int main(int argc, char **argv) {
     for(i=0; i < 25; ++i) {
         assert(2*val[i] == BranchTab_get(bt, key[i]));
     }
+
+    double x = BranchTab_sum(bt);
+    if(verbose)
+        printf("BranchTab_sum: %lg\n", x);
+    assert(0 == BranchTab_normalize(bt));
+    assert(Dbl_near(1.0, BranchTab_sum(bt)));
+    x = BranchTab_entropy(bt);
+    if(verbose)
+        printf("BranchTab_entropy: %lg\n", x);
 
     if(verbose)
         BranchTab_print(bt, stdout);

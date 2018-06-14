@@ -69,9 +69,8 @@
 #include "diffev.h"
 #include "misc.h"
 #include "simsched.h"
-#if 1
+#include "pointbuff.h"
 #include "jobqueue.h"
-#endif
 #include <gsl/gsl_rng.h>
 #include <limits.h>
 #include <float.h>
@@ -752,6 +751,10 @@ DEStatus diffev(int dim, double estimate[dim], double *loCost, double *yspread,
                     // accept mutation
                     cost[i] = trial_cost;
                     assignd(dim, (*pnew)[i], targ[i]->v);
+
+                    // keep track of successful points
+                    PointBuff_push(dep.pb, trial_cost, dim, targ[i]->v);
+
                     if(trial_cost < cmin) { // New minimum.
                         cmin = trial_cost;  // Reset cmin and imin.
                         imin = i;
