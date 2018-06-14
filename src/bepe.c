@@ -59,4 +59,10 @@ int main(int argc, char **argv){
       lego_stack[i] = parseLegofit_BEPE(legofname[i]);
       data_stack[i] = parseLegofit_BEPE(datafname[i]);
   }
+  real_stack = normalize(real_stack);
+  for(int i = 0; i < nfiles; ++i) {
+      lego_stack[i] = normalize(lego_stack[i]);
+      data_stack[i] = normalize(data_stack[i]);
+  }
+
 }
