@@ -50,8 +50,8 @@ int main(int argc, char **argv){
   StrDblStack* real_stack = parseLegofit_BEPE(realfName);
 
   for(int i = 0; i < nfiles; ++i) {
-      if(StrDblStack_compare(real_stack, lego_stack[i]) ||
-         StrDblStack_compare(real_stack, data_stack[i])) {
+      if(!StrDblStack_compare(real_stack, lego_stack[i]) ||
+         !StrDblStack_compare(real_stack, data_stack[i])) {
           fprintf(stderr, "%s:%d: inconsistent parameters in"
                   " files\n", __FILE__,__LINE__);
           exit(EXIT_FAILURE);
