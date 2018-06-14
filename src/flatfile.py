@@ -9,10 +9,10 @@
 #
 #    usage: flatfile.py [options] <file1> <file2> ...
 #
-#    where <file*> files are legofit output files, which must each
-#    estimate the same parameters
+#    where <file*> files are legofit output files.
 #    Options may include:
 #
+#      -t     or --transpose    Rows are parameters rather than data sets.
 #      -h     or --help         Print this message.
 #
 #    The program writes to standard output.
@@ -23,7 +23,7 @@
 #
 #    flatfile.py s2.legofit s2boot*.legofit
 #
-#All the legofit must estimate the same parameters.
+#Parameters that are missing from a .legofit file will print as "None".
 #
 #The output begins with two lines of comment, which begin with a sharp
 #character in column 1 and give (1) the date and time at which the
@@ -56,6 +56,7 @@ usage: flatfile.py [options] <file1> <file2> ...
 where the "file" arguments files are legofit output files
 Options may include:
 
+  -t     or --transpose    Rows are parameters rather than data sets.
   -h     or --help         Print this message.
 
 The program writes to standard output.
@@ -79,7 +80,6 @@ def parselegofit(fname):
             continue
 
         key = line[0].strip()
-        key = key.replace("2","two")
         if "Gaussian" in line[1]:
             value = 1.0
         else:
@@ -99,6 +99,7 @@ def parselegofit(fname):
     return (parnames, estimates)
 
 fnames = []
+transpose = False
 
 # Loop over command line arguments, ignoring the 0th.
 i = 1
@@ -107,6 +108,8 @@ while(True):
         break
     elif sys.argv[i]=="-h" or sys.argv[i]=="--help":
         usage("")
+    elif sys.argv[i]=="-t" or sys.argv[i]=="--transpose":
+        transpose = True
     elif sys.argv[i][0] == "-":
         usage("Unknown argument: %s" % sys.argv[i])
     else:
@@ -123,28 +126,70 @@ for i in range(len(fnames)):
 print
 
 mat = []
-npar = 0
+parnames = []
+allnames = set([])
 
+# Make arrays. Data sets in rows, parameters in columns.
+# Rows may not be same length, because different data sets
+# may have different parameters.
 for name in fnames:
     parnames2, estimates = parselegofit(name)
-
-    if npar == 0:
-        parnames = parnames2
-        npar = len(parnames)
-    elif parnames != parnames2:
-        print >> sys.stderr, "Input files estimate different parameters"
-        print >> sys.stderr, "  1:", parnames
-        print >> sys.stderr, "  2:", parnames2
-        exit(1)
-
+    if len(parnames2) == 0:
+        print >> sys.stderr, "ERR: file %s has no parameters" % name
+        sys.exit(1)
     mat.append(estimates)
+    parnames.append(parnames2)
+    allnames |= set(parnames2)
 
-for name in parnames:
-    print "%s" % name,
-print
+allnames = sorted(list(allnames))
+npar = len(allnames)
+nfile = len(fnames)
 
-for row in mat:
-    for val in row:
-        print "%s" % val,
+# mat2 is like mat, but is rectangular, with missing parameters
+# set equal to None.
+mat2 = nfile*[None]
+for i in range(nfile):
+    mat2[i] = [None for j in range(npar)]
+    k = 0
+    for j in range(npar):
+        if allnames[j] in parnames[i]:
+            if parnames[i][k] != allnames[j]:
+                print "ERR: parnames[i][k] != allnames[j]"
+                print i, k, j
+                print parnames[i][k], allnames[j]
+                print parnames[i]
+                print allnames
+                sys.exit(1)
+            mat2[i][j] = mat[i][k]
+            k += 1
+        else:
+            mat2[i][j] = None
+
+if transpose:
+    nrows = npar
+    ncols = len(fnames)
+    print "param",
+    for j in range(ncols):
+        print fnames[j],
     print
+    for i in range(nrows):
+        print allnames[i],
+        for j in range(ncols):
+            if mat2[j][i] == None:
+                print "NA",
+            else:
+                print mat2[j][i],
+        print
+else:
+    for name in allnames:
+        print "%s" % name,
+    print
+
+    for row in mat2:
+        for val in row:
+            if val == None:
+                print "NA",
+            else:
+                print "%s" % val,
+        print
 

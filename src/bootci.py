@@ -117,7 +117,6 @@ def parselegofit(fname):
             continue
 
         key = line[0].strip()
-        key = key.replace("2","two")
         if "Gaussian" in line[1]:
             value = 1.0
         else:
