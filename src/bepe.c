@@ -41,9 +41,9 @@ int main(int argc, char **argv){
   const char *datafname[nfiles];
 
   for(int i = 0; i < nfiles; ++i)
-      datafname[i] = argv[i+2];
+      datafname[i] = argv[i+1];
   for(int i = 0; i < nfiles; ++i)
-      legofname[i] = argv[i+3+nfiles];
+      legofname[i] = argv[i+2+nfiles];
 
   // Read bootstrap files into an arrays of FIFO queues
   StrDblStack* data_stack[nfiles];
