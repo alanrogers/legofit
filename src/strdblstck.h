@@ -30,7 +30,7 @@ StrDblStack *StrDblStack_free(StrDblStack *self);
 int          StrDblStack_length(StrDblStack *self);
 void         StrDblStack_print(StrDblStack *self, FILE *fp);
 int          StrDblStack_compare(StrDblStack *lhs, StrDblStack *rhs);
-StrDbl      *StrDblStack_get(StrDblStack *self, StrDbl *strdbl, int index);
+// StrDbl      *StrDblStack_get(StrDblStack *self, StrDbl *strdbl, int index);
 StrDblStack *parseLegofit_CLIC(const char *fname);
 StrDblStack *parseLegofit_BEPE(const char *fname);
 StrDblStack *parseData_BEPE(const char *fname);

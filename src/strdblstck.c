@@ -55,21 +55,21 @@ StrDblStack *StrDblStack_pop(StrDblStack *self, StrDbl *strdbl) {
     return next;
 }
 
-//get a strdbl
-// NOTE: This is inefficient, we should work on making this faster
-
-StrDbl *StrDblStack_get(StrDblStack *self, StrDbl *strdbl, int index) {
-    if(self==NULL)
-        return NULL;
-
-    StrDblStack *temp;
-
-    for (int i = 0; i < index; i++)
-      temp = temp->next;
-
-    strdbl = &(temp->strdbl);
-    return strdbl;
-}
+// //get a strdbl
+// // NOTE: This is inefficient, we should work on making this faster
+//
+// StrDbl *StrDblStack_get(StrDblStack *self, StrDbl *strdbl, int index) {
+//     if(self==NULL)
+//         return NULL;
+//
+//     StrDblStack *temp;
+//
+//     for (int i = 0; i < index; i++)
+//       temp = temp->next;
+//
+//     strdbl = &(temp->strdbl);
+//     return strdbl;
+// }
 
 int StrDblStack_length(StrDblStack *self) {
     if(self==NULL)
@@ -243,14 +243,16 @@ StrDblStack *parseData_BEPE(const char *fname) {
 StrDblStack* normalize(StrDblStack* self){
   int length = StrDblStack_length(self);
   double total = 0;
-  StrDbl* sd;
+  StrDblStack* temp = self;
+
   for(int i = 0; i < length; i++){
-    StrDblStack_get(self, sd, i);
-    total += sd->val;
+    total += temp->strdbl.val;
+    temp = temp->next;
   }
+
+  temp = self;
   for(int i = 0; i < length; i++){
-    StrDblStack_get(self, sd, i);
-    sd->val = (sd->val/total);
+    temp->strdbl.val = ((temp->strdbl.val)/total);
   }
   return self;
 }
