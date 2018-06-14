@@ -55,6 +55,22 @@ StrDblStack *StrDblStack_pop(StrDblStack *self, StrDbl *strdbl) {
     return next;
 }
 
+//get a strdbl
+// NOTE: This is inefficient, we should work on making this faster
+
+StrDbl *StrDblStack_get(StrDblStack *self, StrDbl *strdbl, int index) {
+    if(self==NULL)
+        return NULL;
+
+    StrDblStack *temp;
+
+    for (int i = 0; i < index; i++)
+      temp = temp->next;
+
+    strdbl = &(temp->strdbl);
+    return strdbl;
+}
+
 int StrDblStack_length(StrDblStack *self) {
     if(self==NULL)
         return 0;
@@ -222,6 +238,21 @@ StrDblStack *parseData_BEPE(const char *fname) {
         stack=StrDblStack_push(stack, name, strtod(valstr, NULL) );
     }
     return stack;
+}
+
+StrDblStack* normalize(StrDblStack* self){
+  int length = StrDblStack_length(self);
+  double total = 0;
+  StrDbl* sd;
+  for(int i = 0; i < length; i++){
+    StrDblStack_get(self, sd, i);
+    total += sd->val;
+  }
+  for(int i = 0; i < length; i++){
+    StrDblStack_get(self, sd, i);
+    sd->val = (sd->val/total);
+  }
+  return self;
 }
 
 // On input, nfiles and npar are the number of rows and columns in
