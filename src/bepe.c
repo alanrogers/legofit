@@ -31,10 +31,10 @@ const char *usageMsg =
 
 int main(int argc, char **argv){
   // Command line arguments specify file names
-  if(argc < 4)
+  if(argc < 7)
       usage();
 
-  const char *realfName = argv[1];
+  const char *realfName = argv[2];
   int nfiles = ((argc-5)/2);  // number of bootstrap files
   const char *legofname[nfiles];
   const char *datafname[nfiles];
