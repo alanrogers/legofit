@@ -86,15 +86,14 @@ int main(int argc, char **argv){
       temp_D = data_stack[i];
       for (int k = 0; k < nfiles; ++k){
         if(j == 0){
-          real_msd += pow((temp_L->strdbl.val
-                          - temp_d->strdbl.val),2);
+          real_msd += pow((temp_d->strdbl.val
+                          - temp_L->strdbl.val),2);
           temp_d = temp_d->next;
-          printf("%lf\n", real_msd);
         }
-        boot_msd += pow((temp_L->strdbl.val
-                        - temp_D->strdbl.val),2);
-        temp_D = temp_D->next;
-        printf("%lf\n", boot_msd);
+          boot_msd += pow((temp_D->strdbl.val
+                          - temp_L->strdbl.val),2);
+          temp_D = temp_D->next;
+          temp_L = temp_L->next;
       }
     }
   }
