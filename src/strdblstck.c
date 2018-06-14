@@ -253,6 +253,7 @@ StrDblStack* normalize(StrDblStack* self){
   temp = self;
   for(int i = 0; i < length; i++){
     temp->strdbl.val = ((temp->strdbl.val)/total);
+    temp = temp->next;
   }
   return self;
 }
