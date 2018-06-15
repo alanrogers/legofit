@@ -109,7 +109,7 @@ int main(int argc, char **argv){
   //find MSD
   double real_msd = 0;
   double boot_msd = 0;
-  double msd;
+  double bepe;
   double x;
 
   int npat;
@@ -139,7 +139,7 @@ int main(int argc, char **argv){
   real_msd = (real_msd / (nfiles*npat));
   boot_msd = (boot_msd / (nfiles*npat));
 
-  msd = real_msd + boot_msd;
+  bepe = real_msd + boot_msd;
 
-  printf("MSD = %lf\n", msd);
+  printf("BEPE = %lf\n", bepe);
 }
