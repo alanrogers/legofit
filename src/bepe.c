@@ -134,14 +134,18 @@ int main(int argc, char **argv){
       temp_L = temp_L->next;
       temp_d = temp_d->next;
 
-      fprintf(stderr, "Real: %lf\nBoot: %lf\n", real_msd, boot_msd);
+      fprintf(stderr, "Real: %lf\tBoot: %lf\n", real_msd, boot_msd);
     }
   }
+
+  fprintf(stderr, "Real: %le\tBoot: %le\n", real_msd, boot_msd);
 
   real_msd /= (nfiles*npat);
   boot_msd /= (nfiles*npat);
 
+  fprintf(stderr, "Real: %le\tBoot: %le\n", real_msd, boot_msd);
+
   bepe = real_msd + boot_msd;
 
-  printf("BEPE = %lf\n", bepe);
+  printf("BEPE = %le\n", bepe);
 }
