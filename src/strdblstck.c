@@ -111,6 +111,11 @@ StrDblStack *parseLegofit(const char *fname) {
             if(0 == strncmp("Fitted", buff, 6))
                 got_fitted=1;
             continue;
+        }else if(got_fitted) {
+            if(NULL != strstr(buff, "constrained")) {
+                got_fitted = 0;
+                continue;
+            }
         }
         char *valstr = buff;
         char *name = strsep(&valstr, "=");
@@ -120,6 +125,7 @@ StrDblStack *parseLegofit(const char *fname) {
         valstr = stripWhiteSpace(valstr);
         stack=StrDblStack_push(stack, name, strtod(valstr, NULL) );
     }
+    assert(StrDblStack_length(stack) > 0);
     return stack;
 }
 

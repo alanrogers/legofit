@@ -213,11 +213,19 @@ int main(int argc, char **argv){
     // Do the two sets of parameters match? (One from bootstrap files,
     // the other from pts file.)
     int mismatch = 0;
-    if(hesobj.npar != npar)
+    if(hesobj.npar != npar) {
+        fprintf(stderr,"%s:%d: mismatch in number of parameters\n",
+                __FILE__,__LINE__);
+        fprintf(stderr,"    : pts file has %d, boot files have %d\n",
+                hesobj.npar, npar);
         mismatch=1;
+    }
     for(i=0; mismatch==0 && i<npar; ++i) {
-        if(0 != strcmp(parname[i], Hparname[i]))
+        if(0 != strcmp(parname[i], Hparname[i])) {
+            fprintf(stderr,"%s:%d: mismatch in parameter names\n",
+                    __FILE__,__LINE__);
             mismatch=1;
+        }
     }
     if(mismatch) {
         fprintf(stderr,"%s:%d: mismatch between parameters"
