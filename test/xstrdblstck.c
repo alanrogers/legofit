@@ -101,8 +101,8 @@ int main(int argc, char **argv){
       StrDblStack_print(d,stderr);
     }
 
-    e = parseLegofit_BEPE("s1boot0.legofit");
-    f = parseLegofit_BEPE("s1boot0.legofit");
+    e = parseSitPat("s1boot0.legofit");
+    f = parseSitPat("s1boot0.legofit");
 
     assert(StrDblStack_compare(e,f) == 0);
 

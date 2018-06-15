@@ -154,7 +154,7 @@ StrDblStack *parseLegofit_CLIC(const char *fname) {
 // StrDblStack, which contains the number of parameters, their names,
 // and their values.
 
-StrDblStack *parseData_BEPE(const char *fname) {
+StrDblStack *parseSitPat(const char *fname) {
     FILE *fp = fopen(fname, "r");
     if(fp==NULL) {
         fprintf(stderr,"%s:%d: can't read file \"%s\"\n",

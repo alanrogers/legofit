@@ -39,7 +39,12 @@ int main(int argc, char **argv){
 
   for(int i = 2; i < argc; i++){
     if (argv[i][0] == '-'){
-      break;
+      if(strcmp(argv[i], "-L") == 0){
+        break;
+      }
+      else{
+        usage();
+      }
     }
     else{
       nfiles++;
@@ -49,7 +54,7 @@ int main(int argc, char **argv){
   int nfiles_temp = 0;
   for(int i = (3+nfiles); i < argc; i++){
     if (argv[i][0] == '-'){
-      break;
+      usage();
     }
     else{
       nfiles_temp++;
@@ -75,12 +80,12 @@ int main(int argc, char **argv){
   StrDblStack* data_stack[nfiles];
   StrDblStack* lego_stack[nfiles];
 
-  StrDblStack* real_stack = parseData_BEPE(realfName);
+  StrDblStack* real_stack = parseSitPat(realfName);
 
 
   for(int i = 0; i < nfiles; ++i) {
-      lego_stack[i] = parseData_BEPE(legofname[i]);
-      data_stack[i] = parseData_BEPE(datafname[i]);
+      lego_stack[i] = parseSitPat(legofname[i]);
+      data_stack[i] = parseSitPat(datafname[i]);
 
       if(StrDblStack_compare(real_stack, lego_stack[i])) {
           fprintf(stderr, "%s:%d: inconsistent parameters in"
@@ -107,6 +112,8 @@ int main(int argc, char **argv){
   double msd;
   double x;
 
+  int npat;
+
   StrDblStack* temp_L;
   StrDblStack* temp_D;
   StrDblStack* temp_d;
@@ -115,7 +122,8 @@ int main(int argc, char **argv){
     temp_L = lego_stack[i];
     temp_D = data_stack[i];
     temp_d = real_stack;
-    for (int j = 0; j < StrDblStack_length(temp_D); ++j){
+    npat = StrDblStack_length(temp_D);
+    for (int j = 0; j < npat; ++j){
       x = (temp_d->strdbl.val - temp_L->strdbl.val);
       real_msd += (x*x);
 
@@ -128,8 +136,8 @@ int main(int argc, char **argv){
     }
   }
 
-  real_msd = (real_msd / nfiles);
-  boot_msd = (boot_msd / nfiles);
+  real_msd = (real_msd / (nfiles*npat));
+  boot_msd = (boot_msd / (nfiles*npat));
 
   msd = real_msd + boot_msd;
 
