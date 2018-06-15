@@ -161,7 +161,7 @@ StrDblStack *parseSitPat(const char *fname) {
                 __FILE__,__LINE__,fname);
         exit(EXIT_FAILURE);
     }
-    char buff[500];
+    char buff[2000];
     bool got_sitepat = false;
     StrDblStack *stack=NULL;
     while(1) {
