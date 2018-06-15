@@ -95,7 +95,7 @@ StrDblStack *parseLegofit(const char *fname) {
                 __FILE__,__LINE__,fname);
         exit(EXIT_FAILURE);
     }
-    char buff[500];
+    char buff[2000];
     int got_fitted=0;
     StrDblStack *stack=NULL;
     while(1) {
