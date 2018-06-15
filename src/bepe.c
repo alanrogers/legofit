@@ -16,7 +16,7 @@ void usage(void);
 
 const char *usageMsg =
     "usage: bepe <real_data> <bootdata_1> <bootdata_2> ..."
-    "  <boot1.legofit> <boot2.legofit> ...\n"
+    "  -L <boot1.legofit> <boot2.legofit> ...\n"
     "  where real_data is the real data,\n"
     "  each \"bootdata_\" file is the legofit output from one bootstrap"
     " replicate,\n"
@@ -35,14 +35,41 @@ int main(int argc, char **argv){
       usage();
 
   const char *realfName = argv[1];
-  int nfiles = ((argc-2)/2);  // number of bootstrap files
+  int nfiles = 0;
+
+  for(int i = 2; i < argc; i++){
+    if (argv[i][0] == '-'){
+      break;
+    }
+    else{
+      nfiles++;
+    }
+  }
+
+  int nfiles_temp = 0;
+  for(int i = (3+nfiles); i < argc; i++){
+    if (argv[i][0] == '-'){
+      break;
+    }
+    else{
+      nfiles_temp++;
+    }
+  }
+
+  if(nfiles_temp != nfiles){
+      fprintf(stderr, "%s:%d\n"
+              " Inconsistent number of files!"
+              " %d data files and %d legofit files\n", __FILE__,__LINE__, nfiles, nfiles_temp);
+      usage();
+  }
+
   const char *legofname[nfiles];
   const char *datafname[nfiles];
 
   for(int i = 0; i < nfiles; ++i)
       datafname[i] = argv[i+1];
   for(int i = 0; i < nfiles; ++i)
-      legofname[i] = argv[i+2+nfiles];
+      legofname[i] = argv[i+3+nfiles];
 
   // Read bootstrap files into an arrays of FIFO queues
   StrDblStack* data_stack[nfiles];
