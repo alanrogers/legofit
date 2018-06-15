@@ -48,12 +48,12 @@ int main(int argc, char **argv){
   StrDblStack* data_stack[nfiles];
   StrDblStack* lego_stack[nfiles];
 
-  StrDblStack* real_stack = parseLegofit_BEPE(realfName);
+  StrDblStack* real_stack = parseData_BEPE(realfName);
 
 
   for(int i = 0; i < nfiles; ++i) {
-      lego_stack[i] = parseLegofit_BEPE(legofname[i]);
-      data_stack[i] = parseLegofit_BEPE(datafname[i]);
+      lego_stack[i] = parseData_BEPE(legofname[i]);
+      data_stack[i] = parseData_BEPE(datafname[i]);
 
       if(StrDblStack_compare(real_stack, lego_stack[i])) {
           fprintf(stderr, "%s:%d: inconsistent parameters in"
