@@ -8,7 +8,6 @@
  */
 
 #include "strdblstck.h"
-#include <math.h>
 
 // Function prototypes
 void usage(void);
@@ -79,6 +78,7 @@ int main(int argc, char **argv){
   double real_msd = 0;
   double boot_msd = 0;
   double msd;
+  double x;
 
   StrDblStack* temp_L;
   StrDblStack* temp_D;
@@ -86,24 +86,21 @@ int main(int argc, char **argv){
 
   for (int i = 0; i < nfiles; ++i){
     temp_L = lego_stack[i];
-    for (int j = 0; j < nfiles; ++j){
-      temp_D = data_stack[i];
-      for (int k = 0; k < nfiles; ++k){
-        if(j == 0){
-          real_msd += pow((temp_d->strdbl.val
-                          - temp_L->strdbl.val),2);
-          temp_d = temp_d->next;
-        }
-          boot_msd += pow((temp_D->strdbl.val
-                          - temp_L->strdbl.val),2);
-          temp_D = temp_D->next;
-          temp_L = temp_L->next;
-      }
+    temp_D = data_stack[i];
+    for (int j = 0; j < StrDblStack_length(temp_D); ++j){
+      x = (temp_d->strdbl.val - temp_L->strdbl.val);
+      real_msd += (x*x);
+      temp_d = temp_d->next;
+      
+      x = (temp_D->strdbl.val - temp_L->strdbl.val);
+      real_msd += (x*x);
+      temp_D = temp_D->next;
+      temp_L = temp_L->next;
     }
   }
 
   real_msd = (real_msd / nfiles);
-  boot_msd = (boot_msd / (nfiles * nfiles));
+  boot_msd = (boot_msd / nfiles);
 
   msd = real_msd + boot_msd;
 
