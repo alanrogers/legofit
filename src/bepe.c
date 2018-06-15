@@ -128,16 +128,18 @@ int main(int argc, char **argv){
       real_msd += (x*x);
 
       x = (temp_D->strdbl.val - temp_L->strdbl.val);
-      real_msd += (x*x);
+      boot_msd += (x*x);
 
       temp_D = temp_D->next;
       temp_L = temp_L->next;
       temp_d = temp_d->next;
+
+      fprintf(stderr, "Real: %lf\nBoot: %lf", real_msd, boot_msd);
     }
   }
 
-  real_msd = (real_msd / (nfiles*npat));
-  boot_msd = (boot_msd / (nfiles*npat));
+  real_msd /= (nfiles*npat);
+  boot_msd /= (nfiles*npat);
 
   bepe = real_msd + boot_msd;
 
