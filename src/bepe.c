@@ -82,20 +82,22 @@ int main(int argc, char **argv){
 
   StrDblStack* temp_L;
   StrDblStack* temp_D;
-  StrDblStack* temp_d = real_stack;
+  StrDblStack* temp_d;
 
   for (int i = 0; i < nfiles; ++i){
     temp_L = lego_stack[i];
     temp_D = data_stack[i];
+    temp_d = real_stack;
     for (int j = 0; j < StrDblStack_length(temp_D); ++j){
       x = (temp_d->strdbl.val - temp_L->strdbl.val);
       real_msd += (x*x);
-      temp_d = temp_d->next;
-      
+
       x = (temp_D->strdbl.val - temp_L->strdbl.val);
       real_msd += (x*x);
+
       temp_D = temp_D->next;
       temp_L = temp_L->next;
+      temp_d = temp_d->next;
     }
   }
 
