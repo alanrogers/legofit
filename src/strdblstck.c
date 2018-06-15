@@ -240,14 +240,13 @@ StrDblStack *parseData_BEPE(const char *fname) {
     return stack;
 }
 
-StrDblStack* StrDblStack_normalize(StrDblStack* self){
+void StrDblStack_normalize(StrDblStack* self){
   int length = StrDblStack_length(self);
   double total = 0;
-  StrDblStack* temp = self;
+  StrDblStack* temp;
 
-  for(int i = 0; i < length; i++){
+  for(temp = self; temp; temp = temp->next){
     total += temp->strdbl.val;
-    temp = temp->next;
   }
 
   temp = self;
@@ -255,7 +254,6 @@ StrDblStack* StrDblStack_normalize(StrDblStack* self){
     temp->strdbl.val = ((temp->strdbl.val)/total);
     temp = temp->next;
   }
-  return self;
 }
 
 // On input, nfiles and npar are the number of rows and columns in

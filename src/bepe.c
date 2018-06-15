@@ -69,10 +69,10 @@ int main(int argc, char **argv){
   }
 
   //normalize the queues
-  real_stack = StrDblStack_normalize(real_stack);
+  StrDblStack_normalize(real_stack);
   for(int i = 0; i < nfiles; ++i) {
-      lego_stack[i] = StrDblStack_normalize(lego_stack[i]);
-      data_stack[i] = StrDblStack_normalize(data_stack[i]);
+      StrDblStack_normalize(lego_stack[i]);
+      StrDblStack_normalize(data_stack[i]);
   }
 
   //find MSD
