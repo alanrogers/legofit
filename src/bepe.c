@@ -134,7 +134,7 @@ int main(int argc, char **argv){
       temp_L = temp_L->next;
       temp_d = temp_d->next;
 
-      fprintf(stderr, "Real: %lf\nBoot: %lf", real_msd, boot_msd);
+      fprintf(stderr, "Real: %lf\nBoot: %lf\n", real_msd, boot_msd);
     }
   }
 
