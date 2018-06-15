@@ -240,7 +240,7 @@ StrDblStack *parseData_BEPE(const char *fname) {
     return stack;
 }
 
-StrDblStack* normalize(StrDblStack* self){
+StrDblStack* StrDblStack_normalize(StrDblStack* self){
   int length = StrDblStack_length(self);
   double total = 0;
   StrDblStack* temp = self;

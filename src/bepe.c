@@ -17,7 +17,7 @@ void usage(void);
 
 const char *usageMsg =
     "usage: bepe <real_data> <bootdata_1> <bootdata_2> ..."
-    " -L <boot1.legofit> <boot2.legofit> ...\n"
+    "  <boot1.legofit> <boot2.legofit> ...\n"
     "  where real_data is the real data,\n"
     "  each \"bootdata_\" file is the legofit output from one bootstrap"
     " replicate,\n"
@@ -56,19 +56,23 @@ int main(int argc, char **argv){
       lego_stack[i] = parseLegofit_BEPE(legofname[i]);
       data_stack[i] = parseLegofit_BEPE(datafname[i]);
 
-      if(StrDblStack_compare(real_stack, lego_stack[i]) ||
-         StrDblStack_compare(real_stack, data_stack[i])) {
+      if(StrDblStack_compare(real_stack, lego_stack[i])) {
           fprintf(stderr, "%s:%d: inconsistent parameters in"
-                  " files\n", __FILE__,__LINE__);
+                  " files%s and %s\n", __FILE__,__LINE__, realfName, legofname[i]);
+          exit(EXIT_FAILURE);
+      }
+      if(StrDblStack_compare(real_stack, data_stack[i])) {
+          fprintf(stderr, "%s:%d: inconsistent parameters in"
+                  " files%s and %s\n", __FILE__,__LINE__, realfName, datafname[i]);
           exit(EXIT_FAILURE);
       }
   }
 
   //normalize the queues
-  real_stack = normalize(real_stack);
+  real_stack = StrDblStack_normalize(real_stack);
   for(int i = 0; i < nfiles; ++i) {
-      lego_stack[i] = normalize(lego_stack[i]);
-      data_stack[i] = normalize(data_stack[i]);
+      lego_stack[i] = StrDblStack_normalize(lego_stack[i]);
+      data_stack[i] = StrDblStack_normalize(data_stack[i]);
   }
 
   //find MSD
