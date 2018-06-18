@@ -261,7 +261,7 @@ int main(int argc, char **argv){
      */
     double clic = lnL + trace;
 
-    printf("CLIC: %0.8lg\n", clic);
+    printf("CLIC: %0.8lg\n %u parameters\n Trace: %lg", clic, npar, trace);
 
     gsl_matrix_free(H);
     gsl_matrix_free(HC);
