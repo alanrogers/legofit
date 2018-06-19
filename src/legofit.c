@@ -669,6 +669,7 @@ int main(int argc, char **argv) {
 #if COST==LNL_COST
     printf("  relspread=%e", yspread / cost);
 #endif
+    putchar('\n');
 
     printf("Fitted parameter values\n");
     GPTree_printParStoreFree(gptree, stdout);
