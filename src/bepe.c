@@ -1,11 +1,33 @@
 /**
- * @file clic.c
- * @author Daniel R. Tabin
- * @brief Functions for Composite Likelihood Information Criterion.
- * @copyright Copyright (c) 2018, Alan R. Rogers
- * <rogers@anthro.utah.edu>. This file is released under the Internet
- * Systems Consortium License, which can be found in file "LICENSE".
- */
+@file bepe.c
+@page bepe
+@author Daniel R. Tabin
+@brief Bootstrap estimate of predictive error.
+
+# `bepe`: calculate the bootstrap estimate of predictive error
+
+    usage: bepe <realdat> <bdat1> <bdat2> ...  -L <b1.legofit> <b2.legofit> ...
+      where realdat is the real data, each "bdat" file is the data for one
+      bootstrap replicate, and each "b#.legofit" file is the legofit output from
+      the corresponding bootstrap replicate. Must include realdat file and at
+      least 2 bootstrap replicates.
+    Options:
+       -h or --help
+          print this message
+
+In typical usage, one would type something like
+
+    bepe realdat.txt boot*.txt -L boot*.legofit
+
+This usage assumes that your computer's shell or command interpreter sorts
+the files globbed by `boot*.txt` and `boot*.legofit` in a consistent order,
+so that the i'th .legofit file is the output produced from the i'th
+bootstrap data file.
+
+@copyright Copyright (c) 2018, Alan R. Rogers
+<rogers@anthro.utah.edu>. This file is released under the Internet
+Systems Consortium License, which can be found in file "LICENSE".
+*/
 
 #include "strdblstck.h"
 
@@ -23,7 +45,10 @@ const char *usageMsg =
     " output from\n"
     "  the corresponding bootstrap replicate. Must include realdat file"
     " and at least\n"
-    "  2 boostrap replicates.\n";
+    "  2 bootstrap replicates.\n"
+    "Options:\n"
+    "   -h or --help\n"
+    "      print this message\n";
 
  void usage(void) {
      fputs(usageMsg, stderr);
