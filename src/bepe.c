@@ -15,14 +15,15 @@ void usage(void);
 //vars
 
 const char *usageMsg =
-    "usage: bepe <real_data> <bootdata_1> <bootdata_2> ..."
-    "  -L <boot1.legofit> <boot2.legofit> ...\n"
-    "  where real_data is the real data,\n"
-    "  each \"bootdata_\" file is the legofit output from one bootstrap"
-    " replicate,\n"
-    "  and each \"boot#.legofit\" file is the legofit output from one"
-    " bootstrap replicate\n"
-    "  Must include real_data file and at least 2 boostrap replicates.\n";
+    "usage: bepe <realdat> <bdat1> <bdat2> ..."
+    "  -L <b1.legofit> <b2.legofit> ...\n"
+    "  where realdat is the real data, each \"bdat\" file is the data"
+    " for one\n"
+    "  bootstrap replicate, and each \"b#.legofit\" file is the legofit"
+    " output from\n"
+    "  the corresponding bootstrap replicate. Must include realdat file"
+    " and at least\n"
+    "  2 boostrap replicates.\n";
 
  void usage(void) {
      fputs(usageMsg, stderr);
