@@ -103,7 +103,8 @@ int main(int argc, char **argv){
   if(nfiles_temp != nfiles){
       fprintf(stderr, "%s:%d\n"
               " Inconsistent number of files!"
-              " %d data files and %d legofit files\n", __FILE__,__LINE__, nfiles, nfiles_temp);
+              " %d data files and %d legofit files\n",
+              __FILE__,__LINE__, nfiles, nfiles_temp);
       usage();
   }
 
@@ -128,12 +129,14 @@ int main(int argc, char **argv){
 
       if(StrDblStack_compare(real_stack, lego_stack[i])) {
           fprintf(stderr, "%s:%d: inconsistent parameters in"
-                  " files%s and %s\n", __FILE__,__LINE__, realfName, legofname[i]);
+                  " files%s and %s\n", __FILE__,__LINE__,
+                  realfName, legofname[i]);
           exit(EXIT_FAILURE);
       }
       if(StrDblStack_compare(real_stack, data_stack[i])) {
           fprintf(stderr, "%s:%d: inconsistent parameters in"
-                  " files%s and %s\n", __FILE__,__LINE__, realfName, datafname[i]);
+                  " files%s and %s\n", __FILE__,__LINE__,
+                  realfName, datafname[i]);
           exit(EXIT_FAILURE);
       }
   }
