@@ -57,10 +57,10 @@ special case of the 3-population sample just described, there are only
 3 such site patterns: *xy*, *xz*, and *yz*.
 
 In the general case, with samples from *K* populations, the number of
-site patterns is \f$2^K - K - 2\f$. For example, there are 10 site
-patterns in a sample involving \f$K=4\f$ populations. The table below
-shows data from a sample involving 4 populations, *X*, *Y*, *N*, and
-*D*.
+non-singleton site patterns is \f$2^K - K - 2\f$. For example, there
+are 10 site patterns in a sample involving \f$K=4\f$ populations. The
+table below shows data from a sample involving 4 populations, *X*,
+*Y*, *N*, and *D*.
 
     SitePat          E[count]
          xy    340952.4592501

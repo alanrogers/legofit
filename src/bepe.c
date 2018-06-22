@@ -6,11 +6,12 @@
 
 # `bepe`: calculate the bootstrap estimate of prediction error
 
-This program provides a tool for selecting among models that differ in
-complexity. It implements the "bootstrap estimate of predictive
-error", which is described in section 17.6 of *An introduction to the
-bootstrap*, (Efron and Tibshirani, 1993).  This method provides a
-solution to the problem of @ref modsel "overfitting".
+This program, like it's sibling @ref clic "clic", provides a tool for
+selecting among models that differ in complexity. It implements the
+"bootstrap estimate of predictive error", which is described in
+section 17.6 of *An introduction to the bootstrap*, (Efron and
+Tibshirani, 1993).  This method provides a solution to the problem of
+@ref modsel "overfitting".
 
 Bepe does this by using bootstrap replicates as a proxy for samples
 from the underlying (and usually unknown) statistical

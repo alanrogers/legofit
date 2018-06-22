@@ -1,11 +1,30 @@
 /**
- * @file clic.c
- * @author Daniel R. Tabin and Alan R. Rogers
- * @brief Functions for Composite Likelihood Information Criterion.
- * @copyright Copyright (c) 2018, Alan R. Rogers
- * <rogers@anthro.utah.edu>. This file is released under the Internet
- * Systems Consortium License, which can be found in file "LICENSE".
- */
+@file clic.c
+@page clic
+@author Daniel R. Tabin and Alan R. Rogers
+@brief Composite likelihood information criterion.
+
+# `clic`: calculate the composite likelihood information criterion.
+
+This program, like it's sibling @ref bepe "bepe", provides a tool for
+selecting among models that differ in complexity. It implements the
+"composite likelihood information criterion" (CLIC) of Varin and Vidoni
+(2005, Biometrika 92(3):519-528).
+
+CLIC is a generalization of Akaike's information criterion (AIC). It
+reduces to AIC when full likelihood is available and is used in an
+analogous fashion.
+
+Our definition of clic is -2 times the criterion defined by Varin and
+Vidoni. We multiply by -2 to make our criterion consistent with
+AIC. Because of this change, the best model is the one that minimizes
+our version of clic. In the version of Varin and Vidoni, the best
+model has the maximal value.
+
+@copyright Copyright (c) 2018, Alan R. Rogers
+<rogers@anthro.utah.edu>. This file is released under the Internet
+Systems Consortium License, which can be found in file "LICENSE".
+*/
 
 #include "hessian.h"
 #include "strdblstck.h"
@@ -17,119 +36,16 @@
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_blas.h>
 
-void matrix_mult(double** m1, int m1_rows, int m1_cols, double** m2, int m2_rows, int m2_cols, double** results);
-
 void usage(void);
 
-double KL_to_lnL(double KL, double* p_matrix, int p_matrix_size, double sum);
-
-/*
- Matrix multiplier.  Takes two matricies of doubles m1 and m2 and their sizes,
- as well as a results matrix, where the results go.
-*/
- void matrix_mult(double** m1, int m1_rows, int m1_cols,
-                  double** m2, int m2_rows, int m2_cols,
-                  double** results){
-   int i, j, k;
-
-   for (i = 0; i < m1_rows; i++){         //go through each row
-     for(j = 0; j < m2_cols; j++){        //go through each coloumn
-       int x = 0;
-       for (k = 0; k < m2_rows; k++){
-         x += (m1[i][k] * m2[k][j]);      //calculate what goes there
-       }
-       results[i][j] = x;                 //put it in results
-     }
-   }
- }
-
-#if 0
-/*
-  Parse legofit output.
-  Creates a double array with the first dimension being number of files,
-  and the second being number number of paramaters.  This is used as a
-  file parser
-*/
- double** get_fit_param_array(int num_files, char *file_name[num_files]){
-   char file_base[100];
-
-   FILE* f;
-
-   double** array = (double**) malloc(num_files * sizeof(double*));
-
-   for (int i = 0; i < num_files; i++){             //go through each file
-     f = fopen(file_name[i], "r");
-     if(f == NULL){
-         fprintf(stderr, "Error, invalid file name: %s\n", file_name);
-         exit(EXIT_FAILURE);
-     }
-
-     char input[100];
-     int param_num = 0;
-
-     array[i] = (double*) malloc(num_params * sizeof(double));
-
-     do {                                       //fscanf until past DiffEv
-       fscanf(f, "%s", input);
-     } while(strcmp(input, "DiffEv") != 0);
-
-     while(fscanf(f, "%s", input)){             //find and place data into array
-       if(strcmp(input, "=") == 0){
-         fscanf(f, "%lf", &array[i][param_num]);
-         param_num++;
-         if(param_num >= num_params){
-           break;
-         }
-       }
-     }
-   }
-
-   return array;
- }
-
-/*
-  Takes the start of the string and finds how many of that file you have, then
-  sends that information to get_fit_param_array and returns its result
-*/
- double** get_fit_param_array_num_unkown(char* title, int num_params){
-   int num_files = 0;
-
-   char file_name[200];
-   FILE* f;
-
-   snprintf(file_name, sizeof(file_name), "%sboot%d.legofit",title, num_files);
-
-   while ((f = fopen(file_name, "r"))){
-      snprintf(file_name, sizeof(file_name), "%sboot%d.legofit",title, num_files);
-     num_files++;
-   }
-
-   return get_fit_param_array(title, num_files, num_params);
- }
-#endif
-
-/*
-  Takes KL and converts it to the natural log of likelihood
-*/
-
- double KL_to_lnL(double KL, double* p_matrix, int p_matrix_size, double sum){
-   double lnL;
-   double entropy = 0.0;
-
-   for (int i = 0; i < p_matrix_size; i++){
-     entropy -= (p_matrix[i] * log(p_matrix[i]));
-   }
-
-   lnL = -sum*(entropy + KL);
-
-   return lnL;
- }
-
 const char *usageMsg =
-     "usage: clic <file.pts> <boot1.legofit> <boot2.legofit> ...\n"
+     "Usage: clic [options] <file.pts> <boot1.legofit> <boot2.legofit> ...\n"
      "  where file.pts is the .pts file produced by legofit with the real\n"
      "  data, and each \"boot\" file is the legofit output from one bootstrap\n"
-     "  replicate. Must include .pts file and at least 2 boostrap files.\n";
+     "  replicate. Must include .pts file and at least 2 boostrap files.\n"
+     "Options:\n"
+     "  -v or --verbose : verbose output\n"
+     "  -h or --help    : print this message\n";
 
 void usage(void) {
     fputs(usageMsg, stderr);
@@ -138,15 +54,42 @@ void usage(void) {
 
 int main(int argc, char **argv){
     int i, j;
+    int verbose=0;
+    int nfiles=0;
 
     // Command line arguments specify file names
     if(argc < 4)
         usage();
-    const char *ptsfname = argv[1];
-    int nfiles = argc-2;  // number of bootstrap files
+
+    // first pass through arguments counts file names
+    for(i=1; i<argc; ++i) {
+        if(0==strcmp("-v", argv[i]) || 0==strcmp("--verbose", argv[i]))
+            verbose = 1;
+        if(0==strcmp("-h", argv[i]) || 0==strcmp("--help", argv[i]))
+            usage();
+        else if(argv[i][0] == '-') {
+            fprintf(stderr,"Unknown argument: %s\n", argv[i]);
+            usage();
+        }else
+            ++nfiles;
+    }
+    if(nfiles < 3)
+        usage();
+
+    // 2nd pass builds array of bootstrap filenames
+    nfiles -= 1;   // counts number of bootstrap files
+    const char *ptsfname;
     const char *bootfname[nfiles];
-    for(i=0; i < nfiles; ++i)
-        bootfname[i] = argv[i+2];
+    int gotPtsFile=0;
+    for(i=2, j=0; i<argc; ++i) {
+        if(argv[i][0] == '-')
+            continue;
+        else if(!gotPtsFile) {
+            ptsfname = argv[i];
+            gotPtsFile=1;
+        }else
+            bootfname[j++] = argv[i];
+    }
 
     // Read bootstrap files into an array of FIFO stacks
     StrDblStack *stack[nfiles];
@@ -179,29 +122,33 @@ int main(int argc, char **argv){
         assert(stack[i] == NULL); // check that stacks are freed
     }
 
-    // Print data matrix with column header
-    for(j=0; j < npar; ++j)
-        printf(" %s", parname[j]);
-    putchar('\n');
-    for(i=0; i<nfiles; ++i) {
+    if(verbose) {
+        // Print data matrix with column header
         for(j=0; j < npar; ++j)
-            printf(" %lg", datmat[i][j]);
+            printf(" %s", parname[j]);
         putchar('\n');
+        for(i=0; i<nfiles; ++i) {
+            for(j=0; j < npar; ++j)
+                printf(" %lg", datmat[i][j]);
+            putchar('\n');
+        }
     }
 
     // Make covariance matrix
     gsl_matrix *c_matrix = gsl_matrix_alloc(npar,npar);
     make_covar_matrix(nfiles, npar, datmat, c_matrix);
 
-    // Print it
-    for (j = 0; j < npar; j++)
-        printf(" %8s", parname[j]);
-    putchar('\n');
-    for (i = 0; i < npar; i++){
-        for (j = 0; j < npar; j++){
-            printf(" %8.2lg", gsl_matrix_get(c_matrix, i, j));
+    if(verbose) {
+        // Print it
+        for (j = 0; j < npar; j++)
+            printf(" %8s", parname[j]);
+        putchar('\n');
+        for (i = 0; i < npar; i++){
+            for (j = 0; j < npar; j++){
+                printf(" %8.2lg", gsl_matrix_get(c_matrix, i, j));
+            }
+            printf("\n");
         }
-        printf("\n");
     }
 
     Hessian hesobj = hessian(ptsfname);
@@ -251,16 +198,25 @@ int main(int argc, char **argv){
         trace += gsl_matrix_get(HC, i, i);
 
     /*
-      This is the information criterion of Varin, Cristiano and
-      Vidoni, Paolo. 2005. A note on composite likelihood inference
-      and model selection. Biometrika 92(3):519-528. Eqn 5, p 523.
+      This is proportional to the information criterion of Varin,
+      Cristiano and Vidoni, Paolo. 2005. A note on composite
+      likelihood inference and model selection. Biometrika
+      92(3):519-528. Eqn 5, p 523.
 
-      Note that "trace" should be negative at a local maximum, so clic
-      will be smaller than lnL.
+      Note that "trace" should be negative at a local maximum. Under
+      full likelihood, "trace" is -k, where k is the number of
+      parameters, and clic reduces to aic.
+
+      Varin and Vidoni define their information criterion as lnL +
+      trace. We multiply by -2 for consistency with AIC. In the
+      version of Varin and Vidoni, the best model is the one that
+      maximizes their information criterion. In our version, the best
+      model minimizes clic.
      */
-    double clic = lnL + trace;
+    double clic = -2.0*(lnL + trace);
 
-    printf("CLIC: %0.8lg\n %u parameters\n Trace: %lg\n", clic, npar, trace);
+    printf("clic: %0.8lg\n %u parameters\n"
+           "trace: %lg\n", clic, npar, trace);
 
     gsl_matrix_free(H);
     gsl_matrix_free(HC);

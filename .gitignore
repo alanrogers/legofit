@@ -15,6 +15,7 @@ xhashtab
 xerror
 xgene
 xgptree
+xhessian
 xparse
 xpointbuff
 xbinary
@@ -25,6 +26,7 @@ xpopnodetab
 xsampndx
 xsimsched
 xstate
+xstrdblstck
 xstrtab
 xterm
 xbranchtab
