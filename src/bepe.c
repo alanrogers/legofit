@@ -155,7 +155,7 @@ int main(int argc, char **argv){
   double bepe;
   double x;
 
-  int npat;
+  int npat = 0;
 
   StrDblStack* temp_L;
   StrDblStack* temp_D;
@@ -165,7 +165,14 @@ int main(int argc, char **argv){
     temp_L = lego_stack[i];
     temp_D = data_stack[i];
     temp_d = real_stack;
-    npat = StrDblStack_length(temp_D);
+    int npat2 = StrDblStack_length(temp_D);
+    if(npat==0)
+        npat = npat2;
+    if(npat != npat2) {
+        fprintf(stderr,"%s:%d: files 0 and %d have inconsistent"
+                " site patterns.\n", __FILE__,__LINE__,i);
+        exit(EXIT_FAILURE);
+    }
     for (int j = 0; j < npat; ++j){
       x = (temp_d->strdbl.val - temp_L->strdbl.val);
       real_msd += (x*x);
@@ -177,6 +184,11 @@ int main(int argc, char **argv){
       temp_L = temp_L->next;
       temp_d = temp_d->next;
     }
+  }
+
+  if(npat==0) {
+      fprintf(stderr,"%s:%d: npat should not be 0\n", __FILE__,__LINE__);
+      exit(EXIT_FAILURE);
   }
 
   real_msd /= (nfiles*npat);
