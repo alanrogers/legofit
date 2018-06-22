@@ -1,10 +1,23 @@
 /**
 @file bepe.c
 @page bepe
-@author Daniel R. Tabin
-@brief Bootstrap estimate of predictive error.
+@author Daniel R. Tabin and Alan R. Rogers
+@brief Bootstrap estimate of prediction error.
 
-# `bepe`: calculate the bootstrap estimate of predictive error
+# `bepe`: calculate the bootstrap estimate of prediction error
+
+This program provides a tool for selecting among models that differ in
+complexity. It implements the "bootstrap estimate of predictive
+error", which is described in section 17.6 of *An introduction to the
+bootstrap*, (Efron and Tibshirani, 1993).  This method provides a
+solution to the problem of @ref modsel "overfitting".
+
+Bepe does this by using bootstrap replicates as a proxy for samples
+from the underlying (and usually unknown) statistical
+distribution. Its value estimates the mean squared error between
+predicted site pattern frequencies and those of unobserved samples
+from the same statistical distribution. The best model is the one for
+which bepe reports the smallest value.
 
     usage: bepe <realdat> <bdat1> <bdat2> ...  -L <b1.legofit> <b2.legofit> ...
       where realdat is the real data, each "bdat" file is the data for one
