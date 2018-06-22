@@ -9,7 +9,6 @@
 
 #include "hessian.h"
 #include "strdblstck.h"
-#include "misc.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -152,7 +151,7 @@ int main(int argc, char **argv){
     // Read bootstrap files into an array of FIFO stacks
     StrDblStack *stack[nfiles];
     for(i=0; i < nfiles; ++i) {
-        stack[i] = parseLegofit(bootfname[i]);
+        stack[i] = parseLegofit_CLIC(bootfname[i]);
         if(i>0) {
             if(StrDblStack_compare(stack[0], stack[i])) {
                 fprintf(stderr, "%s:%d: inconsistent parameters in"

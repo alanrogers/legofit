@@ -468,6 +468,18 @@ char *stripWhiteSpace(char *buff) {
     *t = '\0';
     return s;
 }
+char* stripInternalWhiteSpace(char* buff) {
+  char* str = buff;
+  int x = 0;
+  for(int i = 0; buff[i]; ++i){
+    if(!(buff[i] == ' ')){
+      str[x] = str[i];
+      ++x;
+    }
+  }
+  str[x] = '\0';
+  return str;
+}
 
 /**
  * Return tokens separated by 1 or more spaces and/or tabs.

@@ -30,6 +30,10 @@ gene flow. The package consists of the following programs
   column for each parameter.
 * @ref diverg "diverg.py" compares two distributions of site
   pattern frequencies, using the Kullback-Leibler (KL) divergence.
+* @ref bepe "bepe" calculates the "bootstrap estimate of prediction
+  error (Efron and Tibshirani, 1993).
+* @ref clic "clic" calculates the "composite likelihood information
+  criterion" (Varin and Vidoni, 2005).
 
 # Nucleotide site patterns {#sitepat}
 
@@ -441,6 +445,25 @@ site patterns. For example, "x:y" refers to the pattern in which the
 derived allele is present in the samples x and y but not in n. The 2nd
 column gives the expected length in generations of the branch on which
 mutations would generate the corresponding site pattern.
+
+# Model selection {#modsel}
+
+In fitting models to data, it is important to avoid
+"overfitting". Complex models generally fit the data set better than
+simple ones do, but this improvement may be illusory. As models
+increase in complexity, we are eventually fitting the noise in the
+data rather than the signal. Consequently, the complex model may do a
+poor job of predicting new observations, which were not used to fit
+the model in the first place. Methods of model selection aim to
+penalize overly-complex models, so that the preferred model is the one
+that is best at predicting new observations.
+
+The legofit package provides two methods of model selection:
+
+* @ref bepe "bepe", implements the "bootstrap estimate of prediction
+  accuracy" (Efron and Tibshirani, 1993, sec. 17.6).
+* @ref clic "clic", implements the "composite likelihood information
+  criterion" (Varin and Vidoni, 2005). 
 
 # Using the package
 
