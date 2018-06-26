@@ -182,6 +182,7 @@ Systems Consortium License, which can be found in file "LICENSE".
 #include "state.h"
 #include "pointbuff.h"
 #include <assert.h>
+#include <libgen.h>
 #include <float.h>
 #include <getopt.h>
 #include <gsl/gsl_sf_gamma.h>
@@ -704,8 +705,8 @@ int main(int argc, char **argv) {
     char qfname[200];
     {
         char a[200], b[200];
-        strcpy(a, lgofname);
-        strcpy(b, patfname);
+        strcpy(a, basename(lgofname));
+        strcpy(b, basename(patfname));
         char *chrptr = strrchr(a, '.');
         if(chrptr)
             *chrptr = '\0';

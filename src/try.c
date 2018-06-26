@@ -1,14 +1,9 @@
+#include <libgen.h>
+#include <string.h>
 #include <stdio.h>
 int main(void) {
-
-    double x;
-    int status;
-    while(1) {
-        status = scanf("%lf", &x);
-        if(status != 1)
-            break;
-        printf("%g\n", x);
-    }
-
-    return 0;
+  char buff[100];
+  strcpy(buff, "/a/b/c/foo.txt");
+  printf("basename: %s\n", basename(buff));
+  return 0;
 }
