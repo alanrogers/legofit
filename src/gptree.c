@@ -255,20 +255,19 @@ GPTree     *GPTree_dup(const GPTree * old) {
 
     GPTree_sanityCheck(new, __FILE__, __LINE__);
     assert(GPTree_equals(old, new));
-    if(!GPTree_feasible(new, 0)) {
+    if(!GPTree_feasible(new, 1)) {
         pthread_mutex_lock(&outputLock);
         fflush(stdout);
         dostacktrace(__FILE__, __LINE__, stderr);
-        fprintf(stderr, "%s:%d: new tree isn't feasible\n", __FILE__,
-                __LINE__);
+        fprintf(stderr, "%s:%s:%d: new tree isn't feasible\n", __FILE__,
+                __func__,__LINE__);
         pthread_mutex_unlock(&outputLock);
         exit(EXIT_FAILURE);
     }
     if(ParStore_constrain(new->parstore)) {
-        fprintf(stderr,"%s:%d: free parameters violate constraints\n",
-                __FILE__,__LINE__);
+        fprintf(stderr,"%s:%s:%d: free parameters violate constraints\n",
+                __FILE__,__func__,__LINE__);
     }
-    assert(GPTree_feasible(new, 1));
     return new;
 }
 
@@ -332,8 +331,14 @@ unsigned GPTree_nsamples(GPTree * self) {
 
 /// Are parameters within the feasible region?
 int GPTree_feasible(const GPTree * self, int verbose) {
-    if(ParStore_constrain(self->parstore))
+    if(ParStore_constrain(self->parstore)) {
+        if(verbose) {
+            fprintf(stderr,"%s:%s:%d: warning:"
+                    " free parameters violate constraints\n",
+                    __FILE__,__func__,__LINE__);
+        }
         return 0;
+    }
     return PopNode_feasible(self->rootPop, self->bnd, verbose);
 }
 
