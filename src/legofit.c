@@ -489,7 +489,7 @@ int main(int argc, char **argv) {
     // and a column for each parameter.
     State *state;
     if(stateInNames) {
-        // read State from file
+        // read States from files
         state = State_readList(stateInNames, npts,
                                GPTree_nFree(gptree));
         CHECKMEM(state);
@@ -499,12 +499,19 @@ int main(int argc, char **argv) {
             npts = State_npoints(state);
         }
 
-        // Set gptree parameters from state array, so that
-        // initial parameter values, as printed, will represent
-        // one of the vectors in the state array.
+        // Copy 0'th point in State object into GPTree, replacing
+        // values specified in .lgo file.
         double x[dim];
         State_getVector(state, 0, dim, x);
         GPTree_setParams(gptree, dim, x);
+        if(!GPTree_feasible(gptree, 1)) {
+            fflush(stdout);
+            dostacktrace(__FILE__, __LINE__, stderr);
+            fprintf(stderr, "%s:%s:%d: stateIn points not feasible\n", __FILE__,
+                    __func__,__LINE__);
+            GPTree_printParStore(gptree, stderr);
+            exit(EXIT_FAILURE);
+        }
     } else {
         // de novo State
         state = State_new(npts, dim);
