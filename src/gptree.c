@@ -194,7 +194,7 @@ GPTree     *GPTree_dup(const GPTree * old) {
         fprintf(stderr,"%s:%d: free parameters violate constraints\n",
                 __FILE__,__LINE__);
     }
-    assert(GPTree_feasible(old, 0));
+    assert(GPTree_feasible(old, 1));
     if(old->rootGene != NULL) {
         fprintf(stderr, "%s:%s:%d: old->rootGene must be NULL on entry\n",
                 __FILE__, __func__, __LINE__);
