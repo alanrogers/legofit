@@ -498,7 +498,8 @@ int main(int argc, char **argv) {
                     npts, State_npoints(state));
             npts = State_npoints(state);
         }
-
+        fprintf(stderr,"Initial State object\n");
+        State_print(state, stderr);
         // Copy 0'th point in State object into GPTree, replacing
         // values specified in .lgo file.
         double x[dim];
