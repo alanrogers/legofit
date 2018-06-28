@@ -194,7 +194,16 @@ GPTree     *GPTree_dup(const GPTree * old) {
         fprintf(stderr,"%s:%d: free parameters violate constraints\n",
                 __FILE__,__LINE__);
     }
-    assert(GPTree_feasible(old, 1));
+    if(!GPTree_feasible(old, 1)) {
+        pthread_mutex_lock(&outputLock);
+        fflush(stdout);
+        dostacktrace(__FILE__, __LINE__, stderr);
+        fprintf(stderr, "%s:%s:%d: old tree isn't feasible\n", __FILE__,
+                __func__,__LINE__);
+        ParStore_print(old->parstore, stderr);
+        pthread_mutex_unlock(&outputLock);
+        exit(EXIT_FAILURE);
+    }
     if(old->rootGene != NULL) {
         fprintf(stderr, "%s:%s:%d: old->rootGene must be NULL on entry\n",
                 __FILE__, __func__, __LINE__);
@@ -255,18 +264,16 @@ GPTree     *GPTree_dup(const GPTree * old) {
 
     GPTree_sanityCheck(new, __FILE__, __LINE__);
     assert(GPTree_equals(old, new));
+    // GPTree_feasible calls ParStore_constrain, so don't call it again.
     if(!GPTree_feasible(new, 1)) {
         pthread_mutex_lock(&outputLock);
         fflush(stdout);
         dostacktrace(__FILE__, __LINE__, stderr);
         fprintf(stderr, "%s:%s:%d: new tree isn't feasible\n", __FILE__,
                 __func__,__LINE__);
+        ParStore_print(new->parstore, stderr);
         pthread_mutex_unlock(&outputLock);
         exit(EXIT_FAILURE);
-    }
-    if(ParStore_constrain(new->parstore)) {
-        fprintf(stderr,"%s:%s:%d: free parameters violate constraints\n",
-                __FILE__,__func__,__LINE__);
     }
     return new;
 }
