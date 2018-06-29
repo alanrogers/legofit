@@ -72,7 +72,8 @@ int main(int argc, char **argv) {
         fprintf(stderr,"%s:%d: can't write to file\n", __FILE__,__LINE__);
         exit(1);
     default:
-        fprintf(stderr,"%s:%d: Unknown error\n", __FILE__,__LINE__);
+        fprintf(stderr,"%s:%d: Unknown error %d\n", __FILE__,__LINE__,
+                status);
         exit(1);
     }
     fclose(fp);
@@ -108,7 +109,7 @@ int main(int argc, char **argv) {
     }
     State_free(s);
 
-    s = State_readList(list);
+    s = State_readList(list, npts, npar);
     if(verbose)
         State_print(s, stderr);
     for(i=0; i<npts; ++i) {
