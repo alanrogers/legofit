@@ -1,4 +1,3 @@
-
 /**
  * @file parse.c
  * @brief Parse a .lgo file

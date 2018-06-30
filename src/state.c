@@ -2,9 +2,14 @@
 #include "gptree.h"
 #include "error.h"
 #include "misc.h"
+#include "tokenizer.h"
 #include <assert.h>
+#include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
+
+typedef enum StateFile_t StateFile_t;
+enum StateFile_t {UNSET, OLD, NEW};
 
 struct NameList {
     char *name;
@@ -12,6 +17,7 @@ struct NameList {
 };
 
 struct State {
+    StateFile_t filetype;
     int npts, npar; // numbers of points and parameters
     int haveNames;  // boolean: nonzero means names have been assigned
     char **name;     // name[j] is name of j'th parameter
@@ -144,18 +150,60 @@ void State_free(State *self) {
 }
 
 // Construct a new State object by reading a file
-State *State_read(FILE *fp, StateFile_t statefiletype) {
+State *State_read(FILE *fp) {
     int i, j, npts, npar, status;
     State *self = NULL;
-    status = fscanf(fp, "%d %d", &npts, &npar);
-    if(status != 2) {
-        fprintf(stderr,"%s:%d: status=%d\n", __FILE__,__LINE__,status);
-        goto fail;
+
+    {
+        // Read first line and figure out whether we're in
+        // a new-format state file or an old-format file.
+        char buff[200];
+        Tokenizer *tkz = Tokenizer_new(4);
+        if(fgets(buff, sizeof(buff), fp) == NULL) {
+            fprintf(stderr,"%s:%d: empty state file\n",__FILE__,__LINE__);
+            goto fail;
+        }
+        if(NULL == strchr(buff, '\n') && !feof(fp)) {
+            fprintf(stderr,"%s:%d: Buffer overflow. size=%zu\n",
+                    __FILE__,__LINE__, sizeof(buff));
+            goto fail;
+        }
+        int ntokens = Tokenizer_split(tkz, buff, " ");
+        ntokens = Tokenizer_strip(tkz, " \n");
+        switch(ntokens) {
+        case 2:
+            self->filetype = OLD;
+            break;
+        case 3:
+            self->filetype = NEW;
+            if(0 != strcmp("new_format", Tokenizer_token(tkz, 2))) {
+                fprintf(stderr,"%s:%d: state file format error\n",
+                        __FILE__,__LINE__);
+                fprintf(stderr,"  Old format: 1st line has 2 ints\n");
+                fprintf(stderr,"  New format: 2 ints, then \"new_format\"\n");
+                fprintf(stderr,"  Got \"%s\" instead of \"new_format\"\n",
+                        Tokenizer_token(tkz, 2));
+                goto fail;
+            }
+            break;
+        default:
+            fprintf(stderr,"%s:%d: state file format error\n",
+                    __FILE__,__LINE__);
+            fprintf(stderr,"  Old format: 1st line has 2 fields\n");
+            fprintf(stderr,"  New format: 3 fields\n");
+            fprintf(stderr,"  But I got %d fields\n", ntokens);
+            Tokenizer_print(tkz, stderr);
+            goto fail;
+        }
+        npts = strtol(Tokenizer_token(tkz, 0), NULL, 10);
+        npar = strtol(Tokenizer_token(tkz, 0), NULL, 10);
+        Tokenizer_free(tkz);
     }
+    
     self = State_new(npts, npar);
     CHECKMEM(self);
 
-    if(statefiletype == NEW) {
+    if(self->filetype == NEW) {
         // Read header containing parameter names
         char buff[100];
         status = fscanf(fp, "%s", buff);
@@ -165,7 +213,7 @@ State *State_read(FILE *fp, StateFile_t statefiletype) {
         }
         if(0 != strcmp("cost", buff)) {
             fprintf(stderr, "%s:%d: got \"%s\" instead of \"cost\""
-                    " reading state file\n",
+                    " reading new-format state file\n",
                     __FILE__,__LINE__, buff);
             goto fail;
         }
@@ -175,13 +223,18 @@ State *State_read(FILE *fp, StateFile_t statefiletype) {
                 fprintf(stderr,"%s:%d: status=%d\n", __FILE__,__LINE__,status);
                 goto fail;
             }
+            if(!isalpha(buff[0])) {
+                fprintf(stderr,"%s:%d: parameter names must start with"
+                        " an alphabetic character\n", __FILE__,__LINE__);
+                fprintf(stderr,"  Got \"%s\"\n", buff);
+                goto fail;
+            }
             self->name[j] = strdup(buff);
             if(self->name[j] == NULL) {
                 fprintf(stderr,"%s:%d: bad strdup\n", __FILE__,__LINE__);
                 goto fail;
             }
         }
-        self->haveNames = 1;
     }
 
     for(i=0; i < npts; ++i) {
@@ -281,8 +334,7 @@ int State_print(State *self, FILE *fp) {
             __FILE__,__LINE__);
     return EIO;
 }
-State *State_readList(NameList *list, int npts, GPTree *gptree,
-                      StateFile_t statefiletype) {
+State *State_readList(NameList *list, int npts, GPTree *gptree) {
     int nstates = NameList_size(list);
     if(nstates==0)
         return NULL;
@@ -296,7 +348,7 @@ State *State_readList(NameList *list, int npts, GPTree *gptree,
 
         // Create a State object from each file name in list.
         FILE *fp = fopen(node->name, "r");
-        state[i] = State_read(fp, statefiletype);
+        state[i] = State_read(fp);
         CHECKMEM(state[i]);
         fclose(fp);
 
@@ -310,18 +362,24 @@ State *State_readList(NameList *list, int npts, GPTree *gptree,
             exit(EXIT_FAILURE);
         }
 
-        if(statefiletype != NEW)
+        if(state[i]->filetype != NEW) {
+            // Can't check parameter names in old-format
+            // state files.
             continue;
+        }
 
         // Make sure parameter names are consistent
         for(j=0; j < npar; ++j) {
-            if(0 != strcmp(state[i]->name[j],
-                           GPTree_getNameFree(gptree, j))) {
+            if(0 != strcmp(GPTree_getNameFree(gptree, j),
+                           state[i]->name[j])) {
                 fprintf(stderr,"%s:%s:%d:"
                         " input state file \"%s\" has"
                         " incompatible parameter names.\n",
                         __FILE__,__func__,__LINE__,
                         node->name);
+                fprintf(stderr,"    \"%s\" != \"%s\"\n",
+                        GPTree_getNameFree(gptree, j),
+                        state[i]->name[j]);
                 exit(EXIT_FAILURE);
             }
         }
@@ -368,7 +426,7 @@ State *State_readList(NameList *list, int npts, GPTree *gptree,
         }
     }
 
-    // Set vectors; free pointers in vector "state".
+    // Set vectors in self; free pointers in vector "state".
     k = 0; // index into self->s
     for(i=0; i < nstates; ++i) {
         for(j=0; j < npoints[i]; ++j) {

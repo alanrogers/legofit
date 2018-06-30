@@ -36,6 +36,8 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
+    StateFile_t statefiletype = OLD;
+
     const char *fname = "xstate.tmp";
     const char *fname2 = "xstate2.tmp";
 
@@ -97,7 +99,7 @@ int main(int argc, char **argv) {
     fclose(fp);
     fp = fopen(fname, "r");
     assert(fp);
-    s = State_read(fp);
+    s = State_read(fp, statefiletype);
     CHECKMEM(s);
     fclose(fp);
 
@@ -109,7 +111,7 @@ int main(int argc, char **argv) {
     }
     State_free(s);
 
-    s = State_readList(list, npts, npar);
+    s = State_readList(list, npts, gptree, statefiletype);
     if(verbose)
         State_print(s, stderr);
     for(i=0; i<npts; ++i) {
