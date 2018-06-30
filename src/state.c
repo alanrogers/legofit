@@ -180,6 +180,7 @@ State *State_read(FILE *fp) {
                 fprintf(stderr,"  New format: 2 ints, then \"new_format\"\n");
                 fprintf(stderr,"  Got \"%s\" instead of \"new_format\"\n",
                         fmt);
+                fprintf(stderr,"  Input: %s", buff);
                 goto fail;
             }
             break;
