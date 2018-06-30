@@ -27,7 +27,7 @@ Systems Consortium License, which can be found in file "LICENSE".
 */
 
 #include "hessian.h"
-#include "strdblstck.h"
+#include "strdblqueue.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -91,12 +91,12 @@ int main(int argc, char **argv){
             bootfname[j++] = argv[i];
     }
 
-    // Read bootstrap files into an array of FIFO stacks
-    StrDblStack *stack[nfiles];
+    // Read bootstrap files into an array of FIFO queues
+    StrDblQueue *queue[nfiles];
     for(i=0; i < nfiles; ++i) {
-        stack[i] = parseLegofit_CLIC(bootfname[i]);
+        queue[i] = parseLegofit_CLIC(bootfname[i]);
         if(i>0) {
-            if(StrDblStack_compare(stack[0], stack[i])) {
+            if(StrDblQueue_compare(queue[0], queue[i])) {
                 fprintf(stderr, "%s:%d: inconsistent parameters in"
                         " files %s and %s\n", __FILE__,__LINE__,
                         bootfname[0], bootfname[i]);
@@ -105,21 +105,21 @@ int main(int argc, char **argv){
         }
     }
 
-    // Use the stacks to populate an array of parameter names
+    // Use the queues to populate an array of parameter names
     // and a matrix of parameter values. Rows are bootstrap
     // replicates; columns are parameters.
-    int npar = StrDblStack_length(stack[0]);
+    int npar = StrDblQueue_length(queue[0]);
     char *parname[npar];
     double datmat[nfiles][npar];
     for(i=0; i < nfiles; ++i) {
         for(j=0; j < npar; ++j) {
             StrDbl strdbl;
-            stack[i] = StrDblStack_pop(stack[i], &strdbl);
+            queue[i] = StrDblQueue_pop(queue[i], &strdbl);
             datmat[i][j] = strdbl.val;
             if(i==0)
                 parname[j] = strdup(strdbl.str);
         }
-        assert(stack[i] == NULL); // check that stacks are freed
+        assert(queue[i] == NULL); // check that queues are freed
     }
 
     if(verbose) {

@@ -43,7 +43,7 @@ bootstrap data file.
 Systems Consortium License, which can be found in file "LICENSE".
 */
 
-#include "strdblstck.h"
+#include "strdblqueue.h"
 
 // Function prototypes
 void usage(void);
@@ -118,23 +118,23 @@ int main(int argc, char **argv){
       legofname[i] = argv[i+3+nfiles];
 
   // Read bootstrap files into an arrays of FIFO queues
-  StrDblStack* data_stack[nfiles];
-  StrDblStack* lego_stack[nfiles];
+  StrDblQueue* data_queue[nfiles];
+  StrDblQueue* lego_queue[nfiles];
 
-  StrDblStack* real_stack = parseSitPat(realfName);
+  StrDblQueue* real_queue = parseSitPat(realfName);
 
 
   for(int i = 0; i < nfiles; ++i) {
-      lego_stack[i] = parseSitPat(legofname[i]);
-      data_stack[i] = parseSitPat(datafname[i]);
+      lego_queue[i] = parseSitPat(legofname[i]);
+      data_queue[i] = parseSitPat(datafname[i]);
 
-      if(StrDblStack_compare(real_stack, lego_stack[i])) {
+      if(StrDblQueue_compare(real_queue, lego_queue[i])) {
           fprintf(stderr, "%s:%d: inconsistent parameters in"
                   " files%s and %s\n", __FILE__,__LINE__,
                   realfName, legofname[i]);
           exit(EXIT_FAILURE);
       }
-      if(StrDblStack_compare(real_stack, data_stack[i])) {
+      if(StrDblQueue_compare(real_queue, data_queue[i])) {
           fprintf(stderr, "%s:%d: inconsistent parameters in"
                   " files%s and %s\n", __FILE__,__LINE__,
                   realfName, datafname[i]);
@@ -143,10 +143,10 @@ int main(int argc, char **argv){
   }
 
   //normalize the queues
-  StrDblStack_normalize(real_stack);
+  StrDblQueue_normalize(real_queue);
   for(int i = 0; i < nfiles; ++i) {
-      StrDblStack_normalize(lego_stack[i]);
-      StrDblStack_normalize(data_stack[i]);
+      StrDblQueue_normalize(lego_queue[i]);
+      StrDblQueue_normalize(data_queue[i]);
   }
 
   //find MSD
@@ -157,15 +157,15 @@ int main(int argc, char **argv){
 
   int npat = 0;
 
-  StrDblStack* temp_L;
-  StrDblStack* temp_D;
-  StrDblStack* temp_d;
+  StrDblQueue* temp_L;
+  StrDblQueue* temp_D;
+  StrDblQueue* temp_d;
 
   for (int i = 0; i < nfiles; ++i){
-    temp_L = lego_stack[i];
-    temp_D = data_stack[i];
-    temp_d = real_stack;
-    int npat2 = StrDblStack_length(temp_D);
+    temp_L = lego_queue[i];
+    temp_D = data_queue[i];
+    temp_d = real_queue;
+    int npat2 = StrDblQueue_length(temp_D);
     if(npat==0)
         npat = npat2;
     if(npat != npat2) {

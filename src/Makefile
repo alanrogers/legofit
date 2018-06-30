@@ -57,11 +57,11 @@ LEGOFIT := legofit.o patprob.o gptree.o binary.o jobqueue.o misc.o \
 legofit : $(LEGOFIT)
 	$(CC) $(CFLAGS) -o $@ $(LEGOFIT) $(lib)
 
-CLIC := clic.o misc.o hessian.o strdblstck.o
+CLIC := clic.o misc.o hessian.o strdblqueue.o
 clic : $(CLIC)
 	$(CC) $(CFLAGS) -o $@ $(CLIC) $(lib)
 
-BEPE := bepe.o misc.o strdblstck.o
+BEPE := bepe.o misc.o strdblqueue.o
 bepe : $(BEPE)
 	$(CC) $(CFLAGS) -o $@ $(BEPE) $(lib)
 

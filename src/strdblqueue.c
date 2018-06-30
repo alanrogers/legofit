@@ -1,5 +1,5 @@
 /**
- * @file strdblstck.c
+ * @file strdblqueue.c
  * @author Daniel R. Tabin and Alan R. Rogers
  * @brief Functions for Composite Likelihood Information Criterion.
  * @copyright Copyright (c) 2018, Alan R. Rogers
@@ -9,21 +9,21 @@
 
 #include "hessian.h"
 #include "misc.h"
-#include "strdblstck.h"
+#include "strdblqueue.h"
 #include <stdbool.h>
 
-// Push a value onto the tail of the stack. Return pointer to new
+// Push a value onto the tail of the queue. Return pointer to new
 // head. Example:
 //
-// StrDblStack *stack=NULL;
-// stack = StrDblStack_push(stack, "name1", 1.0);
-// stack = StrDblStack_push(stack, "name2", 2.0);
-StrDblStack *StrDblStack_push(StrDblStack *self, const char *str, double val) {
+// StrDblQueue *queue=NULL;
+// queue = StrDblQueue_push(queue, "name1", 1.0);
+// queue = StrDblQueue_push(queue, "name2", 2.0);
+StrDblQueue *StrDblQueue_push(StrDblQueue *self, const char *str, double val) {
     if(self != NULL) {
-        self->next = StrDblStack_push(self->next, str, val);
+        self->next = StrDblQueue_push(self->next, str, val);
         return self;
     }
-    StrDblStack *new = malloc(sizeof(StrDblStack));
+    StrDblQueue *new = malloc(sizeof(StrDblQueue));
     CHECKMEM(new);
     new->strdbl.val = val;
     int status = snprintf(new->strdbl.str, sizeof(new->strdbl.str), "%s", str);
@@ -35,23 +35,23 @@ StrDblStack *StrDblStack_push(StrDblStack *self, const char *str, double val) {
     return new;
 }
 
-// Pop a value off the head of the stack. Return pointer to new
+// Pop a value off the head of the queue. Return pointer to new
 // head. Example:
 //
-// StrDblStack *stack=NULL;
-// stack = StrDblStack_push(stack, "name1", 1.0);
-// stack = StrDblStack_push(stack, "name2", 2.0);
+// StrDblQueue *queue=NULL;
+// queue = StrDblQueue_push(queue, "name1", 1.0);
+// queue = StrDblQueue_push(queue, "name2", 2.0);
 //
 // StrDbl x;            NOTE: Make sure this is not NULL
-// stack = StrDblStack_pop(stack, &x);  // x={"name1", 1.0}
-// stack = StrDblStack_pop(stack, &x);  // x={"name2", 2.0}
-StrDblStack *StrDblStack_pop(StrDblStack *self, StrDbl *strdbl) {
+// queue = StrDblQueue_pop(queue, &x);  // x={"name1", 1.0}
+// queue = StrDblQueue_pop(queue, &x);  // x={"name2", 2.0}
+StrDblQueue *StrDblQueue_pop(StrDblQueue *self, StrDbl *strdbl) {
     if(self==NULL)
         return NULL;
     assert(strdbl != NULL);
     strdbl->val = self->strdbl.val;
     strcpy(strdbl->str, self->strdbl.str);
-    StrDblStack *next = self->next;
+    StrDblQueue *next = self->next;
     free(self);
     return next;
 }
@@ -59,11 +59,11 @@ StrDblStack *StrDblStack_pop(StrDblStack *self, StrDbl *strdbl) {
 // //get a strdbl
 // // NOTE: This is inefficient, we should work on making this faster
 //
-// StrDbl *StrDblStack_get(StrDblStack *self, StrDbl *strdbl, int index) {
+// StrDbl *StrDblQueue_get(StrDblQueue *self, StrDbl *strdbl, int index) {
 //     if(self==NULL)
 //         return NULL;
 //
-//     StrDblStack *temp;
+//     StrDblQueue *temp;
 //
 //     for (int i = 0; i < index; i++)
 //       temp = temp->next;
@@ -72,21 +72,21 @@ StrDblStack *StrDblStack_pop(StrDblStack *self, StrDbl *strdbl) {
 //     return strdbl;
 // }
 
-int StrDblStack_length(StrDblStack *self) {
+int StrDblQueue_length(StrDblQueue *self) {
     if(self==NULL)
         return 0;
-    return 1 + StrDblStack_length(self->next);
+    return 1 + StrDblQueue_length(self->next);
 }
 
-StrDblStack *StrDblStack_free(StrDblStack *self) {
+StrDblQueue *StrDblQueue_free(StrDblQueue *self) {
     if(self) {
-        self->next = StrDblStack_free(self->next);
+        self->next = StrDblQueue_free(self->next);
         free(self);
     }
     return NULL;
 }
 
-void StrDblStack_print(StrDblStack *self, FILE *fp) {
+void StrDblQueue_print(StrDblQueue *self, FILE *fp) {
     while(self) {
         fprintf(fp,"%s = %lg\n", self->strdbl.str, self->strdbl.val);
         self = self->next;
@@ -94,10 +94,10 @@ void StrDblStack_print(StrDblStack *self, FILE *fp) {
 }
 
 /**
- * Compare the str fields in two StrDblStack objects. Return -1, 0, or 1
+ * Compare the str fields in two StrDblQueue objects. Return -1, 0, or 1
  * if the lhs is less than, equal to, or greater than rhs.
  */
-int StrDblStack_compare(StrDblStack *lhs, StrDblStack *rhs) {
+int StrDblQueue_compare(StrDblQueue *lhs, StrDblQueue *rhs) {
     while(lhs && rhs) {
         int cmp = strcmp(lhs->strdbl.str, rhs->strdbl.str);
         if(cmp)
@@ -113,9 +113,9 @@ int StrDblStack_compare(StrDblStack *lhs, StrDblStack *rhs) {
 }
 
 // Parse a legofit output file for CLIC. Return an object of type
-// StrDblStack, which contains the number of parameters, their names,
+// StrDblQueue, which contains the number of parameters, their names,
 // and their values.
-StrDblStack *parseLegofit_CLIC(const char *fname) {
+StrDblQueue *parseLegofit_CLIC(const char *fname) {
     FILE *fp = fopen(fname, "r");
     if(fp==NULL) {
         fprintf(stderr,"%s:%d: can't read file \"%s\"\n",
@@ -124,7 +124,7 @@ StrDblStack *parseLegofit_CLIC(const char *fname) {
     }
     char buff[2000];
     int got_fitted=0;
-    StrDblStack *stack=NULL;
+    StrDblQueue *queue=NULL;
     while(1) {
         if(fgets(buff, sizeof buff, fp) == NULL) {
             break;
@@ -150,17 +150,17 @@ StrDblStack *parseLegofit_CLIC(const char *fname) {
             continue;
         name = stripWhiteSpace(name);
         valstr = stripWhiteSpace(valstr);
-        stack=StrDblStack_push(stack, name, strtod(valstr, NULL) );
+        queue=StrDblQueue_push(queue, name, strtod(valstr, NULL) );
     }
-    assert(StrDblStack_length(stack) > 0);
-    return stack;
+    assert(StrDblQueue_length(queue) > 0);
+    return queue;
 }
 
 // Parse a data file for BEPE. Return an object of type
-// StrDblStack, which contains the number of parameters, their names,
+// StrDblQueue, which contains the number of parameters, their names,
 // and their values.
 
-StrDblStack *parseSitPat(const char *fname) {
+StrDblQueue *parseSitPat(const char *fname) {
     FILE *fp = fopen(fname, "r");
     if(fp==NULL) {
         fprintf(stderr,"%s:%d: can't read file \"%s\"\n",
@@ -169,7 +169,7 @@ StrDblStack *parseSitPat(const char *fname) {
     }
     char buff[2000];
     bool got_sitepat = false;
-    StrDblStack *stack=NULL;
+    StrDblQueue *queue=NULL;
     while(1) {
         if(fgets(buff, sizeof buff, fp) == NULL) {
             break;
@@ -194,15 +194,15 @@ StrDblStack *parseSitPat(const char *fname) {
             continue;
         name = stripWhiteSpace(name);
         valstr = stripWhiteSpace(valstr);
-        stack=StrDblStack_push(stack, name, strtod(valstr, NULL) );
+        queue=StrDblQueue_push(queue, name, strtod(valstr, NULL) );
     }
-    return stack;
+    return queue;
 }
 
-void StrDblStack_normalize(StrDblStack* self){
-  int length = StrDblStack_length(self);
+void StrDblQueue_normalize(StrDblQueue* self){
+  int length = StrDblQueue_length(self);
   double total = 0;
-  StrDblStack* temp;
+  StrDblQueue* temp;
 
   for(temp = self; temp; temp = temp->next){
     total += temp->strdbl.val;
