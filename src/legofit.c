@@ -245,14 +245,18 @@ void usage(void) {
     tellopt("-S <g>@<r> or --stage <g>@<r>",
             "add stage with <g> generations and <r> simulation reps");
     tellopt("-p <x> or --ptsPerDim <x>", "number of DE points per free var");
+    tellopt("--oldStateIn <filename>",
+            "read initial state from old-style file. Option may be repeated.");
     tellopt("--stateIn <filename>",
-            "read initial state from file. Option may be repeated.");
+            "read initial state from new-style file. Option may be repeated.");
     tellopt("--stateOut <filename>",
             "write final state to file");
     tellopt("-1 or --singletons", "Use singleton site patterns");
     tellopt("-v or --verbose", "verbose output");
     tellopt("--version", "Print version and exit");
     tellopt("-h or --help", "print this message");
+    fprintf(stderr,"Options --oldStateIn and --stateIn are mutually"
+            " exclusive.\n");
     exit(1);
 }
 
@@ -277,6 +281,7 @@ int main(int argc, char **argv) {
         {"genomeSize", required_argument, 0, 'n'},
 #endif
         {"singletons", no_argument, 0, '1'},
+        {"oldStateIn", required_argument, 0, 'w'},
         {"stateIn", required_argument, 0, 'z'},
         {"stateOut", required_argument, 0, 'y'},
         {"help", no_argument, 0, 'h'},
@@ -300,6 +305,7 @@ int main(int argc, char **argv) {
     char patfname[200] = { '\0' };
     char stateOutName[200] = { '\0' };
     NameList *stateInNames = NULL;
+    StateFile_t statefiletype = UNSET;
     FILE *stateOut = NULL;
 
     // DiffEv parameters
@@ -413,7 +419,21 @@ int main(int argc, char **argv) {
                 exit(EXIT_FAILURE);
             }
             break;
+        case 'w':
+            if(statefiletype == NEW) {
+                fprintf(stderr,"ERR: can't mix --oldStateIn and --stateIn\n");
+                usage();
+            }
+            statefiletype = OLD;
+            stateInNames = NameList_append(stateInNames, optarg);
+            CHECKMEM(stateInNames);
+            break;
         case 'z':
+            if(statefiletype == OLD) {
+                fprintf(stderr,"ERR: can't mix --oldStateIn and --stateIn\n");
+                usage();
+            }
+            statefiletype = NEW;
             stateInNames = NameList_append(stateInNames, optarg);
             CHECKMEM(stateInNames);
             break;
@@ -490,8 +510,7 @@ int main(int argc, char **argv) {
     State *state;
     if(stateInNames) {
         // read States from files
-        state = State_readList(stateInNames, npts,
-                               GPTree_nFree(gptree));
+        state = State_readList(stateInNames, npts, gptree, statefiletype);
         CHECKMEM(state);
         if(npts != State_npoints(state)) {
             fprintf(stderr, "Revising npts from %d to %d\n",
@@ -517,6 +536,8 @@ int main(int argc, char **argv) {
         // de novo State
         state = State_new(npts, dim);
         CHECKMEM(state);
+        for(i = 0; i < dim; ++i)
+            State_setName(state, i, GPTree_getNameFree(gptree, i));
         for(i = 0; i < npts; ++i) {
             double x[dim];
             initStateVec(i, gptree, dim, x, rng);

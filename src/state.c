@@ -1,10 +1,10 @@
 #include "state.h"
+#include "gptree.h"
 #include "error.h"
 #include "misc.h"
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 
 struct NameList {
     char *name;
@@ -13,6 +13,8 @@ struct NameList {
 
 struct State {
     int npts, npar; // numbers of points and parameters
+    int haveNames;  // boolean: nonzero means names have been assigned
+    char **name;     // name[j] is name of j'th parameter
     double *cost;   // cost[i] is cost function at i'th point
     double **s;     // s[i][j]=value of j'th param at i'th point
 };
@@ -112,6 +114,10 @@ State *State_new(int npts, int npar) {
     self->npar = npar;
     self->cost = malloc(npts * sizeof(self->cost[0]));
     CHECKMEM(self->cost);
+    self->name = malloc(npar * sizeof(self->name[0]));
+    CHECKMEM(self->name);
+    memset(self->name, 0, npar * sizeof(self->name[0]));
+    self->haveNames = 0;
     self->s = malloc(npts * sizeof(self->s[0]));
     CHECKMEM(self->s);
     for(i=0; i < npts; ++i) {
@@ -128,12 +134,17 @@ void State_free(State *self) {
     for(i=0; i < self->npts; ++i)
         free(self->s[i]);
     free(self->cost);
+    for(i=0; i < self->npar; ++i) {
+        if(self->name[i])
+            free(self->name[i]);
+    }
+    free(self->name);
     free(self->s);
     free(self);
 }
 
 // Construct a new State object by reading a file
-State *State_read(FILE *fp) {
+State *State_read(FILE *fp, StateFile_t statefiletype) {
     int i, j, npts, npar, status;
     State *self = NULL;
     status = fscanf(fp, "%d %d", &npts, &npar);
@@ -143,6 +154,35 @@ State *State_read(FILE *fp) {
     }
     self = State_new(npts, npar);
     CHECKMEM(self);
+
+    if(statefiletype == NEW) {
+        // Read header containing parameter names
+        char buff[100];
+        status = fscanf(fp, "%s", buff);
+        if(status != 1) {
+            fprintf(stderr,"%s:%d: status=%d\n", __FILE__,__LINE__,status);
+            goto fail;
+        }
+        if(0 != strcmp("cost", buff)) {
+            fprintf(stderr, "%s:%d: got \"%s\" instead of \"cost\""
+                    " reading state file\n",
+                    __FILE__,__LINE__, buff);
+            goto fail;
+        }
+        for(j=0; j < npar; ++j) {
+            status = fscanf(fp, "%s", buff);
+            if(status != 1) {
+                fprintf(stderr,"%s:%d: status=%d\n", __FILE__,__LINE__,status);
+                goto fail;
+            }
+            self->name[j] = strdup(buff);
+            if(self->name[j] == NULL) {
+                fprintf(stderr,"%s:%d: bad strdup\n", __FILE__,__LINE__);
+                goto fail;
+            }
+        }
+        self->haveNames = 1;
+    }
 
     for(i=0; i < npts; ++i) {
         status = fscanf(fp, "%lf", self->cost + i);
@@ -168,6 +208,20 @@ State *State_read(FILE *fp) {
     return NULL;
 }
 
+/// Set name of parameter with index "ndx". Return 0 on success,
+/// abort on failure.
+int State_setName(State *self, int ndx, const char *name) {
+    assert(ndx < self->npar);
+    assert(ndx >= 0);
+
+    self->name[ndx] = strdup(name);
+    if(self->name[ndx] == NULL) {
+        fprintf(stderr,"%s:%d: bad strdup\n",__FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
+    return 0;
+}
+
 // Print State object to a file
 int State_print(State *self, FILE *fp) {
     int i, j, status, imin=0;
@@ -179,6 +233,20 @@ int State_print(State *self, FILE *fp) {
 
     status = fprintf(fp, "%d %d\n", self->npts, self->npar);
     if(status==0)
+        goto fail;
+
+    // write header containing column names
+    assert(self->haveNames);
+    status = fprintf(fp, "%s", "cost");
+    if(status==0)
+        goto fail;
+    for(j=0; j < self->npar; ++j) {
+        status = fprintf(fp, " %s", self->name[j]);
+        if(status == 0)
+            goto fail;
+    }
+    status = putc('\n', fp);
+    if(status == EOF)
         goto fail;
 
     // print point with minimum cost first
@@ -213,11 +281,12 @@ int State_print(State *self, FILE *fp) {
             __FILE__,__LINE__);
     return EIO;
 }
-
-State *State_readList(NameList *list, int npts, int npar) {
+State *State_readList(NameList *list, int npts, GPTree *gptree,
+                      StateFile_t statefiletype) {
     int nstates = NameList_size(list);
     if(nstates==0)
         return NULL;
+    int npar = GPTree_nFree(gptree);
 
     State *state[nstates];
     NameList *node;
@@ -227,7 +296,7 @@ State *State_readList(NameList *list, int npts, int npar) {
 
         // Create a State object from each file name in list.
         FILE *fp = fopen(node->name, "r");
-        state[i] = State_read(fp);
+        state[i] = State_read(fp, statefiletype);
         CHECKMEM(state[i]);
         fclose(fp);
 
@@ -239,6 +308,22 @@ State *State_readList(NameList *list, int npts, int npar) {
                     __FILE__,__func__,__LINE__,
                     node->name);
             exit(EXIT_FAILURE);
+        }
+
+        if(statefiletype != NEW)
+            continue;
+
+        // Make sure parameter names are consistent
+        for(j=0; j < npar; ++j) {
+            if(0 != strcmp(state[i]->name[j],
+                           GPTree_getNameFree(gptree, j))) {
+                fprintf(stderr,"%s:%s:%d:"
+                        " input state file \"%s\" has"
+                        " incompatible parameter names.\n",
+                        __FILE__,__func__,__LINE__,
+                        node->name);
+                exit(EXIT_FAILURE);
+            }
         }
     }
 
