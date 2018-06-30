@@ -2,7 +2,6 @@
 #include "gptree.h"
 #include "error.h"
 #include "misc.h"
-#include "tokenizer.h"
 #include <assert.h>
 #include <ctype.h>
 #include <stdlib.h>
@@ -157,8 +156,7 @@ State *State_read(FILE *fp) {
     {
         // Read first line and figure out whether we're in
         // a new-format state file or an old-format file.
-        char buff[200];
-        Tokenizer *tkz = Tokenizer_new(4);
+        char buff[200], fmt[200], dummy[200];
         if(fgets(buff, sizeof(buff), fp) == NULL) {
             fprintf(stderr,"%s:%d: empty state file\n",__FILE__,__LINE__);
             goto fail;
@@ -168,21 +166,20 @@ State *State_read(FILE *fp) {
                     __FILE__,__LINE__, sizeof(buff));
             goto fail;
         }
-        int ntokens = Tokenizer_split(tkz, buff, " ");
-        ntokens = Tokenizer_strip(tkz, " \n");
-        switch(ntokens) {
+        status = sscanf(buff, "%d %d %s %s", &npts, &npar, fmt, dummy);
+        switch(status) {
         case 2:
             self->filetype = OLD;
             break;
         case 3:
             self->filetype = NEW;
-            if(0 != strcmp("new_format", Tokenizer_token(tkz, 2))) {
+            if(0 != strcmp("new_format", fmt)) {
                 fprintf(stderr,"%s:%d: state file format error\n",
                         __FILE__,__LINE__);
                 fprintf(stderr,"  Old format: 1st line has 2 ints\n");
                 fprintf(stderr,"  New format: 2 ints, then \"new_format\"\n");
                 fprintf(stderr,"  Got \"%s\" instead of \"new_format\"\n",
-                        Tokenizer_token(tkz, 2));
+                        fmt);
                 goto fail;
             }
             break;
@@ -191,13 +188,9 @@ State *State_read(FILE *fp) {
                     __FILE__,__LINE__);
             fprintf(stderr,"  Old format: 1st line has 2 fields\n");
             fprintf(stderr,"  New format: 3 fields\n");
-            fprintf(stderr,"  But I got %d fields\n", ntokens);
-            Tokenizer_print(tkz, stderr);
+            fprintf(stderr,"  Input: %s", buff);
             goto fail;
         }
-        npts = strtol(Tokenizer_token(tkz, 0), NULL, 10);
-        npar = strtol(Tokenizer_token(tkz, 0), NULL, 10);
-        Tokenizer_free(tkz);
     }
     
     self = State_new(npts, npar);
@@ -284,7 +277,7 @@ int State_print(State *self, FILE *fp) {
         if(self->cost[i] < self->cost[imin])
             imin = i;
 
-    status = fprintf(fp, "%d %d\n", self->npts, self->npar);
+    status = fprintf(fp, "%d %d new_format\n", self->npts, self->npar);
     if(status==0)
         goto fail;
 
