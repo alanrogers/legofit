@@ -159,7 +159,6 @@ StrDblQueue *parseLegofit_CLIC(const char *fname) {
 // Parse a data file for BEPE. Return an object of type
 // StrDblQueue, which contains the number of parameters, their names,
 // and their values.
-
 StrDblQueue *parseSitPat(const char *fname) {
     FILE *fp = fopen(fname, "r");
     if(fp==NULL) {
@@ -210,7 +209,7 @@ void StrDblQueue_normalize(StrDblQueue* self){
 
   temp = self;
   for(int i = 0; i < length; i++){
-    temp->strdbl.val = ((temp->strdbl.val)/total);
+    temp->strdbl.val /= total;
     temp = temp->next;
   }
 }
