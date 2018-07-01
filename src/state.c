@@ -46,7 +46,7 @@ Systems Consortium License, which can be found in file "LICENSE".
 */
 
 typedef enum StateFile_t StateFile_t;
-enum StateFile_t {UNSET, OLD, NEW};
+enum StateFile_t {OLD=0, NEW=1, UNSET=2};
 
 static const char * file_format_2 = "format-2";
 
@@ -189,12 +189,13 @@ void State_free(State *self) {
 // Construct a new State object by reading a file
 State *State_read(FILE *fp) {
     int i, j, npts, npar, status;
+    char buff[200];
     State *self = NULL;
 
     {
         // Read first line and figure out whether we're in
         // a new-format state file or an old-format file.
-        char buff[200], fmt[200], dummy[200];
+        char fmt[200], dummy[200];
         if(fgets(buff, sizeof(buff), fp) == NULL) {
             fprintf(stderr,"%s:%d: empty state file\n",__FILE__,__LINE__);
             goto fail;
@@ -207,9 +208,13 @@ State *State_read(FILE *fp) {
         status = sscanf(buff, "%d %d %s %s", &npts, &npar, fmt, dummy);
         switch(status) {
         case 2:
+            self = State_new(npts, npar);
+            CHECKMEM(self);
             self->filetype = OLD;
             break;
         case 3:
+            self = State_new(npts, npar);
+            CHECKMEM(self);
             self->filetype = NEW;
             if(0 != strcmp(file_format_2, fmt)) {
                 fprintf(stderr,"%s:%d: state file format error\n",
@@ -233,12 +238,9 @@ State *State_read(FILE *fp) {
         }
     }
     
-    self = State_new(npts, npar);
-    CHECKMEM(self);
-
-    if(self->filetype == NEW) {
+    switch(self->filetype) {
+    case NEW:
         // Read header containing parameter names
-        char buff[100];
         status = fscanf(fp, "%s", buff);
         if(status != 1) {
             fprintf(stderr,"%s:%d: status=%d\n", __FILE__,__LINE__,status);
@@ -268,12 +270,20 @@ State *State_read(FILE *fp) {
                 goto fail;
             }
         }
+        break;
+    case OLD:
+        break;
+    default:
+        fprintf(stderr,"%s:%d unknown filetype\n",__FILE__,__LINE__);
     }
 
     for(i=0; i < npts; ++i) {
         status = fscanf(fp, "%lf", self->cost + i);
         if(status != 1) {
-            fprintf(stderr,"%s:%d: status=%d\n", __FILE__,__LINE__,status);
+            fprintf(stderr,"%s:%d: i=%d status=%d\n",
+                    __FILE__,__LINE__,i,status);
+            if(feof(fp))
+                fprintf(stderr,"  Unexpected EOF\n");
             goto fail;
         }
         for(j=0; j < npar; ++j) {
@@ -327,6 +337,11 @@ int State_print(State *self, FILE *fp) {
     if(status==0)
         goto fail;
     for(j=0; j < self->npar; ++j) {
+        if(self->name[j] == NULL) {
+            fprintf(stderr,"%s:%s:%d: parameter names undefined\n",
+                    __FILE__,__func__,__LINE__);
+            goto fail;
+        }
         status = fprintf(fp, " %s", self->name[j]);
         if(status == 0)
             goto fail;

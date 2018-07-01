@@ -68,7 +68,7 @@ static inline double survival(double t, double twoN);
 
 #  define   CHECKMEM(x) do {                                \
         if((x)==NULL) {                                     \
-            fprintf(stderr, "%s:%s:%d: allocation error\n", \
+            fprintf(stderr, "%s:%s:%d: NULL pointer\n",     \
                     __FILE__,__func__,__LINE__);            \
             exit(EXIT_FAILURE);                             \
         }                                                   \

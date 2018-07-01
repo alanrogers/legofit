@@ -9,6 +9,8 @@
 #include "typedefs.h"
 #include "state.h"
 #include "misc.h"
+#include "gptree.h"
+#include "parstore.h"
 #include <stdio.h>
 #include <assert.h>
 #include <unistd.h>
@@ -17,6 +19,29 @@
 #ifdef NDEBUG
 #  error "Unit tests must be compiled without -DNDEBUG flag"
 #endif
+
+const char *tstInput =
+    "# this is a comment\n"
+    "time fixed  T0=0\n"
+    "time free   Tc=1\n"
+    "time free   Tab=3\n"
+    "time fixed  Tabc=5.5\n"
+    "twoN fixed  twoNa=100\n"
+    "twoN fixed  twoNb=123\n"
+    "twoN fixed  twoNc=213.4\n"
+    "twoN fixed  twoNbb=32.1\n"
+    "twoN fixed  twoNab=222\n"
+    "twoN fixed  twoNabc=1.2e2\n"
+    "mixFrac fixed Mc=0.02\n"
+    "segment a   t=T0     twoN=twoNa    samples=1\n"
+    "segment b   t=T0     twoN=twoNb    samples=1\n"
+    "segment c   t=Tc     twoN=twoNc    samples=1\n"
+    "segment bb  t=Tc     twoN=twoNbb\n"
+    "segment ab  t=Tab    twoN=twoNab\n"
+    "segment abc t=Tabc   twoN=twoNabc\n"
+    "mix    b  from bb + Mc * c\n"
+    "derive a  from ab\n"
+    "derive bb from ab\n" "derive ab from abc\n" "derive c  from abc\n";
 
 int main(int argc, char **argv) {
 	int verbose=0;
@@ -36,10 +61,22 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
-    StateFile_t statefiletype = OLD;
-
+    const char *lgoname = "xstate.lgo";
     const char *fname = "xstate.tmp";
     const char *fname2 = "xstate2.tmp";
+    FILE       *fp = fopen(lgoname, "w");
+    fputs(tstInput, fp);
+    fclose(fp);
+
+    Bounds      bnd = {
+        .lo_twoN = 0.0,
+        .hi_twoN = 1e7,
+        .lo_t = 0.0,
+        .hi_t = HUGE_VAL
+    };
+
+    GPTree     *gptree = GPTree_new(lgoname, bnd);
+    assert(gptree);
 
     NameList *list=NULL;
     list = NameList_append(list, fname);
@@ -47,9 +84,9 @@ int main(int argc, char **argv) {
     assert(2 == NameList_size(list));
 
     const int npts=3, npar=2;
-    int i, status;
-    double x1[npts][npar] = {{1.0, 2.0}, {3.0, 4.0}, {5.0, 6.0}};
-    double x2[npts][npar] = {{7.0, 8.0}, {9.0, 10.0}, {11.0, 12.0}};
+    int i, j, status;
+    double x1[npts][npar] = {{1.0, 2.0}, {1.5, 3.5}, {2.0, 2.5}};
+    double x2[npts][npar] = {{1.8, 2.2}, {1.7, 3.1}, {1.9, 2.8}};
     double c1[npts] = {0.01, 0.02, 0.03};
     double c2[npts] = {0.04, 0.05, 0.06};
     State *s = State_new(npts, npar);
@@ -57,6 +94,16 @@ int main(int argc, char **argv) {
     CHECKMEM(s);
     assert(npts == State_npoints(s));
     assert(npar == State_nparameters(s));
+    assert(npts == State_npoints(s2));
+    assert(npar == State_nparameters(s2));
+
+    // set parameter names
+    for(j=0; j < npar; ++j) {
+        State_setName(s, j, GPTree_getNameFree(gptree, j));
+        State_setName(s2, j, GPTree_getNameFree(gptree, j));
+    }
+
+    // set parameter values
     for(i=0; i < npts; ++i) {
         State_setVector(s, i, npar, x1[i]);
         State_setCost(s, i, c1[i]);
@@ -64,22 +111,19 @@ int main(int argc, char **argv) {
         State_setCost(s2, i, c2[i]);
     }
 
-    FILE *fp = fopen(fname, "w");
+    // write old-type state file
+    fp = fopen(fname, "w");
     assert(fp);
-    status = State_print(s, fp);
-    switch(status) {
-    case 0:
-        break;
-    case EIO:
-        fprintf(stderr,"%s:%d: can't write to file\n", __FILE__,__LINE__);
-        exit(1);
-    default:
-        fprintf(stderr,"%s:%d: Unknown error %d\n", __FILE__,__LINE__,
-                status);
-        exit(1);
+    fprintf(fp,"%d %d\n", npts, npar);
+    for(i=0; i<npts; ++i) {
+        fprintf(fp, "%0.18lf", c1[i]);
+        for(j=0; j < npar; ++j)
+            fprintf(fp, " %0.18lf", x1[i][j]);
+        putc('\n', fp);
     }
     fclose(fp);
 
+    // write new-type state file
     fp = fopen(fname2, "w");
     assert(fp);
     status = State_print(s2, fp);
@@ -93,25 +137,40 @@ int main(int argc, char **argv) {
         fprintf(stderr,"%s:%d: Unknown error\n", __FILE__,__LINE__);
         exit(1);
     }
+    fclose(fp);
 
     State_free(s2);
 
-    fclose(fp);
+    // read old-type file
     fp = fopen(fname, "r");
     assert(fp);
-    s = State_read(fp, statefiletype);
+    s = State_read(fp);
     CHECKMEM(s);
     fclose(fp);
 
+    // read new-type file
+    fp = fopen(fname2, "r");
+    assert(fp);
+    s2 = State_read(fp);
+    CHECKMEM(s2);
+    fclose(fp);
+
+    // check the two State objects
     double y[npar];
     for(i=0; i<npts; ++i) {
         State_getVector(s, i, npar, y);
         assert(0 == memcmp(y, x1[i], npar*sizeof(y[0])));
         assert(c1[i] == State_getCost(s, i));
+
+        State_getVector(s2, i, npar, y);
+        assert(0 == memcmp(y, x2[i], npar*sizeof(y[0])));
+        assert(c2[i] == State_getCost(s2, i));
     }
     State_free(s);
+    State_free(s2);
 
-    s = State_readList(list, npts, gptree, statefiletype);
+    // Read npts points spread across the two state files
+    s = State_readList(list, npts, gptree);
     if(verbose)
         State_print(s, stderr);
     for(i=0; i<npts; ++i) {
@@ -132,5 +191,6 @@ int main(int argc, char **argv) {
 
     unlink(fname);
     unlink(fname2);
+    unlink(lgoname);
     return 0;
 }

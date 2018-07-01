@@ -78,7 +78,9 @@ XWRAPAROUND := xwraparound.o wraparound.o
 xwraparound : $(XWRAPAROUND)
 	$(CC) $(CFLAGS) -o $@ $(XWRAPAROUND) $(lib)
 
-XSTATE := xstate.o misc.o state.o
+XSTATE := xstate.o misc.o state.o gptree.o parstore.o gene.o branchtab.o \
+   lblndx.o popnode.o parkeyval.o tokenizer.o parse.o popnodetab.o dtnorm.o \
+   binary.o tinyexpr.o dprintf.o
 xstate : $(XSTATE)
 	$(CC) $(CFLAGS) -o $@ $(XSTATE) $(lib)
 
