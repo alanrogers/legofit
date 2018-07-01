@@ -7,8 +7,48 @@
 #include <stdlib.h>
 #include <string.h>
 
+/**
+@file state.c
+@brief Read and write "state files", which describe the state of the optmizer.
+
+This file implements classes NameList and State. 
+
+NameList stores file names in a linked list. It is used for storing
+the names of state files while processing command-line arguments. Then
+State_readList uses this list of file names to construct a single
+State object.
+
+State records the parameter values and the cost value of each point in
+the swarm maintained by the differential evolution algorithm. There
+are functions for moving data into and out of the State object and for
+reading from and writing to files.
+
+The format of the state file changed in early July, 2018. Before that
+date, the state file did not include names of parameters. Parameter
+values in the state file had to be arranged in the same order as the
+free parameters in the .lgo file. If the .lgo and state files referred
+to different parameters or to the same parameters in a different
+order, parameters would get the wrong values. No error was detected
+unless this misassignment resulted in a tree that was not
+feasible--for example, one in which a segment of the population tree
+was older than its parent in the tree.
+
+The new state file format includes the names of parameters, and the
+input routine compares these against the names of free parameters in
+the .lgo file. The two lists must have the same parameters in the same
+order. Otherwise, legofit aborts with an error message. Old- and
+new-format state files can both be input using --stateIn arguments and
+can be intermingled in a single legofit run. 
+
+@copyright Copyright (c) 2018, Alan R. Rogers
+<rogers@anthro.utah.edu>. This file is released under the Internet
+Systems Consortium License, which can be found in file "LICENSE".
+*/
+
 typedef enum StateFile_t StateFile_t;
 enum StateFile_t {UNSET, OLD, NEW};
+
+static const char * file_format_2 = "format-2";
 
 struct NameList {
     char *name;
@@ -18,7 +58,6 @@ struct NameList {
 struct State {
     StateFile_t filetype;
     int npts, npar; // numbers of points and parameters
-    int haveNames;  // boolean: nonzero means names have been assigned
     char **name;     // name[j] is name of j'th parameter
     double *cost;   // cost[i] is cost function at i'th point
     double **s;     // s[i][j]=value of j'th param at i'th point
@@ -122,7 +161,6 @@ State *State_new(int npts, int npar) {
     self->name = malloc(npar * sizeof(self->name[0]));
     CHECKMEM(self->name);
     memset(self->name, 0, npar * sizeof(self->name[0]));
-    self->haveNames = 0;
     self->s = malloc(npts * sizeof(self->s[0]));
     CHECKMEM(self->s);
     for(i=0; i < npts; ++i) {
@@ -173,13 +211,14 @@ State *State_read(FILE *fp) {
             break;
         case 3:
             self->filetype = NEW;
-            if(0 != strcmp("new_format", fmt)) {
+            if(0 != strcmp(file_format_2, fmt)) {
                 fprintf(stderr,"%s:%d: state file format error\n",
                         __FILE__,__LINE__);
                 fprintf(stderr,"  Old format: 1st line has 2 ints\n");
-                fprintf(stderr,"  New format: 2 ints, then \"new_format\"\n");
-                fprintf(stderr,"  Got \"%s\" instead of \"new_format\"\n",
-                        fmt);
+                fprintf(stderr,"  New format: 2 ints, then \"%s\"\n",
+                        file_format_2);
+                fprintf(stderr,"  Got \"%s\" instead of \"%s\"\n",
+                        fmt, file_format_2);
                 fprintf(stderr,"  Input: %s", buff);
                 goto fail;
             }
@@ -278,12 +317,12 @@ int State_print(State *self, FILE *fp) {
         if(self->cost[i] < self->cost[imin])
             imin = i;
 
-    status = fprintf(fp, "%d %d new_format\n", self->npts, self->npar);
+    status = fprintf(fp, "%d %d %s\n", self->npts, self->npar,
+                     file_format_2);
     if(status==0)
         goto fail;
 
     // write header containing column names
-    assert(self->haveNames);
     status = fprintf(fp, "%s", "cost");
     if(status==0)
         goto fail;

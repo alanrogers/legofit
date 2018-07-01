@@ -105,6 +105,23 @@ diffev.c. In each row, the first entry is the value of the cost
 function at that point. The remaining entries give the free parameter
 values in the same order in which they are printed by legofit.
 
+The format of the state file changed in early July, 2018. Before that
+date, the state file did not include names of parameters. Parameter
+values in the state file had to be arranged in the same order as the
+free parameters in the .lgo file. If the .lgo and state files referred
+to different parameters or to the same parameters in a different
+order, parameters would get the wrong values. No error was detected
+unless this misassignment resulted in a tree that was not
+feasible--for example, one in which a segment of the population tree
+was older than its parent in the tree.
+
+The new state file format includes the names of parameters, and the
+input routine compares these against the names of free parameters in
+the .lgo file. The two lists must have the same parameters in the same
+order. Otherwise, legofit aborts with an error message. Old- and
+new-format state files can both be input using --stateIn arguments and
+can be intermingled in a single legofit run. 
+
 The `-1` option tells legofit to use singleton site patterns--patterns
 in which the derived allele is present in only a single sample. This
 is a bad idea with low-coverage sequence data. It also behaves poorly
