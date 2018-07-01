@@ -78,7 +78,7 @@ int main(int argc, char **argv){
 
     // 2nd pass builds array of bootstrap filenames
     nfiles -= 1;   // counts number of bootstrap files
-    const char *ptsfname;
+    const char *ptsfname = NULL;
     const char *bootfname[nfiles];
     int gotPtsFile=0;
     for(i=2, j=0; i<argc; ++i) {
@@ -90,6 +90,9 @@ int main(int argc, char **argv){
         }else
             bootfname[j++] = argv[i];
     }
+
+    if(ptsfname == NULL)
+        usage();
 
     // Read bootstrap files into an array of FIFO queues
     StrDblQueue *queue[nfiles];
