@@ -442,6 +442,8 @@ State *State_readList(NameList *list, int npts, GPTree *gptree) {
 
     State *self = State_new(npts, npar);
     CHECKMEM(self);
+    for(j=0; j < npar; ++j)
+        State_setName(self, j, GPTree_getNameFree(gptree, j));
 
     // Figure out how many points to take from each State object.
     // The goal is to take nearly equal numbers.
