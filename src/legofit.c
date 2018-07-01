@@ -326,7 +326,7 @@ int main(int argc, char **argv) {
     double u = 0.0;             // mutation rate per site per generation
     long nnuc = 0;              // number of nucleotides per haploid genome
 #endif
-    double ytol = 1e-4;         // stop when yspread <= ytol
+    double ytol = 3e-5;         // stop when yspread <= ytol
     int strategy = 2;
     int ptsPerDim = 10;
     int verbose = 0;
