@@ -25,10 +25,16 @@ int mystrerror_r(int errnum, char *buff, size_t len) {
         rval = snprintf(buff, len, "Bad .raf input file");
         break;
     case BAD_DAF_INPUT:
-        rval = snprintf(buff, len, "Bad .raf input file");
+        rval = snprintf(buff, len, "Bad .daf input file");
         break;
     case BAD_SORT:
         rval = snprintf(buff, len, "Incorrect sort");
+        break;
+    case DIMENSION_MISMATCH:
+        rval = snprintf(buff, len, "Inconsistent array dimensions");
+        break;
+    case NAME_MISMATCH:
+        rval = snprintf(buff, len, "Inconsistent variable names");
         break;
     default:
         status = strerror_r(errnum, buff, len);

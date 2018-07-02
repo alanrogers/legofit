@@ -502,12 +502,18 @@ int main(int argc, char **argv) {
     }
     int npts = dim * ptsPerDim;
 
+    char *parnames[dim];
+    for(i=0; i<dim; ++i) {
+        parnames[i] = strdup(GPTree_getNameFree(gptree, i));
+        CHECKMEM(parnames[i]);
+    }
+
     // DiffEv state array is a matrix with a row for each point
     // and a column for each parameter.
     State *state;
     if(stateInNames) {
         // read States from files
-        state = State_readList(stateInNames, npts, gptree);
+        state = State_readList(stateInNames, npts, dim, parnames);
         CHECKMEM(state);
         if(npts != State_npoints(state)) {
             fprintf(stderr, "Revising npts from %d to %d\n",
@@ -829,6 +835,8 @@ int main(int argc, char **argv) {
     GPTree_sanityCheck(gptree, __FILE__, __LINE__);
     GPTree_free(gptree);
     SimSched_free(simSched);
+    for(i=0; i<dim; ++i)
+        free(parnames[i]);
 
     fprintf(stderr, "legofit is finished\n");
 

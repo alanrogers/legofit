@@ -1,5 +1,4 @@
 #include "state.h"
-#include "gptree.h"
 #include "error.h"
 #include "misc.h"
 #include <assert.h>
@@ -187,38 +186,45 @@ void State_free(State *self) {
 }
 
 // Construct a new State object by reading a file
-State *State_read(FILE *fp) {
-    int i, j, npts, npar, status;
+State *State_read(const char *fname, int npar, const char *name[npar]) {
+    int i, j, npts, npar2, status;
     char buff[200];
     State *self = NULL;
+    FILE *fp = fopen(fname, "r");
+    if(fp == NULL) {
+        fprintf(stderr, "%s:%d: can't read file \"%s\"\n",
+                __FILE__,__LINE__, fname);
+        return NULL;
+    }
 
     {
         // Read first line and figure out whether we're in
         // a new-format state file or an old-format file.
         char fmt[200], dummy[200];
         if(fgets(buff, sizeof(buff), fp) == NULL) {
-            fprintf(stderr,"%s:%d: empty state file\n",__FILE__,__LINE__);
+            fprintf(stderr,"%s:%d: empty state file \"%s\"\n",
+                    __FILE__,__LINE__, fname);
             goto fail;
         }
         if(NULL == strchr(buff, '\n') && !feof(fp)) {
-            fprintf(stderr,"%s:%d: Buffer overflow. size=%zu\n",
-                    __FILE__,__LINE__, sizeof(buff));
+            fprintf(stderr,"%s:%d: Buffer overflow reading \"%s\". size=%zu\n",
+                    __FILE__,__LINE__, fname, sizeof(buff));
             goto fail;
         }
-        status = sscanf(buff, "%d %d %s %s", &npts, &npar, fmt, dummy);
+        status = sscanf(buff, "%d %d %s %s", &npts, &npar2, fmt, dummy);
         switch(status) {
         case 2:
-            self = State_new(npts, npar);
+            self = State_new(npts, npar2);
             CHECKMEM(self);
             self->filetype = OLD;
             break;
         case 3:
-            self = State_new(npts, npar);
+            self = State_new(npts, npar2);
             CHECKMEM(self);
             self->filetype = NEW;
             if(0 != strcmp(file_format_2, fmt)) {
-                fprintf(stderr,"%s:%d: state file format error\n",
-                        __FILE__,__LINE__);
+                fprintf(stderr,"%s:%d: format error in file \"%s\"\n",
+                        __FILE__,__LINE__, fname);
                 fprintf(stderr,"  Old format: 1st line has 2 ints\n");
                 fprintf(stderr,"  New format: 2 ints, then \"%s\"\n",
                         file_format_2);
@@ -229,13 +235,20 @@ State *State_read(FILE *fp) {
             }
             break;
         default:
-            fprintf(stderr,"%s:%d: state file format error\n",
-                    __FILE__,__LINE__);
+            fprintf(stderr,"%s:%d: format error in file \"%s\"\n",
+                    __FILE__,__LINE__, fname);
             fprintf(stderr,"  Old format: 1st line has 2 fields\n");
             fprintf(stderr,"  New format: 3 fields\n");
             fprintf(stderr,"  Input: %s", buff);
             goto fail;
         }
+    }
+
+    if(npar != npar2) {
+        fprintf(stderr,"%s:%d: --stateIn file \"%s\" and .lgo disagree about"
+                " number of free parameters",
+                __FILE__,__LINE__, fname);
+        goto fail;
     }
     
     switch(self->filetype) {
@@ -248,8 +261,8 @@ State *State_read(FILE *fp) {
         }
         if(0 != strcmp("cost", buff)) {
             fprintf(stderr, "%s:%d: got \"%s\" instead of \"cost\""
-                    " reading new-format state file\n",
-                    __FILE__,__LINE__, buff);
+                    " reading new-format state file \"%s\"\n",
+                    __FILE__,__LINE__, buff, fname);
             goto fail;
         }
         for(j=0; j < npar; ++j) {
@@ -258,10 +271,11 @@ State *State_read(FILE *fp) {
                 fprintf(stderr,"%s:%d: status=%d\n", __FILE__,__LINE__,status);
                 goto fail;
             }
-            if(!isalpha(buff[0])) {
-                fprintf(stderr,"%s:%d: parameter names must start with"
-                        " an alphabetic character\n", __FILE__,__LINE__);
-                fprintf(stderr,"  Got \"%s\"\n", buff);
+            if(0 != strcmp(buff, name[j])) {
+                fprintf(stderr,"%s:%d: \"%s\" and .lgo file"
+                        " have inconsistent parameter names\n"
+                        "   %s != %s\n", __FILE__,__LINE__,
+                        fname, buff, name[j]);
                 goto fail;
             }
             self->name[j] = strdup(buff);
@@ -294,11 +308,17 @@ State *State_read(FILE *fp) {
             }
         }
     }
+
+    for(j=0; j < npar; ++j)
+        State_setName(self, j, name[j]);
+
+    fclose(fp);
+    fp = NULL;
     return self;
 
  fail:
-    fprintf(stderr,"%s:%d: Can't read state file\n",
-            __FILE__,__LINE__);
+    fprintf(stderr,"%s:%d: Can't read state file \"%s\"\n",
+            __FILE__,__LINE__, fname);
     if(self)
         State_free(self);
     return NULL;
@@ -382,55 +402,21 @@ int State_print(State *self, FILE *fp) {
             __FILE__,__LINE__);
     return EIO;
 }
-State *State_readList(NameList *list, int npts, GPTree *gptree) {
+
+State *State_readList(NameList *list, int npts, int npar,
+                      const char *name[npar]) {
     int nstates = NameList_size(list);
     if(nstates==0)
         return NULL;
-    int npar = GPTree_nFree(gptree);
 
     State *state[nstates];
     NameList *node;
     int i, j, k;
 
+    // Create a State object from each file name in list.
     for(i=0, node=list; i<nstates; ++i, node=node->next) {
-
-        // Create a State object from each file name in list.
-        FILE *fp = fopen(node->name, "r");
-        state[i] = State_read(fp);
+        state[i] = State_read(node->name, npar, name);
         CHECKMEM(state[i]);
-        fclose(fp);
-
-        // Make sure dimensions are compatible.
-        if(npar != State_nparameters(state[i])) {
-            fprintf(stderr,"%s:%s:%d:"
-                    " input state file \"%s\" has"
-                    " incompatible dimensions.\n",
-                    __FILE__,__func__,__LINE__,
-                    node->name);
-            exit(EXIT_FAILURE);
-        }
-
-        if(state[i]->filetype != NEW) {
-            // Can't check parameter names in old-format
-            // state files.
-            continue;
-        }
-
-        // Make sure parameter names are consistent
-        for(j=0; j < npar; ++j) {
-            if(0 != strcmp(GPTree_getNameFree(gptree, j),
-                           state[i]->name[j])) {
-                fprintf(stderr,"%s:%s:%d:"
-                        " input state file \"%s\" has"
-                        " incompatible parameter names.\n",
-                        __FILE__,__func__,__LINE__,
-                        node->name);
-                fprintf(stderr,"    \"%s\" != \"%s\"\n",
-                        GPTree_getNameFree(gptree, j),
-                        state[i]->name[j]);
-                exit(EXIT_FAILURE);
-            }
-        }
     }
 
     // Make sure we're not asking for more points than exist
@@ -443,7 +429,7 @@ State *State_readList(NameList *list, int npts, GPTree *gptree) {
     State *self = State_new(npts, npar);
     CHECKMEM(self);
     for(j=0; j < npar; ++j)
-        State_setName(self, j, GPTree_getNameFree(gptree, j));
+        State_setName(self, j, name[j]);
 
     // Figure out how many points to take from each State object.
     // The goal is to take nearly equal numbers.
