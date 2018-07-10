@@ -65,7 +65,7 @@ int main(int argc, char **argv){
     for(i=1; i<argc; ++i) {
         if(0==strcmp("-v", argv[i]) || 0==strcmp("--verbose", argv[i]))
             verbose = 1;
-        if(0==strcmp("-h", argv[i]) || 0==strcmp("--help", argv[i]))
+        else if(0==strcmp("-h", argv[i]) || 0==strcmp("--help", argv[i]))
             usage();
         else if(argv[i][0] == '-') {
             fprintf(stderr,"Unknown argument: %s\n", argv[i]);
