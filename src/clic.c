@@ -81,7 +81,7 @@ int main(int argc, char **argv){
     const char *ptsfname = NULL;
     const char *bootfname[nfiles];
     int gotPtsFile=0;
-    for(i=2, j=0; i<argc; ++i) {
+    for(i=1, j=0; i<argc; ++i) {
         if(argv[i][0] == '-')
             continue;
         else if(!gotPtsFile) {
