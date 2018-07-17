@@ -71,7 +71,7 @@ int main(int argc, char **argv){
     fputs(fakeBoot, fakeFile);
     fclose(fakeFile);
 
-    bool verbose = 0;
+    int verbose = 0;
 
       switch (argc) {
     case 1:
@@ -86,18 +86,17 @@ int main(int argc, char **argv){
         usage();
     }
 
-    int files = 2;
+    int nfiles = 2;
 
     //test matrix
 
     StrDblQueue *queue[nfiles];
-    for(i=0; i < nfiles; ++i) {
+    for(int i=0; i < nfiles; ++i) {
         queue[i] = parseLegofit_CLIC("s1boot0.legofit");
         if(i>0) {
             if(StrDblQueue_compare(queue[0], queue[i])) {
-                fprintf(stderr, "%s:%d: inconsistent parameters in"
-                        " files %s and %s\n", __FILE__,__LINE__,
-                        bootfname[0], bootfname[i]);
+                fprintf(stderr, "%s:%d: inconsistent parameters",
+                    __FILE__,__LINE__);
                 exit(EXIT_FAILURE);
             }
         }
@@ -109,8 +108,8 @@ int main(int argc, char **argv){
     int npar = StrDblQueue_length(queue[0]);
     char *parname[npar];
     double datmat[nfiles][npar];
-    for(i=0; i < nfiles; ++i) {
-        for(j=0; j < npar; ++j) {
+    for(int i=0; i < nfiles; ++i) {
+        for(int j=0; j < npar; ++j) {
             StrDbl strdbl;
             queue[i] = StrDblQueue_pop(queue[i], &strdbl);
             datmat[i][j] = strdbl.val;
@@ -122,11 +121,11 @@ int main(int argc, char **argv){
 
     if(verbose) {
         // Print data matrix with column header
-        for(j=0; j < npar; ++j)
+        for(int j=0; j < npar; ++j)
             printf(" %s", parname[j]);
         putchar('\n');
-        for(i=0; i<nfiles; ++i) {
-            for(j=0; j < npar; ++j)
+        for(int i=0; i<nfiles; ++i) {
+            for(int j=0; j < npar; ++j)
                 printf(" %lg", datmat[i][j]);
             putchar('\n');
         }
@@ -138,11 +137,11 @@ int main(int argc, char **argv){
 
     if(verbose) {
         // Print it
-        for (j = 0; j < npar; j++)
+        for (int j = 0; j < npar; j++)
             printf(" %8s", parname[j]);
         putchar('\n');
-        for (i = 0; i < npar; i++){
-            for (j = 0; j < npar; j++){
+        for (int i = 0; i < npar; i++){
+            for (int j = 0; j < npar; j++){
                 printf(" %8.2lg", gsl_matrix_get(c_matrix, i, j));
             }
             printf("\n");
