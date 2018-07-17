@@ -123,9 +123,6 @@ XRAFREADER := xrafreader.o rafreader.o misc.o lblndx.o tokenizer.o binary.o \
 xrafreader : $(XRAFREADER)
 	$(CC) $(CFLAGS) -o $@ $(XRAFREADER) $(lib)
 
-xclic.o : clic.c
-	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/clic.c
-
 XCLIC := xclic.o misc.o hessian.o strdblqueue.o
 xclic : $(XCLIC)
 	$(CC) $(CFLAGS) -o $@ $(XCLIC) $(lib)
