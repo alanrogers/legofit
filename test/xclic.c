@@ -86,7 +86,7 @@ int main(int argc, char **argv){
         usage();
     }
 
-    int nfiles = 2;
+    int nfiles = 9;
 
     //test matrix
 
@@ -134,7 +134,6 @@ int main(int argc, char **argv){
     // Make covariance matrix
     gsl_matrix *c_matrix = gsl_matrix_alloc(npar,npar);
     make_covar_matrix(nfiles, npar, datmat, c_matrix);
-
     if(verbose) {
         // Print it
         for (int j = 0; j < npar; j++)
@@ -143,6 +142,41 @@ int main(int argc, char **argv){
         for (int i = 0; i < npar; i++){
             for (int j = 0; j < npar; j++){
                 printf(" %8.2lg", gsl_matrix_get(c_matrix, i, j));
+            }
+            printf("\n");
+        }
+    }
+
+    for(int i=0; i < nfiles; ++i) {
+        for(int j=0; j < npar; ++j) {
+            datmat[i][j] = (i*j);
+        }
+        assert(queue[i] == NULL); // check that queues are freed
+    }
+
+    if(verbose) {
+        // Print data matrix with column header
+        for(int j=0; j < npar; ++j)
+            printf(" %s", parname[j]);
+        putchar('\n');
+        for(int i=0; i<nfiles; ++i) {
+            for(int j=0; j < npar; ++j)
+                printf(" %lg", datmat[i][j]);
+            putchar('\n');
+        }
+    }
+
+    // Make covariance matrix
+    gsl_matrix *c_matrix2 = gsl_matrix_alloc(npar,npar);
+    make_covar_matrix(nfiles, npar, datmat, c_matrix2);
+    if(verbose) {
+        // Print it
+        for (int j = 0; j < npar; j++)
+            printf(" %8s", parname[j]);
+        putchar('\n');
+        for (int i = 0; i < npar; i++){
+            for (int j = 0; j < npar; j++){
+                printf(" %8.2lg", gsl_matrix_get(c_matrix2, i, j));
             }
             printf("\n");
         }
