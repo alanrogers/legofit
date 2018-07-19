@@ -73,7 +73,7 @@ const char *usageMsg =
 
 int main(int argc, char **argv){
   // Command line arguments specify file names
-  if(argc < 6)
+  if(argc < 8)
       usage();
 
   const char *realDataName = argv[1];
