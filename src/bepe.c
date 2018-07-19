@@ -20,13 +20,14 @@ predicted site pattern frequencies and those of unobserved samples
 from the same statistical distribution. The best model is the one for
 which bepe reports the smallest value.
 
-    usage: bepe <realdat> <bdat1> <bdat2> ...
-     -L <real.legofit> <b1.legofit> <b2.legofit> ...
+    usage: bepe <realdat> <bdat1> <bdat2> ... -L <real.legofit> 
+     <b1.legofit> <b2.legofit> ...
 
      where realdat is the real data, each "bdat" file is the data
      for one bootstrap replicate, and each "b#.legofit" file is the
      legofit output from the corresponding bootstrap replicate
      Must include realdat file and at least 2 bootstrap replicates.
+
     Options:
        -h or --help
        print this message
@@ -53,13 +54,14 @@ void usage(void);
 //vars
 
 const char *usageMsg =
-    "usage: bepe <realdat> <bdat1> <bdat2> ...\n"
-    " -L <real.legofit> <b1.legofit> <b2.legofit> ...\n"
+    "usage: bepe <realdat> <bdat1> <bdat2> ... -L <real.legofit>\n"
+    " <b1.legofit> <b2.legofit> ...\n"
     "\n"
     " where realdat is the real data, each \"bdat\" file is the data\n"
     " for one bootstrap replicate, and each \"b#.legofit\" file is the\n"
     " legofit output from the corresponding bootstrap replicate\n"
     " Must include realdat file and at least 2 bootstrap replicates.\n"
+    "\n"
     "Options:\n"
     "   -h or --help\n"
     "   print this message\n";
@@ -200,4 +202,50 @@ int main(int argc, char **argv){
   bepe = real_msd + boot_msd;
 
   printf("BEPE = %lg\n", bepe);
+
+  for (int k = 0; k < nfiles; ++k){
+    for (int i = 0; i < nfiles; ++i){
+      //Switch each of the real data with a boot
+      if(i != k){
+        temp_L = lego_queue[i];
+      }
+      else{
+        temp_L = real_data_queue;
+        temp_d = lego_queue[i];
+      }
+
+      temp_D = data_queue[i];
+      int npat2 = StrDblQueue_length(temp_D);
+      if(npat==0)
+          npat = npat2;
+      if(npat != npat2) {
+          fprintf(stderr,"%s:%d: files 0 and %d have inconsistent"
+                  " site patterns.\n", __FILE__,__LINE__,i);
+          exit(EXIT_FAILURE);
+      }
+      for (int j = 0; j < npat; ++j){
+        x = (temp_d->strdbl.val - temp_L->strdbl.val);
+        real_msd += (x*x);
+
+        x = (temp_D->strdbl.val - temp_L->strdbl.val);
+        boot_msd += (x*x);
+
+        temp_D = temp_D->next;
+        temp_L = temp_L->next;
+        temp_d = temp_d->next;
+      }
+    }
+
+    if(npat==0) {
+        fprintf(stderr,"%s:%d: npat should not be 0\n", __FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
+
+    real_msd /= (nfiles*npat);
+    boot_msd /= (nfiles*npat);
+
+    bepe = real_msd + boot_msd;
+
+    printf("BEPE on boot #%d = %lg\n", k, bepe);
+  }
 }
