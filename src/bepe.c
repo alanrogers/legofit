@@ -201,7 +201,7 @@ int main(int argc, char **argv){
 
   bepe = real_msd + boot_msd;
 
-  printf("BEPE = %lg\n", bepe);
+  printf("%lg \t#Real BEPE\n", bepe);
 
   for (int k = 0; k < nfiles; ++k){
     for (int i = 0; i < nfiles; ++i){
@@ -246,6 +246,6 @@ int main(int argc, char **argv){
 
     bepe = real_msd + boot_msd;
 
-    printf("BEPE on boot #%d = %lg\n", k, bepe);
+    printf("%lg \t#BEPE based on %s\n", bepe, legofname[k]);
   }
 }
