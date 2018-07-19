@@ -20,18 +20,20 @@ predicted site pattern frequencies and those of unobserved samples
 from the same statistical distribution. The best model is the one for
 which bepe reports the smallest value.
 
-    usage: bepe <realdat> <bdat1> <bdat2> ...  -L <b1.legofit> <b2.legofit> ...
-      where realdat is the real data, each "bdat" file is the data for one
-      bootstrap replicate, and each "b#.legofit" file is the legofit output from
-      the corresponding bootstrap replicate. Must include realdat file and at
-      least 2 bootstrap replicates.
+    usage: bepe <realdat> <bdat1> <bdat2> ...
+     -L <real.legofit> <b1.legofit> <b2.legofit> ...
+
+     where realdat is the real data, each "bdat" file is the data
+     for one bootstrap replicate, and each "b#.legofit" file is the
+     legofit output from the corresponding bootstrap replicate
+     Must include realdat file and at least 2 bootstrap replicates.
     Options:
        -h or --help
-          print this message
+       print this message
 
 In typical usage, one would type something like
 
-    bepe realdat.txt boot*.txt -L boot*.legofit
+    bepe realdat.txt boot*.txt -L real.legofit boot*.legofit
 
 This usage assumes that your computer's shell or command interpreter sorts
 the files globbed by `boot*.txt` and `boot*.legofit` in a consistent order,
@@ -51,18 +53,16 @@ void usage(void);
 //vars
 
 const char *usageMsg =
-    "usage: bepe <realdat> <bdat1> <bdat2> ..."
-    "  -L <b1.legofit> <b2.legofit> ...\n"
-    "  where realdat is the real data, each \"bdat\" file is the data"
-    " for one\n"
-    "  bootstrap replicate, and each \"b#.legofit\" file is the legofit"
-    " output from\n"
-    "  the corresponding bootstrap replicate. Must include realdat file"
-    " and at least\n"
-    "  2 bootstrap replicates.\n"
+    "usage: bepe <realdat> <bdat1> <bdat2> ...\n"
+    " -L <real.legofit> <b1.legofit> <b2.legofit> ...\n"
+    "\n"
+    " where realdat is the real data, each \"bdat\" file is the data\n"
+    " for one bootstrap replicate, and each \"b#.legofit\" file is the\n"
+    " legofit output from the corresponding bootstrap replicate\n"
+    " Must include realdat file and at least 2 bootstrap replicates.\n"
     "Options:\n"
     "   -h or --help\n"
-    "      print this message\n";
+    "   print this message\n";
 
  void usage(void) {
      fputs(usageMsg, stderr);
@@ -71,10 +71,10 @@ const char *usageMsg =
 
 int main(int argc, char **argv){
   // Command line arguments specify file names
-  if(argc < 5)
+  if(argc < 6)
       usage();
 
-  const char *realfName = argv[1];
+  const char *realDataName = argv[1];
   int nfiles = 0;
 
   for(int i = 2; i < argc; i++){
@@ -91,8 +91,9 @@ int main(int argc, char **argv){
     }
   }
 
+  const char *realLegoName = argv[3+nfiles];
   int nfiles_temp = 0;
-  for(int i = (3+nfiles); i < argc; i++){
+  for(int i = (4+nfiles); i < argc; i++){
     if (argv[i][0] == '-'){
       usage();
     }
@@ -115,35 +116,37 @@ int main(int argc, char **argv){
   for(int i = 0; i < nfiles; ++i)
       datafname[i] = argv[i+1];
   for(int i = 0; i < nfiles; ++i)
-      legofname[i] = argv[i+3+nfiles];
+      legofname[i] = argv[i+4+nfiles];
 
   // Read bootstrap files into an arrays of FIFO queues
   StrDblQueue* data_queue[nfiles];
   StrDblQueue* lego_queue[nfiles];
 
-  StrDblQueue* real_queue = parseSitPat(realfName);
+  StrDblQueue* real_data_queue = parseSitPat(realDataName);
+  StrDblQueue* real_lego_queue = parseSitPat(realLegoName);
 
 
   for(int i = 0; i < nfiles; ++i) {
       lego_queue[i] = parseSitPat(legofname[i]);
       data_queue[i] = parseSitPat(datafname[i]);
 
-      if(StrDblQueue_compare(real_queue, lego_queue[i])) {
+      if(StrDblQueue_compare(real_lego_queue, lego_queue[i])) {
           fprintf(stderr, "%s:%d: inconsistent parameters in"
                   " files%s and %s\n", __FILE__,__LINE__,
-                  realfName, legofname[i]);
+                  realLegoName, legofname[i]);
           exit(EXIT_FAILURE);
       }
-      if(StrDblQueue_compare(real_queue, data_queue[i])) {
+      if(StrDblQueue_compare(real_data_queue, data_queue[i])) {
           fprintf(stderr, "%s:%d: inconsistent parameters in"
                   " files%s and %s\n", __FILE__,__LINE__,
-                  realfName, datafname[i]);
+                  realDataName, datafname[i]);
           exit(EXIT_FAILURE);
       }
   }
 
   //normalize the queues
-  StrDblQueue_normalize(real_queue);
+  StrDblQueue_normalize(real_lego_queue);
+  StrDblQueue_normalize(real_data_queue);
   for(int i = 0; i < nfiles; ++i) {
       StrDblQueue_normalize(lego_queue[i]);
       StrDblQueue_normalize(data_queue[i]);
@@ -164,7 +167,7 @@ int main(int argc, char **argv){
   for (int i = 0; i < nfiles; ++i){
     temp_L = lego_queue[i];
     temp_D = data_queue[i];
-    temp_d = real_queue;
+    temp_d = real_data_queue;
     int npat2 = StrDblQueue_length(temp_D);
     if(npat==0)
         npat = npat2;
