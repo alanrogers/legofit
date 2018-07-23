@@ -208,6 +208,7 @@ int main(int argc, char **argv){
       //Switch each of the real data with a boot
       if(i != k){
         temp_L = lego_queue[i];
+        temp_d = real_data_queue;
       }
       else{
         temp_L = real_data_queue;
