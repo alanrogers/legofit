@@ -114,7 +114,7 @@ const char *usageMsg =
 	"data set. The first row after the header refers to the real data. Each\n"
 	"succeeding row refers to a bootstrap replicate. The number of rows\n"
 	"(excluding comments and the header) should agree with the numbers of\n"
-	"rows in the `.bepe` files.";
+	"rows in the `.bepe` files.\n";
 
  void usage(void) {
      fputs(usageMsg, stderr);
