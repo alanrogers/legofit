@@ -85,6 +85,8 @@ for the *i*th bootstrap replicate.
 Systems Consortium License, which can be found in file "LICENSE".
 */
 
+#include "strdblqueue.h"
+
 void usage(void);
 
 const char *usageMsg =
@@ -159,10 +161,10 @@ const char *usageMsg =
   }
 
   const char *bepe_file_names[nfiles];
-  const char *flat_file+names[nfiles];
+  const char *flat_file_names[nfiles];
 
   for(int i = 0; i < nfiles; ++i)
-      datafname[i] = argv[i+1];
+      bepe_file_names[i] = argv[i+1];
   for(int i = 0; i < nfiles; ++i)
-      legofname[i] = argv[i+4+nfiles];
+      flat_file_names[i] = argv[i+2+nfiles];
 }
