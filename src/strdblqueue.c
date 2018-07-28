@@ -167,7 +167,7 @@ static int isSitePatHdr(const char *s) {
         return 0;
     while(isspace(*s))
         ++s;
-    if(0 == strcmp(s, "SitePat"))
+    if(0 == strncmp(s, "SitePat", 7))
         return 1;
     return 0;
 }
@@ -197,10 +197,14 @@ StrDblQueue *StrDblQueue_parseSitPat(const char *fname) {
         }
         fprintf(stderr,"%s:%d: buff=%s\n",__FILE__,__LINE__,buff);
         if(!got_sitepat) {
-            if(isSitePatHdr(buff))
+            if(isSitePatHdr(buff)) 
                 got_sitepat=true;
+            fprintf(stderr,"%s:%d: got_sitepat=%d\n",
+                    __FILE__,__LINE__,got_sitepat);
             continue;
         }
+        fprintf(stderr,"%s:%d: got_sitepat=%d\n",
+                __FILE__,__LINE__,got_sitepat);
 
         char* valstr = buff;
         char* name = strsep(&valstr, " ");
