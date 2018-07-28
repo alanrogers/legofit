@@ -195,10 +195,9 @@ StrDblQueue *StrDblQueue_parseSitPat(const char *fname) {
             exit(EXIT_FAILURE);
         }
         if(!got_sitepat) {
-            if(isSitePatHdr(buff)) {
+            if(isSitePatHdr(buff))
                 got_sitepat=true;
-                continue;
-            }
+            continue;
         }
 
         char* valstr = buff;
