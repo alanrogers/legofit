@@ -86,7 +86,7 @@ StrDblQueue *StrDblQueue_free(StrDblQueue *self) {
     return NULL;
 }
 
-void StrDblQueue_print(StrDblQueue *self, FILE *fp) {
+void StrDblQueue_print(const StrDblQueue *self, FILE *fp) {
     while(self) {
         fprintf(fp,"%s = %lg\n", self->strdbl.str, self->strdbl.val);
         self = self->next;

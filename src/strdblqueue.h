@@ -28,7 +28,7 @@ StrDblQueue *StrDblQueue_push(StrDblQueue *prev, const char *str, double val);
 StrDblQueue *StrDblQueue_pop(StrDblQueue *self, StrDbl *strdbl);
 StrDblQueue *StrDblQueue_free(StrDblQueue *self);
 int          StrDblQueue_length(StrDblQueue *self);
-void         StrDblQueue_print(StrDblQueue *self, FILE *fp);
+void         StrDblQueue_print(const StrDblQueue *self, FILE *fp);
 int          StrDblQueue_compare(StrDblQueue *lhs, StrDblQueue *rhs);
 // StrDbl      *StrDblQueue_get(StrDblQueue *self, StrDbl *strdbl, int index);
 StrDblQueue *StrDblQueue_parseLegofit(const char *fname);
