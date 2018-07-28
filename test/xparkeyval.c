@@ -1,3 +1,4 @@
+
 /**
  * @file xparkeyval.c
  * @author Alan R. Rogers
@@ -17,11 +18,11 @@
 #error "Unit tests must be compiled without -DNDEBUG flag"
 #endif
 
-int main(int argc, char* argv[]){
+int main(int argc, char *argv[]) {
 
-	int verbose=0;
+    int verbose = 0;
 
-	switch (argc) {
+    switch (argc) {
     case 1:
         break;
     case 2:
@@ -33,46 +34,46 @@ int main(int argc, char* argv[]){
         eprintf("usage: xparkeyval [-v]\n");
     }
 
-	double x=1.0, y=2.0, z=3.0;
-	double xx=1.0, yy=2.0, zz=3.0;
-	ParKeyVal *pkv = NULL;
-	ParamStatus pstat;
+    double x = 1.0, y = 2.0, z = 3.0;
+    double xx = 1.0, yy = 2.0, zz = 3.0;
+    ParKeyVal *pkv = NULL;
+    ParamStatus pstat;
 
-	pkv = ParKeyVal_add(pkv, "y", &y, Free);
-	pkv = ParKeyVal_add(pkv, "x", &x, Fixed);
-	pkv = ParKeyVal_add(pkv, "z", &z, Free);
+    pkv = ParKeyVal_add(pkv, "y", &y, Free);
+    pkv = ParKeyVal_add(pkv, "x", &x, Fixed);
+    pkv = ParKeyVal_add(pkv, "z", &z, Free);
 
-	double *ptr;
-	ptr = ParKeyVal_get(pkv, &pstat, "x");
-	assert(ptr == &x);
-	assert(pstat == Fixed);
-	assert(*ptr == 1.0);
+    double *ptr;
+    ptr = ParKeyVal_get(pkv, &pstat, "x");
+    assert(ptr == &x);
+    assert(pstat == Fixed);
+    assert(*ptr == 1.0);
 
-	ptr = ParKeyVal_get(pkv, &pstat, "y");
-	assert(ptr == &y);
-	assert(pstat == Free);
-	assert(*ptr == 2.0);
+    ptr = ParKeyVal_get(pkv, &pstat, "y");
+    assert(ptr == &y);
+    assert(pstat == Free);
+    assert(*ptr == 2.0);
 
-	ptr = ParKeyVal_get(pkv, &pstat, "z");
-	assert(ptr == &z);
-	assert(pstat == Free);
-	assert(*ptr == 3.0);
+    ptr = ParKeyVal_get(pkv, &pstat, "z");
+    assert(ptr == &z);
+    assert(pstat == Free);
+    assert(*ptr == 3.0);
 
-	assert(NULL == ParKeyVal_get(pkv, &pstat, "nonexistent"));
-	assert(pstat == Free); // should be unchanged
+    assert(NULL == ParKeyVal_get(pkv, &pstat, "nonexistent"));
+    assert(pstat == Free);      // should be unchanged
 
-	if(verbose)
-		ParKeyVal_print(pkv, stdout);
+    if(verbose)
+        ParKeyVal_print(pkv, stdout);
 
     ParKeyVal *pkv2 = NULL;
 
-	pkv2 = ParKeyVal_add(pkv2, "x", &xx, Fixed);
-	pkv2 = ParKeyVal_add(pkv2, "z", &zz, Free);
-	pkv2 = ParKeyVal_add(pkv2, "y", &yy, Free);
+    pkv2 = ParKeyVal_add(pkv2, "x", &xx, Fixed);
+    pkv2 = ParKeyVal_add(pkv2, "z", &zz, Free);
+    pkv2 = ParKeyVal_add(pkv2, "y", &yy, Free);
     assert(ParKeyVal_equals(pkv, pkv2));
-	ParKeyVal_free(pkv2);
-	ParKeyVal_free(pkv);
+    ParKeyVal_free(pkv2);
+    ParKeyVal_free(pkv);
 
-	unitTstResult("ParKeyVal", "OK");
+    unitTstResult("ParKeyVal", "OK");
     return 0;
 }

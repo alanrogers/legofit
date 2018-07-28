@@ -142,8 +142,8 @@ int main(int argc, char **argv){
     assert(StrDblQueue_compare(a,b) == 0);
     assert(StrDblQueue_length(a) == 0);
 
-    c = parseLegofit_CLIC("s1boot0.legofit");
-    d = parseLegofit_CLIC("s1boot0.legofit");
+    c = StrDblQueue_parseLegofit("s1boot0.legofit");
+    d = StrDblQueue_parseLegofit("s1boot0.legofit");
 
     assert(StrDblQueue_compare(c,d) == 0);
 
@@ -165,7 +165,6 @@ int main(int argc, char **argv){
 
     assert(StrDblQueue_compare(c,d) != 0);
 
-
     c = StrDblQueue_pop(c, &temp);
     d = StrDblQueue_pop(d, &temp);
 
@@ -178,8 +177,8 @@ int main(int argc, char **argv){
       StrDblQueue_print(d,stderr);
     }
 
-    e = parseSitPat("s1boot0.legofit");
-    f = parseSitPat("s1boot0.legofit");
+    e = StrDblQueue_parseSitPat("s1boot0.legofit");
+    f = StrDblQueue_parseSitPat("s1boot0.legofit");
 
     assert(StrDblQueue_compare(e,f) == 0);
 
@@ -201,7 +200,6 @@ int main(int argc, char **argv){
 
     assert(StrDblQueue_compare(e,f) != 0);
 
-
     e = StrDblQueue_pop(e, &temp);
     f = StrDblQueue_pop(f, &temp);
 
@@ -216,7 +214,27 @@ int main(int argc, char **argv){
 
     remove("s1boot0.legofit");
 
-    printf("All tests completed\n");
+    a = StrDblQueue_free(a);
+    b = StrDblQueue_free(b);
+    c = StrDblQueue_free(c);
+    d = StrDblQueue_free(d);
+    e = StrDblQueue_free(e);
+    f = StrDblQueue_free(f);
+
+    assert(a==NULL);
+    assert(b==NULL);
+    assert(c==NULL);
+    assert(d==NULL);
+    assert(e==NULL);
+    assert(f==NULL);
+
+    a = StrDblQueue_push(a, "x", 1.0);
+    b = StrDblQueue_push(b, "x", 2.0);
+    a = StrDblQueue_push(a, "y", 3.0);
+    b = StrDblQueue_push(b, "y", 4.0);
+    assert(1.0 == StrDblQueue_msd(a,b));
+
+    unitTstResult("StrDblQueue", "OK");
 
     return 0;
 }

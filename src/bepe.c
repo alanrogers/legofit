@@ -52,211 +52,333 @@ Systems Consortium License, which can be found in file "LICENSE".
 void usage(void);
 
 //vars
-
 const char *usageMsg =
     "usage: bepe <realdat> <bdat1> <bdat2> ... -L <real.legofit>\n"
-    " <b1.legofit> <b2.legofit> ...\n"
-    "\n"
+    " <b1.legofit> <b2.legofit> ...\n" "\n"
     " where realdat is the real data, each \"bdat\" file is the data\n"
     " for one bootstrap replicate, and each \"b#.legofit\" file is the\n"
     " legofit output from the corresponding bootstrap replicate\n"
-    " Must include realdat file and at least 2 bootstrap replicates.\n"
-    "\n"
-    "Options:\n"
-    "   -h or --help\n"
-    "   print this message\n";
+    " Must include realdat file and at least 2 bootstrap replicates.\n" "\n"
+    "Options:\n" "   -h or --help\n" "   print this message\n";
+void usage(void) {
+    fputs(usageMsg, stderr);
+    exit(EXIT_FAILURE);
+} 
 
- void usage(void) {
-     fputs(usageMsg, stderr);
-     exit(EXIT_FAILURE);
- }
+int main(int argc, char **argv) {
 
-int main(int argc, char **argv){
-  // Command line arguments specify file names
-  if(argc < 8)
-      usage();
-
-  const char *realDataName = argv[1];
-  int nfiles = 0;
-
-  for(int i = 2; i < argc; i++){
-    if (argv[i][0] == '-'){
-      if(strcmp(argv[i], "-L") == 0){
-        break;
-      }
-      else{
+    // Command line arguments specify file names
+    if(argc < 8)
         usage();
-      }
+    const char *realDataName = argv[1];
+    int nfiles = 0;
+    for(int i = 2; i < argc; i++) {
+        if(argv[i][0] == '-') {
+            if(strcmp(argv[i], "-L") == 0) {
+                break;
+            }
+
+            else {
+                usage();
+            }
+        }
+
+        else {
+            nfiles++;
+        }
     }
-    else{
-      nfiles++;
+    const char *realLegoName = argv[3 + nfiles];
+    int nfiles_temp = 0;
+    for(int i = (4 + nfiles); i < argc; i++) {
+        if(argv[i][0] == '-') {
+            usage();
+        }
+
+        else {
+            nfiles_temp++;
+        }
     }
-  }
-
-  const char *realLegoName = argv[3+nfiles];
-  int nfiles_temp = 0;
-  for(int i = (4+nfiles); i < argc; i++){
-    if (argv[i][0] == '-'){
-      usage();
+    if(nfiles_temp != nfiles) {
+        fprintf(stderr, "%s:%d\n"
+                " Inconsistent number of files!"
+                " %d data files and %d legofit files\n", __FILE__, __LINE__,
+                nfiles, nfiles_temp);
+        usage();
     }
-    else{
-      nfiles_temp++;
+    const char *legofname[nfiles];
+    const char *datafname[nfiles];
+    for(int i = 0; i < nfiles; ++i) {
+        datafname[i] = argv[i + 1];
+        legofname[i] = argv[i + 4 + nfiles];
     }
-  }
-
-  if(nfiles_temp != nfiles){
-      fprintf(stderr, "%s:%d\n"
-              " Inconsistent number of files!"
-              " %d data files and %d legofit files\n",
-              __FILE__,__LINE__, nfiles, nfiles_temp);
-      usage();
-  }
-
-  const char *legofname[nfiles];
-  const char *datafname[nfiles];
-
-  for(int i = 0; i < nfiles; ++i) {
-      datafname[i] = argv[i+1];
-      legofname[i] = argv[i+4+nfiles];
-  }
-
-  // Read bootstrap files into an arrays of FIFO queues
-  StrDblQueue* data_queue[nfiles];
-  StrDblQueue* lego_queue[nfiles];
-
-  StrDblQueue* real_data_queue = StrDblQueue_parseSitPat(realDataName);
-  if(real_data_queue == NULL) {
-      fprintf(stderr,"%s:%d: can't parse \"%s\" as site pattern data\n",
-              __FILE__,__LINE__,realDataName);
-      exit(EXIT_FAILURE);
-  }
-  StrDblQueue* real_lego_queue = StrDblQueue_parseLegofit(realLegoName);
-  if(real_data_queue == NULL) {
-      fprintf(stderr,"%s:%d: can't parse \"%s\" as legofit output\n",
-              __FILE__,__LINE__,realLegoName);
-      exit(EXIT_FAILURE);
-  }
-
-
-  for(int i = 0; i < nfiles; ++i) {
-      lego_queue[i] = StrDblQueue_parseLegofit(legofname[i]);
-      data_queue[i] = StrDblQueue_parseSitPat(datafname[i]);
-
-      if(StrDblQueue_compare(real_lego_queue, lego_queue[i])) {
-          fprintf(stderr, "%s:%d: inconsistent parameters in"
-                  " files%s and %s\n", __FILE__,__LINE__,
-                  realLegoName, legofname[i]);
-          exit(EXIT_FAILURE);
-      }
-      if(StrDblQueue_compare(real_data_queue, data_queue[i])) {
-          fprintf(stderr, "%s:%d: inconsistent parameters in"
-                  " files%s and %s\n", __FILE__,__LINE__,
-                  realDataName, datafname[i]);
-          exit(EXIT_FAILURE);
-      }
-  }
-
-  //normalize the queues
-  StrDblQueue_normalize(real_lego_queue);
-  StrDblQueue_normalize(real_data_queue);
-  for(int i = 0; i < nfiles; ++i) {
-      StrDblQueue_normalize(lego_queue[i]);
-      StrDblQueue_normalize(data_queue[i]);
-  }
-
-  //find MSD
-  double real_msd = 0;
-  double boot_msd = 0;
-  double bepe;
-  double x;
-
-  int npat = 0;
-
-  StrDblQueue* temp_L;
-  StrDblQueue* temp_D;
-  StrDblQueue* temp_d;
-
-  for (int i = 0; i < nfiles; ++i){
-    temp_L = lego_queue[i];
-    temp_D = data_queue[i];
-    temp_d = real_data_queue;
-    int npat2 = StrDblQueue_length(temp_D);
-    if(npat==0)
-        npat = npat2;
-    if(npat != npat2) {
-        fprintf(stderr,"%s:%d: files 0 and %d have inconsistent"
-                " site patterns.\n", __FILE__,__LINE__,i);
+    // Read bootstrap files into an arrays of FIFO queues
+    StrDblQueue *data_queue[nfiles];
+    StrDblQueue *lego_queue[nfiles];
+    StrDblQueue *real_data_queue = StrDblQueue_parseSitPat(realDataName);
+    if(real_data_queue == NULL) {
+        fprintf(stderr, "%s:%d: can't parse \"%s\" as site pattern data\n",
+                __FILE__, __LINE__, realDataName);
         exit(EXIT_FAILURE);
     }
-    for (int j = 0; j < npat; ++j){
-      x = temp_d->strdbl.val - temp_L->strdbl.val;
-      real_msd += x*x;
-
-      x = temp_D->strdbl.val - temp_L->strdbl.val;
-      boot_msd += x*x;
-
-      temp_D = temp_D->next;
-      temp_L = temp_L->next;
-      temp_d = temp_d->next;
+    StrDblQueue *real_lego_queue = StrDblQueue_parseLegofit(realLegoName);
+    if(real_data_queue == NULL) {
+        fprintf(stderr, "%s:%d: can't parse \"%s\" as legofit output\n",
+                __FILE__, __LINE__, realLegoName);
+        exit(EXIT_FAILURE);
     }
-  }
+    for(int i = 0; i < nfiles; ++i) {
+        lego_queue[i] = StrDblQueue_parseLegofit(legofname[i]);
+        data_queue[i] = StrDblQueue_parseSitPat(datafname[i]);
+        if(StrDblQueue_compare(real_lego_queue, lego_queue[i])) {
+            fprintf(stderr, "%s:%d: inconsistent parameters in"
+                    " files%s and %s\n", __FILE__, __LINE__, realLegoName,
+                    legofname[i]);
+            exit(EXIT_FAILURE);
+        }
+        if(StrDblQueue_compare(real_data_queue, data_queue[i])) {
+            fprintf(stderr, "%s:%d: inconsistent parameters in"
+                    " files%s and %s\n", __FILE__, __LINE__, realDataName,
+                    datafname[i]);
+            exit(EXIT_FAILURE);
+        }
+    }
 
-  if(npat==0) {
-      fprintf(stderr,"%s:%d: npat should not be 0\n", __FILE__,__LINE__);
-      exit(EXIT_FAILURE);
-  }
-
-  real_msd /= nfiles*npat;
-  boot_msd /= nfiles*npat;
-
-  bepe = real_msd + boot_msd;
-
-  printf("%lg \t#Real BEPE\n", bepe);
-
-  for (int k = 0; k < nfiles; ++k){
-    for (int i = 0; i < nfiles; ++i){
-      //Switch each of the real data with a boot
-      if(i != k){
+    //normalize the queues
+    StrDblQueue_normalize(real_lego_queue);
+    StrDblQueue_normalize(real_data_queue);
+    for(int i = 0; i < nfiles; ++i) {
+        StrDblQueue_normalize(lego_queue[i]);
+        StrDblQueue_normalize(data_queue[i]);
+    }
+    //find MSD
+    double real_msd = 0;
+    double boot_msd = 0;
+    double bepe;
+    double x;
+    int npat = 0;
+    StrDblQueue *temp_L;
+    StrDblQueue *temp_D;
+    StrDblQueue *temp_d;
+    for(int i = 0; i < nfiles; ++i) {
         temp_L = lego_queue[i];
+        temp_D = data_queue[i];
         temp_d = real_data_queue;
-      }
-      else{
-        temp_L = real_data_queue;
-        temp_d = lego_queue[i];
-      }
-
-      temp_D = data_queue[i];
-      int npat2 = StrDblQueue_length(temp_D);
-      if(npat==0)
-          npat = npat2;
-      if(npat != npat2) {
-          fprintf(stderr,"%s:%d: files 0 and %d have inconsistent"
-                  " site patterns.\n", __FILE__,__LINE__,i);
-          exit(EXIT_FAILURE);
-      }
-      for (int j = 0; j < npat; ++j){
-        x = (temp_d->strdbl.val - temp_L->strdbl.val);
-        real_msd += (x*x);
-
-        x = (temp_D->strdbl.val - temp_L->strdbl.val);
-        boot_msd += (x*x);
-
-        temp_D = temp_D->next;
-        temp_L = temp_L->next;
-        temp_d = temp_d->next;
-      }
-    }
-
-    if(npat==0) {
-        fprintf(stderr,"%s:%d: npat should not be 0\n", __FILE__,__LINE__);
+        int npat2 = StrDblQueue_length(temp_D);
+        if(npat == 0)
+            npat = npat2;
+        if(npat != npat2) {
+            fprintf(stderr, "%s:%d: files 0 and %d have inconsistent"
+                    " site patterns.\n", __FILE__, __LINE__, i);
+            exit(EXIT_FAILURE);
+        }
+        for(int j = 0; j < npat; ++j) {
+            x = temp_d->strdbl.val - temp_L->strdbl.val;
+            real_msd += x * x;
+            x = temp_D->strdbl.val - temp_L->strdbl.val;
+            boot_msd += x * x;
+            temp_D = temp_D->next;
+            temp_L = temp_L->next;
+            temp_d = temp_d->next;
+    }} if(npat == 0) {
+        fprintf(stderr, "%s:%d: npat should not be 0\n", __FILE__, __LINE__);
         exit(EXIT_FAILURE);
     }
-
-    real_msd /= (nfiles*npat);
-    boot_msd /= (nfiles*npat);
-
+    real_msd /= nfiles * npat;
+    boot_msd /= nfiles * npat;
     bepe = real_msd + boot_msd;
+    printf("%lg \t#Real BEPE\n", bepe);
+    for(int k = 0; k < nfiles; ++k) {
+        for(int i = 0; i < nfiles; ++i) {
 
-    printf("%lg \t#BEPE based on %s\n", bepe, legofname[k]);
-  }
+            //Switch each of the real data with a boot
+            if(i != k) {
+                temp_L = lego_queue[i];
+                temp_d = real_data_queue;
+            }
+
+            else {
+                temp_L = real_data_queue;
+                temp_d = lego_queue[i];
+            }
+            temp_D = data_queue[i];
+            int npat2 = StrDblQueue_length(temp_D);
+            if(npat == 0)
+                npat = npat2;
+            if(npat != npat2) {
+                fprintf(stderr, "%s:%d: files 0 and %d have inconsistent"
+                        " site patterns.\n", __FILE__, __LINE__, i);
+                exit(EXIT_FAILURE);
+            }
+            for(int j = 0; j < npat; ++j) {
+                x = (temp_d->strdbl.val - temp_L->strdbl.val);
+                real_msd += (x * x);
+                x = (temp_D->strdbl.val - temp_L->strdbl.val);
+                boot_msd += (x * x);
+                temp_D = temp_D->next;
+                temp_L = temp_L->next;
+                temp_d = temp_d->next;
+        }} if(npat == 0) {
+            fprintf(stderr, "%s:%d: npat should not be 0\n", __FILE__,
+                    __LINE__);
+            exit(EXIT_FAILURE);
+        }
+        real_msd /= (nfiles * npat);
+        boot_msd /= (nfiles * npat);
+        bepe = real_msd + boot_msd;
+        printf("%lg \t#BEPE based on %s\n", bepe, legofname[k]);
+    }
+}
+
+// rewrite of bepe
+int main(int argc, char **argv) {
+
+    // Command line arguments specify file names
+    if(argc < 8)
+        usage();
+    int i, j;
+    int nfiles=0, nLegoFiles=0;
+    int gotDashL = 0;
+    for(i = 1; i < argc; i++) {
+        if(argv[i][0] == '-') {
+            if(strcmp(argv[i], "-L") == 0) {
+                gotDashL = 1;
+                break;
+            }else
+                usage();
+        }
+        if(gotDashL)
+            ++nLegofiles;
+        else
+            ++nfiles;
+    }
+    if(nfiles != nLegoFiles) {
+        fprintf(stderr, "%s:%d\n"
+                " Inconsistent number of files!"
+                " %d data files and %d legofit files\n",
+                __FILE__, __LINE__, nfiles, nLegoFiles);
+        usage();
+    }
+    const char *datafname[nfiles], *legofname[nfiles];
+    gotDashL=0;
+    for(i = 1; i < argc; i++) {
+        if(argv[i][0] == '-') {
+            if(strcmp(argv[i], "-L") == 0) {
+                gotDashL = 1;
+                j = 0;
+                break;
+            }else
+                usage();
+        }
+        if(gotDashL)
+            legofname[j++] = argv[i];
+        else
+            datafname[j++] = argv[i];
+    }
+
+    fprintf(stderr,"%2s %11s %11s\n", "i", "datfile[i]", "legofile[i]");
+    for(i = 0; i < nfiles; ++i)
+        fprintf(stderr, "%2d %11s %11s\n", i, datafname[i], legofname[i]);
+
+    // Read data and bootstrap files into an arrays of queues
+    StrDblQueue *data_queue[nfiles];
+    StrDblQueue *lego_queue[nfiles];
+    for(int i = 0; i < nfiles; ++i) {
+        lego_queue[i] = StrDblQueue_parseLegofit(legofname[i]);
+        data_queue[i] = StrDblQueue_parseSitPat(datafname[i]);
+        if(i==0)
+            continue;
+        if(StrDblQueue_compare(lego_queue[0], lego_queue[i])) {
+            fprintf(stderr, "%s:%d: inconsistent parameters in"
+                    " files%s and %s\n", __FILE__, __LINE__,
+                    legofname[0], legofname[i]);
+            exit(EXIT_FAILURE);
+        }
+        if(StrDblQueue_compare(data_queue[0], data_queue[i])) {
+            fprintf(stderr, "%s:%d: inconsistent parameters in"
+                    " files%s and %s\n", __FILE__, __LINE__,
+                    datafname[0], datafname[i]);
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    //normalize the queues
+    for(i = 0; i < nfiles; ++i) {
+        StrDblQueue_normalize(lego_queue[i]);
+        StrDblQueue_normalize(data_queue[i]);
+    }
+
+    //find MSD
+    double x, real_msd = 0, boot_msd = 0, bepe;
+    int npat = 0;
+    StrDblQueue *temp_L, *temp_D, *temp_d;
+    for(int i = 0; i < nfiles; ++i) {
+        temp_L = lego_queue[i];
+        temp_D = data_queue[i];
+        temp_d = real_data_queue;
+        int npat2 = StrDblQueue_length(temp_D);
+        if(npat == 0)
+            npat = npat2;
+        if(npat != npat2) {
+            fprintf(stderr, "%s:%d: files 0 and %d have inconsistent"
+                    " site patterns.\n", __FILE__, __LINE__, i);
+            exit(EXIT_FAILURE);
+        }
+        for(int j = 0; j < npat; ++j) {
+            x = temp_d->strdbl.val - temp_L->strdbl.val;
+            real_msd += x * x;
+            x = temp_D->strdbl.val - temp_L->strdbl.val;
+            boot_msd += x * x;
+            temp_D = temp_D->next;
+            temp_L = temp_L->next;
+            temp_d = temp_d->next;
+        }
+    } if(npat == 0) {
+        fprintf(stderr, "%s:%d: npat should not be 0\n", __FILE__, __LINE__);
+        exit(EXIT_FAILURE);
+    }
+    real_msd /= nfiles * npat;
+    boot_msd /= nfiles * npat;
+    bepe = real_msd + boot_msd;
+    printf("%lg \t#Real BEPE\n", bepe);
+    for(int k = 0; k < nfiles; ++k) {
+        for(int i = 0; i < nfiles; ++i) {
+
+            //Switch each of the real data with a boot
+            if(i != k) {
+                temp_L = lego_queue[i];
+                temp_d = real_data_queue;
+            }
+
+            else {
+                temp_L = real_data_queue;
+                temp_d = lego_queue[i];
+            }
+            temp_D = data_queue[i];
+            int npat2 = StrDblQueue_length(temp_D);
+            if(npat == 0)
+                npat = npat2;
+            if(npat != npat2) {
+                fprintf(stderr, "%s:%d: files 0 and %d have inconsistent"
+                        " site patterns.\n", __FILE__, __LINE__, i);
+                exit(EXIT_FAILURE);
+            }
+            for(int j = 0; j < npat; ++j) {
+                x = (temp_d->strdbl.val - temp_L->strdbl.val);
+                real_msd += (x * x);
+                x = (temp_D->strdbl.val - temp_L->strdbl.val);
+                boot_msd += (x * x);
+                temp_D = temp_D->next;
+                temp_L = temp_L->next;
+                temp_d = temp_d->next;
+            }
+        } if(npat == 0) {
+            fprintf(stderr, "%s:%d: npat should not be 0\n", __FILE__,
+                    __LINE__);
+            exit(EXIT_FAILURE);
+        }
+        real_msd /= (nfiles * npat);
+        boot_msd /= (nfiles * npat);
+        bepe = real_msd + boot_msd;
+        printf("%lg \t#BEPE based on %s\n", bepe, legofname[k]);
+    }
 }

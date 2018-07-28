@@ -214,6 +214,37 @@ void StrDblQueue_normalize(StrDblQueue* self){
   }
 }
 
+// Calculate mean squared deviation between the values of
+// two StrDblQueue objects;
+double StrDblQueue_msd(const StrDblQueue *a, const StrDblQueue *b) {
+    const StrDblQueue *ia = a;
+    const StrDblQueue *ib = b;
+    double x, msd=0.0;
+    int n=0;
+
+    while(ia!=NULL && ib!=NULL) {
+        StrDbl sda = ia->strdbl;
+        StrDbl sdb = ib->strdbl;
+        if(0 != strcmp(sda.str, sdb.str)) {
+            fprintf(stderr, "%s:%s:%d: inconsistent strings: %s != %s\n",
+                    __FILE__,__func__,__LINE__,
+                    sda.str, sdb.str);
+            exit(EXIT_FAILURE);
+        }
+        x = sda.val - sdb.val;
+        msd += x*x;
+        ++n;
+        ia = ia->next;
+        ib = ib->next;
+    }
+    if(ia || ib) {
+        fprintf(stderr, "%s:%s:%d: queues are of unequal length\n",
+                __FILE__,__func__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
+    return msd/n;
+}
+
 // On input, nfiles and npar are the number of rows and columns in
 // the input data matrix "array". The npar X npar matrix "cov" should
 // be allocated in the calling function.
