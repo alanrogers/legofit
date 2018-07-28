@@ -228,7 +228,7 @@ int main(int argc, char **argv) {
         real_msd /= (nfiles * npat);
         boot_msd /= (nfiles * npat);
         bepe = real_msd + boot_msd;
-        printf("%lg \t#BEPE based on %s\n", bepe, legofname[k]);
+        printf("%lg \t#BEPE based on %s\n", bepe, mybasename(legofname[k]));
     }
 }
 #endif
