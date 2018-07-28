@@ -280,6 +280,7 @@ int main(int argc, char **argv) {
         else
             datafname[j++] = argv[i];
     }
+    printf("nfiles=%d j=%d\n", nfiles, j);
     assert(j==nfiles);
 
     fprintf(stderr,"%2s %11s %11s\n", "i", "datfile[i]", "legofile[i]");
