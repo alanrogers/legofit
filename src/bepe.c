@@ -220,7 +220,9 @@ int main(int argc, char **argv) {
                 temp_D = temp_D->next;
                 temp_L = temp_L->next;
                 temp_d = temp_d->next;
-        }} if(npat == 0) {
+            }
+        }
+        if(npat == 0) {
             fprintf(stderr, "%s:%d: npat should not be 0\n", __FILE__,
                     __LINE__);
             exit(EXIT_FAILURE);
@@ -328,7 +330,7 @@ int main(int argc, char **argv) {
             bias += StrDblQueue_msd(data_queue[j], lego_queue[j]);
         }
         bepe = (msd+bias)/(nfiles-1);
-        printf("%lg \t#BEPE based on %s\n", bepe, datafname[i]);
+        printf("%lg \t#BEPE based on %s\n", bepe, mybasename(datafname[i]));
     }
     return 0;
 }
