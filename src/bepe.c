@@ -297,6 +297,10 @@ int main(int argc, char **argv) {
     for(i = 0; i < nfiles; ++i) {
         lego_queue[i] = StrDblQueue_parseSitPat(legofname[i]);
         data_queue[i] = StrDblQueue_parseSitPat(datafname[i]);
+        fprintf(stderr,"%s:%d i=%d lengths: lego=%d data=%d\n",
+                __FILE__,__LINE__, i,
+                StrDblQueue_length(lego_queue[i]),
+                StrDblQueue_length(data_queue[i]));
         fprintf(stderr,"%s:%d i=%d\n",__FILE__,__LINE__, i);
         StrDblQueue_normalize(lego_queue[i]);
         fprintf(stderr,"%s:%d i=%d\n",__FILE__,__LINE__, i);
