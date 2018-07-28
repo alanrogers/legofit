@@ -186,14 +186,12 @@ StrDblQueue *StrDblQueue_parseSitPat(const char *fname) {
             continue;
         }
 
-        char* temp = buff;
-        char* name = strsep(&temp, " ");
-        char* valstr = strsep(&temp, " ");
+        char* valstr = buff;
+        char* name = strsep(&valstr, " ");
 
         if(name==NULL || valstr==NULL)
             continue;
         name = stripWhiteSpace(name);
-        valstr = stripWhiteSpace(valstr);
         queue=StrDblQueue_push(queue, name, strtod(valstr, NULL) );
     }
     return queue;
@@ -206,6 +204,13 @@ void StrDblQueue_normalize(StrDblQueue* self){
 
   for(temp = self; temp; temp = temp->next){
     total += temp->strdbl.val;
+  }
+
+  assert(isfinite(total));
+  if(total == 0.0) {
+      fprintf(stderr,"%s:%s:%d: total is zero; can't normalize\n",
+              __FILE__,__func__,__LINE__);
+      exit(EXIT_FAILURE);
   }
 
   temp = self;

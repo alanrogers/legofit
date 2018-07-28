@@ -68,6 +68,7 @@ void usage(void) {
 } 
 
 #if 0
+
 int main(int argc, char **argv) {
 
     // Command line arguments specify file names
@@ -79,11 +80,8 @@ int main(int argc, char **argv) {
         if(argv[i][0] == '-') {
             if(strcmp(argv[i], "-L") == 0) {
                 break;
-            }
-
-            else {
+            }else
                 usage();
-            }
         }
 
         else {
