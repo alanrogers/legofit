@@ -8,10 +8,10 @@
 
 Bootstrap model averaging was proposed by Buckland et al (Biometrics,
 53(2):603-618). It can be used with weights provided by any method of
-model selection. Model selection is applied to the real data and also
-to a set of bootstrap replicates. The weight, \f$w_i\f$ of the i'th
-model is the fraction of these data sets for which the i'th model
-wins.
+model selection, including @ref bepe "bepe" and @ref clic
+"clic". Model selection is applied to the real data and also to a set
+of bootstrap replicates. The weight, \f$w_i\f$ of the i'th model is
+the fraction of these data sets for which the i'th model wins.
 
 The model-averaged estimator of a parameter, \f$\theta\f$, is the
 average across models, weighted by \f$w_i\f$, of the model-specific
