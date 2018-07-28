@@ -226,9 +226,14 @@ double StrDblQueue_msd(const StrDblQueue *a, const StrDblQueue *b) {
         StrDbl sda = ia->strdbl;
         StrDbl sdb = ib->strdbl;
         if(0 != strcmp(sda.str, sdb.str)) {
-            fprintf(stderr, "%s:%s:%d: inconsistent strings: %s != %s\n",
+            fprintf(stderr, "%s:%s:%d: inconsistent strings:"
+                    " \"%s\" != \"%s\"\n",
                     __FILE__,__func__,__LINE__,
                     sda.str, sdb.str);
+            fprintf(stderr,"Queue a:");
+            StrDblQueue_print(a, stderr);
+            fprintf(stderr,"Queue b:");
+            StrDblQueue_print(b, stderr);
             exit(EXIT_FAILURE);
         }
         x = sda.val - sdb.val;
