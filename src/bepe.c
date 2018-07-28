@@ -287,12 +287,12 @@ int main(int argc, char **argv) {
 
     fprintf(stderr,"%2s %11s %11s\n", "i", "datfile[i]", "legofile[i]");
     for(i = 0; i < nfiles; ++i) {
-        const char *dfn = rindex(datafname[i]);
+        const char *dfn = rindex(datafname[i], '/');
         if(dfn==NULL)
             dfn = datafname[i];
         else
             dfn += 1;
-        const char *lfn = rindex(legofname[i]);
+        const char *lfn = rindex(legofname[i], '/');
         if(lfn==NULL)
             lfn = legofname[i];
         else
