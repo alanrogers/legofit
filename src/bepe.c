@@ -284,9 +284,9 @@ int main(int argc, char **argv) {
     }
     assert(j==nfiles);
 
-    fprintf(stderr,"# %2s %11s %11s\n", "i", "datfile[i]", "legofile[i]");
+    printf("# %2s %11s %11s\n", "i", "datfile[i]", "legofile[i]");
     for(i = 0; i < nfiles; ++i) {
-        fprintf(stderr, "# %2d %11s %11s\n", i,
+        printf("# %2d %11s %11s\n", i,
                 mybasename(datafname[i]),
                 mybasename(legofname[i]));
     }
