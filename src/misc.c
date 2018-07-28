@@ -468,6 +468,7 @@ char *stripWhiteSpace(char *buff) {
     *t = '\0';
     return s;
 }
+
 char* stripInternalWhiteSpace(char* buff) {
   char* str = buff;
   int x = 0;

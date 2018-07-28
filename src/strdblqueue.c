@@ -12,6 +12,9 @@
 #include "strdblqueue.h"
 #include <math.h>
 #include <stdbool.h>
+#include <ctype.h>
+
+static int isSitePatHdr(const char *s);
 
 // Push a value onto the tail of the queue. Return pointer to new
 // head. Example:
@@ -157,6 +160,18 @@ StrDblQueue *StrDblQueue_parseLegofit(const char *fname) {
     return queue;
 }
 
+/// Return 1 if string begins with '#', then any number of whitespace
+/// characters, then "SitePat". Return 0 otherwise.
+static int isSitePatHdr(const char *s) {
+    if(*s++ != '#')
+        return 0;
+    while(isspace(*s))
+        ++s;
+    if(0 == strcmp(s, "SitePat"))
+        return 1;
+    return 0;
+}
+
 // Parse a data file. Return an object of type
 // StrDblQueue, which contains the site pattern names and their
 // frequencies.
@@ -180,10 +195,10 @@ StrDblQueue *StrDblQueue_parseSitPat(const char *fname) {
             exit(EXIT_FAILURE);
         }
         if(!got_sitepat) {
-            char* no_spaces_buff = stripInternalWhiteSpace(buff);
-            if(strncmp("#SitePat", no_spaces_buff, 8) == 0)
+            if(isSitePatHdr(buff)) {
                 got_sitepat=true;
-            continue;
+                continue;
+            }
         }
 
         char* valstr = buff;
