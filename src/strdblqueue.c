@@ -10,6 +10,7 @@
 #include "hessian.h"
 #include "misc.h"
 #include "strdblqueue.h"
+#include <math.h>
 #include <stdbool.h>
 
 // Push a value onto the tail of the queue. Return pointer to new
@@ -236,6 +237,8 @@ double StrDblQueue_msd(const StrDblQueue *a, const StrDblQueue *b) {
             StrDblQueue_print(b, stderr);
             exit(EXIT_FAILURE);
         }
+        assert(isfinite(sda.val));
+        assert(isfinite(sdb.val));
         x = sda.val - sdb.val;
         msd += x*x;
         ++n;
