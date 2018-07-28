@@ -157,8 +157,8 @@ StrDblQueue *StrDblQueue_parseLegofit(const char *fname) {
 }
 
 // Parse a data file. Return an object of type
-// StrDblQueue, which contains the number of parameters, their names,
-// and their values.
+// StrDblQueue, which contains the site pattern names and their
+// frequencies.
 StrDblQueue *StrDblQueue_parseSitPat(const char *fname) {
     FILE *fp = fopen(fname, "r");
     if(fp==NULL) {

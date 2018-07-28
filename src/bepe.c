@@ -122,14 +122,14 @@ int main(int argc, char **argv) {
                 __FILE__, __LINE__, realDataName);
         exit(EXIT_FAILURE);
     }
-    StrDblQueue *real_lego_queue = StrDblQueue_parseLegofit(realLegoName);
+    StrDblQueue *real_lego_queue = StrDblQueue_parseSitPat(realLegoName);
     if(real_data_queue == NULL) {
         fprintf(stderr, "%s:%d: can't parse \"%s\" as legofit output\n",
                 __FILE__, __LINE__, realLegoName);
         exit(EXIT_FAILURE);
     }
     for(int i = 0; i < nfiles; ++i) {
-        lego_queue[i] = StrDblQueue_parseLegofit(legofname[i]);
+        lego_queue[i] = StrDblQueue_parseSitPat(legofname[i]);
         data_queue[i] = StrDblQueue_parseSitPat(datafname[i]);
         if(StrDblQueue_compare(real_lego_queue, lego_queue[i])) {
             fprintf(stderr, "%s:%d: inconsistent parameters in"
@@ -304,7 +304,7 @@ int main(int argc, char **argv) {
     StrDblQueue *data_queue[nfiles];
     StrDblQueue *lego_queue[nfiles];
     for(i = 0; i < nfiles; ++i) {
-        lego_queue[i] = StrDblQueue_parseLegofit(legofname[i]);
+        lego_queue[i] = StrDblQueue_parseSitPat(legofname[i]);
         data_queue[i] = StrDblQueue_parseSitPat(datafname[i]);
         StrDblQueue_normalize(lego_queue[i]);
         StrDblQueue_normalize(data_queue[i]);
