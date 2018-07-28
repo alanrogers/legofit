@@ -247,6 +247,8 @@ double StrDblQueue_msd(const StrDblQueue *a, const StrDblQueue *b) {
                 __FILE__,__func__,__LINE__);
         exit(EXIT_FAILURE);
     }
+    assert(isfinite(msd));
+    assert(n>0);
     return msd/n;
 }
 

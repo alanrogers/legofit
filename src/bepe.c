@@ -254,7 +254,6 @@ int main(int argc, char **argv) {
             ++nLegoFiles;
         else
             ++nfiles;
-        printf("%2d: %d %d %s\n", i, nfiles, nLegoFiles, argv[i]);
     }
     if(nfiles != nLegoFiles) {
         fprintf(stderr, "%s:%d\n"
@@ -285,7 +284,6 @@ int main(int argc, char **argv) {
         else
             datafname[j++] = argv[i];
     }
-    printf("nfiles=%d j=%d\n", nfiles, j);
     assert(j==nfiles);
 
     fprintf(stderr,"%2s %11s %11s\n", "i", "datfile[i]", "legofile[i]");
@@ -330,6 +328,7 @@ int main(int argc, char **argv) {
             bias += StrDblQueue_msd(data_queue[j], lego_queue[j]);
         }
         bepe = (msd+bias)/(nfiles-1);
+        printf("msd=%lg bias=%lg nfiles-1=%d\n", msd, bias, nfiles-1);
         printf("%lg \t#BEPE based on %s\n", bepe, mybasename(datafname[i]));
     }
     return 0;
