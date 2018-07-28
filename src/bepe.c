@@ -297,13 +297,7 @@ int main(int argc, char **argv) {
     for(i = 0; i < nfiles; ++i) {
         lego_queue[i] = StrDblQueue_parseSitPat(legofname[i]);
         data_queue[i] = StrDblQueue_parseSitPat(datafname[i]);
-        fprintf(stderr,"%s:%d i=%d lengths: lego=%d data=%d\n",
-                __FILE__,__LINE__, i,
-                StrDblQueue_length(lego_queue[i]),
-                StrDblQueue_length(data_queue[i]));
-        fprintf(stderr,"%s:%d i=%d\n",__FILE__,__LINE__, i);
         StrDblQueue_normalize(lego_queue[i]);
-        fprintf(stderr,"%s:%d i=%d\n",__FILE__,__LINE__, i);
         StrDblQueue_normalize(data_queue[i]);
         if(i==0)
             continue;
@@ -332,7 +326,6 @@ int main(int argc, char **argv) {
             bias += StrDblQueue_msd(data_queue[j], lego_queue[j]);
         }
         bepe = (msd+bias)/(nfiles-1);
-        printf("msd=%lg bias=%lg nfiles-1=%d\n", msd, bias, nfiles-1);
         printf("%lg \t#BEPE based on %s\n", bepe, mybasename(datafname[i]));
     }
     return 0;

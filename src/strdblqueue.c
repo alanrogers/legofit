@@ -176,7 +176,6 @@ static int isSitePatHdr(const char *s) {
 // StrDblQueue, which contains the site pattern names and their
 // frequencies.
 StrDblQueue *StrDblQueue_parseSitPat(const char *fname) {
-    fprintf(stderr,"%s:%d: parsing %s\n", __FILE__,__LINE__,fname);
     FILE *fp = fopen(fname, "r");
     if(fp==NULL) {
         fprintf(stderr,"%s:%d: can't read file \"%s\"\n",
@@ -195,22 +194,15 @@ StrDblQueue *StrDblQueue_parseSitPat(const char *fname) {
                     __FILE__, __LINE__, sizeof(buff));
             exit(EXIT_FAILURE);
         }
-        fprintf(stderr,"%s:%d: buff=%s\n",__FILE__,__LINE__,buff);
         if(!got_sitepat) {
             if(isSitePatHdr(buff)) 
                 got_sitepat=true;
-            fprintf(stderr,"%s:%d: got_sitepat=%d\n",
-                    __FILE__,__LINE__,got_sitepat);
             continue;
         }
-        fprintf(stderr,"%s:%d: got_sitepat=%d\n",
-                __FILE__,__LINE__,got_sitepat);
 
         char* valstr = stripWhiteSpace(buff);
         char* name = strsep(&valstr, " ");
 
-        fprintf(stderr,"%s:%d: name=%s valstr=%s\n",
-                __FILE__,__LINE__,name, valstr);
         if(name==NULL || valstr==NULL)
             continue;
         name = stripWhiteSpace(name);
@@ -258,10 +250,6 @@ double StrDblQueue_msd(const StrDblQueue *a, const StrDblQueue *b) {
                     " \"%s\" != \"%s\"\n",
                     __FILE__,__func__,__LINE__,
                     sda.str, sdb.str);
-            fprintf(stderr,"Queue a:");
-            StrDblQueue_print(a, stderr);
-            fprintf(stderr,"Queue b:");
-            StrDblQueue_print(b, stderr);
             exit(EXIT_FAILURE);
         }
         assert(isfinite(sda.val));
