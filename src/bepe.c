@@ -242,7 +242,7 @@ int main(int argc, char **argv) {
         if(argv[i][0] == '-') {
             if(strcmp(argv[i], "-L") == 0) {
                 gotDashL = 1;
-                break;
+                continue;
             }else
                 usage();
         }
