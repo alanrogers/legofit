@@ -250,6 +250,7 @@ int main(int argc, char **argv) {
             ++nLegoFiles;
         else
             ++nfiles;
+        printf("%2d: %d %d %s\n", i, nfiles, nLegoFiles, argv[i]);
     }
     if(nfiles != nLegoFiles) {
         fprintf(stderr, "%s:%d\n"
