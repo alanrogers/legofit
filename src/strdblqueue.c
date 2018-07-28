@@ -112,10 +112,10 @@ int StrDblQueue_compare(StrDblQueue *lhs, StrDblQueue *rhs) {
     return 0;
 }
 
-// Parse a legofit output file for CLIC. Return an object of type
+// Parse a legofit output file. Return an object of type
 // StrDblQueue, which contains the number of parameters, their names,
 // and their values.
-StrDblQueue *parseLegofit_CLIC(const char *fname) {
+StrDblQueue *StrDblQueue_parseLegofit(const char *fname) {
     FILE *fp = fopen(fname, "r");
     if(fp==NULL) {
         fprintf(stderr,"%s:%d: can't read file \"%s\"\n",
@@ -156,10 +156,10 @@ StrDblQueue *parseLegofit_CLIC(const char *fname) {
     return queue;
 }
 
-// Parse a data file for BEPE. Return an object of type
+// Parse a data file. Return an object of type
 // StrDblQueue, which contains the number of parameters, their names,
 // and their values.
-StrDblQueue *parseSitPat(const char *fname) {
+StrDblQueue *StrDblQueue_parseSitPat(const char *fname) {
     FILE *fp = fopen(fname, "r");
     if(fp==NULL) {
         fprintf(stderr,"%s:%d: can't read file \"%s\"\n",
@@ -186,8 +186,8 @@ StrDblQueue *parseSitPat(const char *fname) {
         }
 
         char* temp = buff;
-        char* name = strtok_r(temp, " ", &temp);
-        char* valstr = strtok_r(temp, " ", &temp);
+        char* name = strsep(&temp, " ");
+        char* valstr = strsep(&temp, " ");
 
         if(name==NULL || valstr==NULL)
             continue;

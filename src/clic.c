@@ -97,7 +97,7 @@ int main(int argc, char **argv){
     // Read bootstrap files into an array of FIFO queues
     StrDblQueue *queue[nfiles];
     for(i=0; i < nfiles; ++i) {
-        queue[i] = parseLegofit_CLIC(bootfname[i]);
+        queue[i] = StrDblQueue_parseLegofit(bootfname[i]);
         if(i>0) {
             if(StrDblQueue_compare(queue[0], queue[i])) {
                 fprintf(stderr, "%s:%d: inconsistent parameters in"

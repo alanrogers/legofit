@@ -115,22 +115,32 @@ int main(int argc, char **argv){
   const char *legofname[nfiles];
   const char *datafname[nfiles];
 
-  for(int i = 0; i < nfiles; ++i)
+  for(int i = 0; i < nfiles; ++i) {
       datafname[i] = argv[i+1];
-  for(int i = 0; i < nfiles; ++i)
       legofname[i] = argv[i+4+nfiles];
+  }
 
   // Read bootstrap files into an arrays of FIFO queues
   StrDblQueue* data_queue[nfiles];
   StrDblQueue* lego_queue[nfiles];
 
-  StrDblQueue* real_data_queue = parseSitPat(realDataName);
-  StrDblQueue* real_lego_queue = parseSitPat(realLegoName);
+  StrDblQueue* real_data_queue = StrDblQueue_parseSitPat(realDataName);
+  if(real_data_queue == NULL) {
+      fprintf(stderr,"%s:%d: can't parse \"%s\" as site pattern data\n",
+              __FILE__,__LINE__,realDataName);
+      exit(EXIT_FAILURE);
+  }
+  StrDblQueue* real_lego_queue = StrDblQueue_parseLegofit(realLegoName);
+  if(real_data_queue == NULL) {
+      fprintf(stderr,"%s:%d: can't parse \"%s\" as legofit output\n",
+              __FILE__,__LINE__,realLegoName);
+      exit(EXIT_FAILURE);
+  }
 
 
   for(int i = 0; i < nfiles; ++i) {
-      lego_queue[i] = parseSitPat(legofname[i]);
-      data_queue[i] = parseSitPat(datafname[i]);
+      lego_queue[i] = StrDblQueue_parseLegofit(legofname[i]);
+      data_queue[i] = StrDblQueue_parseSitPat(datafname[i]);
 
       if(StrDblQueue_compare(real_lego_queue, lego_queue[i])) {
           fprintf(stderr, "%s:%d: inconsistent parameters in"
@@ -179,11 +189,11 @@ int main(int argc, char **argv){
         exit(EXIT_FAILURE);
     }
     for (int j = 0; j < npat; ++j){
-      x = (temp_d->strdbl.val - temp_L->strdbl.val);
-      real_msd += (x*x);
+      x = temp_d->strdbl.val - temp_L->strdbl.val;
+      real_msd += x*x;
 
-      x = (temp_D->strdbl.val - temp_L->strdbl.val);
-      boot_msd += (x*x);
+      x = temp_D->strdbl.val - temp_L->strdbl.val;
+      boot_msd += x*x;
 
       temp_D = temp_D->next;
       temp_L = temp_L->next;
@@ -196,8 +206,8 @@ int main(int argc, char **argv){
       exit(EXIT_FAILURE);
   }
 
-  real_msd /= (nfiles*npat);
-  boot_msd /= (nfiles*npat);
+  real_msd /= nfiles*npat;
+  boot_msd /= nfiles*npat;
 
   bepe = real_msd + boot_msd;
 
