@@ -74,12 +74,6 @@ int main(int argc, char **argv) {
     int nfiles=0, nLegoFiles=0;
     int gotDashL = 0;
 
-    printf("# cmd:");
-    for(i = 0; i < argc; ++i)
-        printf(" %s", argv[i]);
-    putchar('\n');
-    fflush(stdout);
-
     for(i = 1; i < argc; i++) {
         if(argv[i][0] == '-') {
             if(strcmp(argv[i], "-L") == 0) {
@@ -124,13 +118,6 @@ int main(int argc, char **argv) {
     }
     assert(j==nfiles);
 
-    printf("# %2s %11s %11s\n", "i", "datfile[i]", "legofile[i]");
-    for(i = 0; i < nfiles; ++i) {
-        printf("# %2d %11s %11s\n", i,
-                mybasename(datafname[i]),
-                mybasename(legofname[i]));
-    }
-
     // Read data and bootstrap files into an arrays of queues
     StrDblQueue *data_queue[nfiles];
     StrDblQueue *lego_queue[nfiles];
@@ -168,5 +155,21 @@ int main(int argc, char **argv) {
         bepe = (msd+bias)/(nfiles-1);
         printf("%lg \t#BEPE based on %s\n", bepe, mybasename(datafname[i]));
     }
+
+    // Echo input files
+    printf("# %2s %11s %11s\n", "i", "datfile[i]", "legofile[i]");
+    for(i = 0; i < nfiles; ++i) {
+        printf("# %2d %11s %11s\n", i,
+                mybasename(datafname[i]),
+                mybasename(legofname[i]));
+    }
+
+    // Echo command line
+    printf("# cmd:");
+    for(i = 0; i < argc; ++i)
+        printf(" %s", argv[i]);
+    putchar('\n');
+    fflush(stdout);
+
     return 0;
 }
