@@ -206,7 +206,7 @@ StrDblQueue *StrDblQueue_parseSitPat(const char *fname) {
         fprintf(stderr,"%s:%d: got_sitepat=%d\n",
                 __FILE__,__LINE__,got_sitepat);
 
-        char* valstr = buff;
+        char* valstr = stripWhiteSpace(buff);
         char* name = strsep(&valstr, " ");
 
         fprintf(stderr,"%s:%d: name=%s valstr=%s\n",
