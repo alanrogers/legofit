@@ -47,6 +47,7 @@ Systems Consortium License, which can be found in file "LICENSE".
 */
 
 #include "strdblqueue.h"
+#include <strings.h>
 
 // Function prototypes
 void usage(void);
@@ -270,8 +271,9 @@ int main(int argc, char **argv) {
         if(argv[i][0] == '-') {
             if(strcmp(argv[i], "-L") == 0) {
                 gotDashL = 1;
+                assert(j==nfiles);
                 j = 0;
-                break;
+                continue;
             }else
                 usage();
         }
@@ -284,8 +286,19 @@ int main(int argc, char **argv) {
     assert(j==nfiles);
 
     fprintf(stderr,"%2s %11s %11s\n", "i", "datfile[i]", "legofile[i]");
-    for(i = 0; i < nfiles; ++i)
-        fprintf(stderr, "%2d %11s %11s\n", i, datafname[i], legofname[i]);
+    for(i = 0; i < nfiles; ++i) {
+        const char *dfn = rindex(datafname[i]);
+        if(dfn==NULL)
+            dfn = datafname[i];
+        else
+            dfn += 1;
+        const char *lfn = rindex(legofname[i]);
+        if(lfn==NULL)
+            lfn = legofname[i];
+        else
+            lfn += 1;
+        fprintf(stderr, "%2d %11s %11s\n", i, dfn, lfn);
+    }
 
     // Read data and bootstrap files into an arrays of queues
     StrDblQueue *data_queue[nfiles];
