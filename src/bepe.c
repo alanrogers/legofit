@@ -240,6 +240,13 @@ int main(int argc, char **argv) {
     int i, j;
     int nfiles=0, nLegoFiles=0;
     int gotDashL = 0;
+
+    printf("# cmd:");
+    for(i = 0; i < argc; ++i)
+        printf(" %s", argv[i]);
+    putchar('\n');
+    fflush(stdout);
+
     for(i = 1; i < argc; i++) {
         if(argv[i][0] == '-') {
             if(strcmp(argv[i], "-L") == 0) {
