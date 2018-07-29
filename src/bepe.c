@@ -41,6 +41,87 @@ the files globbed by `boot*.txt` and `boot*.legofit` in a consistent order,
 so that the i'th .legofit file is the output produced from the i'th
 bootstrap data file.
 
+The first few lines of `bepe`'s output look like this:
+
+    ################################################
+    # bepe: bootstrap estimate of predictive error #
+    #                 version 1.47                 #
+    ################################################
+    
+    # Program was compiled: Jul 29 2018 08:45:55
+    # Program was run: Sun Jul 29 08:53:47 2018
+    
+    #          bepe DataFile
+    3.599051951e-07 mpqva1.txt
+    3.937402126e-07 mpqvasing000
+     3.65923644e-07 mpqvasing001
+    4.205461171e-07 mpqvasing002
+    3.841736741e-07 mpqvasing003
+    4.103783016e-07 mpqvasing004
+    4.357691253e-07 mpqvasing005
+    3.996038295e-07 mpqvasing006
+
+Many of the lines begin with the comment character (#) so that they
+can be removed easily in downstream processing. Each uncommented line
+refers to a particular data set, whose name is given in column
+2. Typically, the first file is the real data, and the others are
+bootstrap replicates. Column 1 (bepe) gives the mean squared
+difference between the site pattern frequencies in this data set, and
+the predictions obtained from all the other data sets. (Bepe also
+includes a bias correction, which is described by Efron and
+Tibshirani.) The predicted values are taken from the various
+`.legofit` files.
+
+The next section lists the two sets of input files. Here are a few
+illustrative lines:
+
+    #  i         datfile[i]        legofile[i]
+    #  0         mpqva1.txt         t3.legofit
+    #  1       mpqvasing000    t3boot0.legofit
+    #  2       mpqvasing001    t3boot1.legofit
+    #  3       mpqvasing002    t3boot2.legofit
+    #  4       mpqvasing003    t3boot3.legofit
+    #  5       mpqvasing004    t3boot4.legofit
+
+The first column gives the index of the current data set, the second
+names the data file containing site pattern frequencie, and the third
+names the `legofit` output generated from that data file. The
+`legofit` output includes predicted site pattern frequencies, which
+are used by `bepe`.
+
+This section of output is provided to help find a particular kind of
+mistake. Suppose we had run `bepe` like this:
+
+    bepe mpqva1.txt mpqvasing* -L t3.legofit t3boot*.legofit
+
+This generates erroneous output, which can be detected by examining
+the 2nd portion of `bepe`'s output. Here are the first few lines:
+
+    #  i         datfile[i]        legofile[i]
+    #  0         mpqva1.txt         t3.legofit
+    #  1       mpqvasing000    t3boot0.legofit
+    #  2       mpqvasing001   t3boot10.legofit
+
+Note that bootstrap data file `mpqvasing001` is paired with `legofit`
+file `t2boot10.legofit`. This is a mistake. This data file should have
+been paired with `t2boot1.legofit`. The problem is that the wildcards
+characters (\*) expand to file names sorted in lexical order. Because
+of the leading zeroes in the data file names, a lexical sort 
+puts these names into into numerical order. But there are no leading
+zeroes in the `.legofit` filenames, so they sort in a different
+order. This generates a mismatch between the data files and the
+`.legofit` files.
+
+To avoid such problems, you need to generate both sets of file names
+in a consistent order. Here's a `bash` command line that solves the
+above problem:
+
+    bepe mpqva1.txt mpqvasing* -L t3.legofit `seq 0 49 | \
+    xargs printf "t3boot%d.legofit "`
+
+The last section of `bepe`'s output echoes the command line, which
+serves as documentation for this run of `bepe`.
+
 @copyright Copyright (c) 2018, Alan R. Rogers
 <rogers@anthro.utah.edu>. This file is released under the Internet
 Systems Consortium License, which can be found in file "LICENSE".

@@ -92,7 +92,7 @@ void usage(void);
 const char *usageMsg =
     "Usage: bma m1.bepe m2.bepe ... mK.bepe -F m1.flat m2.flat ... mK.flat\n"
     "\n"
-	"Here, the mX.bepe file refer to different models of population\n"
+	"Here, the mX.bepe files refer to different models of population\n"
 	"history. Each of these files consists of a list of numbers, one on\n"
 	"each line. The first line refers to the real data, and each succeeding\n"
 	"line refers to a single bootstrap replicate. The numbers may be\n"
