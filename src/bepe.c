@@ -49,6 +49,7 @@ Systems Consortium License, which can be found in file "LICENSE".
 #include "strdblqueue.h"
 #include "misc.h"
 #include <strings.h>
+#include <time.h>
 
 // Function prototypes
 void usage(void);
@@ -80,6 +81,15 @@ static void checkConsistency(const char *fname1, const char *fname2,
 }
 
 int main(int argc, char **argv) {
+
+    time_t currtime = time(NULL);
+
+    hdr("bepe: bootstrap estimate of predictive error");
+#if defined(__DATE__) && defined(__TIME__)
+    printf("# Program was compiled: %s %s\n", __DATE__, __TIME__);
+#endif
+    printf("# Program was run: %s\n", ctime(&currtime));
+    putchar('\n');
 
     // Command line arguments specify file names
     int i, j;
@@ -151,6 +161,7 @@ int main(int argc, char **argv) {
 
     // i is the file against which all others are being compared.
     // j indexes the other files.
+    printf("#%14s %s\n", "bepe", "DataFile");
     for(i=0; i<nfiles; ++i) {
         double msd = 0.0, bias=0.0, bepe;
         for(j=0; j < nfiles; ++j) {
@@ -160,8 +171,9 @@ int main(int argc, char **argv) {
             bias += StrDblQueue_msd(data_queue[j], lego_queue[j]);
         }
         bepe = (msd+bias)/(nfiles-1);
-        printf("%lg \t#BEPE based on %s\n", bepe, mybasename(datafname[i]));
+        printf("%15.10lg %s\n", bepe, mybasename(datafname[i]));
     }
+    putchar('\n');
 
     // Echo input files
     printf("# %2s %18s %18s\n", "i", "datfile[i]", "legofile[i]");
