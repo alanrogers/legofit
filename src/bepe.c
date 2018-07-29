@@ -182,9 +182,10 @@ int main(int argc, char **argv) {
                 mybasename(datafname[i]),
                 mybasename(legofname[i]));
     }
+    putchar('\n');
 
     // Echo command line
-    printf("# cmd:");
+    printf("# command line:\n# ");
     for(i = 0; i < argc; ++i)
         printf(" %s", argv[i]);
     putchar('\n');
