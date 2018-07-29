@@ -65,6 +65,7 @@ const char *usageMsg =
     " legofit output from the corresponding bootstrap replicate\n"
     " Must include realdat file and at least 2 bootstrap replicates.\n" "\n"
     "Options:\n" "   -h or --help\n" "   print this message\n";
+
 void usage(void) {
     fputs(usageMsg, stderr);
     exit(EXIT_FAILURE);
@@ -90,7 +91,6 @@ int main(int argc, char **argv) {
 #endif
     printf("# Program was run: %s\n", ctime(&currtime));
 
-    // Command line arguments specify file names
     int i, j;
     int nfiles=0, nLegoFiles=0;
     int gotDashL = 0;
