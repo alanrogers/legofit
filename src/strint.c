@@ -97,8 +97,6 @@ SILink     *SILink_insert(SILink * self, const char *key, int value) {
 int SILink_get(SILink * self, const char *key) {
     if(self == NULL) {
 		errno = EDOM;
-        fprintf(stderr,"%s:%s:%d: unknown chromosome: %s\n",
-                __FILE__,__func__,__LINE__, key);
 		return -1;
     }
 
@@ -110,8 +108,6 @@ int SILink_get(SILink * self, const char *key) {
     else{
         assert(diff < 0);
 		errno = EDOM;
-        fprintf(stderr,"%s:%s:%d: unknown chromosome: %s\n",
-                __FILE__,__func__,__LINE__, key);
         return -1;
     }
 }
@@ -217,7 +213,6 @@ int main(int argc, char **argv) {
     }
 	errno = 0;
     fflush(stdout);
-    fprintf(stderr,"\"Unknown chromosome\" error should follow this line.\n");
 	assert(-1 == StrInt_get(si, "notthere"));
 	assert(errno == EDOM);
 

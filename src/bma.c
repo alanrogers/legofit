@@ -91,8 +91,28 @@ Systems Consortium License, which can be found in file "LICENSE".
 */
 
 #include "strdblqueue.h"
+#include "strdbl.h"
+#include "tokenizer.h"
+
+typedef struct ModSelCrit {
+    int dim;
+    double *c;  // c[i] is the criterion for the i'th data set
+    char **fname; // fname[i] points to name of i'th data set
+} ModSelCrit;
+
+typedef struct ModPar {
+    int dim;
+    StrDbl **par // par[i] is a hash table of estimates from the i'th
+                 // data set.
+    char **fname; // fname[i] points to name of i'th data set
+} ModPar;
 
 void usage(void);
+ModSelCrit *ModSelCrit_new(const char *fname);
+void ModSelCrit_free(ModSelCrit *self);
+int ModSelCrit_compare(ModSelCrit *x, ModSelCrit *y);
+int ModSelCrit_dim(ModSelCrit *self);
+ModPar *ModPar_new(const char *fname);
 
 const char *usageMsg =
     "Usage: bma <m1.msc> ... <mK.msc> -F <m1.flat> ... <mK.flat>\n"
@@ -124,55 +144,281 @@ const char *usageMsg =
     "In both types of input files, comments begin with a sharp character\n"
     "and are ignored.\n";
 
- void usage(void) {
-     fputs(usageMsg, stderr);
-     exit(EXIT_FAILURE);
- }
+void usage(void) {
+    fputs(usageMsg, stderr);
+    exit(EXIT_FAILURE);
+}
 
- int main(int argc, char **argv){
-  // Command line arguments specify file names
-  if(argc < 4)
-      usage();
+/// Construct a new object of type ModSelCrit by parsing a file.
+/// Return NULL on failure.
+ModSelCrit *ModSelCrit_new(const char *fname) {
+    FILE *fp = fopen(fname, "r");
+    if(fp == NULL) {
+        fprintf(stderr,"%s:%d: can't read file \"%s\"\n",
+                __FILE__,__LINE__,fname);
+        exit(EXIT_FAILURE);
+    }
+    char buff[200];
 
-  int nfiles = 0;
+    // 1st pass counts lines
+    int dim=0;
+    while(1) {
+        if(fgets(buff, sizeof buff, fp) == NULL) {
+            break;
+        }
+        if(strchr(buff, '\n') == NULL && !feof(stdin)) {
+            fprintf(stderr, "%s:%d: Buffer overflow. size=%zu\n",
+                    __FILE__, __LINE__, sizeof(buff));
+            exit(EXIT_FAILURE);
+        }
+        char *next = stripWhiteSpace(buff);
+        assert(next);
+        if(*next == '#' || strlen(next)==0)
+            continue;
+        ++dim;
+    }
 
-  for(int i = 1; i < argc; i++){
-    if (argv[i][0] == '-'){
-      if(strcmp(argv[i], "-F") == 0){
-        break;
-      }
-      else{
+    ModSelCrit *msc = malloc(sizeof(ModSelCrit));
+    if(msc==NULL) {
+        fprintf(stderr,"%s:%d: bad malloc\n",__FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
+
+    msc->dim = dim;
+    msc->c = malloc(dim * sizeof(msc->c[0]));
+    msc->fname = malloc(dim * sizeof(msc->fname[0]));
+    if(msc->c==NULL || msc->fname==NULL) {
+        fprintf(stderr,"%s:%d: bad malloc\n",__FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
+
+    int line=0;
+    while(1) {
+        if(fgets(buff, sizeof buff, fp) == NULL)
+            break;
+        if(strchr(buff, '\n') == NULL && !feof(stdin)) {
+            fprintf(stderr, "%s:%d: Buffer overflow. size=%zu\n",
+                    __FILE__, __LINE__, sizeof(buff));
+            exit(EXIT_FAILURE);
+        }
+        assert(line < msc->dim);
+        char *next = stripWhiteSpace(buff);
+        assert(next);
+        if(*next == '#' || strlen(next)==0)
+            continue;
+        char *valstr = strsep(&next, " \t");
+        next = stripWhiteSpace(next);
+        if(valstr==NULL || next==NULL || strlen(next)==0) {
+            fprintf(stderr,"%s:%d: can't parse file %s\n",
+                    __FILE__,__LINE__, fname);
+            exit(EXIT_FAILURE);
+        }
+        msc->c[line] = strtod(valstr, NULL);
+        msc->fname[line] = strdup(next);
+        if(msc->fname[line] == NULL) {
+            fprintf(stderr,"%s:%d: bad strdup\n",__FILE__,__LINE__);
+            exit(EXIT_FAILURE);
+        }
+        ++line;
+    }
+    return msc;
+}
+
+void ModSelCrit_free(ModSelCrit *self) {
+    int i;
+    for(i=0; i < self->dim; ++i) {
+        if(self->fname[i])
+            free(self->fname[i]);
+    }
+    free(self->fname);
+    free(self->c);
+    free(self);
+}
+
+// Compares dimensions and filenames. Return 0 if x and y agree.
+int ModSelCrit_compare(ModSelCrit *x, ModSelCrit *y) {
+    int i, diff;
+
+    diff = x->dim - y->dim;
+    if(diff)
+        return diff;
+
+    for(i=0; i < x->dim; ++i) {
+        diff = strcmp(x->fname[i], y->fname[i]);
+        if(diff)
+            return diff;
+    }
+    return 0;
+}
+
+int ModSelCrit_dim(ModSelCrit *self) {
+    return self->dim;
+}
+
+ModPar *ModPar_new(const char *fname) {
+    FILE *fp = fopen(fname, "r");
+    if(fp == NULL) {
+        fprintf(stderr,"%s:%d: can't read file \"%s\"\n",
+                __FILE__,__LINE__,fname);
+        exit(EXIT_FAILURE);
+    }
+    char buff[4096];
+    Tokenizer *tkz = Tokenizer_new(100); // room for 100 parameters
+
+    // 1st pass counts rows and columns
+    int nrows=0, ncols=0, ntokens;
+    while(1) {
+        if(fgets(buff, sizeof buff, fp) == NULL) {
+            break;
+        }
+        if(strchr(buff, '\n') == NULL && !feof(stdin)) {
+            fprintf(stderr, "%s:%d: Buffer overflow. size=%zu\n",
+                    __FILE__, __LINE__, sizeof(buff));
+            exit(EXIT_FAILURE);
+        }
+        ntokens = Tokenizer_split(tkz, buff, " \t");
+        ntokens = Tokenizer_strip(tkz, " \n\t");
+        if(ncols == 0) {
+            ncols = ntokens;
+        }else{
+            if(ncols != ntokens) {
+                fprintf(stderr,"%s:%d: inconsistent row lengths in file %s\n",
+                        __FILE__,__LINE__,fname);
+                exit(EXIT_FAILURE);
+            }
+            ++nrows;
+        }
+    }
+
+    Stopped here
+
+    ModSelCrit *self = malloc(sizeof(ModSelCrit));
+    if(self==NULL) {
+        fprintf(stderr,"%s:%d: bad malloc\n",__FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
+
+    self->nrows = nrows;
+    self->c = malloc(nrows * sizeof(self->c[0]));
+    self->fname = malloc(nrows * sizeof(self->fname[0]));
+    if(self->c==NULL || self->fname==NULL) {
+        fprintf(stderr,"%s:%d: bad malloc\n",__FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
+
+    int line=0;
+    while(1) {
+        if(fgets(buff, sizeof buff, fp) == NULL)
+            break;
+        if(strchr(buff, '\n') == NULL && !feof(stdin)) {
+            fprintf(stderr, "%s:%d: Buffer overflow. size=%zu\n",
+                    __FILE__, __LINE__, sizeof(buff));
+            exit(EXIT_FAILURE);
+        }
+        assert(line < self->nrows);
+        char *next = stripWhiteSpace(buff);
+        assert(next);
+        if(*next == '#' || strlen(next)==0)
+            continue;
+        char *valstr = strsep(&next, " \t");
+        next = stripWhiteSpace(next);
+        if(valstr==NULL || next==NULL || strlen(next)==0) {
+            fprintf(stderr,"%s:%d: can't parse file %s\n",
+                    __FILE__,__LINE__, fname);
+            exit(EXIT_FAILURE);
+        }
+        self->c[line] = strtod(valstr, NULL);
+        self->fname[line] = strdup(next);
+        if(self->fname[line] == NULL) {
+            fprintf(stderr,"%s:%d: bad strdup\n",__FILE__,__LINE__);
+            exit(EXIT_FAILURE);
+        }
+        ++line;
+    }
+    return self;
+}
+
+int main(int argc, char **argv) {
+    time_t currtime = time(NULL);
+
+    hdr("bma: bootstrap model average");
+#if defined(__DATE__) && defined(__TIME__)
+    printf("# Program was compiled: %s %s\n", __DATE__, __TIME__);
+#endif
+    printf("# Program was run: %s\n", ctime(&currtime));
+
+    int i, j, nmodels = 0, nflat = 0, gotDashF = 0;
+
+    // first pass through arguments: count files
+    for(i = 1; i < argc; i++) {
+        if(argv[i][0] == '-') {
+            if(strcmp(argv[i], "-F") == 0) {
+                gotDashF = 1;
+                continue;
+            } else
+                usage();
+        }
+        if(gotDashF)
+            ++nflat;
+        else
+            ++nmodels
+    }
+    if(nfiles != nflat) {
+        fprintf(stderr, "%s:%d\n"
+                " Inconsistent number of files!"
+                " %d model selection criterion files and %d flat files\n",
+                __FILE__, __LINE__, nmodels, nflat);
         usage();
-      }
     }
-    else{
-      nfiles++;
+
+    if(nmodels < 2)
+        usage();
+
+    const char *mscnames[nmodels];
+    const char *flatnames[nmodels];
+
+    // first pass through arguments: put file names in arrays
+    gotDashF=0;
+    j=0;
+    for(i = 1; i < argc; i++) {
+        if(argv[i][0] == '-') {
+            if(strcmp(argv[i], "-F") == 0) {
+                gotDashF = 1;
+                j=0;
+                continue;
+            } else
+                usage();
+        }
+        if(gotDashF)
+            flatnames[j++] = argv[i];
+        else
+            mscnames[j++] = argv[i];
     }
-  }
 
-  int nfiles_temp = 0;
-  for(int i = (2+nfiles); i < argc; i++){
-    if (argv[i][0] == '-'){
-      usage();
+    ModSelCrit *msc[nmodels];
+
+    // Parse msc files and check for consistency
+    for(i=0; i< nmodels; ++i) {
+        msc[i] = ModSelCrit_new(mscnames[i]);
+        if(i>0) {
+            if(ModSelCrit_compare(msc[0], msc[i])) {
+                fprintf(stderr,"%s:%d: inconsistent files: %s and %s\n",
+                        __FILE__,__LINE__,mscnames[i], mscnames[i]);
+            }
+        }
     }
-    else{
-      nfiles_temp++;
+
+    int nrows = ModSelCrit_dim(msc[0]);
+
+    // Flat files have the same number of rows as msc files. They have
+    // a column for each parameter, and the parameters may not agree
+    // across files. This suggests that we need a matrix of hash
+    // tables. Each row represents a data set, each column a model,
+    // and the parameter values are in the hash tables.
+    StrDbl *par[nrows][nmodels];
+    for(i=0; i < nrows; ++i) {
+        for(j=0; j<nmodels; ++j)
+            par[i][j] = StrDbl_new();
     }
-  }
-
-  if(nfiles_temp != nfiles){
-      fprintf(stderr, "%s:%d\n"
-              " Inconsistent number of files!"
-              " %d bepe files and %d flat files\n",
-              __FILE__,__LINE__, nfiles, nfiles_temp);
-      usage();
-  }
-
-  const char *bepe_file_names[nfiles];
-  const char *flat_file_names[nfiles];
-
-  for(int i = 0; i < nfiles; ++i) {
-      bepe_file_names[i] = argv[i+1];
-      flat_file_names[i] = argv[i+2+nfiles];
-  }
+    
 }
