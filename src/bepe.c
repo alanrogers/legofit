@@ -184,7 +184,7 @@ int main(int argc, char **argv) {
     putchar('\n');
 
     // Echo command line
-    printf("# command line:\n# ");
+    printf("# command line:\n#");
     for(i = 0; i < argc; ++i)
         printf(" %s", argv[i]);
     putchar('\n');
