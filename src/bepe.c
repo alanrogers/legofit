@@ -52,6 +52,8 @@ Systems Consortium License, which can be found in file "LICENSE".
 
 // Function prototypes
 void usage(void);
+static void checkConsistency(const char *fname1, const char *fname2,
+                             StrDblQueue *q1, StrDblQueue *q2);
 
 //vars
 const char *usageMsg =
@@ -66,6 +68,16 @@ void usage(void) {
     fputs(usageMsg, stderr);
     exit(EXIT_FAILURE);
 } 
+
+static void checkConsistency(const char *fname1, const char *fname2,
+                             StrDblQueue *q1, StrDblQueue *q2) {
+    if(StrDblQueue_compare(q1, q2)) {
+        fprintf(stderr, "%s:%d: inconsistent site patterns in"
+                " files %s and %s\n", __FILE__, __LINE__,
+                fname1, fname2);
+        exit(EXIT_FAILURE);
+    }
+}
 
 int main(int argc, char **argv) {
 
@@ -126,20 +138,15 @@ int main(int argc, char **argv) {
         data_queue[i] = StrDblQueue_parseSitPat(datafname[i]);
         StrDblQueue_normalize(lego_queue[i]);
         StrDblQueue_normalize(data_queue[i]);
-        if(i==0)
+        if(i==0) {
+            checkConsistency(datafname[0], legofname[0],
+                             data_queue[0], lego_queue[0]);
             continue;
-        if(StrDblQueue_compare(lego_queue[0], lego_queue[i])) {
-            fprintf(stderr, "%s:%d: inconsistent parameters in"
-                    " files%s and %s\n", __FILE__, __LINE__,
-                    legofname[0], legofname[i]);
-            exit(EXIT_FAILURE);
         }
-        if(StrDblQueue_compare(data_queue[0], data_queue[i])) {
-            fprintf(stderr, "%s:%d: inconsistent parameters in"
-                    " files%s and %s\n", __FILE__, __LINE__,
-                    datafname[0], datafname[i]);
-            exit(EXIT_FAILURE);
-        }
+        checkConsistency(legofname[0], legofname[i],
+                         lego_queue[0], lego_queue[i]);
+        checkConsistency(datafname[0], legofname[i],
+                         data_queue[0], data_queue[i]);
     }
 
     // i is the file against which all others are being compared.
