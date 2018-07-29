@@ -100,8 +100,11 @@ typedef struct ModSelCrit {
     char **fname; // fname[i] points to name of i'th data set
 } ModSelCrit;
 
+// Maybe instead of an array of hash tables, I should have a single
+// StrInt hash table that associates parameter names with column
+// indices. Then the parameter values could be in a matrix.
 typedef struct ModPar {
-    int dim;
+    int nrows, ncols;
     StrDbl **par // par[i] is a hash table of estimates from the i'th
                  // data set.
     char **fname; // fname[i] points to name of i'th data set
@@ -290,7 +293,15 @@ ModPar *ModPar_new(const char *fname) {
         }
     }
 
-    Stopped here
+    ModPar *self = malloc(sizeof(ModPar));
+    if(self==NULL) {
+        fprintf(stderr,"%s:%d: bad malloc\n",__FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
+
+    self->nrows = nrows;
+    char *parName[ncols];
+    
 
     ModSelCrit *self = malloc(sizeof(ModSelCrit));
     if(self==NULL) {
