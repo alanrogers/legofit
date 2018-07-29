@@ -89,7 +89,6 @@ int main(int argc, char **argv) {
     printf("# Program was compiled: %s %s\n", __DATE__, __TIME__);
 #endif
     printf("# Program was run: %s\n", ctime(&currtime));
-    putchar('\n');
 
     // Command line arguments specify file names
     int i, j;
