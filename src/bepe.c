@@ -164,9 +164,9 @@ int main(int argc, char **argv) {
     }
 
     // Echo input files
-    printf("# %2s %15s %15s\n", "i", "datfile[i]", "legofile[i]");
+    printf("# %2s %18s %18s\n", "i", "datfile[i]", "legofile[i]");
     for(i = 0; i < nfiles; ++i) {
-        printf("# %2d %15s %15s\n", i,
+        printf("# %2d %18s %18s\n", i,
                 mybasename(datafname[i]),
                 mybasename(legofname[i]));
     }
