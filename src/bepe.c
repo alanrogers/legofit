@@ -103,8 +103,8 @@ the 2nd portion of `bepe`'s output. Here are the first few lines:
     #  2       mpqvasing001   t3boot10.legofit
 
 Note that bootstrap data file `mpqvasing001` is paired with `legofit`
-file `t2boot10.legofit`. This is a mistake. This data file should have
-been paired with `t2boot1.legofit`. The problem is that the wildcards
+file `t3boot10.legofit`. This is a mistake. This data file should have
+been paired with `t3boot1.legofit`. The problem is that the wildcards
 characters (\*) expand to file names sorted in lexical order. Because
 of the leading zeroes in the data file names, a lexical sort 
 puts these names into into numerical order. But there are no leading
@@ -120,7 +120,7 @@ above problem:
     xargs printf "t3boot%d.legofit "`
 
 The last section of `bepe`'s output echoes the command line, which
-serves as documentation for this run of `bepe`.
+serves as documentation.
 
 @copyright Copyright (c) 2018, Alan R. Rogers
 <rogers@anthro.utah.edu>. This file is released under the Internet
