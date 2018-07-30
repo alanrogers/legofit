@@ -93,6 +93,11 @@ Systems Consortium License, which can be found in file "LICENSE".
 #include "strdblqueue.h"
 #include "strint.h"
 #include "tokenizer.h"
+#include "misc.h"
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 
 typedef struct ModSelCrit {
     int dim;
@@ -105,20 +110,36 @@ typedef struct ModPar {
     int nrows, ncols;
     StrInt *parndx; // hash table to relate parameter names to
                     // indices.
-    double *par     // par[i*ncols + j] is i'th par in j'th data set
+    double *par;    // par[i*ncols + j] is i'th par in j'th data set
     char *fname;    // name of input file
 } ModPar;
 
-void usage(void);
+// Linked list of parameter names
+#define MAXNAME 100
+typedef struct NameList {
+    struct NameList *next;
+    char        name[MAXNAME];
+} NameList;
+
+
+void        usage(void);
 ModSelCrit *ModSelCrit_new(const char *fname);
-void ModSelCrit_free(ModSelCrit *self);
-int ModSelCrit_compare(ModSelCrit *x, ModSelCrit *y);
-int ModSelCrit_dim(ModSelCrit *self);
-ModPar *ModPar_new(const char *fname);
-int ModPar_exists(ModPar *self, const char *parname);
-double ModPar_value(ModPar *self, int row, const char *parname);
-int ModPar_nrows(ModPar *self);
-int ModPar_ncols(ModPar *self);
+void        ModSelCrit_free(ModSelCrit *self);
+int         ModSelCrit_compare(ModSelCrit *x, ModSelCrit *y);
+int         ModSelCrit_dim(ModSelCrit *self);
+double      ModSelCrit_badness(ModSelCrit *self, int ndx);
+ModPar     *ModPar_new(const char *fname, NameList **namelist);
+void        ModPar_free(ModPar *self);
+int         ModPar_exists(ModPar *self, const char *parname);
+double      ModPar_value(ModPar *self, int row, const char *parname);
+int         ModPar_nrows(ModPar *self);
+int         ModPar_ncols(ModPar *self);
+NameList   *NameList_new(const char *name, NameList *next);
+NameList   *NameList_insert(NameList * self, const char *name);
+void        NameList_free(NameList * self);
+int         NameList_exists(NameList * self, const char *name);
+void        NameList_print(const NameList * self, FILE *fp);
+unsigned    NameList_size(NameList *self);
 
 const char *usageMsg =
     "Usage: bma <m1.msc> ... <mK.msc> -F <m1.flat> ... <mK.flat>\n"
@@ -185,10 +206,7 @@ ModSelCrit *ModSelCrit_new(const char *fname) {
     }
 
     ModSelCrit *msc = malloc(sizeof(ModSelCrit));
-    if(msc==NULL) {
-        fprintf(stderr,"%s:%d: bad malloc\n",__FILE__,__LINE__);
-        exit(EXIT_FAILURE);
-    }
+    CHECKMEM(msc);
 
     msc->dim = dim;
     msc->c = malloc(dim * sizeof(msc->c[0]));
@@ -261,9 +279,15 @@ int ModSelCrit_dim(ModSelCrit *self) {
     return self->dim;
 }
 
+double  ModSelCrit_badness(ModSelCrit *self, int ndx) {
+    assert(ndx < self->dim);
+    return self->c[ndx];
+}
+
+
 /// ModPar constructor. Argument is the name of a file in the format
 /// produced by flatfile.py.
-ModPar *ModPar_new(const char *fname) {
+ModPar *ModPar_new(const char *fname, NameList **namelist) {
     FILE *fp = fopen(fname, "r");
     if(fp == NULL) {
         fprintf(stderr,"%s:%d: can't read file \"%s\"\n",
@@ -281,7 +305,7 @@ ModPar *ModPar_new(const char *fname) {
     CHECKMEM(self->fname);
 
     // 1st pass counts rows and columns. Creates hash map.
-    int nrows=0, ncols=0, ntokens;
+    int i, j, nrows=0, ncols=0, ntokens;
     while(1) {
         if(fgets(buff, sizeof buff, fp) == NULL)
             break;
@@ -297,8 +321,12 @@ ModPar *ModPar_new(const char *fname) {
             ncols = ntokens;
             self->ncols = ncols;
             // Create hash table mapping parameter names to indices.
-            for(j=0; j<ncols; ++j)
-                StrInt_insert(self->parndx, Tokenizer_token(tkz, j), j);
+            // Also add parameter names to linked list
+            for(j=0; j<ncols; ++j) {
+                const char *name = Tokenizer_token(tkz, j);
+                StrInt_insert(self->parndx, name, j);
+                *namelist = NameList_insert(*namelist, name);
+            }
             StrInt_print(self->parndx, stderr);
         }else{
             if(ncols != ntokens) {
@@ -336,7 +364,7 @@ ModPar *ModPar_new(const char *fname) {
         }else{
             assert(self->ncols == ntokens);
             for(j=0; j < ntokens; ++j) {
-                double x = strtod(Tokenizer_token(tkz, j));
+                double x = strtod(Tokenizer_token(tkz, j), NULL);
                 self->par[i*self->ncols + j] = x;
             }
             ++i;
@@ -347,6 +375,14 @@ ModPar *ModPar_new(const char *fname) {
     return self;
 }
 
+void ModPar_free(ModPar *self) {
+    StrInt_free(self->parndx);
+    free(self->par);
+    free(self->fname);
+    free(self);
+}
+
+/// Return 1 if parname exists w/i this model; 0 otherwise.
 int ModPar_exists(ModPar *self, const char *parname) {
     return StrInt_exists(self->parndx, parname);
 }
@@ -371,6 +407,80 @@ int ModPar_ncols(ModPar *self) {
     return self->ncols;
 }
 
+/// NameList constructor
+NameList     *NameList_new(const char *name, NameList * next) {
+    NameList     *new = malloc(sizeof(*new));
+    CHECKMEM(new);
+
+    new->next = next;
+    int         status = snprintf(new->name, sizeof new->name, "%s", name);
+    if(status >= MAXNAME) {
+        fprintf(stderr, "%s:%s:%d: Buffer overflow. MAXNAME=%d, name=%s\n",
+                __FILE__, __func__, __LINE__, MAXNAME, name);
+        free(new);
+        exit(EXIT_FAILURE);
+    }
+
+    return new;
+}
+
+/// Return number of links in list
+unsigned NameList_size(NameList *self) {
+    if(self == NULL)
+        return 0u;
+    return 1u + NameList_size(self->next);
+}
+
+/// Free linked list of NameList objects
+void NameList_free(NameList * self) {
+    if(self == NULL)
+        return;
+    NameList_free(self->next);
+    free(self);
+}
+
+/// Insert a new name. Do nothing if name already exists.
+NameList     *NameList_insert(NameList * self, const char *name) {
+    if(self == NULL)
+        return NameList_new(name, NULL);
+
+    int         diff = strcmp(name, self->name);
+    if(diff == 0) {
+		return self;
+    }else if(diff > 0) {
+        self->next = NameList_insert(self->next, name);
+        return self;
+    }else
+        return NameList_new(name, self);
+}
+
+/// Return 1 if name is present in list, 0 otherwise.
+int NameList_exists(NameList * self, const char *name) {
+    if(self == NULL) {
+		return 0;
+    }
+
+    int diff = strcmp(name, self->name);
+    if(diff == 0)
+        return 1;
+    else if(diff > 0)
+        return NameList_exists(self->next, name);
+    else{
+        assert(diff < 0);
+        return 0;
+    }
+}
+
+/// Print linked list of NameList objects
+void NameList_print(const NameList * self, FILE *fp) {
+    if(self == NULL) {
+        putc('\n',fp);
+        return;
+    }
+    fprintf(fp, " %s", self->name);
+    NameList_print(self->next, fp);
+}
+
 int main(int argc, char **argv) {
     time_t currtime = time(NULL);
 
@@ -380,28 +490,32 @@ int main(int argc, char **argv) {
 #endif
     printf("# Program was run: %s\n", ctime(&currtime));
 
-    int i, j, nmodels = 0, nflat = 0, gotDashF = 0;
+    int i, j, k, nmodels = 0, gotDashF = 0;
 
-    // first pass through arguments: count files
-    for(i = 1; i < argc; i++) {
-        if(argv[i][0] == '-') {
-            if(strcmp(argv[i], "-F") == 0) {
-                gotDashF = 1;
-                continue;
-            } else
-                usage();
+    {
+        int nflat=0;
+
+        // first pass through arguments: count files
+        for(i = 1; i < argc; i++) {
+            if(argv[i][0] == '-') {
+                if(strcmp(argv[i], "-F") == 0) {
+                    gotDashF = 1;
+                    continue;
+                } else
+                    usage();
+            }
+            if(gotDashF)
+                ++nflat;
+            else
+                ++nmodels;
         }
-        if(gotDashF)
-            ++nflat;
-        else
-            ++nmodels
-    }
-    if(nfiles != nflat) {
-        fprintf(stderr, "%s:%d\n"
-                " Inconsistent number of files!"
-                " %d model selection criterion files and %d flat files\n",
-                __FILE__, __LINE__, nmodels, nflat);
-        usage();
+        if(nmodels != nflat) {
+            fprintf(stderr, "%s:%d\n"
+                    " Inconsistent files count."
+                    " %d model selection files != %d flat files\n",
+                    __FILE__, __LINE__, nmodels, nflat);
+            usage();
+        }
     }
 
     if(nmodels < 2)
@@ -410,7 +524,7 @@ int main(int argc, char **argv) {
     const char *mscnames[nmodels];
     const char *flatnames[nmodels];
 
-    // first pass through arguments: put file names in arrays
+    // 2nd pass through arguments: put file names in arrays
     gotDashF=0;
     j=0;
     for(i = 1; i < argc; i++) {
@@ -442,15 +556,18 @@ int main(int argc, char **argv) {
     }
 
     int nrows = ModSelCrit_dim(msc[0]);
+    NameList *parnames = NULL;
+    ModPar *modpar[nmodels];
 
     // Flat files should have the same number of rows as msc
     // files--one per data set. They have a column for each parameter,
     // and the parameters may not agree across files. This section
     // creates for each file an object of type ModPar, which allows
     // access to the parameter values by row index and parameter name.
-    ModPar *modpar[nmodels];
+    // It also constructs an ordered linked list (parnames) which
+    // includes the names of all parameters.
     for(i=0; i < nmodels; ++i) {
-        modpar[i] = ModPar_new(flatnames[i]);
+        modpar[i] = ModPar_new(flatnames[i], &parnames);
         CHECKMEM(modpar[i]);
         if(ModPar_nrows(modpar[i]) != nrows) {
             fprintf(stderr, "%s:%d: file \"%s\" has %d rows;"
@@ -460,5 +577,88 @@ int main(int argc, char **argv) {
             exit(EXIT_FAILURE);
         }
     }
-    
+
+    // Calculate weights, w[i].  w[i] is the fraction of data sets for
+    // which i is the best model.
+    double w[nmodels];
+    memset(w, 0, sizeof(w));
+    for(i=0; i<nrows; ++i) {
+        int ibest=0;
+        double best = DBL_MAX;
+        for(j=0; j<nmodels; ++j) {
+            double badness = ModSelCrit_badness(msc[j], i);
+            if(badness < best) {
+                best = badness;
+                ibest = j;
+            }
+        }
+        ++w[ibest];
+    }
+    for(j=0; j < nmodels; ++j)
+        w[i] /= nrows;
+
+    // Echo weights and input files
+    printf("%15s %15s %15s\n", "Weight", "MSC_file", "Flat_file");
+    for(i=0; i<nmodels; ++i)
+        printf("%15.10lg %15s %15s\n", w[i], mscnames[i], flatnames[i]);
+    putchar('\n');
+
+    // number of parameters, pooled across models
+    int npar = NameList_size(parnames);
+
+    // avg[i][j] is average of j'th parameter for i'th data set
+    double avg[nrows][npar];
+    NameList *node;
+
+    for(i=0; i < nrows; ++i) {
+        // i indexes data sets
+        for(j=0, node=parnames; j<npar && node!=NULL; ++j, node=node->next) {
+            // j indexes parameters
+            // par is the name of the current parameter
+            const char *par = node->name;
+            int exist[nmodels]; // 0 for models lacking par
+            int nExist=0;       // # models containing par
+            double wsum=0.0;
+            for(k=0; k < nmodels; ++k) {
+                if(ModPar_exists(modpar[k], par)) {
+                    // par exists in model k
+                    ++nExist;
+                    exist[k] = 1;
+                    wsum += w[k];
+                }else
+                    exist[k] = 0;
+            }
+            avg[i][j] = 0.0;
+            for(k=0; k < nmodels; ++k) {
+                if(!exist[k])
+                    continue;
+                double parval = ModPar_value(modpar[k], i, par);
+                avg[i][j] += parval*w[k]/wsum;
+            }
+        }
+        assert(j == npar);
+        assert(node == NULL);
+    }
+
+    // Output matrix: rows are data sets; cols are parameters;
+    // values are model-averaged estimates.
+    printf("# Model-averaged parameter estimates\n");
+    for(node=parnames; node!=NULL; node = node->next)
+        printf(" %15s", node->name);
+    putchar('\n');
+    for(i=0; i < nrows; ++i) {
+        for(j=0; j < npar; ++j)
+            printf(" %15.10g", avg[i][j]);
+        putchar('\n');
+    }
+
+    // Cleanup
+    for(i=0; i<nmodels; ++i)
+        ModSelCrit_free(msc[i]);
+
+    NameList_free(parnames);
+
+    for(i=0; i<nmodels; ++i)
+        ModPar_free(modpar[i]);
+    return 0;
 }
