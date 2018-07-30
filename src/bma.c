@@ -91,7 +91,7 @@ Systems Consortium License, which can be found in file "LICENSE".
 */
 
 #include "strdblqueue.h"
-#include "strdbl.h"
+#include "strint.h"
 #include "tokenizer.h"
 
 typedef struct ModSelCrit {
@@ -100,14 +100,13 @@ typedef struct ModSelCrit {
     char **fname; // fname[i] points to name of i'th data set
 } ModSelCrit;
 
-// Maybe instead of an array of hash tables, I should have a single
-// StrInt hash table that associates parameter names with column
-// indices. Then the parameter values could be in a matrix.
+// Data from one file as produced by flatfile.py
 typedef struct ModPar {
     int nrows, ncols;
-    StrDbl **par // par[i] is a hash table of estimates from the i'th
-                 // data set.
-    char **fname; // fname[i] points to name of i'th data set
+    StrInt *parndx; // hash table to relate parameter names to
+                    // indices.
+    double *par     // par[i*ncols + j] is i'th par in j'th data set
+    char *fname;    // name of input file
 } ModPar;
 
 void usage(void);
@@ -116,6 +115,10 @@ void ModSelCrit_free(ModSelCrit *self);
 int ModSelCrit_compare(ModSelCrit *x, ModSelCrit *y);
 int ModSelCrit_dim(ModSelCrit *self);
 ModPar *ModPar_new(const char *fname);
+int ModPar_exists(ModPar *self, const char *parname);
+double ModPar_value(ModPar *self, int row, const char *parname);
+int ModPar_nrows(ModPar *self);
+int ModPar_ncols(ModPar *self);
 
 const char *usageMsg =
     "Usage: bma <m1.msc> ... <mK.msc> -F <m1.flat> ... <mK.flat>\n"
@@ -258,6 +261,8 @@ int ModSelCrit_dim(ModSelCrit *self) {
     return self->dim;
 }
 
+/// ModPar constructor. Argument is the name of a file in the format
+/// produced by flatfile.py.
 ModPar *ModPar_new(const char *fname) {
     FILE *fp = fopen(fname, "r");
     if(fp == NULL) {
@@ -268,8 +273,52 @@ ModPar *ModPar_new(const char *fname) {
     char buff[4096];
     Tokenizer *tkz = Tokenizer_new(100); // room for 100 parameters
 
-    // 1st pass counts rows and columns
+    ModPar *self = malloc(sizeof(ModPar));
+    CHECKMEM(self);
+    self->parndx = StrInt_new();
+    CHECKMEM(self->parndx);
+    self->fname = strdup(fname);
+    CHECKMEM(self->fname);
+
+    // 1st pass counts rows and columns. Creates hash map.
     int nrows=0, ncols=0, ntokens;
+    while(1) {
+        if(fgets(buff, sizeof buff, fp) == NULL)
+            break;
+
+        if(strchr(buff, '\n') == NULL && !feof(stdin)) {
+            fprintf(stderr, "%s:%d: Buffer overflow. size=%zu\n",
+                    __FILE__, __LINE__, sizeof(buff));
+            exit(EXIT_FAILURE);
+        }
+        ntokens = Tokenizer_split(tkz, buff, " \t");
+        ntokens = Tokenizer_strip(tkz, " \n\t");
+        if(ncols == 0) {
+            ncols = ntokens;
+            self->ncols = ncols;
+            // Create hash table mapping parameter names to indices.
+            for(j=0; j<ncols; ++j)
+                StrInt_insert(self->parndx, Tokenizer_token(tkz, j), j);
+            StrInt_print(self->parndx, stderr);
+        }else{
+            if(ncols != ntokens) {
+                fprintf(stderr,"%s:%d: inconsistent row lengths in file %s\n",
+                        __FILE__,__LINE__,fname);
+                exit(EXIT_FAILURE);
+            }
+            ++nrows;
+        }
+    }
+
+    self->nrows = nrows;
+    self->par = malloc(nrows*ncols*sizeof(double));
+    CHECKMEM(self->par);
+    self->fname = malloc(nrows * sizeof(char *));
+    CHECKMEM(self->fname);
+
+    // 2nd pass puts parameter values into array
+    ncols=0;
+    i = 0;
     while(1) {
         if(fgets(buff, sizeof buff, fp) == NULL) {
             break;
@@ -283,70 +332,43 @@ ModPar *ModPar_new(const char *fname) {
         ntokens = Tokenizer_strip(tkz, " \n\t");
         if(ncols == 0) {
             ncols = ntokens;
+            assert(ncols == self->ncols);
         }else{
-            if(ncols != ntokens) {
-                fprintf(stderr,"%s:%d: inconsistent row lengths in file %s\n",
-                        __FILE__,__LINE__,fname);
-                exit(EXIT_FAILURE);
+            assert(self->ncols == ntokens);
+            for(j=0; j < ntokens; ++j) {
+                double x = strtod(Tokenizer_token(tkz, j));
+                self->par[i*self->ncols + j] = x;
             }
-            ++nrows;
+            ++i;
         }
     }
+    assert(i == nrows);
 
-    ModPar *self = malloc(sizeof(ModPar));
-    if(self==NULL) {
-        fprintf(stderr,"%s:%d: bad malloc\n",__FILE__,__LINE__);
-        exit(EXIT_FAILURE);
-    }
-
-    self->nrows = nrows;
-    char *parName[ncols];
-    
-
-    ModSelCrit *self = malloc(sizeof(ModSelCrit));
-    if(self==NULL) {
-        fprintf(stderr,"%s:%d: bad malloc\n",__FILE__,__LINE__);
-        exit(EXIT_FAILURE);
-    }
-
-    self->nrows = nrows;
-    self->c = malloc(nrows * sizeof(self->c[0]));
-    self->fname = malloc(nrows * sizeof(self->fname[0]));
-    if(self->c==NULL || self->fname==NULL) {
-        fprintf(stderr,"%s:%d: bad malloc\n",__FILE__,__LINE__);
-        exit(EXIT_FAILURE);
-    }
-
-    int line=0;
-    while(1) {
-        if(fgets(buff, sizeof buff, fp) == NULL)
-            break;
-        if(strchr(buff, '\n') == NULL && !feof(stdin)) {
-            fprintf(stderr, "%s:%d: Buffer overflow. size=%zu\n",
-                    __FILE__, __LINE__, sizeof(buff));
-            exit(EXIT_FAILURE);
-        }
-        assert(line < self->nrows);
-        char *next = stripWhiteSpace(buff);
-        assert(next);
-        if(*next == '#' || strlen(next)==0)
-            continue;
-        char *valstr = strsep(&next, " \t");
-        next = stripWhiteSpace(next);
-        if(valstr==NULL || next==NULL || strlen(next)==0) {
-            fprintf(stderr,"%s:%d: can't parse file %s\n",
-                    __FILE__,__LINE__, fname);
-            exit(EXIT_FAILURE);
-        }
-        self->c[line] = strtod(valstr, NULL);
-        self->fname[line] = strdup(next);
-        if(self->fname[line] == NULL) {
-            fprintf(stderr,"%s:%d: bad strdup\n",__FILE__,__LINE__);
-            exit(EXIT_FAILURE);
-        }
-        ++line;
-    }
     return self;
+}
+
+int ModPar_exists(ModPar *self, const char *parname) {
+    return StrInt_exists(self->parndx, parname);
+}
+
+double ModPar_value(ModPar *self, int row, const char *parname) {
+    errno = 0;
+    int col = StrInt_get(self->parndx, parname);
+    if(errno) {
+        fprintf(stderr,
+                "%s:%d: ERR: bad parameter name %s\n",
+                __FILE__, __LINE__, parname);
+        exit(EXIT_FAILURE);
+    }
+    return self->par[row*self->ncols + col];
+}
+
+int ModPar_nrows(ModPar *self) {
+    return self->nrows;
+}
+
+int ModPar_ncols(ModPar *self) {
+    return self->ncols;
 }
 
 int main(int argc, char **argv) {
@@ -421,15 +443,22 @@ int main(int argc, char **argv) {
 
     int nrows = ModSelCrit_dim(msc[0]);
 
-    // Flat files have the same number of rows as msc files. They have
-    // a column for each parameter, and the parameters may not agree
-    // across files. This suggests that we need a matrix of hash
-    // tables. Each row represents a data set, each column a model,
-    // and the parameter values are in the hash tables.
-    StrDbl *par[nrows][nmodels];
-    for(i=0; i < nrows; ++i) {
-        for(j=0; j<nmodels; ++j)
-            par[i][j] = StrDbl_new();
+    // Flat files should have the same number of rows as msc
+    // files--one per data set. They have a column for each parameter,
+    // and the parameters may not agree across files. This section
+    // creates for each file an object of type ModPar, which allows
+    // access to the parameter values by row index and parameter name.
+    ModPar *modpar[nmodels];
+    for(i=0; i < nmodels; ++i) {
+        modpar[i] = ModPar_new(flatnames[i]);
+        CHECKMEM(modpar[i]);
+        if(ModPar_nrows(modpar[i]) != nrows) {
+            fprintf(stderr, "%s:%d: file \"%s\" has %d rows;"
+                    " previous files had %d\n",
+                    __FILE__,__LINE__, flatnames[i],
+                    ModPar_nrows(modpar[i]), nrows);
+            exit(EXIT_FAILURE);
+        }
     }
     
 }

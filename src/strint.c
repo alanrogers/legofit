@@ -40,6 +40,7 @@ SILink     *SILink_new(const char *key, int value, SILink * next);
 void        SILink_free(SILink * self);
 SILink     *SILink_insert(SILink * self, const char *key, int value);
 int         SILink_get(SILink * self, const char *key);
+int         SILink_exists(SILink * self, const char *key);
 void        SILink_print(const SILink * self, FILE *fp);
 unsigned    SILink_size(SILink *self);
 
@@ -112,6 +113,23 @@ int SILink_get(SILink * self, const char *key) {
     }
 }
 
+/// Return 1 if key is present in list, 0 otherwise.
+int SILink_exists(SILink * self, const char *key) {
+    if(self == NULL) {
+		return 0;
+    }
+
+    int diff = strcmp(key, self->key);
+    if(diff == 0)
+        return 1;
+    else if(diff > 0)
+        return SILink_exists(self->next, key);
+    else{
+        assert(diff < 0);
+        return 0;
+    }
+}
+
 /// Print linked list of SILink objects
 void SILink_print(const SILink * self, FILE *fp) {
     if(self == NULL)
@@ -152,6 +170,14 @@ int StrInt_get(StrInt * self, const char *key) {
     assert(h < STRINT_DIM);
     assert(self);
     return SILink_get(self->tab[h], key);
+}
+
+/// Return 1 if key exists in hash map; 0 otherwise.
+int StrInt_exists(StrInt * self, const char *key) {
+    unsigned    h = strhash(key) & (STRINT_DIM - 1u);
+    assert(h < STRINT_DIM);
+    assert(self);
+    return SILink_exists(self->tab[h], key);
 }
 
 /// Print a StrInt object
@@ -215,6 +241,9 @@ int main(int argc, char **argv) {
     fflush(stdout);
 	assert(-1 == StrInt_get(si, "notthere"));
 	assert(errno == EDOM);
+
+    assert(0 == StrInt_exists(si, "notthere"));
+    assert(1 == StrInt_exists(si, "1"));
 
     if(verbose)
         StrInt_print(si, stdout);
