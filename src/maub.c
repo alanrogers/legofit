@@ -1,10 +1,10 @@
 /**
-@file bma.c
-@page bma
+@file maub.c
+@page maub
 @author Alan R. Rogers and Daniel Tabin
 @brief Bootstrap model averaging
 
-# `bma`: bootstrap model averaging
+# `maub`: model averaging using BEPE
 
 Bootstrap model averaging was proposed by Buckland et al (Biometrics,
 53(2):603-618). It can be used with weights provided by any method of
@@ -22,7 +22,7 @@ To construct confidence intervals, we average across models within
 each bootstrap replicate to obtain a bootstrap distribution of
 model-averaged estimates.
 
-Usage: bma m1.bepe m2.bepe ... mK.bepe -F m1.flat m2.flat ... mK.flat
+Usage: maub m1.bepe m2.bepe ... mK.bepe -F m1.flat m2.flat ... mK.flat
 
 Here, the mX.bepe file refer to different models of population
 history. Each of these files consists of a list of numbers, one on
@@ -51,13 +51,13 @@ rows in the `.bepe` files.
 In both types of input files, comments begin with a sharp character
 and are ignored.
 
-When `bma` runs, the first step is to calculate model weights,
+When `maub` runs, the first step is to calculate model weights,
 \f$w_{i}\f$, where \f$i\f$ runs across models. The value of
 \f$w_{ij}\f$ is the fraction data sets (i.e. of rows in the `.bepe`
 files) for which \f$i\f$ is the best model (i.e. the one with the
 lowest badness value.
 
-In the next step, `bma` averages across models to obtain a
+In the next step, `maub` averages across models to obtain a
 model-averaged estimate of each parameter. This is done separately for
 each data set: first for the real data and then for each bootstrap
 replicate. Some parameters may be missing from some models. In this
@@ -85,12 +85,15 @@ for the *i*th bootstrap replicate.
 Systems Consortium License, which can be found in file "LICENSE".
 */
 
-#include "strdblqueue.h"
+#include "misc.h"
+#include <string.h>
 
 void usage(void);
+double* maub_parse_bepe(const char* file_name);
+int get_lines(const char* file_name);
 
 const char *usageMsg =
-    "Usage: bma m1.bepe m2.bepe ... mK.bepe -F m1.flat m2.flat ... mK.flat\n"
+    "Usage: maub m1.bepe m2.bepe ... mK.bepe -F m1.flat m2.flat ... mK.flat\n"
     "\n"
 	"Here, the mX.bepe file refer to different models of population\n"
 	"history. Each of these files consists of a list of numbers, one on\n"
@@ -121,12 +124,35 @@ const char *usageMsg =
      exit(EXIT_FAILURE);
  }
 
+ int get_lines(const char* file_name){
+ 	FILE* f = fopen(file_name, "r");
+    if(f==NULL) {
+        fprintf(stderr,"%s:%d: can't read file \"%s\"\n",
+                __FILE__,__LINE__,file_name);
+        exit(EXIT_FAILURE);
+    }
+
+	char temp;
+	int num_lines = 0;
+
+	do {
+	    temp = fgetc(f);
+	    if(temp == '\n'){
+	        num_lines++;
+	    }
+	} while (temp != EOF);
+
+	fclose(f);
+	return num_lines;
+ }
+
  int main(int argc, char **argv){
   // Command line arguments specify file names
   if(argc < 4)
       usage();
 
   int nfiles = 0;
+  int nmodels = 0;
 
   for(int i = 1; i < argc; i++){
     if (argv[i][0] == '-'){
@@ -160,11 +186,73 @@ const char *usageMsg =
       usage();
   }
 
-  const char *bepe_file_names[nfiles];
-  const char *flat_file_names[nfiles];
+  const char* bepe_file_names[nfiles];
+  const char* flat_file_names[nfiles];
+
+  FILE* bepe_files[nfiles];
+  FILE* flat_files[nfiles];
+
+  int* winner_totals[nmodels];
 
   for(int i = 0; i < nfiles; ++i)
       bepe_file_names[i] = argv[i+1];
   for(int i = 0; i < nfiles; ++i)
       flat_file_names[i] = argv[i+2+nfiles];
+
+  for(int i = 0; i < nfiles; ++i)
+      winner_totals[i] = 0;
+
+  nmodels = get_lines(bepe_file_names[0]);
+  for(int i = 0; i < nfiles; ++i) {
+      if(get_lines(flat_file_names[i]) != nmodels) {
+          fprintf(stderr, "%s:%d: inconsistent parameters in"
+                  " files%s and %s\n", __FILE__,__LINE__,
+                  flat_file_names[i], bepe_file_names[0]);
+          exit(EXIT_FAILURE);
+      }
+      if(get_lines(bepe_file_names[i]) != nmodels) {
+          fprintf(stderr, "%s:%d: inconsistent parameters in"
+                  " files%s and %s\n", __FILE__,__LINE__,
+                  bepe_file_names[i], bepe_file_names[0]);
+          exit(EXIT_FAILURE);
+      }
+  }
+
+  printf("file length checked: %u\n", nmodels);
+
+  int winner;
+  double temp;
+  double best_val;
+  char buff[2000];
+
+  for(int i = 0; i < nfiles; ++i) { 
+ 	bepe_files[i] = fopen(bepe_file_names[i], "r");
+  	if(bepe_files[i] == NULL) {
+	fprintf(stderr,"%s:%d: can't read file \"%s\"\n",
+	  __FILE__,__LINE__, bepe_file_names[i]);
+ 	  exit(EXIT_FAILURE); 
+  	}
+  	fscanf(bepe_files[i], "%s", buff);
+  	fscanf(bepe_files[i], "%s", buff);
+  	fscanf(bepe_files[i], "%s", buff);
+  }
+
+  for(int j = 0; j < nmodels; ++j) {
+  	best_val = -1;
+  	winner = -1;
+  	for(int i = 0; i < nfiles; ++i) {  
+  	  fscanf(bepe_files[i], "%lf", &temp);
+
+  	  if(temp > best_val){
+  	  	winner = j;
+  	  	best_val = temp;
+  	  }
+
+  	  fscanf(bepe_files[i], "%s", buff);
+  	  fscanf(bepe_files[i], "%s", buff);
+  	  fscanf(bepe_files[i], "%s", buff);
+  	  fscanf(bepe_files[i], "%s", buff);
+  	}
+  	winner_totals[winner]++;
+  }
 }
