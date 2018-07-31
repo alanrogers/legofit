@@ -188,8 +188,18 @@ const char *usageMsg =
 		flat_array[i].nmodels = nmodels;
 		flat_array[i].param_names = malloc(params*sizeof(char*));
 		flat_array[i].values = malloc(nmodels*sizeof(double*));
+
 		for (int j = 0; j < nmodels; j++){
 			flat_array[i].values[j] =  malloc(params*sizeof(double));
+		}
+		for (int j = 0; j < nmodels; j++){
+			flat_array[i].param_names[j] =  temp_params[j];
+		}
+
+		for (int j = 0; j < params; j++){
+			for (int k = 0; k < nmodels; k++){
+				fscanf(f, "%lf", &flat_array[i].values[j][k]);
+			}
 		}
  	}
  }
