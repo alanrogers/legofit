@@ -85,12 +85,22 @@ for the *i*th bootstrap replicate.
 Systems Consortium License, which can be found in file "LICENSE".
 */
 
+typedef struct flat flat;
+struct flat {
+	int nparams;
+	int nmodels;
+    double** values;
+    char** param_names;
+};
+
+
 #include "misc.h"
 #include <string.h>
 
 void usage(void);
 double* maub_parse_bepe(const char* file_name);
 int get_lines(const char* file_name);
+void get_flats(const char** file_names, int nfiles, int nmodels, flat* flat_array);
 
 const char *usageMsg =
     "Usage: maub m1.bepe m2.bepe ... mK.bepe -F m1.flat m2.flat ... mK.flat\n"
@@ -144,6 +154,44 @@ const char *usageMsg =
 
 	fclose(f);
 	return num_lines;
+ }
+
+ void get_flats(const char** file_names, int nfiles, int nmodels, flat* flat_array){
+ 	for (int i = 0; i < nfiles; i++){
+ 		FILE* f = fopen(file_names[i], "r");
+	    if(f==NULL) {
+	        fprintf(stderr,"%s:%d: can't read file \"%s\"\n",
+	                __FILE__,__LINE__,file_names[i]);
+	        exit(EXIT_FAILURE);
+	    } 
+
+	    char ch;
+		int num_lines = 0;
+		int params = 0;
+
+		do {
+		    ch = fgetc(f);
+		    if(ch == '\n'){
+		        num_lines++;
+		    }
+		} while (num_lines < 2);
+
+		char* temp_params[1000];
+
+		do {
+			fscanf(f, "%s", temp_params[params]);
+			params++;
+		    ch = fgetc(f);
+		} while (ch != '\n');
+
+		flat_array[i].nparams = params;
+		flat_array[i].nmodels = nmodels;
+		flat_array[i].param_names = malloc(params*sizeof(char*));
+		flat_array[i].values = malloc(nmodels*sizeof(double*));
+		for (int j = 0; j < nmodels; j++){
+			flat_array[i].values[j] =  malloc(params*sizeof(double));
+		}
+ 	}
  }
 
  int main(int argc, char **argv){
