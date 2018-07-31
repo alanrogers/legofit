@@ -89,8 +89,17 @@ typedef struct flat flat;
 struct flat {
 	int nparams;
 	int nmodels;
-    double** values;
-    char** param_names;
+
+	double** values;
+	char** param_names;
+};
+
+typedef struct param_list param_list;
+struct param_list {
+	char* val;
+
+	param_list* next;
+	param_list* prev;
 };
 
 
@@ -98,9 +107,10 @@ struct flat {
 #include <string.h>
 
 void usage(void);
+void push_param(char* param, param_list* node);
 double* maub_parse_bepe(const char* file_name);
 int get_lines(const char* file_name);
-flat* get_flats(const char** file_names, int nfiles, int nmodels, flat* flat_array);
+flat* get_flats(const char** file_names, int nfiles, int nmodels);
 
 const char *usageMsg =
     "Usage: maub m1.bepe m2.bepe ... mK.bepe -F m1.flat m2.flat ... mK.flat\n"
@@ -129,12 +139,48 @@ const char *usageMsg =
 	"(excluding comments and the header) should agree with the numbers of\n"
 	"rows in the `.bepe` files.\n";
 
- void usage(void) {
-     fputs(usageMsg, stderr);
-     exit(EXIT_FAILURE);
- }
+param_list* all_params = NULL;
 
- int get_lines(const char* file_name){
+void usage(void) {
+	fputs(usageMsg, stderr);
+	exit(EXIT_FAILURE);
+}
+
+void push_param(char* param, param_list* node){
+	char* str = node->val;
+	if (strcmp(param, str) == 0){
+		return;
+	}
+	else if (strcmp(param, str) < 0){
+		param_list* new_node = malloc(sizeof(param_list));
+		new_node->val = param;
+		new_node->next = node;
+		if(node->prev){
+			new_node->prev = node->prev;
+			node->prev->next = new_node;
+		}
+		else{
+			new_node->prev = NULL;
+			all_params = new_node;
+		}
+		node->prev = new_node;
+
+	}
+	else if (strcmp(param, str) > 0){
+		if(node->next){
+			push_param(param, node->next);
+		}
+		else{
+			param_list* new_node = malloc(sizeof(param_list));
+			new_node->val = param;
+			new_node->next = NULL;
+			new_node->prev = node;
+			node->next = new_node;
+		}
+	}
+}
+
+int get_lines(const char* file_name){
 	FILE* f = fopen(file_name, "r");
 	if(f==NULL) {
 		fprintf(stderr,"%s:%d: can't read file \"%s\"\n",
@@ -156,7 +202,9 @@ const char *usageMsg =
 	return num_lines;
 }
 
-flat* get_flats(const char** file_names, int nfiles, int nmodels, flat* flat_array){
+flat* get_flats(const char** file_names, int nfiles, int nmodels){
+	flat* flat_array = malloc(nfiles*sizeof(flat));
+
 	for (int i = 0; i < nfiles; i++){
 		FILE* f = fopen(file_names[i], "r");
 		if(f==NULL) {
@@ -315,5 +363,5 @@ int main(int argc, char **argv){
 	}
 
 	flat* flat_input;
-	flat_input = get_flats(flat_file_names, nfiles, nmodels, flat_input);
+	flat_input = get_flats(flat_file_names, nfiles, nmodels);
 }
