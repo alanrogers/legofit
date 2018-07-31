@@ -7,7 +7,7 @@
  * <rogers@anthro.utah.edu>. This file is released under the Internet
  * Systems Consortium License, which can be found in file "LICENSE".
  */
-#include "strdbl.h"
+#include "strdblmap.h"
 #include "misc.h"
 #include <assert.h>
 #include <string.h>
@@ -32,7 +32,7 @@ typedef struct SDLink {
 } SDLink;
 
 /// Hash table
-struct StrDbl {
+struct StrDblMap {
     SDLink     *tab[STRDBL_DIM];
 };
 
@@ -137,16 +137,16 @@ void SDLink_print(const SDLink * self, FILE *fp) {
     SDLink_print(self->next, fp);
 }
 
-/// StrDbl constructor
-StrDbl     *StrDbl_new(void) {
-    StrDbl     *new = malloc(sizeof(*new));
+/// StrDblMap constructor
+StrDblMap     *StrDblMap_new(void) {
+    StrDblMap     *new = malloc(sizeof(*new));
     CHECKMEM(new);
     memset(new, 0, sizeof(*new));
     return new;
 }
 
-/// StrDbl destructor
-void StrDbl_free(StrDbl * self) {
+/// StrDblMap destructor
+void StrDblMap_free(StrDblMap * self) {
     int         i;
     for(i = 0; i < STRDBL_DIM; ++i)
         SDLink_free(self->tab[i]);
@@ -155,7 +155,7 @@ void StrDbl_free(StrDbl * self) {
 
 /// Insert a key-value pair into the hash table. Set errno=EDOM if
 /// pair already exists.
-void StrDbl_insert(StrDbl *self, const char *key, double value) {
+void StrDblMap_insert(StrDblMap *self, const char *key, double value) {
     unsigned    h = strhash(key) & (STRDBL_DIM - 1u);
     assert(h < STRDBL_DIM);
     assert(self);
@@ -164,22 +164,22 @@ void StrDbl_insert(StrDbl *self, const char *key, double value) {
 
 /// Return value corresponding to key. If key is not in table, return
 /// -1 and set errno = EDOM.
-double StrDbl_get(StrDbl * self, const char *key) {
+double StrDblMap_get(StrDblMap * self, const char *key) {
     unsigned    h = strhash(key) & (STRDBL_DIM - 1u);
     assert(h < STRDBL_DIM);
     assert(self);
     return SDLink_get(self->tab[h], key);
 }
 
-int StrDbl_exists(StrDbl * self, const char *key) {
+int StrDblMap_exists(StrDblMap * self, const char *key) {
     unsigned    h = strhash(key) & (STRDBL_DIM - 1u);
     assert(h < STRDBL_DIM);
     assert(self);
     return SDLink_exists(self->tab[h], key);
 }
 
-/// Print a StrDbl object
-void StrDbl_print(const StrDbl * self, FILE *fp) {
+/// Print a StrDblMap object
+void StrDblMap_print(const StrDblMap * self, FILE *fp) {
     unsigned    i;
     for(i = 0; i < STRDBL_DIM; ++i) {
         fprintf(fp, "%2u:", i);
@@ -189,7 +189,7 @@ void StrDbl_print(const StrDbl * self, FILE *fp) {
 }
 
 /// Number of items stored in hash table.
-unsigned StrDbl_size(const StrDbl *self) {
+unsigned StrDblMap_size(const StrDblMap *self) {
     unsigned i, n=0;
 
     for(i=0; i < STRDBL_DIM; ++i)
@@ -219,34 +219,34 @@ int main(int argc, char **argv) {
 
     int         i;
     char        key[20];
-    StrDbl     *sd = StrDbl_new();
+    StrDblMap     *sd = StrDblMap_new();
     CHECKMEM(sd);
-    assert(0 == StrDbl_size(sd));
+    assert(0 == StrDblMap_size(sd));
 
     for(i = 0; i < 100; ++i) {
         snprintf(key, sizeof key, "%d", i);
-        StrDbl_insert(sd, key, (double) i);
+        StrDblMap_insert(sd, key, (double) i);
     }
-    assert(100 == StrDbl_size(sd));
+    assert(100 == StrDblMap_size(sd));
 	errno = 0;
-	StrDbl_insert(sd, "1", 1);
+	StrDblMap_insert(sd, "1", 1);
 	assert(errno == EDOM);
     for(i = 0; i < 100; ++i) {
         snprintf(key, sizeof key, "%d", i);
-        assert(((double) i) == StrDbl_get(sd, key));
+        assert(((double) i) == StrDblMap_get(sd, key));
     }
 	errno = 0;
     fflush(stdout);
-	assert(-1 == StrDbl_get(sd, "notthere"));
+	assert(-1 == StrDblMap_get(sd, "notthere"));
 	assert(errno == EDOM);
-    assert(0 == StrDbl_exists(sd, "notthere"));
-    assert(1 == StrDbl_exists(sd, "1"));
+    assert(0 == StrDblMap_exists(sd, "notthere"));
+    assert(1 == StrDblMap_exists(sd, "1"));
 
     if(verbose)
-        StrDbl_print(sd, stdout);
+        StrDblMap_print(sd, stdout);
 
-    StrDbl_free(sd);
+    StrDblMap_free(sd);
 
-    unitTstResult("StrDbl", "OK");
+    unitTstResult("StrDblMap", "OK");
 }
 #endif
