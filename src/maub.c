@@ -241,7 +241,8 @@ flat* get_flats(const char** file_names, int nfiles, int nmodels){
 			flat_array[i].values[j] =  malloc(params*sizeof(double));
 		}
 		for (int j = 0; j < nmodels; j++){
-			flat_array[i].param_names[j] =  temp_params[j];
+			flat_array[i].param_names[j] = temp_params[j];
+			push_param (temp_params[j], all_params);
 		}
 
 		for (int j = 0; j < params; j++){
