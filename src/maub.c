@@ -135,45 +135,45 @@ const char *usageMsg =
  }
 
  int get_lines(const char* file_name){
- 	FILE* f = fopen(file_name, "r");
-    if(f==NULL) {
-        fprintf(stderr,"%s:%d: can't read file \"%s\"\n",
-                __FILE__,__LINE__,file_name);
-        exit(EXIT_FAILURE);
-    }
+	FILE* f = fopen(file_name, "r");
+	if(f==NULL) {
+		fprintf(stderr,"%s:%d: can't read file \"%s\"\n",
+			__FILE__,__LINE__,file_name);
+		exit(EXIT_FAILURE);
+	}
 
 	char temp;
 	int num_lines = 0;
 
 	do {
-	    temp = fgetc(f);
-	    if(temp == '\n'){
-	        num_lines++;
-	    }
+		temp = fgetc(f);
+		if(temp == '\n'){
+			num_lines++;
+		}
 	} while (temp != EOF);
 
 	fclose(f);
 	return num_lines;
- }
+}
 
- void get_flats(const char** file_names, int nfiles, int nmodels, flat* flat_array){
- 	for (int i = 0; i < nfiles; i++){
- 		FILE* f = fopen(file_names[i], "r");
-	    if(f==NULL) {
-	        fprintf(stderr,"%s:%d: can't read file \"%s\"\n",
-	                __FILE__,__LINE__,file_names[i]);
-	        exit(EXIT_FAILURE);
-	    } 
+void get_flats(const char** file_names, int nfiles, int nmodels, flat* flat_array){
+	for (int i = 0; i < nfiles; i++){
+		FILE* f = fopen(file_names[i], "r");
+		if(f==NULL) {
+			fprintf(stderr,"%s:%d: can't read file \"%s\"\n",
+				__FILE__,__LINE__,file_names[i]);
+			exit(EXIT_FAILURE);
+		}
 
-	    char ch;
+		char ch;
 		int num_lines = 0;
 		int params = 0;
 
 		do {
-		    ch = fgetc(f);
-		    if(ch == '\n'){
-		        num_lines++;
-		    }
+			ch = fgetc(f);
+			if(ch == '\n'){
+				num_lines++;
+			}
 		} while (num_lines < 2);
 
 		char* temp_params[1000];
@@ -181,7 +181,7 @@ const char *usageMsg =
 		do {
 			fscanf(f, "%s", temp_params[params]);
 			params++;
-		    ch = fgetc(f);
+			ch = fgetc(f);
 		} while (ch != '\n');
 
 		flat_array[i].nparams = params;
@@ -201,8 +201,8 @@ const char *usageMsg =
 				fscanf(f, "%lf", &flat_array[i].values[j][k]);
 			}
 		}
- 	}
- }
+	}
+}
 
 int main(int argc, char **argv){
 	// Command line arguments specify file names
@@ -248,7 +248,6 @@ int main(int argc, char **argv){
 	const char* flat_file_names[nfiles];
 
 	FILE* bepe_files[nfiles];
-	FILE* flat_files[nfiles];
 
 	int* winner_totals[nmodels];
 
@@ -263,17 +262,17 @@ int main(int argc, char **argv){
 	nmodels = get_lines(bepe_file_names[0]);
 	for(int i = 0; i < nfiles; ++i) {
 		if(get_lines(flat_file_names[i]) != nmodels) {
-      		fprintf(stderr, "%s:%d: inconsistent parameters in"
-      			" files%s and %s\n", __FILE__,__LINE__,
-      			flat_file_names[i], bepe_file_names[0]);
+			fprintf(stderr, "%s:%d: inconsistent parameters in"
+				" files%s and %s\n", __FILE__,__LINE__,
+				flat_file_names[i], bepe_file_names[0]);
 			exit(EXIT_FAILURE);
 		}
 		if(get_lines(bepe_file_names[i]) != nmodels) {
 			fprintf(stderr, "%s:%d: inconsistent parameters in"
-          		" files%s and %s\n", __FILE__,__LINE__,
+				" files%s and %s\n", __FILE__,__LINE__,
 				bepe_file_names[i], bepe_file_names[0]);
 			exit(EXIT_FAILURE);
-  		}
+		}
 	}
 
 	printf("file length checked: %u\n", nmodels);
@@ -313,5 +312,6 @@ int main(int argc, char **argv){
   		winner_totals[winner]++;
 	}
 
-	flat[nfiles]
+	flat flat_input[nfiles];
+	get_flats(flat_file_names, nfiles, nmodels, flat_input);
 }
