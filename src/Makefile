@@ -7,7 +7,7 @@ opt := -O0 -fno-inline-functions -rdynamic -DDEBUG     # For debugging
 prof :=
 incl := -I/usr/local/include -I/opt/local/include
 
-targets := bma legosim legofit tabpat sitepat scrmpat daf raf numcores \
+targets := legosim legofit tabpat sitepat scrmpat daf raf numcores \
      joinraf raf2daf clic bepe bma
 pytargets := diverg.py bootci.py flatfile.py axt2raf.py
 tests := xzeroin xbinary
