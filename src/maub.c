@@ -204,113 +204,114 @@ const char *usageMsg =
  	}
  }
 
- int main(int argc, char **argv){
-  // Command line arguments specify file names
-  if(argc < 4)
-      usage();
+int main(int argc, char **argv){
+	// Command line arguments specify file names
+	if(argc < 4)
+		usage();
 
-  int nfiles = 0;
-  int nmodels = 0;
+	int nfiles = 0;
+	int nmodels = 0;
 
-  for(int i = 1; i < argc; i++){
-    if (argv[i][0] == '-'){
-      if(strcmp(argv[i], "-F") == 0){
-        break;
-      }
-      else{
-        usage();
-      }
-    }
-    else{
-      nfiles++;
-    }
-  }
+	for(int i = 1; i < argc; i++){
+		if (argv[i][0] == '-'){
+			if(strcmp(argv[i], "-F") == 0){
+				break;
+			}
+			else{
+				usage();
+			}
+		}
+		else{
+			nfiles++;
+		}
+	}
 
-  int nfiles_temp = 0;
-  for(int i = (2+nfiles); i < argc; i++){
-    if (argv[i][0] == '-'){
-      usage();
-    }
-    else{
-      nfiles_temp++;
-    }
-  }
+	int nfiles_temp = 0;
+	for(int i = (2+nfiles); i < argc; i++){
+		if (argv[i][0] == '-'){
+			usage();
+		}
+		else{
+			nfiles_temp++;
+		}
+	}
 
-  if(nfiles_temp != nfiles){
-      fprintf(stderr, "%s:%d\n"
-              " Inconsistent number of files!"
-              " %d bepe files and %d flat files\n",
-              __FILE__,__LINE__, nfiles, nfiles_temp);
-      usage();
-  }
+	if(nfiles_temp != nfiles){
+		fprintf(stderr, "%s:%d\n"
+			" Inconsistent number of files!"
+			" %d bepe files and %d flat files\n",
+			__FILE__,__LINE__, nfiles, nfiles_temp);
+		usage();
+	}
 
-  const char* bepe_file_names[nfiles];
-  const char* flat_file_names[nfiles];
+	const char* bepe_file_names[nfiles];
+	const char* flat_file_names[nfiles];
 
-  FILE* bepe_files[nfiles];
-  FILE* flat_files[nfiles];
+	FILE* bepe_files[nfiles];
+	FILE* flat_files[nfiles];
 
-  int* winner_totals[nmodels];
+	int* winner_totals[nmodels];
 
-  for(int i = 0; i < nfiles; ++i)
-      bepe_file_names[i] = argv[i+1];
-  for(int i = 0; i < nfiles; ++i)
-      flat_file_names[i] = argv[i+2+nfiles];
+	for(int i = 0; i < nfiles; ++i)
+		bepe_file_names[i] = argv[i+1];
+	for(int i = 0; i < nfiles; ++i)
+		flat_file_names[i] = argv[i+2+nfiles];
 
-  for(int i = 0; i < nfiles; ++i)
-      winner_totals[i] = 0;
+	for(int i = 0; i < nfiles; ++i)
+		winner_totals[i] = 0;
 
-  nmodels = get_lines(bepe_file_names[0]);
-  for(int i = 0; i < nfiles; ++i) {
-      if(get_lines(flat_file_names[i]) != nmodels) {
-          fprintf(stderr, "%s:%d: inconsistent parameters in"
-                  " files%s and %s\n", __FILE__,__LINE__,
-                  flat_file_names[i], bepe_file_names[0]);
-          exit(EXIT_FAILURE);
-      }
-      if(get_lines(bepe_file_names[i]) != nmodels) {
-          fprintf(stderr, "%s:%d: inconsistent parameters in"
-                  " files%s and %s\n", __FILE__,__LINE__,
-                  bepe_file_names[i], bepe_file_names[0]);
-          exit(EXIT_FAILURE);
-      }
-  }
+	nmodels = get_lines(bepe_file_names[0]);
+	for(int i = 0; i < nfiles; ++i) {
+		if(get_lines(flat_file_names[i]) != nmodels) {
+      		fprintf(stderr, "%s:%d: inconsistent parameters in"
+      			" files%s and %s\n", __FILE__,__LINE__,
+      			flat_file_names[i], bepe_file_names[0]);
+			exit(EXIT_FAILURE);
+		}
+		if(get_lines(bepe_file_names[i]) != nmodels) {
+			fprintf(stderr, "%s:%d: inconsistent parameters in"
+          		" files%s and %s\n", __FILE__,__LINE__,
+				bepe_file_names[i], bepe_file_names[0]);
+			exit(EXIT_FAILURE);
+  		}
+	}
 
-  printf("file length checked: %u\n", nmodels);
+	printf("file length checked: %u\n", nmodels);
 
-  int winner;
-  double temp;
-  double best_val;
-  char buff[2000];
+	int winner;
+	double temp;
+	double best_val;
+	char buff[2000];
 
-  for(int i = 0; i < nfiles; ++i) { 
- 	bepe_files[i] = fopen(bepe_file_names[i], "r");
-  	if(bepe_files[i] == NULL) {
-	fprintf(stderr,"%s:%d: can't read file \"%s\"\n",
-	  __FILE__,__LINE__, bepe_file_names[i]);
- 	  exit(EXIT_FAILURE); 
+	for(int i = 0; i < nfiles; ++i) { 
+		bepe_files[i] = fopen(bepe_file_names[i], "r");
+		if(bepe_files[i] == NULL) {
+			fprintf(stderr,"%s:%d: can't read file \"%s\"\n",
+		  		__FILE__,__LINE__, bepe_file_names[i]);
+  			exit(EXIT_FAILURE); 
+		}
+		fscanf(bepe_files[i], "%s", buff);
+		fscanf(bepe_files[i], "%s", buff);
+		fscanf(bepe_files[i], "%s", buff);
   	}
-  	fscanf(bepe_files[i], "%s", buff);
-  	fscanf(bepe_files[i], "%s", buff);
-  	fscanf(bepe_files[i], "%s", buff);
-  }
 
-  for(int j = 0; j < nmodels; ++j) {
-  	best_val = -1;
-  	winner = -1;
-  	for(int i = 0; i < nfiles; ++i) {  
-  	  fscanf(bepe_files[i], "%lf", &temp);
+	for(int j = 0; j < nmodels; ++j) {
+		best_val = -1;
+		winner = -1;
+		for(int i = 0; i < nfiles; ++i) {  
+  			fscanf(bepe_files[i], "%lf", &temp);
 
-  	  if(temp > best_val){
-  	  	winner = j;
-  	  	best_val = temp;
-  	  }
+			if(temp > best_val){
+				winner = j;
+				best_val = temp;
+  	  		}
+			fscanf(bepe_files[i], "%s", buff);
+			fscanf(bepe_files[i], "%s", buff);
+		  	fscanf(bepe_files[i], "%s", buff);
+		  	fscanf(bepe_files[i], "%s", buff);
+		}
+  		winner_totals[winner]++;
+	}
 
-  	  fscanf(bepe_files[i], "%s", buff);
-  	  fscanf(bepe_files[i], "%s", buff);
-  	  fscanf(bepe_files[i], "%s", buff);
-  	  fscanf(bepe_files[i], "%s", buff);
-  	}
-  	winner_totals[winner]++;
-  }
+	flat[nfiles]
 }
