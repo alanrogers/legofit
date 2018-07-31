@@ -99,6 +99,8 @@ Systems Consortium License, which can be found in file "LICENSE".
 #include <stdlib.h>
 #include <time.h>
 
+#define LINESIZE 65536
+
 typedef struct ModSelCrit {
     int dim;
     double *c;  // c[i] is the criterion for the i'th data set
@@ -116,10 +118,10 @@ typedef struct ModPar {
 
 // Linked list of parameter names
 #define MAXNAME 100
-typedef struct NameList {
-    struct NameList *next;
+typedef struct ParNameLst {
+    struct ParNameLst *next;
     char        name[MAXNAME];
-} NameList;
+} ParNameLst;
 
 
 void        usage(void);
@@ -128,18 +130,18 @@ void        ModSelCrit_free(ModSelCrit *self);
 int         ModSelCrit_compare(ModSelCrit *x, ModSelCrit *y);
 int         ModSelCrit_dim(ModSelCrit *self);
 double      ModSelCrit_badness(ModSelCrit *self, int ndx);
-ModPar     *ModPar_new(const char *fname, NameList **namelist);
+ModPar     *ModPar_new(const char *fname, ParNameLst **namelist);
 void        ModPar_free(ModPar *self);
 int         ModPar_exists(ModPar *self, const char *parname);
 double      ModPar_value(ModPar *self, int row, const char *parname);
 int         ModPar_nrows(ModPar *self);
 int         ModPar_ncols(ModPar *self);
-NameList   *NameList_new(const char *name, NameList *next);
-NameList   *NameList_insert(NameList * self, const char *name);
-void        NameList_free(NameList * self);
-int         NameList_exists(NameList * self, const char *name);
-void        NameList_print(const NameList * self, FILE *fp);
-unsigned    NameList_size(NameList *self);
+ParNameLst   *ParNameLst_new(const char *name, ParNameLst *next);
+ParNameLst   *ParNameLst_insert(ParNameLst * self, const char *name);
+void        ParNameLst_free(ParNameLst * self);
+int         ParNameLst_exists(ParNameLst * self, const char *name);
+void        ParNameLst_print(const ParNameLst * self, FILE *fp);
+unsigned    ParNameLst_size(ParNameLst *self);
 
 const char *usageMsg =
     "Usage: bma <m1.msc> ... <mK.msc> -F <m1.flat> ... <mK.flat>\n"
@@ -185,7 +187,7 @@ ModSelCrit *ModSelCrit_new(const char *fname) {
                 __FILE__,__LINE__,fname);
         exit(EXIT_FAILURE);
     }
-    char buff[2000];
+    char buff[LINESIZE];
 
     // 1st pass counts lines
     int dim=0;
@@ -217,6 +219,7 @@ ModSelCrit *ModSelCrit_new(const char *fname) {
     }
 
     int line=0;
+    rewind(fp);
     while(1) {
         if(fgets(buff, sizeof buff, fp) == NULL)
             break;
@@ -225,7 +228,6 @@ ModSelCrit *ModSelCrit_new(const char *fname) {
                     __FILE__, __LINE__, sizeof(buff));
             exit(EXIT_FAILURE);
         }
-        assert(line < msc->dim);
         char *next = stripWhiteSpace(buff);
         assert(next);
         if(*next == '#' || strlen(next)==0)
@@ -237,6 +239,7 @@ ModSelCrit *ModSelCrit_new(const char *fname) {
                     __FILE__,__LINE__, fname);
             exit(EXIT_FAILURE);
         }
+        assert(line < msc->dim);
         msc->c[line] = strtod(valstr, NULL);
         msc->fname[line] = strdup(next);
         if(msc->fname[line] == NULL) {
@@ -245,6 +248,7 @@ ModSelCrit *ModSelCrit_new(const char *fname) {
         }
         ++line;
     }
+    assert(line == msc->dim);
     return msc;
 }
 
@@ -287,14 +291,14 @@ double  ModSelCrit_badness(ModSelCrit *self, int ndx) {
 
 /// ModPar constructor. Argument is the name of a file in the format
 /// produced by flatfile.py.
-ModPar *ModPar_new(const char *fname, NameList **namelist) {
+ModPar *ModPar_new(const char *fname, ParNameLst **namelist) {
     FILE *fp = fopen(fname, "r");
     if(fp == NULL) {
         fprintf(stderr,"%s:%d: can't read file \"%s\"\n",
                 __FILE__,__LINE__,fname);
         exit(EXIT_FAILURE);
     }
-    char buff[4096];
+    char buff[LINESIZE];
     Tokenizer *tkz = Tokenizer_new(100); // room for 100 parameters
 
     ModPar *self = malloc(sizeof(ModPar));
@@ -315,6 +319,8 @@ ModPar *ModPar_new(const char *fname, NameList **namelist) {
                     __FILE__, __LINE__, sizeof(buff));
             exit(EXIT_FAILURE);
         }
+        if(*buff == '#')
+            continue;
         ntokens = Tokenizer_split(tkz, buff, " \t");
         ntokens = Tokenizer_strip(tkz, " \n\t");
         if(ncols == 0) {
@@ -325,13 +331,14 @@ ModPar *ModPar_new(const char *fname, NameList **namelist) {
             for(j=0; j<ncols; ++j) {
                 const char *name = Tokenizer_token(tkz, j);
                 StrInt_insert(self->parndx, name, j);
-                *namelist = NameList_insert(*namelist, name);
+                *namelist = ParNameLst_insert(*namelist, name);
             }
-            StrInt_print(self->parndx, stderr);
         }else{
             if(ncols != ntokens) {
                 fprintf(stderr,"%s:%d: inconsistent row lengths in file %s\n",
                         __FILE__,__LINE__,fname);
+                fprintf(stderr,"  current line has %d tokens\n", ntokens);
+                fprintf(stderr,"  previous lines had %d\n", ncols);
                 exit(EXIT_FAILURE);
             }
             ++nrows;
@@ -343,6 +350,7 @@ ModPar *ModPar_new(const char *fname, NameList **namelist) {
     CHECKMEM(self->par);
     self->fname = malloc(nrows * sizeof(char *));
     CHECKMEM(self->fname);
+    rewind(fp);
 
     // 2nd pass puts parameter values into array
     ncols=0;
@@ -356,6 +364,8 @@ ModPar *ModPar_new(const char *fname, NameList **namelist) {
                     __FILE__, __LINE__, sizeof(buff));
             exit(EXIT_FAILURE);
         }
+        if(*buff == '#')
+            continue;
         ntokens = Tokenizer_split(tkz, buff, " \t");
         ntokens = Tokenizer_strip(tkz, " \n\t");
         if(ncols == 0) {
@@ -407,9 +417,9 @@ int ModPar_ncols(ModPar *self) {
     return self->ncols;
 }
 
-/// NameList constructor
-NameList     *NameList_new(const char *name, NameList * next) {
-    NameList     *new = malloc(sizeof(*new));
+/// ParNameLst constructor
+ParNameLst     *ParNameLst_new(const char *name, ParNameLst * next) {
+    ParNameLst     *new = malloc(sizeof(*new));
     CHECKMEM(new);
 
     new->next = next;
@@ -425,37 +435,37 @@ NameList     *NameList_new(const char *name, NameList * next) {
 }
 
 /// Return number of links in list
-unsigned NameList_size(NameList *self) {
+unsigned ParNameLst_size(ParNameLst *self) {
     if(self == NULL)
         return 0u;
-    return 1u + NameList_size(self->next);
+    return 1u + ParNameLst_size(self->next);
 }
 
-/// Free linked list of NameList objects
-void NameList_free(NameList * self) {
+/// Free linked list of ParNameLst objects
+void ParNameLst_free(ParNameLst * self) {
     if(self == NULL)
         return;
-    NameList_free(self->next);
+    ParNameLst_free(self->next);
     free(self);
 }
 
 /// Insert a new name. Do nothing if name already exists.
-NameList     *NameList_insert(NameList * self, const char *name) {
+ParNameLst     *ParNameLst_insert(ParNameLst * self, const char *name) {
     if(self == NULL)
-        return NameList_new(name, NULL);
+        return ParNameLst_new(name, NULL);
 
     int         diff = strcmp(name, self->name);
     if(diff == 0) {
 		return self;
     }else if(diff > 0) {
-        self->next = NameList_insert(self->next, name);
+        self->next = ParNameLst_insert(self->next, name);
         return self;
     }else
-        return NameList_new(name, self);
+        return ParNameLst_new(name, self);
 }
 
 /// Return 1 if name is present in list, 0 otherwise.
-int NameList_exists(NameList * self, const char *name) {
+int ParNameLst_exists(ParNameLst * self, const char *name) {
     if(self == NULL) {
 		return 0;
     }
@@ -464,33 +474,37 @@ int NameList_exists(NameList * self, const char *name) {
     if(diff == 0)
         return 1;
     else if(diff > 0)
-        return NameList_exists(self->next, name);
+        return ParNameLst_exists(self->next, name);
     else{
         assert(diff < 0);
         return 0;
     }
 }
 
-/// Print linked list of NameList objects
-void NameList_print(const NameList * self, FILE *fp) {
+/// Print linked list of ParNameLst objects
+void ParNameLst_print(const ParNameLst * self, FILE *fp) {
     if(self == NULL) {
         putc('\n',fp);
         return;
     }
     fprintf(fp, " %s", self->name);
-    NameList_print(self->next, fp);
+    ParNameLst_print(self->next, fp);
 }
 
 int main(int argc, char **argv) {
     time_t currtime = time(NULL);
+    int i, j, k, nmodels = 0, gotDashF = 0;
 
     hdr("bma: bootstrap model average");
 #if defined(__DATE__) && defined(__TIME__)
     printf("# Program was compiled: %s %s\n", __DATE__, __TIME__);
 #endif
-    printf("# Program was run: %s\n", ctime(&currtime));
-
-    int i, j, k, nmodels = 0, gotDashF = 0;
+    printf("# Program was run: %s", ctime(&currtime));
+    printf("# cmd:");
+    for(i = 0; i < argc; ++i)
+        printf(" %s", argv[i]);
+    putchar('\n');
+    fflush(stdout);
 
     {
         int nflat=0;
@@ -556,7 +570,7 @@ int main(int argc, char **argv) {
     }
 
     int nrows = ModSelCrit_dim(msc[0]);
-    NameList *parnames = NULL;
+    ParNameLst *parnames = NULL;
     ModPar *modpar[nmodels];
 
     // Flat files should have the same number of rows as msc
@@ -581,34 +595,34 @@ int main(int argc, char **argv) {
     // Calculate weights, w[i].  w[i] is the fraction of data sets for
     // which i is the best model.
     double w[nmodels];
-    memset(w, 0, sizeof(w));
+    memset(w, 0, nmodels * sizeof(w[0]));
     for(i=0; i<nrows; ++i) {
-        int ibest=0;
+        int jbest=0;
         double best = DBL_MAX;
         for(j=0; j<nmodels; ++j) {
             double badness = ModSelCrit_badness(msc[j], i);
             if(badness < best) {
                 best = badness;
-                ibest = j;
+                jbest = j;
             }
         }
-        ++w[ibest];
+        w[jbest] += 1.0;
     }
     for(j=0; j < nmodels; ++j)
-        w[i] /= nrows;
+        w[j] /= nrows;
 
     // Echo weights and input files
-    printf("%15s %15s %15s\n", "Weight", "MSC_file", "Flat_file");
+    printf("#%15s %15s %15s\n", "Weight", "MSC_file", "Flat_file");
     for(i=0; i<nmodels; ++i)
-        printf("%15.10lg %15s %15s\n", w[i], mscnames[i], flatnames[i]);
+        printf("#%15.10lg %15s %15s\n", w[i], mscnames[i], flatnames[i]);
     putchar('\n');
 
     // number of parameters, pooled across models
-    int npar = NameList_size(parnames);
+    int npar = ParNameLst_size(parnames);
 
     // avg[i][j] is average of j'th parameter for i'th data set
     double avg[nrows][npar];
-    NameList *node;
+    ParNameLst *node;
 
     for(i=0; i < nrows; ++i) {
         // i indexes data sets
@@ -644,11 +658,11 @@ int main(int argc, char **argv) {
     // values are model-averaged estimates.
     printf("# Model-averaged parameter estimates\n");
     for(node=parnames; node!=NULL; node = node->next)
-        printf(" %15s", node->name);
+        printf(" %s", node->name);
     putchar('\n');
     for(i=0; i < nrows; ++i) {
         for(j=0; j < npar; ++j)
-            printf(" %15.10g", avg[i][j]);
+            printf(" %0.10g", avg[i][j]);
         putchar('\n');
     }
 
@@ -656,7 +670,7 @@ int main(int argc, char **argv) {
     for(i=0; i<nmodels; ++i)
         ModSelCrit_free(msc[i]);
 
-    NameList_free(parnames);
+    ParNameLst_free(parnames);
 
     for(i=0; i<nmodels; ++i)
         ModPar_free(modpar[i]);
