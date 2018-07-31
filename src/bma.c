@@ -185,7 +185,7 @@ ModSelCrit *ModSelCrit_new(const char *fname) {
                 __FILE__,__LINE__,fname);
         exit(EXIT_FAILURE);
     }
-    char buff[200];
+    char buff[2000];
 
     // 1st pass counts lines
     int dim=0;
