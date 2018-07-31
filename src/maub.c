@@ -108,6 +108,8 @@ struct param_list {
 
 void usage(void);
 void push_param(char* param, param_list* node);
+int get_index(char* param, flat f);
+
 double* maub_parse_bepe(const char* file_name);
 int get_lines(const char* file_name);
 flat* get_flats(const char** file_names, int nfiles, int nmodels);
@@ -178,6 +180,15 @@ void push_param(char* param, param_list* node){
 			node->next = new_node;
 		}
 	}
+}
+
+int get_index(char* param, flat f){
+	for (int i = 0; i < f.nparams; i++){
+		if(strcmp(param, f.param_names[i]) == 0){
+			return i;
+		}
+	}
+	return -1;
 }
 
 int get_lines(const char* file_name){
