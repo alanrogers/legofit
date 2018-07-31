@@ -100,7 +100,7 @@ struct flat {
 void usage(void);
 double* maub_parse_bepe(const char* file_name);
 int get_lines(const char* file_name);
-void get_flats(const char** file_names, int nfiles, int nmodels, flat* flat_array);
+flat* get_flats(const char** file_names, int nfiles, int nmodels, flat* flat_array);
 
 const char *usageMsg =
     "Usage: maub m1.bepe m2.bepe ... mK.bepe -F m1.flat m2.flat ... mK.flat\n"
@@ -156,7 +156,7 @@ const char *usageMsg =
 	return num_lines;
 }
 
-void get_flats(const char** file_names, int nfiles, int nmodels, flat* flat_array){
+flat* get_flats(const char** file_names, int nfiles, int nmodels, flat* flat_array){
 	for (int i = 0; i < nfiles; i++){
 		FILE* f = fopen(file_names[i], "r");
 		if(f==NULL) {
@@ -202,6 +202,8 @@ void get_flats(const char** file_names, int nfiles, int nmodels, flat* flat_arra
 			}
 		}
 	}
+
+	return flat_array;
 }
 
 int main(int argc, char **argv){
@@ -312,6 +314,6 @@ int main(int argc, char **argv){
   		winner_totals[winner]++;
 	}
 
-	flat flat_input[nfiles];
-	get_flats(flat_file_names, nfiles, nmodels, flat_input);
+	flat* flat_input;
+	flat_input = get_flats(flat_file_names, nfiles, nmodels, flat_input);
 }
