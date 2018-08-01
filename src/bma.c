@@ -502,6 +502,21 @@ void ParNameLst_print(const ParNameLst * self, FILE *fp) {
 #    error "Unit tests must be compiled without -DNDEBUG flag"
 #  endif
 
+const char *mscInput = \
+    "# comment\n"
+    "\n"
+    "# comment\n"
+    "0.01 foo\n"
+    "0.02 bar\n";
+
+const char *flatInput = \
+    "# comment\n"
+    "\n"
+    "# comment\n"
+    "par1 par2\n"
+    "1.0  2.0\n"
+    "3e+0 4\n";
+
 int main(int argc, char **argv) {
     int         verbose = 0;
     if(argc > 1) {
@@ -512,7 +527,20 @@ int main(int argc, char **argv) {
         verbose = 1;
     }
 
-    unitTstResult("ParNameLst", "untested");
+    FILE *fp;
+    
+    const char *mscFile = "tst.msc";
+    fp = fopen(mscFile, "w");
+    assert(fp);
+    fputs(mscInput, fp);
+    fclose(fp);
+    ModSelCrit *msc = ModSelCrit_new(mscFile);
+    assert(ModSelCrit_compare(msc,msc) == 0);
+    assert(ModSelCrit_dim(msc) == 2);
+    assert(ModSelCrit_badness(msc, 0) == 0.01);
+    assert(ModSelCrit_badness(msc, 1) == 0.02);
+    ModSelCrit_free(msc);
+    unitTstResult("ParNameLst", "OK");
     unitTstResult("ModSelCrit", "untested");
     unitTstResult("ModPar", "untested");
     return 0;
