@@ -88,7 +88,7 @@ Systems Consortium License, which can be found in file "LICENSE".
 typedef struct flat flat;
 struct flat {
 	int nparams;
-	int nmodels;
+	int ndatum;
 
 	double** values;
 	char** param_names;
@@ -112,7 +112,7 @@ int get_index(char* param, flat f);
 
 double* maub_parse_bepe(const char* file_name);
 int get_lines(const char* file_name);
-flat* get_flats(const char** file_names, int nfiles, int nmodels);
+flat* get_flats(const char** file_names, int nfiles, int ndatum);
 
 const char *usageMsg =
     "Usage: maub m1.bepe m2.bepe ... mK.bepe -F m1.flat m2.flat ... mK.flat\n"
@@ -202,18 +202,33 @@ int get_lines(const char* file_name){
 	char temp;
 	int num_lines = 0;
 
+	temp = fgetc(f);
+	if(temp != '#'){
+		num_lines++;
+	}
+
 	do {
 		temp = fgetc(f);
 		if(temp == '\n'){
-			num_lines++;
+ 		CHECK: temp = fgetc(f);
+			if(temp == '\n'){
+				goto CHECK;
+			}
+			else if(temp == '#'){
+				continue;
+			}
+			else{
+				num_lines++;
+			}
 		}
+
 	} while (temp != EOF);
 
 	fclose(f);
-	return num_lines;
+	return (num_lines-1);
 }
 
-flat* get_flats(const char** file_names, int nfiles, int nmodels){
+flat* get_flats(const char** file_names, int nfiles, int ndatum){
 	flat* flat_array = malloc(nfiles*sizeof(flat));
 
 	for (int i = 0; i < nfiles; i++){
@@ -244,20 +259,20 @@ flat* get_flats(const char** file_names, int nfiles, int nmodels){
 		} while (ch != '\n');
 
 		flat_array[i].nparams = params;
-		flat_array[i].nmodels = nmodels;
+		flat_array[i].ndatum = ndatum;
 		flat_array[i].param_names = malloc(params*sizeof(char*));
-		flat_array[i].values = malloc(nmodels*sizeof(double*));
+		flat_array[i].values = malloc(ndatum*sizeof(double*));
 
-		for (int j = 0; j < nmodels; j++){
+		for (int j = 0; j < ndatum; j++){
 			flat_array[i].values[j] =  malloc(params*sizeof(double));
 		}
-		for (int j = 0; j < nmodels; j++){
+		for (int j = 0; j < ndatum; j++){
 			flat_array[i].param_names[j] = temp_params[j];
 			push_param (temp_params[j], all_params);
 		}
 
 		for (int j = 0; j < params; j++){
-			for (int k = 0; k < nmodels; k++){
+			for (int k = 0; k < ndatum; k++){
 				fscanf(f, "%lf", &flat_array[i].values[j][k]);
 			}
 		}
@@ -272,7 +287,7 @@ int main(int argc, char **argv){
 		usage();
 
 	int nfiles = 0;
-	int nmodels = 0;
+	int ndatum = 0;
 
 	for(int i = 1; i < argc; i++){
 		if (argv[i][0] == '-'){
@@ -311,38 +326,45 @@ int main(int argc, char **argv){
 
 	FILE* bepe_files[nfiles];
 
-	int* winner_totals[nmodels];
+	int winner_totals[nfiles];
 
 	for(int i = 0; i < nfiles; ++i)
 		bepe_file_names[i] = argv[i+1];
 	for(int i = 0; i < nfiles; ++i)
 		flat_file_names[i] = argv[i+2+nfiles];
 
-	for(int i = 0; i < nfiles; ++i)
+	for(int i = 0; i < nfiles; ++i){
 		winner_totals[i] = 0;
+	}
 
-	nmodels = get_lines(bepe_file_names[0]);
+	ndatum = get_lines(bepe_file_names[0]);
 	for(int i = 0; i < nfiles; ++i) {
-		if(get_lines(flat_file_names[i]) != nmodels) {
-			fprintf(stderr, "%s:%d: inconsistent parameters in"
-				" files%s and %s\n", __FILE__,__LINE__,
-				flat_file_names[i], bepe_file_names[0]);
+		if((get_lines(flat_file_names[i])-1) != ndatum) {
+			fprintf(stderr, "%s:%d: inconsistent datasets in"
+				" files %s (%u) and %s (%u)\n", __FILE__,__LINE__,
+				flat_file_names[i], (get_lines(flat_file_names[i]) -1),
+				bepe_file_names[0], ndatum);
 			exit(EXIT_FAILURE);
 		}
-		if(get_lines(bepe_file_names[i]) != nmodels) {
-			fprintf(stderr, "%s:%d: inconsistent parameters in"
-				" files%s and %s\n", __FILE__,__LINE__,
-				bepe_file_names[i], bepe_file_names[0]);
-			exit(EXIT_FAILURE);
+		if(get_lines(bepe_file_names[i]) != ndatum) {
+			fprintf(stderr, "%s:%d: inconsistent datasets in"
+				" files %s (%u) and %s (%u)\n", __FILE__,__LINE__,
+				bepe_file_names[i], get_lines(bepe_file_names[i]),
+				bepe_file_names[0], ndatum);
+			exit(EXIT_FAILURE);;
 		}
 	}
 
-	printf("file length checked: %u\n", nmodels);
+	printf("# num datasets %u\n", ndatum);
 
 	int winner;
 	double temp;
 	double best_val;
 	char buff[2000];
+
+	for (int i = 0; i < nfiles; i++){
+		printf("%s won %u\n", bepe_file_names[i], winner_totals[i]);
+	}
 
 	for(int i = 0; i < nfiles; ++i) { 
 		bepe_files[i] = fopen(bepe_file_names[i], "r");
@@ -351,29 +373,31 @@ int main(int argc, char **argv){
 		  		__FILE__,__LINE__, bepe_file_names[i]);
   			exit(EXIT_FAILURE); 
 		}
-		fscanf(bepe_files[i], "%s", buff);
-		fscanf(bepe_files[i], "%s", buff);
-		fscanf(bepe_files[i], "%s", buff);
+		do {
+			fscanf(bepe_files[i], "%s", buff);
+		} while(strcmp(buff, "DataFile"));
   	}
 
-	for(int j = 0; j < nmodels; ++j) {
+	for(int j = 0; j < ndatum; ++j) {
 		best_val = -1;
 		winner = -1;
 		for(int i = 0; i < nfiles; ++i) {  
   			fscanf(bepe_files[i], "%lf", &temp);
 
 			if(temp > best_val){
-				winner = j;
+				winner = i;
 				best_val = temp;
   	  		}
 			fscanf(bepe_files[i], "%s", buff);
-			fscanf(bepe_files[i], "%s", buff);
-		  	fscanf(bepe_files[i], "%s", buff);
-		  	fscanf(bepe_files[i], "%s", buff);
 		}
   		winner_totals[winner]++;
 	}
 
+	for (int i = 0; i < nfiles; i++){
+		printf("%s won %u\n", bepe_file_names[i], winner_totals[i]);
+	}
+
 	flat* flat_input;
-	flat_input = get_flats(flat_file_names, nfiles, nmodels);
+	printf("flat prep\n");
+	flat_input = get_flats(flat_file_names, nfiles, ndatum);
 }
