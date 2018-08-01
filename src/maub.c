@@ -141,7 +141,7 @@ const char *usageMsg =
 	"(excluding comments and the header) should agree with the numbers of\n"
 	"rows in the `.bepe` files.\n";
 
-param_list* all_params = NULL;
+param_list* all_params;
 
 void usage(void) {
 	fputs(usageMsg, stderr);
@@ -150,6 +150,10 @@ void usage(void) {
 
 void push_param(char* param, param_list* node){
 	char* str = node->val;
+	if(node->val =='\0'){
+		node->val = param;
+		return;
+	}
 	if (strcmp(param, str) == 0){
 		return;
 	}
@@ -240,22 +244,27 @@ flat* get_flats(const char** file_names, int nfiles, int ndatum){
 		}
 
 		char ch;
-		int num_lines = 0;
+
+		do {
+			ch = fgetc(f);
+			if(ch == '#'){
+				while(ch != '\n'){
+					ch = fgetc(f);
+				}
+				ch = '#';
+			}
+		} while (ch == '#');
+
+		ungetc(ch,f);
+
+		char temp_params[100][100];
 		int params = 0;
 
 		do {
-			ch = fgetc(f);
-			if(ch == '\n'){
-				num_lines++;
-			}
-		} while (num_lines < 2);
-
-		char* temp_params[1000];
-
-		do {
 			fscanf(f, "%s", temp_params[params]);
-			params++;
 			ch = fgetc(f);
+			ungetc(ch,f);
+			params++;
 		} while (ch != '\n');
 
 		flat_array[i].nparams = params;
@@ -266,18 +275,19 @@ flat* get_flats(const char** file_names, int nfiles, int ndatum){
 		for (int j = 0; j < ndatum; j++){
 			flat_array[i].values[j] =  malloc(params*sizeof(double));
 		}
-		for (int j = 0; j < ndatum; j++){
-			flat_array[i].param_names[j] = temp_params[j];
-			push_param (temp_params[j], all_params);
-		}
 
-		for (int j = 0; j < params; j++){
-			for (int k = 0; k < ndatum; k++){
+		for (int j = 0; j < ndatum; j++){
+			for (int k = 0; k < params; k++){
 				fscanf(f, "%lf", &flat_array[i].values[j][k]);
 			}
 		}
-	}
 
+		for (int j = 0; j < params; j++){
+			flat_array[i].param_names[j] = malloc(strlen(temp_params[j])*sizeof(char));
+			strcpy(flat_array[i].param_names[j],temp_params[j]);
+			push_param (flat_array[i].param_names[j], all_params);
+		}
+	}
 	return flat_array;
 }
 
@@ -355,16 +365,10 @@ int main(int argc, char **argv){
 		}
 	}
 
-	printf("# num datasets %u\n", ndatum);
-
 	int winner;
 	double temp;
 	double best_val;
 	char buff[2000];
-
-	for (int i = 0; i < nfiles; i++){
-		printf("%s won %u\n", bepe_file_names[i], winner_totals[i]);
-	}
 
 	for(int i = 0; i < nfiles; ++i) { 
 		bepe_files[i] = fopen(bepe_file_names[i], "r");
@@ -393,11 +397,12 @@ int main(int argc, char **argv){
   		winner_totals[winner]++;
 	}
 
-	for (int i = 0; i < nfiles; i++){
-		printf("%s won %u\n", bepe_file_names[i], winner_totals[i]);
-	}
-
 	flat* flat_input;
-	printf("flat prep\n");
+
+	all_params = malloc(sizeof(param_list));
+	all_params->val = '\0';
+	all_params->prev = NULL;
+	all_params->next = NULL;
+
 	flat_input = get_flats(flat_file_names, nfiles, ndatum);
 }
