@@ -22,7 +22,7 @@
 #  error STRINT_DIM must be a power of 2
 #endif
 
-#define MAXKEY 10
+#define MAXKEY 200
 
 /// A single element of a linked list
 typedef struct SILink {
