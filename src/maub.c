@@ -379,12 +379,12 @@ int main(int argc, char **argv){
   	}
 
 	for(int j = 0; j < ndatum; ++j) {
-		best_val = -1;
+		best_val = 999999999;
 		winner = -1;
 		for(int i = 0; i < nfiles; ++i) {  
   			fscanf(bepe_files[i], "%lf", &temp);
 
-			if(temp > best_val){
+			if(temp < best_val){
 				winner = i;
 				best_val = temp;
   	  		}
