@@ -136,8 +136,8 @@ int         ModPar_exists(ModPar *self, const char *parname);
 double      ModPar_value(ModPar *self, int row, const char *parname);
 int         ModPar_nrows(ModPar *self);
 int         ModPar_ncols(ModPar *self);
-ParNameLst   *ParNameLst_new(const char *name, ParNameLst *next);
-ParNameLst   *ParNameLst_insert(ParNameLst * self, const char *name);
+ParNameLst *ParNameLst_new(const char *name, ParNameLst *next);
+ParNameLst *ParNameLst_insert(ParNameLst * self, const char *name);
 void        ParNameLst_free(ParNameLst * self);
 int         ParNameLst_exists(ParNameLst * self, const char *name);
 void        ParNameLst_print(const ParNameLst * self, FILE *fp);
@@ -491,6 +491,33 @@ void ParNameLst_print(const ParNameLst * self, FILE *fp) {
     ParNameLst_print(self->next, fp);
 }
 
+/*
+ * This file has two main functions. The first compiles if "TEST" is
+ * defined provides a unit test for the functions in this file. The
+ * second "main" compiles if "TEST" is not defined is produces the bma
+ * executable.
+ */
+#ifdef TEST
+#  ifdef NDEBUG
+#    error "Unit tests must be compiled without -DNDEBUG flag"
+#  endif
+
+int main(int argc, char **argv) {
+    int         verbose = 0;
+    if(argc > 1) {
+        if(argc != 2 || 0 != strcmp(argv[1], "-v")) {
+            fprintf(stderr, "usage: xstrint [-v]\n");
+            exit(EXIT_FAILURE);
+        }
+        verbose = 1;
+    }
+
+    unitTstResult("ParNameLst", "untested");
+    unitTstResult("ModSelCrit", "untested");
+    unitTstResult("ModPar", "untested");
+    return 0;
+}
+#else
 int main(int argc, char **argv) {
     time_t currtime = time(NULL);
     int i, j, k, nmodels = 0, gotDashF = 0;
@@ -676,3 +703,4 @@ int main(int argc, char **argv) {
         ModPar_free(modpar[i]);
     return 0;
 }
+#endif
