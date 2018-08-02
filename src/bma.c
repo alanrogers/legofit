@@ -369,6 +369,8 @@ ModPar *ModPar_new(const char *fname, ParNameLst **namelist) {
             continue;
         ntokens = Tokenizer_split(tkz, buff, " \t");
         ntokens = Tokenizer_strip(tkz, " \n\t");
+        if(ntokens==0)
+            continue;
         if(ncols == 0) {
             ncols = ntokens;
             assert(ncols == self->ncols);
@@ -546,10 +548,55 @@ int main(int argc, char **argv) {
     ModSelCrit_free(msc);
     ModSelCrit_free(msc2);
     remove(mscFile);
+    unitTstResult("ModSelCrit", "OK");
 
+    ParNameLst *pnl=NULL, *node;
+    assert(ParNameLst_size(pnl) == 0);
+    pnl = ParNameLst_insert(pnl, "george");
+    assert(ParNameLst_size(pnl) == 1);
+    pnl = ParNameLst_insert(pnl, "frank");
+    assert(ParNameLst_size(pnl) == 2);
+    pnl = ParNameLst_insert(pnl, "alfred");
+    assert(ParNameLst_size(pnl) == 3);
+    node = pnl;
+    assert(node);
+    assert(strcmp(node->name, "alfred") == 0);
+    node = node->next;
+    assert(node);
+    assert(strcmp(node->name, "frank") == 0);
+    node = node->next;
+    assert(node);
+    assert(strcmp(node->name, "george") == 0);
+    node = node->next;
+    assert(node==NULL);
+    assert(ParNameLst_exists(pnl, "alfred"));
+    assert(ParNameLst_exists(pnl, "frank"));
+    assert(ParNameLst_exists(pnl, "george"));
+    assert(!ParNameLst_exists(pnl, "notthere"));
+    if(verbose)
+        ParNameLst_print(pnl, stdout);
+    ParNameLst_free(pnl);
     unitTstResult("ParNameLst", "OK");
-    unitTstResult("ModSelCrit", "untested");
-    unitTstResult("ModPar", "untested");
+
+    const char *flatFile = "tst.flat";
+    fp = fopen(flatFile, "w");
+    assert(fp);
+    fputs(flatInput, fp);
+    fclose(fp);
+    pnl = NULL;
+    ModPar *mp = ModPar_new(flatFile, &pnl);
+    assert(ModPar_exists(mp, "par1"));
+    assert(ModPar_exists(mp, "par2"));
+    assert(!ModPar_exists(mp, "par3"));
+    assert(ParNameLst_size(pnl) == 2);
+    assert(ModPar_nrows(mp) == 2);
+    assert(ModPar_ncols(mp) == 2);
+    assert(ModPar_value(mp, 0, "par1") == 1.0);
+    assert(ModPar_value(mp, 0, "par2") == 2.0);
+    assert(ModPar_value(mp, 1, "par1") == 3.0);
+    assert(ModPar_value(mp, 1, "par2") == 4.0);
+    remove(flatFile);
+    unitTstResult("ModPar", "OK");
     return 0;
 }
 #else
