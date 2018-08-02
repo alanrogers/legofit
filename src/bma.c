@@ -11,7 +11,9 @@ Bootstrap model averaging was proposed by Buckland et al (Biometrics,
 model selection, including @ref bepe "bepe" and @ref clic
 "clic". Model selection is applied to the real data and also to a set
 of bootstrap replicates. The weight, \f$w_i\f$ of the i'th model is
-the fraction of these data sets for which the i'th model wins.
+the fraction of these data sets for which the i'th model wins. In
+other words, it is the fraction of data sets for which the i'th model
+has the smallest information criterion.
 
 The model-averaged estimator of a parameter, \f$\theta\f$, is the
 average across models, weighted by \f$w_i\f$, of the model-specific
@@ -51,14 +53,14 @@ After the header, each row in a `.flat` file refers to a different
 data set. The first row after the header refers to the real data. Each
 succeeding row refers to a bootstrap replicate. The number of rows
 (excluding comments and the header) should agree with the numbers of
-rows in the `.bepe` files.
+rows in the `.bepe` or `.clic` files.
 
-In both types of input files, comments begin with a sharp character
+In all types of input files, comments begin with a sharp character
 and are ignored.
 
 When `bma` runs, the first step is to calculate model weights,
 \f$w_{i}\f$, where \f$i\f$ runs across models. The value of
-\f$w_{ij}\f$ is the fraction data sets (i.e. of rows in the `.bepe`
+\f$w_{i}\f$ is the fraction data sets (i.e. of rows in the `.bepe`
 files) for which \f$i\f$ is the best model (i.e. the one with the
 lowest badness value.
 
@@ -68,7 +70,9 @@ each data set: first for the real data and then for each bootstrap
 replicate. Some parameters may be missing from some models. In this
 case, the average runs only across models that include the parameter,
 and the weights are re-normalized so that they sum to 1 within this
-reduced set of models.
+reduced set of models. If a parameter is present only in models with
+weight zero, its model-averaged value is undefined and prints as "nan"
+(not a number). 
 
 Finally, the program uses the bootstrap distribution of model-averaged
 parameter estimates to construct a 95% confidence interval for each
