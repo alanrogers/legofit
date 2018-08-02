@@ -142,6 +142,7 @@ const char *usageMsg =
 	"rows in the `.bepe` files.\n";
 
 param_list* all_params;
+int num_params = 0;
 
 void usage(void) {
 	fputs(usageMsg, stderr);
@@ -152,6 +153,7 @@ void push_param(char* param, param_list* node){
 	char* str = node->val;
 	if(node->val =='\0'){
 		node->val = param;
+		num_params++;
 		return;
 	}
 	if (strcmp(param, str) == 0){
@@ -170,7 +172,7 @@ void push_param(char* param, param_list* node){
 			all_params = new_node;
 		}
 		node->prev = new_node;
-
+		num_params++;
 	}
 	else if (strcmp(param, str) > 0){
 		if(node->next){
@@ -182,6 +184,7 @@ void push_param(char* param, param_list* node){
 			new_node->next = NULL;
 			new_node->prev = node;
 			node->next = new_node;
+			num_params++;
 		}
 	}
 }
@@ -405,4 +408,24 @@ int main(int argc, char **argv){
 	all_params->next = NULL;
 
 	flat_input = get_flats(flat_file_names, nfiles, ndatum);
+
+	param_list* pl = all_params;
+	flat* finalflat = malloc(sizeof(flat));
+	finalflat->param_names = malloc(num_params*(sizeof(char*)));
+
+	for (int i = 0; i < num_params; i++){
+		finalflat->param_names[i] = malloc(strlen(pl->val)*sizeof(char));
+		finalflat->param_names[i] = pl->val;
+		pl = pl->next;
+	}
+
+	finalflat->ndatum = ndatum;
+	finalflat->nparams = num_params;
+
+	finalflat->values = malloc(num_params*sizeof(double*));
+	for( int i = 0; i < num_params; i++){
+		finalflat->values = malloc(ndatum*sizeof(double));
+	}
+
+	//free everything!
 }
