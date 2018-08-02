@@ -105,6 +105,7 @@ struct param_list {
 
 #include "misc.h"
 #include <string.h>
+#include <time.h>
 
 void usage(void);
 void push_param(char* param, param_list* node);
@@ -378,6 +379,18 @@ int main(int argc, char **argv){
 		}
 	}
 
+
+	#if defined(__DATE__) && defined(__TIME__)
+   		printf("# Program was compiled: %s %s\n", __DATE__, __TIME__);
+	#endif
+    time_t currtime = time(NULL);
+   	printf("# Program was run: %s", ctime(&currtime));
+    printf("# cmd:");
+    for(int i = 0; i < argc; ++i)
+        printf(" %s", argv[i]);
+    putchar('\n');
+    fflush(stdout);
+
 	int winner;
 	double temp;
 	double best_val;
@@ -410,6 +423,12 @@ int main(int argc, char **argv){
   		winner_totals[winner]++;
 	}
 
+	printf("#%15s %15s %15s\n", "Weight", "MSC_file", "Flat_file");
+    for(int i=0; i<nfiles; ++i){
+        printf("#%15.10lg %15s %15s\n", (winner_totals[i]/ndatum), bepe_file_names[i], flat_file_names[i]);
+    }
+    putchar('\n');
+
 	flat* flat_input;
 
 	all_params = malloc(sizeof(param_list));
@@ -435,10 +454,11 @@ int main(int argc, char **argv){
 	finalflat->values = malloc(num_params*sizeof(double*));
 	double files_w_param;
 	double final_val;
-	double weight;
+	double*** weight = malloc(num_params*sizeof(double**));
 
 	for( int i = 0; i < num_params; i++){
-		finalflat->values[i] = malloc(ndatum*sizeof(double));
+		finalflat->values[i] = malloc(ndatum*sizeof(double*));
+		weight[i] = malloc(ndatum*sizeof(double));
 		files_w_param = 0;
 		char* par_i = finalflat->param_names[i];
 
@@ -447,20 +467,29 @@ int main(int argc, char **argv){
 				files_w_param++;
 			}
 		}
-		printf("%s: %lf\n",par_i, files_w_param);
 
 		for( int j = 0; j < ndatum; j++){
 			final_val = 0;
+			weight[i][j] = malloc(nfiles*sizeof(double));
 			for( int k = 0; k < nfiles; k++){
-				weight = ((winner_totals[k]/ndatum));//*(nfiles/files_w_param));
-				// printf("mod %lf\n", weight);
-				final_val += (weight*flat_input->values[j][i]);
-				// printf("%lf\n", final_val);
+				weight[i][j][k] = ((winner_totals[k]/ndatum));//*(nfiles/files_w_param));
+				final_val += (weight[i][j][k]*flat_input->values[j][i]);
 			}
-			printf("FINAL: %lf\n", final_val);
 			finalflat->values[i][j] = final_val;
 		}
 	}
+
+	printf("# Model-averaged parameter estimates\n");
+    for(int i = 0; i < num_params; i++){
+        printf(" %s", finalflat->param_names[i]);
+    }
+    putchar('\n');
+    for(int i=0; i < ndatum; ++i) {
+        for(int j=0; j < num_params; ++j){
+            printf(" %0.10g", finalflat->values[j][i]);
+        }
+        putchar('\n');
+    }
 
 	//free everything!
 }
