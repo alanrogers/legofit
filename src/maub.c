@@ -349,7 +349,7 @@ int main(int argc, char **argv){
 
 	FILE* bepe_files[nfiles];
 
-	int winner_totals[nfiles];
+	double winner_totals[nfiles];
 
 	for(int i = 0; i < nfiles; ++i)
 		bepe_file_names[i] = argv[i+1];
@@ -433,24 +433,32 @@ int main(int argc, char **argv){
 	finalflat->nparams = num_params;
 
 	finalflat->values = malloc(num_params*sizeof(double*));
-	double mod[nfiles];
-	double total_params;
+	double files_w_param;
+	double final_val;
+	double weight;
 
 	for( int i = 0; i < num_params; i++){
-		finalflat->values = malloc(ndatum*sizeof(double));
-		total_params = 0;
+		finalflat->values[i] = malloc(ndatum*sizeof(double));
+		files_w_param = 0;
 		char* par_i = finalflat->param_names[i];
 
 		for( int j = 0; j < nfiles; j++){
 			if(has_param(flat_input[j], par_i)){
-				total_params++;
-				// printf("up %lf\n", total_params);
+				files_w_param++;
 			}
 		}
-		printf("%s: %lf\n",par_i, total_params);
+		printf("%s: %lf\n",par_i, files_w_param);
 
 		for( int j = 0; j < ndatum; j++){
-			
+			final_val = 0;
+			for( int k = 0; k < nfiles; k++){
+				weight = ((winner_totals[k]/ndatum));//*(nfiles/files_w_param));
+				// printf("mod %lf\n", weight);
+				final_val += (weight*flat_input->values[j][i]);
+				// printf("%lf\n", final_val);
+			}
+			printf("FINAL: %lf\n", final_val);
+			finalflat->values[i][j] = final_val;
 		}
 	}
 
