@@ -109,6 +109,7 @@ struct param_list {
 void usage(void);
 void push_param(char* param, param_list* node);
 int get_index(char* param, flat f);
+bool has_param(flat f, char* p);
 
 double* maub_parse_bepe(const char* file_name);
 int get_lines(const char* file_name);
@@ -196,6 +197,15 @@ int get_index(char* param, flat f){
 		}
 	}
 	return -1;
+}
+
+bool has_param(flat f, char* p){
+	for (int i = 0; i < f.nparams; i++){
+		if(strcmp(f.param_names[i], p) == 0){
+			return true;
+		}
+	}
+	return false;
 }
 
 int get_lines(const char* file_name){
@@ -423,8 +433,25 @@ int main(int argc, char **argv){
 	finalflat->nparams = num_params;
 
 	finalflat->values = malloc(num_params*sizeof(double*));
+	double mod[nfiles];
+	double total_params;
+
 	for( int i = 0; i < num_params; i++){
 		finalflat->values = malloc(ndatum*sizeof(double));
+		total_params = 0;
+		char* par_i = finalflat->param_names[i];
+
+		for( int j = 0; j < nfiles; j++){
+			if(has_param(flat_input[j], par_i)){
+				total_params++;
+				// printf("up %lf\n", total_params);
+			}
+		}
+		printf("%s: %lf\n",par_i, total_params);
+
+		for( int j = 0; j < ndatum; j++){
+			
+		}
 	}
 
 	//free everything!
