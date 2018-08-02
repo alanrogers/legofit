@@ -669,7 +669,11 @@ DEStatus diffev(int dim, double estimate[dim], double *loCost, double *yspread,
     // Initialize array of points
     for(i = 0; i < nPts; ++i) {
         status=State_getVector(dep.state, i, dim, c[i]);
-        assert(status==0);
+        if(status) {
+            fprintf(stderr,"%s:%d: bad return from State_getVector: %d\n",
+                    __FILE__,__LINE__, status);
+            exit(EXIT_FAILURE);
+        }
         if(dep.jobData) {
             jobData[i] = (*dep.JobData_dup)(dep.jobData);
             CHECKMEM(jobData[i]);
