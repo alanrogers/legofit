@@ -145,6 +145,7 @@ const char *usageMsg =
 
 param_list* all_params;
 int num_params = 0;
+int warningremove;
 
 void usage(void) {
 	fputs(usageMsg, stderr);
@@ -275,7 +276,7 @@ flat* get_flats(const char** file_names, int nmodels, int ndtsets){
 		int params = 0;
 
 		do {
-			fscanf(f, "%s", temp_params[params]);
+			warningremove = fscanf(f, "%s", temp_params[params]);
 			ch = fgetc(f);
 			ungetc(ch,f);
 			params++;
@@ -292,7 +293,7 @@ flat* get_flats(const char** file_names, int nmodels, int ndtsets){
 
 		for (int j = 0; j < ndtsets; j++){
 			for (int k = 0; k < params; k++){
-				fscanf(f, "%lf", &flat_array[i].values[j][k]);
+				warningremove = fscanf(f, "%lf", &flat_array[i].values[j][k]);
 			}
 		}
 
@@ -404,7 +405,7 @@ int main(int argc, char **argv){
   			exit(EXIT_FAILURE); 
 		}
 		do {
-			fscanf(bepe_files[i], "%s", buff);
+			warningremove = fscanf(bepe_files[i], "%s", buff);
 		} while(strcmp(buff, "DataFile"));
   	}
 
@@ -412,13 +413,13 @@ int main(int argc, char **argv){
 		best_val = 999999999;
 		winner = -1;
 		for(int i = 0; i < nmodels; ++i) {  
-  			fscanf(bepe_files[i], "%lf", &temp);
+  			warningremove = fscanf(bepe_files[i], "%lf", &temp);
 
 			if(temp < best_val){
 				winner = i;
 				best_val = temp;
   	  		}
-			fscanf(bepe_files[i], "%s", buff);
+			warningremove = fscanf(bepe_files[i], "%s", buff);
 		}
   		winner_totals[winner]++;
 	}
@@ -455,7 +456,6 @@ int main(int argc, char **argv){
 	double files_w_param;
 	double final_val;
 	double* weight = malloc(nmodels*sizeof(double));
-	int delta = 0;
 
 	for( int i = 0; i < num_params; i++){
 		finalflat->values[i] = malloc(ndtsets*sizeof(double*));
