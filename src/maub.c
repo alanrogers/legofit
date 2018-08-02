@@ -454,11 +454,11 @@ int main(int argc, char **argv){
 	finalflat->values = malloc(num_params*sizeof(double*));
 	double files_w_param;
 	double final_val;
-	double*** weight = malloc(num_params*sizeof(double**));
+	double* weight = malloc(nfiles*sizeof(double));
+	int delta = 0;
 
 	for( int i = 0; i < num_params; i++){
 		finalflat->values[i] = malloc(ndatum*sizeof(double*));
-		weight[i] = malloc(ndatum*sizeof(double));
 		files_w_param = 0;
 		char* par_i = finalflat->param_names[i];
 
@@ -470,10 +470,11 @@ int main(int argc, char **argv){
 
 		for( int j = 0; j < ndatum; j++){
 			final_val = 0;
-			weight[i][j] = malloc(nfiles*sizeof(double));
 			for( int k = 0; k < nfiles; k++){
-				weight[i][j][k] = ((winner_totals[k]/ndatum));//*(nfiles/files_w_param));
-				final_val += (weight[i][j][k]*flat_input->values[j][i]);
+				if(has_param(flat_input[k], par_i)){
+					weight[k] = ((winner_totals[k]/ndatum));//*(nfiles/files_w_param));
+					final_val += (weight[k]*flat_input[k].values[j][i]);
+				}
 			}
 			finalflat->values[i][j] = final_val;
 		}
