@@ -486,7 +486,12 @@ int main(int argc, char **argv){
     putchar('\n');
     for(int i=0; i < ndatum; ++i) {
         for(int j=0; j < num_params; ++j){
-            printf(" %0.10g", finalflat->values[j][i]);
+        	if(finalflat->values[j][i] > 10e-100){
+            	printf(" %0.10g", finalflat->values[j][i]);
+        	}
+        	else{
+        		printf(" nan");
+        	}
         }
         putchar('\n');
     }
