@@ -249,6 +249,7 @@ ModSelCrit *ModSelCrit_new(const char *fname) {
         ++line;
     }
     assert(line == msc->dim);
+    fclose(fp);
     return msc;
 }
 
@@ -535,11 +536,17 @@ int main(int argc, char **argv) {
     fputs(mscInput, fp);
     fclose(fp);
     ModSelCrit *msc = ModSelCrit_new(mscFile);
-    assert(ModSelCrit_compare(msc,msc) == 0);
+    ModSelCrit *msc2 = ModSelCrit_new(mscFile);
+    assert(ModSelCrit_compare(msc,msc2) == 0);
+    msc2->fname[0][0] += 1;
+    assert(ModSelCrit_compare(msc,msc2) != 0);
     assert(ModSelCrit_dim(msc) == 2);
     assert(ModSelCrit_badness(msc, 0) == 0.01);
     assert(ModSelCrit_badness(msc, 1) == 0.02);
     ModSelCrit_free(msc);
+    ModSelCrit_free(msc2);
+    remove(mscFile);
+
     unitTstResult("ParNameLst", "OK");
     unitTstResult("ModSelCrit", "untested");
     unitTstResult("ModPar", "untested");
