@@ -88,7 +88,7 @@ Systems Consortium License, which can be found in file "LICENSE".
 typedef struct flat flat;
 struct flat {
 	int nparams;
-	int ndatum;
+	int ndtsets;
 
 	double** values;
 	char** param_names;
@@ -114,7 +114,7 @@ bool has_param(flat f, char* p);
 
 double* maub_parse_bepe(const char* file_name);
 int get_lines(const char* file_name);
-flat* get_flats(const char** file_names, int nfiles, int ndatum);
+flat* get_flats(const char** file_names, int nmodels, int ndtsets);
 
 const char *usageMsg =
     "Usage: maub m1.bepe m2.bepe ... mK.bepe -F m1.flat m2.flat ... mK.flat\n"
@@ -246,10 +246,10 @@ int get_lines(const char* file_name){
 	return (num_lines-1);
 }
 
-flat* get_flats(const char** file_names, int nfiles, int ndatum){
-	flat* flat_array = malloc(nfiles*sizeof(flat));
+flat* get_flats(const char** file_names, int nmodels, int ndtsets){
+	flat* flat_array = malloc(nmodels*sizeof(flat));
 
-	for (int i = 0; i < nfiles; i++){
+	for (int i = 0; i < nmodels; i++){
 		FILE* f = fopen(file_names[i], "r");
 		if(f==NULL) {
 			fprintf(stderr,"%s:%d: can't read file \"%s\"\n",
@@ -282,15 +282,15 @@ flat* get_flats(const char** file_names, int nfiles, int ndatum){
 		} while (ch != '\n');
 
 		flat_array[i].nparams = params;
-		flat_array[i].ndatum = ndatum;
+		flat_array[i].ndtsets = ndtsets;
 		flat_array[i].param_names = malloc(params*sizeof(char*));
-		flat_array[i].values = malloc(ndatum*sizeof(double*));
+		flat_array[i].values = malloc(ndtsets*sizeof(double*));
 
-		for (int j = 0; j < ndatum; j++){
+		for (int j = 0; j < ndtsets; j++){
 			flat_array[i].values[j] =  malloc(params*sizeof(double));
 		}
 
-		for (int j = 0; j < ndatum; j++){
+		for (int j = 0; j < ndtsets; j++){
 			for (int k = 0; k < params; k++){
 				fscanf(f, "%lf", &flat_array[i].values[j][k]);
 			}
@@ -310,8 +310,8 @@ int main(int argc, char **argv){
 	if(argc < 4)
 		usage();
 
-	int nfiles = 0;
-	int ndatum = 0;
+	int nmodels = 0;
+	int ndtsets = 0;
 
 	for(int i = 1; i < argc; i++){
 		if (argv[i][0] == '-'){
@@ -323,58 +323,58 @@ int main(int argc, char **argv){
 			}
 		}
 		else{
-			nfiles++;
+			nmodels++;
 		}
 	}
 
-	int nfiles_temp = 0;
-	for(int i = (2+nfiles); i < argc; i++){
+	int nmodels_temp = 0;
+	for(int i = (2+nmodels); i < argc; i++){
 		if (argv[i][0] == '-'){
 			usage();
 		}
 		else{
-			nfiles_temp++;
+			nmodels_temp++;
 		}
 	}
 
-	if(nfiles_temp != nfiles){
+	if(nmodels_temp != nmodels){
 		fprintf(stderr, "%s:%d\n"
 			" Inconsistent number of files!"
 			" %d bepe files and %d flat files\n",
-			__FILE__,__LINE__, nfiles, nfiles_temp);
+			__FILE__,__LINE__, nmodels, nmodels_temp);
 		usage();
 	}
 
-	const char* bepe_file_names[nfiles];
-	const char* flat_file_names[nfiles];
+	const char* bepe_file_names[nmodels];
+	const char* flat_file_names[nmodels];
 
-	FILE* bepe_files[nfiles];
+	FILE* bepe_files[nmodels];
 
-	double winner_totals[nfiles];
+	double winner_totals[nmodels];
 
-	for(int i = 0; i < nfiles; ++i)
+	for(int i = 0; i < nmodels; ++i)
 		bepe_file_names[i] = argv[i+1];
-	for(int i = 0; i < nfiles; ++i)
-		flat_file_names[i] = argv[i+2+nfiles];
+	for(int i = 0; i < nmodels; ++i)
+		flat_file_names[i] = argv[i+2+nmodels];
 
-	for(int i = 0; i < nfiles; ++i){
+	for(int i = 0; i < nmodels; ++i){
 		winner_totals[i] = 0;
 	}
 
-	ndatum = get_lines(bepe_file_names[0]);
-	for(int i = 0; i < nfiles; ++i) {
-		if((get_lines(flat_file_names[i])-1) != ndatum) {
+	ndtsets = get_lines(bepe_file_names[0]);
+	for(int i = 0; i < nmodels; ++i) {
+		if((get_lines(flat_file_names[i])-1) != ndtsets) {
 			fprintf(stderr, "%s:%d: inconsistent datasets in"
 				" files %s (%u) and %s (%u)\n", __FILE__,__LINE__,
 				flat_file_names[i], (get_lines(flat_file_names[i]) -1),
-				bepe_file_names[0], ndatum);
+				bepe_file_names[0], ndtsets);
 			exit(EXIT_FAILURE);
 		}
-		if(get_lines(bepe_file_names[i]) != ndatum) {
+		if(get_lines(bepe_file_names[i]) != ndtsets) {
 			fprintf(stderr, "%s:%d: inconsistent datasets in"
 				" files %s (%u) and %s (%u)\n", __FILE__,__LINE__,
 				bepe_file_names[i], get_lines(bepe_file_names[i]),
-				bepe_file_names[0], ndatum);
+				bepe_file_names[0], ndtsets);
 			exit(EXIT_FAILURE);;
 		}
 	}
@@ -396,7 +396,7 @@ int main(int argc, char **argv){
 	double best_val;
 	char buff[2000];
 
-	for(int i = 0; i < nfiles; ++i) { 
+	for(int i = 0; i < nmodels; ++i) { 
 		bepe_files[i] = fopen(bepe_file_names[i], "r");
 		if(bepe_files[i] == NULL) {
 			fprintf(stderr,"%s:%d: can't read file \"%s\"\n",
@@ -408,10 +408,10 @@ int main(int argc, char **argv){
 		} while(strcmp(buff, "DataFile"));
   	}
 
-	for(int j = 0; j < ndatum; ++j) {
+	for(int j = 0; j < ndtsets; ++j) {
 		best_val = 999999999;
 		winner = -1;
-		for(int i = 0; i < nfiles; ++i) {  
+		for(int i = 0; i < nmodels; ++i) {  
   			fscanf(bepe_files[i], "%lf", &temp);
 
 			if(temp < best_val){
@@ -424,8 +424,8 @@ int main(int argc, char **argv){
 	}
 
 	printf("#%15s %15s %15s\n", "Weight", "MSC_file", "Flat_file");
-    for(int i=0; i<nfiles; ++i){
-        printf("#%15.10lg %15s %15s\n", (winner_totals[i]/ndatum), bepe_file_names[i], flat_file_names[i]);
+    for(int i=0; i<nmodels; ++i){
+        printf("#%15.10lg %15s %15s\n", (winner_totals[i]/ndtsets), bepe_file_names[i], flat_file_names[i]);
     }
     putchar('\n');
 
@@ -436,7 +436,7 @@ int main(int argc, char **argv){
 	all_params->prev = NULL;
 	all_params->next = NULL;
 
-	flat_input = get_flats(flat_file_names, nfiles, ndatum);
+	flat_input = get_flats(flat_file_names, nmodels, ndtsets);
 
 	param_list* pl = all_params;
 	flat* finalflat = malloc(sizeof(flat));
@@ -448,31 +448,31 @@ int main(int argc, char **argv){
 		pl = pl->next;
 	}
 
-	finalflat->ndatum = ndatum;
+	finalflat->ndtsets = ndtsets;
 	finalflat->nparams = num_params;
 
 	finalflat->values = malloc(num_params*sizeof(double*));
 	double files_w_param;
 	double final_val;
-	double* weight = malloc(nfiles*sizeof(double));
+	double* weight = malloc(nmodels*sizeof(double));
 	int delta = 0;
 
 	for( int i = 0; i < num_params; i++){
-		finalflat->values[i] = malloc(ndatum*sizeof(double*));
+		finalflat->values[i] = malloc(ndtsets*sizeof(double*));
 		files_w_param = 0;
 		char* par_i = finalflat->param_names[i];
 
-		for( int j = 0; j < nfiles; j++){
+		for( int j = 0; j < nmodels; j++){
 			if(has_param(flat_input[j], par_i)){
 				files_w_param++;
 			}
 		}
 
-		for( int j = 0; j < ndatum; j++){
+		for( int j = 0; j < ndtsets; j++){
 			final_val = 0;
-			for( int k = 0; k < nfiles; k++){
+			for( int k = 0; k < nmodels; k++){
 				if(has_param(flat_input[k], par_i)){
-					weight[k] = ((winner_totals[k]/ndatum));//*(nfiles/files_w_param));
+					weight[k] = ((winner_totals[k]/ndtsets));//*(nmodels/files_w_param));
 					final_val += (weight[k]*flat_input[k].values[j][get_index(par_i, flat_input[k])]);
 				}
 			}
@@ -485,7 +485,7 @@ int main(int argc, char **argv){
         printf(" %s", finalflat->param_names[i]);
     }
     putchar('\n');
-    for(int i=0; i < ndatum; ++i) {
+    for(int i=0; i < ndtsets; ++i) {
         for(int j=0; j < num_params; ++j){
         	if(finalflat->values[j][i] > 10e-100){
             	printf(" %0.10g", finalflat->values[j][i]);
