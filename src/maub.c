@@ -473,7 +473,7 @@ int main(int argc, char **argv){
 			for( int k = 0; k < nfiles; k++){
 				if(has_param(flat_input[k], par_i)){
 					weight[k] = ((winner_totals[k]/ndatum));//*(nfiles/files_w_param));
-					final_val += (weight[k]*flat_input[k].values[j][i]);
+					final_val += (weight[k]*flat_input[k].values[j][get_index(par_i, flat_input[k])]);
 				}
 			}
 			finalflat->values[i][j] = final_val;
