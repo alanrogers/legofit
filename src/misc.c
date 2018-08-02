@@ -468,6 +468,7 @@ char *stripWhiteSpace(char *buff) {
     *t = '\0';
     return s;
 }
+
 char* stripInternalWhiteSpace(char* buff) {
   char* str = buff;
   int x = 0;
@@ -675,4 +676,16 @@ int readline(int dim, char buff[dim], FILE *fp) {
     }
 
     return 0;
+}
+
+/// Strip leading pathname components; return a pointer
+/// to the filename. There is a standard library function for this,
+/// but it can't be used with const strings. This one can.
+/// Current code assumes that '/' is the path separator.
+/// If pathname ends with '/', this will return an empty string.
+const char *mybasename(const char *pathname) {
+    const char *p = rindex(pathname, '/');
+    if(p == NULL)
+        return pathname;
+    return p+1;
 }

@@ -404,7 +404,7 @@ int State_print(State *self, FILE *fp) {
 }
 
 State *State_readList(NameList *list, int npts, int npar,
-                      const char *name[npar]) {
+                      char const *name[npar]) {
     int nstates = NameList_size(list);
     if(nstates==0)
         return NULL;

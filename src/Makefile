@@ -7,8 +7,8 @@ opt := -DNDEBUG -O3  -finline-functions  # For full optimization
 prof :=
 incl := -I/usr/local/include -I/opt/local/include
 
-targets := legosim legofit tabpat sitepat scrmpat daf raf numcores joinraf \
-     raf2daf clic bepe maub
+targets := legosim legofit tabpat sitepat scrmpat daf raf numcores \
+     joinraf raf2daf clic bepe bma maub
 pytargets := diverg.py bootci.py flatfile.py axt2raf.py
 tests := xzeroin xbinary
 
@@ -69,6 +69,10 @@ bepe : $(BEPE)
 MAUB := maub.o
 maub : $(MAUB)
 	$(CC) $(CFLAGS) -o $@ $(MAUB) $(lib)
+
+BMA := bma.o misc.o strdblqueue.o strint.o tokenizer.o
+bma : $(BMA)
+	$(CC) $(CFLAGS) -o $@ $(BMA) $(lib)
 
 TABPAT := tabpat.o misc.o binary.o lblndx.o parkeyval.o dafreader.o \
   tokenizer.o strint.o boot.o error.o

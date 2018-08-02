@@ -3,10 +3,10 @@ vpath %.c ../src
 opt :=  -O0 -fno-inline-functions -DDEBUG
 prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
-tests := xbinary xboot xbranchtab xclic xdafreader xrafreader xdiffev xgene \
-  xgptree xhessian xpopnodetab xjobqueue xlblndx xllrbtree xparkeyval xparse \
-  xparstore xpopnode xscrmreader xsimsched xstrdblqueue xstrint xdtnorm xmisc \
-  xerror xstate xwraparound xpointbuff
+tests := xbinary xbma xboot xbranchtab xclic xdafreader xrafreader xdiffev \
+  xgene xgptree xhessian xpopnodetab xjobqueue xlblndx xllrbtree xparkeyval \
+  xparse xparstore xpopnode xscrmreader xsimsched xstrdblqueue xstrint \
+  xstrdblmap xdtnorm xmisc xerror xstate xwraparound xpointbuff
 
 CC := gcc
 
@@ -37,6 +37,7 @@ all : $(tests)
 
 test : $(tests)
 	-./xbinary
+	-./xbma
 	-./xboot
 	-./xbranchtab
 	-./xclic
@@ -62,6 +63,7 @@ test : $(tests)
 	-./xsimsched
 	-./xstate
 	-./xstrint
+	-./xstrdblmap
 	-./xstrdblqueue
 	-./xwraparound
 	@echo "ALL UNIT TESTS WERE COMPLETED."
@@ -126,6 +128,13 @@ xrafreader : $(XRAFREADER)
 XCLIC := xclic.o misc.o hessian.o strdblqueue.o
 xclic : $(XCLIC)
 	$(CC) $(CFLAGS) -o $@ $(XCLIC) $(lib)
+
+xbma.o : bma.c
+	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/bma.c
+
+XBMA := xbma.o misc.o strdblqueue.o strint.o tokenizer.o
+xbma : $(XBMA)
+	$(CC) $(CFLAGS) -o $@ $(XBMA) $(lib)
 
 xscrmreader.o : scrmreader.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/scrmreader.c
@@ -213,6 +222,13 @@ xstrint.o : strint.c
 XSTRINT := xstrint.o misc.o binary.o lblndx.o parkeyval.o
 xstrint : $(XSTRINT)
 	$(CC) $(CFLAGS) -o $@ $(XSTRINT) $(lib)
+
+xstrdblmap.o : strdblmap.c
+	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/strdblmap.c
+
+XSTRDBLMAP := xstrdblmap.o misc.o
+xstrdblmap : $(XSTRDBLMAP)
+	$(CC) $(CFLAGS) -o $@ $(XSTRDBLMAP) $(lib)
 
 XSTRDBLQUEUE := xstrdblqueue.o strdblqueue.o misc.o
 xstrdblqueue : $(XSTRDBLQUEUE)

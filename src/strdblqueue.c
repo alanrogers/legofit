@@ -10,7 +10,11 @@
 #include "hessian.h"
 #include "misc.h"
 #include "strdblqueue.h"
+#include <math.h>
 #include <stdbool.h>
+#include <ctype.h>
+
+static int isSitePatHdr(const char *s);
 
 // Push a value onto the tail of the queue. Return pointer to new
 // head. Example:
@@ -86,7 +90,7 @@ StrDblQueue *StrDblQueue_free(StrDblQueue *self) {
     return NULL;
 }
 
-void StrDblQueue_print(StrDblQueue *self, FILE *fp) {
+void StrDblQueue_print(const StrDblQueue *self, FILE *fp) {
     while(self) {
         fprintf(fp,"%s = %lg\n", self->strdbl.str, self->strdbl.val);
         self = self->next;
@@ -112,10 +116,10 @@ int StrDblQueue_compare(StrDblQueue *lhs, StrDblQueue *rhs) {
     return 0;
 }
 
-// Parse a legofit output file for CLIC. Return an object of type
+// Parse a legofit output file. Return an object of type
 // StrDblQueue, which contains the number of parameters, their names,
 // and their values.
-StrDblQueue *parseLegofit_CLIC(const char *fname) {
+StrDblQueue *StrDblQueue_parseLegofit(const char *fname) {
     FILE *fp = fopen(fname, "r");
     if(fp==NULL) {
         fprintf(stderr,"%s:%d: can't read file \"%s\"\n",
@@ -156,10 +160,22 @@ StrDblQueue *parseLegofit_CLIC(const char *fname) {
     return queue;
 }
 
-// Parse a data file for BEPE. Return an object of type
-// StrDblQueue, which contains the number of parameters, their names,
-// and their values.
-StrDblQueue *parseSitPat(const char *fname) {
+/// Return 1 if string begins with '#', then any number of whitespace
+/// characters, then "SitePat". Return 0 otherwise.
+static int isSitePatHdr(const char *s) {
+    if(*s++ != '#')
+        return 0;
+    while(isspace(*s))
+        ++s;
+    if(0 == strncmp(s, "SitePat", 7))
+        return 1;
+    return 0;
+}
+
+// Parse a data file. Return an object of type
+// StrDblQueue, which contains the site pattern names and their
+// frequencies.
+StrDblQueue *StrDblQueue_parseSitPat(const char *fname) {
     FILE *fp = fopen(fname, "r");
     if(fp==NULL) {
         fprintf(stderr,"%s:%d: can't read file \"%s\"\n",
@@ -179,20 +195,17 @@ StrDblQueue *parseSitPat(const char *fname) {
             exit(EXIT_FAILURE);
         }
         if(!got_sitepat) {
-            char* no_spaces_buff = stripInternalWhiteSpace(buff);
-            if(strncmp("#SitePat", no_spaces_buff, 8) == 0)
+            if(isSitePatHdr(buff)) 
                 got_sitepat=true;
             continue;
         }
 
-        char* temp = buff;
-        char* name = strtok_r(temp, " ", &temp);
-        char* valstr = strtok_r(temp, " ", &temp);
+        char* valstr = stripWhiteSpace(buff);
+        char* name = strsep(&valstr, " ");
 
         if(name==NULL || valstr==NULL)
             continue;
         name = stripWhiteSpace(name);
-        valstr = stripWhiteSpace(valstr);
         queue=StrDblQueue_push(queue, name, strtod(valstr, NULL) );
     }
     return queue;
@@ -207,11 +220,54 @@ void StrDblQueue_normalize(StrDblQueue* self){
     total += temp->strdbl.val;
   }
 
+  assert(isfinite(total));
+  if(total == 0.0) {
+      fprintf(stderr,"%s:%s:%d: total is zero; can't normalize\n",
+              __FILE__,__func__,__LINE__);
+      exit(EXIT_FAILURE);
+  }
+
   temp = self;
   for(int i = 0; i < length; i++){
     temp->strdbl.val /= total;
     temp = temp->next;
   }
+}
+
+// Calculate mean squared deviation between the values of
+// two StrDblQueue objects;
+double StrDblQueue_msd(const StrDblQueue *a, const StrDblQueue *b) {
+    const StrDblQueue *ia = a;
+    const StrDblQueue *ib = b;
+    double x, msd=0.0;
+    int n=0;
+
+    while(ia!=NULL && ib!=NULL) {
+        StrDbl sda = ia->strdbl;
+        StrDbl sdb = ib->strdbl;
+        if(0 != strcmp(sda.str, sdb.str)) {
+            fprintf(stderr, "%s:%s:%d: inconsistent strings:"
+                    " \"%s\" != \"%s\"\n",
+                    __FILE__,__func__,__LINE__,
+                    sda.str, sdb.str);
+            exit(EXIT_FAILURE);
+        }
+        assert(isfinite(sda.val));
+        assert(isfinite(sdb.val));
+        x = sda.val - sdb.val;
+        msd += x*x;
+        ++n;
+        ia = ia->next;
+        ib = ib->next;
+    }
+    if(ia || ib) {
+        fprintf(stderr, "%s:%s:%d: queues are of unequal length\n",
+                __FILE__,__func__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
+    assert(isfinite(msd));
+    assert(n>0);
+    return msd/n;
 }
 
 // On input, nfiles and npar are the number of rows and columns in
