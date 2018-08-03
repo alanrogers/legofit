@@ -568,6 +568,7 @@ int main(int argc, char **argv){
 		all_params = temp_pl;
 	}
 	Flat_free(*finalflat);
+	free(finalflat);
 	for (int i = 0; i < nmodels; i++){
 		Flat_free(flat_input[i]);
 	}
