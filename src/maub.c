@@ -128,7 +128,7 @@ struct Param_List {
 void usage(void);
 void Param_List_push(char* param, Param_List* node);
 int Param_List_get_index(char* param, Flat f);
-bool has_param(Flat f, char* p);
+bool Param_List_has_param(Flat f, char* p);
 
 double* maub_parse_bepe(const char* file_name);
 int get_lines(const char* file_name);
@@ -232,7 +232,7 @@ int Param_List_get_index(char* param, Flat f){
 /*
 returns if  parameter is in list
 */
-bool has_param(Flat f, char* p){
+bool Param_List_has_param(Flat f, char* p){
 	for (int i = 0; i < f.nparams; i++){
 		if(strcmp(f.param_names[i], p) == 0){
 			return true;
@@ -241,8 +241,11 @@ bool has_param(Flat f, char* p){
 	return false;
 }
 
+/*
+Returns the number of non commented lines in a file
+*/
 int get_lines(const char* file_name){
-	FILE* f = fopen(file_name, "r");
+	FILE* f = fopen(file_name, "r");		//try and open file
 	if(f==NULL) {
 		fprintf(stderr,"%s:%d: can't read file \"%s\"\n",
 			__FILE__,__LINE__,file_name);
@@ -252,15 +255,15 @@ int get_lines(const char* file_name){
 	char temp;
 	int num_lines = 0;
 
-	temp = fgetc(f);
+	temp = fgetc(f);		//test if first line is commented
 	if(temp != '#'){
 		num_lines++;
 	}
 
-	do {
+	do {					//loop through chars
 		temp = fgetc(f);
 		if(temp == '\n'){
- 		CHECK: temp = fgetc(f);
+ 		CHECK: temp = fgetc(f);		//check for empty lines and #
 			if(temp == '\n'){
 				goto CHECK;
 			}
@@ -268,20 +271,23 @@ int get_lines(const char* file_name){
 				continue;
 			}
 			else{
-				num_lines++;
+				num_lines++;		//new lines without that = more lines
 			}
 		}
 
-	} while (temp != EOF);
+	} while (temp != EOF);		//end of file
 
 	fclose(f);
 	return (num_lines-1);
 }
 
+/*
+Takes in data from a list of files
+*/
 Flat* Flat_new(const char** file_names, int nmodels, int ndtsets){
 	Flat* flat_array = malloc(nmodels*sizeof(Flat));
 
-	for (int i = 0; i < nmodels; i++){
+	for (int i = 0; i < nmodels; i++){				//try to open files
 		FILE* f = fopen(file_names[i], "r");
 		if(f==NULL) {
 			fprintf(stderr,"%s:%d: can't read file \"%s\"\n",
@@ -291,7 +297,7 @@ Flat* Flat_new(const char** file_names, int nmodels, int ndtsets){
 
 		char ch;
 
-		do {
+		do {						//skip comments
 			ch = fgetc(f);
 			if(ch == '#'){
 				while(ch != '\n'){
@@ -303,17 +309,17 @@ Flat* Flat_new(const char** file_names, int nmodels, int ndtsets){
 
 		ungetc(ch,f);
 
-		char temp_params[100][100];
+		char temp_params[100][100];			//make an temp array of parameters
 		int params = 0;
 
 		do {
-			warningremove = fscanf(f, "%s", temp_params[params]);
+			warningremove = fscanf(f, "%s", temp_params[params]);		//scan in parameters
 			ch = fgetc(f);
 			ungetc(ch,f);
 			params++;
 		} while (ch != '\n');
 
-		flat_array[i].nparams = params;
+		flat_array[i].nparams = params;				//set up for data
 		flat_array[i].ndtsets = ndtsets;
 		flat_array[i].param_names = malloc(params*sizeof(char*));
 		flat_array[i].values = malloc(ndtsets*sizeof(double*));
@@ -322,13 +328,13 @@ Flat* Flat_new(const char** file_names, int nmodels, int ndtsets){
 			flat_array[i].values[j] =  malloc(params*sizeof(double));
 		}
 
-		for (int j = 0; j < ndtsets; j++){
+		for (int j = 0; j < ndtsets; j++){				//scan indata
 			for (int k = 0; k < params; k++){
 				warningremove = fscanf(f, "%lf", &flat_array[i].values[j][k]);
 			}
 		}
 
-		for (int j = 0; j < params; j++){
+		for (int j = 0; j < params; j++){					//move parameters to better location
 			flat_array[i].param_names[j] = malloc(strlen(temp_params[j])*sizeof(char));
 			strcpy(flat_array[i].param_names[j],temp_params[j]);
 			Param_List_push (flat_array[i].param_names[j], all_params);
@@ -345,6 +351,7 @@ int main(int argc, char **argv){
 	int nmodels = 0;
 	int ndtsets = 0;
 
+	//check to see if args make sense
 	for(int i = 1; i < argc; i++){
 		if (argv[i][0] == '-'){
 			if(strcmp(argv[i], "-F") == 0){
@@ -384,6 +391,8 @@ int main(int argc, char **argv){
 
 	double winner_totals[nmodels];
 
+	//read in files
+
 	for(int i = 0; i < nmodels; ++i)
 		bepe_file_names[i] = argv[i+1];
 	for(int i = 0; i < nmodels; ++i)
@@ -411,6 +420,7 @@ int main(int argc, char **argv){
 		}
 	}
 
+	//print basic setup
 
 	#if defined(__DATE__) && defined(__TIME__)
    		printf("# Program was compiled: %s %s\n", __DATE__, __TIME__);
@@ -428,6 +438,8 @@ int main(int argc, char **argv){
 	double best_val;
 	char buff[2000];
 
+	//read in bepe files
+
 	for(int i = 0; i < nmodels; ++i) { 
 		bepe_files[i] = fopen(bepe_file_names[i], "r");
 		if(bepe_files[i] == NULL) {
@@ -439,7 +451,7 @@ int main(int argc, char **argv){
 			warningremove = fscanf(bepe_files[i], "%s", buff);
 		} while(strcmp(buff, "DataFile"));
   	}
-
+  	//go through each file and determine winner
 	for(int j = 0; j < ndtsets; ++j) {
 		best_val = 999999999;
 		winner = -1;
@@ -454,6 +466,8 @@ int main(int argc, char **argv){
 		}
   		winner_totals[winner]++;
 	}
+
+	//set up and read in flat files
 
 	Flat* flat_input;
 
@@ -482,13 +496,15 @@ int main(int argc, char **argv){
 	double final_val;
 	double* weight = malloc(nmodels*sizeof(double));
 
+	//Calculate maub
+
 	for( int i = 0; i < num_params; i++){
 		finalflat->values[i] = malloc(ndtsets*sizeof(double*));
 		files_w_param = 0;
 		char* par_i = finalflat->param_names[i];
 
 		for( int j = 0; j < nmodels; j++){
-			if(has_param(flat_input[j], par_i)){
+			if(Param_List_has_param(flat_input[j], par_i)){
 				files_w_param++;
 			}
 		}
@@ -496,7 +512,7 @@ int main(int argc, char **argv){
 		for( int j = 0; j < ndtsets; j++){
 			final_val = 0;
 			for( int k = 0; k < nmodels; k++){
-				if(has_param(flat_input[k], par_i)){
+				if(Param_List_has_param(flat_input[k], par_i)){
 					weight[k] = ((winner_totals[k]/ndtsets));//*(nmodels/files_w_param));
 					final_val += (weight[k]*flat_input[k].values[j][Param_List_get_index(par_i, flat_input[k])]);
 				}
@@ -504,6 +520,8 @@ int main(int argc, char **argv){
 			finalflat->values[i][j] = final_val;
 		}
 	}
+
+	//print out data
 
 	printf("#%15s %15s %15s %15s\n", "i", "Weight", "MSC_file", "Flat_file");
     for(int i=0; i<nmodels; ++i){
