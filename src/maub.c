@@ -133,7 +133,7 @@ bool Param_List_has_param(Flat f, char* p);
 double* maub_parse_bepe(const char* file_name);
 int get_lines(const char* file_name);
 Flat* Flat_new(const char** file_names, int nmodels, int ndtsets);
-void Flat_free(Flat* f);
+void Flat_free(Flat f);
 
 const char *usageMsg =
     "Usage: maub <m1.msc> ... <mK.msc> -F <m1.flat> ... <mK.flat>\n"
@@ -347,18 +347,15 @@ Flat* Flat_new(const char** file_names, int nmodels, int ndtsets){
 /*
 Frees flats
 */
-void Flat_free(Flat* f){
-	for (int j = 0; j < f->ndtsets; j++){
-		free(f->values[j]);
+void Flat_free(Flat f){
+	for (int j = 0; j < f.nparams; j++){
+		free(f.values[j]);
 	}
-
-	for (int j = 0; j < f->nparams; j++){
-		free(f->param_names[j]);
+	for (int j = 0; j < f.nparams; j++){
+		free(f.param_names[j]);
 	}
-	free(f->param_names);
-	free(f->values);
-
-	free(f);
+	free(f.param_names);
+	free(f.values);
 }
 
 int main(int argc, char **argv){
@@ -570,9 +567,9 @@ int main(int argc, char **argv){
 		free(all_params);
 		all_params = temp_pl;
 	}
-	Flat_free(finalflat);
+	Flat_free(*finalflat);
 	for (int i = 0; i < nmodels; i++){
-		Flat_free(&flat_input[i]);
+		Flat_free(flat_input[i]);
 	}
 	free(flat_input);
 }
