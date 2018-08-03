@@ -424,12 +424,6 @@ int main(int argc, char **argv){
   		winner_totals[winner]++;
 	}
 
-	printf("#%15s %15s %15s\n", "Weight", "MSC_file", "Flat_file");
-    for(int i=0; i<nmodels; ++i){
-        printf("#%15.10lg %15s %15s\n", (winner_totals[i]/ndtsets), bepe_file_names[i], flat_file_names[i]);
-    }
-    putchar('\n');
-
 	flat* flat_input;
 
 	all_params = malloc(sizeof(param_list));
@@ -479,6 +473,12 @@ int main(int argc, char **argv){
 			finalflat->values[i][j] = final_val;
 		}
 	}
+
+	printf("#%15s %15s %15s %15s\n", "i", "Weight", "MSC_file", "Flat_file");
+    for(int i=0; i<nmodels; ++i){
+        printf("#%15u %15.10lg %15s %15s\n", i, weight[i], bepe_file_names[i], flat_file_names[i]);
+    }
+    putchar('\n');
 
 	printf("# Model-averaged parameter estimates\n");
     for(int i = 0; i < num_params; i++){
