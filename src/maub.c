@@ -133,6 +133,7 @@ bool Param_List_has_param(Flat f, char* p);
 double* maub_parse_bepe(const char* file_name);
 int get_lines(const char* file_name);
 Flat* Flat_new(const char** file_names, int nmodels, int ndtsets);
+void Flat_free(Flat f);
 
 const char *usageMsg =
     "Usage: maub <m1.msc> ... <mK.msc> -F <m1.flat> ... <mK.flat>\n"
@@ -288,13 +289,6 @@ Flat* Flat_new(const char** file_names, int nmodels, int ndtsets){
 	Flat* flat_array = malloc(nmodels*sizeof(Flat));
 
 	for (int i = 0; i < nmodels; i++){				//try to open files
-		FILE* f = fopen(file_names[i], "r");
-		if(f==NULL) {
-			fprintf(stderr,"%s:%d: can't read file \"%s\"\n",
-				__FILE__,__LINE__,file_names[i]);
-			exit(EXIT_FAILURE);
-		}
-
 		char ch;
 
 		do {						//skip comments
@@ -341,6 +335,23 @@ Flat* Flat_new(const char** file_names, int nmodels, int ndtsets){
 		}
 	}
 	return flat_array;
+}
+
+/*
+Frees flats
+*/
+void Flat_free(Flat* f){
+	for (int j = 0; j < f->ndtsets; j++){
+		free(flat_array[i].values[j]);
+	}
+
+	for (int j = 0; j < f->nparams; j++){
+		free(flat_array[i].param_names[j]);
+	}
+	free(flat_array[i].param_names);
+	free(flat_array[i].values);
+
+	free(f);
 }
 
 int main(int argc, char **argv){
@@ -547,4 +558,14 @@ int main(int argc, char **argv){
     }
 
 	//free everything!
+	while(all_params){
+		Param_List* temp_pl = all_params->next;
+		free(all_params);
+		all_params = temp_pl;
+	}
+	Flat_free(finalflat);
+	for (int i = 0; i < nmodels; i++){
+		Flat_free(flat_input[i]);
+	}
+	free(flat_input);
 }
