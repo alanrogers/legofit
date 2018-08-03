@@ -348,7 +348,7 @@ Flat* Flat_new(const char** file_names, int nmodels, int ndtsets){
 Frees flats
 */
 void Flat_free(Flat f){
-	for (int j = 0; j < f.nparams; j++){
+	for (int j = 0; j < f.ndtsets; j++){
 		free(f.values[j]);
 	}
 	for (int j = 0; j < f.nparams; j++){
@@ -567,6 +567,8 @@ int main(int argc, char **argv){
 		free(all_params);
 		all_params = temp_pl;
 	}
+	//transpose the size of finalflat
+	finalflat->ndtsets = finalflat->nparams;
 	Flat_free(*finalflat);
 	free(finalflat);
 	for (int i = 0; i < nmodels; i++){
