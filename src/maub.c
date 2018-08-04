@@ -179,7 +179,7 @@ Adds a parameter to the paramater list
 */
 void Param_List_push(char* param, Param_List* node){
 	char* str = node->val;
-	if(node->val =='\0'){		//if nothing in the list make the first node have filled
+	if(node->val == NULL){		//if nothing in the list make the first node have filled
 		node->val = param;
 		num_params++;
 		return;
@@ -487,7 +487,7 @@ int main(int argc, char **argv){
 	Flat* flat_input;
 
 	all_params = malloc(sizeof(Param_List));
-	all_params->val = '\0';
+	all_params->val = NULL;
 	all_params->prev = NULL;
 	all_params->next = NULL;
 
