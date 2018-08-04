@@ -231,6 +231,9 @@ int RAFReader_next(RAFReader * self) {
         return errno;
     }
 
+    // Derived allele frequency is set later
+    self->daf = strtod("NaN", NULL);
+
     return 0;
 }
 

@@ -644,7 +644,7 @@ int main(int argc, char **argv) {
         // write an output file for each bootstrap replicate
         for(j = 0; j < bootreps; ++j) {
             char        buff[FILENAMESIZE + 3];
-            status = snprintf(buff, sizeof buff, "%s%03d", bootfname, j);
+            status = snprintf(buff, sizeof buff, "%s%d", bootfname, j);
             if(status >= sizeof buff)
                 DIE("buffer overflow in snprintf");
 
