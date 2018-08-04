@@ -10,6 +10,7 @@ struct DAFReader {
     char       *fname;
     FILE       *fp;
     Tokenizer  *tkz;
+    int         ispipe;         // 1 if fp is a pipe; 0 otherwise
 
     // properties of current snp
     long        snpid;          // 0-based index of current snp

@@ -71,6 +71,7 @@ RAFReader *RAFReader_new(const char *fname) {
                 __FILE__, __func__, __LINE__, self->fname);
         exit(EXIT_FAILURE);
     }
+
     self->tkz = Tokenizer_new(MAXFIELDS);
     self->snpid = -1;
     self->raf = strtod("NaN", NULL);
