@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <ctype.h>
+#include <unistd.h>
 
 #define MAXFIELDS 5
 
@@ -27,7 +28,44 @@ RAFReader *RAFReader_new(const char *fname) {
     memset(self, 0, sizeof(RAFReader));
     self->fname = strdup(fname);
     CHECKMEM(self->fname);
-    self->fp = fopen(self->fname, "r");
+
+    // Does input file exist?
+    if( access( self->fname, F_OK ) == -1 ) {
+        fprintf(stderr, "%s:%d: nonexistent input:  %s\n",
+                __FILE__,__LINE__, self->fname);
+        exit(EXIT_FAILURE);
+    }
+
+    // Is input file compressed?
+    const char *gz = ".gz";
+    char *pos = strstr(self->fname, gz);
+    if(pos == gz) {
+        fprintf(stderr,"%s:%d: input file name \"%s\" is empty\n",
+                __FILE__,__LINE__, self->fname);
+        exit(EXIT_FAILURE);
+    }else if(pos == NULL) {
+        // not compressed
+        self->fp = fopen(self->fname, "r");
+        self->ispipe = 0;
+    }else {
+        // compressed
+        self->ispipe = 1;
+        char cmd[10000];
+        int status = snprintf(cmd, sizeof cmd, "gunzip -c %s", self->fname);
+        if(status >= sizeof cmd) {
+            fprintf(stderr, "%s:%d: ERR: Input filename is too large."
+                    " Max: %zu\n",
+                    __FILE__, __LINE__, sizeof(cmd) - 1);
+            exit(EXIT_FAILURE);
+        }
+#ifdef _WIN32
+        // windows
+        self->fp = _popen(cmd, "r");
+#else
+        // osx, linux, or unix
+        self->fp = popen(cmd, "r");
+#endif
+    }
     if(self->fp == NULL) {
         fprintf(stderr, "%s:%s:%d: can't open \"%s\" for input.\n",
                 __FILE__, __func__, __LINE__, self->fname);
@@ -49,7 +87,14 @@ void RAFReader_clearChromosomes(int n, RAFReader * r[n]) {
 
 /// RAFReader destructor
 void RAFReader_free(RAFReader * self) {
-    fclose(self->fp);
+    if(self->ispipe) {
+#ifdef _WIN32
+        _pclose(self->fp);
+#else
+        pclose(self->fp);
+#endif
+    }else
+        fclose(self->fp);
     free(self->fname);
     Tokenizer_free(self->tkz);
     free(self);

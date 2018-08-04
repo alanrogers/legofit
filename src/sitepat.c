@@ -14,8 +14,9 @@ replicate into a separate file.
 
     Usage: sitepat [options] <x>=<in1> <y>=<in2> ...
        where <x> and <y> are arbitrary labels, and <in1> and <in2> are input
-       files in raf format. Writes to standard output. Labels may not include
-       the character ":". Maximum number of input files: 32.
+       files in raf format. If input file name ends with .gz, input is
+       decompressed using gunzip. Writes to standard output. Labels
+       may not include the character ":". Maximum number of input files: 32.
 
     Options may include:
        -f <name> or --bootfile <name>
@@ -38,11 +39,17 @@ replicate into a separate file.
 # Example
 
 Before running `sitepat`, use @ref raf "raf" to convert the input data
-into raf format. Let us assume you have done this, and that directory
-~/raf contains a separate raf file for each population. We want to
-compare 4 populations, whose .raf files are `yri.raf`, `ceu.raf`,
-`altai.raf`, and `denisova.raf`. The following command will do this,
-putting the results into `obs.txt`.
+into raf format. To save space, you may want to compress the ".raf"
+files using the external utility "gzip". The names of these compressed
+files should end in ".gz", and `sitepat` will use an external utility
+(gunzip) to decompress them. If `gunzip` has not been installed,
+`sitepat` cannot read compressed input files.
+
+Let us assume you have generated raf files, and that directory ~/raf
+contains a separate raf file for each population. We want to compare 4
+populations, whose .raf files are `yri.raf`, `ceu.raf`, `altai.raf`,
+and `denisova.raf`. The following command will do this, putting the
+results into `obs.txt`.
 
     sitepat x=~/raf/yri.raf \
            y=~/raf/ceu.raf \
@@ -172,9 +179,9 @@ static void generatePatterns(int bit, int npops, Stack * stk, tipId_t pat,
 const char *useMsg =
     "\nUsage: sitepat [options] <x>=<in_1> <y>=<in_2> ... outgroup=<in_K>\n"
     "   where <x> and <y> are arbitrary labels, and <in_i> are input\n"
-    "   files in raf format. Writes to standard output."
-    " Labels may not include\n"
-    "   the character \":\". Final label must be \"outgroup\".\n";
+    "   files in raf format.  If input file name ends with .gz, input is\n"
+    "   decompressed using gunzip. Writes to standard output. Labels may\n"
+    "   not include the character \":\". Final label must be \"outgroup\".\n";
 
 /// Print usage message and die.
 static void usage(void) {
