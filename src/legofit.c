@@ -745,7 +745,7 @@ int main(int argc, char **argv) {
         chrptr = strrchr(b, '.');
         if(chrptr)
             *chrptr = '\0';
-        status=snprintf(qfname, sizeof qfname, "%s-%s.txt", a, b);
+        status=snprintf(qfname, sizeof qfname, "%s-%s.pts", a, b);
         if(status >= sizeof qfname)
             DIE("buffer overflow");
     }
