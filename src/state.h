@@ -12,9 +12,8 @@ int    State_npoints(State *self);
 int    State_nparameters(State *self);
 State *State_new(int npts, int npar);
 void   State_free(State *self);
-State *State_read(const char *fname, int npar, const char *name[npar]);
-State *State_readList(NameList *list, int npts, int npar,
-                      char const *name[npar]);
+State *State_read(const char *fname, int npar, char *name[npar]);
+State *State_readList(NameList *list, int npts, int npar, char **name);
 int    State_print(State *self, FILE *fp);
 int    State_setName(State *self, int ndx, const char *name);
 void   State_setVector(State *self, int ndx, int dim, double x[dim]);

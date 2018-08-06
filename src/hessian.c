@@ -17,15 +17,22 @@ Hessian hessian(const char *fname) {
         exit(EXIT_FAILURE);
     }
 
-    int i, j, k, nfiles, npar;
-    fscanf(fp, "%d %d", &nfiles, &npar);
+    int i, j, k, nfiles, npar, status;
+    status = fscanf(fp, "%d %d", &nfiles, &npar);
+    if(status != 2)
+        DIE("bad return from fscanf");
 
     // read names of parameters
     char buff[500], parname[npar][50];
-    fscanf(fp, "%s", buff);
+    status = fscanf(fp, "%s", buff);
+    if(status != 1)
+        DIE("bad fscanf");
+    
     assert(0 == strcmp(buff, "lnL"));
     for(i=0; i<npar; ++i) {
-        fscanf(fp, "%s", parname[i]);
+        status = fscanf(fp, "%s", parname[i]);
+        if(status != 1)
+            DIE("bad fscanf");
     }
 
     // read data
@@ -33,10 +40,14 @@ Hessian hessian(const char *fname) {
     gsl_matrix *data = gsl_matrix_alloc(nfiles, npar);
     double x, y;
     for(i=0; i < nfiles; ++i) {
-        fscanf(fp, "%lf", &x);
+        status = fscanf(fp, "%lf", &x);
+        if(status != 1)
+            DIE("bad fscanf");
         gsl_vector_set(lnL, i, x);
         for(j=0; j<npar; ++j) {
-            fscanf(fp, "%lf", &x);
+            status = fscanf(fp, "%lf", &x);
+            if(status != 1)
+                DIE("bad fscanf");
             gsl_matrix_set(data, i, j, x);
         }
     }
@@ -97,7 +108,6 @@ Hessian hessian(const char *fname) {
     gsl_matrix *cov = gsl_matrix_alloc(nterms, nterms);
     gsl_multifit_linear_workspace *work =
         gsl_multifit_linear_alloc(nfiles, nterms);
-    int status;
     double chisq;
     status = gsl_multifit_linear(design, lnL, beta, cov, &chisq, work);
     if(status) {
