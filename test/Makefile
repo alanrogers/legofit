@@ -3,7 +3,7 @@ vpath %.c ../src
 opt :=  -O0 -fno-inline-functions -DDEBUG
 prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
-tests := xbinary xbma xboot xbranchtab xclic xdafreader xrafreader xdiffev \
+tests := xbinary xbma xboot xbranchtab xdafreader xrafreader xdiffev \
   xgene xgptree xhessian xpopnodetab xjobqueue xlblndx xllrbtree xparkeyval \
   xparse xparstore xpopnode xscrmreader xsimsched xstrdblqueue xstrint \
   xstrdblmap xdtnorm xmisc xerror xstate xwraparound xpointbuff
@@ -40,7 +40,6 @@ test : $(tests)
 	-./xbma
 	-./xboot
 	-./xbranchtab
-	-./xclic
 	-./xdafreader
 	-./xrafreader
 	-./xdiffev
@@ -124,10 +123,6 @@ XRAFREADER := xrafreader.o rafreader.o misc.o lblndx.o tokenizer.o binary.o \
    parkeyval.o strint.o error.o
 xrafreader : $(XRAFREADER)
 	$(CC) $(CFLAGS) -o $@ $(XRAFREADER) $(lib)
-
-XCLIC := xclic.o misc.o hessian.o strdblqueue.o
-xclic : $(XCLIC)
-	$(CC) $(CFLAGS) -o $@ $(XCLIC) $(lib)
 
 xbma.o : bma.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/bma.c
