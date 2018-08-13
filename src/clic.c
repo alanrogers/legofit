@@ -141,6 +141,13 @@ int main(int argc, char **argv){
     gsl_matrix *c_matrix = gsl_matrix_alloc(npar,npar);
     make_covar_matrix(nfiles, npar, datmat, c_matrix);
 
+    //Check to see if matrix is negative
+    if(gsl_matrix_isnonneg (c_matrix)) {
+        fprintf(stderr, "%s: %d: Warning!  Covar matrix isn't negative."
+           "  This is likely due to error!", __FILE__,__LINE__);
+    }
+
+
     if(verbose) {
         // Print it
         for (j = 0; j < npar; j++)
