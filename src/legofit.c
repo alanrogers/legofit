@@ -777,7 +777,9 @@ int main(int argc, char **argv) {
         fprintf(stderr,"%s:%d: can't write file %s: using stdout\n",
                 __FILE__,__LINE__,ptsfname);
         qfp = stdout;
-    }
+    }else
+        fprintf(stderr,"%s:%d: writing to \"%s\"\n",
+                __FILE__,__LINE__, ptsfname);
 
     // First line contains dimensions. Each row contains dim+1 values:
     // first lnL, then dim parameter values.
