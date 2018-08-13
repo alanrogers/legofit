@@ -587,6 +587,38 @@ int main(int argc, char **argv) {
 # error "Unknown cost function"
 #endif
 
+    // Construct name for output file to which we will write
+    // points for use in estimating Hessian matrix.
+    char ptsfname[200];
+    {
+        char a[200], b[200];
+        strcpy(a, basename(lgofname));
+        strcpy(b, basename(patfname));
+        char *chrptr = strrchr(a, '.');
+        if(chrptr)
+            *chrptr = '\0';
+        chrptr = strrchr(b, '.');
+        if(chrptr)
+            *chrptr = '\0';
+        int version = 1;
+        while(1) {
+            // increment version number until we find one that hasn't
+            // been used.
+            status=snprintf(ptsfname, sizeof ptsfname, "%s-%s-%d.pts", 
+                            a, b, version);
+            if(status >= sizeof ptsfname)
+                DIE("buffer overflow");
+            if( access( ptsfname, F_OK ) == -1 ) {
+                // file name doesn't exist, so use this name
+                break;
+            }else{
+                // increment version number and try again
+                ++version;
+            }
+        }
+    }
+    printf("# pts output file    : %s\n", ptsfname);
+
     // Observed site pattern frequencies
     BranchTab *rawObs = BranchTab_parse(patfname, &lblndx);
     if(doSing) {
@@ -730,37 +762,6 @@ int main(int argc, char **argv) {
         fclose(stateOut);
     }
 
-    // Construct name for output file to which we will write
-    // points for use in estimating Hessian matrix.
-    char ptsfname[200];
-    {
-        char a[200], b[200];
-        strcpy(a, basename(lgofname));
-        strcpy(b, basename(patfname));
-        char *chrptr = strrchr(a, '.');
-        if(chrptr)
-            *chrptr = '\0';
-        chrptr = strrchr(b, '.');
-        if(chrptr)
-            *chrptr = '\0';
-        int version = 1;
-        while(1) {
-            // increment version number until we find one that hasn't
-            // been used.
-            status=snprintf(ptsfname, sizeof ptsfname, "%s-%s-%d.pts", 
-                            a, b, version);
-            if(status >= sizeof ptsfname)
-                DIE("buffer overflow");
-            if( access( ptsfname, F_OK ) == -1 ) {
-                // file name doesn't exist, so use this name
-                break;
-            }else{
-                // increment version number and try again
-                ++version;
-            }
-        }
-    }
-
 #if COST==KL_COST || COST==LNL_COST
     double S = BranchTab_sum(rawObs); // sum of site pattern counts
     double entropy = BranchTab_entropy(obs); // -sum p ln(p)
@@ -777,9 +778,7 @@ int main(int argc, char **argv) {
         fprintf(stderr,"%s:%d: can't write file %s: using stdout\n",
                 __FILE__,__LINE__,ptsfname);
         qfp = stdout;
-    }else
-        fprintf(stderr,"%s:%d: writing to \"%s\"\n",
-                __FILE__,__LINE__, ptsfname);
+    }
 
     // First line contains dimensions. Each row contains dim+1 values:
     // first lnL, then dim parameter values.
