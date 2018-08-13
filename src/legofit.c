@@ -520,8 +520,6 @@ int main(int argc, char **argv) {
                     npts, State_npoints(state));
             npts = State_npoints(state);
         }
-        fprintf(stderr,"Initial State object\n");
-        State_print(state, stderr);
         // Copy 0'th point in State object into GPTree, replacing
         // values specified in .lgo file.
         double x[dim];
@@ -588,6 +586,38 @@ int main(int argc, char **argv) {
 #else
 # error "Unknown cost function"
 #endif
+
+    // Construct name for output file to which we will write
+    // points for use in estimating Hessian matrix.
+    char ptsfname[200];
+    {
+        char a[200], b[200];
+        strcpy(a, basename(lgofname));
+        strcpy(b, basename(patfname));
+        char *chrptr = strrchr(a, '.');
+        if(chrptr)
+            *chrptr = '\0';
+        chrptr = strrchr(b, '.');
+        if(chrptr)
+            *chrptr = '\0';
+        int version = 1;
+        while(1) {
+            // increment version number until we find one that hasn't
+            // been used.
+            status=snprintf(ptsfname, sizeof ptsfname, "%s-%s-%d.pts", 
+                            a, b, version);
+            if(status >= sizeof ptsfname)
+                DIE("buffer overflow");
+            if( access( ptsfname, F_OK ) == -1 ) {
+                // file name doesn't exist, so use this name
+                break;
+            }else{
+                // increment version number and try again
+                ++version;
+            }
+        }
+    }
+    printf("# pts output file    : %s\n", ptsfname);
 
     // Observed site pattern frequencies
     BranchTab *rawObs = BranchTab_parse(patfname, &lblndx);
@@ -732,24 +762,6 @@ int main(int argc, char **argv) {
         fclose(stateOut);
     }
 
-    // Construct name for output file to which we will write
-    // points for use in estimating Hessian matrix.
-    char qfname[200];
-    {
-        char a[200], b[200];
-        strcpy(a, basename(lgofname));
-        strcpy(b, basename(patfname));
-        char *chrptr = strrchr(a, '.');
-        if(chrptr)
-            *chrptr = '\0';
-        chrptr = strrchr(b, '.');
-        if(chrptr)
-            *chrptr = '\0';
-        status=snprintf(qfname, sizeof qfname, "%s-%s.pts", a, b);
-        if(status >= sizeof qfname)
-            DIE("buffer overflow");
-    }
-
 #if COST==KL_COST || COST==LNL_COST
     double S = BranchTab_sum(rawObs); // sum of site pattern counts
     double entropy = BranchTab_entropy(obs); // -sum p ln(p)
@@ -759,14 +771,12 @@ int main(int argc, char **argv) {
         nQuadPts = PointBuff_size(dep.pb);
     }
 
-    // Warn if output file already exists
-    if( access( qfname, F_OK ) != -1 )
-        fprintf(stderr, "Warning: overwriting file %s\n", qfname);
+    assert( access( ptsfname, F_OK ) == -1 );
 
-    FILE *qfp = fopen(qfname, "w");
+    FILE *qfp = fopen(ptsfname, "w");
     if(qfp == NULL) {
         fprintf(stderr,"%s:%d: can't write file %s: using stdout\n",
-                __FILE__,__LINE__,qfname);
+                __FILE__,__LINE__,ptsfname);
         qfp = stdout;
     }
 
@@ -823,7 +833,7 @@ int main(int argc, char **argv) {
     if(qfp != stdout) {
         fclose(qfp);
         fprintf(stderr,"%d points written to file %s\n",
-                nQuadPts, qfname);
+                nQuadPts, ptsfname);
     }
 #endif
 
