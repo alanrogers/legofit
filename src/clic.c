@@ -144,7 +144,7 @@ int main(int argc, char **argv){
     //Check to see if matrix is negative
     if(gsl_matrix_isnonneg (c_matrix)) {
         fprintf(stderr, "%s: %d: Warning!  Covar matrix isn't negative."
-           "  This is likely due to error!", __FILE__,__LINE__);
+           "  This is likely due to error!\n", __FILE__,__LINE__);
     }
 
 
