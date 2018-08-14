@@ -533,7 +533,7 @@ int main(int argc, char **argv) {
             GPTree_printParStore(gptree, stderr);
             exit(EXIT_FAILURE);
         }
-    } else {
+  } else {
         // de novo State
         state = State_new(npts, dim);
         CHECKMEM(state);
