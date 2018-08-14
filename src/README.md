@@ -62,21 +62,21 @@ there are 14 site patterns in a sample involving \f$K=4\f$
 populations. The table below shows data from a sample involving 4
 populations, *X*, *Y*, *N*, and *D*.
 
-    SitePat       E[count]
-          x 528808.0000000
-          y 518558.8750000
-          n 529267.3750000
-          d 581255.2500000
-        x:y 320273.6250000
-        x:n  43345.3750000
-        x:d  41517.7500000
-        y:n  49486.0000000
-        y:d  40366.3750000
-        n:d 255980.6250000
-      x:y:n 108149.0000000
-      x:y:d  91739.3750000
-      x:n:d  89563.3750000
-      y:n:d  91388.2500000
+    SitePat     E[count]
+          x   528808.000
+          y   518558.875
+          n   529267.375
+          d   581255.250
+        x:y   320273.625
+        x:n    43345.375
+        x:d    41517.750
+        y:n    49486.000
+        y:d    40366.375
+        n:d   255980.625
+      x:y:n   108149.000
+      x:y:d    91739.375
+      x:n:d    89563.375
+      y:n:d    91388.250
 
 The `E[count]` column shows numbers that can be thought of loosely as
 counts of site patterns in a genome-wide sample. The last line tells
