@@ -321,16 +321,6 @@ LblNdx GPTree_getLblNdx(GPTree * self) {
     return self->lblndx;
 }
 
-/// Return pointer to array of lower bounds of free parameters
-double     *GPTree_loBounds(GPTree * self) {
-    return ParStore_loBounds(self->parstore);
-}
-
-/// Return pointer to array of upper bounds of free parameters
-double     *GPTree_upBounds(GPTree * self) {
-    return ParStore_upBounds(self->parstore);
-}
-
 /// Return number of samples.
 unsigned GPTree_nsamples(GPTree * self) {
     return SampNdx_size(&self->sndx);
