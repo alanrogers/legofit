@@ -6,7 +6,7 @@ incl := -I/usr/local/include -I/opt/local/include -I../src
 tests := xbinary xbma xboot xbranchtab xdafreader xrafreader xdiffev \
   xgene xgptree xhessian xpopnodetab xjobqueue xlblndx xllrbtree xparkeyval \
   xparse xparstore xpopnode xscrmreader xsimsched xstrdblqueue xstrint \
-  xstrdblmap xdtnorm xmisc xerror xstate xwraparound xpointbuff
+  xstrdblmap xstrparmap xdtnorm xmisc xerror xstate xwraparound xpointbuff
 
 CC := gcc
 
@@ -63,6 +63,7 @@ test : $(tests)
 	-./xstate
 	-./xstrint
 	-./xstrdblmap
+	-./xstrparmap
 	-./xstrdblqueue
 	-./xwraparound
 	@echo "ALL UNIT TESTS WERE COMPLETED."
@@ -224,6 +225,13 @@ xstrdblmap.o : strdblmap.c
 XSTRDBLMAP := xstrdblmap.o misc.o
 xstrdblmap : $(XSTRDBLMAP)
 	$(CC) $(CFLAGS) -o $@ $(XSTRDBLMAP) $(lib)
+
+xstrparmap.o : strparmap.c
+	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/strparmap.c
+
+XSTRPARMAP := xstrparmap.o misc.o param.o
+xstrparmap : $(XSTRPARMAP)
+	$(CC) $(CFLAGS) -o $@ $(XSTRPARMAP) $(lib)
 
 XSTRDBLQUEUE := xstrdblqueue.o strdblqueue.o misc.o
 xstrdblqueue : $(XSTRDBLQUEUE)
