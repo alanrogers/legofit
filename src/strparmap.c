@@ -43,10 +43,6 @@ void StrParMap_free(StrParMap *h) {
     free(h);
 }
 
-const char *StrParMap_key(StrParMap *h) {
-    return h->par->name;
-}
-
 StrParMap *StrParMap_new(Param *par) {
     StrParMap *self = malloc(sizeof(StrParMap));
     if(self==NULL) {

@@ -3,7 +3,6 @@
 
 #include "typedefs.h"
 
-const char *StrParMap_key(StrParMap *h);
 Param      *StrParMap_search(StrParMap *root, const char *key);
 StrParMap  *StrParMap_insert(StrParMap *root, Param *par);
 void        StrParMap_free(StrParMap *h);
