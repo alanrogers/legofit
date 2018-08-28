@@ -22,9 +22,8 @@ gene flow. The package consists of the following programs
   assumptions about population history.
 * @ref legofit "legofit" estimates parameters from site pattern
   counts.
-* @ref bootci "bootci.py" uses multiple legofit output files
-  (one for the real data and one for each bootstrap replicate) to
-  generate bootstrap confidence intervals for estimated parameters.
+* @ref bootci "bootci.py" reads a flat file to generate bootstrap
+  confidence intervals. 
 * @ref flatfile "flatfile.py" reads a list of legofit output
   files and writes a flat file with a row for each legofit file and a
   column for each parameter.
