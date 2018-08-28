@@ -23,7 +23,7 @@ gene flow. The package consists of the following programs
 * @ref legofit "legofit" estimates parameters from site pattern
   counts.
 * @ref bootci "bootci.py" reads a flat file to generate bootstrap
-  confidence intervals. 
+  confidence intervals.
 * @ref flatfile "flatfile.py" reads a list of legofit output
   files and writes a flat file with a row for each legofit file and a
   column for each parameter.
@@ -337,10 +337,10 @@ precedence. For example, the following lines are equivalent:
     twoN constrained x=exp(a + y*log(b))
 
 To spread a constraint across several lines, break the line after a
-"+" symbol. For example,
+binary operator ("+", "-", "*", or "/"). For example,
 
-    twoN constrained twoNxy=1e4 +
-	  -1.2*Txy +
+    twoN constrained twoNxy=1e4 -
+	  1.2*Txy +
 	  0.01*Txy*Txyn # Constraint spread across 3 lines.
 
 We have one more variable to declare:
@@ -467,7 +467,7 @@ The legofit package provides two methods of model selection:
 * @ref bepe "bepe", implements the "bootstrap estimate of prediction
   accuracy" (Efron and Tibshirani, 1993, sec. 17.6).
 * @ref clic "clic", implements the "composite likelihood information
-  criterion" (Varin and Vidoni, 2005). 
+  criterion" (Varin and Vidoni, 2005).
 
 # Using the package
 

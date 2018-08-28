@@ -560,16 +560,17 @@ PopNode *mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, ParStore * parstore,
         if(1 == get_one_line(sizeof(buff), buff, fp))
             break;
 
-        char *plus, *end;
-
-        // If line ends with "+", then append next line
+        // If line ends with a binary operator ("+-*/"), then append
+        // next line.
         while(1) {
-            end = buff + strlen(buff);
-            assert(end < buff + sizeof(buff));
-            plus = strrchr(buff, '+');
-            if(plus == NULL || 1 + plus != end)
+            char *end = buff + strlen(buff);
+            // Check if last character is a binary operator.
+            // No need to strip trailing whitespace, because that's
+            // done in get_one_line.
+            assert(end==buff || !isspace(*(end-1)));
+            if(end>buff && strchr("+-*/", *(end-1)) == NULL)
                 break;
-            // line ends with plus: append next line
+            // line empty or ends with binary operator: append next line
             if(1 == get_one_line(sizeof(buff2), buff2, fp)) {
                 fprintf(stderr, "%s:%d: unexpected end of file\n",
                         __FILE__, __LINE__);
