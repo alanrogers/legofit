@@ -3,10 +3,11 @@ vpath %.c ../src
 opt :=  -O0 -fno-inline-functions -DDEBUG
 prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
-tests := xbinary xbma xboot xbranchtab xdafreader xrafreader xdiffev \
-  xgene xgptree xhessian xpopnodetab xjobqueue xlblndx xllrbtree xparkeyval \
-  xparse xparstore xpopnode xscrmreader xsimsched xstrdblqueue xstrint \
-  xstrdblmap xstrparmap xdtnorm xmisc xerror xstate xwraparound xpointbuff
+tests := xaddrparmap xbinary xbma xboot xbranchtab xdafreader xrafreader \
+  xdiffev xgene xgptree xhessian xpopnodetab xjobqueue xlblndx xllrbtree \
+  xparkeyval xparse xparstore xpopnode xscrmreader xsimsched xstrdblqueue \
+  xstrint xstrdblmap xstrparmap xdtnorm xmisc xerror xstate xwraparound \
+  xpointbuff
 
 CC := gcc
 
@@ -36,6 +37,7 @@ lib := -L/usr/local/lib -lgsl -lgslcblas -lpthread -lm
 all : $(tests)
 
 test : $(tests)
+	-./xaddrparmap
 	-./xbinary
 	-./xbma
 	-./xboot
@@ -232,6 +234,13 @@ xstrparmap.o : strparmap.c
 XSTRPARMAP := xstrparmap.o misc.o param.o
 xstrparmap : $(XSTRPARMAP)
 	$(CC) $(CFLAGS) -o $@ $(XSTRPARMAP) $(lib)
+
+xaddrparmap.o : addrparmap.c
+	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/addrparmap.c
+
+XADDRPARMAP := xaddrparmap.o misc.o param.o
+xaddrparmap : $(XADDRPARMAP)
+	$(CC) $(CFLAGS) -o $@ $(XADDRPARMAP) $(lib)
 
 XSTRDBLQUEUE := xstrdblqueue.o strdblqueue.o misc.o
 xstrdblqueue : $(XSTRDBLQUEUE)

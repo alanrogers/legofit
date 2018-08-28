@@ -11,6 +11,7 @@
  * Translated from Java code at
  * http://www.cs.princeton.edu/~rs/talks/LLRB/LLRB.pdf 
  */
+#include "addrparmap.h"
 #include "param.h"
 #include "strparmap.h"
 #include "misc.h"
@@ -49,18 +50,17 @@ AddrParMap *AddrParMap_new(Param *par) {
                 __FILE__, __LINE__);
         exit(EXIT_FAILURE);
     }
-    self->key = key;
-    self->value = value;
+    self->par = par;
     self->color = RED;
     return self;
 }
 
-AddrParMap *AddrParMap_search(AddrParMap *root, bstkey_t key) {
+Param *AddrParMap_search(AddrParMap *root, double *valptr) {
     AddrParMap *x = root;
     while(x != NULL) {
-        if(key == x->key)
-            return x;
-        else if(key < x->key)
+        if(valptr == x->par->valptr)
+            return x->par;
+        else if(valptr < x->par->valptr)
             x = x->left;
         else
             x = x->right;
@@ -68,24 +68,27 @@ AddrParMap *AddrParMap_search(AddrParMap *root, bstkey_t key) {
     return NULL;
 }
 
-AddrParMap *AddrParMap_insert(AddrParMap *root, bstkey_t key, val_t value) {
-    root = AddrParMap_insert_r(root, key, value);
+AddrParMap *AddrParMap_insert(AddrParMap *root, Param *par) {
+    root = AddrParMap_insert_r(root, par);
     root->color = BLACK;
     return root;
 }
 
-AddrParMap *AddrParMap_insert_r(AddrParMap *h, bstkey_t key, val_t value) {
+AddrParMap *AddrParMap_insert_r(AddrParMap *h, Param *par) {
     if(h == NULL)
-        return AddrParMap_new(key, value);
+        return AddrParMap_new(par);
     if(ISRED(h->left) && ISRED(h->right))
         AddrParMap_flipColors(h);
-    if(key == h->key)
-        h->value = value;
-    else if( key < h->key )
-        h->left = AddrParMap_insert_r(h->left, key, value);
+    if(par->valptr == h->par->valptr) {
+        fprintf(stderr,"%s:%d: duplicate parameter name: %s\n",
+                __FILE__,__LINE__, par->name);
+        exit(EXIT_FAILURE);
+    }
+    if( par->valptr < h->par->valptr )
+        h->left = AddrParMap_insert_r(h->left, par);
     else {
-        assert(key > h->key);
-        h->right = AddrParMap_insert_r(h->right, key, value);
+        assert(par->valptr > h->par->valptr);
+        h->right = AddrParMap_insert_r(h->right, par);
     }
     if(ISRED(h->right) && !ISRED(h->left))
         h = AddrParMap_rotateLeft(h);
@@ -138,9 +141,9 @@ void AddrParMap_print(AddrParMap *h, FILE *fp, int indent) {
 
     // This fprintf statement must be modified to reflect
     // the definitions of bstkey_t and val_t.
-    fprintf(fp, "[%u, %lf, %s]\n",
-            h->key,
-            h->value,
+    fprintf(fp, "[%p, %s, %s]\n",
+            h->par->valptr,
+            h->par->name,
             h->color==RED ? "red" : "black");
     AddrParMap_print(h->right, fp, indent+1);
 }
@@ -151,39 +154,48 @@ int main(int argc, char **argv) {
 
     if(argc > 1) {
         if(argc != 2 || 0 != strcmp(argv[1], "-v")) {
-            fprintf(stderr, "usage: xllrbtree [-v]\n");
+            fprintf(stderr, "usage: xaddrparmap [-v]\n");
             exit(EXIT_FAILURE);
         }
         verbose = 1;
     }
 
+    double a[] = {0.0, 1.0, 2.0, 3.0};
+
     AddrParMap *root = NULL;
-    int i;
-    for(i=0; i < 100; ++i) {
-        bstkey_t key = (bstkey_t) i;
-        val_t value = (val_t) i;
-        root = AddrParMap_insert(root, key, value);
-    }
+
+    root = AddrParMap_insert(root, Param_new("par0", a+0, 0.0, 1.0, Free) );
+    root = AddrParMap_insert(root, Param_new("par1", a+1, -INFINITY, INFINITY,
+                                       Constrained) );
+    root = AddrParMap_insert(root, Param_new("par2", a+2, 1.0, 1e6, Fixed) );
+    root = AddrParMap_insert(root, Param_new("par3", a+3, -1.0, 1.0, Gaussian) );
 
     if(verbose)
         AddrParMap_print(root, stdout, 0);
 
     // Search for nodes that exist. Each search should succeed.
-    for(i=0; i < 100; ++i) {
-        bstkey_t key = (bstkey_t) i;
-        val_t value = (val_t) i;
-        AddrParMap *found = AddrParMap_search(root, key);
-        assert(found);
-        assert(AddrParMap_key(found) == key);
-        assert(AddrParMap_value(found) == value);
-    }
+    Param *par;
+
+    par = AddrParMap_search(root, a+0);
+    assert(par);
+    assert(strcmp(par->name, "par0") == 0);
+
+    par = AddrParMap_search(root, a+1);
+    assert(par);
+    assert(strcmp(par->name, "par1") == 0);
+    
+    par = AddrParMap_search(root, a+2);
+    assert(par);
+    assert(strcmp(par->name, "par2") == 0);
+
+    par = AddrParMap_search(root, a+3);
+    assert(par);
+    assert(strcmp(par->name, "par3") == 0);
 
     // Search for nodes that don't exist. Each search should fail.
-    for(i=100; i < 110; ++i) {
-        bstkey_t key = (bstkey_t) i;
-        AddrParMap *found = AddrParMap_search(root, key);
-        assert(found == NULL);
-    }
+    par = AddrParMap_search(root, a+10);
+    assert(par == NULL);
+
     AddrParMap_free(root);
     printf("%-26s %s\n", "AddrParMap", "OK");
 }

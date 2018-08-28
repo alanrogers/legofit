@@ -4,6 +4,7 @@
 #include <stdint.h>
 #define FILENAMESIZE 200
 
+typedef struct AddrParMap AddrParMap;
 typedef struct Boot Boot;
 typedef struct BootChr BootChr;
 typedef struct Bounds Bounds;
