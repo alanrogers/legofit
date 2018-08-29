@@ -7,6 +7,7 @@ struct Param {
     char *name;         // name of parameter; locally owned
     double *valptr;     // pointer to value; not locally owned
     double low, high;   // bounds;
+    double mean, sd;    // parameters for gaussian variables
     ParamStatus status; // Free, Fixed, Gaussian, Constrained
 };
 

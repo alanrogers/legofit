@@ -66,20 +66,6 @@ struct ParStore {
     char       *formulas[MAXPAR];    // formulas of constrained vars
 };
 
-static inline int chrcount(const char *s, char c);
-
-/// Count the number of copies of character c in string s
-static inline int chrcount(const char *s, char c) {
-    if(s==NULL)
-        return 0;
-    int n=0;
-    while(*s != '\0') {
-        if(*s++ == c)
-            ++n;
-    }
-    return n;
-}
-
 /// Return <0, 0, or >0, as x is <, ==, or > y.
 int compareDblPtrs(const void *void_x, const void *void_y) {
     double * const * x = (double * const *) void_x;
