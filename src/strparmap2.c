@@ -20,8 +20,12 @@
 #define CAT(A,B) CAT2(A, B)
 #define METHOD(B) CAT(CLASS,B)
 
+#include "parmap.src"
 
 #undef CLASS
+#undef KEYTYPE
+#undef KEYNAME
+#undef KEYCOMPARE
 #undef METHOD
 #undef CAT
 #undef CAT1
