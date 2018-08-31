@@ -235,6 +235,10 @@ XSTRPARMAP := xstrparmap.o misc.o param.o
 xstrparmap : $(XSTRPARMAP)
 	$(CC) $(CFLAGS) -o $@ $(XSTRPARMAP) $(lib)
 
+XSTRPARMAP2 := xstrparmap2.o misc.o param.o strparmap2.o
+xstrparmap2 : $(XSTRPARMAP2)
+	$(CC) $(CFLAGS) -o $@ $(XSTRPARMAP2) $(lib)
+
 xaddrparmap.o : addrparmap.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/addrparmap.c
 
