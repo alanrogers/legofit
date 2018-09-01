@@ -56,4 +56,52 @@ struct ParStore2 {
     char       *formulas[MAXPAR];    // formulas of constrained vars
 };
 
+/// Return <0, 0, or >0, as x is <, ==, or > y.
+int compareDblPtrs(const void *void_x, const void *void_y) {
+    double * const * x = (double * const *) void_x;
+    double * const * y = (double * const *) void_y;
+    return **x - **y;
+}
+
+/// Return <0, 0, or >0, as x is <, ==, or > y.
+int compareDbls(const void *void_x, const void *void_y) {
+    const double * x = (const double *) void_x;
+    const double * y = (const double *) void_y;
+    return *x - *y;
+}
+
+/// Set vector of free parameters.
+void ParStore_setFreeParams(ParStore *self, int n, double x[n]) {
+    assert(n == self->nFree);
+    memcpy(self->freeVal, x, n*sizeof(double));
+}
+
+/// Get vector of free parameters.
+void ParStore_getFreeParams(ParStore *self, int n, double x[n]) {
+    assert(n == self->nFree);
+    memcpy(x, self->freeVal, n*sizeof(double));
+}
+
+/// Print a ParStore
+void ParStore_print(ParStore *self, FILE *fp) {
+    int i;
+    Param *par;
+    fprintf(fp, "%5d fixed:\n", self->nFixed);
+    for(i=0; i < self->nFixed; ++i) {
+        par = AddrParMap_search(self->byaddr, self->fixedVal+i);
+        if(par==NULL)
+            DIE("Can't find parameter address");
+        fprintf(fp, "   %8s = %lg\n", par->name, self->fixedVal[i]);
+    }
+    fprintf(fp, "%5d Gaussian:\n", self->nGaussian);
+    for(i=0; i < self->nGaussian; ++i) {
+        par = AddrParMap_search(self->byaddr, self->gaussianVal+i);
+        if(par==NULL)
+            DIE("Can't find parameter address");
+        fprintf(fp, "   %8s = Gaussian(%lg, %lg)\n", self->nameGaussian[i],
+                par->mean, par->sd);
+    }
+    ParStore_printFree(self, fp);
+    ParStore_printConstrained(self, fp);
+}
 
