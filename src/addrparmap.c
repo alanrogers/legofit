@@ -20,7 +20,7 @@
 #include <assert.h>
 #define RED 1
 #define BLACK 0
-#define ISRED(node) ((node)->color==RED)
+#define ISRED(node) ((node)!=NULL && (node)->color==RED)
 
 struct AddrParMap {
     Param *par; // locally owned
@@ -78,7 +78,7 @@ AddrParMap *AddrParMap_insert(AddrParMap *root, Param *par) {
 AddrParMap *AddrParMap_insert_r(AddrParMap *h, Param *par) {
     if(h == NULL)
         return AddrParMap_new(par);
-    if(h->left && h->right && ISRED(h->left) && ISRED(h->right))
+    if(ISRED(h->left) && ISRED(h->right))
         AddrParMap_flipColors(h);
     if(par->valptr == h->par->valptr) {
         fprintf(stderr,"%s:%d: duplicate parameter name: %s\n",
@@ -91,9 +91,9 @@ AddrParMap *AddrParMap_insert_r(AddrParMap *h, Param *par) {
         assert(par->valptr > h->par->valptr);
         h->right = AddrParMap_insert_r(h->right, par);
     }
-    if(h->left && h->right && ISRED(h->right) && !ISRED(h->left))
+    if(ISRED(h->right) && !ISRED(h->left))
         h = AddrParMap_rotateLeft(h);
-    if(h->left && h->left->left && ISRED(h->left) && ISRED(h->left->left))
+    if(h->left && ISRED(h->left) && ISRED(h->left->left))
         h = AddrParMap_rotateRight(h);
     return h;
 }

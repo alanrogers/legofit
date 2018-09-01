@@ -20,7 +20,7 @@
 #include <string.h>
 #define RED 1
 #define BLACK 0
-#define ISRED(node) ((node)->color==RED)
+#define ISRED(node) ((node)!=NULL && (node)->color==RED)
 
 struct StrParMap {
     Param *par; // locally owned
@@ -79,7 +79,7 @@ StrParMap *StrParMap_insert(StrParMap *root, Param *par) {
 StrParMap *StrParMap_insert_r(StrParMap *h, Param *par) {
     if(h == NULL)
         return StrParMap_new(par);
-    if(h->left && h->right && ISRED(h->left) && ISRED(h->right))
+    if(ISRED(h->left) && ISRED(h->right))
         StrParMap_flipColors(h);
     int diff = strcmp(par->name, h->par->name);
     if(diff == 0) {
@@ -93,9 +93,9 @@ StrParMap *StrParMap_insert_r(StrParMap *h, Param *par) {
         assert(diff > 0);
         h->right = StrParMap_insert_r(h->right, par);
     }
-    if(h->left && h->right && ISRED(h->right) && !ISRED(h->left))
+    if(ISRED(h->right) && !ISRED(h->left))
         h = StrParMap_rotateLeft(h);
-    if(h->left && h->left->left && ISRED(h->left) && ISRED(h->left->left))
+    if(h->left && ISRED(h->left) && ISRED(h->left->left))
         h = StrParMap_rotateRight(h);
     return h;
 }

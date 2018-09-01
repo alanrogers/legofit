@@ -85,7 +85,7 @@ BSTNode *BSTNode_insert_r(BSTNode *h, bstkey_t key, val_t value) {
     }
     if(ISRED(h->right) && !ISRED(h->left))
         h = BSTNode_rotateLeft(h);
-    if(ISRED(h->left) && ISRED(h->left->left))
+    if(h->left && ISRED(h->left) && ISRED(h->left->left))
         h = BSTNode_rotateRight(h);
     return h;
 }
