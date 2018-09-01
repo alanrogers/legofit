@@ -1,5 +1,8 @@
-#ifndef LEGOFIT_STRPARMAP_H
-#define LEGOFIT_STRPARMAP_H
+/**
+   This file is meant to be included by other files, which define macros
+   METHOD, CLASS, and KEYTYPE. It can be included by more than one such
+   file in order to define more than one class.
+ */
 
 #include "typedefs.h"
 #include <stdio.h>
@@ -9,4 +12,3 @@ CLASS      *METHOD(insert)(CLASS *root, Param *par);
 void        METHOD(free)(CLASS *h);
 void        METHOD(print)(CLASS *h, FILE *fp, int indent);
 
-#endif

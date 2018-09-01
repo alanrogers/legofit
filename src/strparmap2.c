@@ -20,6 +20,7 @@
 #define CAT(A,B) CAT2(A, B)
 #define METHOD(B) CAT(CLASS,B)
 
+#include "parmap.h"
 #include "parmap.src"
 
 #undef CLASS
