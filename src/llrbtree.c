@@ -26,6 +26,7 @@ void BSTNode_free(BSTNode *h) {
         return;
     BSTNode_free(h->left);
     BSTNode_free(h->right);
+    h->left = h->right = NULL;
     free(h);
 }
 
