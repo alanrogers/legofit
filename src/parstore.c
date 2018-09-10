@@ -182,6 +182,7 @@ ParStore *ParStore_dup(const ParStore * old) {
             fprintf(stderr,"  %*s^\nError near here\n", status-1, "");
             exit(EXIT_FAILURE);
         }
+        new->dependencies[i] = StrInt_dup(old->dependencies[i]);
     }
     ParStore_sanityCheck(new, __FILE__, __LINE__);
     return new;
@@ -345,8 +346,6 @@ void ParStore_addConstrainedPar(ParStore * self, const char *str,
     }
     SET_CONSTR(i);
 }
-
-XXXXXXXXXXXXXXXXXX stopped here
 
 /// Return the number of fixed parameters
 int ParStore_nFixed(ParStore * self) {

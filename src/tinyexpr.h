@@ -20,6 +20,8 @@
  * 2. Altered source versions must be plainly marked as such, and must not be
  * misrepresented as being the original software.
  * 3. This notice may not be removed or altered from any source distribution.
+ *
+ * 2018-09-10: added StrInt parameter to argument list of te_compile.
  */
 
 #ifndef __TINYEXPR_H__
@@ -27,6 +29,7 @@
 
 #define TE_NAT_LOG
 
+#include "strint.h"
 #include <stdio.h>
 
 typedef struct te_expr {
@@ -67,7 +70,9 @@ double te_interp(const char *expression, int *error);
 
 /* Returns NULL on error. */
 te_expr *te_compile(const char *expression,
-                    const te_variable * variables, int var_count, int *error);
+                    const te_variable * variables, int var_count,
+                    StrInt *dependencies,
+                    int *error);
 
 /* Evaluates the expression. */
 double te_eval(const te_expr * n);

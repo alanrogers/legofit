@@ -5,6 +5,7 @@
 #  include <stdio.h>
 
 StrInt     *StrInt_new(void);
+StrInt     *StrInt_dup(StrInt *old);
 void        StrInt_free(StrInt * self);
 void        StrInt_insert(StrInt *self, const char *key, int value);
 int         StrInt_get(StrInt * self, const char *key);
