@@ -54,6 +54,13 @@ struct ParStore2 {
     te_expr    *constr[MAXPAR];      // controls constrainedVal entries
     te_variable te_pars[MAXPAR];
     char       *formulas[MAXPAR];    // formulas of constrained vars
+
+    // dependencies[i] records the names of the variables on which
+    // the i'th constrained variable depends. Each constrained variable
+    // must be defined in the .lgo after all its dependencies, and
+    // constrained time variables cannot depend on constrained time
+    // variables of descendants in the network of populations.
+    StrInt     *dependencies[MAXPAR];
 };
 
 /// Return <0, 0, or >0, as x is <, ==, or > y.
