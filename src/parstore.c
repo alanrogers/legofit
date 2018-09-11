@@ -208,7 +208,14 @@ void ParStore_free(ParStore * self) {
 void ParStore_addFreePar(ParStore * self, double value,
                          double lo, double hi, const char *name) {
     int         i = self->nFree;
-    int         j = self->nFree + self->nConstrained;
+
+    int n_tepar = self->nFree + self->nConstrained;
+    if(n_tepar >= MAXPAR){
+        fprintf(stderr, "%s:%s:%d: buffer overflow.\n",
+                __FILE__, __func__, __LINE__);
+        exit(EXIT_FAILURE);
+    }
+
     ParamStatus pstat;
     if(NULL != ParKeyVal_get(self->pkv, &pstat, name)) {
         fprintf(stderr,"%s:%d: Duplicate definition of parameter \"%s\".\n",
@@ -235,8 +242,8 @@ void ParStore_addFreePar(ParStore * self, double value,
     self->hiFree[i] = hi;
     self->nameFree[i] = strdup(name);
     CHECKMEM(self->nameFree[i]);
-    self->te_pars[j].name = self->nameFree[i];
-    self->te_pars[j].address = self->freeVal + i;
+    self->te_pars[n_tepar].name = self->nameFree[i];
+    self->te_pars[n_tepar].address = self->freeVal + i;
 
     // Linked list associates pointer with parameter name.
     self->pkv = ParKeyVal_add(self->pkv, name, self->freeVal + i,
@@ -305,6 +312,12 @@ void ParStore_addConstrainedPar(ParStore * self, const char *str,
                                 const char *name) {
     int status, i = self->nConstrained;
     int n_tepar = self->nFree + self->nConstrained;
+    if(n_tepar >= MAXPAR){
+        fprintf(stderr, "%s:%s:%d: buffer overflow.\n",
+                __FILE__, __func__, __LINE__);
+        exit(EXIT_FAILURE);
+    }
+    
     ParamStatus pstat;
     if(NULL != ParKeyVal_get(self->pkv, &pstat, name)) {
         fprintf(stderr,"%s:%d: Duplicate definition of parameter \"%s\".\n",
@@ -324,9 +337,11 @@ void ParStore_addConstrainedPar(ParStore * self, const char *str,
     self->nameConstrained[i] = strdup(name);
     CHECKMEM(self->nameConstrained[i]);
 
+    self->te_pars[n_tepar].name = self->nameConstrained[i];
+    self->te_pars[n_tepar].address = self->constrainedVal + i;
     self->pkv = ParKeyVal_add(self->pkv, name, self->constrainedVal + i,
 		Constrained);
-    self->constr[i] = te_compile(str, self->te_pars, n_tepars, &status);
+    self->constr[i] = te_compile(str, self->te_pars, n_tepar, &status);
     if(self->constr[i] == NULL) {
         fprintf(stderr,"%s:%d: parse error\n", __FILE__,__LINE__);
         fprintf(stderr,"  %s\n", str);
