@@ -572,6 +572,16 @@ static void PopNode_randomize_r(PopNode * self, Bounds bnd,
         PopNode_randomize_r(self->child[i], bnd, parstore, rng);
 }
 
+/// Randomly perturb all free parameters in tree while maintaining
+/// inequality constraints.
+void PopNode_randomize(PopNode * self, Bounds bnd, ParStore * parstore,
+                       gsl_rng * rng) {
+    do {
+        PopNode_untouch(self);
+        PopNode_randomize_r(self, bnd, parstore, rng);
+    } while(!PopNode_feasible(self, bnd, 0));
+}
+
 /// Reset the value of each Gaussian parameter by sampling from the
 /// relevant distribution.
 void PopNode_gaussian(PopNode * self, Bounds bnd,
@@ -651,6 +661,36 @@ static void PopNode_gaussian_r(PopNode * self, Bounds bnd,
     int         i;
     for(i = 0; i < self->nchildren; ++i)
         PopNode_gaussian_r(self->child[i], bnd, ps, rng);
+}
+
+/// Make sure that constrained variables depend only on
+void PopNode_chkDependencies(PopNode * self, ParStore * parstore) {
+    PopNode_untouch(self);
+    PopNode_chkDependencies_r(self, parstore);
+}
+
+/// Traverse the population tree to check dependencies of each
+/// constrained variable. Constrained variables can depend only
+/// on constrained variables that precede them in this traversal.
+/// Call PopNode_untouch before calling this function.
+static void PopNode_chkDependencies_r(PopNode * self, ParStore * ps) {
+
+    // If at least one parents is untouched, postpone this node.
+    if(self->nparents==2 && !(self->parent[0]->touched &&
+                             self->parent[1]->touched)) {
+        // one of the two parents hasn't been touched yet, so postpone
+        // the current node.
+        return;
+    }
+    assert(self->nparents==0 || self->parent[0]->touched);
+    assert(self->nparents<2 || self->parent[1]->touched);
+
+    // code goes here
+
+    self->touched = true;
+
+    for(int i = 0; i < self->nchildren; ++i)
+        PopNode_chkDependencies_r(self->child[i], bnd, ps, rng);
 }
 
 /// Return 1 if parameters satisfy inequality constraints, or 0 otherwise.
