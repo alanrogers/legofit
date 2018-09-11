@@ -743,9 +743,7 @@ static void optimize(te_expr * n) {
 }
 
 te_expr    *te_compile(const char *expression, const te_variable * variables,
-                       int var_count,
-                       StrInt *dependencies,
-                       int *error) {
+                       int var_count, int *error) {
     state       s;
     s.start = s.next = expression;
     s.lookup = variables;
