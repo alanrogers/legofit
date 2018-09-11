@@ -37,7 +37,6 @@ struct StrInt {
 };
 
 SILink     *SILink_new(const char *key, int value, SILink * next);
-SILink     *SILink_dup(SILink *self);
 void        SILink_free(SILink * self);
 SILink     *SILink_insert(SILink * self, const char *key, int value);
 int         SILink_get(SILink * self, const char *key);
@@ -60,16 +59,6 @@ SILink     *SILink_new(const char *key, int value, SILink * next) {
         exit(EXIT_FAILURE);
     }
 
-    return new;
-}
-
-/// Duplicate a linked list of SILink objects.
-SILink     *SILink_dup(SILink *old) {
-    if(old==NULL)
-        return NULL;
-    SILink *new = SILink_new(old->key, old->value, NULL);
-    CHECKMEM(new);
-    new->next = SILink_dup(old->next);
     return new;
 }
 
@@ -154,15 +143,6 @@ StrInt *StrInt_new(void) {
     StrInt     *new = malloc(sizeof(*new));
     CHECKMEM(new);
     memset(new, 0, sizeof(*new));
-    return new;
-}
-
-StrInt *StrInt_dup(StrInt *old) {
-    StrInt *new = StrInt_new();
-    CHECKMEM(new);
-
-    for(int i=0; i < STRINT_DIM; ++i)
-        new->tab[i] = SILink_dup(old->tab[i]);
     return new;
 }
 

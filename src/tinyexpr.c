@@ -826,3 +826,47 @@ static void pn(const te_expr * n, int depth, FILE *fp) {
 void te_print(const te_expr * n, FILE *fp) {
     pn(n, 0, fp);
 }
+
+/*
+ * Fill array "ptr" with pointers to the variables on which this
+ * expression depends. Return the number of dependent variables, which
+ * should be less than or equal to len. Abort if len is smaller than
+ * the number of dependent variables.
+ */ 
+int te_dependencies(const te_expr *self, int len, double *ptr[len]) {
+    int i, arity, n=0;
+    switch(TYPE_MASK(self->type)) {
+    case TE_VARIABLE:
+        if(len == 0) {
+            fprintf(stderr,"%s:%s:%d: buffer overflow\n",
+                    __FILE__,__func__,__LINE__);
+            exit(EXIT_FAILURE);
+        }
+        ptr[0] = self->bound;
+        n = 1;
+        break;
+    case TE_FUNCTION0:
+    case TE_FUNCTION1:
+    case TE_FUNCTION2:
+    case TE_FUNCTION3:
+    case TE_FUNCTION4:
+    case TE_FUNCTION5:
+    case TE_FUNCTION6:
+    case TE_FUNCTION7:
+    case TE_CLOSURE0:
+    case TE_CLOSURE1:
+    case TE_CLOSURE2:
+    case TE_CLOSURE3:
+    case TE_CLOSURE4:
+    case TE_CLOSURE5:
+    case TE_CLOSURE6:
+    case TE_CLOSURE7:
+        arity = ARITY(n->type);
+        for(i=0; i < arity; ++i)
+            n += te_dependencies(self->parameters[i], len-n, ptr+n);
+        break;
+    default:
+        break;
+    }
+    return n;
+}

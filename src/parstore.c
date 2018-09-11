@@ -64,13 +64,6 @@ struct ParStore {
     te_expr    *constr[MAXPAR];      // controls constrainedVal entries
     te_variable te_pars[MAXPAR];
     char       *formulas[MAXPAR];    // formulas of constrained vars
-
-    // dependencies[i] records the names of the variables on which
-    // the i'th constrained variable depends. Each constrained variable
-    // must be defined in the .lgo after all its dependencies, and
-    // constrained time variables cannot depend on constrained time
-    // variables of descendants in the network of populations.
-    StrInt     *dependencies[MAXPAR];
 };
 
 /// Return <0, 0, or >0, as x is <, ==, or > y.
@@ -182,7 +175,6 @@ ParStore *ParStore_dup(const ParStore * old) {
             fprintf(stderr,"  %*s^\nError near here\n", status-1, "");
             exit(EXIT_FAILURE);
         }
-        new->dependencies[i] = StrInt_dup(old->dependencies[i]);
     }
     ParStore_sanityCheck(new, __FILE__, __LINE__);
     return new;
@@ -205,7 +197,6 @@ void ParStore_free(ParStore * self) {
         free(self->nameConstrained[i]);
         free(self->formulas[i]);
         te_free(self->constr[i]);
-        StrInt_free(self->dependencies[i]);
     }
 
     ParKeyVal_free(self->pkv);
@@ -312,7 +303,6 @@ void ParStore_addFixedPar(ParStore * self, double value, const char *name) {
 void ParStore_addConstrainedPar(ParStore * self, const char *str,
                                 const char *name) {
     int status, i = self->nConstrained;
-    int n_tepar = i + self->nFree;
     ParamStatus pstat;
     if(NULL != ParKeyVal_get(self->pkv, &pstat, name)) {
         fprintf(stderr,"%s:%d: Duplicate definition of parameter \"%s\".\n",
@@ -331,13 +321,10 @@ void ParStore_addConstrainedPar(ParStore * self, const char *str,
     self->formulas[i] = strdup(str);
     self->nameConstrained[i] = strdup(name);
     CHECKMEM(self->nameConstrained[i]);
-    self->dependencies[i] = StrInt_new();
 
     self->pkv = ParKeyVal_add(self->pkv, name, self->constrainedVal + i,
 		Constrained);
-    self->constr[i] = te_compile(str, self->te_pars, n_tepar,
-                                 self->dependencies[i],
-                                 &status);
+    self->constr[i] = te_compile(str, self->te_pars, &status);
     if(self->constr[i] == NULL) {
         fprintf(stderr,"%s:%d: parse error\n", __FILE__,__LINE__);
         fprintf(stderr,"  %s\n", str);

@@ -80,8 +80,15 @@ double te_eval(const te_expr * n);
 /* Prints debugging information on the syntax tree. */
 void te_print(const te_expr * n, FILE * fp);
 
-/* Frees the expression. */
+/*
+ * Fill array "ptr" with pointers to the variables on which this
+ * expression depends. Return the number of dependent variables, which
+ * should be less than or equal to len. Abort if len is smaller than
+ * the number of dependent variables.
+ */ 
+int te_dependencies(const te_expr *self, int len, double *ptr[len])
 
+/* Frees the expression. */
 /* This is safe to call on NULL pointers. */
 void te_free(te_expr * n);
 
