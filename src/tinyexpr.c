@@ -831,7 +831,7 @@ void te_print(const te_expr * n, FILE *fp) {
  * should be less than or equal to len. Abort if len is smaller than
  * the number of dependent variables.
  */ 
-int te_dependencies(const te_expr *self, int len, double *ptr[len]) {
+int te_dependencies(const te_expr *self, int len, const double *ptr[len]) {
     int i, arity, n=0;
     switch(TYPE_MASK(self->type)) {
     case TE_VARIABLE:
@@ -859,7 +859,7 @@ int te_dependencies(const te_expr *self, int len, double *ptr[len]) {
     case TE_CLOSURE5:
     case TE_CLOSURE6:
     case TE_CLOSURE7:
-        arity = ARITY(n->type);
+        arity = ARITY(self->type);
         for(i=0; i < arity; ++i)
             n += te_dependencies(self->parameters[i], len-n, ptr+n);
         break;

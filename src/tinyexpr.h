@@ -67,8 +67,7 @@ double te_interp(const char *expression, int *error);
 
 /* Returns NULL on error. */
 te_expr *te_compile(const char *expression,
-                    const te_variable * variables, int var_count,
-                    int *error);
+                    const te_variable * variables, int var_count, int *error);
 
 /* Evaluates the expression. */
 double te_eval(const te_expr * n);
@@ -82,7 +81,7 @@ void te_print(const te_expr * n, FILE * fp);
  * should be less than or equal to len. Abort if len is smaller than
  * the number of dependent variables.
  */ 
-int te_dependencies(const te_expr *self, int len, double *ptr[len])
+int te_dependencies(const te_expr *self, int len, const double *ptr[len]);
 
 /* Frees the expression. */
 /* This is safe to call on NULL pointers. */
