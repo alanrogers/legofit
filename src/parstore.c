@@ -168,7 +168,8 @@ ParStore *ParStore_dup(const ParStore * old) {
                                   new->constrainedVal + i, Constrained);
         new->formulas[i] = strdup(old->formulas[i]);
         new->constr[i] = te_compile(new->formulas[i], new->te_pars,
-                                    new->nFree, &status);
+                                    new->nFree + new->nConstrained,
+                                    &status);
         if(new->constr[i] == NULL) {
             fprintf(stderr,"%s:%d: parse error\n", __FILE__,__LINE__);
             fprintf(stderr,"  %s\n", new->formulas[i]);
@@ -303,6 +304,7 @@ void ParStore_addFixedPar(ParStore * self, double value, const char *name) {
 void ParStore_addConstrainedPar(ParStore * self, const char *str,
                                 const char *name) {
     int status, i = self->nConstrained;
+    int n_tepar = self->nFree + self->nConstrained;
     ParamStatus pstat;
     if(NULL != ParKeyVal_get(self->pkv, &pstat, name)) {
         fprintf(stderr,"%s:%d: Duplicate definition of parameter \"%s\".\n",
@@ -324,7 +326,7 @@ void ParStore_addConstrainedPar(ParStore * self, const char *str,
 
     self->pkv = ParKeyVal_add(self->pkv, name, self->constrainedVal + i,
 		Constrained);
-    self->constr[i] = te_compile(str, self->te_pars, &status);
+    self->constr[i] = te_compile(str, self->te_pars, n_tepars, &status);
     if(self->constr[i] == NULL) {
         fprintf(stderr,"%s:%d: parse error\n", __FILE__,__LINE__);
         fprintf(stderr,"  %s\n", str);
