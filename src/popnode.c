@@ -703,11 +703,11 @@ static void PopNode_chkDependencies_r(PopNode * self, ParStore * ps,
 
     // Add constrained parameters of current node to "seen"
     if(ParStore_isConstrained(twoN))
-        PtrSet_push(seen, twoN);
+        PtrSet_insert(seen, twoN);
     if(ParStore_isConstrained(start))
-        PtrSet_push(seen, start);
+        PtrSet_insert(seen, start);
     if(ParStore_isConstrained(mix))
-        PtrSet_push(seen, mix);
+        PtrSet_insert(seen, mix);
 
     self->touched = true;
 
