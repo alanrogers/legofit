@@ -673,7 +673,8 @@ void PopNode_chkDependencies(PopNode * self, ParStore * parstore) {
 /// constrained variable. Constrained variables can depend only
 /// on constrained variables that precede them in this traversal.
 /// Call PopNode_untouch before calling this function.
-static void PopNode_chkDependencies_r(PopNode * self, ParStore * ps) {
+static void PopNode_chkDependencies_r(PopNode * self, ParStore * ps,
+                                      PtrSet *seen) {
 
     // If at least one parents is untouched, postpone this node.
     if(self->nparents==2 && !(self->parent[0]->touched &&
@@ -686,6 +687,12 @@ static void PopNode_chkDependencies_r(PopNode * self, ParStore * ps) {
     assert(self->nparents<2 || self->parent[1]->touched);
 
     // code goes here
+    ParStore_chkDependencies(ps, twoN, seen);
+    ParStore_chkDependencies(ps, start, seen);
+    ParStore_chkDependencies(ps, mix, seen);
+    PtrSet_push(seen, twoN);
+    PtrSet_push(seen, start);
+    PtrSet_push(seen, mix);
 
     self->touched = true;
 
