@@ -104,6 +104,9 @@ int main(int argc, char **argv) {
     ParStore_addFixedPar(ps, fixed1, "fixed1");
     ParStore_addConstrainedPar(ps, "exp(x+log(y+z))", "c");
     ParStore_constrain(ps);
+    ptr = ParStore_findPtr(ps, &pstat, "c");
+    assert(pstat == Constrained);
+    assert(ParStore_isConstrained(ps, ptr));
     assert(2 == ParStore_nFixed(ps));
     assert(3 == ParStore_nFree(ps));
     assert(1 == ParStore_nConstrained(ps));
@@ -120,6 +123,7 @@ int main(int argc, char **argv) {
     ParStore_addFixedPar(ps, val, "x");
     ptr = ParStore_findPtr(ps, &pstat, "x");
     assert(*ptr == val);
+    assert(!ParStore_isConstrained(ps, ptr));
 	assert(pstat == Fixed);
     assert(ParStore_nFixed(ps) == 1);
     assert(ParStore_nFree(ps) == 0);
@@ -146,6 +150,7 @@ int main(int argc, char **argv) {
     ParStore_addFixedPar(ps, val, "w");
     ptr = ParStore_findPtr(ps, &pstat, "w");
     assert(*ptr == val);
+    assert(!ParStore_isConstrained(ps, ptr));
 	assert(pstat == Fixed);
     assert(ParStore_nFixed(ps) == 2);
     assert(ParStore_nFree(ps) == 1);
@@ -158,6 +163,7 @@ int main(int argc, char **argv) {
     ParStore_addFreePar(ps, val, -100.0, 0.0, "z");
     ptr = ParStore_findPtr(ps, &pstat, "z");
     assert(*ptr == val);
+    assert(!ParStore_isConstrained(ps, ptr));
 	assert(pstat == Free);
     assert(ParStore_nFixed(ps) == 2);
     assert(ParStore_nFree(ps) == 2);
@@ -172,6 +178,7 @@ int main(int argc, char **argv) {
     ParStore_addFreePar(ps, val, 0.0, 1.0, "a");
     ptr = ParStore_findPtr(ps, &pstat, "a");
     assert(*ptr == val);
+    assert(!ParStore_isConstrained(ps, ptr));
 	assert(pstat == Free);
     assert(ParStore_nFixed(ps) == 2);
     assert(ParStore_nFree(ps) == 3);

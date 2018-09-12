@@ -8,6 +8,10 @@
  * knows its size and duration. It has pointers to parents and
  * children. If it has two parents, there is also a mixing parameter,
  * which determines what fraction of the node derives from each parent.
+ *
+ * @copyright Copyright (c) 2018, Alan R. Rogers
+ * <rogers@anthro.utah.edu>. This file is released under the Internet
+ * Systems Consortium License, which can be found in file "LICENSE".
  */
 
 #include "popnode.h"
@@ -15,6 +19,7 @@
 #include "misc.h"
 #include "parstore.h"
 #include "dtnorm.h"
+#include "ptrset.h"
 #include <stdbool.h>
 #include <string.h>
 #include <float.h>
@@ -32,6 +37,8 @@ static void PopNode_randomize_r(PopNode * self, Bounds bnd,
                                 ParStore * parstore, gsl_rng * rng);
 static void PopNode_gaussian_r(PopNode * self, Bounds bnd, ParStore * ps,
                                gsl_rng * rng);
+static void PopNode_chkDependencies_r(PopNode * self, ParStore * ps,
+                                      PtrSet *seen);
 
 /// Check for errors in PopNode tree. Call this from each leaf node.
 void PopNode_sanityFromLeaf(PopNode * self, const char *file, int line) {
@@ -666,7 +673,9 @@ static void PopNode_gaussian_r(PopNode * self, Bounds bnd,
 /// Make sure that constrained variables depend only on
 void PopNode_chkDependencies(PopNode * self, ParStore * parstore) {
     PopNode_untouch(self);
-    PopNode_chkDependencies_r(self, parstore);
+    PtrSet *seen = PtrSet_new();
+    PopNode_chkDependencies_r(self, parstore, seen);
+    PtrSet_free(seen);
 }
 
 /// Traverse the population tree to check dependencies of each
@@ -686,13 +695,19 @@ static void PopNode_chkDependencies_r(PopNode * self, ParStore * ps,
     assert(self->nparents==0 || self->parent[0]->touched);
     assert(self->nparents<2 || self->parent[1]->touched);
 
-    // code goes here
+    // Make sure that the dependencies of each constrained
+    // parameter are present in "seen".
     ParStore_chkDependencies(ps, twoN, seen);
     ParStore_chkDependencies(ps, start, seen);
     ParStore_chkDependencies(ps, mix, seen);
-    PtrSet_push(seen, twoN);
-    PtrSet_push(seen, start);
-    PtrSet_push(seen, mix);
+
+    // Add constrained parameters of current node to "seen"
+    if(ParStore_isConstrained(twoN))
+        PtrSet_push(seen, twoN);
+    if(ParStore_isConstrained(start))
+        PtrSet_push(seen, start);
+    if(ParStore_isConstrained(mix))
+        PtrSet_push(seen, mix);
 
     self->touched = true;
 

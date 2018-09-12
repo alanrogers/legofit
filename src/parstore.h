@@ -44,6 +44,8 @@ double     *ParStore_loBounds(ParStore * self);
 double     *ParStore_upBounds(ParStore * self);
 double     *ParStore_findPtr(ParStore * self, ParamStatus *pstat,
                              const char *name);
+void        ParStore_chkDependencies(ParStore *self, double *par,
+                                     PtrSet *seen);
 ParStore   *ParStore_dup(const ParStore * old);
 void        ParStore_sanityCheck(ParStore * self, const char *file, int line);
 void        ParStore_print(ParStore * self, FILE * fp);
@@ -52,6 +54,7 @@ void        ParStore_printConstrained(ParStore * self, FILE * fp);
 int         ParStore_equals(ParStore * lhs, ParStore * rhs);
 void        ParStore_setFreeParams(ParStore * self, int n, double x[n]);
 void        ParStore_getFreeParams(ParStore * self, int n, double x[n]);
+int         ParStore_isConstrained(const ParStore *self, double *ptr);
 void        ParStore_sample(ParStore * self, double *ptr, double low,
                             double high, gsl_rng * rng);
 

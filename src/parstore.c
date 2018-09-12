@@ -452,6 +452,75 @@ double     *ParStore_findPtr(ParStore * self, ParamStatus *pstat,
     return ParKeyVal_get(self->pkv, pstat, name);
 }
 
+void        ParStore_chkDependencies(ParStore *self, double *par,
+                                     PtrSet *seen) {
+    // Nothing to be done unless par is constrained.
+    if( !ParStore_isConstrained(self, par) )
+        return;
+
+    // index of par in array
+    int ipar = par - self->constrainedVal;
+
+    // Get list of pointers to parameters on which par depends.
+    int len = 100;
+    double * dep[len];
+    len = te_dependencies(self->formulas[ipar], len, dep);
+
+    // Check that each dependendant constrained parameter is in
+    // "seen". This implies that dependencies will be set before par
+    // is set.
+    for(int j=0; j<len; ++j) {
+        if(!ParStore_isConstrained(self, dep[j])) {
+            // dep[j] not constrained: no problem
+            continue;
+        }
+
+        // index of dep[j]
+        int idep = dep[j] - self->constrainedVal;
+        assert(idep >= 0);
+        assert(idep < self->nConstrained);
+
+        // Does par depend on itself?
+        if(ipar == idep) {
+            fprintf(stderr, "%s:%d: Error: \"%s\" depends on itself\n",
+                    __FILE__,__LINE__, self->nameConstrained[ipar]);
+            exit(EXIT_FAILURE);
+        }
+
+        // If x and y are constrained parameters and y = f(x), then x
+        // must come before y in the .lgo file.
+        if(ipar <= idep) {
+            fprintf(stderr, "%s:%d: Error: \"%s\" depends on"
+                    " \"%s\" and must come later in\n"
+                    " the .lgo file.\n",
+                    __FILE__,__LINE__,
+                    self->nameConstrained[ipar],
+                    self->nameConstrained[idep]);
+            exit(EXIT_FAILURE);
+        }
+
+        if(PtrSet_exists(seen, dep[j])) {
+            // dep[i] is set before par: no problem. 
+            continue;
+        }
+
+        // Pointer dep[j] is not in "seen", which means that it will
+        // not be set before "par" is evaluated. Print an error
+        // message and abort.
+        fprintf(stderr,"%s:%d: Error: \"%s\" depends on \"%s\".\n",
+                __FILE__,__LINE__,
+                self->nameConstrained[ipar],
+                self->nameConstrained[idep]);
+        fprintf(stderr, "   When one constrained parameter depends on"
+                " another, the dependent\n"
+                "   parameter must appear in the tree, either earlier"
+                " on the same\n"
+                "   line of descent or on a different line of descent.\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+
 void ParStore_sanityCheck(ParStore *self, const char *file, int line) {
 #ifndef NDEBUG
     REQUIRE(self, file, line);
@@ -574,6 +643,15 @@ int         ParStore_equals(ParStore *lhs, ParStore *rhs) {
             return 0;
         }
     return ParKeyVal_equals(lhs->pkv, rhs->pkv);
+}
+
+/// Return 1 if ptr is the address of a constrained parameter; 0
+/// otherwise.  
+int ParStore_isConstrained(const ParStore *self, double *ptr) {
+    if(ptr >= self->constrainedVal &&
+       ptr < self->constrainedVal + self->nConstrained)
+        return 1;
+    return 0;
 }
 
 /// Set Gaussian parameter by sampling from a truncated Gaussian
