@@ -26,6 +26,7 @@
 #include "parkeyval.h"
 #include "dtnorm.h"
 #include "tinyexpr.h"
+#include "ptrset.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -463,8 +464,8 @@ void        ParStore_chkDependencies(ParStore *self, double *par,
 
     // Get list of pointers to parameters on which par depends.
     int len = 100;
-    double * dep[len];
-    len = te_dependencies(self->formulas[ipar], len, dep);
+    const double * dep[len];
+    len = te_dependencies(self->constr[ipar], len, dep);
 
     // Check that each dependendant constrained parameter is in
     // "seen". This implies that dependencies will be set before par
@@ -647,7 +648,7 @@ int         ParStore_equals(ParStore *lhs, ParStore *rhs) {
 
 /// Return 1 if ptr is the address of a constrained parameter; 0
 /// otherwise.  
-int ParStore_isConstrained(const ParStore *self, double *ptr) {
+int ParStore_isConstrained(const ParStore *self, const double *ptr) {
     if(ptr >= self->constrainedVal &&
        ptr < self->constrainedVal + self->nConstrained)
         return 1;

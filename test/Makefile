@@ -3,11 +3,11 @@ vpath %.c ../src
 opt :=  -O0 -fno-inline-functions -DDEBUG
 prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
-tests := xaddrparmap xbinary xbma xboot xbranchtab xdafreader xrafreader \
-  xdiffev xgene xgptree xhessian xpopnodetab xjobqueue xlblndx xllrbtree \
-  xparkeyval xparse xparstore xpopnode xscrmreader xsimsched xstrdblqueue \
-  xstrint xstrdblmap xstrparmap xdtnorm xmisc xerror xstate xwraparound \
-  xpointbuff
+tests := xaddrparmap xbinary xbma xboot xbranchtab xdafreader xdiffev \
+  xdtnorm xerror xgene xgptree xhessian xjobqueue xlblndx xllrbtree \
+  xmisc xparkeyval xparse xparstore xpointbuff xpopnode xpopnodetab \
+  xptrset xrafreader xscrmreader xsimsched xstate xstrdblmap xstrdblqueue \
+  xstrint xstrparmap xtinyexpr xwraparound
 
 CC := gcc
 
@@ -43,7 +43,6 @@ test : $(tests)
 	-./xboot
 	-./xbranchtab
 	-./xdafreader
-	-./xrafreader
 	-./xdiffev
 	-./xdtnorm
 	-./xerror
@@ -60,13 +59,16 @@ test : $(tests)
 	-./xpointbuff
 	-./xpopnode
 	-./xpopnodetab
+	-./xptrset
+	-./xrafreader
 	-./xscrmreader
 	-./xsimsched
 	-./xstate
-	-./xstrint
 	-./xstrdblmap
-	-./xstrparmap
 	-./xstrdblqueue
+	-./xstrint
+	-./xstrparmap
+	-./xtinyexpr
 	-./xwraparound
 	@echo "ALL UNIT TESTS WERE COMPLETED."
 
@@ -99,6 +101,14 @@ xdtnorm : $(XDTNORM)
 XERROR := xerror.o error.o misc.o
 xerror : $(XERROR)
 	$(CC) $(CFLAGS) -o $@ $(XERROR) $(lib)
+
+XPTRSET := xptrset.o ptrset.o misc.o
+xptrset : $(XPTRSET)
+	$(CC) $(CFLAGS) -o $@ $(XPTRSET) $(lib)
+
+XTINYEXPR := xtinyexpr.o tinyexpr.o misc.o
+xtinyexpr : $(XTINYEXPR)
+	$(CC) $(CFLAGS) -o $@ $(XTINYEXPR) $(lib)
 
 XHESSIAN := xhessian.o misc.o hessian.o
 xhessian : $(XHESSIAN)
@@ -183,7 +193,7 @@ xgptree : $(XGPTREE)
 	$(CC) $(CFLAGS) -o $@ $(XGPTREE) $(lib)
 
 XPARSTORE := xparstore.o misc.o parstore.o parkeyval.o binary.o lblndx.o \
-        dtnorm.o tinyexpr.o
+        dtnorm.o tinyexpr.o ptrset.o
 xparstore : $(XPARSTORE)
 	$(CC) $(CFLAGS) -o $@ $(XPARSTORE) $(lib)
 

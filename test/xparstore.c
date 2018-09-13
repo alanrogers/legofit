@@ -9,6 +9,7 @@
 
 #include "parstore.h"
 #include "parkeyval.h"
+#include "ptrset.h"
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
@@ -95,6 +96,8 @@ int main(int argc, char **argv) {
     double val, *ptr;
     ParamStatus pstat, pstat2;
 
+    PtrSet *seen = PtrSet_new();
+
     ps = ParStore_new();
     double fixed0=99.0, fixed1=100.0;
     ParStore_addFreePar(ps, x, 0.0, 100.0, "x");
@@ -107,6 +110,8 @@ int main(int argc, char **argv) {
     ptr = ParStore_findPtr(ps, &pstat, "c");
     assert(pstat == Constrained);
     assert(ParStore_isConstrained(ps, ptr));
+    PtrSet_insert(seen, ptr);
+    ParStore_chkDependencies(ps, ptr, seen);
     assert(2 == ParStore_nFixed(ps));
     assert(3 == ParStore_nFree(ps));
     assert(1 == ParStore_nConstrained(ps));
@@ -116,6 +121,12 @@ int main(int argc, char **argv) {
     assert(fixed0 = ParStore_getFixed(ps, 0));
     assert(fixed1 = ParStore_getFixed(ps, 1));
     assert(exp(x+log(y+z)) == ParStore_getConstrained(ps, 0));
+    ParStore_addConstrainedPar(ps, "x+c", "d");
+    ParStore_constrain(ps);
+    ptr = ParStore_findPtr(ps, &pstat, "d");
+    assert(pstat == Constrained);
+    assert(ParStore_isConstrained(ps, ptr));
+    ParStore_chkDependencies(ps, ptr, seen);
     ParStore_free(ps);
 
     ps = ParStore_new();
