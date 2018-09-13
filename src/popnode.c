@@ -496,6 +496,7 @@ void PopNode_randomize(PopNode * self, Bounds bnd, ParStore * parstore,
     } while(!PopNode_feasible(self, bnd, 0));
 }
 
+/// Randomly perturb all free parameters in tree while maintaining
 /// Recurse through the tree perturbing free parameters. Must call
 /// PopNode_untouch before calling this function.
 static void PopNode_randomize_r(PopNode * self, Bounds bnd,
@@ -577,16 +578,6 @@ static void PopNode_randomize_r(PopNode * self, Bounds bnd,
     int         i;
     for(i = 0; i < self->nchildren; ++i)
         PopNode_randomize_r(self->child[i], bnd, parstore, rng);
-}
-
-/// Randomly perturb all free parameters in tree while maintaining
-/// inequality constraints.
-void PopNode_randomize(PopNode * self, Bounds bnd, ParStore * parstore,
-                       gsl_rng * rng) {
-    do {
-        PopNode_untouch(self);
-        PopNode_randomize_r(self, bnd, parstore, rng);
-    } while(!PopNode_feasible(self, bnd, 0));
 }
 
 /// Reset the value of each Gaussian parameter by sampling from the
@@ -697,22 +688,22 @@ static void PopNode_chkDependencies_r(PopNode * self, ParStore * ps,
 
     // Make sure that the dependencies of each constrained
     // parameter are present in "seen".
-    ParStore_chkDependencies(ps, twoN, seen);
-    ParStore_chkDependencies(ps, start, seen);
-    ParStore_chkDependencies(ps, mix, seen);
+    ParStore_chkDependencies(ps, self->twoN, seen);
+    ParStore_chkDependencies(ps, self->start, seen);
+    ParStore_chkDependencies(ps, self->mix, seen);
 
     // Add constrained parameters of current node to "seen"
-    if(ParStore_isConstrained(twoN))
-        PtrSet_insert(seen, twoN);
-    if(ParStore_isConstrained(start))
-        PtrSet_insert(seen, start);
-    if(ParStore_isConstrained(mix))
-        PtrSet_insert(seen, mix);
+    if(ParStore_isConstrained(ps, self->twoN))
+        PtrSet_insert(seen, self->twoN);
+    if(ParStore_isConstrained(ps, self->start))
+        PtrSet_insert(seen, self->start);
+    if(ParStore_isConstrained(ps, self->mix))
+        PtrSet_insert(seen, self->mix);
 
     self->touched = true;
 
     for(int i = 0; i < self->nchildren; ++i)
-        PopNode_chkDependencies_r(self->child[i], bnd, ps, rng);
+        PopNode_chkDependencies_r(self->child[i], ps, seen);
 }
 
 /// Return 1 if parameters satisfy inequality constraints, or 0 otherwise.

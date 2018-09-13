@@ -175,7 +175,7 @@ xpopnode.o : popnode.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/popnode.c
 
 XPOPNODE := xpopnode.o misc.o gene.o branchtab.o binary.o lblndx.o \
-   tokenizer.o parkeyval.o dtnorm.o parstore.o tinyexpr.o
+   tokenizer.o parkeyval.o dtnorm.o parstore.o tinyexpr.o ptrset.o
 xpopnode : $(XPOPNODE)
 	$(CC) $(CFLAGS) -o $@ $(XPOPNODE) $(lib)
 

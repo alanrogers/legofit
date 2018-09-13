@@ -42,6 +42,7 @@ void        PopNode_mix(PopNode * child, double *mPtr, bool mixFree,
 void        PopNode_newGene(PopNode * self, unsigned ndx);
 void        PopNode_addSample(PopNode * self, Gene * gene);
 Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng);
+void        PopNode_chkDependencies(PopNode * self, ParStore * parstore);
 int         PopNode_feasible(const PopNode *self, Bounds bnd, int verbose);
 void        PopNode_free(PopNode * self);
 void        PopNode_clear(PopNode * self);
