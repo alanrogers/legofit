@@ -1016,6 +1016,7 @@ int main(int argc, char **argv) {
     gsl_rng_set(rng, rngseed);
     PopNode_randomize(p1, bnd, ps, rng);
     gsl_rng_free(rng);
+    PopNode_chkDependencies(p1, ps);
 
     if(verbose) {
         printf("After randomization\n");
