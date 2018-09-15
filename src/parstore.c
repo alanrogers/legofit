@@ -47,6 +47,13 @@
         }                                                               \
     }while(0)
 
+#define FIXED 1
+#define CONSTRAINED 2
+#define GAUSSIAN 4
+#define TWON 8
+#define TIME 16
+#define MIX 32
+
 struct ParStore {
     int         nFixed, nFree, nGaussian, nConstrained; // num pars
     double      loFree[MAXPAR]; // lower bounds
@@ -66,20 +73,6 @@ struct ParStore {
     te_variable te_pars[MAXPAR];
     char       *formulas[MAXPAR];    // formulas of constrained vars
 };
-
-/// Return <0, 0, or >0, as x is <, ==, or > y.
-int compareDblPtrs(const void *void_x, const void *void_y) {
-    double * const * x = (double * const *) void_x;
-    double * const * y = (double * const *) void_y;
-    return **x - **y;
-}
-
-/// Return <0, 0, or >0, as x is <, ==, or > y.
-int compareDbls(const void *void_x, const void *void_y) {
-    const double * x = (const double *) void_x;
-    const double * y = (const double *) void_y;
-    return *x - *y;
-}
 
 /// Set vector of free parameters.
 void ParStore_setFreeParams(ParStore *self, int n, double x[n]) {

@@ -61,8 +61,4 @@ void        ParStore_sample(ParStore * self, double *ptr, double low,
 void        Bounds_sanityCheck(Bounds * self, const char *file, int line);
 int         Bounds_equals(const Bounds * lhs, const Bounds * rhs);
 
-int compareDblPtrs(const void *void_x, const void *void_y);
-int compareDbls(const void *void_x, const void *void_y);
-
-
 #endif
