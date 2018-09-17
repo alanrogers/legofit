@@ -50,13 +50,6 @@
 #define NEWCODE
 #ifdef NEWCODE
 
-#define FIXED 1
-#define CONSTRAINED 2
-#define GAUSSIAN 4
-#define TWON 8
-#define TIME 16
-#define MIX 32
-#define NAMESIZE 40
 
 void Param_print(Param *self, unsigned onlytype; FILE *fp);
 
@@ -77,16 +70,6 @@ struct ParStore {
     te_variable te_pars[MAXPAR];
     char       *formulas[MAXPAR];    // formulas of constrained vars
 };
-
-/// Print name and value of a Param if it is of type "onlytype"
-void Param_print(Param *self, unsigned onlytype; FILE *fp) {
-    if(self==NULL)
-        return;
-    if(self->type & onlytype)
-        fprintf(fp, "   %8s = %lg\n",
-                self->name,
-                self->value);
-}
 
 /// Set vector of free parameters.
 void ParStore_setFreeParams(ParStore *self, int n, double x[n]) {

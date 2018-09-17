@@ -19,8 +19,11 @@ struct Param {
     unsigned type;     // combinations such as FIXED | TWON
 };
 
-Param *Param_new(const char *name, double value, double low, double high,
-                 ParamStatus status);
+void Param_init(Param *self, const char *name, double value,
+                double low, double high,
+                unsigned type);
 void   Param_free(Param *self);
+void   Param_print(Param *self, unsigned onlytype; FILE *fp);
+void   Param_setGaussianParams(Param *self, double mean, double sd);
 
 #endif
