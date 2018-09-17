@@ -3,15 +3,15 @@
 #include <string.h>
 #include <stdlib.h>
 
-Param *Param_new(const char *name, double *valptr, double low, double high,
-                 ParamStatus status) {
+Param *Param_new(const char *name, double value, double low, double high,
+                 unsigned type) {
     Param *self = malloc(sizeof(Param));
     CHECKMEM(self);
     self->name = strdup(name);
-    self->valptr = valptr;
+    self->value = value;
     self->low = low;
     self->high = high;
-    self->status = status;
+    self->type = type;
     return self;
 }
 

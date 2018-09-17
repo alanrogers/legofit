@@ -47,55 +47,78 @@
         }                                                               \
     }while(0)
 
+#define NEWCODE
+#ifdef NEWCODE
+
 #define FIXED 1
 #define CONSTRAINED 2
 #define GAUSSIAN 4
 #define TWON 8
 #define TIME 16
 #define MIX 32
+#define NAMESIZE 40
+
+void Param_print(Param *self, unsigned onlytype; FILE *fp);
+
+struct Param {
+    char name[NAMESIZE];
+    double value;
+    unsigned type; // combinations such as FIXED | TWON
+    double low, high;
+    double mean, sd;
+};
 
 struct ParStore {
-    int         nFixed, nFree, nGaussian, nConstrained; // num pars
-    double      loFree[MAXPAR]; // lower bounds
-    double      hiFree[MAXPAR]; // upper bounds
-    char       *nameFixed[MAXPAR];  // Parameter names
-    char       *nameFree[MAXPAR];   // Parameter names
-    char       *nameGaussian[MAXPAR];    // Parameter names
-    char       *nameConstrained[MAXPAR]; // Parameter names
+    int nFree, nUnfree, nConstrained;
+    Param freePar[MAXPAR];
+    Param unfreePar[MAXPAR];
     ParKeyVal  *pkv;           // linked list of name/ptr pairs
-    double      fixedVal[MAXPAR];   // parameter values
-    double      freeVal[MAXPAR];    // parameter values
-    double      gaussianVal[MAXPAR]; // parameter values
-    double      constrainedVal[MAXPAR]; // parameter values
-    double      mean[MAXPAR];        // Gaussian means
-    double      sd[MAXPAR];          // Gaussian standard deviations
     te_expr    *constr[MAXPAR];      // controls constrainedVal entries
     te_variable te_pars[MAXPAR];
     char       *formulas[MAXPAR];    // formulas of constrained vars
 };
 
+/// Print name and value of a Param if it is of type "onlytype"
+void Param_print(Param *self, unsigned onlytype; FILE *fp) {
+    if(self==NULL)
+        return;
+    if(self->type & onlytype)
+        fprintf(fp, "   %8s = %lg\n",
+                self->name,
+                self->value);
+}
+
 /// Set vector of free parameters.
 void ParStore_setFreeParams(ParStore *self, int n, double x[n]) {
     assert(n == self->nFree);
-    memcpy(self->freeVal, x, n*sizeof(double));
+    for(int i=0; i < n; ++i)
+        self->freePar[i].value = x[i];
 }
 
 /// Get vector of free parameters.
 void ParStore_getFreeParams(ParStore *self, int n, double x[n]) {
     assert(n == self->nFree);
-    memcpy(x, self->freeVal, n*sizeof(double));
+    for(int i=0; i < n; ++i)
+        x[i] self->freePar[i].value;
 }
 
 /// Print a ParStore
 void ParStore_print(ParStore *self, FILE *fp) {
     int i;
-    fprintf(fp, "%5d fixed:\n", self->nFixed);
-    for(i=0; i < self->nFixed; ++i)
-        fprintf(fp, "   %8s = %lg\n", self->nameFixed[i], self->fixedVal[i]);
-    fprintf(fp, "%5d Gaussian:\n", self->nGaussian);
-    for(i=0; i < self->nGaussian; ++i)
-        fprintf(fp, "   %8s = Gaussian(%lg, %lg)\n", self->nameGaussian[i],
-                self->mean[i], self->sd[i]);
+    fprintf(fp, "Fixed:\n");
+    for(i=0; i < self->nUnfree; ++i) {
+        if(self->unfreePar[i].type & FIXED)
+            fprintf(fp, "   %8s = %lg\n",
+                    self->unfreePar[i].name,
+                    self->unfreePar[i].value);
+
+    fprintf(fp, "Gaussian:\n");
+    for(i=0; i < self->nUnfree; ++i) {
+        if(self->unfreePar[i].type & GAUSSIAN)
+            fprintf(fp, "   %8s = %lg\n",
+                    self->unfreePar[i].name,
+                    self->unfreePar[i].value);
+        
     ParStore_printFree(self, fp);
     ParStore_printConstrained(self, fp);
 }
@@ -105,18 +128,15 @@ void ParStore_printFree(ParStore *self, FILE *fp) {
     int i;
     fprintf(fp, "%5d free:\n", self->nFree);
     for(i=0; i < self->nFree; ++i)
-        fprintf(fp, "   %8s = %lg\n", self->nameFree[i], self->freeVal[i]);
+        Param_print(self->freePar+i, FREE, fp);
 }
 
 /// Print constrained parameter values
 void ParStore_printConstrained(ParStore *self, FILE *fp) {
     int i;
-    fprintf(fp, "%5d constrained:\n", self->nConstrained);
-    for(i=0; i < self->nConstrained; ++i) {
-        fprintf(fp, "   %8s = %lg = %s\n", self->nameConstrained[i],
-                self->constrainedVal[i],
-                self->formulas[i]);
-    }
+    fprintf(fp, "constrained:\n");
+    for(i=0; i < self->nUnfree; ++i)
+        Param_print(self->freePar+i, CONSTRAINED, fp);
 }
 
 /// Constructor
@@ -137,24 +157,16 @@ ParStore *ParStore_dup(const ParStore * old) {
 
     int         i;
     for(i = 0; i < new->nFree; ++i) {
-        new->nameFree[i] = strdup(old->nameFree[i]);
-        new->pkv = ParKeyVal_add(new->pkv, new->nameFree[i],
-                                  new->freeVal + i, Free);
-        new->te_pars[i].name = new->nameFree[i];
-        new->te_pars[i].address = new->freeVal + i;
+        new->pkv = ParKeyVal_add(new->pkv,
+                                 new->freePar[i].name,
+                                 new->&freePar[i].value,
+                                 Free);
     }
 
-    for(i = 0; i < new->nFixed; ++i) {
-        new->nameFixed[i] = strdup(old->nameFixed[i]);
-        new->pkv = ParKeyVal_add(new->pkv, new->nameFixed[i],
-                                  new->fixedVal + i, Fixed);
-    }
+    
 
-    for(i = 0; i < new->nGaussian; ++i) {
-        new->nameGaussian[i] = strdup(old->nameGaussian[i]);
-        new->pkv = ParKeyVal_add(new->pkv, new->nameGaussian[i],
-                                  new->gaussianVal + i, Gaussian);
-    }
+ new->te_pars[i].name = new->nameFree[i];
+ new->te_pars[i].address = new->freeVal + i;
 
     for(i = 0; i < new->nConstrained; ++i) {
         new->nameConstrained[i] = strdup(old->nameConstrained[i]);
@@ -174,6 +186,26 @@ ParStore *ParStore_dup(const ParStore * old) {
     ParStore_sanityCheck(new, __FILE__, __LINE__);
     return new;
 }
+#else
+struct ParStore {
+    int         nFixed, nFree, nGaussian, nConstrained; // num pars
+    double      loFree[MAXPAR]; // lower bounds
+    double      hiFree[MAXPAR]; // upper bounds
+    char       *nameFixed[MAXPAR];  // Parameter names
+    char       *nameFree[MAXPAR];   // Parameter names
+    char       *nameGaussian[MAXPAR];    // Parameter names
+    char       *nameConstrained[MAXPAR]; // Parameter names
+    ParKeyVal  *pkv;           // linked list of name/ptr pairs
+    double      fixedVal[MAXPAR];   // parameter values
+    double      freeVal[MAXPAR];    // parameter values
+    double      gaussianVal[MAXPAR]; // parameter values
+    double      constrainedVal[MAXPAR]; // parameter values
+    double      mean[MAXPAR];        // Gaussian means
+    double      sd[MAXPAR];          // Gaussian standard deviations
+    te_expr    *constr[MAXPAR];      // controls constrainedVal entries
+    te_variable te_pars[MAXPAR];
+    char       *formulas[MAXPAR];    // formulas of constrained vars
+};
 
 /// Destructor
 void ParStore_free(ParStore * self) {
@@ -726,3 +758,5 @@ int         Bounds_equals(const Bounds *lhs, const Bounds *rhs) {
         && lhs->lo_t == rhs->lo_t
         && lhs->hi_t == rhs->hi_t;
 }
+
+#endif
