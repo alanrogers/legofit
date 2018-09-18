@@ -10,7 +10,7 @@ void Param_init(Param *self, const char *name, double value,
     if(low > value || high < value) {
         fprintf(stderr,"%s:%d: can't initialize parameter \"%s\"."
                 " Value (%g) is not in [%lg, %lg]\n",
-                __FILE__,__LINE__, name, low, high);
+                __FILE__,__LINE__, name, value, low, high);
         exit(EXIT_FAILURE);
     }
     self->name = strdup(name);
@@ -21,8 +21,13 @@ void Param_init(Param *self, const char *name, double value,
     self->mean = self->sd = strtod("NaN", NULL);
 }
 
-void Param_setGaussianParams(Param *self, double mean, double sd) {
+void Param_setGaussian(Param *self, double mean, double sd) {
     assert(self);
+    if((self->type & GAUSSIAN) == 0) {
+        fprintf(stderr,"%s:%s:%d: parameter \"%s\" isn't Gaussian.\n",
+                __FILE__,__func__,__LINE__, self->name);
+        exit(EXIT_FAILURE);
+    }
     self->mean = mean;
     self->sd = sd;
 }
@@ -33,7 +38,7 @@ void Param_freePtrs(Param *self) {
 }
 
 /// Print name and value of a Param if it is of type "onlytype"
-void Param_print(Param *self, unsigned onlytype; FILE *fp) {
+void Param_print(Param *self, unsigned onlytype, FILE *fp) {
     if(self && (self->type & onlytype))
         fprintf(fp, "   %8s = %lg\n", self->name, self->value);
 }

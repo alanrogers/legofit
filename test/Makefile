@@ -5,7 +5,7 @@ prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
 tests := xaddrparmap xbinary xbma xboot xbranchtab xdafreader xdiffev \
   xdtnorm xerror xgene xgptree xhessian xjobqueue xlblndx xllrbtree \
-  xmisc xparkeyval xparse xparstore xpointbuff xpopnode xpopnodetab \
+  xmisc xparam xparkeyval xparse xparstore xpointbuff xpopnode xpopnodetab \
   xptrset xrafreader xscrmreader xsimsched xstate xstrdblmap xstrdblqueue \
   xstrint xstrparmap xtinyexpr xwraparound
 
@@ -53,6 +53,7 @@ test : $(tests)
 	-./xlblndx
 	-./xllrbtree
 	-./xmisc
+	-./xparam
 	-./xparkeyval
 	-./xparse
 	-./xparstore
@@ -101,6 +102,10 @@ xdtnorm : $(XDTNORM)
 XERROR := xerror.o error.o misc.o
 xerror : $(XERROR)
 	$(CC) $(CFLAGS) -o $@ $(XERROR) $(lib)
+
+XPARAM := xparam.o misc.o param.o
+xparam : $(XPARAM)
+	$(CC) $(CFLAGS) -o $@ $(XPARAM) $(lib)
 
 XPTRSET := xptrset.o ptrset.o misc.o
 xptrset : $(XPTRSET)
