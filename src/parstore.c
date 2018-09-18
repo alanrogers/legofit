@@ -23,7 +23,8 @@
  */
 
 #include "parstore.h"
-#include "parkeyval.h"
+#include "strparmap.h"
+#include "addrparmap.h"
 #include "dtnorm.h"
 #include "tinyexpr.h"
 #include "ptrset.h"
@@ -50,22 +51,12 @@
 #define NEWCODE
 #ifdef NEWCODE
 
-
-void Param_print(Param *self, unsigned onlytype; FILE *fp);
-
-struct Param {
-    char name[NAMESIZE];
-    double value;
-    unsigned type; // combinations such as FIXED | TWON
-    double low, high;
-    double mean, sd;
-};
-
 struct ParStore {
     int nFree, nUnfree, nConstrained;
     Param freePar[MAXPAR];
     Param unfreePar[MAXPAR];
-    ParKeyVal  *pkv;           // linked list of name/ptr pairs
+    StrParMap *byname;               // look up by name
+    AddrParMap *byaddr;              // look up by address of value
     te_expr    *constr[MAXPAR];      // controls constrainedVal entries
     te_variable te_pars[MAXPAR];
     char       *formulas[MAXPAR];    // formulas of constrained vars
@@ -89,19 +80,9 @@ void ParStore_getFreeParams(ParStore *self, int n, double x[n]) {
 void ParStore_print(ParStore *self, FILE *fp) {
     int i;
     fprintf(fp, "Fixed:\n");
-    for(i=0; i < self->nUnfree; ++i) {
-        if(self->unfreePar[i].type & FIXED)
-            fprintf(fp, "   %8s = %lg\n",
-                    self->unfreePar[i].name,
-                    self->unfreePar[i].value);
+    for(i=0; i < self->nUnfree; ++i)
+        Param_print(self->unfreePar + i, FIXED, fp);
 
-    fprintf(fp, "Gaussian:\n");
-    for(i=0; i < self->nUnfree; ++i) {
-        if(self->unfreePar[i].type & GAUSSIAN)
-            fprintf(fp, "   %8s = %lg\n",
-                    self->unfreePar[i].name,
-                    self->unfreePar[i].value);
-        
     ParStore_printFree(self, fp);
     ParStore_printConstrained(self, fp);
 }
@@ -119,7 +100,7 @@ void ParStore_printConstrained(ParStore *self, FILE *fp) {
     int i;
     fprintf(fp, "constrained:\n");
     for(i=0; i < self->nUnfree; ++i)
-        Param_print(self->freePar+i, CONSTRAINED, fp);
+        Param_print(self->unfreePar+i, CONSTRAINED, fp);
 }
 
 /// Constructor
@@ -136,38 +117,56 @@ ParStore *ParStore_dup(const ParStore * old) {
     assert(old);
     int status;
     ParStore   *new = memdup(old, sizeof(ParStore));
-    new->pkv = NULL;
+    new->byname = new->byaddr = NULL;
 
-    int         i;
+    int i, j=0, k=0;
     for(i = 0; i < new->nFree; ++i) {
-        new->pkv = ParKeyVal_add(new->pkv,
-                                 new->freePar[i].name,
-                                 new->&freePar[i].value,
-                                 Free);
+        new->byname = StrParMap_insert(new->byname,
+                                       new->freePar + i);
+        new->byaddr = AddrParMap_insert(new->byaddr,
+                                        new->freePar + i);
+        new->te_pars[j].name = new->freePar[i].name;
+        new->te_pars[j++].address = &new->freePar[i].value;
     }
 
-    
+    for(i = 0; i < new->nUnfree; ++i) {
 
- new->te_pars[i].name = new->nameFree[i];
- new->te_pars[i].address = new->freeVal + i;
+        // skip parameters that are not CONSTRAINED
+        if( !(new->unfreePar[i].type & CONSTRAINED) )
+            continue;
 
-    for(i = 0; i < new->nConstrained; ++i) {
-        new->nameConstrained[i] = strdup(old->nameConstrained[i]);
-        new->pkv = ParKeyVal_add(new->pkv, new->nameConstrained[i],
-                                  new->constrainedVal + i, Constrained);
-        new->formulas[i] = strdup(old->formulas[i]);
-        new->constr[i] = te_compile(new->formulas[i], new->te_pars,
-                                    new->nFree + new->nConstrained,
-                                    &status);
-        if(new->constr[i] == NULL) {
+        new->te_pars[j].name = new->unfreePar[i].name;
+        new->te_pars[j++].address = &new->unfreePar[i].value;
+        new->formulas[k] = strdup(old->formulas[k]);
+        new->constr[k] = te_compile(new->formulas[k], new->te_pars,
+                                    new->nFree + k + 1, &status);
+        if(new->constr[k] == NULL) {
             fprintf(stderr,"%s:%d: parse error\n", __FILE__,__LINE__);
-            fprintf(stderr,"  %s\n", new->formulas[i]);
+            fprintf(stderr,"  %s\n", new->formulas[k]);
             fprintf(stderr,"  %*s^\nError near here\n", status-1, "");
             exit(EXIT_FAILURE);
         }
+        ++k;
     }
+    assert(k == new->nConstrained);
+    assert(j == new->nFree + new->nConstrained);
     ParStore_sanityCheck(new, __FILE__, __LINE__);
     return new;
+}
+
+/// Destructor
+void ParStore_free(ParStore * self) {
+    int         i;
+
+    StrParMap_free(self->byname);
+    AddrParMap_free(self->byaddr);
+
+    for(i = 0; i < self->nFree; ++i)
+        Param_freePtrs(self->freeParam + i);
+
+    for(i = 0; i < self->nUnfree; ++i)
+        Param_freePtrs(self->unfreeParam + i);
+    free(self);
 }
 #else
 struct ParStore {
@@ -190,28 +189,6 @@ struct ParStore {
     char       *formulas[MAXPAR];    // formulas of constrained vars
 };
 
-/// Destructor
-void ParStore_free(ParStore * self) {
-    int         i;
-
-    for(i = 0; i < self->nFixed; ++i)
-        free(self->nameFixed[i]);
-
-    for(i = 0; i < self->nFree; ++i)
-        free(self->nameFree[i]);
-
-    for(i = 0; i < self->nGaussian; ++i)
-        free(self->nameGaussian[i]);
-
-    for(i=0; i < self->nConstrained; ++i) {
-        free(self->nameConstrained[i]);
-        free(self->formulas[i]);
-        te_free(self->constr[i]);
-    }
-
-    ParKeyVal_free(self->pkv);
-    free(self);
-}
 
 /// Add free parameter to ParStore.
 void ParStore_addFreePar(ParStore * self, double value,
