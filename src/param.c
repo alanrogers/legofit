@@ -8,7 +8,7 @@ void Param_init(Param *self, const char *name, double value,
                  unsigned type) {
     assert(self);
     if(low > value || high < value) {
-        fprintf(stderr,"%s:%d: can't initialize parameter \"%s\"."
+        fprintf(stderr,"%s:%d: can't initialize parameter \"%s\".\n"
                 " Value (%g) is not in [%lg, %lg]\n",
                 __FILE__,__LINE__, name, value, low, high);
         exit(EXIT_FAILURE);
@@ -18,18 +18,6 @@ void Param_init(Param *self, const char *name, double value,
     self->low = low;
     self->high = high;
     self->type = type;
-    self->mean = self->sd = strtod("NaN", NULL);
-}
-
-void Param_setGaussian(Param *self, double mean, double sd) {
-    assert(self);
-    if((self->type & GAUSSIAN) == 0) {
-        fprintf(stderr,"%s:%s:%d: parameter \"%s\" isn't Gaussian.\n",
-                __FILE__,__func__,__LINE__, self->name);
-        exit(EXIT_FAILURE);
-    }
-    self->mean = mean;
-    self->sd = sd;
 }
 
 // frees only memory allocated within Param, not Param itself

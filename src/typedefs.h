@@ -20,8 +20,6 @@ typedef struct LblNdx LblNdx;
 typedef struct NameList NameList;
 typedef struct NodeStore NodeStore;
 typedef struct Param Param;
-typedef enum   ParamStatus ParamStatus;
-typedef enum   ParamType ParamType;
 typedef struct ParKeyVal ParKeyVal;
 typedef struct ParStore ParStore;
 typedef struct Point Point;
@@ -39,18 +37,6 @@ typedef struct StrParMap StrParMap;
 typedef struct Tokenizer Tokenizer;
 typedef struct DAFReader DAFReader;
 typedef struct RAFReader RAFReader;
-
-/// Distinguish between parameters that free, fixed, Gaussian, or
-/// constrained.  Free parameters can be changed during optimization;
-/// fixed ones never change; Gaussian ones are reset for each
-/// simulation replicate by sampling from a truncated normal
-/// distribution; Constrained ones are functions of one or more free
-/// parameters.
-enum ParamStatus {Free, Fixed, Gaussian, Constrained};
-
-/// Distinguish between parameters that describe population size,
-/// time, and gene flow.
-enum ParamType { TwoN, Time, MixFrac };
 
 #if 1
 #  define TIPID_SIZE 32
