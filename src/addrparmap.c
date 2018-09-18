@@ -13,7 +13,6 @@
  */
 #include "addrparmap.h"
 #include "param.h"
-#include "strparmap.h"
 #include "misc.h"
 #include <stdlib.h>
 #include <stdio.h>
@@ -23,7 +22,7 @@
 #define ISRED(node) ((node)!=NULL && (node)->color==RED)
 
 struct AddrParMap {
-    Param *par; // locally owned
+    Param *par; // not locally owned
     int color;
     AddrParMap *left, *right;
 };
@@ -39,7 +38,6 @@ void AddrParMap_free(AddrParMap *h) {
         return;
     AddrParMap_free(h->left);
     AddrParMap_free(h->right);
-    Param_free(h->par);
     free(h);
 }
 
@@ -50,7 +48,7 @@ AddrParMap *AddrParMap_new(Param *par) {
                 __FILE__, __LINE__);
         exit(EXIT_FAILURE);
     }
-    self->par = par;
+    self->par = par;  // no copy because par is not locally owned
     self->color = RED;
     self->left = self->right = NULL;
     return self;
@@ -59,9 +57,9 @@ AddrParMap *AddrParMap_new(Param *par) {
 Param *AddrParMap_search(AddrParMap *root, double *valptr) {
     AddrParMap *x = root;
     while(x != NULL) {
-        if(valptr == x->par->valptr)
+        if(valptr == &x->par->value)
             return x->par;
-        else if(valptr < x->par->valptr)
+        else if(valptr < &x->par->value)
             x = x->left;
         else
             x = x->right;
@@ -80,15 +78,15 @@ AddrParMap *AddrParMap_insert_r(AddrParMap *h, Param *par) {
         return AddrParMap_new(par);
     if(ISRED(h->left) && ISRED(h->right))
         AddrParMap_flipColors(h);
-    if(par->valptr == h->par->valptr) {
-        fprintf(stderr,"%s:%d: duplicate parameter name: %s\n",
+    if(&par->value == &h->par->value) {
+        fprintf(stderr,"%s:%d: duplicate value pointer: %s\n",
                 __FILE__,__LINE__, par->name);
         exit(EXIT_FAILURE);
     }
-    if( par->valptr < h->par->valptr )
+    if( &par->value < &h->par->value )
         h->left = AddrParMap_insert_r(h->left, par);
     else {
-        assert(par->valptr > h->par->valptr);
+        assert(&par->value > &h->par->value);
         h->right = AddrParMap_insert_r(h->right, par);
     }
     if(ISRED(h->right) && !ISRED(h->left))
@@ -140,10 +138,9 @@ void AddrParMap_print(AddrParMap *h, FILE *fp, int indent) {
     for(i=0; i<indent; ++i)
         fprintf(fp,"%d", i);
 
-    // This fprintf statement must be modified to reflect
-    // the definitions of bstkey_t and val_t.
+    // Printing address of value, because that's the sort key.
     fprintf(fp, "[%p, %s, %s]\n",
-            h->par->valptr,
+            &h->par->value,
             h->par->name,
             h->color==RED ? "red" : "black");
     AddrParMap_print(h->right, fp, indent+1);
@@ -161,15 +158,20 @@ int main(int argc, char **argv) {
         verbose = 1;
     }
 
-    double a[] = {0.0, 1.0, 2.0, 3.0};
+    double a[] = {0.0, 1.0, 2.0, 0.5};
+
+    Param parvec[4];
+    Param_init(parvec+0, "par0", a[0], 0.0, 1.0, FREE | MIX);
+    Param_init(parvec+1, "par1", a[1], -INFINITY, INFINITY,
+               CONSTRAINED | GENERAL);
+    Param_init(parvec+2, "par2", a[2], 1.0, 1e6, FIXED | TWON);
+    Param_init(parvec+3, "par3", a[3], -1.0, 1.0, CONSTRAINED | GENERAL);
 
     AddrParMap *root = NULL;
-
-    root = AddrParMap_insert(root, Param_new("par0", a+0, 0.0, 1.0, Free) );
-    root = AddrParMap_insert(root, Param_new("par1", a+1, -INFINITY, INFINITY,
-                                       Constrained) );
-    root = AddrParMap_insert(root, Param_new("par2", a+2, 1.0, 1e6, Fixed) );
-    root = AddrParMap_insert(root, Param_new("par3", a+3, -1.0, 1.0, Gaussian) );
+    root = AddrParMap_insert(root, parvec+0);
+    root = AddrParMap_insert(root, parvec+1);
+    root = AddrParMap_insert(root, parvec+2);
+    root = AddrParMap_insert(root, parvec+3);
 
     if(verbose)
         AddrParMap_print(root, stdout, 0);
@@ -177,24 +179,24 @@ int main(int argc, char **argv) {
     // Search for nodes that exist. Each search should succeed.
     Param *par;
 
-    par = AddrParMap_search(root, a+0);
+    par = AddrParMap_search(root, &parvec[0].value);
     assert(par);
     assert(strcmp(par->name, "par0") == 0);
 
-    par = AddrParMap_search(root, a+1);
+    par = AddrParMap_search(root, &parvec[1].value);
     assert(par);
     assert(strcmp(par->name, "par1") == 0);
     
-    par = AddrParMap_search(root, a+2);
+    par = AddrParMap_search(root, &parvec[2].value);
     assert(par);
     assert(strcmp(par->name, "par2") == 0);
 
-    par = AddrParMap_search(root, a+3);
+    par = AddrParMap_search(root, &parvec[3].value);
     assert(par);
     assert(strcmp(par->name, "par3") == 0);
 
     // Search for nodes that don't exist. Each search should fail.
-    par = AddrParMap_search(root, a+10);
+    par = AddrParMap_search(root, 1lu + &parvec[3].value);
     assert(par == NULL);
 
     AddrParMap_free(root);
