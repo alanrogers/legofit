@@ -33,6 +33,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <assert.h>
+#include <float.h>
 
 // Set value of i'th constraint. Abort with an error message if result is
 // NaN.
@@ -168,6 +169,122 @@ void ParStore_free(ParStore * self) {
         Param_freePtrs(self->unfreeParam + i);
     free(self);
 }
+
+/// Add a free parameter to ParStore.
+void ParStore_addFreePar(ParStore * self, double value,
+                         double lo, double hi, const char *name) {
+    Param *par = StrParMap_search(self->byname, name);
+    if(par) {
+        fprintf(stderr,"%s:%d: Duplicate definition of parameter \"%s\".\n",
+                __FILE__,__LINE__, name);
+        exit(EXIT_FAILURE);
+    }
+    int n_tepar = self->nFree + self->nConstrained;
+    if(n_tepar >= MAXPAR){
+        fprintf(stderr, "%s:%s:%d: buffer overflow.\n",
+                __FILE__, __func__, __LINE__);
+        exit(EXIT_FAILURE);
+    }
+
+    int i = self->nFree;
+    if(++self->nFree >= MAXPAR) {
+        fprintf(stderr, "%s:%s:%d: buffer overflow."
+                " nFree=%d. MAXPAR=%d."
+                " Increase MAXPAR and recompile.\n",
+                __FILE__, __func__, __LINE__, self->nFree, MAXPAR);
+        exit(1);
+    }
+
+    Param_init(self->freePar + i, name, value, low, high, FREE);
+    self->byname = StrParMap_insert(self->byname, self->freePar + i);
+    self->addr = AddrParMap_insert(self->addr, self->freePar + i);
+
+    self->te_pars[n_tepar].name = self->freePar[i].name;
+    self->te_pars[n_tepar].address = &self->freePar[i].value;
+}
+
+/// Add fixed parameter to ParStore.
+void ParStore_addFixedPar(ParStore * self, double value, const char *name) {
+    Param *par = StrParMap_search(self->byname, name);
+    if(par) {
+        fprintf(stderr,"%s:%d: Duplicate definition of parameter \"%s\".\n",
+                __FILE__,__LINE__, name);
+        exit(EXIT_FAILURE);
+    }
+
+    int i = self->nUnfree;
+    if(++self->nUnfree >= MAXPAR) {
+        fprintf(stderr, "%s:%s:%d: buffer overflow."
+                " nUnfree=%d. MAXPAR=%d."
+                " Increase MAXPAR and recompile.\n",
+                __FILE__, __func__, __LINE__, self->nUnfree, MAXPAR);
+        exit(EXIT_FAILURE);
+    }
+
+    // For fixed parameters, the lower and upper bounds equal the
+    // parameter value.
+    Param_init(self->unfreePar + i, name, value, value, value, FIXED);
+    self->byname = StrParMap_insert(self->byname, self->unfreePar + i);
+    self->addr = AddrParMap_insert(self->addr, self->unfreePar + i);
+}
+
+/// Add constrained parameter to ParStore.
+void ParStore_addConstrainedPar(ParStore * self, const char *str,
+                                const char *name) {
+    Param *par = StrParMap_search(self->byname, name);
+    if(par) {
+        fprintf(stderr,"%s:%d: Duplicate definition of parameter \"%s\".\n",
+                __FILE__,__LINE__, name);
+        exit(EXIT_FAILURE);
+    }
+
+    int i = self->nUnfree;
+    int j = self->nConstrained;
+    int n_tepar = self->nFree + self->nConstrained;
+    if(++self->nUnfree >= MAXPAR) {
+        fprintf(stderr, "%s:%s:%d: buffer overflow."
+                " nUnfree=%d. MAXPAR=%d."
+                " Increase MAXPAR and recompile.\n",
+                __FILE__, __func__, __LINE__, self->nUnfree, MAXPAR);
+        exit(EXIT_FAILURE);
+    }
+    if(++self->nConstrained >= MAXPAR) {
+        fprintf(stderr, "%s:%s:%d: buffer overflow."
+                " nConstrained=%d. MAXPAR=%d."
+                " Increase MAXPAR and recompile.\n",
+                __FILE__, __func__, __LINE__, self->nConstrained, MAXPAR);
+        exit(EXIT_FAILURE);
+    }
+    if(n_tepar >= MAXPAR){
+        fprintf(stderr, "%s:%s:%d: buffer overflow.\n",
+                __FILE__, __func__, __LINE__);
+        exit(EXIT_FAILURE);
+    }
+
+    Param_init(self->unfreePar + i, name, value, DBL_MAX, DBL_MIN,
+               CONSTRAINED);
+    self->byname = StrParMap_insert(self->byname, self->unfreePar + i);
+    self->addr = AddrParMap_insert(self->addr, self->unfreePar + i);
+
+    self->te_pars[n_tepar].name = self->freePar[i].name;
+    self->te_pars[n_tepar].address = &self->freePar[i].value;
+
+    self->formulas[j] = strdup(str);
+    CHECKMEM(self->formulas[j]);
+
+    int status;
+    self->te_pars[n_tepar].name = self->nameConstrained[i];
+    self->te_pars[n_tepar].address = self->constrainedVal + i;
+    self->constr[j] = te_compile(str, self->te_pars, n_tepar, &status);
+    if(self->constr[j] == NULL) {
+        fprintf(stderr,"%s:%d: parse error\n", __FILE__,__LINE__);
+        fprintf(stderr,"  %s\n", str);
+        fprintf(stderr,"  %*s^\nError near here\n", status-1, "");
+        exit(EXIT_FAILURE);
+    }
+    SET_CONSTR(i);
+}
+
 #else
 struct ParStore {
     int         nFixed, nFree, nGaussian, nConstrained; // num pars
@@ -188,154 +305,6 @@ struct ParStore {
     te_variable te_pars[MAXPAR];
     char       *formulas[MAXPAR];    // formulas of constrained vars
 };
-
-
-/// Add free parameter to ParStore.
-void ParStore_addFreePar(ParStore * self, double value,
-                         double lo, double hi, const char *name) {
-    int         i = self->nFree;
-
-    int n_tepar = self->nFree + self->nConstrained;
-    if(n_tepar >= MAXPAR){
-        fprintf(stderr, "%s:%s:%d: buffer overflow.\n",
-                __FILE__, __func__, __LINE__);
-        exit(EXIT_FAILURE);
-    }
-
-    ParamStatus pstat;
-    if(NULL != ParKeyVal_get(self->pkv, &pstat, name)) {
-        fprintf(stderr,"%s:%d: Duplicate definition of parameter \"%s\".\n",
-                __FILE__,__LINE__, name);
-        exit(EXIT_FAILURE);
-    }
-
-    if(++self->nFree >= MAXPAR) {
-        fprintf(stderr, "%s:%s:%d: buffer overflow."
-                " nFree=%d. MAXPAR=%d."
-                " Increase MAXPAR and recompile.\n",
-                __FILE__, __func__, __LINE__, self->nFree, MAXPAR);
-        exit(1);
-    }
-
-    if(value < lo || value > hi) {
-        fprintf(stderr,"%s:%s:%d: value (%lf) not in range [%lf,%lf]\n",
-                __FILE__, __func__, __LINE__, value, lo, hi);
-        exit(1);
-    }
-
-    self->freeVal[i] = value;
-    self->loFree[i] = lo;
-    self->hiFree[i] = hi;
-    self->nameFree[i] = strdup(name);
-    CHECKMEM(self->nameFree[i]);
-    self->te_pars[n_tepar].name = self->nameFree[i];
-    self->te_pars[n_tepar].address = self->freeVal + i;
-
-    // Linked list associates pointer with parameter name.
-    self->pkv = ParKeyVal_add(self->pkv, name, self->freeVal + i,
-							   Free);
-}
-
-/// Add Gaussian parameter to ParStore.
-void ParStore_addGaussianPar(ParStore * self, double mean, double sd,
-                             const char *name) {
-    int         i = self->nGaussian;
-    ParamStatus pstat;
-    if(NULL != ParKeyVal_get(self->pkv, &pstat, name)) {
-        fprintf(stderr,"%s:%d: Duplicate definition of parameter \"%s\".\n",
-                __FILE__,__LINE__, name);
-        exit(EXIT_FAILURE);
-    }
-
-    if(++self->nGaussian >= MAXPAR) {
-        fprintf(stderr, "%s:%s:%d: buffer overflow."
-                " nGaussian=%d. MAXPAR=%d."
-                " Increase MAXPAR and recompile.\n",
-                __FILE__, __func__, __LINE__, self->nGaussian, MAXPAR);
-        exit(1);
-    }
-
-    assert(mean >= 0.0);
-    assert(sd >= 0.0);
-
-    self->gaussianVal[i] = self->mean[i] = mean;
-    self->sd[i] = sd;
-    self->nameGaussian[i] = strdup(name);
-    CHECKMEM(self->nameGaussian[i]);
-
-    // Linked list associates pointer with parameter name.
-    self->pkv = ParKeyVal_add(self->pkv, name, self->gaussianVal + i,
-							   Gaussian);
-}
-
-/// Add fixed parameter to ParStore.
-void ParStore_addFixedPar(ParStore * self, double value, const char *name) {
-    int         i = self->nFixed;
-    ParamStatus pstat;
-    if(NULL != ParKeyVal_get(self->pkv, &pstat, name)) {
-        fprintf(stderr,"%s:%d: Duplicate definition of parameter \"%s\".\n",
-                __FILE__,__LINE__, name);
-        exit(EXIT_FAILURE);
-    }
-
-    if(++self->nFixed >= MAXPAR)
-        eprintf("%s:%s:%d: buffer overflow."
-                " nFixed=%d. MAXPAR=%d."
-                " Increase MAXPAR and recompile.\n",
-                __FILE__, __func__, __LINE__, self->nFixed, MAXPAR);
-
-    self->fixedVal[i] = value;
-    self->nameFixed[i] = strdup(name);
-    CHECKMEM(self->nameFixed[i]);
-
-    // Linked list associates pointer with parameter name.
-    self->pkv = ParKeyVal_add(self->pkv, name, self->fixedVal + i,
-		Fixed);
-}
-
-/// Add constrained parameter to ParStore.
-void ParStore_addConstrainedPar(ParStore * self, const char *str,
-                                const char *name) {
-    int status, i = self->nConstrained;
-    int n_tepar = self->nFree + self->nConstrained;
-    if(n_tepar >= MAXPAR){
-        fprintf(stderr, "%s:%s:%d: buffer overflow.\n",
-                __FILE__, __func__, __LINE__);
-        exit(EXIT_FAILURE);
-    }
-    
-    ParamStatus pstat;
-    if(NULL != ParKeyVal_get(self->pkv, &pstat, name)) {
-        fprintf(stderr,"%s:%d: Duplicate definition of parameter \"%s\".\n",
-                __FILE__,__LINE__, name);
-        exit(EXIT_FAILURE);
-    }
-
-    if(++self->nConstrained >= MAXPAR) {
-        fprintf(stderr, "%s:%s:%d: buffer overflow."
-                " nConstrained=%d. MAXPAR=%d."
-                " Increase MAXPAR and recompile.\n",
-                __FILE__, __func__, __LINE__, self->nConstrained, MAXPAR);
-        exit(EXIT_FAILURE);
-    }
-
-    self->formulas[i] = strdup(str);
-    self->nameConstrained[i] = strdup(name);
-    CHECKMEM(self->nameConstrained[i]);
-
-    self->te_pars[n_tepar].name = self->nameConstrained[i];
-    self->te_pars[n_tepar].address = self->constrainedVal + i;
-    self->pkv = ParKeyVal_add(self->pkv, name, self->constrainedVal + i,
-		Constrained);
-    self->constr[i] = te_compile(str, self->te_pars, n_tepar, &status);
-    if(self->constr[i] == NULL) {
-        fprintf(stderr,"%s:%d: parse error\n", __FILE__,__LINE__);
-        fprintf(stderr,"  %s\n", str);
-        fprintf(stderr,"  %*s^\nError near here\n", status-1, "");
-        exit(EXIT_FAILURE);
-    }
-    SET_CONSTR(i);
-}
 
 /// Return the number of fixed parameters
 int ParStore_nFixed(ParStore * self) {

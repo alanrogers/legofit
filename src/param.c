@@ -14,6 +14,7 @@ void Param_init(Param *self, const char *name, double value,
         exit(EXIT_FAILURE);
     }
     self->name = strdup(name);
+    CHECKMEM(self->name);
     self->value = value;
     self->low = low;
     self->high = high;
