@@ -19,11 +19,16 @@ void Param_init(Param *self, const char *name, double value,
     self->low = low;
     self->high = high;
     self->type = type;
+    self->formula = self->constr = NULL;
 }
 
 // frees only memory allocated within Param, not Param itself
 void Param_freePtrs(Param *self) {
     free(self->name);
+    if(self->formula)
+        free(self->formula);
+    if(self->constr)
+        te_free(self->constr);
 }
 
 /// Print name and value of a Param if it is of type "onlytype"

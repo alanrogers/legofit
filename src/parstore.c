@@ -35,16 +35,15 @@
 #include <assert.h>
 #include <float.h>
 
-// Set value of i'th constraint. Abort with an error message if result is
-// NaN.
-#define SET_CONSTR(i) do {                                              \
-        self->constrainedVal[(i)] = te_eval(self->constr[(i)]);         \
-        if(isnan(self->constrainedVal[(i)])) {                          \
+// Set value of constrained variable. Abort with an error message if
+// result is NaN.
+#define SET_CONSTR(par) do {                                            \
+        (par)->value = te_eval((par)->constr);                          \
+        if(isnan((par)->value) {                                        \
             fprintf(stderr,"%s:%d: constraint returned NaN\n",          \
                     __FILE__,__LINE__);                                 \
             fprintf(stderr,"formula: %s = %s\n",                        \
-                    self->nameConstrained[(i)], self->formulas[(i)]);   \
-            ParStore_printFree(self, stderr);                           \
+                    (par)->name, (par)->formula);                       \
             exit(EXIT_FAILURE);                                         \
         }                                                               \
     }while(0)
@@ -58,9 +57,7 @@ struct ParStore {
     Param unfreePar[MAXPAR];
     StrParMap *byname;               // look up by name
     AddrParMap *byaddr;              // look up by address of value
-    te_expr    *constr[MAXPAR];      // controls constrainedVal entries
-    te_variable te_pars[MAXPAR];
-    char       *formulas[MAXPAR];    // formulas of constrained vars
+    te_variable *te_pars;
 };
 
 /// Set vector of free parameters.
@@ -74,7 +71,7 @@ void ParStore_setFreeParams(ParStore *self, int n, double x[n]) {
 void ParStore_getFreeParams(ParStore *self, int n, double x[n]) {
     assert(n == self->nFree);
     for(int i=0; i < n; ++i)
-        x[i] self->freePar[i].value;
+        x[i] = self->freePar[i].value;
 }
 
 /// Print a ParStore
@@ -122,35 +119,29 @@ ParStore *ParStore_dup(const ParStore * old) {
 
     int i, j=0, k=0;
     for(i = 0; i < new->nFree; ++i) {
-        new->byname = StrParMap_insert(new->byname,
-                                       new->freePar + i);
-        new->byaddr = AddrParMap_insert(new->byaddr,
-                                        new->freePar + i);
-        new->te_pars[j].name = new->freePar[i].name;
-        new->te_pars[j++].address = &new->freePar[i].value;
+        new->byname = StrParMap_insert(new->byname, new->freePar + i);
+        new->byaddr = AddrParMap_insert(new->byaddr, new->freePar + i);
+        new->te_pars = te_variable_push(new->te_pars, new->freePar[i].name,
+                                        &new->freePar[i].value);
     }
 
     for(i = 0; i < new->nUnfree; ++i) {
+        Param *par = new->unfreePar + i;
 
         // skip parameters that are not CONSTRAINED
-        if( !(new->unfreePar[i].type & CONSTRAINED) )
+        if( !(par->type & CONSTRAINED) )
             continue;
 
-        new->te_pars[j].name = new->unfreePar[i].name;
-        new->te_pars[j++].address = &new->unfreePar[i].value;
-        new->formulas[k] = strdup(old->formulas[k]);
-        new->constr[k] = te_compile(new->formulas[k], new->te_pars,
-                                    new->nFree + k + 1, &status);
-        if(new->constr[k] == NULL) {
+        new->te_pars = te_variable_push(new->te_pars, par->name, &par->value);
+        par->formula = strdup(old->unfreePar[i].formula);
+        par->constr = te_compile(par->formula, new->te_pars, &status);
+        if(par->constr == NULL) {
             fprintf(stderr,"%s:%d: parse error\n", __FILE__,__LINE__);
-            fprintf(stderr,"  %s\n", new->formulas[k]);
+            fprintf(stderr,"  %s\n", par->formula);
             fprintf(stderr,"  %*s^\nError near here\n", status-1, "");
             exit(EXIT_FAILURE);
         }
-        ++k;
     }
-    assert(k == new->nConstrained);
-    assert(j == new->nFree + new->nConstrained);
     ParStore_sanityCheck(new, __FILE__, __LINE__);
     return new;
 }
@@ -179,12 +170,6 @@ void ParStore_addFreePar(ParStore * self, double value,
                 __FILE__,__LINE__, name);
         exit(EXIT_FAILURE);
     }
-    int n_tepar = self->nFree + self->nConstrained;
-    if(n_tepar >= MAXPAR){
-        fprintf(stderr, "%s:%s:%d: buffer overflow.\n",
-                __FILE__, __func__, __LINE__);
-        exit(EXIT_FAILURE);
-    }
 
     int i = self->nFree;
     if(++self->nFree >= MAXPAR) {
@@ -199,8 +184,9 @@ void ParStore_addFreePar(ParStore * self, double value,
     self->byname = StrParMap_insert(self->byname, self->freePar + i);
     self->addr = AddrParMap_insert(self->addr, self->freePar + i);
 
-    self->te_pars[n_tepar].name = self->freePar[i].name;
-    self->te_pars[n_tepar].address = &self->freePar[i].value;
+    self->te_pars = te_variable_push(self->te_pars,
+                                     self->freePar[i].name,
+                                     &self->freePar[i].value);
 }
 
 /// Add fixed parameter to ParStore.
@@ -239,8 +225,6 @@ void ParStore_addConstrainedPar(ParStore * self, const char *str,
     }
 
     int i = self->nUnfree;
-    int j = self->nConstrained;
-    int n_tepar = self->nFree + self->nConstrained;
     if(++self->nUnfree >= MAXPAR) {
         fprintf(stderr, "%s:%s:%d: buffer overflow."
                 " nUnfree=%d. MAXPAR=%d."
@@ -248,68 +232,25 @@ void ParStore_addConstrainedPar(ParStore * self, const char *str,
                 __FILE__, __func__, __LINE__, self->nUnfree, MAXPAR);
         exit(EXIT_FAILURE);
     }
-    if(++self->nConstrained >= MAXPAR) {
-        fprintf(stderr, "%s:%s:%d: buffer overflow."
-                " nConstrained=%d. MAXPAR=%d."
-                " Increase MAXPAR and recompile.\n",
-                __FILE__, __func__, __LINE__, self->nConstrained, MAXPAR);
-        exit(EXIT_FAILURE);
-    }
-    if(n_tepar >= MAXPAR){
-        fprintf(stderr, "%s:%s:%d: buffer overflow.\n",
-                __FILE__, __func__, __LINE__);
-        exit(EXIT_FAILURE);
-    }
 
-    Param_init(self->unfreePar + i, name, value, DBL_MAX, DBL_MIN,
-               CONSTRAINED);
-    self->byname = StrParMap_insert(self->byname, self->unfreePar + i);
-    self->addr = AddrParMap_insert(self->addr, self->unfreePar + i);
+    par = self->unfreePar + i;
+    Param_init(par, name, value, DBL_MIN, DBL_MAX, CONSTRAINED);
+    par->formula = strdup(str);
+    CHECKMEM(par->formula);
 
-    self->te_pars[n_tepar].name = self->freePar[i].name;
-    self->te_pars[n_tepar].address = &self->freePar[i].value;
-
-    self->formulas[j] = strdup(str);
-    CHECKMEM(self->formulas[j]);
+    self->byname = StrParMap_insert(self->byname, par);
+    self->addr = AddrParMap_insert(self->addr, par);
 
     int status;
-    self->te_pars[n_tepar].name = self->nameConstrained[i];
-    self->te_pars[n_tepar].address = self->constrainedVal + i;
-    self->constr[j] = te_compile(str, self->te_pars, n_tepar, &status);
+    par->constr = te_compile(str, self->te_pars, &status);
     if(self->constr[j] == NULL) {
         fprintf(stderr,"%s:%d: parse error\n", __FILE__,__LINE__);
         fprintf(stderr,"  %s\n", str);
         fprintf(stderr,"  %*s^\nError near here\n", status-1, "");
         exit(EXIT_FAILURE);
     }
-    SET_CONSTR(i);
-}
-
-#else
-struct ParStore {
-    int         nFixed, nFree, nGaussian, nConstrained; // num pars
-    double      loFree[MAXPAR]; // lower bounds
-    double      hiFree[MAXPAR]; // upper bounds
-    char       *nameFixed[MAXPAR];  // Parameter names
-    char       *nameFree[MAXPAR];   // Parameter names
-    char       *nameGaussian[MAXPAR];    // Parameter names
-    char       *nameConstrained[MAXPAR]; // Parameter names
-    ParKeyVal  *pkv;           // linked list of name/ptr pairs
-    double      fixedVal[MAXPAR];   // parameter values
-    double      freeVal[MAXPAR];    // parameter values
-    double      gaussianVal[MAXPAR]; // parameter values
-    double      constrainedVal[MAXPAR]; // parameter values
-    double      mean[MAXPAR];        // Gaussian means
-    double      sd[MAXPAR];          // Gaussian standard deviations
-    te_expr    *constr[MAXPAR];      // controls constrainedVal entries
-    te_variable te_pars[MAXPAR];
-    char       *formulas[MAXPAR];    // formulas of constrained vars
-};
-
-/// Return the number of fixed parameters
-int ParStore_nFixed(ParStore * self) {
-    assert(self);
-    return self->nFixed;
+    SET_CONSTR(par);
+    self->te_pars = te_variable_push(self->te_pars, par->name, &par->value);
 }
 
 /// Return the number of free parameters
@@ -318,99 +259,58 @@ int ParStore_nFree(ParStore * self) {
     return self->nFree;
 }
 
-/// Return the number of Gaussian parameters
-int ParStore_nGaussian(ParStore * self) {
+/// Return the number of fixed parameters
+int ParStore_nFixed(ParStore * self) {
     assert(self);
-    return self->nGaussian;
+    int n=0;
+    for(int i=0; i < self->nUnfree; ++i)
+        if(self->unfreePar[i].type & FIXED)
+            ++n;
+    return n;
 }
 
 /// Return the number of constrained parameters
 int ParStore_nConstrained(ParStore * self) {
     assert(self);
-    return self->nConstrained;
-}
-
-/// Get value of i'th fixed parameter
-double ParStore_getFixed(ParStore * self, int i) {
-    assert(i < self->nFixed);
-    return self->fixedVal[i];
-}
-
-/// Get value of i'th free parameter
-double ParStore_getFree(ParStore * self, int i) {
-    assert(i < self->nFree);
-    return self->freeVal[i];
-}
-
-/// Get value of i'th constrained parameter
-double ParStore_getConstrained(ParStore * self, int i) {
-    assert(i < self->nConstrained);
-    SET_CONSTR(i);
-    return self->constrainedVal[i];
-}
-
-/// Get value of i'th Gaussian parameter
-double ParStore_getGaussian(ParStore * self, int i) {
-    assert(i < self->nGaussian);
-    return self->gaussianVal[i];
-}
-
-/// Get name of i'th fixed parameter
-const char *ParStore_getNameFixed(ParStore * self, int i) {
-    assert(i < self->nFixed);
-    return self->nameFixed[i];
+    int n=0;
+    for(int i=0; i < self->nUnfree; ++i)
+        if(self->unfreePar[i].type & CONSTRAINED)
+            ++n;
+    return n;
 }
 
 /// Get name of i'th free parameter
 const char *ParStore_getNameFree(ParStore * self, int i) {
     assert(i < self->nFree);
-    return self->nameFree[i];
-}
-
-/// Get name of i'th Gaussian parameter
-const char *ParStore_getNameGaussian(ParStore * self, int i) {
-    assert(i < self->nGaussian);
-    return self->nameGaussian[i];
-}
-
-/// Set value of i'th free parameter
-void ParStore_setFree(ParStore * self, int i, double value) {
-    assert(i < self->nFree);
-    self->freeVal[i] = value;
-}
-
-/// Return low bound of i'th free parameter
-double ParStore_loFree(ParStore * self, int i) {
-    assert(i < self->nFree);
-    return self->loFree[i];
-}
-
-/// Return high bound of i'th free parameter
-double ParStore_hiFree(ParStore * self, int i) {
-    assert(i < self->nFree);
-    return self->hiFree[i];
-}
-
-/// Return pointer to array of lower bounds of free parameters
-double     *ParStore_loBounds(ParStore * self) {
-    return &self->loFree[0];
-}
-
-/// Return pointer to array of upper bounds of free parameters
-double     *ParStore_upBounds(ParStore * self) {
-    return &self->hiFree[0];
+    return self->freePar[i].name;
 }
 
 /// Return pointer associated with parameter name.
-double     *ParStore_findPtr(ParStore * self, ParamStatus *pstat,
-							 const char *name) {
-    return ParKeyVal_get(self->pkv, pstat, name);
+double *ParStore_findPtr(ParStore * self, int *type, const char *name) {
+    Param *par = StrParMap_search(self->byname, name);
+    if(par == NULL)
+        return NULL;
+    *type = par->type;
+    return &par->value;
 }
 
-void        ParStore_chkDependencies(ParStore *self, double *par,
-                                     PtrSet *seen) {
+/// Return 1 if ptr is the address of a constrained parameter; 0
+/// otherwise.  
+int ParStore_isConstrained(const ParStore *self, const double *ptr) {
+    assert(self);
+    Param *par = AddrParMap(self->byaddr, ptr);
+    if(par && (par->type & CONSTRAINED))
+        return 1;
+    return 0;
+}
+
+void ParStore_chkDependencies(ParStore *self, double *valptr, PtrSet *seen) {
+    assert(self);
+
+    Param *par = AddrParMap(self->byaddr, valptr);
+    
     // Nothing to be done unless par is constrained.
-    if( !ParStore_isConstrained(self, par) )
+    if( !(par->type & CONSTRAINED) )
         return;
 
     // index of par in array
@@ -419,38 +319,40 @@ void        ParStore_chkDependencies(ParStore *self, double *par,
     // Get list of pointers to parameters on which par depends.
     int len = 100;
     const double * dep[len];
-    len = te_dependencies(self->constr[ipar], len, dep);
+    len = te_dependencies(par->constr, len, dep);
 
     // Check that each dependendant constrained parameter is in
     // "seen". This implies that dependencies will be set before par
     // is set.
     for(int j=0; j<len; ++j) {
-        if(!ParStore_isConstrained(self, dep[j])) {
+        // dpar is Param structure associated with value pointer dep[j]
+        Param *dpar = AddrParMap(self->byaddr, dep[j]);
+
+        if(dpar == NULL) {
+            fprintf(stderr,"%s:%d: can't find parameter with address %p\n",
+                    __FILE__,__LINE__, dep[j]);
+            exit(EXIT_FAILURE);
+        }
+
+        if(!(dpar & CONSTRAINED)) {
             // dep[j] not constrained: no problem
             continue;
         }
 
-        // index of dep[j]
-        int idep = dep[j] - self->constrainedVal;
-        assert(idep >= 0);
-        assert(idep < self->nConstrained);
-
         // Does par depend on itself?
-        if(ipar == idep) {
+        if(par == dpar) {
             fprintf(stderr, "%s:%d: Error: \"%s\" depends on itself\n",
-                    __FILE__,__LINE__, self->nameConstrained[ipar]);
+                    __FILE__,__LINE__, par->name);
             exit(EXIT_FAILURE);
         }
 
         // If x and y are constrained parameters and y = f(x), then x
         // must come before y in the .lgo file.
-        if(ipar <= idep) {
+        if(par < dpar) {
             fprintf(stderr, "%s:%d: Error: \"%s\" depends on"
                     " \"%s\" and must come later in\n"
                     " the .lgo file.\n",
-                    __FILE__,__LINE__,
-                    self->nameConstrained[ipar],
-                    self->nameConstrained[idep]);
+                    __FILE__,__LINE__, par->name, dpar->name);
             exit(EXIT_FAILURE);
         }
 
@@ -463,9 +365,7 @@ void        ParStore_chkDependencies(ParStore *self, double *par,
         // not be set before "par" is evaluated. Print an error
         // message and abort.
         fprintf(stderr,"%s:%d: Error: \"%s\" depends on \"%s\".\n",
-                __FILE__,__LINE__,
-                self->nameConstrained[ipar],
-                self->nameConstrained[idep]);
+                __FILE__,__LINE__, par->name, dpar->name);
         fprintf(stderr, "   When one constrained parameter depends on"
                 " another, the dependent\n"
                 "   parameter must appear in the tree, either earlier"
@@ -475,6 +375,7 @@ void        ParStore_chkDependencies(ParStore *self, double *par,
     }
 }
 
+#else
 
 void ParStore_sanityCheck(ParStore *self, const char *file, int line) {
 #ifndef NDEBUG
@@ -598,15 +499,6 @@ int         ParStore_equals(ParStore *lhs, ParStore *rhs) {
             return 0;
         }
     return ParKeyVal_equals(lhs->pkv, rhs->pkv);
-}
-
-/// Return 1 if ptr is the address of a constrained parameter; 0
-/// otherwise.  
-int ParStore_isConstrained(const ParStore *self, const double *ptr) {
-    if(ptr >= self->constrainedVal &&
-       ptr < self->constrainedVal + self->nConstrained)
-        return 1;
-    return 0;
 }
 
 /// Set Gaussian parameter by sampling from a truncated Gaussian

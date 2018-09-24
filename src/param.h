@@ -17,7 +17,9 @@ struct Param {
     char *name;         // name of parameter; locally owned
     double value;
     double low, high;   // bounds;
-    unsigned type;     // combinations such as FIXED | TWON
+    unsigned type;      // combinations such as FIXED | TWON
+    char *formula;      // formula for constrained variable
+    te_expr *constr;    // expression tree for constrained variable
 };
 
 void   Param_init(Param *self, const char *name, double value,
