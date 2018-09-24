@@ -56,7 +56,11 @@ typedef struct te_variable {
     void *address;
     int type;
     void *context;
+    struct te_variable *next;
 } te_variable;
+
+te_variable *te_variable_push(te_variable *self, const char *name, void *address);
+void te_variable_free(te_variable *self);
 
 /* Parses the input expression, evaluates it, and frees it. */
 
@@ -66,8 +70,7 @@ double te_interp(const char *expression, int *error);
 /* Parses the input expression and binds variables. */
 
 /* Returns NULL on error. */
-te_expr *te_compile(const char *expression,
-                    const te_variable * variables, int var_count, int *error);
+te_expr *te_compile(const char *expression, const te_variable * variables, int *error);
 
 /* Evaluates the expression. */
 double te_eval(const te_expr * n);

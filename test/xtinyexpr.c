@@ -29,27 +29,17 @@ int main(int argc, char **argv) {
 
     int status;
     double w=1.0, x=2.0, y=3.0, z=4.0;
-    const int npars = 4;
-    te_variable pars[npars];
+    te_variable *pars = NULL;
 
-    // This memset is essential, because otherwise, the type and
-    // context fields of the te_variable structures will be
-    // initialized with garbage.
-    memset(pars, 0, sizeof(pars));
-
-    pars[0].name = "w";
-    pars[0].address = &w;
-    pars[1].name = "x";
-    pars[1].address = &x;
-    pars[2].name = "y";
-    pars[2].address = &y;
-    pars[3].name = "z";
-    pars[3].address = &z;
+    pars = te_variable_push(pars, "w", &w);
+    pars = te_variable_push(pars, "x", &x);
+    pars = te_variable_push(pars, "y", &y);
+    pars = te_variable_push(pars, "z", &z);
 
     char formula[100];
     sprintf(formula, "%s", "w + x*y - z");
 
-    te_expr *expr = te_compile(formula, pars, npars, &status);
+    te_expr *expr = te_compile(formula, pars, &status);
     printf("status=%d\n", status);
     if(expr == NULL) {
         fprintf(stderr,"%s:%d: parse error\n", __FILE__,__LINE__);
@@ -61,9 +51,9 @@ int main(int argc, char **argv) {
     int len=100;
     const double *dep[len];
     len = te_dependencies(expr, len, dep);
-    assert(len==npars);
+    assert(len==4);
     int gotw=0, gotx=0, goty=0, gotz=0;
-    for(int i=0; i<npars; ++i) {
+    for(int i=0; i<4; ++i) {
         if(dep[i] == &w)
             ++gotw;
         else if(dep[i] == &x)

@@ -74,7 +74,6 @@ typedef struct state {
     void       *context;
 
     const te_variable *lookup;
-    int         lookup_len;
 } state;
 
 #define TYPE_MASK(TYPE) ((TYPE)&0x0000001F)
@@ -89,6 +88,34 @@ void te_free_parameters(te_expr * n);
 void next_token(state * s);
 static double pi(void);
 static double e(void);
+te_variable *te_variable_new(const char *name, void *address);
+
+te_variable *te_variable_new(const char *name, void *address) {
+    te_variable *self = malloc(sizeof(te_variable));
+    if(self==NULL)
+        return NULL;
+    memset(self, 0, sizeof(te_variable));
+    self->name = strdup(name);
+    self->address = address;
+    return self;
+}
+
+// Push new variable onto end of list.
+te_variable *te_variable_push(te_variable *self, const char *name, void *address) {
+    if(self == NULL)
+        return te_variable_new(name, address);
+    self->next = te_variable_push(self->next, name, address);
+    return self;
+}
+
+// Free linked list.
+void te_variable_free(te_variable *self) {
+    if(self==NULL)
+        return;
+    te_variable_free(self->next);
+    free(self);
+}
+
 
 static te_expr *new_expr(const int type, const te_expr * parameters[]) {
     const int   arity = ARITY(type);
@@ -239,17 +266,15 @@ static const te_variable *find_builtin(const char *name, int len) {
 
 static const te_variable *find_lookup(const state * s, const char *name,
                                       int len) {
-    int         iters;
     const te_variable *var;
     if(!s->lookup)
         return 0;
 
-    for(var = s->lookup, iters = s->lookup_len; iters; ++var, --iters) {
-        if(strncmp(name, var->name, len) == 0 && var->name[len] == '\0') {
+    for(var = s->lookup; var; var = var->next) {
+        if(strncmp(name, var->name, len) == 0 && var->name[len] == '\0') 
             return var;
-        }
     }
-    return 0;
+    return NULL;
 }
 
 static double add(double a, double b) {
@@ -743,11 +768,10 @@ static void optimize(te_expr * n) {
 }
 
 te_expr    *te_compile(const char *expression, const te_variable * variables,
-                       int var_count, int *error) {
+                       int *error) {
     state       s;
     s.start = s.next = expression;
     s.lookup = variables;
-    s.lookup_len = var_count;
 
     next_token(&s);
     te_expr    *root = list(&s);
@@ -769,7 +793,7 @@ te_expr    *te_compile(const char *expression, const te_variable * variables,
 }
 
 double te_interp(const char *expression, int *error) {
-    te_expr    *n = te_compile(expression, 0, 0, error);
+    te_expr    *n = te_compile(expression, 0, error);
     double      ret;
     if(n) {
         ret = te_eval(n);
