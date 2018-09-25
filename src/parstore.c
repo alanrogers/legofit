@@ -52,12 +52,12 @@
 #ifdef NEWCODE
 
 struct ParStore {
-    int nFree, nUnfree, nConstrained;
+    int nFree, nUnfree;
     Param freePar[MAXPAR];
     Param unfreePar[MAXPAR];
     StrParMap *byname;               // look up by name
     AddrParMap *byaddr;              // look up by address of value
-    te_variable *te_pars;
+    te_variable *te_pars;            // linked list
 };
 
 /// Set vector of free parameters.
@@ -375,17 +375,13 @@ void ParStore_chkDependencies(ParStore *self, double *valptr, PtrSet *seen) {
     }
 }
 
-#else
-
 void ParStore_sanityCheck(ParStore *self, const char *file, int line) {
 #ifndef NDEBUG
     REQUIRE(self, file, line);
-    REQUIRE(self->nFixed >= 0, file, line);
     REQUIRE(self->nFree >= 0, file, line);
-    REQUIRE(self->nGaussian >= 0, file, line);
-    REQUIRE(self->nFixed < MAXPAR, file, line);
+    REQUIRE(self->nUnfree >= 0, file, line);
     REQUIRE(self->nFree < MAXPAR, file, line);
-    REQUIRE(self->nGaussian < MAXPAR, file, line);
+    REQUIRE(self->nUnfree < MAXPAR, file, line);
 
     // For each name: (1) make sure it's a legal name;
     // (2) get the pointer associated with that name,
@@ -393,10 +389,11 @@ void ParStore_sanityCheck(ParStore *self, const char *file, int line) {
     char *s;
     double *ptr;
     ParamStatus pstat;
-    for(i=0; i < self->nFixed; ++i) {
-        s = self->nameFixed[i];
-        REQUIRE(NULL != s, file, line);
-        REQUIRE(legalName(s), file, line);
+    Param *par;
+    for(i=0; i < self->nFree; ++i) {
+        par = self->freePar + i;
+        REQUIRE(NULL != par->name, file, line);
+        REQUIRE(legalName(par->name), file, line);
         ptr = ParKeyVal_get(self->pkv, &pstat, s);
         REQUIRE(ptr != NULL, file, line);
         REQUIRE(pstat == Fixed, file, line);
@@ -432,6 +429,8 @@ void ParStore_sanityCheck(ParStore *self, const char *file, int line) {
     ParKeyVal_sanityCheck(self->pkv, file, line);
 #endif
 }
+
+#else
 
 /// Return 1 if two ParStore objects are equal; 0 otherwise.
 int         ParStore_equals(ParStore *lhs, ParStore *rhs) {
