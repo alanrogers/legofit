@@ -28,6 +28,7 @@
 #include "param.h"
 #include "tinyexpr.h"
 #include "ptrset.h"
+#include "misc.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -59,10 +60,14 @@ struct ParStore {
 
 /// Return the number of free parameters
 int ParStore_nFree(ParStore * self) {
+    fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
     assert(self);
     int n = 0;
-    for(Param * par = self->freePar; par != NULL; par = par->next)
+    for(Param * par = self->freePar; par != NULL; par = par->next) {
+        fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
         ++n;
+    }
+    fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
     return n;
 }
 
@@ -141,6 +146,7 @@ ParStore *ParStore_new(void) {
 
 /// Duplicate a ParStore
 ParStore *ParStore_dup(const ParStore * old) {
+    fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
     assert(old);
     int status;
     ParStore *new = memdup(old, sizeof(ParStore));
@@ -148,50 +154,69 @@ ParStore *ParStore_dup(const ParStore * old) {
     new->byname = NULL;
     new->byaddr = NULL;
 
+    fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
     for(int i = 0; i < new->nPar; ++i) {
+        fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
         Param *par = new->vec + i;
-        const Param *opar;
+        const Param *opar = old->vec + i;
+        XXXX Param_copy goes here
+        par->next = NULL;
+        fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
         new->byname = StrParMap_insert(new->byname, par);
         new->byaddr = AddrParMap_insert(new->byaddr, par);
         new->te_pars = te_variable_push(new->te_pars, par->name, &par->value);
+        fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
         switch (par->type) {
         case Free:
+            fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
             new->freePar = Param_push(new->freePar, par);
+            fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
             break;
         case Fixed:
+            fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
             new->fixedPar = Param_push(new->fixedPar, par);
             break;
         case Constrained:
-            opar = old->vec + i;
+            fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
             new->constrainedPar = Param_push(new->constrainedPar, par);
             new->te_pars =
                 te_variable_push(new->te_pars, par->name, &par->value);
             par->formula = strdup(opar->formula);
             par->constr = te_compile(par->formula, new->te_pars, &status);
+            fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
             if(par->constr == NULL) {
                 fprintf(stderr, "%s:%d: parse error\n", __FILE__, __LINE__);
                 fprintf(stderr, "  %s\n", par->formula);
                 fprintf(stderr, "  %*s^\nError near here\n", status - 1, "");
                 exit(EXIT_FAILURE);
             }
+            fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
             break;
         default:
             DIE("Illegal Param type");
         }
+        fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
     }
 
+    fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
     ParStore_sanityCheck(new, __FILE__, __LINE__);
+    fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
     return new;
 }
 
 /// Destructor
 void ParStore_free(ParStore * self) {
+    fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
     StrParMap_free(self->byname);
+    fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
     AddrParMap_free(self->byaddr);
 
-    for(int i = 0; i < self->nPar; ++i)
+    for(int i = 0; i < self->nPar; ++i) {
+        fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
         Param_freePtrs(self->vec + i);
+    }
 
+    fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
     free(self);
 }
 
@@ -251,7 +276,8 @@ void ParStore_addFixedPar(ParStore * self, double value, const char *name) {
 }
 
 /// Add constrained parameter to ParStore.
-void ParStore_addConstrainedPar(ParStore * self, const char *str, const char *name) {
+void ParStore_addConstrainedPar(ParStore * self, const char *str,
+                                const char *name) {
     Param *par = StrParMap_search(self->byname, name);
     if(par) {
         fprintf(stderr, "%s:%d: Duplicate definition of parameter \"%s\".\n",
@@ -269,7 +295,7 @@ void ParStore_addConstrainedPar(ParStore * self, const char *str, const char *na
     }
 
     par = self->vec + i;
-    Param_init(par, name, 0.0, DBL_MIN, DBL_MAX, Constrained);
+    Param_init(par, name, 0.0, -DBL_MAX, DBL_MAX, Constrained);
     par->formula = strdup(str);
     CHECKMEM(par->formula);
 
@@ -298,6 +324,7 @@ const char *ParStore_getNameFree(ParStore * self, int i) {
             return par->name;
         ++j;
     }
+    return NULL;
 }
 
 /// Return pointer associated with parameter name.
@@ -398,9 +425,6 @@ void ParStore_sanityCheck(ParStore * self, const char *file, int line) {
     // For each name: (1) make sure it's a legal name;
     // (2) get the pointer associated with that name,
     int i;
-    char *s;
-    double *ptr;
-    ParamType ptype;
     Param *par, *par2;
     for(i = 0; i < self->nPar; ++i) {
         par = self->vec + i;
@@ -418,7 +442,7 @@ void ParStore_sanityCheck(ParStore * self, const char *file, int line) {
         REQUIRE(par->type == Free, file, line);
     }
     for(par = self->fixedPar; par; par = par->next) {
-        REQUIRE(par->type == Fixed);
+        REQUIRE(par->type == Fixed, file, line);
     }
 
     for(par = self->constrainedPar; par; par = par->next) {
@@ -461,7 +485,7 @@ int ParStore_equals(ParStore * lhs, ParStore * rhs) {
 /// If ptr points to a constrained parameter, then set its value.
 void ParStore_constrain_ptr(ParStore * self, double *ptr) {
     assert(self);
-    par = AddrParMap_search(self->byaddr, ptr);
+    Param *par = AddrParMap_search(self->byaddr, ptr);
     assert(par);
 
     // If ptr isn't a constrained parameter, then return immediately

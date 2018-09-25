@@ -145,14 +145,21 @@ int main(int argc, char **argv) {
     if(verbose)
         ParStore_print(ps, stdout);
 
+    fflush(stdout);
+    fprintf(stderr,"%s:%d\n", __FILE__,__LINE__);
     ParStore *ps2 = ParStore_dup(ps);
+    fprintf(stderr,"%s:%d\n", __FILE__,__LINE__);
 
     assert(ParStore_equals(ps, ps2));
+    fprintf(stderr,"%s:%d\n", __FILE__,__LINE__);
 
     assert(ParStore_nFree(ps2) == ParStore_nFree(ps));
+    fprintf(stderr,"%s:%d\n", __FILE__,__LINE__);
     assert(ParStore_nFixed(ps2) == ParStore_nFixed(ps));
 
+    fprintf(stderr,"%s:%d\n", __FILE__,__LINE__);
     ParStore_free(ps);
+    fprintf(stderr,"%s:%d\n", __FILE__,__LINE__);
     ParStore_free(ps2);
     unitTstResult("ParStore", "OK");
 
