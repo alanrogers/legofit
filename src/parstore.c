@@ -129,7 +129,7 @@ ParStore *ParStore_dup(const ParStore * old) {
         Param *par = new->unfreePar + i;
 
         // skip parameters that are not CONSTRAINED
-        if( !(par->type & CONSTRAINED) )
+        if( par->type != Constrained )
             continue;
 
         new->te_pars = te_variable_push(new->te_pars, par->name, &par->value);
@@ -264,7 +264,7 @@ int ParStore_nFixed(ParStore * self) {
     assert(self);
     int n=0;
     for(int i=0; i < self->nUnfree; ++i)
-        if(self->unfreePar[i].type & FIXED)
+        if(self->unfreePar[i].type == Fixed)
             ++n;
     return n;
 }
@@ -274,7 +274,7 @@ int ParStore_nConstrained(ParStore * self) {
     assert(self);
     int n=0;
     for(int i=0; i < self->nUnfree; ++i)
-        if(self->unfreePar[i].type & CONSTRAINED)
+        if(self->unfreePar[i].type == Constrained)
             ++n;
     return n;
 }
@@ -286,7 +286,7 @@ const char *ParStore_getNameFree(ParStore * self, int i) {
 }
 
 /// Return pointer associated with parameter name.
-double *ParStore_findPtr(ParStore * self, int *type, const char *name) {
+double *ParStore_findPtr(ParStore * self, ParamType *type, const char *name) {
     Param *par = StrParMap_search(self->byname, name);
     if(par == NULL)
         return NULL;
@@ -299,7 +299,7 @@ double *ParStore_findPtr(ParStore * self, int *type, const char *name) {
 int ParStore_isConstrained(const ParStore *self, const double *ptr) {
     assert(self);
     Param *par = AddrParMap(self->byaddr, ptr);
-    if(par && (par->type & CONSTRAINED))
+    if(par && (par->type == Constrained))
         return 1;
     return 0;
 }
@@ -310,7 +310,7 @@ void ParStore_chkDependencies(ParStore *self, double *valptr, PtrSet *seen) {
     Param *par = AddrParMap(self->byaddr, valptr);
     
     // Nothing to be done unless par is constrained.
-    if( !(par->type & CONSTRAINED) )
+    if( par->type != Constrained )
         return;
 
     // index of par in array
@@ -388,42 +388,42 @@ void ParStore_sanityCheck(ParStore *self, const char *file, int line) {
     int i;
     char *s;
     double *ptr;
-    ParamStatus pstat;
+    ParamType ptype;
     Param *par;
     for(i=0; i < self->nFree; ++i) {
         par = self->freePar + i;
         REQUIRE(NULL != par->name, file, line);
         REQUIRE(legalName(par->name), file, line);
-        ptr = ParKeyVal_get(self->pkv, &pstat, s);
+        ptr = ParKeyVal_get(self->pkv, &ptype, s);
         REQUIRE(ptr != NULL, file, line);
-        REQUIRE(pstat == Fixed, file, line);
+        REQUIRE(ptype == Fixed, file, line);
         REQUIRE(ptr == self->fixedVal+i, file, line);
     }
     for(i=0; i < self->nFree; ++i) {
         s = self->nameFree[i];
         REQUIRE(NULL != s, file, line);
         REQUIRE(legalName(s), file, line);
-        ptr = ParKeyVal_get(self->pkv, &pstat, s);
+        ptr = ParKeyVal_get(self->pkv, &ptype, s);
         REQUIRE(ptr != NULL, file, line);
-        REQUIRE(pstat == Free, file, line);
+        REQUIRE(ptype == Free, file, line);
         REQUIRE(ptr == self->freeVal+i, file, line);
     }
     for(i=0; i < self->nGaussian; ++i) {
         s = self->nameGaussian[i];
         REQUIRE(NULL != s, file, line);
         REQUIRE(legalName(s), file, line);
-        ptr = ParKeyVal_get(self->pkv, &pstat, s);
+        ptr = ParKeyVal_get(self->pkv, &ptype, s);
         REQUIRE(ptr != NULL, file, line);
-        REQUIRE(pstat == Gaussian, file, line);
+        REQUIRE(ptype == Gaussian, file, line);
         REQUIRE(ptr == self->gaussianVal+i, file, line);
     }
     for(i=0; i < self->nConstrained; ++i) {
         s = self->nameConstrained[i];
         REQUIRE(NULL != s, file, line);
         REQUIRE(legalName(s), file, line);
-        ptr = ParKeyVal_get(self->pkv, &pstat, s);
+        ptr = ParKeyVal_get(self->pkv, &ptype, s);
         REQUIRE(ptr != NULL, file, line);
-        REQUIRE(pstat == Constrained, file, line);
+        REQUIRE(ptype == Constrained, file, line);
         REQUIRE(ptr == self->constrainedVal+i, file, line);
     }
     ParKeyVal_sanityCheck(self->pkv, file, line);

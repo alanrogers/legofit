@@ -5,7 +5,7 @@
 
 void Param_init(Param *self, const char *name, double value,
                  double low, double high,
-                 unsigned type) {
+                 ParamType type) {
     assert(self);
     if(low > value || high < value) {
         fprintf(stderr,"%s:%d: can't initialize parameter \"%s\".\n"
@@ -32,8 +32,8 @@ void Param_freePtrs(Param *self) {
 }
 
 /// Print name and value of a Param if it is of type "onlytype"
-void Param_print(Param *self, unsigned onlytype, FILE *fp) {
-    if(self && (self->type & onlytype))
+void Param_print(Param *self, ParamType onlytype, FILE *fp) {
+    if(self && (self->type == onlytype))
         fprintf(fp, "   %8s = %lg\n", self->name, self->value);
 }
 

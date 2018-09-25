@@ -20,6 +20,7 @@ typedef struct LblNdx LblNdx;
 typedef struct NameList NameList;
 typedef struct NodeStore NodeStore;
 typedef struct Param Param;
+typedef struct ParamType ParamType;
 typedef struct ParKeyVal ParKeyVal;
 typedef struct ParStore ParStore;
 typedef struct Point Point;
@@ -37,6 +38,12 @@ typedef struct StrParMap StrParMap;
 typedef struct Tokenizer Tokenizer;
 typedef struct DAFReader DAFReader;
 typedef struct RAFReader RAFReader;
+
+/// Distinguish between parameters that free, fixed, or constrained.
+/// Free parameters can be changed during optimization; 
+/// fixed ones never change; constrained ones are functions of one or
+/// more other parameters.
+enum ParamType {Free, Fixed, Constrained};
 
 #if 1
 #  define TIPID_SIZE 32

@@ -42,7 +42,8 @@ double      ParStore_loFree(ParStore * self, int i);
 double      ParStore_hiFree(ParStore * self, int i);
 double     *ParStore_loBounds(ParStore * self);
 double     *ParStore_upBounds(ParStore * self);
-double     *ParStore_findPtr(ParStore * self, int *type, const char *name);
+double     *ParStore_findPtr(ParStore * self, ParamType *type,
+                             const char *name);
 void        ParStore_chkDependencies(ParStore *self, double *par,
                                      PtrSet *seen);
 ParStore   *ParStore_dup(const ParStore * old);
