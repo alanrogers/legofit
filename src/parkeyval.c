@@ -1,4 +1,3 @@
-
 /**
  * @file parkeyval.c
  * @author Alan R. Rogers
@@ -157,10 +156,3 @@ int ParKeyVal_equals(ParKeyVal * lhs, ParKeyVal * rhs) {
     return ParKeyVal_equals(lhs->next, rhs->next);
 }
 
-/// Return nonzero if name is legal; zero otherwise
-int legalName(const char *name) {
-    const char *legal =
-        "abcdefghijklmnopqrstuvwxyz"
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZ" "0123456789" "._:@$";
-    return strlen(name) == strspn(name, legal);
-}

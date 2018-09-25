@@ -3,7 +3,7 @@
 #include "typedefs.h"
 
 AddrParMap *AddrParMap_insert(AddrParMap *root, Param *par);
-Param      *AddrParMap_search(AddrParMap *root, double *valptr);
+Param      *AddrParMap_search(AddrParMap *root, const double *valptr);
 void        AddrParMap_free(AddrParMap *h);
 
 #endif

@@ -20,7 +20,7 @@ typedef struct LblNdx LblNdx;
 typedef struct NameList NameList;
 typedef struct NodeStore NodeStore;
 typedef struct Param Param;
-typedef struct ParamType ParamType;
+typedef enum   ParamType ParamType;
 typedef struct ParKeyVal ParKeyVal;
 typedef struct ParStore ParStore;
 typedef struct Point Point;

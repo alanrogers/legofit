@@ -54,7 +54,7 @@ AddrParMap *AddrParMap_new(Param *par) {
     return self;
 }
 
-Param *AddrParMap_search(AddrParMap *root, double *valptr) {
+Param *AddrParMap_search(AddrParMap *root, const double *valptr) {
     AddrParMap *x = root;
     while(x != NULL) {
         if(valptr == &x->par->value)

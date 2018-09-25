@@ -197,8 +197,8 @@ XGPTREE := xgptree.o misc.o branchtab.o parstore.o lblndx.o \
 xgptree : $(XGPTREE)
 	$(CC) $(CFLAGS) -o $@ $(XGPTREE) $(lib)
 
-XPARSTORE := xparstore.o misc.o parstore.o parkeyval.o binary.o lblndx.o \
-        dtnorm.o tinyexpr.o ptrset.o
+XPARSTORE := xparstore.o misc.o parstore.o binary.o lblndx.o \
+        tinyexpr.o ptrset.o strparmap.o addrparmap.o param.o
 xparstore : $(XPARSTORE)
 	$(CC) $(CFLAGS) -o $@ $(XPARSTORE) $(lib)
 

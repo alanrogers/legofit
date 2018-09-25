@@ -689,3 +689,11 @@ const char *mybasename(const char *pathname) {
         return pathname;
     return p+1;
 }
+
+/// Return nonzero if name is legal; zero otherwise
+int legalName(const char *name) {
+    const char *legal =
+        "abcdefghijklmnopqrstuvwxyz"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ" "0123456789" "._:@$";
+    return strlen(name) == strspn(name, legal);
+}
