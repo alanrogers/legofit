@@ -36,30 +36,30 @@ int main(int argc, char *argv[]) {
     double x = 1.0, y = 2.0, z = 3.0;
     double xx = 1.0, yy = 2.0, zz = 3.0;
     ParKeyVal *pkv = NULL;
-    ParamStatus pstat;
+    Behavior behavior;
 
     pkv = ParKeyVal_add(pkv, "y", &y, Free);
     pkv = ParKeyVal_add(pkv, "x", &x, Fixed);
     pkv = ParKeyVal_add(pkv, "z", &z, Free);
 
     double *ptr;
-    ptr = ParKeyVal_get(pkv, &pstat, "x");
+    ptr = ParKeyVal_get(pkv, &behavior, "x");
     assert(ptr == &x);
-    assert(pstat == Fixed);
+    assert(behavior == Fixed);
     assert(*ptr == 1.0);
 
-    ptr = ParKeyVal_get(pkv, &pstat, "y");
+    ptr = ParKeyVal_get(pkv, &behavior, "y");
     assert(ptr == &y);
-    assert(pstat == Free);
+    assert(behavior == Free);
     assert(*ptr == 2.0);
 
-    ptr = ParKeyVal_get(pkv, &pstat, "z");
+    ptr = ParKeyVal_get(pkv, &behavior, "z");
     assert(ptr == &z);
-    assert(pstat == Free);
+    assert(behavior == Free);
     assert(*ptr == 3.0);
 
-    assert(NULL == ParKeyVal_get(pkv, &pstat, "nonexistent"));
-    assert(pstat == Free);      // should be unchanged
+    assert(NULL == ParKeyVal_get(pkv, &behavior, "nonexistent"));
+    assert(behavior == Free);      // should be unchanged
 
     if(verbose)
         ParKeyVal_print(pkv, stdout);

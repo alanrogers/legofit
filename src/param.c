@@ -5,7 +5,7 @@
 
 void Param_init(Param *self, const char *name, double value,
                  double low, double high,
-                 ParamType type) {
+                 Behavior behavior) {
     assert(self);
     if(low > value || high < value) {
         fprintf(stderr,"%s:%d: can't initialize parameter \"%s\".\n"
@@ -18,7 +18,7 @@ void Param_init(Param *self, const char *name, double value,
     self->value = value;
     self->low = low;
     self->high = high;
-    self->type = type;
+    self->behavior = behavior;
     self->formula = NULL;
     self->constr = NULL;
     self->next = NULL;
@@ -32,7 +32,7 @@ void Param_copy(Param *new, const Param *old) {
     CHECKMEM(new);
     new->name = strdup(old->name);
     CHECKMEM(new->name);
-    if(new->type == Constrained) {
+    if(new->behavior == Constrained) {
         assert(old->formula != NULL);
         new->formula = strdup(old->formula);
         CHECKMEM(new->formula);
@@ -61,7 +61,7 @@ void Param_freePtrs(Param *self) {
         te_free(self->constr);
 }
 
-/// Print name and value of a Param if it is of type "onlytype"
+/// Print name and value of a Param.
 void Param_print(Param *self, FILE *fp) {
     fprintf(fp, "   %8s = %lg\n", self->name, self->value);
 }
@@ -83,7 +83,7 @@ int Param_compare(const Param *lhs, const Param *rhs) {
         return 1;
     if(lhs->high < rhs->high)
         return -1;
-    c = lhs->type - rhs->type;
+    c = lhs->behavior - rhs->behavior;
     if(c)
         return c;
     if(lhs->formula == NULL && rhs->formula==NULL)

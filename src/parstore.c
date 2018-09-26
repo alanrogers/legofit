@@ -51,11 +51,21 @@
 
 struct ParStore {
     int nPar;
+
+    // These 3 pointers are the heads of linked lists of free
+    // parameters, fixed parameters, and constrained parameters. 
+    // The objects in these lists can also be accessed through
+    // array "vec".
     Param *freePar, *fixedPar, *constrainedPar;
+
+    // Map names and addresses of values to parameter objects
     StrParMap *byname;          // look up by name
     AddrParMap *byaddr;         // look up by address of value
-    te_variable *te_pars;       // linked list
-    Param vec[MAXPAR];          // vector of parameter objects
+
+    te_variable *te_pars;       // for tinyexpr.c
+
+    // This is where the parameter objects are allocated.
+    Param vec[MAXPAR];
 };
 
 /// Return the number of free parameters
@@ -155,7 +165,7 @@ ParStore *ParStore_dup(const ParStore * old) {
         Param_copy(par, opar);
         new->byname = StrParMap_insert(new->byname, par);
         new->byaddr = AddrParMap_insert(new->byaddr, par);
-        switch (par->type) {
+        switch (par->behavior) {
         case Free:
             new->freePar = Param_push(new->freePar, par);
             break;
@@ -173,7 +183,7 @@ ParStore *ParStore_dup(const ParStore * old) {
             }
             break;
         default:
-            DIE("Illegal Param type");
+            DIE("Illegal value of behavior variable");
         }
         new->te_pars =
             te_variable_push(new->te_pars, par->name, &par->value);
@@ -302,11 +312,12 @@ const char *ParStore_getNameFree(ParStore * self, int i) {
 }
 
 /// Return pointer associated with parameter name.
-double *ParStore_findPtr(ParStore * self, ParamType * type, const char *name) {
+double *ParStore_findPtr(ParStore * self, Behavior * behavior,
+                         const char *name) {
     Param *par = StrParMap_search(self->byname, name);
     if(par == NULL)
         return NULL;
-    *type = par->type;
+    *behavior = par->behavior;
     return &par->value;
 }
 
@@ -315,7 +326,7 @@ double *ParStore_findPtr(ParStore * self, ParamType * type, const char *name) {
 int ParStore_isConstrained(const ParStore * self, const double *ptr) {
     assert(self);
     Param *par = AddrParMap_search(self->byaddr, ptr);
-    if(par && (par->type == Constrained))
+    if(par && (par->behavior == Constrained))
         return 1;
     return 0;
 }
@@ -326,7 +337,7 @@ void ParStore_chkDependencies(ParStore * self, const double *valptr, PtrSet * se
     Param *par = AddrParMap_search (self->byaddr, valptr);
 
     // Nothing to be done unless par is constrained.
-    if(par->type != Constrained)
+    if(par->behavior != Constrained)
         return;
 
     // index of par in array
@@ -352,7 +363,7 @@ void ParStore_chkDependencies(ParStore * self, const double *valptr, PtrSet * se
             exit(EXIT_FAILURE);
         }
 
-        if(dpar->type != Constrained) {
+        if(dpar->behavior != Constrained) {
             // dep[j] not constrained: no problem
             continue;
         }
@@ -413,13 +424,13 @@ void ParStore_sanityCheck(ParStore * self, const char *file, int line) {
         ParStore_nConstrained(self);
     REQUIRE(npar == self->nPar, file, line);
     for(par = self->freePar; par; par = par->next)
-        REQUIRE(par->type == Free, file, line);
+        REQUIRE(par->behavior == Free, file, line);
 
     for(par = self->fixedPar; par; par = par->next)
-        REQUIRE(par->type == Fixed, file, line);
+        REQUIRE(par->behavior == Fixed, file, line);
 
     for(par = self->constrainedPar; par; par = par->next) {
-        REQUIRE(par->type == Constrained, file, line);
+        REQUIRE(par->behavior == Constrained, file, line);
         REQUIRE(par->formula != NULL, file, line);
     }
 #  endif
@@ -462,7 +473,7 @@ void ParStore_constrain_ptr(ParStore * self, double *ptr) {
     assert(par);
 
     // If ptr isn't a constrained parameter, then return immediately
-    if(par->type != Constrained)
+    if(par->behavior != Constrained)
         return;
 
     // set value of constrained parameter

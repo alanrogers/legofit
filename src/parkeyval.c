@@ -19,16 +19,16 @@
 struct ParKeyVal {
     char key[MAX_PARAM_NAME];
     double *valPtr;             // not locally owned
-    ParamStatus pstat;
+    Behavior behavior;
     ParKeyVal *next;
 };
 
 ParKeyVal *ParKeyVal_new(const char *key, double *vptr,
-                         ParamStatus pstat, ParKeyVal * next);
+                         Behavior behavior, ParKeyVal * next);
 
 /// Constructor. Call with next=NULL to terminate linked list.
 ParKeyVal *ParKeyVal_new(const char *key, double *vptr,
-                         ParamStatus pstat, ParKeyVal * next) {
+                         Behavior behavior, ParKeyVal * next) {
     if(strlen(key) >= MAX_PARAM_NAME)
         eprintf("%s:%s:%d: Parameter name too long. Max=%d.\n",
                 __FILE__, __func__, __LINE__, MAX_PARAM_NAME);
@@ -36,7 +36,7 @@ ParKeyVal *ParKeyVal_new(const char *key, double *vptr,
     CHECKMEM(self);
     snprintf(self->key, sizeof(self->key), "%s", key);
     self->valPtr = vptr;
-    self->pstat = pstat;
+    self->behavior = behavior;
     self->next = next;
     ParKeyVal_sanityCheck(self, __FILE__, __LINE__);
     return self;
@@ -52,25 +52,25 @@ void ParKeyVal_free(ParKeyVal * self) {
 
 /// Insert a new key/pointer pair into sorted linked list.
 ParKeyVal *ParKeyVal_add(ParKeyVal * self, const char *key,
-                         double *vptr, ParamStatus pstat) {
+                         double *vptr, Behavior behavior) {
     if(self == NULL)
-        return ParKeyVal_new(key, vptr, pstat, NULL);
+        return ParKeyVal_new(key, vptr, behavior, NULL);
 
     int i = strcmp(key, self->key);
     if(i < 0)
-        return ParKeyVal_new(key, vptr, pstat, self);
+        return ParKeyVal_new(key, vptr, behavior, self);
     else if(i == 0)
         eprintf("%s:%s:%d: Duplicate key \"%s\".\n",
                 __FILE__, __func__, __LINE__, key);
 
     // else..
-    self->next = ParKeyVal_add(self->next, key, vptr, pstat);
+    self->next = ParKeyVal_add(self->next, key, vptr, behavior);
     return self;
 }
 
 /// Find key in linked list. On success, return pointer corresponding
 /// to key. On failure, return NULL.
-double *ParKeyVal_get(ParKeyVal * self, ParamStatus * pstat, const char *key) {
+double *ParKeyVal_get(ParKeyVal * self, Behavior * behavior, const char *key) {
     if(self == NULL)
         return NULL;
 
@@ -79,11 +79,11 @@ double *ParKeyVal_get(ParKeyVal * self, ParamStatus * pstat, const char *key) {
         return NULL;
 
     if(i == 0) {                // Success
-        *pstat = self->pstat;
+        *behavior = self->behavior;
         return self->valPtr;
     }
 
-    return ParKeyVal_get(self->next, pstat, key);
+    return ParKeyVal_get(self->next, behavior, key);
 }
 
 /// Print a ParKeyVal
@@ -92,22 +92,19 @@ void ParKeyVal_print(ParKeyVal * self, FILE * fp) {
         fprintf(fp, "NULL\n");
     else {
         fprintf(fp, "[%p:%s,%p,", self, self->key, self->valPtr);
-        switch (self->pstat) {
+        switch (self->behavior) {
         case Free:
             fputs("Free", fp);
             break;
         case Fixed:
             fputs("Fixed", fp);
             break;
-        case Gaussian:
-            fputs("Gaussian", fp);
-            break;
         case Constrained:
             fputs("Constrained", fp);
             break;
         default:
-            fprintf(stderr, "%s:%d: Unknown ParamStat value: %d.\n",
-                    __FILE__, __LINE__, self->pstat);
+            fprintf(stderr, "%s:%d: Unknown Behavior value: %d.\n",
+                    __FILE__, __LINE__, self->behavior);
             exit(EXIT_FAILURE);
         }
         fputs("]->", fp);
@@ -149,7 +146,7 @@ int ParKeyVal_equals(ParKeyVal * lhs, ParKeyVal * rhs) {
         if(!Dbl_equals_allowNonfinite(*lhs->valPtr, *rhs->valPtr)) {
             return 0;
         }
-        if(lhs->pstat != rhs->pstat) {
+        if(lhs->behavior != rhs->behavior) {
             return 0;
         }
     }

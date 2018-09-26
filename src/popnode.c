@@ -35,8 +35,6 @@ struct NodeStore {
 static void PopNode_sanityCheck(PopNode * self, const char *file, int lineno);
 static void PopNode_randomize_r(PopNode * self, Bounds bnd,
                                 ParStore * parstore, gsl_rng * rng);
-static void PopNode_gaussian_r(PopNode * self, Bounds bnd, ParStore * ps,
-                               gsl_rng * rng);
 static void PopNode_chkDependencies_r(PopNode * self, ParStore * ps,
                                       PtrSet *seen);
 
@@ -578,87 +576,6 @@ static void PopNode_randomize_r(PopNode * self, Bounds bnd,
     int         i;
     for(i = 0; i < self->nchildren; ++i)
         PopNode_randomize_r(self->child[i], bnd, parstore, rng);
-}
-
-/// Reset the value of each Gaussian parameter by sampling from the
-/// relevant distribution.
-void PopNode_gaussian(PopNode * self, Bounds bnd,
-                      ParStore * ps, gsl_rng * rng) {
-    PopNode_untouch(self);
-    if(ParStore_constrain(ps)) {
-        fprintf(stderr,"%s:%d: free parameters violate constraints\n",
-                __FILE__,__LINE__);
-    }
-    PopNode_gaussian_r(self, bnd, ps, rng);
-}
-
-/// Traverse the population tree to reset the value of each Gaussian
-/// parameter by sampling from the relevant distribution.
-/// Call PopNode_untouch before calling this function.
-static void PopNode_gaussian_r(PopNode * self, Bounds bnd,
-                               ParStore * ps, gsl_rng * rng) {
-
-    // If at least one parents is untouched, postpone this node.
-    if(self->nparents==2 && !(self->parent[0]->touched &&
-                             self->parent[1]->touched)) {
-        // one of the two parents hasn't been touched yet, so postpone
-        // the current node.
-        return;
-    }
-    assert(self->nparents==0 || self->parent[0]->touched);
-    assert(self->nparents<2 || self->parent[1]->touched);
-
-    // perturb self->twoN
-    ParStore_sample(ps, self->twoN, bnd.lo_twoN, bnd.hi_twoN, rng);
-
-    // perturb self->start
-    // hi_t is the minimum age of parents or bnd.hi_t
-    double      hi_t = bnd.hi_t;
-    switch (self->nparents) {
-    case 0:
-        hi_t = fmin(hi_t, *self->start + gsl_ran_exponential(rng, 10000.0));
-        break;
-    case 1:
-        assert(self->parent[0]->touched);
-        hi_t = *self->parent[0]->start;
-        break;
-    case 2:
-        assert(self->parent[0]->touched);
-        assert(self->parent[1]->touched);
-        hi_t = fmin(*self->parent[0]->start, *self->parent[1]->start);
-        break;
-    default:
-        fprintf(stderr, "%s:%s:%d: bad value of nparents: %d\n",
-                __FILE__, __func__, __LINE__, self->nparents);
-        exit(EXIT_FAILURE);
-    }
-
-    // lo_t is the maximum age of children or bnd.lo_t
-    double      lo_t = bnd.lo_t;
-    switch (self->nchildren) {
-    case 0:
-        break;
-    case 1:
-        lo_t = *self->child[0]->start;
-        break;
-    case 2:
-        lo_t = fmax(*self->child[0]->start, *self->child[1]->start);
-        break;
-    default:
-        fprintf(stderr, "%s:%s:%d: bad value of nchildren: %d\n",
-                __FILE__, __func__, __LINE__, self->nchildren);
-        exit(EXIT_FAILURE);
-    }
-    ParStore_sample(ps, self->start, lo_t, hi_t, rng);
-
-    // Perturb mix probability
-    ParStore_sample(ps, self->mix, 0.0, 1.0, rng);
-
-    self->touched = true;
-
-    int         i;
-    for(i = 0; i < self->nchildren; ++i)
-        PopNode_gaussian_r(self->child[i], bnd, ps, rng);
 }
 
 /// Make sure that constrained variables depend only on

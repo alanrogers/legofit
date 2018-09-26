@@ -22,7 +22,8 @@ int         ParStore_nFixed(ParStore * self);
 int         ParStore_nFree(ParStore * self);
 int         ParStore_nConstrained(ParStore * self);
 const char *ParStore_getNameFree(ParStore * self, int i);
-double     *ParStore_findPtr(ParStore * self, ParamType *type, const char *name);
+double     *ParStore_findPtr(ParStore * self, Behavior *behavior,
+                             const char *name);
 void        ParStore_chkDependencies(ParStore *self, const double *par, PtrSet *seen);
 ParStore   *ParStore_dup(const ParStore * old);
 void        ParStore_sanityCheck(ParStore * self, const char *file, int line);

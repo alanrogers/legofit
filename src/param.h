@@ -11,14 +11,14 @@ struct Param {
     char *name;         // name of parameter; locally owned
     double value;
     double low, high;   // bounds;
-    ParamType type;     // Free, Fixed, or Constrained
+    Behavior behavior;  // Free, Fixed, or Constrained
     char *formula;      // formula for constrained variable
     te_expr *constr;    // expression tree for constrained variable
     struct Param *next; // for a linked list of Param objects.
 };
 
 void   Param_init(Param *self, const char *name, double value,
-                  double low, double high, ParamType type);
+                  double low, double high, Behavior behavior);
 void Param_copy(Param *new, const Param *old);
 Param *Param_push(Param *self, Param *new);
 void   Param_freePtrs(Param *self);
