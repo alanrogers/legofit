@@ -161,11 +161,10 @@ int main(int argc, char **argv) {
 
     double a[] = {0.0, 1.0, 2.0, 0.5};
     Param parvec[4];
-    Param_init(parvec+0, "par0", a[0], 0.0, 1.0, FREE | MIX);
-    Param_init(parvec+1, "par1", a[1], -INFINITY, INFINITY,
-               CONSTRAINED | GENERAL);
-    Param_init(parvec+2, "par2", a[2], 1.0, 1e6, FIXED | TWON);
-    Param_init(parvec+3, "par3", a[3], -1.0, 1.0, CONSTRAINED | GENERAL);
+    Param_init(parvec+0, "par0", a[0], 0.0, 1.0, Free);
+    Param_init(parvec+1, "par1", a[1], -INFINITY, INFINITY, Constrained);
+    Param_init(parvec+2, "par2", a[2], 1.0, 1e6, Fixed);
+    Param_init(parvec+3, "par3", a[3], -1.0, 1.0, Constrained);
 
     StrParMap *root = NULL;
     root = StrParMap_insert(root, parvec+0);

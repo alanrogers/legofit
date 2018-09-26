@@ -89,9 +89,9 @@ XSTATE := xstate.o state.o misc.o
 xstate : $(XSTATE)
 	$(CC) $(CFLAGS) -o $@ $(XSTATE) $(lib)
 
-XPOPNODETAB := xpopnodetab.o popnodetab.o misc.o popnode.o gene.o \
-   branchtab.o lblndx.o tokenizer.o dtnorm.o binary.o \
-   parkeyval.o parstore.o tinyexpr.o
+XPOPNODETAB := xpopnodetab.o addrparmap.o popnodetab.o misc.o param.o \
+   popnode.o gene.o branchtab.o lblndx.o tokenizer.o dtnorm.o binary.o \
+   parstore.o ptrset.o strparmap.o tinyexpr.o
 xpopnodetab : $(XPOPNODETAB)
 	$(CC) $(CFLAGS) -o $@ $(XPOPNODETAB) $(lib)
 
@@ -103,7 +103,7 @@ XERROR := xerror.o error.o misc.o
 xerror : $(XERROR)
 	$(CC) $(CFLAGS) -o $@ $(XERROR) $(lib)
 
-XPARAM := xparam.o misc.o param.o
+XPARAM := xparam.o misc.o param.o tinyexpr.o
 xparam : $(XPARAM)
 	$(CC) $(CFLAGS) -o $@ $(XPARAM) $(lib)
 
@@ -128,7 +128,7 @@ xpointbuff : $(XPOINTBUFF)
 	$(CC) $(CFLAGS) -o $@ $(XPOINTBUFF) $(lib)
 
 XDIFFEV := xdiffev.o diffev.o binary.o lblndx.o jobqueue.o parkeyval.o \
-  simsched.o state.o misc.o
+  simsched.o state.o misc.o pointbuff.o
 xdiffev : $(XDIFFEV)
 	$(CC) $(CFLAGS) -o $@ $(XDIFFEV) $(lib)
 
@@ -193,9 +193,9 @@ xsimsched : $(XSIMSCHED)
 xgptree.o : gptree.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/gptree.c
 
-XGPTREE := xgptree.o misc.o branchtab.o parstore.o lblndx.o \
-        parkeyval.o tokenizer.o popnodetab.o gene.o popnode.o binary.o \
-        dprintf.o dtnorm.o parse.o tinyexpr.o
+XGPTREE := xgptree.o addrparmap.o misc.o branchtab.o parstore.o lblndx.o \
+        tokenizer.o popnodetab.o gene.o param.o popnode.o binary.o \
+        dprintf.o dtnorm.o parse.o ptrset.o strparmap.o tinyexpr.o
 xgptree : $(XGPTREE)
 	$(CC) $(CFLAGS) -o $@ $(XGPTREE) $(lib)
 
@@ -225,9 +225,9 @@ xllrbtree : $(XLLRBTREE)
 xbranchtab.o : branchtab.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/branchtab.c
 
-XBRANCHTAB := xbranchtab.o gptree.o misc.o binary.o parstore.o popnode.o \
-   gene.o lblndx.o parse.o parkeyval.o tokenizer.o popnodetab.o \
-   dprintf.o dtnorm.o tinyexpr.o
+XBRANCHTAB := xbranchtab.o addrparmap.o gptree.o misc.o binary.o \
+   parstore.o popnode.o gene.o lblndx.o param.o parse.o ptrset.o \
+   tokenizer.o popnodetab.o dprintf.o dtnorm.o strparmap.o tinyexpr.o
 xbranchtab : $(XBRANCHTAB)
 	$(CC) $(CFLAGS) -o $@ $(XBRANCHTAB) $(lib)
 
@@ -248,21 +248,14 @@ xstrdblmap : $(XSTRDBLMAP)
 xstrparmap.o : strparmap.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/strparmap.c
 
-XSTRPARMAP := xstrparmap.o misc.o param.o
+XSTRPARMAP := xstrparmap.o misc.o param.o tinyexpr.o
 xstrparmap : $(XSTRPARMAP)
 	$(CC) $(CFLAGS) -o $@ $(XSTRPARMAP) $(lib)
-
-strparmap2.o : strparmap2.c ../src/parmap.src ../src/parmap.h
-	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/strparmap2.c
-
-XSTRPARMAP2 := xstrparmap2.o misc.o param.o strparmap2.o 
-xstrparmap2 : $(XSTRPARMAP2)
-	$(CC) $(CFLAGS) -o $@ $(XSTRPARMAP2) $(lib)
 
 xaddrparmap.o : addrparmap.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/addrparmap.c
 
-XADDRPARMAP := xaddrparmap.o misc.o param.o
+XADDRPARMAP := xaddrparmap.o misc.o param.o tinyexpr.o
 xaddrparmap : $(XADDRPARMAP)
 	$(CC) $(CFLAGS) -o $@ $(XADDRPARMAP) $(lib)
 

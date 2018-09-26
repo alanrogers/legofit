@@ -681,7 +681,6 @@ int main(int argc, char **argv) {
         exit(1);
     }
     // test getDbl
-    fprintf(stderr, "%s:%s:%d\n", __FILE__, __func__, __LINE__);
     char buff[100], *next;
     double x;
     strcpy(buff, " +1.23 ");
@@ -693,7 +692,6 @@ int main(int argc, char **argv) {
     next = buff;
     assert(0 == getDbl(&x, &next, buff));
     assert(Dbl_near(x, -1.23e-4));
-    fprintf(stderr, "%s:%s:%d\n", __FILE__, __func__, __LINE__);
     unitTstResult("getDbl", "OK");
 
     SampNdx sndx;

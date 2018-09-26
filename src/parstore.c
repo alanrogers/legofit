@@ -333,7 +333,8 @@ int ParStore_isConstrained(const ParStore * self, const double *ptr) {
     return 0;
 }
 
-void ParStore_chkDependencies(ParStore * self, const double *valptr, PtrSet * seen) {
+void ParStore_chkDependencies(ParStore * self, const double *valptr,
+                              PtrSet * seen) {
     assert(self);
 
     if(self->byaddr == NULL)
