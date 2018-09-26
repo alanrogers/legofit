@@ -22,7 +22,6 @@ typedef struct NodeStore NodeStore;
 typedef struct Param Param;
 typedef enum   Behavior Behavior;
 typedef enum   Boundedness Boundedness;
-typedef struct ParKeyVal ParKeyVal;
 typedef struct ParStore ParStore;
 typedef struct Point Point;
 typedef struct PointBuff PointBuff;

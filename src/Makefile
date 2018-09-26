@@ -71,12 +71,12 @@ BMA := bma.o misc.o strdblqueue.o strint.o tokenizer.o
 bma : $(BMA)
 	$(CC) $(CFLAGS) -o $@ $(BMA) $(lib)
 
-TABPAT := tabpat.o misc.o binary.o lblndx.o parkeyval.o dafreader.o \
+TABPAT := tabpat.o misc.o binary.o lblndx.o dafreader.o \
   tokenizer.o strint.o boot.o error.o
 tabpat : $(TABPAT)
 	$(CC) $(CFLAGS) -o $@ $(TABPAT) $(lib)
 
-SITEPAT := sitepat.o misc.o binary.o lblndx.o parkeyval.o rafreader.o \
+SITEPAT := sitepat.o misc.o binary.o lblndx.o rafreader.o \
   tokenizer.o strint.o boot.o error.o
 sitepat : $(SITEPAT)
 	$(CC) $(CFLAGS) -o $@ $(SITEPAT) $(lib)
@@ -89,7 +89,7 @@ RAF2DAF := raf2daf.o rafreader.o error.o tokenizer.o misc.o
 raf2daf : $(RAF2DAF)
 	$(CC) $(CFLAGS) -o $@ $(RAF2DAF) $(lib)
 
-SCRMPAT := scrmpat.o misc.o binary.o lblndx.o parkeyval.o scrmreader.o \
+SCRMPAT := scrmpat.o misc.o binary.o lblndx.o scrmreader.o \
   tokenizer.o boot.o error.o
 scrmpat : $(SCRMPAT)
 	$(CC) $(CFLAGS) -o $@ $(SCRMPAT) $(lib)

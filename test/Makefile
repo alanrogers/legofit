@@ -5,7 +5,7 @@ prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
 tests := xaddrparmap xbinary xbma xboot xbranchtab xdafreader xdiffev \
   xdtnorm xerror xgene xgptree xhessian xjobqueue xlblndx xllrbtree \
-  xmisc xparam xparkeyval xparse xparstore xpointbuff xpopnode xpopnodetab \
+  xmisc xparam xparse xparstore xpointbuff xpopnode xpopnodetab \
   xptrset xrafreader xscrmreader xsimsched xstate xstrdblmap xstrdblqueue \
   xstrint xstrparmap xtinyexpr xwraparound
 
@@ -54,7 +54,6 @@ test : $(tests)
 	-./xllrbtree
 	-./xmisc
 	-./xparam
-	-./xparkeyval
 	-./xparse
 	-./xparstore
 	-./xpointbuff
@@ -127,18 +126,18 @@ XPOINTBUFF := xpointbuff.o misc.o pointbuff.o
 xpointbuff : $(XPOINTBUFF)
 	$(CC) $(CFLAGS) -o $@ $(XPOINTBUFF) $(lib)
 
-XDIFFEV := xdiffev.o diffev.o binary.o lblndx.o jobqueue.o parkeyval.o \
+XDIFFEV := xdiffev.o diffev.o binary.o lblndx.o jobqueue.o \
   simsched.o state.o misc.o pointbuff.o
 xdiffev : $(XDIFFEV)
 	$(CC) $(CFLAGS) -o $@ $(XDIFFEV) $(lib)
 
 XDAFREADER := xdafreader.o dafreader.o misc.o lblndx.o tokenizer.o binary.o \
-   parkeyval.o strint.o
+   strint.o
 xdafreader : $(XDAFREADER)
 	$(CC) $(CFLAGS) -o $@ $(XDAFREADER) $(lib)
 
 XRAFREADER := xrafreader.o rafreader.o misc.o lblndx.o tokenizer.o binary.o \
-   parkeyval.o strint.o error.o
+   strint.o error.o
 xrafreader : $(XRAFREADER)
 	$(CC) $(CFLAGS) -o $@ $(XRAFREADER) $(lib)
 
@@ -160,7 +159,7 @@ xparse.o : parse.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/parse.c
 
 XPARSE := xparse.o popnodetab.o misc.o tokenizer.o gptree.o lblndx.o \
-       branchtab.o parstore.o parkeyval.o popnode.o binary.o gene.o \
+       branchtab.o parstore.o popnode.o binary.o gene.o \
        dprintf.o dtnorm.o tinyexpr.o param.o strparmap.o addrparmap.o \
        ptrset.o
 xparse : $(XPARSE)
@@ -169,7 +168,7 @@ xparse : $(XPARSE)
 xgene.o : gene.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/gene.c
 
-XGENE := xgene.o branchtab.o misc.o binary.o tokenizer.o lblndx.o parkeyval.o
+XGENE := xgene.o branchtab.o misc.o binary.o tokenizer.o lblndx.o
 xgene : $(XGENE)
 	$(CC) $(CFLAGS) -o $@ $(XGENE) $(lib)
 
@@ -204,14 +203,10 @@ XPARSTORE := xparstore.o misc.o parstore.o binary.o lblndx.o \
 xparstore : $(XPARSTORE)
 	$(CC) $(CFLAGS) -o $@ $(XPARSTORE) $(lib)
 
-XPARKEYVAL := xparkeyval.o parkeyval.o misc.o binary.o lblndx.o
-xparkeyval : $(XPARKEYVAL)
-	$(CC) $(CFLAGS) -o $@ $(XPARKEYVAL) $(lib)
-
 xlblndx.o : lblndx.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/lblndx.c
 
-XLBLNDX := xlblndx.o misc.o parkeyval.o binary.o
+XLBLNDX := xlblndx.o misc.o binary.o
 xlblndx : $(XLBLNDX)
 	$(CC) $(CFLAGS) -o $@ $(XLBLNDX) $(lib)
 
@@ -234,7 +229,7 @@ xbranchtab : $(XBRANCHTAB)
 xstrint.o : strint.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/strint.c
 
-XSTRINT := xstrint.o misc.o binary.o lblndx.o parkeyval.o
+XSTRINT := xstrint.o misc.o binary.o lblndx.o
 xstrint : $(XSTRINT)
 	$(CC) $(CFLAGS) -o $@ $(XSTRINT) $(lib)
 
