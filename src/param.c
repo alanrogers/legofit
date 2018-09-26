@@ -25,22 +25,22 @@ void Param_init(Param *self, const char *name, double value,
 }
 
 /// Copy old into new, allocating all the internal pointers but not 
-/// new itself.
-void Param_copy(Param *new, const Param *old, const te_variables *variables,
-                int *error) {
+/// new itself. Does not allocate "constr" field of
+/// constrained parameters. This is set to NULL.
+void Param_copy(Param *new, const Param *old) {
     memcpy(new, old, sizeof(Param));
     CHECKMEM(new);
-    new->name = strcpy(old->name);
+    new->name = strdup(old->name);
     CHECKMEM(new->name);
     if(new->type == Constrained) {
-        new->formula = strcpy(old->formula);
+        assert(old->formula != NULL);
+        new->formula = strdup(old->formula);
         CHECKMEM(new->formula);
-        new->constr = te_compile(new->formula, variables, error);
-        CHECKMEM(new->constr);
-    }else{
+    }else {
+        assert(old->formula == NULL);
         new->formula = NULL;
-        new->constr = NULL;
     }
+    new->constr = NULL;
     new->next = NULL;
 }
 
@@ -48,24 +48,17 @@ void Param_copy(Param *new, const Param *old, const te_variables *variables,
 Param *Param_push(Param *self, Param *new) {
     if(self == NULL)
         return new;
-    fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
     self->next = Param_push(self->next, new);
-    fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
     return self;
 }
 
 // frees only memory allocated within Param, not Param itself
 void Param_freePtrs(Param *self) {
-    fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
     free(self->name);
-    if(self->formula) {
-        fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
+    if(self->formula)
         free(self->formula);
-    }
-    if(self->constr) {
-        fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
+    if(self->constr)
         te_free(self->constr);
-    }
 }
 
 /// Print name and value of a Param if it is of type "onlytype"

@@ -60,14 +60,10 @@ struct ParStore {
 
 /// Return the number of free parameters
 int ParStore_nFree(ParStore * self) {
-    fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
     assert(self);
     int n = 0;
-    for(Param * par = self->freePar; par != NULL; par = par->next) {
-        fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
+    for(Param * par = self->freePar; par != NULL; par = par->next)
         ++n;
-    }
-    fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
     return n;
 }
 
@@ -146,7 +142,6 @@ ParStore *ParStore_new(void) {
 
 /// Duplicate a ParStore
 ParStore *ParStore_dup(const ParStore * old) {
-    fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
     assert(old);
     int status;
     ParStore *new = memdup(old, sizeof(ParStore));
@@ -154,69 +149,48 @@ ParStore *ParStore_dup(const ParStore * old) {
     new->byname = NULL;
     new->byaddr = NULL;
 
-    fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
     for(int i = 0; i < new->nPar; ++i) {
-        fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
         Param *par = new->vec + i;
         const Param *opar = old->vec + i;
-        XXXX Param_copy goes here
-        par->next = NULL;
-        fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
+        Param_copy(par, opar);
         new->byname = StrParMap_insert(new->byname, par);
         new->byaddr = AddrParMap_insert(new->byaddr, par);
-        new->te_pars = te_variable_push(new->te_pars, par->name, &par->value);
-        fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
         switch (par->type) {
         case Free:
-            fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
             new->freePar = Param_push(new->freePar, par);
-            fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
             break;
         case Fixed:
-            fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
             new->fixedPar = Param_push(new->fixedPar, par);
             break;
         case Constrained:
-            fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
             new->constrainedPar = Param_push(new->constrainedPar, par);
-            new->te_pars =
-                te_variable_push(new->te_pars, par->name, &par->value);
-            par->formula = strdup(opar->formula);
             par->constr = te_compile(par->formula, new->te_pars, &status);
-            fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
             if(par->constr == NULL) {
                 fprintf(stderr, "%s:%d: parse error\n", __FILE__, __LINE__);
                 fprintf(stderr, "  %s\n", par->formula);
                 fprintf(stderr, "  %*s^\nError near here\n", status - 1, "");
                 exit(EXIT_FAILURE);
             }
-            fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
             break;
         default:
             DIE("Illegal Param type");
         }
-        fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
+        new->te_pars =
+            te_variable_push(new->te_pars, par->name, &par->value);
     }
 
-    fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
     ParStore_sanityCheck(new, __FILE__, __LINE__);
-    fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
     return new;
 }
 
 /// Destructor
 void ParStore_free(ParStore * self) {
-    fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
     StrParMap_free(self->byname);
-    fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
     AddrParMap_free(self->byaddr);
 
-    for(int i = 0; i < self->nPar; ++i) {
-        fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
+    for(int i = 0; i < self->nPar; ++i)
         Param_freePtrs(self->vec + i);
-    }
 
-    fprintf(stderr,"%s:%s:%d\n", __FILE__,__func__,__LINE__);
     free(self);
 }
 
@@ -438,12 +412,11 @@ void ParStore_sanityCheck(ParStore * self, const char *file, int line) {
     int npar = ParStore_nFree(self) + ParStore_nFixed(self) +
         ParStore_nConstrained(self);
     REQUIRE(npar == self->nPar, file, line);
-    for(par = self->freePar; par; par = par->next) {
+    for(par = self->freePar; par; par = par->next)
         REQUIRE(par->type == Free, file, line);
-    }
-    for(par = self->fixedPar; par; par = par->next) {
+
+    for(par = self->fixedPar; par; par = par->next)
         REQUIRE(par->type == Fixed, file, line);
-    }
 
     for(par = self->constrainedPar; par; par = par->next) {
         REQUIRE(par->type == Constrained, file, line);

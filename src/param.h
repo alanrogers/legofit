@@ -18,10 +18,8 @@ struct Param {
 };
 
 void   Param_init(Param *self, const char *name, double value,
-                  double low, double high,
-                  ParamType type);
-void Param_copy(Param *new, const Param *old, const te_variables *variables,
-                int *error);
+                  double low, double high, ParamType type);
+void Param_copy(Param *new, const Param *old);
 Param *Param_push(Param *self, Param *new);
 void   Param_freePtrs(Param *self);
 void   Param_print(Param *self, FILE *fp);
