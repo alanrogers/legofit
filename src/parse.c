@@ -185,7 +185,7 @@ void parseParam(char *next, Boundedness bness,
     }
 
     char *formula;
-    double value, sd = 0.0;
+    double value;
     if(pbeh == Constrained) {
         formula = stripWhiteSpace(next);
         assert(formula != NULL);

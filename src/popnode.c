@@ -605,8 +605,11 @@ static void PopNode_chkDependencies_r(PopNode * self, ParStore * ps,
 
     // Make sure that the dependencies of each constrained
     // parameter are present in "seen".
+    fprintf(stderr,"%s:%s:%d\n",__FILE__,__func__,__LINE__);
     ParStore_chkDependencies(ps, self->twoN, seen);
+    fprintf(stderr,"%s:%s:%d\n",__FILE__,__func__,__LINE__);
     ParStore_chkDependencies(ps, self->start, seen);
+    fprintf(stderr,"%s:%s:%d\n",__FILE__,__func__,__LINE__);
     ParStore_chkDependencies(ps, self->mix, seen);
 
     // Add constrained parameters of current node to "seen"

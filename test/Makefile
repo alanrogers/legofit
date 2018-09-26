@@ -161,7 +161,8 @@ xparse.o : parse.c
 
 XPARSE := xparse.o popnodetab.o misc.o tokenizer.o gptree.o lblndx.o \
        branchtab.o parstore.o parkeyval.o popnode.o binary.o gene.o \
-       dprintf.o dtnorm.o tinyexpr.o
+       dprintf.o dtnorm.o tinyexpr.o param.o strparmap.o addrparmap.o \
+       ptrset.o
 xparse : $(XPARSE)
 	$(CC) $(CFLAGS) -o $@ $(XPARSE) $(lib)
 

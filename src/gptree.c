@@ -124,7 +124,6 @@ void GPTree_simulate(GPTree * self, BranchTab * branchtab, gsl_rng * rng,
     for(rep = 0; rep < nreps; ++rep) {
         PopNode_clear(self->rootPop);   // remove old samples
         SampNdx_populateTree(&(self->sndx));    // add new samples
-        PopNode_gaussian(self->rootPop, self->bnd, self->parstore, rng);
 
         // coalescent simulation generates gene genealogy within
         // population tree.

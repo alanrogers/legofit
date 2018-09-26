@@ -195,6 +195,7 @@ ParStore *ParStore_dup(const ParStore * old) {
 
 /// Destructor
 void ParStore_free(ParStore * self) {
+    assert(self);
     StrParMap_free(self->byname);
     AddrParMap_free(self->byaddr);
 
@@ -207,6 +208,7 @@ void ParStore_free(ParStore * self) {
 /// Add a free parameter to ParStore.
 void ParStore_addFreePar(ParStore * self, double value,
                          double lo, double hi, const char *name) {
+    assert(self);
     Param *par = StrParMap_search(self->byname, name);
     if(par) {
         fprintf(stderr, "%s:%d: Duplicate definition of parameter \"%s\".\n",
@@ -334,7 +336,14 @@ int ParStore_isConstrained(const ParStore * self, const double *ptr) {
 void ParStore_chkDependencies(ParStore * self, const double *valptr, PtrSet * seen) {
     assert(self);
 
+    if(self->byaddr == NULL)
+        return;
     Param *par = AddrParMap_search (self->byaddr, valptr);
+    if(par == NULL) {
+        fprintf(stderr, "%s:%s:%d: can't find parameter with address %p\n",
+                __FILE__, __func__, __LINE__, valptr);
+        exit(EXIT_FAILURE);
+    }
 
     // Nothing to be done unless par is constrained.
     if(par->behavior != Constrained)
@@ -356,10 +365,9 @@ void ParStore_chkDependencies(ParStore * self, const double *valptr, PtrSet * se
     for(int j = 0; j < len; ++j) {
         // dpar is Param structure associated with value pointer dep[j]
         Param *dpar = AddrParMap_search(self->byaddr, dep[j]);
-
         if(dpar == NULL) {
-            fprintf(stderr, "%s:%d: can't find parameter with address %p\n",
-                    __FILE__, __LINE__, dep[j]);
+            fprintf(stderr, "%s:%s:%d: can't find parameter with address %p\n",
+                    __FILE__, __func__, __LINE__, dep[j]);
             exit(EXIT_FAILURE);
         }
 
@@ -469,6 +477,8 @@ int ParStore_equals(ParStore * lhs, ParStore * rhs) {
 /// If ptr points to a constrained parameter, then set its value.
 void ParStore_constrain_ptr(ParStore * self, double *ptr) {
     assert(self);
+    if(self->byaddr == NULL)
+        return;
     Param *par = AddrParMap_search(self->byaddr, ptr);
     assert(par);
 
