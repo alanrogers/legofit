@@ -99,7 +99,7 @@ int main(void) {
     printf("32-bit key %u -> hash %u\n", key32, uint32Hash(key32));
 
     uint64_t key64 = 1234u;
-    printf("64-bit key %llu -> hash %u\n", key64, uint64Hash(key64));
+    printf("64-bit key %lu -> hash %u\n", key64, uint64Hash(key64));
 
     return 0;
 }

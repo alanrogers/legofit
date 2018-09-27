@@ -9,7 +9,7 @@
 #include "error.h"
 #include "misc.h"
 #include <stdio.h>
-#include <strings.h>
+#include <string.h>
 #include <assert.h>
 
 #ifdef NDEBUG

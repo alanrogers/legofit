@@ -28,8 +28,7 @@ warn := \
  -Wno-unused-function \
  -Wshadow \
  -Wundef \
- -Wwrite-strings \
- -Wno-incompatible-pointer-types-discards-qualifiers
+ -Wwrite-strings
 
 CFLAGS := -g -std=gnu99 $(warn) $(incl) $(opt) $(prof) $(osargs)
 

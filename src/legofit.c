@@ -513,7 +513,8 @@ int main(int argc, char **argv) {
     State *state;
     if(stateInNames) {
         // read States from files
-        state = State_readList(stateInNames, npts, dim, parnames);
+        state = State_readList(stateInNames, npts, dim,
+                               (const char * const *) parnames);
         CHECKMEM(state);
         if(npts != State_npoints(state)) {
             fprintf(stderr, "Revising npts from %d to %d\n",
