@@ -158,6 +158,7 @@ ParStore *ParStore_dup(const ParStore * old) {
     new->freePar = new->fixedPar = new->constrainedPar = NULL;
     new->byname = NULL;
     new->byaddr = NULL;
+    new->te_pars = NULL;
 
     for(int i = 0; i < new->nPar; ++i) {
         Param *par = new->vec + i;
