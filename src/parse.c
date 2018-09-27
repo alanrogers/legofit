@@ -480,28 +480,30 @@ void parseMix(char *next, PopNodeTab * poptbl, ParStore * parstore,
     PopNode_mix(childNode, mPtr, mbehavior == Free, parNode1, parNode0);
 }
 
-// Read a line into buff; strip comments and trailing whitespace.
-// Return 0 on success; 1 on EOF.
+// Read a line into buff, skipping blank lines; strip comments and
+// trailing whitespace.  Return 0 on success; 1 on EOF.
 int get_one_line(size_t n, char buff[n], FILE * fp) {
-    if(fgets(buff, n, fp) == NULL)
-        return 1;
+    do{
+        if(fgets(buff, n, fp) == NULL)
+            return 1;
 
-    if(!strchr(buff, '\n') && !feof(fp)) {
-        fprintf(stderr, "%s:%d: buffer overflow. buff size: %zu\n",
-                __FILE__, __LINE__, n);
-        fprintf(stderr, "input: %s\n", buff);
-        exit(EXIT_FAILURE);
-    }
-    // strip trailing comments
-    char *s = strchr(buff, '#');
-    if(s)
+        if(!strchr(buff, '\n') && !feof(fp)) {
+            fprintf(stderr, "%s:%d: buffer overflow. buff size: %zu\n",
+                    __FILE__, __LINE__, n);
+            fprintf(stderr, "input: %s\n", buff);
+            exit(EXIT_FAILURE);
+        }
+        // strip trailing comments
+        char *s = strchr(buff, '#');
+        if(s)
+            *s = '\0';
+
+        // strip trailing whitespace
+        for(s = buff; *s != '\0'; ++s) ;
+        while(s > buff && isspace(*(s - 1)))
+            --s;
         *s = '\0';
-
-    // strip trailing whitespace
-    for(s = buff; *s != '\0'; ++s) ;
-    while(s > buff && isspace(*(s - 1)))
-        --s;
-    *s = '\0';
+    }while(*buff == '\0');
 
     return 0;
 }
@@ -540,6 +542,7 @@ PopNode *mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, ParStore * parstore,
             if(1 == get_one_line(sizeof(buff2), buff2, fp)) {
                 fprintf(stderr, "%s:%d: unexpected end of file\n",
                         __FILE__, __LINE__);
+                fprintf(stderr,"  prev line: \"%s\"\n", buff);
                 exit(EXIT_FAILURE);
             }
             if(strlen(buff) + strlen(buff2) >= sizeof(buff)) {
