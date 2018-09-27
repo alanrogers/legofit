@@ -113,6 +113,7 @@ void te_variable_free(te_variable *self) {
     if(self==NULL)
         return;
     te_variable_free(self->next);
+    free((char *) self->name);
     free(self);
 }
 

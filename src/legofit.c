@@ -510,7 +510,7 @@ int main(int argc, char **argv) {
 
     // DiffEv state array is a matrix with a row for each point
     // and a column for each parameter.
-    State *state;
+    State *state=NULL;
     if(stateInNames) {
         // read States from files
         state = State_readList(stateInNames, npts, dim,
@@ -546,6 +546,7 @@ int main(int argc, char **argv) {
             State_setVector(state, i, dim, x);
         }
     }
+    assert(state);
 
     if(nThreads == 0)
         nThreads = ceil(0.75 * getNumCores());
@@ -846,6 +847,7 @@ int main(int argc, char **argv) {
     GPTree_sanityCheck(gptree, __FILE__, __LINE__);
     GPTree_free(gptree);
     SimSched_free(simSched);
+    State_free(state);
     for(i=0; i<dim; ++i)
         free(parnames[i]);
 

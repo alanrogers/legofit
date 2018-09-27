@@ -199,6 +199,7 @@ void ParStore_free(ParStore * self) {
     assert(self);
     StrParMap_free(self->byname);
     AddrParMap_free(self->byaddr);
+    te_variable_free(self->te_pars);
 
     for(int i = 0; i < self->nPar; ++i)
         Param_freePtrs(self->vec + i);
