@@ -65,4 +65,12 @@ typedef uint64_t tipId_t;
 #define LNL_COST 5
 #define COST KL_COST
 
+#define FREE 1
+#define FIXED 2
+#define CONSTRAINED 4
+#define TWON 8
+#define TIME 16
+#define MIXFRAC 32
+#define ARBITRARY 64
+
 #endif
