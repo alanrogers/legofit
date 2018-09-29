@@ -1,8 +1,10 @@
 #include "param.h"
 #include "misc.h"
+#include "dtnorm.h"
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
+#include <gsl/gsl_randist.h>
 
 void Param_init(Param *self, const char *name, double value,
                  double low, double high,
@@ -115,4 +117,21 @@ void Param_sanityCheck(const Param *self, const char *file, int line) {
     if(self->next)
         REQUIRE(self->next > self, file, line);
 #endif
+}
+
+/// Randomize parameter if FREE and not TIME.
+void Param_randomize(Param *self, gsl_rng *rng) {
+    assert(self);
+    if( !(self->type & FREE) )
+        return;
+
+    if(self->type & TWON) {
+        self->value = dtnorm(self->value, 10000.0, self->low,
+                             self->high, rng);
+    }else if( self->type & MIXFRAC ) {
+        self->value = gsl_ran_beta(rng, 1.0, 5.0);
+    }else if( self->type & ARBITRARY ) {
+        if(isinf(self->low) && isinf(self->high))
+           self->value += gsl_ran_gaussian_ziggurat(rng, 100.0)
+    }
 }
