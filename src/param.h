@@ -4,6 +4,7 @@
 #include "typedefs.h"
 #include "tinyexpr.h"
 #include <stdio.h>
+#include <gsl/gsl_randist.h>
 
 #define NAMESIZE 40
 
@@ -25,5 +26,6 @@ void   Param_freePtrs(Param *self);
 void   Param_print(Param *self, FILE *fp);
 int    Param_compare(const Param *lhs, const Param *rhs);
 void   Param_sanityCheck(const Param *self, const char *file, int line);
+void   Param_randomize(Param *self, gsl_rng *rng);
 
 #endif

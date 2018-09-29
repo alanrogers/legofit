@@ -102,7 +102,7 @@ XERROR := xerror.o error.o misc.o
 xerror : $(XERROR)
 	$(CC) $(CFLAGS) -o $@ $(XERROR) $(lib)
 
-XPARAM := xparam.o misc.o param.o tinyexpr.o
+XPARAM := xparam.o misc.o param.o tinyexpr.o dtnorm.o
 xparam : $(XPARAM)
 	$(CC) $(CFLAGS) -o $@ $(XPARAM) $(lib)
 
@@ -199,7 +199,8 @@ xgptree : $(XGPTREE)
 	$(CC) $(CFLAGS) -o $@ $(XGPTREE) $(lib)
 
 XPARSTORE := xparstore.o misc.o parstore.o binary.o lblndx.o \
-        tinyexpr.o ptrset.o strparmap.o addrparmap.o param.o
+        tinyexpr.o ptrset.o strparmap.o addrparmap.o param.o \
+		dtnorm.o
 xparstore : $(XPARSTORE)
 	$(CC) $(CFLAGS) -o $@ $(XPARSTORE) $(lib)
 

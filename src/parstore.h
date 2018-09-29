@@ -3,6 +3,7 @@
 
 #  include "typedefs.h"
 #  include "misc.h"
+#  include <gsl/gsl_rng.h>
 #  define MAXPAR 100
 
 struct Bounds {
@@ -35,6 +36,7 @@ int         ParStore_equals(ParStore * lhs, ParStore * rhs);
 void        ParStore_setFreeParams(ParStore * self, int n, double x[n]);
 void        ParStore_getFreeParams(ParStore * self, int n, double x[n]);
 int         ParStore_isConstrained(const ParStore *self, const double *ptr);
+void        ParStore_randomize(ParStore *self, gsl_rng *rng);
 void        Bounds_sanityCheck(Bounds * self, const char *file, int line);
 int         Bounds_equals(const Bounds * lhs, const Bounds * rhs);
 

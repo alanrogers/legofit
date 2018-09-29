@@ -35,6 +35,7 @@
 #include <stdbool.h>
 #include <assert.h>
 #include <float.h>
+#include <gsl/gsl_rng.h>
 
 // Set value of constrained variable. Abort with an error message if
 // result is NaN.
@@ -507,6 +508,12 @@ int ParStore_constrain(ParStore * self) {
     for(par = self->constrainedPar; par; par = par->next)
         SET_CONSTR(par);
     return 0;
+}
+
+/// Randomize all FREE parameters except TIME parameters
+void ParStore_randomize(ParStore *self, gsl_rng *rng) {
+    for(Param *par = self->freePar; par; par = par->next)
+        Param_randomize(par, rng);
 }
 
 /// Make sure Bounds object is sane.

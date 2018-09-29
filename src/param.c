@@ -122,6 +122,7 @@ void Param_sanityCheck(const Param *self, const char *file, int line) {
 /// Randomize parameter if FREE and not TIME.
 void Param_randomize(Param *self, gsl_rng *rng) {
     assert(self);
+    double r;
     if( !(self->type & FREE) )
         return;
 
@@ -131,7 +132,25 @@ void Param_randomize(Param *self, gsl_rng *rng) {
     }else if( self->type & MIXFRAC ) {
         self->value = gsl_ran_beta(rng, 1.0, 5.0);
     }else if( self->type & ARBITRARY ) {
-        if(isinf(self->low) && isinf(self->high))
-           self->value += gsl_ran_gaussian_ziggurat(rng, 100.0)
+        if(isinf(self->low) && isinf(self->high)) {
+            // both bounds are infinite
+            self->value += gsl_ran_gaussian_ziggurat(rng, 100.0);
+        }else if(isinf(self->low)) {
+            // lower bound infinite
+            do{
+                r = gsl_ran_gaussian_ziggurat(rng, 100.0);
+            }while(self->value + r > self->high);
+            self->value += r;
+        }else if(isinf(self->high)) {
+            // upper bound infinite
+            do{
+                r = gsl_ran_gaussian_ziggurat(rng, 100.0);
+            }while(self->value + r < self->low);
+            self->value += r;
+        }else {
+            // finite bounds
+            self->value = dtnorm(self->value, 100.0, self->low,
+                                 self->high, rng);
+        }
     }
 }

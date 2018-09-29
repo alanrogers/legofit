@@ -511,11 +511,6 @@ static void PopNode_randomize_r(PopNode * self, Bounds bnd,
     assert(self->nparents==0 || self->parent[0]->touched);
     assert(self->nparents<2 || self->parent[1]->touched);
 
-    // perturb self->twoN
-    if(self->twoNfree)
-        *self->twoN = dtnorm(*self->twoN, 10000.0, bnd.lo_twoN,
-                             bnd.hi_twoN, rng);
-
     // perturb self->start
     if(self->startFree) {
 

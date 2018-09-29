@@ -16,6 +16,8 @@
 #include <string.h>
 #include <time.h>
 #include <limits.h>
+#include <gsl/gsl_rng.h>
+#include <time.h>
 
 #ifdef NDEBUG
 #  error "Unit tests must be compiled without -DNDEBUG flag"
@@ -35,6 +37,12 @@ int main(int argc, char **argv) {
     default:
         eprintf("usage: xparstore [-v]\n");
     }
+
+    time_t      currtime = time(NULL);
+    unsigned    seed = currtime % UINT_MAX;
+    gsl_rng    *rng = gsl_rng_alloc(gsl_rng_taus);
+    CHECKMEM(rng);
+    gsl_rng_set(rng, seed);
 
     Bounds bnd0 = {
         .lo_twoN = 0.0,
@@ -156,6 +164,11 @@ int main(int argc, char **argv) {
     ParStore *ps2 = ParStore_dup(ps);
 
     assert(ParStore_equals(ps, ps2));
+
+    ParStore_randomize(ps2, rng);
+    ParStore_sanityCheck(ps2, __FILE__, __LINE__);
+
+    assert( !ParStore_equals(ps, ps2) );
 
     assert(ParStore_nFree(ps2) == ParStore_nFree(ps));
     assert(ParStore_nFixed(ps2) == ParStore_nFixed(ps));
