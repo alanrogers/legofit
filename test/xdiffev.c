@@ -1,6 +1,7 @@
 #include "diffev.h"
 #include "simsched.h"
 #include "state.h"
+#include "pointbuff.h"
 #include <getopt.h>
 #include <limits.h>
 #include <math.h>
@@ -246,6 +247,16 @@ int main(int argc, char *argv[]) {
     printf("Strategy: %s\n", diffEvStrategyLbl(strategy));
     printf("nPts=%d F=%-4.2lg CR=%-4.2lg\n", nPts, F, CR);
 
+    // Number of parameters in quadratic model used to estimate
+    // Hessian matrix: 1 intercept
+    // dim linear terms
+    // dim squared terms
+    // (dim*(dim-1))/2 cross product terms
+    unsigned nQuadPar = 1 + 2*dim + (dim*(dim-1))/2;
+
+    // Number of points to use in fitting quadratic model
+    unsigned nQuadPts = 10*nQuadPar;
+
     // parameters for Differential Evolution
     DiffEvPar   dep = {
         .dim = dim,
@@ -257,7 +268,6 @@ int main(int argc, char *argv[]) {
         .seed = ((unsigned long) time(NULL))-1ul,
         .F = F,
         .CR = CR,
-        .ytol = ytol,
         .jobData = NULL,
         .JobData_dup = NULL,
         .JobData_free = NULL,
@@ -265,8 +275,10 @@ int main(int argc, char *argv[]) {
         .threadData = NULL,
         .ThreadState_new = NULL,
         .ThreadState_free = NULL,
+		.state = state,
         .simSched = simSched,
-		.state = state
+        .ytol = ytol,
+        .pb = PointBuff_new(dim, nQuadPts)
     };
 
     double      estimate[dim];

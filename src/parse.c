@@ -94,8 +94,8 @@
 
 int getDbl(double *x, char **next, const char *orig);
 int getULong(unsigned long *x, char **next, const char *orig);
-void parseParam(char *next, enum ParamType type,
-                ParStore * parstore, Bounds * bnd, const char *orig);
+void parseParam(char *next, Boundedness bness, ParStore * parstore,
+                Bounds * bnd, const char *orig);
 void parseSegment(char *next, PopNodeTab * poptbl, SampNdx * sndx,
                   LblNdx * lndx, ParStore * parstore,
                   NodeStore * ns, const char *orig);
@@ -135,30 +135,28 @@ int getULong(unsigned long *x, char **next, const char *orig) {
 
 /// Parse a line of input defining a parameter
 /// @param[inout] next points to unparsed portion of input line
-/// @param[in] type the type of the current parameter: TwoN, Time, or MixFrac
+/// @param[in] bness: determines bounds of current parameter
 /// @param[out] parstore structure that maintains info about
 /// parameters
 /// @param[in] bnd the bounds of each type of parameter
 /// @parem[in] orig original input line
-void parseParam(char *next, enum ParamType type,
+void parseParam(char *next, Boundedness bness,
                 ParStore * parstore, Bounds * bnd, const char *orig) {
-    enum ParamStatus pstat = Free;
+    Behavior pbeh = Free;
 
-    // Read status of parameter
+    // Read behavior of parameter
     {
         char *tok = nextWhitesepToken(&next);
         CHECK_TOKEN(tok, orig);
         if(0 == strcmp("fixed", tok))
-            pstat = Fixed;
+            pbeh = Fixed;
         else if(0 == strcmp("free", tok))
-            pstat = Free;
-        else if(0 == strcmp("gaussian", tok))
-            pstat = Gaussian;
+            pbeh = Free;
         else if(0 == strcmp("constrained", tok))
-            pstat = Constrained;
+            pbeh = Constrained;
         else {
             fprintf(stderr, "%s:%s:%d: got %s when expecting \"fixed\","
-                    " \"free\", \"gaussian\", or \"constrained\".\n",
+                    " \"free\", or \"constrained\".\n",
                     __FILE__, __func__, __LINE__, tok);
             fprintf(stderr, "input: %s\n", orig);
             exit(EXIT_FAILURE);
@@ -187,8 +185,8 @@ void parseParam(char *next, enum ParamType type,
     }
 
     char *formula;
-    double value, sd = 0.0;
-    if(pstat == Constrained) {
+    double value;
+    if(pbeh == Constrained) {
         formula = stripWhiteSpace(next);
         assert(formula != NULL);
     } else {
@@ -201,53 +199,21 @@ void parseParam(char *next, enum ParamType type,
             fprintf(stderr, "input: %s\n", orig);
             exit(EXIT_FAILURE);
         }
-
-        if(pstat == Gaussian) {
-
-            // Read string "sd"
-            char *sdstr = strsep(&next, "=");
-            CHECK_TOKEN(sdstr, orig);
-            sdstr = stripWhiteSpace(sdstr);
-            if(0 != strcmp(sdstr, "sd")) {
-                fprintf(stderr, "%s:%s:%d: \"%s\" should be \"sd\".\n",
-                        __FILE__, __func__, __LINE__, sdstr);
-                fprintf(stderr, "input: %s\n", orig);
-                exit(EXIT_FAILURE);
-            }
-            // Read sd value
-            if(getDbl(&sd, &next, orig)) {
-                fflush(stdout);
-                fprintf(stderr,
-                        "%s:%s:%d:Can't parse double.\n",
-                        __FILE__, __func__, __LINE__);
-                fprintf(stderr, "input: %s\n", orig);
-                exit(EXIT_FAILURE);
-            }
-            if(sd <= 0.0) {
-                fprintf(stderr, "%s:%s:%d: Error sd=%lg <= 0.0\n",
-                        __FILE__, __func__, __LINE__, sd);
-                fprintf(stderr, "input: %s\n", orig);
-                exit(EXIT_FAILURE);
-            }
-        }
     }
 
     // Allocate and initialize parameter in ParStore
-    switch (pstat) {
+    switch (pbeh) {
     case Fixed:
         ParStore_addFixedPar(parstore, value, name);
-        break;
-    case Gaussian:
-        ParStore_addGaussianPar(parstore, value, sd, name);
         break;
     case Constrained:
         ParStore_addConstrainedPar(parstore, formula, name);
         break;
     case Free:
-        // Set bounds, based on type of parameter
+        // Set bounds, based on bness of parameter
     {
         double lo, hi;
-        switch (type) {
+        switch (bness) {
         case TwoN:
             lo = bnd->lo_twoN;
             hi = bnd->hi_twoN;
@@ -286,7 +252,7 @@ void parseSegment(char *next, PopNodeTab * poptbl, SampNdx * sndx,
                   const char *orig) {
     char *popName, *tok;
     double *tPtr, *twoNptr;
-    ParamStatus tstat, twoNstat;
+    Behavior tbehavior, twoNbehavior;
     unsigned long nsamples = 0;
 
     // Read name of segment
@@ -304,7 +270,7 @@ void parseSegment(char *next, PopNodeTab * poptbl, SampNdx * sndx,
     }
     tok = nextWhitesepToken(&next);
     CHECK_TOKEN(tok, orig);
-    tPtr = ParStore_findPtr(parstore, &tstat, tok);
+    tPtr = ParStore_findPtr(parstore, &tbehavior, tok);
     if(NULL == tPtr) {
         fprintf(stderr, "%s:%s:%d: Parameter \"%s\" is undefined\n",
                 __FILE__, __func__, __LINE__, tok);
@@ -323,7 +289,7 @@ void parseSegment(char *next, PopNodeTab * poptbl, SampNdx * sndx,
     tok = nextWhitesepToken(&next);
     CHECK_TOKEN(tok, orig);
     tok = stripWhiteSpace(tok);
-    twoNptr = ParStore_findPtr(parstore, &twoNstat, tok);
+    twoNptr = ParStore_findPtr(parstore, &twoNbehavior, tok);
     if(NULL == twoNptr) {
         fprintf(stderr, "%s:%s:%dParameter \"%s\" is undefined\n",
                 __FILE__, __func__, __LINE__, tok);
@@ -366,8 +332,8 @@ void parseSegment(char *next, PopNodeTab * poptbl, SampNdx * sndx,
     }
 
     assert(strlen(popName) > 0);
-    PopNode *thisNode = PopNode_new(twoNptr, twoNstat == Free,
-                                    tPtr, tstat == Free, ns);
+    PopNode *thisNode = PopNode_new(twoNptr, twoNbehavior == Free,
+                                    tPtr, tbehavior == Free, ns);
     if(0 != PopNodeTab_insert(poptbl, popName, thisNode)) {
         fprintf(stderr, "%s:%d: duplicate \"segment %s\"\n",
                 __FILE__, __LINE__, popName);
@@ -442,7 +408,7 @@ void parseMix(char *next, PopNodeTab * poptbl, ParStore * parstore,
               const char *orig) {
     char *childName, *parName[2], *tok;
     double *mPtr;
-    ParamStatus mstat;
+    Behavior mbehavior;
 
     // Read name of child
     childName = nextWhitesepToken(&next);
@@ -466,7 +432,7 @@ void parseMix(char *next, PopNodeTab * poptbl, ParStore * parstore,
     tok = strsep(&next, "*");
     CHECK_TOKEN(tok, orig);
     tok = stripWhiteSpace(tok);
-    mPtr = ParStore_findPtr(parstore, &mstat, tok);
+    mPtr = ParStore_findPtr(parstore, &mbehavior, tok);
     if(NULL == mPtr) {
         fprintf(stderr, "%s:%s:%d: Parameter \"%s\" is undefined\n",
                 __FILE__, __func__, __LINE__, tok);
@@ -511,31 +477,33 @@ void parseMix(char *next, PopNodeTab * poptbl, ParStore * parstore,
         exit(EXIT_FAILURE);
     }
 
-    PopNode_mix(childNode, mPtr, mstat == Free, parNode1, parNode0);
+    PopNode_mix(childNode, mPtr, mbehavior == Free, parNode1, parNode0);
 }
 
-// Read a line into buff; strip comments and trailing whitespace.
-// Return 0 on success; 1 on EOF.
+// Read a line into buff, skipping blank lines; strip comments and
+// trailing whitespace.  Return 0 on success; 1 on EOF.
 int get_one_line(size_t n, char buff[n], FILE * fp) {
-    if(fgets(buff, n, fp) == NULL)
-        return 1;
+    do{
+        if(fgets(buff, n, fp) == NULL)
+            return 1;
 
-    if(!strchr(buff, '\n') && !feof(fp)) {
-        fprintf(stderr, "%s:%d: buffer overflow. buff size: %zu\n",
-                __FILE__, __LINE__, n);
-        fprintf(stderr, "input: %s\n", buff);
-        exit(EXIT_FAILURE);
-    }
-    // strip trailing comments
-    char *s = strchr(buff, '#');
-    if(s)
+        if(!strchr(buff, '\n') && !feof(fp)) {
+            fprintf(stderr, "%s:%d: buffer overflow. buff size: %zu\n",
+                    __FILE__, __LINE__, n);
+            fprintf(stderr, "input: %s\n", buff);
+            exit(EXIT_FAILURE);
+        }
+        // strip trailing comments
+        char *s = strchr(buff, '#');
+        if(s)
+            *s = '\0';
+
+        // strip trailing whitespace
+        for(s = buff; *s != '\0'; ++s) ;
+        while(s > buff && isspace(*(s - 1)))
+            --s;
         *s = '\0';
-
-    // strip trailing whitespace
-    for(s = buff; *s != '\0'; ++s) ;
-    while(s > buff && isspace(*(s - 1)))
-        --s;
-    *s = '\0';
+    }while(*buff == '\0');
 
     return 0;
 }
@@ -574,6 +542,7 @@ PopNode *mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, ParStore * parstore,
             if(1 == get_one_line(sizeof(buff2), buff2, fp)) {
                 fprintf(stderr, "%s:%d: unexpected end of file\n",
                         __FILE__, __LINE__);
+                fprintf(stderr,"  prev line: \"%s\"\n", buff);
                 exit(EXIT_FAILURE);
             }
             if(strlen(buff) + strlen(buff2) >= sizeof(buff)) {
@@ -615,6 +584,7 @@ PopNode *mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, ParStore * parstore,
     // these searches all find the same root. Otherwise, it aborts
     // with an error.
     PopNode *root = PopNodeTab_check_and_root(poptbl, __FILE__, __LINE__);
+    PopNode_chkDependencies(root, parstore);
     PopNodeTab_free(poptbl);
     return root;
 }
@@ -714,7 +684,6 @@ int main(int argc, char **argv) {
         exit(1);
     }
     // test getDbl
-    fprintf(stderr, "%s:%s:%d\n", __FILE__, __func__, __LINE__);
     char buff[100], *next;
     double x;
     strcpy(buff, " +1.23 ");
@@ -726,7 +695,6 @@ int main(int argc, char **argv) {
     next = buff;
     assert(0 == getDbl(&x, &next, buff));
     assert(Dbl_near(x, -1.23e-4));
-    fprintf(stderr, "%s:%s:%d\n", __FILE__, __func__, __LINE__);
     unitTstResult("getDbl", "OK");
 
     SampNdx sndx;
@@ -767,8 +735,6 @@ int main(int argc, char **argv) {
                ParStore_nFixed(parstore));
         printf("Used %d free parameters in \"parstore\".\n",
                ParStore_nFree(parstore));
-        printf("Used %d Gaussian parameters in \"parstore\".\n",
-               ParStore_nGaussian(parstore));
         printf("Used %d constrained parameters in \"parstore\".\n",
                ParStore_nConstrained(parstore));
     }

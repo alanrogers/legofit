@@ -2,17 +2,27 @@
 #define LEGOFIT_PARAM_H
 
 #include "typedefs.h"
+#include "tinyexpr.h"
+#include <stdio.h>
+
+#define NAMESIZE 40
 
 struct Param {
     char *name;         // name of parameter; locally owned
-    double *valptr;     // pointer to value; not locally owned
+    double value;
     double low, high;   // bounds;
-    double mean, sd;    // parameters for gaussian variables
-    ParamStatus status; // Free, Fixed, Gaussian, Constrained
+    Behavior behavior;  // Free, Fixed, or Constrained
+    char *formula;      // formula for constrained variable
+    te_expr *constr;    // expression tree for constrained variable
+    struct Param *next; // for a linked list of Param objects.
 };
 
-Param *Param_new(const char *name, double *valptr, double low, double high,
-                 ParamStatus status);
-void   Param_free(Param *self);
+void   Param_init(Param *self, const char *name, double value,
+                  double low, double high, Behavior behavior);
+void Param_copy(Param *new, const Param *old);
+Param *Param_push(Param *self, Param *new);
+void   Param_freePtrs(Param *self);
+void   Param_print(Param *self, FILE *fp);
+int    Param_compare(const Param *lhs, const Param *rhs);
 
 #endif

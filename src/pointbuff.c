@@ -83,6 +83,7 @@ unsigned PointBuff_size(const PointBuff *self) {
 
 void PointBuff_push(PointBuff *self, double cost, int n,
                     double param[n]) {
+    assert(self);
     assert(n == self->nPar);
     Point *pt = (Point *) self->curPtr;
     Point_set(pt, cost, n, param);

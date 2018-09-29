@@ -23,7 +23,7 @@
 #define ISRED(node) ((node)!=NULL && (node)->color==RED)
 
 struct StrParMap {
-    Param *par; // locally owned
+    Param *par; // not locally owned
     int color;
     StrParMap *left, *right;
 };
@@ -39,7 +39,6 @@ void StrParMap_free(StrParMap *h) {
         return;
     StrParMap_free(h->left);
     StrParMap_free(h->right);
-    Param_free(h->par);
     free(h);
 }
 
@@ -50,7 +49,7 @@ StrParMap *StrParMap_new(Param *par) {
                 __FILE__, __LINE__);
         exit(1);
     }
-    self->par = par;
+    self->par = par;  // no copy: not locally owned
     self->color = RED;
     self->left = self->right = NULL;
     return self;
@@ -141,9 +140,9 @@ void StrParMap_print(StrParMap *h, FILE *fp, int indent) {
     int i;
     for(i=0; i<indent; ++i)
         fprintf(fp,"%d", i);
-    fprintf(fp, "[%s, %p, %s]\n",
+    fprintf(fp, "[%s, %g, %s]\n",
             h->par->name,
-            h->par->valptr,
+            h->par->value,
             h->color==RED ? "red" : "black");
     StrParMap_print(h->right, fp, indent+1);
 }
@@ -160,14 +159,18 @@ int main(int argc, char **argv) {
         verbose = 1;
     }
 
-    double a[] = {0.0, 1.0, 2.0, 3.0};
+    double a[] = {0.0, 1.0, 2.0, 0.5};
+    Param parvec[4];
+    Param_init(parvec+0, "par0", a[0], 0.0, 1.0, Free);
+    Param_init(parvec+1, "par1", a[1], -INFINITY, INFINITY, Constrained);
+    Param_init(parvec+2, "par2", a[2], 1.0, 1e6, Fixed);
+    Param_init(parvec+3, "par3", a[3], -1.0, 1.0, Constrained);
 
     StrParMap *root = NULL;
-    root = StrParMap_insert(root, Param_new("par0", a+0, 0.0, 1.0, Free) );
-    root = StrParMap_insert(root, Param_new("par1", a+1, -INFINITY, INFINITY,
-                                       Constrained) );
-    root = StrParMap_insert(root, Param_new("par2", a+2, 1.0, 1e6, Fixed) );
-    root = StrParMap_insert(root, Param_new("par3", a+3, -1.0, 1.0, Gaussian) );
+    root = StrParMap_insert(root, parvec+0);
+    root = StrParMap_insert(root, parvec+1);
+    root = StrParMap_insert(root, parvec+2);
+    root = StrParMap_insert(root, parvec+3);
 
     if(verbose)
         StrParMap_print(root, stdout, 0);
@@ -178,18 +181,22 @@ int main(int argc, char **argv) {
     par = StrParMap_search(root, "par0");
     assert(par);
     assert(strcmp(par->name, "par0") == 0);
+    assert(par->value == a[0]);
 
     par = StrParMap_search(root, "par1");
     assert(par);
     assert(strcmp(par->name, "par1") == 0);
+    assert(par->value == a[1]);
     
     par = StrParMap_search(root, "par2");
     assert(par);
     assert(strcmp(par->name, "par2") == 0);
+    assert(par->value == a[2]);
 
     par = StrParMap_search(root, "par3");
     assert(par);
     assert(strcmp(par->name, "par3") == 0);
+    assert(par->value == a[3]);
 
     // Search for nodes that don't exist. Each search should fail.
     par = StrParMap_search(root, "par10");

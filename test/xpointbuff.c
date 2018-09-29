@@ -2,6 +2,11 @@
 #include "misc.h"
 #include <string.h>
 #include <stdio.h>
+
+#ifdef NDEBUG
+#  error "Unit tests must be compiled without -DNDEBUG flag"
+#endif
+
 int main(int argc, char **argv) {
 
     const unsigned npar = 2;

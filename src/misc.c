@@ -40,12 +40,16 @@
 /// addresses instead.
 /// Call like this: "dostacktrace(__FILE__, __LINE__)"
 void dostacktrace(const char *file, int line, FILE * ofp) {
+#ifndef NDEBUG    
     void       *callstack[CALLSTACK_SIZE];
     int         nsymbols = backtrace(callstack, CALLSTACK_SIZE);
 
     fprintf(ofp, "backtrace depth: %d\n", nsymbols);
     fprintf(ofp, "dostacktrace called from %s:%d:\n", file, line);
     backtrace_symbols_fd(callstack, nsymbols, fileno(ofp));
+#else
+    fprintf(ofp, "Stack trace not available because of NDEBUG option.\n");
+#endif    
 }
 
 /// Describe an option. For use in "usage" functions.
@@ -688,4 +692,16 @@ const char *mybasename(const char *pathname) {
     if(p == NULL)
         return pathname;
     return p+1;
+}
+
+/// Return nonzero if name is legal; zero otherwise. Legal
+/// names begin with an alphabetic character and then continue
+/// with any number of letters, digits, or characters in "._:@$".
+int legalName(const char *name) {
+    const char *legal =
+        "abcdefghijklmnopqrstuvwxyz"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ" "0123456789" "._:@$";
+    if(!isalpha(name[0]))
+        return 0;
+    return strlen(name) == strspn(name, legal);
 }

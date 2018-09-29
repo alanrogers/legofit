@@ -186,7 +186,7 @@ void State_free(State *self) {
 }
 
 // Construct a new State object by reading a file
-State *State_read(const char *fname, int npar, char *name[npar]) {
+State *State_read(const char *fname, int npar, const char * const *name) {
     int i, j, npts, npar2, status;
     char buff[200];
     State *self = NULL;
@@ -404,7 +404,7 @@ int State_print(State *self, FILE *fp) {
 }
 
 // name is an array of npar char pointers
-State *State_readList(NameList *list, int npts, int npar, char *name[npar]) {
+State *State_readList(NameList *list, int npts, int npar, const char * const *name) {
     int nstates = NameList_size(list);
     if(nstates==0)
         return NULL;

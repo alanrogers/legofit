@@ -23,6 +23,10 @@
 
 #include "dtnorm.h"
 
+#ifdef NDEBUG
+#  error "Unit tests must be compiled without -DNDEBUG flag"
+#endif
+
 typedef struct Pair Pair;
 struct Pair {
     double first, second;

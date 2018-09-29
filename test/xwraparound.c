@@ -2,6 +2,11 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+
+#ifdef NDEBUG
+#  error "Unit tests must be compiled without -DNDEBUG flag"
+#endif
+
 int main(int argc, char **argv) {
     int verbose = 0;
     unsigned i, u;

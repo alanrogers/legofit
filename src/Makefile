@@ -1,7 +1,7 @@
 destination := $(HOME)/bin
 global_destination := $(HOME)/group/bin
-opt := -DNDEBUG -O3  -finline-functions  # For full optimization
-#opt := -O0 -fno-inline-functions -rdynamic -DDEBUG     # For debugging
+#opt := -DNDEBUG -O3  -finline-functions  # For full optimization
+opt := -O0 -fno-inline-functions -rdynamic -DDEBUG     # For debugging
 #opt := -O3  -finline-functions  # Optimization + debugging
 #prof := -pg -rdynamic                    # For profiling
 prof :=
@@ -28,8 +28,7 @@ warn := \
  -Wno-unused-function \
  -Wshadow \
  -Wundef \
- -Wwrite-strings \
- -Wno-incompatible-pointer-types-discards-qualifiers
+ -Wwrite-strings
 
 CFLAGS := -g -std=gnu99 $(warn) $(incl) $(opt) $(prof) $(osargs)
 
@@ -45,16 +44,17 @@ test : $(tests)
 	-./xzeroin
 	@echo "ALL UNIT TESTS WERE COMPLETED."
 
-LEGOSIM := legosim.o patprob.o gptree.o binary.o jobqueue.o misc.o parse.o \
-  branchtab.o popnodetab.o lblndx.o tokenizer.o parstore.o parkeyval.o \
-  popnode.o gene.o dprintf.o rngseed.o dtnorm.o tinyexpr.o
+LEGOSIM := legosim.o addrparmap.o patprob.o gptree.o binary.o jobqueue.o \
+  misc.o parse.o branchtab.o popnodetab.o lblndx.o tokenizer.o param.o \
+  parstore.o popnode.o gene.o dprintf.o rngseed.o dtnorm.o tinyexpr.o \
+  ptrset.o strparmap.o
 legosim : $(LEGOSIM)
 	$(CC) $(CFLAGS) -o $@ $(LEGOSIM) $(lib)
 
-LEGOFIT := legofit.o patprob.o gptree.o binary.o jobqueue.o misc.o \
-  parse.o branchtab.o popnodetab.o lblndx.o tokenizer.o parstore.o \
-  parkeyval.o popnode.o gene.o cost.o diffev.o dprintf.o rngseed.o \
-  simsched.o dtnorm.o tinyexpr.o state.o pointbuff.o
+LEGOFIT := legofit.o addrparmap.o patprob.o gptree.o binary.o jobqueue.o \
+  misc.o parse.o branchtab.o popnodetab.o lblndx.o tokenizer.o parstore.o \
+  popnode.o gene.o cost.o diffev.o dprintf.o rngseed.o simsched.o dtnorm.o \
+  tinyexpr.o state.o strparmap.o param.o pointbuff.o ptrset.o
 legofit : $(LEGOFIT)
 	$(CC) $(CFLAGS) -o $@ $(LEGOFIT) $(lib)
 
@@ -70,12 +70,12 @@ BMA := bma.o misc.o strdblqueue.o strint.o tokenizer.o
 bma : $(BMA)
 	$(CC) $(CFLAGS) -o $@ $(BMA) $(lib)
 
-TABPAT := tabpat.o misc.o binary.o lblndx.o parkeyval.o dafreader.o \
+TABPAT := tabpat.o misc.o binary.o lblndx.o dafreader.o \
   tokenizer.o strint.o boot.o error.o
 tabpat : $(TABPAT)
 	$(CC) $(CFLAGS) -o $@ $(TABPAT) $(lib)
 
-SITEPAT := sitepat.o misc.o binary.o lblndx.o parkeyval.o rafreader.o \
+SITEPAT := sitepat.o misc.o binary.o lblndx.o rafreader.o \
   tokenizer.o strint.o boot.o error.o
 sitepat : $(SITEPAT)
 	$(CC) $(CFLAGS) -o $@ $(SITEPAT) $(lib)
@@ -88,7 +88,7 @@ RAF2DAF := raf2daf.o rafreader.o error.o tokenizer.o misc.o
 raf2daf : $(RAF2DAF)
 	$(CC) $(CFLAGS) -o $@ $(RAF2DAF) $(lib)
 
-SCRMPAT := scrmpat.o misc.o binary.o lblndx.o parkeyval.o scrmreader.o \
+SCRMPAT := scrmpat.o misc.o binary.o lblndx.o scrmreader.o \
   tokenizer.o boot.o error.o
 scrmpat : $(SCRMPAT)
 	$(CC) $(CFLAGS) -o $@ $(SCRMPAT) $(lib)

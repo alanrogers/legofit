@@ -8,6 +8,10 @@
  * knows its size and duration. It has pointers to parents and
  * children. If it has two parents, there is also a mixing parameter,
  * which determines what fraction of the node derives from each parent.
+ *
+ * @copyright Copyright (c) 2018, Alan R. Rogers
+ * <rogers@anthro.utah.edu>. This file is released under the Internet
+ * Systems Consortium License, which can be found in file "LICENSE".
  */
 
 #include "popnode.h"
@@ -15,6 +19,7 @@
 #include "misc.h"
 #include "parstore.h"
 #include "dtnorm.h"
+#include "ptrset.h"
 #include <stdbool.h>
 #include <string.h>
 #include <float.h>
@@ -30,8 +35,8 @@ struct NodeStore {
 static void PopNode_sanityCheck(PopNode * self, const char *file, int lineno);
 static void PopNode_randomize_r(PopNode * self, Bounds bnd,
                                 ParStore * parstore, gsl_rng * rng);
-static void PopNode_gaussian_r(PopNode * self, Bounds bnd, ParStore * ps,
-                               gsl_rng * rng);
+static void PopNode_chkDependencies_r(PopNode * self, ParStore * ps,
+                                      PtrSet *seen);
 
 /// Check for errors in PopNode tree. Call this from each leaf node.
 void PopNode_sanityFromLeaf(PopNode * self, const char *file, int line) {
@@ -489,6 +494,7 @@ void PopNode_randomize(PopNode * self, Bounds bnd, ParStore * parstore,
     } while(!PopNode_feasible(self, bnd, 0));
 }
 
+/// Randomly perturb all free parameters in tree while maintaining
 /// Recurse through the tree perturbing free parameters. Must call
 /// PopNode_untouch before calling this function.
 static void PopNode_randomize_r(PopNode * self, Bounds bnd,
@@ -572,23 +578,20 @@ static void PopNode_randomize_r(PopNode * self, Bounds bnd,
         PopNode_randomize_r(self->child[i], bnd, parstore, rng);
 }
 
-/// Reset the value of each Gaussian parameter by sampling from the
-/// relevant distribution.
-void PopNode_gaussian(PopNode * self, Bounds bnd,
-                      ParStore * ps, gsl_rng * rng) {
+/// Make sure that constrained variables depend only on
+void PopNode_chkDependencies(PopNode * self, ParStore * parstore) {
     PopNode_untouch(self);
-    if(ParStore_constrain(ps)) {
-        fprintf(stderr,"%s:%d: free parameters violate constraints\n",
-                __FILE__,__LINE__);
-    }
-    PopNode_gaussian_r(self, bnd, ps, rng);
+    PtrSet *seen = PtrSet_new();
+    PopNode_chkDependencies_r(self, parstore, seen);
+    PtrSet_free(seen);
 }
 
-/// Traverse the population tree to reset the value of each Gaussian
-/// parameter by sampling from the relevant distribution.
+/// Traverse the population tree to check dependencies of each
+/// constrained variable. Constrained variables can depend only
+/// on constrained variables that precede them in this traversal.
 /// Call PopNode_untouch before calling this function.
-static void PopNode_gaussian_r(PopNode * self, Bounds bnd,
-                               ParStore * ps, gsl_rng * rng) {
+static void PopNode_chkDependencies_r(PopNode * self, ParStore * ps,
+                                      PtrSet *seen) {
 
     // If at least one parents is untouched, postpone this node.
     if(self->nparents==2 && !(self->parent[0]->touched &&
@@ -600,57 +603,27 @@ static void PopNode_gaussian_r(PopNode * self, Bounds bnd,
     assert(self->nparents==0 || self->parent[0]->touched);
     assert(self->nparents<2 || self->parent[1]->touched);
 
-    // perturb self->twoN
-    ParStore_sample(ps, self->twoN, bnd.lo_twoN, bnd.hi_twoN, rng);
+    // Make sure that the dependencies of each constrained
+    // parameter are present in "seen".
+    ParStore_chkDependencies(ps, self->twoN, seen);
+    ParStore_chkDependencies(ps, self->start, seen);
 
-    // perturb self->start
-    // hi_t is the minimum age of parents or bnd.hi_t
-    double      hi_t = bnd.hi_t;
-    switch (self->nparents) {
-    case 0:
-        hi_t = fmin(hi_t, *self->start + gsl_ran_exponential(rng, 10000.0));
-        break;
-    case 1:
-        assert(self->parent[0]->touched);
-        hi_t = *self->parent[0]->start;
-        break;
-    case 2:
-        assert(self->parent[0]->touched);
-        assert(self->parent[1]->touched);
-        hi_t = fmin(*self->parent[0]->start, *self->parent[1]->start);
-        break;
-    default:
-        fprintf(stderr, "%s:%s:%d: bad value of nparents: %d\n",
-                __FILE__, __func__, __LINE__, self->nparents);
-        exit(EXIT_FAILURE);
+    // Add constrained parameters of current node to "seen"
+    if(ParStore_isConstrained(ps, self->twoN))
+        PtrSet_insert(seen, self->twoN);
+    if(ParStore_isConstrained(ps, self->start))
+        PtrSet_insert(seen, self->start);
+    if(self->nparents == 2) {
+        assert(self->mix != NULL);
+        ParStore_chkDependencies(ps, self->mix, seen);
+        if(ParStore_isConstrained(ps, self->mix))
+            PtrSet_insert(seen, self->mix);
     }
-
-    // lo_t is the maximum age of children or bnd.lo_t
-    double      lo_t = bnd.lo_t;
-    switch (self->nchildren) {
-    case 0:
-        break;
-    case 1:
-        lo_t = *self->child[0]->start;
-        break;
-    case 2:
-        lo_t = fmax(*self->child[0]->start, *self->child[1]->start);
-        break;
-    default:
-        fprintf(stderr, "%s:%s:%d: bad value of nchildren: %d\n",
-                __FILE__, __func__, __LINE__, self->nchildren);
-        exit(EXIT_FAILURE);
-    }
-    ParStore_sample(ps, self->start, lo_t, hi_t, rng);
-
-    // Perturb mix probability
-    ParStore_sample(ps, self->mix, 0.0, 1.0, rng);
 
     self->touched = true;
 
-    int         i;
-    for(i = 0; i < self->nchildren; ++i)
-        PopNode_gaussian_r(self->child[i], bnd, ps, rng);
+    for(int i = 0; i < self->nchildren; ++i)
+        PopNode_chkDependencies_r(self->child[i], ps, seen);
 }
 
 /// Return 1 if parameters satisfy inequality constraints, or 0 otherwise.
@@ -963,6 +936,7 @@ int main(int argc, char **argv) {
     gsl_rng_set(rng, rngseed);
     PopNode_randomize(p1, bnd, ps, rng);
     gsl_rng_free(rng);
+    PopNode_chkDependencies(p1, ps);
 
     if(verbose) {
         printf("After randomization\n");
