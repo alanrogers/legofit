@@ -94,7 +94,7 @@
 
 int getDbl(double *x, char **next, const char *orig);
 int getULong(unsigned long *x, char **next, const char *orig);
-void parseParam(char *next, unsigned bness, ParStore * parstore,
+void parseParam(char *next, unsigned type, ParStore * parstore,
                 Bounds * bnd, const char *orig);
 void parseSegment(char *next, PopNodeTab * poptbl, SampNdx * sndx,
                   LblNdx * lndx, ParStore * parstore,
@@ -165,19 +165,11 @@ void parseParam(char *next, unsigned ptype,
     char *name = strsep(&next, "=");
     CHECK_TOKEN(name, orig);
     name = stripWhiteSpace(name);
-    int i, ok = 1;
-    if(!isalpha(name[0]))
-        ok = 0;
-    for(i = 1; ok && name[i] != '\0'; ++i) {
-        int c = name[i];
-        if(!(isalnum(c) || c == '_'))
-            ok = 0;
-    }
-    if(!ok) {
+    if( !legalName(name) ) {
         fprintf(stderr, "%s:%d: \"%s\" is not a legal parameter name.\n",
                 __FILE__, __LINE__, name);
         fprintf(stderr, " Legal names consist of a letter followed by"
-                " letters, digits, and underscores.\n");
+                " letters, digits, underscores, colons, or periods.\n");
         fprintf(stderr, " Input: %s\n", orig);
         exit(EXIT_FAILURE);
     }
@@ -201,9 +193,9 @@ void parseParam(char *next, unsigned ptype,
 
     // Allocate and initialize parameter in ParStore
     if(ptype & FIXED) {
-        ParStore_addFixedPar(parstore, value, name);
+        ParStore_addFixedPar(parstore, value, name, ptype);
     }else if(ptype & CONSTRAINED) {
-        ParStore_addConstrainedPar(parstore, formula, name);
+        ParStore_addConstrainedPar(parstore, formula, name, ptype);
     }else if(ptype & FREE) {
         double lo, hi;
         if(ptype & TWON) {
@@ -217,7 +209,7 @@ void parseParam(char *next, unsigned ptype,
             hi = 1.0;
         }else
             DIE("This shouldn't happen");
-        ParStore_addFreePar(parstore, value, lo, hi, name);
+        ParStore_addFreePar(parstore, value, lo, hi, name, ptype);
     }else
         DIE("This shouldn't happen");
 }
