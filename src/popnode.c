@@ -494,8 +494,8 @@ void PopNode_randomize(PopNode * self, Bounds bnd, ParStore * parstore,
     } while(!PopNode_feasible(self, bnd, 0));
 }
 
-/// Randomly perturb all free parameters in tree while maintaining
-/// Recurse through the tree perturbing free parameters. Must call
+/// Randomly perturb all free time parameters in tree while
+/// maintaining inequality constraints. Must call
 /// PopNode_untouch before calling this function.
 static void PopNode_randomize_r(PopNode * self, Bounds bnd,
                                 ParStore * parstore, gsl_rng * rng) {
@@ -559,11 +559,6 @@ static void PopNode_randomize_r(PopNode * self, Bounds bnd,
             exit(EXIT_FAILURE);
         }
         *self->start = gsl_ran_flat(rng, lo_t, hi_t);
-    }
-
-    if(self->mixFree) {
-        assert(self->mix);
-        *self->mix = gsl_ran_beta(rng, 1.0, 5.0);
     }
 
     self->touched = true;

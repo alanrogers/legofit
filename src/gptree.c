@@ -75,9 +75,14 @@ const char *GPTree_getNameFree(GPTree * self, int i) {
 }
 
 
-/// Randomly perturb all free parameters in the population tree while
-/// maintaining inequality constraints.
+/// Randomly perturb all free parameters while maintaining inequality
+/// constraints.
 void GPTree_randomize(GPTree * self, gsl_rng * rng) {
+
+    // Randomize all non-TIME parameters
+    ParStore_randomize(self->parstore, rng);
+
+    // Randomize TIE parameters
     PopNode_randomize(self->rootPop, self->bnd, self->parstore, rng);
 }
 

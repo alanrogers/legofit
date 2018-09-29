@@ -244,14 +244,14 @@ xstrdblmap : $(XSTRDBLMAP)
 xstrparmap.o : strparmap.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/strparmap.c
 
-XSTRPARMAP := xstrparmap.o misc.o param.o tinyexpr.o
+XSTRPARMAP := xstrparmap.o misc.o param.o tinyexpr.o dtnorm.o
 xstrparmap : $(XSTRPARMAP)
 	$(CC) $(CFLAGS) -o $@ $(XSTRPARMAP) $(lib)
 
 xaddrparmap.o : addrparmap.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/addrparmap.c
 
-XADDRPARMAP := xaddrparmap.o misc.o param.o tinyexpr.o
+XADDRPARMAP := xaddrparmap.o misc.o param.o tinyexpr.o dtnorm.o
 xaddrparmap : $(XADDRPARMAP)
 	$(CC) $(CFLAGS) -o $@ $(XADDRPARMAP) $(lib)
 
