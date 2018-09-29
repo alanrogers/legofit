@@ -34,7 +34,7 @@ int main(int argc, char *argv[]) {
     }
 
     Param par;
-    Param_init(&par, "name", 123.4, 100.0, 200.0, Free);
+    Param_init(&par, "name", 123.4, 100.0, 200.0, FREE|TWON);
     assert(strcmp(par.name, "name") == 0);
     assert(par.value == 123.4);
     assert(par.low == 100.0);

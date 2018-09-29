@@ -2,10 +2,11 @@
 #include "misc.h"
 #include <string.h>
 #include <stdlib.h>
+#include <math.h>
 
 void Param_init(Param *self, const char *name, double value,
                  double low, double high,
-                 Behavior behavior) {
+                 unsigned type) {
     assert(self);
     if(low > value || high < value) {
         fprintf(stderr,"%s:%d: can't initialize parameter \"%s\".\n"
@@ -18,7 +19,7 @@ void Param_init(Param *self, const char *name, double value,
     self->value = value;
     self->low = low;
     self->high = high;
-    self->behavior = behavior;
+    self->type = type;
     self->formula = NULL;
     self->constr = NULL;
     self->next = NULL;
@@ -32,7 +33,7 @@ void Param_copy(Param *new, const Param *old) {
     CHECKMEM(new);
     new->name = strdup(old->name);
     CHECKMEM(new->name);
-    if(new->behavior == Constrained) {
+    if(new->type & CONSTRAINED) {
         assert(old->formula != NULL);
         new->formula = strdup(old->formula);
         CHECKMEM(new->formula);
@@ -83,7 +84,7 @@ int Param_compare(const Param *lhs, const Param *rhs) {
         return 1;
     if(lhs->high < rhs->high)
         return -1;
-    c = lhs->behavior - rhs->behavior;
+    c = lhs->type - rhs->type;
     if(c)
         return c;
     if(lhs->formula == NULL && rhs->formula==NULL)
@@ -93,3 +94,25 @@ int Param_compare(const Param *lhs, const Param *rhs) {
     return strcmp(lhs->formula, rhs->formula);
 }
 
+void Param_sanityCheck(const Param *self, const char *file, int line) {
+#ifndef NDEBUG
+    REQUIRE(self, file, line);
+    REQUIRE(isPow2(self->type & (FREE | FIXED | CONSTRAINED)), file, line);
+    unsigned u = self->type & (TWON | TIME | MIXFRAC | ARBITRARY);
+    REQUIRE(isPow2(u), file, line);
+    REQUIRE(self->name, file, line);
+    REQUIRE(legalName(self->name), file, line);
+    REQUIRE(isfinite(self->value), file, line);
+    REQUIRE(self->low <= self->value, file, line);
+    REQUIRE(self->value <= self->high, file, line);
+    if(self->type & CONSTRAINED) {
+        REQUIRE(self->formula, file, line);
+        REQUIRE(self->constr, file, line);
+    }else{
+        REQUIRE(NULL == self->formula, file, line);
+        REQUIRE(NULL == self->constr, file, line);
+    }
+    if(self->next)
+        REQUIRE(self->next > self, file, line);
+#endif
+}

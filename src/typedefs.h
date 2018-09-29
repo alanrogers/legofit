@@ -20,8 +20,6 @@ typedef struct LblNdx LblNdx;
 typedef struct NameList NameList;
 typedef struct NodeStore NodeStore;
 typedef struct Param Param;
-typedef enum   Behavior Behavior;
-typedef enum   Boundedness Boundedness;
 typedef struct ParStore ParStore;
 typedef struct Point Point;
 typedef struct PointBuff PointBuff;
@@ -38,17 +36,6 @@ typedef struct StrParMap StrParMap;
 typedef struct Tokenizer Tokenizer;
 typedef struct DAFReader DAFReader;
 typedef struct RAFReader RAFReader;
-
-/// Distinguish between parameters that free, fixed, or
-/// constrained.  Free parameters can be changed during optimization;
-/// fixed ones never change; Gaussian ones are reset for each
-/// simulation replicate by sampling from a truncated normal
-/// distribution; Constrained ones are functions of one or more free
-/// parameters.
-enum Behavior {Free, Fixed, Constrained};
-
-/// Distinguish between parameters that are bounded in different ways.
-enum Boundedness { Unbounded, TwoN, Time, MixFrac };
 
 #if 1
 #  define TIPID_SIZE 32

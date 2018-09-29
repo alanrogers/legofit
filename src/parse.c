@@ -94,7 +94,7 @@
 
 int getDbl(double *x, char **next, const char *orig);
 int getULong(unsigned long *x, char **next, const char *orig);
-void parseParam(char *next, Boundedness bness, ParStore * parstore,
+void parseParam(char *next, unsigned bness, ParStore * parstore,
                 Bounds * bnd, const char *orig);
 void parseSegment(char *next, PopNodeTab * poptbl, SampNdx * sndx,
                   LblNdx * lndx, ParStore * parstore,
@@ -135,25 +135,23 @@ int getULong(unsigned long *x, char **next, const char *orig) {
 
 /// Parse a line of input defining a parameter
 /// @param[inout] next points to unparsed portion of input line
-/// @param[in] bness: determines bounds of current parameter
+/// @param[in] ptype TWON, TIME, or MIXFRAC
 /// @param[out] parstore structure that maintains info about
 /// parameters
 /// @param[in] bnd the bounds of each type of parameter
 /// @parem[in] orig original input line
-void parseParam(char *next, Boundedness bness,
+void parseParam(char *next, unsigned ptype,
                 ParStore * parstore, Bounds * bnd, const char *orig) {
-    Behavior pbeh = Free;
-
-    // Read behavior of parameter
+    // Read type of parameter
     {
         char *tok = nextWhitesepToken(&next);
         CHECK_TOKEN(tok, orig);
         if(0 == strcmp("fixed", tok))
-            pbeh = Fixed;
+            ptype |= FIXED;
         else if(0 == strcmp("free", tok))
-            pbeh = Free;
+            ptype |= FREE;
         else if(0 == strcmp("constrained", tok))
-            pbeh = Constrained;
+            ptype |= CONSTRAINED;
         else {
             fprintf(stderr, "%s:%s:%d: got %s when expecting \"fixed\","
                     " \"free\", or \"constrained\".\n",
@@ -186,7 +184,7 @@ void parseParam(char *next, Boundedness bness,
 
     char *formula;
     double value;
-    if(pbeh == Constrained) {
+    if(ptype & CONSTRAINED) {
         formula = stripWhiteSpace(next);
         assert(formula != NULL);
     } else {
@@ -202,39 +200,26 @@ void parseParam(char *next, Boundedness bness,
     }
 
     // Allocate and initialize parameter in ParStore
-    switch (pbeh) {
-    case Fixed:
+    if(ptype & FIXED) {
         ParStore_addFixedPar(parstore, value, name);
-        break;
-    case Constrained:
+    }else if(ptype & CONSTRAINED) {
         ParStore_addConstrainedPar(parstore, formula, name);
-        break;
-    case Free:
-        // Set bounds, based on bness of parameter
-    {
+    }else if(ptype & FREE) {
         double lo, hi;
-        switch (bness) {
-        case TwoN:
+        if(ptype & TWON) {
             lo = bnd->lo_twoN;
             hi = bnd->hi_twoN;
-            break;
-        case Time:
+        }else if(ptype & TIME) {
             lo = bnd->lo_t;
             hi = bnd->hi_t;
-            break;
-        case MixFrac:
+        }else if (ptype & MIXFRAC) {
             lo = 0.0;
             hi = 1.0;
-            break;
-        default:
+        }else
             DIE("This shouldn't happen");
-        }
         ParStore_addFreePar(parstore, value, lo, hi, name);
-    }
-        break;
-    default:
+    }else
         DIE("This shouldn't happen");
-    }
 }
 
 /// Parse a line describing a segment of the population tree
@@ -252,7 +237,7 @@ void parseSegment(char *next, PopNodeTab * poptbl, SampNdx * sndx,
                   const char *orig) {
     char *popName, *tok;
     double *tPtr, *twoNptr;
-    Behavior tbehavior, twoNbehavior;
+    unsigned ttype, twoNtype;
     unsigned long nsamples = 0;
 
     // Read name of segment
@@ -270,7 +255,7 @@ void parseSegment(char *next, PopNodeTab * poptbl, SampNdx * sndx,
     }
     tok = nextWhitesepToken(&next);
     CHECK_TOKEN(tok, orig);
-    tPtr = ParStore_findPtr(parstore, &tbehavior, tok);
+    tPtr = ParStore_findPtr(parstore, &ttype, tok);
     if(NULL == tPtr) {
         fprintf(stderr, "%s:%s:%d: Parameter \"%s\" is undefined\n",
                 __FILE__, __func__, __LINE__, tok);
@@ -289,7 +274,7 @@ void parseSegment(char *next, PopNodeTab * poptbl, SampNdx * sndx,
     tok = nextWhitesepToken(&next);
     CHECK_TOKEN(tok, orig);
     tok = stripWhiteSpace(tok);
-    twoNptr = ParStore_findPtr(parstore, &twoNbehavior, tok);
+    twoNptr = ParStore_findPtr(parstore, &twoNtype, tok);
     if(NULL == twoNptr) {
         fprintf(stderr, "%s:%s:%dParameter \"%s\" is undefined\n",
                 __FILE__, __func__, __LINE__, tok);
@@ -332,8 +317,8 @@ void parseSegment(char *next, PopNodeTab * poptbl, SampNdx * sndx,
     }
 
     assert(strlen(popName) > 0);
-    PopNode *thisNode = PopNode_new(twoNptr, twoNbehavior == Free,
-                                    tPtr, tbehavior == Free, ns);
+    PopNode *thisNode = PopNode_new(twoNptr, twoNtype & FREE,
+                                    tPtr, ttype & FREE, ns);
     if(0 != PopNodeTab_insert(poptbl, popName, thisNode)) {
         fprintf(stderr, "%s:%d: duplicate \"segment %s\"\n",
                 __FILE__, __LINE__, popName);
@@ -408,7 +393,7 @@ void parseMix(char *next, PopNodeTab * poptbl, ParStore * parstore,
               const char *orig) {
     char *childName, *parName[2], *tok;
     double *mPtr;
-    Behavior mbehavior;
+    unsigned mtype;
 
     // Read name of child
     childName = nextWhitesepToken(&next);
@@ -432,7 +417,7 @@ void parseMix(char *next, PopNodeTab * poptbl, ParStore * parstore,
     tok = strsep(&next, "*");
     CHECK_TOKEN(tok, orig);
     tok = stripWhiteSpace(tok);
-    mPtr = ParStore_findPtr(parstore, &mbehavior, tok);
+    mPtr = ParStore_findPtr(parstore, &mtype, tok);
     if(NULL == mPtr) {
         fprintf(stderr, "%s:%s:%d: Parameter \"%s\" is undefined\n",
                 __FILE__, __func__, __LINE__, tok);
@@ -477,7 +462,7 @@ void parseMix(char *next, PopNodeTab * poptbl, ParStore * parstore,
         exit(EXIT_FAILURE);
     }
 
-    PopNode_mix(childNode, mPtr, mbehavior == Free, parNode1, parNode0);
+    PopNode_mix(childNode, mPtr, mtype & FREE, parNode1, parNode0);
 }
 
 // Read a line into buff, skipping blank lines; strip comments and
@@ -563,11 +548,11 @@ PopNode *mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, ParStore * parstore,
             continue;
 
         if(0 == strcmp(token, "twoN"))
-            parseParam(next, TwoN, parstore, bnd, orig);
+            parseParam(next, TWON, parstore, bnd, orig);
         else if(0 == strcmp(token, "time"))
-            parseParam(next, Time, parstore, bnd, orig);
+            parseParam(next, TIME, parstore, bnd, orig);
         else if(0 == strcmp(token, "mixFrac"))
-            parseParam(next, MixFrac, parstore, bnd, orig);
+            parseParam(next, MIXFRAC, parstore, bnd, orig);
         else if(0 == strcmp(token, "segment"))
             parseSegment(next, poptbl, sndx, lndx, parstore, ns, orig);
         else if(0 == strcmp(token, "mix"))

@@ -166,14 +166,11 @@ ParStore *ParStore_dup(const ParStore * old) {
         Param_copy(par, opar);
         new->byname = StrParMap_insert(new->byname, par);
         new->byaddr = AddrParMap_insert(new->byaddr, par);
-        switch (par->behavior) {
-        case Free:
+        if(par->type & FREE) {
             new->freePar = Param_push(new->freePar, par);
-            break;
-        case Fixed:
+        }else if(par->type & FIXED) {
             new->fixedPar = Param_push(new->fixedPar, par);
-            break;
-        case Constrained:
+        }else if(par->type & CONSTRAINED) {
             new->constrainedPar = Param_push(new->constrainedPar, par);
             par->constr = te_compile(par->formula, new->te_pars, &status);
             if(par->constr == NULL) {
@@ -182,9 +179,8 @@ ParStore *ParStore_dup(const ParStore * old) {
                 fprintf(stderr, "  %*s^\nError near here\n", status - 1, "");
                 exit(EXIT_FAILURE);
             }
-            break;
-        default:
-            DIE("Illegal value of behavior variable");
+        }else{
+            DIE("Illegal type field within ParStore");
         }
         new->te_pars =
             te_variable_push(new->te_pars, par->name, &par->value);
@@ -208,8 +204,8 @@ void ParStore_free(ParStore * self) {
 }
 
 /// Add a free parameter to ParStore.
-void ParStore_addFreePar(ParStore * self, double value,
-                         double lo, double hi, const char *name) {
+void ParStore_addFreePar(ParStore * self, double value, double lo,
+                         double hi, const char *name, unsigned type) {
     assert(self);
     Param *par = StrParMap_search(self->byname, name);
     if(par) {
@@ -228,15 +224,17 @@ void ParStore_addFreePar(ParStore * self, double value,
     }
 
     par = self->vec + i;
-    Param_init(par, name, value, lo, hi, Free);
+    Param_init(par, name, value, lo, hi, type|FREE);
     self->byname = StrParMap_insert(self->byname, par);
     self->byaddr = AddrParMap_insert(self->byaddr, par);
     self->freePar = Param_push(self->freePar, par);
     self->te_pars = te_variable_push(self->te_pars, par->name, &par->value);
+    ParStore_sanityCheck(self, __FILE__, __LINE__);
 }
 
 /// Add fixed parameter to ParStore.
-void ParStore_addFixedPar(ParStore * self, double value, const char *name) {
+void ParStore_addFixedPar(ParStore * self, double value, const char *name,
+                          unsigned type) {
     Param *par = StrParMap_search(self->byname, name);
     if(par) {
         fprintf(stderr, "%s:%d: Duplicate definition of parameter \"%s\".\n",
@@ -257,15 +255,16 @@ void ParStore_addFixedPar(ParStore * self, double value, const char *name) {
 
     // For fixed parameters, the lower and upper bounds equal the
     // parameter value.
-    Param_init(par, name, value, value, value, Fixed);
+    Param_init(par, name, value, value, value, type | FIXED);
     self->byname = StrParMap_insert(self->byname, par);
     self->byaddr = AddrParMap_insert(self->byaddr, par);
     self->fixedPar = Param_push(self->fixedPar, par);
+    ParStore_sanityCheck(self, __FILE__, __LINE__);
 }
 
 /// Add constrained parameter to ParStore.
 void ParStore_addConstrainedPar(ParStore * self, const char *str,
-                                const char *name) {
+                                const char *name, unsigned type) {
     Param *par = StrParMap_search(self->byname, name);
     if(par) {
         fprintf(stderr, "%s:%d: Duplicate definition of parameter \"%s\".\n",
@@ -283,7 +282,7 @@ void ParStore_addConstrainedPar(ParStore * self, const char *str,
     }
 
     par = self->vec + i;
-    Param_init(par, name, 0.0, -DBL_MAX, DBL_MAX, Constrained);
+    Param_init(par, name, 0.0, -DBL_MAX, DBL_MAX, type | CONSTRAINED);
     par->formula = strdup(str);
     CHECKMEM(par->formula);
 
@@ -301,6 +300,7 @@ void ParStore_addConstrainedPar(ParStore * self, const char *str,
     }
     SET_CONSTR(par);
     self->te_pars = te_variable_push(self->te_pars, par->name, &par->value);
+    ParStore_sanityCheck(self, __FILE__, __LINE__);
 }
 
 /// Get name of i'th free parameter
@@ -316,12 +316,12 @@ const char *ParStore_getNameFree(ParStore * self, int i) {
 }
 
 /// Return pointer associated with parameter name.
-double *ParStore_findPtr(ParStore * self, Behavior * behavior,
+double *ParStore_findPtr(ParStore * self, unsigned * type,
                          const char *name) {
     Param *par = StrParMap_search(self->byname, name);
     if(par == NULL)
         return NULL;
-    *behavior = par->behavior;
+    *type = par->type;
     return &par->value;
 }
 
@@ -330,7 +330,7 @@ double *ParStore_findPtr(ParStore * self, Behavior * behavior,
 int ParStore_isConstrained(const ParStore * self, const double *ptr) {
     assert(self);
     Param *par = AddrParMap_search(self->byaddr, ptr);
-    if(par && (par->behavior == Constrained))
+    if(par && (par->type & CONSTRAINED))
         return 1;
     return 0;
 }
@@ -349,7 +349,7 @@ void ParStore_chkDependencies(ParStore * self, const double *valptr,
     }
 
     // Nothing to be done unless par is constrained.
-    if(par->behavior != Constrained)
+    if( !(par->type & CONSTRAINED) )
         return;
 
     // index of par in array
@@ -374,7 +374,7 @@ void ParStore_chkDependencies(ParStore * self, const double *valptr,
             exit(EXIT_FAILURE);
         }
 
-        if(dpar->behavior != Constrained) {
+        if( !(dpar->type & CONSTRAINED) ) {
             // dep[j] not constrained: no problem
             continue;
         }
@@ -419,31 +419,31 @@ void ParStore_sanityCheck(ParStore * self, const char *file, int line) {
     REQUIRE(self->nPar <= MAXPAR, file, line);
 
     // For each name: (1) make sure it's a legal name;
-    // (2) get the pointer associated with that name,
+    // (2) get the pointer associated with that name.
     int i;
     Param *par, *par2;
     for(i = 0; i < self->nPar; ++i) {
         par = self->vec + i;
-        REQUIRE(NULL != par->name, file, line);
-        REQUIRE(legalName(par->name), file, line);
+        Param_sanityCheck(par, file, line);
         par2 = StrParMap_search(self->byname, par->name);
         REQUIRE(par == par2, file, line);
         par2 = AddrParMap_search(self->byaddr, &par->value);
         REQUIRE(par == par2, file, line);
     }
+
     int npar = ParStore_nFree(self) + ParStore_nFixed(self) +
         ParStore_nConstrained(self);
     REQUIRE(npar == self->nPar, file, line);
+
     for(par = self->freePar; par; par = par->next)
-        REQUIRE(par->behavior == Free, file, line);
+        REQUIRE(par->type & FREE, file, line);
 
     for(par = self->fixedPar; par; par = par->next)
-        REQUIRE(par->behavior == Fixed, file, line);
+        REQUIRE(par->type & FIXED, file, line);
 
-    for(par = self->constrainedPar; par; par = par->next) {
-        REQUIRE(par->behavior == Constrained, file, line);
-        REQUIRE(par->formula != NULL, file, line);
-    }
+    for(par = self->constrainedPar; par; par = par->next)
+        REQUIRE(par->type & CONSTRAINED, file, line);
+
 #  endif
 }
 
@@ -486,7 +486,7 @@ void ParStore_constrain_ptr(ParStore * self, double *ptr) {
     assert(par);
 
     // If ptr isn't a constrained parameter, then return immediately
-    if(par->behavior != Constrained)
+    if( !(par->type & CONSTRAINED) )
         return;
 
     // set value of constrained parameter

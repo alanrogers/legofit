@@ -11,18 +11,19 @@ struct Bounds {
 
 ParStore   *ParStore_new(void);
 void        ParStore_free(ParStore * self);
-void        ParStore_addFreePar(ParStore * self, double value,
-                                double lo, double hi, const char *name);
-void        ParStore_addFixedPar(ParStore * self, double value, const char *name);
+void        ParStore_addFreePar(ParStore * self, double value, double lo,
+                                double hi, const char *name, unsigned type);
+void        ParStore_addFixedPar(ParStore * self, double value,
+                                 const char *name, unsigned type);
 void        ParStore_addConstrainedPar(ParStore * self, const char *str,
-                                       const char *name);
+                                       const char *name, unsigned type);
 int         ParStore_constrain(ParStore *self);
 void        ParStore_constrain_ptr(ParStore *self, double *ptr);
 int         ParStore_nFixed(ParStore * self);
 int         ParStore_nFree(ParStore * self);
 int         ParStore_nConstrained(ParStore * self);
 const char *ParStore_getNameFree(ParStore * self, int i);
-double     *ParStore_findPtr(ParStore * self, Behavior *behavior,
+double     *ParStore_findPtr(ParStore * self, unsigned *type,
                              const char *name);
 void        ParStore_chkDependencies(ParStore *self, const double *par, PtrSet *seen);
 ParStore   *ParStore_dup(const ParStore * old);
