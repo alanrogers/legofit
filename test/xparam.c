@@ -52,7 +52,6 @@ int main(int argc, char *argv[]) {
     if(verbose)
         Param_print(&par, stdout);
 
-    Param_randomize(&par, rng);
     Param_sanityCheck(&par, __FILE__, __LINE__);
 
     if(verbose)

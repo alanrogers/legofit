@@ -31,7 +31,6 @@ struct PopNode {
     struct PopNode *child[2];
     Gene       *sample[MAXSAMP]; // not locally owned
     bool        twoNfree, startFree, mixFree; // true => parameter varies
-    bool        touched;   // true => node has been visited during traversal
 };
 
 PopNode    *PopNode_new(double *twoN, bool twoNfree, double *start,
@@ -55,9 +54,6 @@ void        PopNode_sanityFromLeaf(PopNode * self, const char *file,
 int         PopNode_nsamples(PopNode * self);
 void        PopNode_shiftParamPtrs(PopNode *self, size_t dp, int sign);
 void        PopNode_shiftPopNodePtrs(PopNode *self, size_t dp, int sign);
-void        PopNode_untouch(PopNode * self);
-void        PopNode_randomize(PopNode *self, Bounds bnd, ParStore *parstore,
-                              gsl_rng *rng);
 
 void        SampNdx_init(SampNdx * self);
 void        SampNdx_addSamples(SampNdx * self, unsigned nsamples,

@@ -1,6 +1,7 @@
 #include "param.h"
 #include "misc.h"
 #include "dtnorm.h"
+#include "gptree.h"
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
@@ -119,16 +120,30 @@ void Param_sanityCheck(const Param *self, const char *file, int line) {
 #endif
 }
 
-/// Randomize parameter if FREE and not TIME.
-void Param_randomize(Param *self, gsl_rng *rng) {
+/// Randomize parameter if FREE
+void Param_randomize(Param *self, GPTree *gpt, gsl_rng *rng) {
     assert(self);
     double r;
     if( !(self->type & FREE) )
         return;
 
+    double orig = self->value;
+
+    // trial value
     if(self->type & TWON) {
-        self->value = dtnorm(self->value, 10000.0, self->low,
+        self->value = dtnorm(self->value, 1000.0, self->low,
                              self->high, rng);
+    }else if( self->type & TIME ) {
+        if(isfinite(self->low) && isfinite(self->high))
+            self->value = gsl_ran_flat(rng, self->low, self->high);
+        else if(isfinite(self->low))
+            self->value = self->low + gsl_ran_exponential(rng, 100.0);
+        else {
+            assert( !isfinite(self->low) );
+            fprintf(stderr, "%s:%s:%d: non-finite lower bound of TIME"
+                    " parameter\n", __FILE__,__func__,__LINE__);
+            exit(EXIT_FAILURE);
+        }
     }else if( self->type & MIXFRAC ) {
         self->value = gsl_ran_beta(rng, 1.0, 5.0);
     }else if( self->type & ARBITRARY ) {
@@ -152,5 +167,10 @@ void Param_randomize(Param *self, gsl_rng *rng) {
             self->value = dtnorm(self->value, 100.0, self->low,
                                  self->high, rng);
         }
+    }
+
+    // Bisect to find a value that satisfies inequality constraints.
+    while( !GPTree_feasible(gpt, 0) ) {
+        self->value = orig + 0.5*(self->value - orig);
     }
 }

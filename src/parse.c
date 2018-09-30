@@ -563,7 +563,6 @@ PopNode *mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, ParStore * parstore,
     // these searches all find the same root. Otherwise, it aborts
     // with an error.
     PopNode *root = PopNodeTab_check_and_root(poptbl, __FILE__, __LINE__);
-    PopNode_chkDependencies(root, parstore);
     PopNodeTab_free(poptbl);
     return root;
 }

@@ -27,8 +27,8 @@
 #include "addrparmap.h"
 #include "param.h"
 #include "tinyexpr.h"
-#include "ptrset.h"
 #include "misc.h"
+#include "gptree.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -336,83 +336,6 @@ int ParStore_isConstrained(const ParStore * self, const double *ptr) {
     return 0;
 }
 
-void ParStore_chkDependencies(ParStore * self, const double *valptr,
-                              PtrSet * seen) {
-    assert(self);
-
-    if(self->byaddr == NULL)
-        return;
-    Param *par = AddrParMap_search (self->byaddr, valptr);
-    if(par == NULL) {
-        fprintf(stderr, "%s:%s:%d: can't find parameter with address %p\n",
-                __FILE__, __func__, __LINE__, valptr);
-        exit(EXIT_FAILURE);
-    }
-
-    // Nothing to be done unless par is constrained.
-    if( !(par->type & CONSTRAINED) )
-        return;
-
-    // index of par in array
-    int ipar = par - self->vec;
-    assert(ipar >= 0);
-    assert(ipar < MAXPAR);
-
-    // Get list of pointers to parameters on which par depends.
-    int len = 100;
-    const double *dep[len];
-    len = te_dependencies(par->constr, len, dep);
-
-    // Check that each dependendant constrained parameter is in
-    // "seen". This implies that dependencies will be set before par
-    // is set.
-    for(int j = 0; j < len; ++j) {
-        // dpar is Param structure associated with value pointer dep[j]
-        Param *dpar = AddrParMap_search(self->byaddr, dep[j]);
-        if(dpar == NULL) {
-            fprintf(stderr, "%s:%s:%d: can't find parameter with address %p\n",
-                    __FILE__, __func__, __LINE__, dep[j]);
-            exit(EXIT_FAILURE);
-        }
-
-        if( !(dpar->type & CONSTRAINED) ) {
-            // dep[j] not constrained: no problem
-            continue;
-        }
-        // Does par depend on itself?
-        if(par == dpar) {
-            fprintf(stderr, "%s:%d: Error: \"%s\" depends on itself\n",
-                    __FILE__, __LINE__, par->name);
-            exit(EXIT_FAILURE);
-        }
-        // If x and y are constrained parameters and y = f(x), then x
-        // must come before y in the .lgo file.
-        if(par < dpar) {
-            fprintf(stderr, "%s:%d: Error: \"%s\" depends on"
-                    " \"%s\" and must come later in\n"
-                    " the .lgo file.\n",
-                    __FILE__, __LINE__, par->name, dpar->name);
-            exit(EXIT_FAILURE);
-        }
-
-        if(PtrSet_exists(seen, dep[j])) {
-            // dep[i] is set before par: no problem. 
-            continue;
-        }
-        // Pointer dep[j] is not in "seen", which means that it will
-        // not be set before "par" is evaluated. Print an error
-        // message and abort.
-        fprintf(stderr, "%s:%d: Error: \"%s\" depends on \"%s\".\n",
-                __FILE__, __LINE__, par->name, dpar->name);
-        fprintf(stderr, "   When one constrained parameter depends on"
-                " another, the dependent\n"
-                "   parameter must appear in the tree, either earlier"
-                " on the same\n"
-                "   line of descent or on a different line of descent.\n");
-        exit(EXIT_FAILURE);
-    }
-}
-
 void ParStore_sanityCheck(ParStore * self, const char *file, int line) {
 #  ifndef NDEBUG
     REQUIRE(self, file, line);
@@ -511,9 +434,10 @@ int ParStore_constrain(ParStore * self) {
 }
 
 /// Randomize all FREE parameters except TIME parameters
-void ParStore_randomize(ParStore *self, gsl_rng *rng) {
-    for(Param *par = self->freePar; par; par = par->next)
-        Param_randomize(par, rng);
+void ParStore_randomize(ParStore *self, GPTree *gpt, gsl_rng *rng) {
+    for(Param *par = self->freePar; par; par = par->next) {
+        Param_randomize(par, gpt, rng);
+    }
 }
 
 /// Make sure Bounds object is sane.

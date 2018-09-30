@@ -10,7 +10,6 @@
 #include "parstore.h"
 #include "strparmap.h"
 #include "addrparmap.h"
-#include "ptrset.h"
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
@@ -71,8 +70,6 @@ int main(int argc, char **argv) {
     double val, *ptr;
     unsigned ptype;
 
-    PtrSet *seen = PtrSet_new();
-
     ps = ParStore_new();
     double fixed0=99.0, fixed1=100.0;
     ParStore_addFreePar(ps, x, 0.0, 100.0, "x", TWON);
@@ -86,8 +83,6 @@ int main(int argc, char **argv) {
     assert(ptype & CONSTRAINED);
     assert(ptype & TIME);
     assert(ParStore_isConstrained(ps, ptr));
-    PtrSet_insert(seen, ptr);
-    ParStore_chkDependencies(ps, ptr, seen);
     assert(2 == ParStore_nFixed(ps));
     assert(3 == ParStore_nFree(ps));
     assert(1 == ParStore_nConstrained(ps));
@@ -98,7 +93,6 @@ int main(int argc, char **argv) {
     assert(ptype & CONSTRAINED);
     assert(ptype & ARBITRARY);
     assert(ParStore_isConstrained(ps, ptr));
-    ParStore_chkDependencies(ps, ptr, seen);
     ParStore_free(ps);
 
     ps = ParStore_new();
@@ -164,11 +158,6 @@ int main(int argc, char **argv) {
     ParStore *ps2 = ParStore_dup(ps);
 
     assert(ParStore_equals(ps, ps2));
-
-    ParStore_randomize(ps2, rng);
-    ParStore_sanityCheck(ps2, __FILE__, __LINE__);
-
-    assert( !ParStore_equals(ps, ps2) );
 
     assert(ParStore_nFree(ps2) == ParStore_nFree(ps));
     assert(ParStore_nFixed(ps2) == ParStore_nFixed(ps));
