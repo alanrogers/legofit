@@ -545,6 +545,8 @@ PopNode *mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, ParStore * parstore,
             parseParam(next, TIME, parstore, bnd, orig);
         else if(0 == strcmp(token, "mixFrac"))
             parseParam(next, MIXFRAC, parstore, bnd, orig);
+        else if(0 == strcmp(token, "param"))
+            parseParam(next, ARBITRARY, parstore, bnd, orig);
         else if(0 == strcmp(token, "segment"))
             parseSegment(next, poptbl, sndx, lndx, parstore, ns, orig);
         else if(0 == strcmp(token, "mix"))

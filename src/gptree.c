@@ -74,7 +74,6 @@ const char *GPTree_getNameFree(GPTree * self, int i) {
     return ParStore_getNameFree(self->parstore, i);
 }
 
-
 /// Randomly perturb all free parameters while maintaining inequality
 /// constraints.
 void GPTree_randomize(GPTree * self, gsl_rng * rng) {
