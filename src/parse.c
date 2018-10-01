@@ -204,7 +204,7 @@ void parseParam(char *next, unsigned ptype,
     double range[2];
     int status = getRange(range, &next, orig);
     int gotRange = (status ? 0 : 1);
-            
+
     if(gotRange) {
         fprintf(stderr,"%s:%d: range=[%g, %g]\n",
                 __FILE__,__LINE__, range[0], range[1]);
@@ -216,7 +216,7 @@ void parseParam(char *next, unsigned ptype,
         fprintf(stderr,"  input: %s\n", orig);
         exit(EXIT_FAILURE);
     }
-    
+
     // Read parameter name, delimited by '='
     char *name = strsep(&next, "=");
     CHECK_TOKEN(name, orig);
@@ -231,7 +231,7 @@ void parseParam(char *next, unsigned ptype,
     }
 
     char *formula;
-    double value;
+    double value=0.0;
     if(ptype & CONSTRAINED) {
         formula = stripWhiteSpace(next);
         assert(formula != NULL);
