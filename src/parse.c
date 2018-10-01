@@ -205,11 +205,6 @@ void parseParam(char *next, unsigned ptype,
     int status = getRange(range, &next, orig);
     int gotRange = (status ? 0 : 1);
 
-    if(gotRange) {
-        fprintf(stderr,"%s:%d: range=[%g, %g]\n",
-                __FILE__,__LINE__, range[0], range[1]);
-    }
-
     if(gotRange && !(ptype & FREE)) {
         fprintf(stderr,"%s:%d: only free variables can have ranges\n",
                 __FILE__,__LINE__);
