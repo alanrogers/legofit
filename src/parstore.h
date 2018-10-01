@@ -37,6 +37,7 @@ void        ParStore_setFreeParams(ParStore * self, int n, double x[n]);
 void        ParStore_getFreeParams(ParStore * self, int n, double x[n]);
 int         ParStore_isConstrained(const ParStore *self, const double *ptr);
 void        ParStore_randomize(ParStore *self, GPTree *gpt, gsl_rng *rng);
+void        ParStore_chkDependencies(ParStore * self);
 void        Bounds_sanityCheck(Bounds * self, const char *file, int line);
 int         Bounds_equals(const Bounds * lhs, const Bounds * rhs);
 

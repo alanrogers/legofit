@@ -440,6 +440,58 @@ void ParStore_randomize(ParStore *self, GPTree *gpt, gsl_rng *rng) {
     }
 }
 
+void ParStore_chkDependencies(ParStore * self) {
+    assert(self);
+
+    for(Param *par = self->constrainedPar; par; par=par->next) {
+
+        assert(par->type & CONSTRAINED);
+
+        // Get list of pointers to parameters on which par depends.
+        int len = 100;
+        const double *dep[len];
+        len = te_dependencies(par->constr, len, dep);
+
+        // Check that each dependent constrained parameter comes before
+        // "par" in the array of parameters. This implies that
+        // dependencies will be set before par is set.
+        for(int j = 0; j < len; ++j) {
+            assert(self->byaddr);
+            // dpar is Param structure associated with value pointer dep[j]
+            Param *dpar = AddrParMap_search(self->byaddr, dep[j]);
+            if(dpar == NULL) {
+                fprintf(stderr, "%s:%s:%d:"
+                        " can't find dependent parameter with address %p\n",
+                        __FILE__, __func__, __LINE__, dep[j]);
+                exit(EXIT_FAILURE);
+            }
+
+            if( !(dpar->type & CONSTRAINED) ) {
+                // dep[j] not constrained: no problem
+                continue;
+            }
+
+            // Does par depend on itself?
+            if(par == dpar) {
+                fprintf(stderr, "%s:%d: Error: \"%s\" depends on itself\n",
+                        __FILE__, __LINE__, par->name);
+                exit(EXIT_FAILURE);
+            }
+
+            // If x and y are constrained parameters and y = f(x), then x
+            // must be defined before y in the .lgo file. This implies
+            // that par > dpar.
+            if(par < dpar) {
+                fprintf(stderr, "%s:%d: Error: \"%s\" depends on"
+                        " \"%s\" and must be defined later in\n"
+                        " the .lgo file.\n",
+                        __FILE__, __LINE__, par->name, dpar->name);
+                exit(EXIT_FAILURE);
+            }
+        }
+    }
+}
+
 /// Make sure Bounds object is sane.
 void Bounds_sanityCheck(Bounds * self, const char *file, int line) {
 #  ifndef NDEBUG

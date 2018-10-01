@@ -564,6 +564,10 @@ PopNode *mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, ParStore * parstore,
     // with an error.
     PopNode *root = PopNodeTab_check_and_root(poptbl, __FILE__, __LINE__);
     PopNodeTab_free(poptbl);
+
+    // Make sure no constrained parameter depends on a constrained parameter
+    // that is defined later in the .lgo file.
+    ParStore_chkDependencies(parstore);
     return root;
 }
 
