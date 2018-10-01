@@ -94,6 +94,7 @@
 
 int getDbl(double *x, char **next, const char *orig);
 int getULong(unsigned long *x, char **next, const char *orig);
+int getRange(double x[2], char **next, const char *orig);
 void parseParam(char *next, unsigned type, ParStore * parstore,
                 Bounds * bnd, const char *orig);
 void parseSegment(char *next, PopNodeTab * poptbl, SampNdx * sndx,
@@ -133,6 +134,45 @@ int getULong(unsigned long *x, char **next, const char *orig) {
     return 1;                   // failure
 }
 
+/// Read a range in form "[ 12, 34 ]". Return 0 on success
+/// or 1 if range is not present. Abort if first character is "["
+/// but the rest of the string is not interpretable as a range.
+int getRange(double x[2], char **next, const char *orig) {
+    while(isspace(**next))
+        *next += 1;
+
+    if(**next != '[')
+        return 1;  // no range
+
+    *next += 1;
+    char *tok, *end=NULL;
+
+    // Read lower bound
+    tok = strsep(next, ",");
+    CHECK_TOKEN(tok, orig);
+    x[0] = strtod(tok, &end);
+    if(end == tok || end == NULL || *end != '\0') {
+        fprintf(stderr,"%s:%d: error reading lower bound.\n",
+                __FILE__,__LINE__);
+        fprintf(stderr,"  input: %s\n", orig);
+        exit(EXIT_FAILURE);
+    }
+
+    // Read upper bound
+    tok = strsep(next, "]");
+    CHECK_TOKEN(tok, orig);
+    tok = stripWhiteSpace(tok);
+    x[1] = strtod(tok, &end);
+    if(end == tok || end == NULL || *end != '\0') {
+        fprintf(stderr,"%s:%d: error reading upper bound.\n",
+                __FILE__,__LINE__);
+        fprintf(stderr,"  input: %s\n", orig);
+        exit(EXIT_FAILURE);
+    }
+
+    return 0;  // success
+}
+
 /// Parse a line of input defining a parameter
 /// @param[inout] next points to unparsed portion of input line
 /// @param[in] ptype TWON, TIME, or MIXFRAC
@@ -161,6 +201,22 @@ void parseParam(char *next, unsigned ptype,
         }
     }
 
+    double range[2];
+    int status = getRange(range, &next, orig);
+    int gotRange = (status ? 0 : 1);
+            
+    if(gotRange) {
+        fprintf(stderr,"%s:%d: range=[%g, %g]\n",
+                __FILE__,__LINE__, range[0], range[1]);
+    }
+
+    if(gotRange && !(ptype & FREE)) {
+        fprintf(stderr,"%s:%d: only free variables can have ranges\n",
+                __FILE__,__LINE__);
+        fprintf(stderr,"  input: %s\n", orig);
+        exit(EXIT_FAILURE);
+    }
+    
     // Read parameter name, delimited by '='
     char *name = strsep(&next, "=");
     CHECK_TOKEN(name, orig);
@@ -198,17 +254,25 @@ void parseParam(char *next, unsigned ptype,
         ParStore_addConstrainedPar(parstore, formula, name, ptype);
     }else if(ptype & FREE) {
         double lo, hi;
-        if(ptype & TWON) {
-            lo = bnd->lo_twoN;
-            hi = bnd->hi_twoN;
-        }else if(ptype & TIME) {
-            lo = bnd->lo_t;
-            hi = bnd->hi_t;
-        }else if (ptype & MIXFRAC) {
-            lo = 0.0;
-            hi = 1.0;
-        }else
-            DIE("This shouldn't happen");
+        if(gotRange) {
+            lo = range[0];
+            hi = range[1];
+        }else{
+            if(ptype & TWON) {
+                lo = bnd->lo_twoN;
+                hi = bnd->hi_twoN;
+            }else if(ptype & TIME) {
+                lo = bnd->lo_t;
+                hi = bnd->hi_t;
+            }else if (ptype & MIXFRAC) {
+                lo = 0.0;
+                hi = 1.0;
+            }else if (ptype & ARBITRARY) {
+                lo = -DBL_MAX;
+                hi = DBL_MAX;
+            }else
+                DIE("This shouldn't happen");
+        }
         ParStore_addFreePar(parstore, value, lo, hi, name, ptype);
     }else
         DIE("This shouldn't happen");
@@ -665,6 +729,7 @@ int main(int argc, char **argv) {
                 __FILE__, __LINE__, tstFname);
         exit(1);
     }
+
     // test getDbl
     char buff[100], *next;
     double x;
@@ -678,6 +743,29 @@ int main(int argc, char **argv) {
     assert(0 == getDbl(&x, &next, buff));
     assert(Dbl_near(x, -1.23e-4));
     unitTstResult("getDbl", "OK");
+
+    // test getULong
+    long unsigned lu;
+    strcpy(buff, " +123 ");
+    next = buff;
+    assert(0 == getULong(&lu, &next, buff));
+    assert(lu == 123);
+    unitTstResult("getULong", "OK");
+
+    // test getRange
+    double y[2];
+    strcpy(buff, " [ 12.34, 2.3e2 ] ");
+    next = buff;
+    assert(0 == getRange(y, &next, buff));
+    assert(y[0] == 12.34);
+    assert(y[1] == 2.3e2);
+
+    strcpy(buff, "  12.34, 2.3e2 ] ");
+    next = buff;
+    assert(1 == getRange(y, &next, buff));
+    assert(*next == '1');
+
+    unitTstResult("getRange", "OK");
 
     SampNdx sndx;
     SampNdx_init(&sndx);
