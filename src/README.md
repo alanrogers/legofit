@@ -201,8 +201,9 @@ The "daf" file is simple and looks like this:
        1     755228  t  g 0.000000000000000000
        1     765437  g  a 0.000000000000000000
 
-The first line (beginning with "#") is an optional comment, which is
-used here to label the columns. The columns are as follows:
+Columns are separated by one or more whitespace characters (tabs and
+spaces). The first line (beginning with "#") is an optional comment,
+which is used here to label the columns. The columns are as follows:
 
 1. Character strings that label chromosomes or scaffolds.
 2. Position of the SNP on the chromosome or scaffold, measured in base
@@ -233,13 +234,13 @@ The "raf" file is simple and looks like this:
     1     755228 t    .   0.000000000000000000
     1     765437 g    .   0.000000000000000000
 
-The columns are separated by tabs.  The first line (beginning with
-"#") is an optional comment, which is used here to label the
-columns. The columns are as follows:
+Columns are separated by single tab characters.  The first line
+(beginning with "#") is an optional comment, which is used here to
+label the columns. The columns are as follows:
 
 1. Character strings that label chromosomes or scaffolds.
 2. Position of the site on the chromosome or scaffold, measured in base
-   pairs. Daf format doesn't care whether nucleotide positions are
+   pairs. Raf format doesn't care whether nucleotide positions are
    numbered beginning with 0 or with 1, provided that they are consistent
    across files in a given analysis.
 4. Reference allele.
@@ -294,24 +295,11 @@ written as
 
     time free     Txy=3.788e3      # Africa-Eurasia separation time
 
-It is also possible to define variables as "gaussian". For example,
-
-    time gaussian x=123 sd=10
-
-Gaussian variables are used to represent exogeneous parameters whose
-values are known only approximately. They are modeled as Gaussian
-random variables. In this case, the mean is 123 and the standard
-deviation is 10. Programs `legosim` and `legofit` use Monte-Carlo
-integration to integrate across the uncertainty in Gaussian
-parameters. Although the package still supports Gaussian parameters, I
-don't recommend them, for reasons discussed below. The Gaussian
-variable "x" just defined will be ignored in what follows.
-
 Our measure of population size is twice the effective size of the
 population, and we define two such variables:
 
     twoN free         twoNn=1e3            # archaic population size
-    twoN constrained twoNxy=1e4 - 1.2*Txy # early modern population size
+    twoN constrained twoNxy=1e4 - 1.2*Txy  # early modern population size
 
 The first of these is a free parameter, but the second is a new
 category: "constrained". It defines "twoNxy" as a function of "Txy".
@@ -324,13 +312,30 @@ terms and independent variables. For example, we could have written
 
     twoN constrained twoNxy=1e4 - 1.2*Txy + 0.01*Txy*Txyn # OK
 
-All independent variables must be free parameters, and all must be
-defined before the constraint. The parser can recognize complex
-mathematical expressions and knows about the standard mathematical
-functions. The y'th power of x can be written either as "x^y" or as
-"pow(x,y)". The natural log can be written either as "log" or as
-"ln". Parentheses are allowed, and operators have the usual
-precedence. For example, the following lines are equivalent:
+It is safest to put spaces around plus and minus signs. For example,
+the following would fail:
+
+    twoN constrained twoNxy=1e4 -1.2*Txy  # Fails
+
+The parser interprets "-1.2" as a number, not as an operator (-)
+followed by a number (1.2). Lacking an operator, the parser aborts. On
+the other hand, this works fine:
+
+    twoN constrained twoNxy=1e4 -Txy  # Fails
+
+Because "-Txy" cannot be interpreted as a literal number, legofit
+treats it as an operator (-) followed by a variable name.
+
+In previous versions of `Legofit`, only free parameters could be used
+in constraint formulas. In the current version, all types of parameter
+can be used. Independent variables must be declared in the .lgo file
+before they are used in a constraint equation. The parser can
+recognize complex mathematical expressions and knows about the
+standard mathematical functions. The y'th power of x can be written
+either as "x^y" or as "pow(x,y)". The natural log can be written
+either as "log" or as "ln". Parentheses are allowed, and operators
+have the usual precedence. For example, the following lines are
+equivalent:
 
     twoN constrained x=exp(a)*pow(b,y)
     twoN constrained x=e^a*b^y
@@ -349,7 +354,16 @@ We have one more variable to declare:
 
 The "mixFrac" command declares a "mixture fraction"---the fraction of a
 some population that derives from introgression. As above, it could
-have been fixed, Gaussian, or constrained.
+have been fixed or constrained.
+
+There is also a 4th type of variable, which is declared with the
+"param" command.
+
+    param free x = 0.0
+
+By default, the ranges of such variables range from the smallest
+negative floating-point number to the largest positive one. They are
+meant to be used in constraint formulas, as I will illustrate below.
 
 The next few lines of the input file declare the segments of the
 population network. The first of these is
