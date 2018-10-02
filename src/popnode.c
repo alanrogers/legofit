@@ -19,7 +19,6 @@
 #include "misc.h"
 #include "parstore.h"
 #include "dtnorm.h"
-#include "ptrset.h"
 #include <stdbool.h>
 #include <string.h>
 #include <float.h>
@@ -33,10 +32,6 @@ struct NodeStore {
 };
 
 static void PopNode_sanityCheck(PopNode * self, const char *file, int lineno);
-static void PopNode_randomize_r(PopNode * self, Bounds bnd,
-                                ParStore * parstore, gsl_rng * rng);
-static void PopNode_chkDependencies_r(PopNode * self, ParStore * ps,
-                                      PtrSet *seen);
 
 /// Check for errors in PopNode tree. Call this from each leaf node.
 void PopNode_sanityFromLeaf(PopNode * self, const char *file, int line) {
@@ -129,24 +124,6 @@ void PopNode_clear(PopNode * self) {
     PopNode_sanityCheck(self, __FILE__, __LINE__);
 }
 
-/// Set all "touched" values to "false".
-///
-/// This algorithm is inefficient because it may process a single node
-/// multiple times. This happens when their is gene flow into the
-/// node, because then there multiple paths from the root to the
-/// node. It would be better to implement this as a shallow function
-/// (not recursive) and traverse the hash tab to execute it on each
-/// node exactly once.
-void PopNode_untouch(PopNode * self) {
-    if(self == NULL)
-        return;
-    int         i;
-    for(i = 0; i < self->nchildren; ++i)
-        PopNode_untouch(self->child[i]);
-
-    self->touched = false;
-}
-
 /// Return 1 if PopNode tree is empty of samples
 int PopNode_isClear(const PopNode * self) {
     if(self == NULL)
@@ -233,7 +210,6 @@ PopNode    *PopNode_new(double *twoN, bool twoNfree, double *start,
     new->twoNfree = twoNfree;
     new->startFree = startFree;
     new->mixFree = false;
-    new->touched = false;
 
     memset(new->sample, 0, sizeof(new->sample));
     memset(new->parent, 0, sizeof(new->parent));
@@ -482,148 +458,6 @@ Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng) {
 /// Free node but not descendants
 void PopNode_free(PopNode * self) {
     free(self);
-}
-
-/// Randomly perturb all free parameters in tree while maintaining
-/// inequality constraints.
-void PopNode_randomize(PopNode * self, Bounds bnd, ParStore * parstore,
-                       gsl_rng * rng) {
-    do {
-        PopNode_untouch(self);
-        PopNode_randomize_r(self, bnd, parstore, rng);
-    } while(!PopNode_feasible(self, bnd, 0));
-}
-
-/// Randomly perturb all free parameters in tree while maintaining
-/// Recurse through the tree perturbing free parameters. Must call
-/// PopNode_untouch before calling this function.
-static void PopNode_randomize_r(PopNode * self, Bounds bnd,
-                                ParStore * parstore, gsl_rng * rng) {
-
-    // If parents have been touched, then randomize this
-    // node. Otherwise, postpone.
-    if(self->nparents==2 && !(self->parent[0]->touched &&
-                             self->parent[1]->touched)) {
-        // one of the two parents hasn't been touched yet, so postpone
-        // the current node.
-        return;
-    }
-    assert(self->nparents==0 || self->parent[0]->touched);
-    assert(self->nparents<2 || self->parent[1]->touched);
-
-    // perturb self->twoN
-    if(self->twoNfree)
-        *self->twoN = dtnorm(*self->twoN, 10000.0, bnd.lo_twoN,
-                             bnd.hi_twoN, rng);
-
-    // perturb self->start
-    if(self->startFree) {
-
-        // hi_t is the minimum age of parents or bnd.hi_t
-        double      hi_t = bnd.hi_t;
-        switch (self->nparents) {
-        case 0:
-            hi_t = fmin(hi_t, *self->start
-                        + gsl_ran_exponential(rng, 10000.0));
-            break;
-        case 1:
-            assert(self->parent[0]->touched);
-            ParStore_constrain_ptr(parstore, self->parent[0]->start);
-            hi_t = *self->parent[0]->start;
-            break;
-        case 2:
-            assert(self->parent[0]->touched);
-            assert(self->parent[1]->touched);
-            ParStore_constrain_ptr(parstore, self->parent[0]->start);
-            ParStore_constrain_ptr(parstore, self->parent[1]->start);
-            hi_t = fmin(*self->parent[0]->start, *self->parent[1]->start);
-            break;
-        default:
-            fprintf(stderr, "%s:%s:%d: bad value of nparents: %d\n",
-                    __FILE__, __func__, __LINE__, self->nparents);
-            exit(EXIT_FAILURE);
-        }
-
-        // lo_t is the maximum age of children or bnd.lo_t
-        double      lo_t = bnd.lo_t;
-        switch (self->nchildren) {
-        case 0:
-            break;
-        case 1:
-            ParStore_constrain_ptr(parstore, self->child[0]->start);
-            lo_t = *self->child[0]->start;
-            break;
-        case 2:
-            ParStore_constrain_ptr(parstore, self->child[0]->start);
-            ParStore_constrain_ptr(parstore, self->child[1]->start);
-            lo_t = fmax(*self->child[0]->start, *self->child[1]->start);
-            break;
-        default:
-            fprintf(stderr, "%s:%s:%d: bad value of nchildren: %d\n",
-                    __FILE__, __func__, __LINE__, self->nchildren);
-            exit(EXIT_FAILURE);
-        }
-        *self->start = gsl_ran_flat(rng, lo_t, hi_t);
-    }
-
-    if(self->mixFree) {
-        assert(self->mix);
-        *self->mix = gsl_ran_beta(rng, 1.0, 5.0);
-    }
-
-    self->touched = true;
-
-    int         i;
-    for(i = 0; i < self->nchildren; ++i)
-        PopNode_randomize_r(self->child[i], bnd, parstore, rng);
-}
-
-/// Make sure that constrained variables depend only on
-void PopNode_chkDependencies(PopNode * self, ParStore * parstore) {
-    PopNode_untouch(self);
-    PtrSet *seen = PtrSet_new();
-    PopNode_chkDependencies_r(self, parstore, seen);
-    PtrSet_free(seen);
-}
-
-/// Traverse the population tree to check dependencies of each
-/// constrained variable. Constrained variables can depend only
-/// on constrained variables that precede them in this traversal.
-/// Call PopNode_untouch before calling this function.
-static void PopNode_chkDependencies_r(PopNode * self, ParStore * ps,
-                                      PtrSet *seen) {
-
-    // If at least one parents is untouched, postpone this node.
-    if(self->nparents==2 && !(self->parent[0]->touched &&
-                             self->parent[1]->touched)) {
-        // one of the two parents hasn't been touched yet, so postpone
-        // the current node.
-        return;
-    }
-    assert(self->nparents==0 || self->parent[0]->touched);
-    assert(self->nparents<2 || self->parent[1]->touched);
-
-    // Make sure that the dependencies of each constrained
-    // parameter are present in "seen".
-    ParStore_chkDependencies(ps, self->twoN, seen);
-    ParStore_chkDependencies(ps, self->start, seen);
-
-    // Add constrained parameters of current node to "seen"
-    if(ParStore_isConstrained(ps, self->twoN))
-        PtrSet_insert(seen, self->twoN);
-    if(ParStore_isConstrained(ps, self->start))
-        PtrSet_insert(seen, self->start);
-    if(self->nparents == 2) {
-        assert(self->mix != NULL);
-        ParStore_chkDependencies(ps, self->mix, seen);
-        if(ParStore_isConstrained(ps, self->mix))
-            PtrSet_insert(seen, self->mix);
-    }
-
-    self->touched = true;
-
-    for(int i = 0; i < self->nchildren; ++i)
-        PopNode_chkDependencies_r(self->child[i], ps, seen);
 }
 
 /// Return 1 if parameters satisfy inequality constraints, or 0 otherwise.
@@ -876,13 +710,6 @@ int main(int argc, char **argv) {
     ns = NodeStore_new(nseg, v);
     CHECKMEM(ns);
 
-    Bounds      bnd = {
-        .lo_twoN = 0.0,
-        .hi_twoN = 1e9,
-        .lo_t = 1e-4,
-        .hi_t = 1e5
-    };
-
     double      twoN0 = 1.0, start0 = 0.0;
     bool        twoNfree = true;
     bool        startFree = true;
@@ -925,24 +752,11 @@ int main(int argc, char **argv) {
     assert(p0->parent[0] == p1);
 
     if(verbose) {
-        printf("Before randomization\n");
         PopNode_printShallow(p1, stdout);
         PopNode_printShallow(p0, stdout);
     }
 
     ParStore   *ps = ParStore_new();
-    gsl_rng    *rng = gsl_rng_alloc(gsl_rng_taus);
-    unsigned long rngseed = (unsigned long) time(NULL);
-    gsl_rng_set(rng, rngseed);
-    PopNode_randomize(p1, bnd, ps, rng);
-    gsl_rng_free(rng);
-    PopNode_chkDependencies(p1, ps);
-
-    if(verbose) {
-        printf("After randomization\n");
-        PopNode_printShallow(p1, stdout);
-        PopNode_printShallow(p0, stdout);
-    }
 
     size_t      twoNloc = (size_t) p1->twoN;
     size_t      startloc = (size_t) p1->start;

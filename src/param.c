@@ -1,11 +1,15 @@
 #include "param.h"
 #include "misc.h"
+#include "dtnorm.h"
+#include "gptree.h"
 #include <string.h>
 #include <stdlib.h>
+#include <math.h>
+#include <gsl/gsl_randist.h>
 
 void Param_init(Param *self, const char *name, double value,
                  double low, double high,
-                 Behavior behavior) {
+                 unsigned type) {
     assert(self);
     if(low > value || high < value) {
         fprintf(stderr,"%s:%d: can't initialize parameter \"%s\".\n"
@@ -18,7 +22,7 @@ void Param_init(Param *self, const char *name, double value,
     self->value = value;
     self->low = low;
     self->high = high;
-    self->behavior = behavior;
+    self->type = type;
     self->formula = NULL;
     self->constr = NULL;
     self->next = NULL;
@@ -32,7 +36,7 @@ void Param_copy(Param *new, const Param *old) {
     CHECKMEM(new);
     new->name = strdup(old->name);
     CHECKMEM(new->name);
-    if(new->behavior == Constrained) {
+    if(new->type & CONSTRAINED) {
         assert(old->formula != NULL);
         new->formula = strdup(old->formula);
         CHECKMEM(new->formula);
@@ -83,7 +87,7 @@ int Param_compare(const Param *lhs, const Param *rhs) {
         return 1;
     if(lhs->high < rhs->high)
         return -1;
-    c = lhs->behavior - rhs->behavior;
+    c = lhs->type - rhs->type;
     if(c)
         return c;
     if(lhs->formula == NULL && rhs->formula==NULL)
@@ -93,3 +97,80 @@ int Param_compare(const Param *lhs, const Param *rhs) {
     return strcmp(lhs->formula, rhs->formula);
 }
 
+void Param_sanityCheck(const Param *self, const char *file, int line) {
+#ifndef NDEBUG
+    REQUIRE(self, file, line);
+    REQUIRE(isPow2(self->type & (FREE | FIXED | CONSTRAINED)), file, line);
+    unsigned u = self->type & (TWON | TIME | MIXFRAC | ARBITRARY);
+    REQUIRE(isPow2(u), file, line);
+    REQUIRE(self->name, file, line);
+    REQUIRE(legalName(self->name), file, line);
+    REQUIRE(isfinite(self->value), file, line);
+    REQUIRE(self->low <= self->value, file, line);
+    REQUIRE(self->value <= self->high, file, line);
+    if(self->type & CONSTRAINED) {
+        REQUIRE(self->formula, file, line);
+        REQUIRE(self->constr, file, line);
+    }else{
+        REQUIRE(NULL == self->formula, file, line);
+        REQUIRE(NULL == self->constr, file, line);
+    }
+    if(self->next)
+        REQUIRE(self->next > self, file, line);
+#endif
+}
+
+/// Randomize parameter if FREE
+void Param_randomize(Param *self, GPTree *gpt, gsl_rng *rng) {
+    assert(self);
+    double r;
+    if( !(self->type & FREE) )
+        return;
+
+    double orig = self->value;
+
+    // trial value
+    if(self->type & TWON) {
+        self->value = dtnorm(self->value, 1000.0, self->low,
+                             self->high, rng);
+    }else if( self->type & TIME ) {
+        if(isfinite(self->low) && isfinite(self->high))
+            self->value = gsl_ran_flat(rng, self->low, self->high);
+        else if(isfinite(self->low))
+            self->value = self->low + gsl_ran_exponential(rng, 100.0);
+        else {
+            assert( !isfinite(self->low) );
+            fprintf(stderr, "%s:%s:%d: non-finite lower bound of TIME"
+                    " parameter\n", __FILE__,__func__,__LINE__);
+            exit(EXIT_FAILURE);
+        }
+    }else if( self->type & MIXFRAC ) {
+        self->value = gsl_ran_beta(rng, 1.0, 5.0);
+    }else if( self->type & ARBITRARY ) {
+        if(isinf(self->low) && isinf(self->high)) {
+            // both bounds are infinite
+            self->value += gsl_ran_gaussian_ziggurat(rng, 100.0);
+        }else if(isinf(self->low)) {
+            // lower bound infinite
+            do{
+                r = gsl_ran_gaussian_ziggurat(rng, 100.0);
+            }while(self->value + r > self->high);
+            self->value += r;
+        }else if(isinf(self->high)) {
+            // upper bound infinite
+            do{
+                r = gsl_ran_gaussian_ziggurat(rng, 100.0);
+            }while(self->value + r < self->low);
+            self->value += r;
+        }else {
+            // finite bounds
+            self->value = dtnorm(self->value, 100.0, self->low,
+                                 self->high, rng);
+        }
+    }
+
+    // Bisect to find a value that satisfies inequality constraints.
+    while( !GPTree_feasible(gpt, 0) ) {
+        self->value = orig + 0.5*(self->value - orig);
+    }
+}

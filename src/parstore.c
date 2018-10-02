@@ -27,14 +27,15 @@
 #include "addrparmap.h"
 #include "param.h"
 #include "tinyexpr.h"
-#include "ptrset.h"
 #include "misc.h"
+#include "gptree.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <assert.h>
 #include <float.h>
+#include <gsl/gsl_rng.h>
 
 // Set value of constrained variable. Abort with an error message if
 // result is NaN.
@@ -166,14 +167,11 @@ ParStore *ParStore_dup(const ParStore * old) {
         Param_copy(par, opar);
         new->byname = StrParMap_insert(new->byname, par);
         new->byaddr = AddrParMap_insert(new->byaddr, par);
-        switch (par->behavior) {
-        case Free:
+        if(par->type & FREE) {
             new->freePar = Param_push(new->freePar, par);
-            break;
-        case Fixed:
+        }else if(par->type & FIXED) {
             new->fixedPar = Param_push(new->fixedPar, par);
-            break;
-        case Constrained:
+        }else if(par->type & CONSTRAINED) {
             new->constrainedPar = Param_push(new->constrainedPar, par);
             par->constr = te_compile(par->formula, new->te_pars, &status);
             if(par->constr == NULL) {
@@ -182,9 +180,8 @@ ParStore *ParStore_dup(const ParStore * old) {
                 fprintf(stderr, "  %*s^\nError near here\n", status - 1, "");
                 exit(EXIT_FAILURE);
             }
-            break;
-        default:
-            DIE("Illegal value of behavior variable");
+        }else{
+            DIE("Illegal type field within ParStore");
         }
         new->te_pars =
             te_variable_push(new->te_pars, par->name, &par->value);
@@ -208,8 +205,8 @@ void ParStore_free(ParStore * self) {
 }
 
 /// Add a free parameter to ParStore.
-void ParStore_addFreePar(ParStore * self, double value,
-                         double lo, double hi, const char *name) {
+void ParStore_addFreePar(ParStore * self, double value, double lo,
+                         double hi, const char *name, unsigned type) {
     assert(self);
     Param *par = StrParMap_search(self->byname, name);
     if(par) {
@@ -228,15 +225,17 @@ void ParStore_addFreePar(ParStore * self, double value,
     }
 
     par = self->vec + i;
-    Param_init(par, name, value, lo, hi, Free);
+    Param_init(par, name, value, lo, hi, type|FREE);
     self->byname = StrParMap_insert(self->byname, par);
     self->byaddr = AddrParMap_insert(self->byaddr, par);
     self->freePar = Param_push(self->freePar, par);
     self->te_pars = te_variable_push(self->te_pars, par->name, &par->value);
+    ParStore_sanityCheck(self, __FILE__, __LINE__);
 }
 
 /// Add fixed parameter to ParStore.
-void ParStore_addFixedPar(ParStore * self, double value, const char *name) {
+void ParStore_addFixedPar(ParStore * self, double value, const char *name,
+                          unsigned type) {
     Param *par = StrParMap_search(self->byname, name);
     if(par) {
         fprintf(stderr, "%s:%d: Duplicate definition of parameter \"%s\".\n",
@@ -257,15 +256,16 @@ void ParStore_addFixedPar(ParStore * self, double value, const char *name) {
 
     // For fixed parameters, the lower and upper bounds equal the
     // parameter value.
-    Param_init(par, name, value, value, value, Fixed);
+    Param_init(par, name, value, value, value, type | FIXED);
     self->byname = StrParMap_insert(self->byname, par);
     self->byaddr = AddrParMap_insert(self->byaddr, par);
     self->fixedPar = Param_push(self->fixedPar, par);
+    ParStore_sanityCheck(self, __FILE__, __LINE__);
 }
 
 /// Add constrained parameter to ParStore.
 void ParStore_addConstrainedPar(ParStore * self, const char *str,
-                                const char *name) {
+                                const char *name, unsigned type) {
     Param *par = StrParMap_search(self->byname, name);
     if(par) {
         fprintf(stderr, "%s:%d: Duplicate definition of parameter \"%s\".\n",
@@ -283,7 +283,7 @@ void ParStore_addConstrainedPar(ParStore * self, const char *str,
     }
 
     par = self->vec + i;
-    Param_init(par, name, 0.0, -DBL_MAX, DBL_MAX, Constrained);
+    Param_init(par, name, 0.0, -DBL_MAX, DBL_MAX, type | CONSTRAINED);
     par->formula = strdup(str);
     CHECKMEM(par->formula);
 
@@ -301,6 +301,7 @@ void ParStore_addConstrainedPar(ParStore * self, const char *str,
     }
     SET_CONSTR(par);
     self->te_pars = te_variable_push(self->te_pars, par->name, &par->value);
+    ParStore_sanityCheck(self, __FILE__, __LINE__);
 }
 
 /// Get name of i'th free parameter
@@ -316,12 +317,12 @@ const char *ParStore_getNameFree(ParStore * self, int i) {
 }
 
 /// Return pointer associated with parameter name.
-double *ParStore_findPtr(ParStore * self, Behavior * behavior,
+double *ParStore_findPtr(ParStore * self, unsigned * type,
                          const char *name) {
     Param *par = StrParMap_search(self->byname, name);
     if(par == NULL)
         return NULL;
-    *behavior = par->behavior;
+    *type = par->type;
     return &par->value;
 }
 
@@ -330,86 +331,9 @@ double *ParStore_findPtr(ParStore * self, Behavior * behavior,
 int ParStore_isConstrained(const ParStore * self, const double *ptr) {
     assert(self);
     Param *par = AddrParMap_search(self->byaddr, ptr);
-    if(par && (par->behavior == Constrained))
+    if(par && (par->type & CONSTRAINED))
         return 1;
     return 0;
-}
-
-void ParStore_chkDependencies(ParStore * self, const double *valptr,
-                              PtrSet * seen) {
-    assert(self);
-
-    if(self->byaddr == NULL)
-        return;
-    Param *par = AddrParMap_search (self->byaddr, valptr);
-    if(par == NULL) {
-        fprintf(stderr, "%s:%s:%d: can't find parameter with address %p\n",
-                __FILE__, __func__, __LINE__, valptr);
-        exit(EXIT_FAILURE);
-    }
-
-    // Nothing to be done unless par is constrained.
-    if(par->behavior != Constrained)
-        return;
-
-    // index of par in array
-    int ipar = par - self->vec;
-    assert(ipar >= 0);
-    assert(ipar < MAXPAR);
-
-    // Get list of pointers to parameters on which par depends.
-    int len = 100;
-    const double *dep[len];
-    len = te_dependencies(par->constr, len, dep);
-
-    // Check that each dependendant constrained parameter is in
-    // "seen". This implies that dependencies will be set before par
-    // is set.
-    for(int j = 0; j < len; ++j) {
-        // dpar is Param structure associated with value pointer dep[j]
-        Param *dpar = AddrParMap_search(self->byaddr, dep[j]);
-        if(dpar == NULL) {
-            fprintf(stderr, "%s:%s:%d: can't find parameter with address %p\n",
-                    __FILE__, __func__, __LINE__, dep[j]);
-            exit(EXIT_FAILURE);
-        }
-
-        if(dpar->behavior != Constrained) {
-            // dep[j] not constrained: no problem
-            continue;
-        }
-        // Does par depend on itself?
-        if(par == dpar) {
-            fprintf(stderr, "%s:%d: Error: \"%s\" depends on itself\n",
-                    __FILE__, __LINE__, par->name);
-            exit(EXIT_FAILURE);
-        }
-        // If x and y are constrained parameters and y = f(x), then x
-        // must come before y in the .lgo file.
-        if(par < dpar) {
-            fprintf(stderr, "%s:%d: Error: \"%s\" depends on"
-                    " \"%s\" and must come later in\n"
-                    " the .lgo file.\n",
-                    __FILE__, __LINE__, par->name, dpar->name);
-            exit(EXIT_FAILURE);
-        }
-
-        if(PtrSet_exists(seen, dep[j])) {
-            // dep[i] is set before par: no problem. 
-            continue;
-        }
-        // Pointer dep[j] is not in "seen", which means that it will
-        // not be set before "par" is evaluated. Print an error
-        // message and abort.
-        fprintf(stderr, "%s:%d: Error: \"%s\" depends on \"%s\".\n",
-                __FILE__, __LINE__, par->name, dpar->name);
-        fprintf(stderr, "   When one constrained parameter depends on"
-                " another, the dependent\n"
-                "   parameter must appear in the tree, either earlier"
-                " on the same\n"
-                "   line of descent or on a different line of descent.\n");
-        exit(EXIT_FAILURE);
-    }
 }
 
 void ParStore_sanityCheck(ParStore * self, const char *file, int line) {
@@ -419,31 +343,31 @@ void ParStore_sanityCheck(ParStore * self, const char *file, int line) {
     REQUIRE(self->nPar <= MAXPAR, file, line);
 
     // For each name: (1) make sure it's a legal name;
-    // (2) get the pointer associated with that name,
+    // (2) get the pointer associated with that name.
     int i;
     Param *par, *par2;
     for(i = 0; i < self->nPar; ++i) {
         par = self->vec + i;
-        REQUIRE(NULL != par->name, file, line);
-        REQUIRE(legalName(par->name), file, line);
+        Param_sanityCheck(par, file, line);
         par2 = StrParMap_search(self->byname, par->name);
         REQUIRE(par == par2, file, line);
         par2 = AddrParMap_search(self->byaddr, &par->value);
         REQUIRE(par == par2, file, line);
     }
+
     int npar = ParStore_nFree(self) + ParStore_nFixed(self) +
         ParStore_nConstrained(self);
     REQUIRE(npar == self->nPar, file, line);
+
     for(par = self->freePar; par; par = par->next)
-        REQUIRE(par->behavior == Free, file, line);
+        REQUIRE(par->type & FREE, file, line);
 
     for(par = self->fixedPar; par; par = par->next)
-        REQUIRE(par->behavior == Fixed, file, line);
+        REQUIRE(par->type & FIXED, file, line);
 
-    for(par = self->constrainedPar; par; par = par->next) {
-        REQUIRE(par->behavior == Constrained, file, line);
-        REQUIRE(par->formula != NULL, file, line);
-    }
+    for(par = self->constrainedPar; par; par = par->next)
+        REQUIRE(par->type & CONSTRAINED, file, line);
+
 #  endif
 }
 
@@ -486,7 +410,7 @@ void ParStore_constrain_ptr(ParStore * self, double *ptr) {
     assert(par);
 
     // If ptr isn't a constrained parameter, then return immediately
-    if(par->behavior != Constrained)
+    if( !(par->type & CONSTRAINED) )
         return;
 
     // set value of constrained parameter
@@ -507,6 +431,65 @@ int ParStore_constrain(ParStore * self) {
     for(par = self->constrainedPar; par; par = par->next)
         SET_CONSTR(par);
     return 0;
+}
+
+/// Randomize all FREE parameters except TIME parameters
+void ParStore_randomize(ParStore *self, GPTree *gpt, gsl_rng *rng) {
+    for(Param *par = self->freePar; par; par = par->next) {
+        Param_randomize(par, gpt, rng);
+    }
+}
+
+void ParStore_chkDependencies(ParStore * self) {
+    assert(self);
+
+    for(Param *par = self->constrainedPar; par; par=par->next) {
+
+        assert(par->type & CONSTRAINED);
+
+        // Get list of pointers to parameters on which par depends.
+        int len = 100;
+        const double *dep[len];
+        len = te_dependencies(par->constr, len, dep);
+
+        // Check that each dependent constrained parameter comes before
+        // "par" in the array of parameters. This implies that
+        // dependencies will be set before par is set.
+        for(int j = 0; j < len; ++j) {
+            assert(self->byaddr);
+            // dpar is Param structure associated with value pointer dep[j]
+            Param *dpar = AddrParMap_search(self->byaddr, dep[j]);
+            if(dpar == NULL) {
+                fprintf(stderr, "%s:%s:%d:"
+                        " can't find dependent parameter with address %p\n",
+                        __FILE__, __func__, __LINE__, dep[j]);
+                exit(EXIT_FAILURE);
+            }
+
+            if( !(dpar->type & CONSTRAINED) ) {
+                // dep[j] not constrained: no problem
+                continue;
+            }
+
+            // Does par depend on itself?
+            if(par == dpar) {
+                fprintf(stderr, "%s:%d: Error: \"%s\" depends on itself\n",
+                        __FILE__, __LINE__, par->name);
+                exit(EXIT_FAILURE);
+            }
+
+            // If x and y are constrained parameters and y = f(x), then x
+            // must be defined before y in the .lgo file. This implies
+            // that par > dpar.
+            if(par < dpar) {
+                fprintf(stderr, "%s:%d: Error: \"%s\" depends on"
+                        " \"%s\" and must be defined later in\n"
+                        " the .lgo file.\n",
+                        __FILE__, __LINE__, par->name, dpar->name);
+                exit(EXIT_FAILURE);
+            }
+        }
+    }
 }
 
 /// Make sure Bounds object is sane.

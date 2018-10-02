@@ -10,12 +10,13 @@
 #include "parstore.h"
 #include "strparmap.h"
 #include "addrparmap.h"
-#include "ptrset.h"
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
 #include <time.h>
 #include <limits.h>
+#include <gsl/gsl_rng.h>
+#include <time.h>
 
 #ifdef NDEBUG
 #  error "Unit tests must be compiled without -DNDEBUG flag"
@@ -35,6 +36,12 @@ int main(int argc, char **argv) {
     default:
         eprintf("usage: xparstore [-v]\n");
     }
+
+    time_t      currtime = time(NULL);
+    unsigned    seed = currtime % UINT_MAX;
+    gsl_rng    *rng = gsl_rng_alloc(gsl_rng_taus);
+    CHECKMEM(rng);
+    gsl_rng_set(rng, seed);
 
     Bounds bnd0 = {
         .lo_twoN = 0.0,
@@ -61,84 +68,86 @@ int main(int argc, char **argv) {
     ParStore_free(ps);
 
     double val, *ptr;
-    Behavior pbeh;
-
-    PtrSet *seen = PtrSet_new();
+    unsigned ptype;
 
     ps = ParStore_new();
     double fixed0=99.0, fixed1=100.0;
-    ParStore_addFreePar(ps, x, 0.0, 100.0, "x");
-    ParStore_addFreePar(ps, y, 0.0, 100.0, "y");
-    ParStore_addFreePar(ps, z, 0.0, 100.0, "z");
-    ParStore_addFixedPar(ps, fixed0, "fixed0");
-    ParStore_addFixedPar(ps, fixed1, "fixed1");
-    ParStore_addConstrainedPar(ps, "exp(x+log(y+z))", "c");
+    ParStore_addFreePar(ps, x, 0.0, 100.0, "x", TWON);
+    ParStore_addFreePar(ps, y, 0.0, 100.0, "y", TWON);
+    ParStore_addFreePar(ps, z, 0.0, 100.0, "z", TIME);
+    ParStore_addFixedPar(ps, fixed0, "fixed0", TIME);
+    ParStore_addFixedPar(ps, fixed1, "fixed1", TWON);
+    ParStore_addConstrainedPar(ps, "exp(x+log(y+z))", "c", TIME);
     ParStore_constrain(ps);
-    ptr = ParStore_findPtr(ps, &pbeh, "c");
-    assert(pbeh == Constrained);
+    ptr = ParStore_findPtr(ps, &ptype, "c");
+    assert(ptype & CONSTRAINED);
+    assert(ptype & TIME);
     assert(ParStore_isConstrained(ps, ptr));
-    PtrSet_insert(seen, ptr);
-    ParStore_chkDependencies(ps, ptr, seen);
     assert(2 == ParStore_nFixed(ps));
     assert(3 == ParStore_nFree(ps));
     assert(1 == ParStore_nConstrained(ps));
     assert(exp(x+log(y+z)) == *ptr);
-    ParStore_addConstrainedPar(ps, "x+c", "d");
+    ParStore_addConstrainedPar(ps, "x+c", "d", ARBITRARY);
     ParStore_constrain(ps);
-    ptr = ParStore_findPtr(ps, &pbeh, "d");
-    assert(pbeh == Constrained);
+    ptr = ParStore_findPtr(ps, &ptype, "d");
+    assert(ptype & CONSTRAINED);
+    assert(ptype & ARBITRARY);
     assert(ParStore_isConstrained(ps, ptr));
-    ParStore_chkDependencies(ps, ptr, seen);
     ParStore_free(ps);
 
     ps = ParStore_new();
     val = 12.3;
-    ParStore_addFixedPar(ps, val, "x");
-    ptr = ParStore_findPtr(ps, &pbeh, "x");
+    ParStore_addFixedPar(ps, val, "x", TWON);
+    ptr = ParStore_findPtr(ps, &ptype, "x");
     assert(*ptr == val);
     assert(!ParStore_isConstrained(ps, ptr));
-	assert(pbeh == Fixed);
+	assert(ptype & FIXED);
+	assert(ptype & TWON);
     assert(ParStore_nFixed(ps) == 1);
     assert(ParStore_nFree(ps) == 0);
 
     val = 23.4;
-    ParStore_addFreePar(ps, val, 10.0, 30.0, "y");
-    ptr = ParStore_findPtr(ps, &pbeh, "y");
+    ParStore_addFreePar(ps, val, 10.0, 30.0, "y", TIME);
+    ptr = ParStore_findPtr(ps, &ptype, "y");
     assert(*ptr == val);
-	assert(pbeh == Free);
+	assert(ptype & FREE);
+	assert(ptype & TIME);
     assert(ParStore_nFixed(ps) == 1);
     assert(ParStore_nFree(ps) == 1);
 
     val = 88.3;
-    ParStore_addFixedPar(ps, val, "w");
-    ptr = ParStore_findPtr(ps, &pbeh, "w");
+    ParStore_addFixedPar(ps, val, "w", TWON);
+    ptr = ParStore_findPtr(ps, &ptype, "w");
     assert(*ptr == val);
     assert(!ParStore_isConstrained(ps, ptr));
-	assert(pbeh == Fixed);
+	assert(ptype & FIXED);
+	assert(ptype & TWON);
     assert(ParStore_nFixed(ps) == 2);
     assert(ParStore_nFree(ps) == 1);
 
     val = -23.8;
-    ParStore_addFreePar(ps, val, -100.0, 0.0, "z");
-    ptr = ParStore_findPtr(ps, &pbeh, "z");
+    ParStore_addFreePar(ps, val, -100.0, 0.0, "z", ARBITRARY);
+    ptr = ParStore_findPtr(ps, &ptype, "z");
     assert(*ptr == val);
     assert(!ParStore_isConstrained(ps, ptr));
-	assert(pbeh == Free);
+	assert(ptype & FREE);
+	assert(ptype & ARBITRARY);
     assert(ParStore_nFixed(ps) == 2);
     assert(ParStore_nFree(ps) == 2);
 
     val = 0.8;
-    ParStore_addFreePar(ps, val, 0.0, 1.0, "a");
-    ptr = ParStore_findPtr(ps, &pbeh, "a");
+    ParStore_addFreePar(ps, val, 0.0, 1.0, "a", MIXFRAC);
+    ptr = ParStore_findPtr(ps, &ptype, "a");
     assert(*ptr == val);
     assert(!ParStore_isConstrained(ps, ptr));
-	assert(pbeh == Free);
+	assert(ptype & FREE);
+	assert(ptype & MIXFRAC);
     assert(ParStore_nFixed(ps) == 2);
     assert(ParStore_nFree(ps) == 3);
 
     strcpy(buff, "1 + 2*y + 1*a");
     assert(0 == ParStore_nConstrained(ps));
-    ParStore_addConstrainedPar(ps, buff, "cnstr");
+    ParStore_addConstrainedPar(ps, buff, "cnstr", ARBITRARY);
     assert(1 == ParStore_nConstrained(ps));
     ParStore_constrain(ps);
 

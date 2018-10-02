@@ -194,7 +194,7 @@ static double ncr(double n, double r) {
         return NAN;
     if(n > UINT_MAX || r > UINT_MAX)
         return INFINITY;
-    unsigned long int un = (unsigned int) (n), ur = (unsigned int) (r), i;
+    unsigned long int un = (unsigned int) n, ur = (unsigned int) r, i;
     unsigned long int result = 1;
     if(ur > un / 2)
         ur = un - ur;
@@ -272,7 +272,7 @@ static const te_variable *find_lookup(const state * s, const char *name,
         return 0;
 
     for(var = s->lookup; var; var = var->next) {
-        if(strncmp(name, var->name, len) == 0 && var->name[len] == '\0') 
+        if(strncmp(name, var->name, len) == 0 && var->name[len] == '\0')
             return var;
     }
     return NULL;
@@ -855,7 +855,7 @@ void te_print(const te_expr * n, FILE *fp) {
  * expression depends. Return the number of dependent variables, which
  * should be less than or equal to len. Abort if len is smaller than
  * the number of dependent variables.
- */ 
+ */
 int te_dependencies(const te_expr *self, int len, const double *ptr[len]) {
     int i, arity, n=0;
     switch(TYPE_MASK(self->type)) {

@@ -6,7 +6,7 @@ incl := -I/usr/local/include -I/opt/local/include -I../src
 tests := xaddrparmap xbinary xbma xboot xbranchtab xdafreader xdiffev \
   xdtnorm xerror xgene xgptree xhessian xjobqueue xlblndx xllrbtree \
   xmisc xparam xparse xparstore xpointbuff xpopnode xpopnodetab \
-  xptrset xrafreader xscrmreader xsimsched xstate xstrdblmap xstrdblqueue \
+  xrafreader xscrmreader xsimsched xstate xstrdblmap xstrdblqueue \
   xstrint xstrparmap xtinyexpr xwraparound
 
 CC := gcc
@@ -59,7 +59,6 @@ test : $(tests)
 	-./xpointbuff
 	-./xpopnode
 	-./xpopnodetab
-	-./xptrset
 	-./xrafreader
 	-./xscrmreader
 	-./xsimsched
@@ -90,7 +89,7 @@ xstate : $(XSTATE)
 
 XPOPNODETAB := xpopnodetab.o addrparmap.o popnodetab.o misc.o param.o \
    popnode.o gene.o branchtab.o lblndx.o tokenizer.o dtnorm.o binary.o \
-   parstore.o ptrset.o strparmap.o tinyexpr.o
+   parstore.o strparmap.o tinyexpr.o
 xpopnodetab : $(XPOPNODETAB)
 	$(CC) $(CFLAGS) -o $@ $(XPOPNODETAB) $(lib)
 
@@ -102,13 +101,11 @@ XERROR := xerror.o error.o misc.o
 xerror : $(XERROR)
 	$(CC) $(CFLAGS) -o $@ $(XERROR) $(lib)
 
-XPARAM := xparam.o misc.o param.o tinyexpr.o
+XPARAM := xparam.o misc.o param.o tinyexpr.o dtnorm.o gptree.o parstore.o \
+    strparmap.o addrparmap.o gene.o lblndx.o popnode.o branchtab.o parse.o \
+    binary.o popnodetab.o tokenizer.o dprintf.o
 xparam : $(XPARAM)
 	$(CC) $(CFLAGS) -o $@ $(XPARAM) $(lib)
-
-XPTRSET := xptrset.o ptrset.o misc.o
-xptrset : $(XPTRSET)
-	$(CC) $(CFLAGS) -o $@ $(XPTRSET) $(lib)
 
 XTINYEXPR := xtinyexpr.o tinyexpr.o misc.o
 xtinyexpr : $(XTINYEXPR)
@@ -160,8 +157,7 @@ xparse.o : parse.c
 
 XPARSE := xparse.o popnodetab.o misc.o tokenizer.o gptree.o lblndx.o \
        branchtab.o parstore.o popnode.o binary.o gene.o \
-       dprintf.o dtnorm.o tinyexpr.o param.o strparmap.o addrparmap.o \
-       ptrset.o
+       dprintf.o dtnorm.o tinyexpr.o param.o strparmap.o addrparmap.o
 xparse : $(XPARSE)
 	$(CC) $(CFLAGS) -o $@ $(XPARSE) $(lib)
 
@@ -181,7 +177,7 @@ xpopnode.o : popnode.c
 
 XPOPNODE := xpopnode.o addrparmap.o dtnorm.o misc.o gene.o branchtab.o \
    binary.o lblndx.o strparmap.o tokenizer.o parstore.o tinyexpr.o \
-   param.o ptrset.o
+   param.o gptree.o parse.o dprintf.o popnodetab.o
 xpopnode : $(XPOPNODE)
 	$(CC) $(CFLAGS) -o $@ $(XPOPNODE) $(lib)
 
@@ -194,12 +190,14 @@ xgptree.o : gptree.c
 
 XGPTREE := xgptree.o addrparmap.o misc.o branchtab.o parstore.o lblndx.o \
         tokenizer.o popnodetab.o gene.o param.o popnode.o binary.o \
-        dprintf.o dtnorm.o parse.o ptrset.o strparmap.o tinyexpr.o
+        dprintf.o dtnorm.o parse.o strparmap.o tinyexpr.o
 xgptree : $(XGPTREE)
 	$(CC) $(CFLAGS) -o $@ $(XGPTREE) $(lib)
 
 XPARSTORE := xparstore.o misc.o parstore.o binary.o lblndx.o \
-        tinyexpr.o ptrset.o strparmap.o addrparmap.o param.o
+        tinyexpr.o strparmap.o addrparmap.o param.o gptree.o \
+		dtnorm.o gene.o popnode.o parse.o dprintf.o branchtab.o \
+        popnodetab.o tokenizer.o 
 xparstore : $(XPARSTORE)
 	$(CC) $(CFLAGS) -o $@ $(XPARSTORE) $(lib)
 
@@ -221,7 +219,7 @@ xbranchtab.o : branchtab.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/branchtab.c
 
 XBRANCHTAB := xbranchtab.o addrparmap.o gptree.o misc.o binary.o \
-   parstore.o popnode.o gene.o lblndx.o param.o parse.o ptrset.o \
+   parstore.o popnode.o gene.o lblndx.o param.o parse.o \
    tokenizer.o popnodetab.o dprintf.o dtnorm.o strparmap.o tinyexpr.o
 xbranchtab : $(XBRANCHTAB)
 	$(CC) $(CFLAGS) -o $@ $(XBRANCHTAB) $(lib)
@@ -243,14 +241,14 @@ xstrdblmap : $(XSTRDBLMAP)
 xstrparmap.o : strparmap.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/strparmap.c
 
-XSTRPARMAP := xstrparmap.o misc.o param.o tinyexpr.o
+XSTRPARMAP := xstrparmap.o misc.o param.o tinyexpr.o dtnorm.o
 xstrparmap : $(XSTRPARMAP)
 	$(CC) $(CFLAGS) -o $@ $(XSTRPARMAP) $(lib)
 
 xaddrparmap.o : addrparmap.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/addrparmap.c
 
-XADDRPARMAP := xaddrparmap.o misc.o param.o tinyexpr.o
+XADDRPARMAP := xaddrparmap.o misc.o param.o tinyexpr.o dtnorm.o
 xaddrparmap : $(XADDRPARMAP)
 	$(CC) $(CFLAGS) -o $@ $(XADDRPARMAP) $(lib)
 

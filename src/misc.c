@@ -696,11 +696,12 @@ const char *mybasename(const char *pathname) {
 
 /// Return nonzero if name is legal; zero otherwise. Legal
 /// names begin with an alphabetic character and then continue
-/// with any number of letters, digits, or characters in "._:@$".
+/// with any number of letters, digits, underscores, colons,
+/// or periods".
 int legalName(const char *name) {
     const char *legal =
         "abcdefghijklmnopqrstuvwxyz"
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZ" "0123456789" "._:@$";
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ" "0123456789" "_:.";
     if(!isalpha(name[0]))
         return 0;
     return strlen(name) == strspn(name, legal);

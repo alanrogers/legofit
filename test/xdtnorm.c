@@ -58,7 +58,7 @@ Pair meanAndLeftHalf(double u, double s, double a, double b) {
     double fb = gsl_ran_ugaussian_pdf(beta);
     double Fa = gsl_cdf_ugaussian_P(alpha);
     double Fb = gsl_cdf_ugaussian_P(beta);
-    double Fmid = gsl_cdf_ugaussian_P(0.5*(alpha+beta));
+    double Fmid = gsl_cdf_ugaussian_P(alpha + 0.5*(beta-alpha));
     double Z = Fb - Fa;
     double mean = (fa - fb)/Z;
 
@@ -74,10 +74,10 @@ void test(int nreps, double mu, double sigma, double a, double b,
     if(verbose)
         printf("test(%lf, %lf, %lf, %lf)\n", mu, sigma, a, b);
     int i, nlefthalf=0;
-    double min = HUGE_VAL;
-    double max = -HUGE_VAL;
+    double min = INFINITY;
+    double max = -INFINITY;
     double x, m=0, lefthalf=0;
-    double mid = 0.5*(a+b);
+    double mid = a + 0.5*(b-a);
     for(i=0; i < nreps; ++i) {
         x = dtnorm(mu, sigma, a, b, rng);
         m += x;

@@ -94,7 +94,8 @@
 
 int getDbl(double *x, char **next, const char *orig);
 int getULong(unsigned long *x, char **next, const char *orig);
-void parseParam(char *next, Boundedness bness, ParStore * parstore,
+int getRange(double x[2], char **next, const char *orig);
+void parseParam(char *next, unsigned type, ParStore * parstore,
                 Bounds * bnd, const char *orig);
 void parseSegment(char *next, PopNodeTab * poptbl, SampNdx * sndx,
                   LblNdx * lndx, ParStore * parstore,
@@ -133,27 +134,64 @@ int getULong(unsigned long *x, char **next, const char *orig) {
     return 1;                   // failure
 }
 
+/// Read a range in form "[ 12, 34 ]". Return 0 on success
+/// or 1 if range is not present. Abort if first character is "["
+/// but the rest of the string is not interpretable as a range.
+int getRange(double x[2], char **next, const char *orig) {
+    while(isspace(**next))
+        *next += 1;
+
+    if(**next != '[')
+        return 1;  // no range
+
+    *next += 1;
+    char *tok, *end=NULL;
+
+    // Read lower bound
+    tok = strsep(next, ",");
+    CHECK_TOKEN(tok, orig);
+    x[0] = strtod(tok, &end);
+    if(end == tok || end == NULL || *end != '\0') {
+        fprintf(stderr,"%s:%d: error reading lower bound.\n",
+                __FILE__,__LINE__);
+        fprintf(stderr,"  input: %s\n", orig);
+        exit(EXIT_FAILURE);
+    }
+
+    // Read upper bound
+    tok = strsep(next, "]");
+    CHECK_TOKEN(tok, orig);
+    tok = stripWhiteSpace(tok);
+    x[1] = strtod(tok, &end);
+    if(end == tok || end == NULL || *end != '\0') {
+        fprintf(stderr,"%s:%d: error reading upper bound.\n",
+                __FILE__,__LINE__);
+        fprintf(stderr,"  input: %s\n", orig);
+        exit(EXIT_FAILURE);
+    }
+
+    return 0;  // success
+}
+
 /// Parse a line of input defining a parameter
 /// @param[inout] next points to unparsed portion of input line
-/// @param[in] bness: determines bounds of current parameter
+/// @param[in] ptype TWON, TIME, or MIXFRAC
 /// @param[out] parstore structure that maintains info about
 /// parameters
 /// @param[in] bnd the bounds of each type of parameter
 /// @parem[in] orig original input line
-void parseParam(char *next, Boundedness bness,
+void parseParam(char *next, unsigned ptype,
                 ParStore * parstore, Bounds * bnd, const char *orig) {
-    Behavior pbeh = Free;
-
-    // Read behavior of parameter
+    // Read type of parameter
     {
         char *tok = nextWhitesepToken(&next);
         CHECK_TOKEN(tok, orig);
         if(0 == strcmp("fixed", tok))
-            pbeh = Fixed;
+            ptype |= FIXED;
         else if(0 == strcmp("free", tok))
-            pbeh = Free;
+            ptype |= FREE;
         else if(0 == strcmp("constrained", tok))
-            pbeh = Constrained;
+            ptype |= CONSTRAINED;
         else {
             fprintf(stderr, "%s:%s:%d: got %s when expecting \"fixed\","
                     " \"free\", or \"constrained\".\n",
@@ -163,30 +201,33 @@ void parseParam(char *next, Boundedness bness,
         }
     }
 
+    double range[2];
+    int status = getRange(range, &next, orig);
+    int gotRange = (status ? 0 : 1);
+
+    if(gotRange && !(ptype & FREE)) {
+        fprintf(stderr,"%s:%d: only free variables can have ranges\n",
+                __FILE__,__LINE__);
+        fprintf(stderr,"  input: %s\n", orig);
+        exit(EXIT_FAILURE);
+    }
+
     // Read parameter name, delimited by '='
     char *name = strsep(&next, "=");
     CHECK_TOKEN(name, orig);
     name = stripWhiteSpace(name);
-    int i, ok = 1;
-    if(!isalpha(name[0]))
-        ok = 0;
-    for(i = 1; ok && name[i] != '\0'; ++i) {
-        int c = name[i];
-        if(!(isalnum(c) || c == '_'))
-            ok = 0;
-    }
-    if(!ok) {
+    if( !legalName(name) ) {
         fprintf(stderr, "%s:%d: \"%s\" is not a legal parameter name.\n",
                 __FILE__, __LINE__, name);
         fprintf(stderr, " Legal names consist of a letter followed by"
-                " letters, digits, and underscores.\n");
+                " letters, digits, underscores, colons, or periods.\n");
         fprintf(stderr, " Input: %s\n", orig);
         exit(EXIT_FAILURE);
     }
 
     char *formula;
-    double value;
-    if(pbeh == Constrained) {
+    double value=0.0;
+    if(ptype & CONSTRAINED) {
         formula = stripWhiteSpace(next);
         assert(formula != NULL);
     } else {
@@ -202,39 +243,34 @@ void parseParam(char *next, Boundedness bness,
     }
 
     // Allocate and initialize parameter in ParStore
-    switch (pbeh) {
-    case Fixed:
-        ParStore_addFixedPar(parstore, value, name);
-        break;
-    case Constrained:
-        ParStore_addConstrainedPar(parstore, formula, name);
-        break;
-    case Free:
-        // Set bounds, based on bness of parameter
-    {
+    if(ptype & FIXED) {
+        ParStore_addFixedPar(parstore, value, name, ptype);
+    }else if(ptype & CONSTRAINED) {
+        ParStore_addConstrainedPar(parstore, formula, name, ptype);
+    }else if(ptype & FREE) {
         double lo, hi;
-        switch (bness) {
-        case TwoN:
-            lo = bnd->lo_twoN;
-            hi = bnd->hi_twoN;
-            break;
-        case Time:
-            lo = bnd->lo_t;
-            hi = bnd->hi_t;
-            break;
-        case MixFrac:
-            lo = 0.0;
-            hi = 1.0;
-            break;
-        default:
-            DIE("This shouldn't happen");
+        if(gotRange) {
+            lo = range[0];
+            hi = range[1];
+        }else{
+            if(ptype & TWON) {
+                lo = bnd->lo_twoN;
+                hi = bnd->hi_twoN;
+            }else if(ptype & TIME) {
+                lo = bnd->lo_t;
+                hi = bnd->hi_t;
+            }else if (ptype & MIXFRAC) {
+                lo = 0.0;
+                hi = 1.0;
+            }else if (ptype & ARBITRARY) {
+                lo = -DBL_MAX;
+                hi = DBL_MAX;
+            }else
+                DIE("This shouldn't happen");
         }
-        ParStore_addFreePar(parstore, value, lo, hi, name);
-    }
-        break;
-    default:
+        ParStore_addFreePar(parstore, value, lo, hi, name, ptype);
+    }else
         DIE("This shouldn't happen");
-    }
 }
 
 /// Parse a line describing a segment of the population tree
@@ -252,7 +288,7 @@ void parseSegment(char *next, PopNodeTab * poptbl, SampNdx * sndx,
                   const char *orig) {
     char *popName, *tok;
     double *tPtr, *twoNptr;
-    Behavior tbehavior, twoNbehavior;
+    unsigned ttype, twoNtype;
     unsigned long nsamples = 0;
 
     // Read name of segment
@@ -270,7 +306,7 @@ void parseSegment(char *next, PopNodeTab * poptbl, SampNdx * sndx,
     }
     tok = nextWhitesepToken(&next);
     CHECK_TOKEN(tok, orig);
-    tPtr = ParStore_findPtr(parstore, &tbehavior, tok);
+    tPtr = ParStore_findPtr(parstore, &ttype, tok);
     if(NULL == tPtr) {
         fprintf(stderr, "%s:%s:%d: Parameter \"%s\" is undefined\n",
                 __FILE__, __func__, __LINE__, tok);
@@ -289,7 +325,7 @@ void parseSegment(char *next, PopNodeTab * poptbl, SampNdx * sndx,
     tok = nextWhitesepToken(&next);
     CHECK_TOKEN(tok, orig);
     tok = stripWhiteSpace(tok);
-    twoNptr = ParStore_findPtr(parstore, &twoNbehavior, tok);
+    twoNptr = ParStore_findPtr(parstore, &twoNtype, tok);
     if(NULL == twoNptr) {
         fprintf(stderr, "%s:%s:%dParameter \"%s\" is undefined\n",
                 __FILE__, __func__, __LINE__, tok);
@@ -332,8 +368,8 @@ void parseSegment(char *next, PopNodeTab * poptbl, SampNdx * sndx,
     }
 
     assert(strlen(popName) > 0);
-    PopNode *thisNode = PopNode_new(twoNptr, twoNbehavior == Free,
-                                    tPtr, tbehavior == Free, ns);
+    PopNode *thisNode = PopNode_new(twoNptr, twoNtype & FREE,
+                                    tPtr, ttype & FREE, ns);
     if(0 != PopNodeTab_insert(poptbl, popName, thisNode)) {
         fprintf(stderr, "%s:%d: duplicate \"segment %s\"\n",
                 __FILE__, __LINE__, popName);
@@ -408,7 +444,7 @@ void parseMix(char *next, PopNodeTab * poptbl, ParStore * parstore,
               const char *orig) {
     char *childName, *parName[2], *tok;
     double *mPtr;
-    Behavior mbehavior;
+    unsigned mtype;
 
     // Read name of child
     childName = nextWhitesepToken(&next);
@@ -432,7 +468,7 @@ void parseMix(char *next, PopNodeTab * poptbl, ParStore * parstore,
     tok = strsep(&next, "*");
     CHECK_TOKEN(tok, orig);
     tok = stripWhiteSpace(tok);
-    mPtr = ParStore_findPtr(parstore, &mbehavior, tok);
+    mPtr = ParStore_findPtr(parstore, &mtype, tok);
     if(NULL == mPtr) {
         fprintf(stderr, "%s:%s:%d: Parameter \"%s\" is undefined\n",
                 __FILE__, __func__, __LINE__, tok);
@@ -477,7 +513,7 @@ void parseMix(char *next, PopNodeTab * poptbl, ParStore * parstore,
         exit(EXIT_FAILURE);
     }
 
-    PopNode_mix(childNode, mPtr, mbehavior == Free, parNode1, parNode0);
+    PopNode_mix(childNode, mPtr, mtype & FREE, parNode1, parNode0);
 }
 
 // Read a line into buff, skipping blank lines; strip comments and
@@ -563,11 +599,13 @@ PopNode *mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, ParStore * parstore,
             continue;
 
         if(0 == strcmp(token, "twoN"))
-            parseParam(next, TwoN, parstore, bnd, orig);
+            parseParam(next, TWON, parstore, bnd, orig);
         else if(0 == strcmp(token, "time"))
-            parseParam(next, Time, parstore, bnd, orig);
+            parseParam(next, TIME, parstore, bnd, orig);
         else if(0 == strcmp(token, "mixFrac"))
-            parseParam(next, MixFrac, parstore, bnd, orig);
+            parseParam(next, MIXFRAC, parstore, bnd, orig);
+        else if(0 == strcmp(token, "param"))
+            parseParam(next, ARBITRARY, parstore, bnd, orig);
         else if(0 == strcmp(token, "segment"))
             parseSegment(next, poptbl, sndx, lndx, parstore, ns, orig);
         else if(0 == strcmp(token, "mix"))
@@ -584,8 +622,11 @@ PopNode *mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, ParStore * parstore,
     // these searches all find the same root. Otherwise, it aborts
     // with an error.
     PopNode *root = PopNodeTab_check_and_root(poptbl, __FILE__, __LINE__);
-    PopNode_chkDependencies(root, parstore);
     PopNodeTab_free(poptbl);
+
+    // Make sure no constrained parameter depends on a constrained parameter
+    // that is defined later in the .lgo file.
+    ParStore_chkDependencies(parstore);
     return root;
 }
 
@@ -683,6 +724,7 @@ int main(int argc, char **argv) {
                 __FILE__, __LINE__, tstFname);
         exit(1);
     }
+
     // test getDbl
     char buff[100], *next;
     double x;
@@ -696,6 +738,29 @@ int main(int argc, char **argv) {
     assert(0 == getDbl(&x, &next, buff));
     assert(Dbl_near(x, -1.23e-4));
     unitTstResult("getDbl", "OK");
+
+    // test getULong
+    long unsigned lu;
+    strcpy(buff, " +123 ");
+    next = buff;
+    assert(0 == getULong(&lu, &next, buff));
+    assert(lu == 123);
+    unitTstResult("getULong", "OK");
+
+    // test getRange
+    double y[2];
+    strcpy(buff, " [ 12.34, 2.3e2 ] ");
+    next = buff;
+    assert(0 == getRange(y, &next, buff));
+    assert(y[0] == 12.34);
+    assert(y[1] == 2.3e2);
+
+    strcpy(buff, "  12.34, 2.3e2 ] ");
+    next = buff;
+    assert(1 == getRange(y, &next, buff));
+    assert(*next == '1');
+
+    unitTstResult("getRange", "OK");
 
     SampNdx sndx;
     SampNdx_init(&sndx);
