@@ -581,12 +581,13 @@ PopNode *mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, ParStore * parstore,
                 fprintf(stderr,"  prev line: \"%s\"\n", buff);
                 exit(EXIT_FAILURE);
             }
-            if(strlen(buff) + strlen(buff2) >= sizeof(buff)) {
+            if(strlen(buff) + 1 + strlen(buff2) >= sizeof(buff)) {
                 fprintf(stderr, "%s:%d: "
                         "buffer overflow on continuation line\n",
                         __FILE__, __LINE__);
                 exit(EXIT_FAILURE);
             }
+            strcat(buff, " "); // add space after operator
             strcat(buff, buff2);
         }
 
