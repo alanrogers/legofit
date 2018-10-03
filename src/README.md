@@ -356,15 +356,6 @@ The "mixFrac" command declares a "mixture fraction"---the fraction of a
 some population that derives from introgression. As above, it could
 have been fixed or constrained.
 
-There is also a 4th type of variable, which is declared with the
-"param" command.
-
-    param free x = 0.0
-
-By default, the ranges of such variables range from the smallest
-negative floating-point number to the largest positive one. They are
-meant to be used in constraint formulas, as I will illustrate below.
-
 The next few lines of the input file declare the segments of the
 population network. The first of these is
 
@@ -463,6 +454,36 @@ site patterns. For example, "x:y" refers to the pattern in which the
 derived allele is present in the samples x and y but not in n. The 2nd
 column gives the expected length in generations of the branch on which
 mutations would generate the corresponding site pattern.
+
+In the example above, we saw parameters of three types: "twoN",
+"time", and "mixFrac". There is also a 4th type of variable, which is
+declared with the "param" command, and which is intended to represent
+quantities that are neither times, population sizes, nor admixture
+fractions. Here's an example, which also illustrates the how ranges
+can be specified for free parameters.
+
+    param free [ 0, 2] msum = 0.02  # mN + mD
+    param free [-1, 1] mdif = 0.0   # mN - mD
+    mixFrac constrained  mN = 0.5*(msum + mdif)
+    mixFrac constrained  mD = 0.5*(msum - mdif)
+
+Here `msum` is the sum of two admixture fractions and `mdif` is the
+difference between them. We defined the parameters this way, because
+`mN` and `mD` were tightly correlated, but `msum` and `mdif` were
+nearly uncorrelated. This allowed the optimization algorithm to work
+with the uncorrelated pair of parameters rather than the correlated
+pair.
+
+In the declaration of `msum`, "[0, 2]" specifies the range of this
+parameter. Ranges are used in initializing the random swarm of points
+used by the differential evolution algorithm. Initial points are
+randomly distributed within the range. A range can be specified for
+any free parameter, not just those defined with the `param`
+command. If no range is provided, legofit uses default ranges that
+differ, depending on the type of parameter. The default range is
+[1, 1e7] for `twoN` parameters, [0, 1e7] for `time` parameters, [0, 1]
+for `mixFrac` parameters, and [-`DBL_MAX`, `DBL_MAX`] for `param`
+parameters. 
 
 # Model selection {#modsel}
 
