@@ -260,6 +260,7 @@ void ParStore_addFixedPar(ParStore * self, double value, const char *name,
     self->byname = StrParMap_insert(self->byname, par);
     self->byaddr = AddrParMap_insert(self->byaddr, par);
     self->fixedPar = Param_push(self->fixedPar, par);
+    self->te_pars = te_variable_push(self->te_pars, par->name, &par->value);
     ParStore_sanityCheck(self, __FILE__, __LINE__);
 }
 

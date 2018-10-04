@@ -5,7 +5,7 @@ time fixed    zero=0
 twoN fixed     one=1
 time free     Txyn=25920       # archaic-modern separation time
 time fixed    Tn=1897          # time of Neanderthal admixture
-time free     Txy=3788         # Africa-Eurasia separation time
+time fixed    Txy=3788         # Africa-Eurasia separation time
 twoN free   twoNn=1e3          # archaic population size
 # To spread a constraint function across several lines, break
 # the line after a binary operator.
