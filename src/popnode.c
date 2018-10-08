@@ -529,8 +529,7 @@ int PopNode_feasible(const PopNode * self, Bounds bnd, int verbose) {
         }
     }
 
-    int         i;
-    for(i = 0; i < self->nchildren; ++i) {
+    for(int i = 0; i < self->nchildren; ++i) {
         if(0 == PopNode_feasible(self->child[i], bnd, verbose))
             return 0;
     }
