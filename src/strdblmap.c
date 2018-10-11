@@ -1,5 +1,5 @@
 /**
- * @file strdbl.c
+ * @file strdblmap.c
  * @author Alan R. Rogers
  * @brief Associate character strings with doubles.
  *

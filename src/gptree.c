@@ -74,11 +74,10 @@ const char *GPTree_getNameFree(GPTree * self, int i) {
     return ParStore_getNameFree(self->parstore, i);
 }
 
-
-/// Randomly perturb all free parameters in the population tree while
-/// maintaining inequality constraints.
+/// Randomly perturb all free parameters while maintaining inequality
+/// constraints.
 void GPTree_randomize(GPTree * self, gsl_rng * rng) {
-    PopNode_randomize(self->rootPop, self->bnd, self->parstore, rng);
+    ParStore_randomize(self->parstore, self, rng);
 }
 
 /// Set free parameters from an array.
@@ -124,7 +123,6 @@ void GPTree_simulate(GPTree * self, BranchTab * branchtab, gsl_rng * rng,
     for(rep = 0; rep < nreps; ++rep) {
         PopNode_clear(self->rootPop);   // remove old samples
         SampNdx_populateTree(&(self->sndx));    // add new samples
-        PopNode_gaussian(self->rootPop, self->bnd, self->parstore, rng);
 
         // coalescent simulation generates gene genealogy within
         // population tree.
@@ -306,7 +304,6 @@ int GPTree_equals(const GPTree * lhs, const GPTree * rhs) {
     if(!Bounds_equals(&lhs->bnd, &rhs->bnd))
         return 0;
     if(!ParStore_equals(lhs->parstore, rhs->parstore)) {
-        fprintf(stderr,"%s:%d: !ParStore_equals\n",__FILE__,__LINE__);
         return 0;
     }
     if(!LblNdx_equals(&lhs->lblndx, &rhs->lblndx))
@@ -319,16 +316,6 @@ int GPTree_equals(const GPTree * lhs, const GPTree * rhs) {
 /// Get the LblNdx object from a GPTree
 LblNdx GPTree_getLblNdx(GPTree * self) {
     return self->lblndx;
-}
-
-/// Return pointer to array of lower bounds of free parameters
-double     *GPTree_loBounds(GPTree * self) {
-    return ParStore_loBounds(self->parstore);
-}
-
-/// Return pointer to array of upper bounds of free parameters
-double     *GPTree_upBounds(GPTree * self) {
-    return ParStore_upBounds(self->parstore);
 }
 
 /// Return number of samples.
@@ -353,6 +340,7 @@ int GPTree_feasible(const GPTree * self, int verbose) {
 
 #  include <string.h>
 #  include <assert.h>
+#  include <time.h>
 
 #  ifdef NDEBUG
 #    error "Unit tests must be compiled without -DNDEBUG flag"
@@ -375,8 +363,9 @@ int GPTree_feasible(const GPTree * self, int verbose) {
 const char *tstInput =
     " # this is a comment\n"
     "time fixed  T0=0\n"
+    "time free   x = 2\n"
     "time free   Tc=1\n"
-    "time free   Tab=3\n"
+    "time constrained Tab=x - Tc\n"
     "time free   Tabc=5.5\n"
     "twoN free   twoNa=100\n"
     "twoN fixed  twoNb=123\n"
@@ -406,6 +395,9 @@ int main(int argc, char **argv) {
         verbose = 1;
     }
 
+    gsl_rng    *rng = gsl_rng_alloc(gsl_rng_taus);
+    gsl_rng_set(rng, (unsigned long) time(NULL));
+
     const char *fname = "mktree-tmp.lgo";
     FILE       *fp = fopen(fname, "w");
     fputs(tstInput, fp);
@@ -415,11 +407,23 @@ int main(int argc, char **argv) {
         .lo_twoN = 0.0,
         .hi_twoN = 1e7,
         .lo_t = 0.0,
-        .hi_t = HUGE_VAL
+        .hi_t = INFINITY
     };
     GPTree     *g = GPTree_new(fname, bnd);
     GPTree     *g2 = GPTree_dup(g);
     assert(GPTree_equals(g, g2));
+
+    GPTree_randomize(g2, rng);
+    assert( !GPTree_equals(g, g2) );
+    gsl_rng_free(rng);
+    rng = NULL;
+
+    if(verbose) {
+        fprintf(stderr,"Before randomization:\n");
+        GPTree_printParStore(g, stderr);
+        fprintf(stderr,"After randomization:\n");
+        GPTree_printParStore(g2, stderr);
+    }
 
     const LblNdx lblndx = GPTree_getLblNdx(g);
     if(verbose)

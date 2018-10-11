@@ -56,7 +56,11 @@ typedef struct te_variable {
     void *address;
     int type;
     void *context;
+    struct te_variable *next;
 } te_variable;
+
+te_variable *te_variable_push(te_variable *self, const char *name, void *address);
+void te_variable_free(te_variable *self);
 
 /* Parses the input expression, evaluates it, and frees it. */
 
@@ -66,8 +70,7 @@ double te_interp(const char *expression, int *error);
 /* Parses the input expression and binds variables. */
 
 /* Returns NULL on error. */
-te_expr *te_compile(const char *expression,
-                    const te_variable * variables, int var_count, int *error);
+te_expr *te_compile(const char *expression, const te_variable * variables, int *error);
 
 /* Evaluates the expression. */
 double te_eval(const te_expr * n);
@@ -75,8 +78,15 @@ double te_eval(const te_expr * n);
 /* Prints debugging information on the syntax tree. */
 void te_print(const te_expr * n, FILE * fp);
 
-/* Frees the expression. */
+/*
+ * Fill array "ptr" with pointers to the variables on which this
+ * expression depends. Return the number of dependent variables, which
+ * should be less than or equal to len. Abort if len is smaller than
+ * the number of dependent variables.
+ */ 
+int te_dependencies(const te_expr *self, int len, const double *ptr[len]);
 
+/* Frees the expression. */
 /* This is safe to call on NULL pointers. */
 void te_free(te_expr * n);
 

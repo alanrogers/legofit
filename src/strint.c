@@ -139,7 +139,7 @@ void SILink_print(const SILink * self, FILE *fp) {
 }
 
 /// StrInt constructor
-StrInt     *StrInt_new(void) {
+StrInt *StrInt_new(void) {
     StrInt     *new = malloc(sizeof(*new));
     CHECKMEM(new);
     memset(new, 0, sizeof(*new));

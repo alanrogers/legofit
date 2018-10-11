@@ -3,8 +3,8 @@
 
 #  include "typedefs.h"
 #  include "misc.h"
-#  include <assert.h>
-#  include <stdbool.h>
+#  include "gptree.h"
+#  include <gsl/gsl_rng.h>
 #  define MAXPAR 100
 
 struct Bounds {
@@ -13,36 +13,19 @@ struct Bounds {
 
 ParStore   *ParStore_new(void);
 void        ParStore_free(ParStore * self);
-void        ParStore_addFreePar(ParStore * self, double value,
-                                double lo, double hi, const char *name);
-void        ParStore_addGaussianPar(ParStore * self, double mean, double sd,
-                                    const char *name);
+void        ParStore_addFreePar(ParStore * self, double value, double lo,
+                                double hi, const char *name, unsigned type);
 void        ParStore_addFixedPar(ParStore * self, double value,
-                                 const char *name);
+                                 const char *name, unsigned type);
 void        ParStore_addConstrainedPar(ParStore * self, const char *str,
-                                       const char *name);
+                                       const char *name, unsigned type);
 int         ParStore_constrain(ParStore *self);
 void        ParStore_constrain_ptr(ParStore *self, double *ptr);
 int         ParStore_nFixed(ParStore * self);
 int         ParStore_nFree(ParStore * self);
-int         ParStore_nGaussian(ParStore * self);
 int         ParStore_nConstrained(ParStore * self);
-
-double      ParStore_getFixed(ParStore * self, int i);
-double      ParStore_getFree(ParStore * self, int i);
-double      ParStore_getGaussian(ParStore * self, int i);
-double      ParStore_getConstrained(ParStore * self, int i);
-
-const char *ParStore_getNameFixed(ParStore * self, int i);
 const char *ParStore_getNameFree(ParStore * self, int i);
-const char *ParStore_getNameGaussian(ParStore * self, int i);
-
-void        ParStore_setFree(ParStore * self, int i, double value);
-double      ParStore_loFree(ParStore * self, int i);
-double      ParStore_hiFree(ParStore * self, int i);
-double     *ParStore_loBounds(ParStore * self);
-double     *ParStore_upBounds(ParStore * self);
-double     *ParStore_findPtr(ParStore * self, ParamStatus *pstat,
+double     *ParStore_findPtr(ParStore * self, unsigned *type,
                              const char *name);
 ParStore   *ParStore_dup(const ParStore * old);
 void        ParStore_sanityCheck(ParStore * self, const char *file, int line);
@@ -52,14 +35,10 @@ void        ParStore_printConstrained(ParStore * self, FILE * fp);
 int         ParStore_equals(ParStore * lhs, ParStore * rhs);
 void        ParStore_setFreeParams(ParStore * self, int n, double x[n]);
 void        ParStore_getFreeParams(ParStore * self, int n, double x[n]);
-void        ParStore_sample(ParStore * self, double *ptr, double low,
-                            double high, gsl_rng * rng);
-
+int         ParStore_isConstrained(const ParStore *self, const double *ptr);
+void        ParStore_randomize(ParStore *self, GPTree *gpt, gsl_rng *rng);
+void        ParStore_chkDependencies(ParStore * self);
 void        Bounds_sanityCheck(Bounds * self, const char *file, int line);
 int         Bounds_equals(const Bounds * lhs, const Bounds * rhs);
-
-int compareDblPtrs(const void *void_x, const void *void_y);
-int compareDbls(const void *void_x, const void *void_y);
-
 
 #endif

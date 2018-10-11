@@ -44,42 +44,45 @@ int main(int argc, char **argv) {
     list = NameList_append(list, fname2);
     assert(2 == NameList_size(list));
 
-    const int npts=3, npar=2;
+#define NPTS 3
+#define NPAR 2    
     int i, j, status;
-    const char *parname[npar] = {"var1", "var2"};
-    double x1[npts][npar] = {{1.0, 2.0}, {1.5, 3.5}, {2.0, 2.5}};
-    double x2[npts][npar] = {{1.8, 2.2}, {1.7, 3.1}, {1.9, 2.8}};
-    double c1[npts] = {0.01, 0.02, 0.03};
-    double c2[npts] = {0.04, 0.05, 0.06};
-    State *s = State_new(npts, npar);
-    State *s2 = State_new(npts, npar);
+    const char *parname[NPAR];
+    parname[0] = "var1";
+    parname[1] = "var2";
+    double x1[NPTS][NPAR] = {{1.0, 2.0}, {1.5, 3.5}, {2.0, 2.5}};
+    double x2[NPTS][NPAR] = {{1.8, 2.2}, {1.7, 3.1}, {1.9, 2.8}};
+    double c1[NPTS] = {0.01, 0.02, 0.03};
+    double c2[NPTS] = {0.04, 0.05, 0.06};
+    State *s = State_new(NPTS, NPAR);
+    State *s2 = State_new(NPTS, NPAR);
     CHECKMEM(s);
-    assert(npts == State_npoints(s));
-    assert(npar == State_nparameters(s));
-    assert(npts == State_npoints(s2));
-    assert(npar == State_nparameters(s2));
+    assert(NPTS == State_npoints(s));
+    assert(NPAR == State_nparameters(s));
+    assert(NPTS == State_npoints(s2));
+    assert(NPAR == State_nparameters(s2));
 
     // set parameter names
-    for(j=0; j < npar; ++j) {
+    for(j=0; j < NPAR; ++j) {
         State_setName(s, j, parname[j]);
         State_setName(s2, j, parname[j]);
     }
 
     // set parameter values
-    for(i=0; i < npts; ++i) {
-        State_setVector(s, i, npar, x1[i]);
+    for(i=0; i < NPTS; ++i) {
+        State_setVector(s, i, NPAR, x1[i]);
         State_setCost(s, i, c1[i]);
-        State_setVector(s2, i, npar, x2[i]);
+        State_setVector(s2, i, NPAR, x2[i]);
         State_setCost(s2, i, c2[i]);
     }
 
     // write old-type state file
     FILE *fp = fopen(fname, "w");
     assert(fp);
-    fprintf(fp,"%d %d\n", npts, npar);
-    for(i=0; i<npts; ++i) {
+    fprintf(fp,"%d %d\n", NPTS, NPAR);
+    for(i=0; i<NPTS; ++i) {
         fprintf(fp, "%0.18lf", c1[i]);
-        for(j=0; j < npar; ++j)
+        for(j=0; j < NPAR; ++j)
             fprintf(fp, " %0.18lf", x1[i][j]);
         putc('\n', fp);
     }
@@ -104,38 +107,38 @@ int main(int argc, char **argv) {
     State_free(s2);
 
     // read old-type file
-    s = State_read(fname, npar, parname);
+    s = State_read(fname, NPAR, parname);
     CHECKMEM(s);
 
     // read new-type file
-    s2 = State_read(fname2, npar, parname);
+    s2 = State_read(fname2, NPAR, parname);
     CHECKMEM(s2);
 
     // check the two State objects
-    double y[npar];
-    for(i=0; i<npts; ++i) {
-        State_getVector(s, i, npar, y);
-        assert(0 == memcmp(y, x1[i], npar*sizeof(y[0])));
+    double y[NPAR];
+    for(i=0; i<NPTS; ++i) {
+        State_getVector(s, i, NPAR, y);
+        assert(0 == memcmp(y, x1[i], NPAR*sizeof(y[0])));
         assert(c1[i] == State_getCost(s, i));
 
-        State_getVector(s2, i, npar, y);
-        assert(0 == memcmp(y, x2[i], npar*sizeof(y[0])));
+        State_getVector(s2, i, NPAR, y);
+        assert(0 == memcmp(y, x2[i], NPAR*sizeof(y[0])));
         assert(c2[i] == State_getCost(s2, i));
     }
     State_free(s);
     State_free(s2);
 
-    // Read npts points spread across the two state files
-    s = State_readList(list, npts, npar, parname);
+    // Read NPTS points spread across the two state files
+    s = State_readList(list, NPTS, NPAR, parname);
     if(verbose)
         State_print(s, stderr);
-    for(i=0; i<npts; ++i) {
-        State_getVector(s, i, npar, y);
+    for(i=0; i<NPTS; ++i) {
+        State_getVector(s, i, NPAR, y);
         if(i < 2) {
-            assert(0 == memcmp(y, x1[i], npar*sizeof(y[0])));
+            assert(0 == memcmp(y, x1[i], NPAR*sizeof(y[0])));
             assert(c1[i] == State_getCost(s, i));
         }else{
-            assert(0 == memcmp(y, x2[i-2], npar*sizeof(y[0])));
+            assert(0 == memcmp(y, x2[i-2], NPAR*sizeof(y[0])));
             assert(c2[i-2] == State_getCost(s, i));
         }
     }

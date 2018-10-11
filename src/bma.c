@@ -209,6 +209,11 @@ ModSelCrit *ModSelCrit_new(const char *fname) {
             continue;
         ++dim;
     }
+    if(dim==0) {
+        fprintf(stderr,"%s:%s:%d: can't parse \"%s\" as an msc file\n",
+                __FILE__,__func__,__LINE__,fname);
+        exit(EXIT_FAILURE);
+    }
 
     ModSelCrit *msc = malloc(sizeof(ModSelCrit));
     CHECKMEM(msc);
@@ -667,7 +672,8 @@ int main(int argc, char **argv) {
         if(i > 0) {
             if(ModSelCrit_compare(msc[0], msc[i])) {
                 fprintf(stderr, "%s:%d: inconsistent files: %s and %s\n",
-                        __FILE__, __LINE__, mscnames[i], mscnames[i]);
+                        __FILE__, __LINE__, mscnames[0], mscnames[i]);
+                exit(EXIT_FAILURE);
             }
         }
     }

@@ -8,6 +8,10 @@
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 
+#ifdef NDEBUG
+#  error "Unit tests must be compiled without -DNDEBUG flag"
+#endif
+
 double quadsurf(int dim, double dat[dim], int offset[dim], int nterms,
                 double tru[nterms], gsl_rng *rng, double sigma);
 

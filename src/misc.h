@@ -49,7 +49,7 @@ char       *strcenter(const char *text, unsigned width,
                       char *buff, size_t buffsize);
 int         readline(int dim, char buff[dim], FILE *fp);
 const char *mybasename(const char *name);
-
+int         legalName(const char *name);
 static inline double survival(double t, double twoN);
 
 #  define ERR(code, msg) do{                        \

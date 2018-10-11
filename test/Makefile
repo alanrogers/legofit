@@ -3,10 +3,11 @@ vpath %.c ../src
 opt :=  -O0 -fno-inline-functions -DDEBUG
 prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
-tests := xbinary xbma xboot xbranchtab xclic xdafreader xrafreader xdiffev \
-  xgene xgptree xhessian xpopnodetab xjobqueue xlblndx xllrbtree xparkeyval \
-  xparse xparstore xpopnode xscrmreader xsimsched xstrdblqueue xstrint \
-  xstrdblmap xdtnorm xmisc xerror xstate xwraparound xpointbuff
+tests := xaddrparmap xbinary xbma xboot xbranchtab xdafreader xdiffev \
+  xdtnorm xerror xgene xgptree xhessian xjobqueue xlblndx xllrbtree \
+  xmisc xparam xparse xparstore xpointbuff xpopnode xpopnodetab \
+  xrafreader xscrmreader xsimsched xstate xstrdblmap xstrdblqueue \
+  xstrint xstrparmap xtinyexpr xwraparound
 
 CC := gcc
 
@@ -36,13 +37,12 @@ lib := -L/usr/local/lib -lgsl -lgslcblas -lpthread -lm
 all : $(tests)
 
 test : $(tests)
+	-./xaddrparmap
 	-./xbinary
 	-./xbma
 	-./xboot
 	-./xbranchtab
-	-./xclic
 	-./xdafreader
-	-./xrafreader
 	-./xdiffev
 	-./xdtnorm
 	-./xerror
@@ -53,18 +53,21 @@ test : $(tests)
 	-./xlblndx
 	-./xllrbtree
 	-./xmisc
-	-./xparkeyval
+	-./xparam
 	-./xparse
 	-./xparstore
 	-./xpointbuff
 	-./xpopnode
 	-./xpopnodetab
+	-./xrafreader
 	-./xscrmreader
 	-./xsimsched
 	-./xstate
-	-./xstrint
 	-./xstrdblmap
 	-./xstrdblqueue
+	-./xstrint
+	-./xstrparmap
+	-./xtinyexpr
 	-./xwraparound
 	@echo "ALL UNIT TESTS WERE COMPLETED."
 
@@ -84,9 +87,9 @@ XSTATE := xstate.o state.o misc.o
 xstate : $(XSTATE)
 	$(CC) $(CFLAGS) -o $@ $(XSTATE) $(lib)
 
-XPOPNODETAB := xpopnodetab.o popnodetab.o misc.o popnode.o gene.o \
-   branchtab.o lblndx.o tokenizer.o dtnorm.o binary.o \
-   parkeyval.o parstore.o tinyexpr.o
+XPOPNODETAB := xpopnodetab.o addrparmap.o popnodetab.o misc.o param.o \
+   popnode.o gene.o branchtab.o lblndx.o tokenizer.o dtnorm.o binary.o \
+   parstore.o strparmap.o tinyexpr.o
 xpopnodetab : $(XPOPNODETAB)
 	$(CC) $(CFLAGS) -o $@ $(XPOPNODETAB) $(lib)
 
@@ -97,6 +100,16 @@ xdtnorm : $(XDTNORM)
 XERROR := xerror.o error.o misc.o
 xerror : $(XERROR)
 	$(CC) $(CFLAGS) -o $@ $(XERROR) $(lib)
+
+XPARAM := xparam.o misc.o param.o tinyexpr.o dtnorm.o gptree.o parstore.o \
+    strparmap.o addrparmap.o gene.o lblndx.o popnode.o branchtab.o parse.o \
+    binary.o popnodetab.o tokenizer.o dprintf.o
+xparam : $(XPARAM)
+	$(CC) $(CFLAGS) -o $@ $(XPARAM) $(lib)
+
+XTINYEXPR := xtinyexpr.o tinyexpr.o misc.o
+xtinyexpr : $(XTINYEXPR)
+	$(CC) $(CFLAGS) -o $@ $(XTINYEXPR) $(lib)
 
 XHESSIAN := xhessian.o misc.o hessian.o
 xhessian : $(XHESSIAN)
@@ -110,24 +123,20 @@ XPOINTBUFF := xpointbuff.o misc.o pointbuff.o
 xpointbuff : $(XPOINTBUFF)
 	$(CC) $(CFLAGS) -o $@ $(XPOINTBUFF) $(lib)
 
-XDIFFEV := xdiffev.o diffev.o binary.o lblndx.o jobqueue.o parkeyval.o \
-  simsched.o state.o misc.o
+XDIFFEV := xdiffev.o diffev.o binary.o lblndx.o jobqueue.o \
+  simsched.o state.o misc.o pointbuff.o
 xdiffev : $(XDIFFEV)
 	$(CC) $(CFLAGS) -o $@ $(XDIFFEV) $(lib)
 
 XDAFREADER := xdafreader.o dafreader.o misc.o lblndx.o tokenizer.o binary.o \
-   parkeyval.o strint.o
+   strint.o
 xdafreader : $(XDAFREADER)
 	$(CC) $(CFLAGS) -o $@ $(XDAFREADER) $(lib)
 
 XRAFREADER := xrafreader.o rafreader.o misc.o lblndx.o tokenizer.o binary.o \
-   parkeyval.o strint.o error.o
+   strint.o error.o
 xrafreader : $(XRAFREADER)
 	$(CC) $(CFLAGS) -o $@ $(XRAFREADER) $(lib)
-
-XCLIC := xclic.o misc.o hessian.o strdblqueue.o
-xclic : $(XCLIC)
-	$(CC) $(CFLAGS) -o $@ $(XCLIC) $(lib)
 
 xbma.o : bma.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/bma.c
@@ -147,15 +156,15 @@ xparse.o : parse.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/parse.c
 
 XPARSE := xparse.o popnodetab.o misc.o tokenizer.o gptree.o lblndx.o \
-       branchtab.o parstore.o parkeyval.o popnode.o binary.o gene.o \
-       dprintf.o dtnorm.o tinyexpr.o
+       branchtab.o parstore.o popnode.o binary.o gene.o \
+       dprintf.o dtnorm.o tinyexpr.o param.o strparmap.o addrparmap.o
 xparse : $(XPARSE)
 	$(CC) $(CFLAGS) -o $@ $(XPARSE) $(lib)
 
 xgene.o : gene.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/gene.c
 
-XGENE := xgene.o branchtab.o misc.o binary.o tokenizer.o lblndx.o parkeyval.o
+XGENE := xgene.o branchtab.o misc.o binary.o tokenizer.o lblndx.o
 xgene : $(XGENE)
 	$(CC) $(CFLAGS) -o $@ $(XGENE) $(lib)
 
@@ -166,8 +175,9 @@ xboot : $(XBOOT)
 xpopnode.o : popnode.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/popnode.c
 
-XPOPNODE := xpopnode.o misc.o gene.o branchtab.o binary.o lblndx.o \
-   tokenizer.o parkeyval.o dtnorm.o parstore.o tinyexpr.o
+XPOPNODE := xpopnode.o addrparmap.o dtnorm.o misc.o gene.o branchtab.o \
+   binary.o lblndx.o strparmap.o tokenizer.o parstore.o tinyexpr.o \
+   param.o gptree.o parse.o dprintf.o popnodetab.o
 xpopnode : $(XPOPNODE)
 	$(CC) $(CFLAGS) -o $@ $(XPOPNODE) $(lib)
 
@@ -178,25 +188,23 @@ xsimsched : $(XSIMSCHED)
 xgptree.o : gptree.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/gptree.c
 
-XGPTREE := xgptree.o misc.o branchtab.o parstore.o lblndx.o \
-        parkeyval.o tokenizer.o popnodetab.o gene.o popnode.o binary.o \
-        dprintf.o dtnorm.o parse.o tinyexpr.o
+XGPTREE := xgptree.o addrparmap.o misc.o branchtab.o parstore.o lblndx.o \
+        tokenizer.o popnodetab.o gene.o param.o popnode.o binary.o \
+        dprintf.o dtnorm.o parse.o strparmap.o tinyexpr.o
 xgptree : $(XGPTREE)
 	$(CC) $(CFLAGS) -o $@ $(XGPTREE) $(lib)
 
-XPARSTORE := xparstore.o misc.o parstore.o parkeyval.o binary.o lblndx.o \
-        dtnorm.o tinyexpr.o
+XPARSTORE := xparstore.o misc.o parstore.o binary.o lblndx.o \
+        tinyexpr.o strparmap.o addrparmap.o param.o gptree.o \
+		dtnorm.o gene.o popnode.o parse.o dprintf.o branchtab.o \
+        popnodetab.o tokenizer.o 
 xparstore : $(XPARSTORE)
 	$(CC) $(CFLAGS) -o $@ $(XPARSTORE) $(lib)
-
-XPARKEYVAL := xparkeyval.o parkeyval.o misc.o binary.o lblndx.o
-xparkeyval : $(XPARKEYVAL)
-	$(CC) $(CFLAGS) -o $@ $(XPARKEYVAL) $(lib)
 
 xlblndx.o : lblndx.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/lblndx.c
 
-XLBLNDX := xlblndx.o misc.o parkeyval.o binary.o
+XLBLNDX := xlblndx.o misc.o binary.o
 xlblndx : $(XLBLNDX)
 	$(CC) $(CFLAGS) -o $@ $(XLBLNDX) $(lib)
 
@@ -210,16 +218,16 @@ xllrbtree : $(XLLRBTREE)
 xbranchtab.o : branchtab.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/branchtab.c
 
-XBRANCHTAB := xbranchtab.o gptree.o misc.o binary.o parstore.o popnode.o \
-   gene.o lblndx.o parse.o parkeyval.o tokenizer.o popnodetab.o \
-   dprintf.o dtnorm.o tinyexpr.o
+XBRANCHTAB := xbranchtab.o addrparmap.o gptree.o misc.o binary.o \
+   parstore.o popnode.o gene.o lblndx.o param.o parse.o \
+   tokenizer.o popnodetab.o dprintf.o dtnorm.o strparmap.o tinyexpr.o
 xbranchtab : $(XBRANCHTAB)
 	$(CC) $(CFLAGS) -o $@ $(XBRANCHTAB) $(lib)
 
 xstrint.o : strint.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/strint.c
 
-XSTRINT := xstrint.o misc.o binary.o lblndx.o parkeyval.o
+XSTRINT := xstrint.o misc.o binary.o lblndx.o
 xstrint : $(XSTRINT)
 	$(CC) $(CFLAGS) -o $@ $(XSTRINT) $(lib)
 
@@ -229,6 +237,20 @@ xstrdblmap.o : strdblmap.c
 XSTRDBLMAP := xstrdblmap.o misc.o
 xstrdblmap : $(XSTRDBLMAP)
 	$(CC) $(CFLAGS) -o $@ $(XSTRDBLMAP) $(lib)
+
+xstrparmap.o : strparmap.c
+	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/strparmap.c
+
+XSTRPARMAP := xstrparmap.o misc.o param.o tinyexpr.o dtnorm.o
+xstrparmap : $(XSTRPARMAP)
+	$(CC) $(CFLAGS) -o $@ $(XSTRPARMAP) $(lib)
+
+xaddrparmap.o : addrparmap.c
+	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/addrparmap.c
+
+XADDRPARMAP := xaddrparmap.o misc.o param.o tinyexpr.o dtnorm.o
+xaddrparmap : $(XADDRPARMAP)
+	$(CC) $(CFLAGS) -o $@ $(XADDRPARMAP) $(lib)
 
 XSTRDBLQUEUE := xstrdblqueue.o strdblqueue.o misc.o
 xstrdblqueue : $(XSTRDBLQUEUE)

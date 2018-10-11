@@ -64,9 +64,8 @@ The program writes to standard output.
     print >> sys.stderr, msg
     exit(1)
 
-# Parse legofit output file.  Return a tuple containing two lists:
-# first a list of parameter names; second a list of parameter
-# estimates.
+# Parse legofit output file.  Return a map relating parameter names to
+# estimated parameter values.
 def parselegofit(fname):
     ifile = open(fname, "r")
     parmap = {}
@@ -85,18 +84,18 @@ def parselegofit(fname):
         else:
             value = line[1].strip()
 
+        # In legofit output, pairs are printed twice. First as initial
+        # values, and second as estimates. This code adds a pair to
+        # parmap the first time it is seen and to estmap the second
+        # time. Thus, parmap will contain the initial values and
+        # estmap the estimates.
         if key in parmap:
             estmap[key] = value
         else:
             parmap[key] = value
 
     ifile.close()
-
-    parnames = sorted(estmap.keys())
-    estimates = len(parnames)*[0.0]
-    for i in range(len(parnames)):
-        estimates[i] = estmap[parnames[i]]
-    return (parnames, estimates)
+    return estmap
 
 fnames = []
 transpose = False
@@ -125,45 +124,33 @@ for i in range(len(fnames)):
     print fnames[i],
 print
 
-mat = []
-parnames = []
-allnames = set([])
+allmaps = []  # allmaps[i] is the dictionary for file i
+allnames = set([]) # set of all parameter names
 
-# Make arrays. Data sets in rows, parameters in columns.
-# Rows may not be same length, because different data sets
-# may have different parameters.
+# Get allmaps and allnames.
 for name in fnames:
-    parnames2, estimates = parselegofit(name)
-    if len(parnames2) == 0:
+    estmap = parselegofit(name)
+    if len(estmap) == 0:
         print >> sys.stderr, "ERR: file %s has no parameters" % name
         sys.exit(1)
-    mat.append(estimates)
-    parnames.append(parnames2)
-    allnames |= set(parnames2)
+    allmaps.append(estmap)
+    allnames |= set(estmap.keys())
 
 allnames = sorted(list(allnames))
 npar = len(allnames)
 nfile = len(fnames)
 
-# mat2 is like mat, but is rectangular, with missing parameters
-# set equal to None.
-mat2 = nfile*[None]
+# mat is a rectangular matrix, with missing parameters set to None.
+mat = nfile*[None]
 for i in range(nfile):
-    mat2[i] = [None for j in range(npar)]
+    mat[i] = [None for j in range(npar)]
     k = 0
     for j in range(npar):
-        if allnames[j] in parnames[i]:
-            if parnames[i][k] != allnames[j]:
-                print "ERR: parnames[i][k] != allnames[j]"
-                print i, k, j
-                print parnames[i][k], allnames[j]
-                print parnames[i]
-                print allnames
-                sys.exit(1)
-            mat2[i][j] = mat[i][k]
-            k += 1
-        else:
-            mat2[i][j] = None
+        # If parameter name is in map i, then put the corresponding
+        # value into mat. Otherwise, it retains its initial value of
+        # None.
+        if allnames[j] in allmaps[i]:
+            mat[i][j] = allmaps[i][allnames[j]]
 
 if transpose:
     nrows = npar
@@ -175,17 +162,17 @@ if transpose:
     for i in range(nrows):
         print allnames[i],
         for j in range(ncols):
-            if mat2[j][i] == None:
+            if mat[j][i] == None:
                 print "NA",
             else:
-                print mat2[j][i],
+                print mat[j][i],
         print
 else:
     for name in allnames:
         print "%s" % name,
     print
 
-    for row in mat2:
+    for row in mat:
         for val in row:
             if val == None:
                 print "NA",

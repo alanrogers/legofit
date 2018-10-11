@@ -74,7 +74,6 @@ typedef struct state {
     void       *context;
 
     const te_variable *lookup;
-    int         lookup_len;
 } state;
 
 #define TYPE_MASK(TYPE) ((TYPE)&0x0000001F)
@@ -89,6 +88,35 @@ void te_free_parameters(te_expr * n);
 void next_token(state * s);
 static double pi(void);
 static double e(void);
+te_variable *te_variable_new(const char *name, void *address);
+
+te_variable *te_variable_new(const char *name, void *address) {
+    te_variable *self = malloc(sizeof(te_variable));
+    if(self==NULL)
+        return NULL;
+    memset(self, 0, sizeof(te_variable));
+    self->name = strdup(name);
+    self->address = address;
+    return self;
+}
+
+// Push new variable onto end of list.
+te_variable *te_variable_push(te_variable *self, const char *name, void *address) {
+    if(self == NULL)
+        return te_variable_new(name, address);
+    self->next = te_variable_push(self->next, name, address);
+    return self;
+}
+
+// Free linked list.
+void te_variable_free(te_variable *self) {
+    if(self==NULL)
+        return;
+    te_variable_free(self->next);
+    free((char *) self->name);
+    free(self);
+}
+
 
 static te_expr *new_expr(const int type, const te_expr * parameters[]) {
     const int   arity = ARITY(type);
@@ -166,7 +194,7 @@ static double ncr(double n, double r) {
         return NAN;
     if(n > UINT_MAX || r > UINT_MAX)
         return INFINITY;
-    unsigned long int un = (unsigned int) (n), ur = (unsigned int) (r), i;
+    unsigned long int un = (unsigned int) n, ur = (unsigned int) r, i;
     unsigned long int result = 1;
     if(ur > un / 2)
         ur = un - ur;
@@ -239,17 +267,15 @@ static const te_variable *find_builtin(const char *name, int len) {
 
 static const te_variable *find_lookup(const state * s, const char *name,
                                       int len) {
-    int         iters;
     const te_variable *var;
     if(!s->lookup)
         return 0;
 
-    for(var = s->lookup, iters = s->lookup_len; iters; ++var, --iters) {
-        if(strncmp(name, var->name, len) == 0 && var->name[len] == '\0') {
+    for(var = s->lookup; var; var = var->next) {
+        if(strncmp(name, var->name, len) == 0 && var->name[len] == '\0')
             return var;
-        }
     }
-    return 0;
+    return NULL;
 }
 
 static double add(double a, double b) {
@@ -743,11 +769,10 @@ static void optimize(te_expr * n) {
 }
 
 te_expr    *te_compile(const char *expression, const te_variable * variables,
-                       int var_count, int *error) {
+                       int *error) {
     state       s;
     s.start = s.next = expression;
     s.lookup = variables;
-    s.lookup_len = var_count;
 
     next_token(&s);
     te_expr    *root = list(&s);
@@ -769,7 +794,7 @@ te_expr    *te_compile(const char *expression, const te_variable * variables,
 }
 
 double te_interp(const char *expression, int *error) {
-    te_expr    *n = te_compile(expression, 0, 0, error);
+    te_expr    *n = te_compile(expression, 0, error);
     double      ret;
     if(n) {
         ret = te_eval(n);
@@ -823,4 +848,48 @@ static void pn(const te_expr * n, int depth, FILE *fp) {
 
 void te_print(const te_expr * n, FILE *fp) {
     pn(n, 0, fp);
+}
+
+/*
+ * Fill array "ptr" with pointers to the variables on which this
+ * expression depends. Return the number of dependent variables, which
+ * should be less than or equal to len. Abort if len is smaller than
+ * the number of dependent variables.
+ */
+int te_dependencies(const te_expr *self, int len, const double *ptr[len]) {
+    int i, arity, n=0;
+    switch(TYPE_MASK(self->type)) {
+    case TE_VARIABLE:
+        if(len == 0) {
+            fprintf(stderr,"%s:%s:%d: buffer overflow\n",
+                    __FILE__,__func__,__LINE__);
+            exit(EXIT_FAILURE);
+        }
+        ptr[0] = self->bound;
+        n = 1;
+        break;
+    case TE_FUNCTION0:
+    case TE_FUNCTION1:
+    case TE_FUNCTION2:
+    case TE_FUNCTION3:
+    case TE_FUNCTION4:
+    case TE_FUNCTION5:
+    case TE_FUNCTION6:
+    case TE_FUNCTION7:
+    case TE_CLOSURE0:
+    case TE_CLOSURE1:
+    case TE_CLOSURE2:
+    case TE_CLOSURE3:
+    case TE_CLOSURE4:
+    case TE_CLOSURE5:
+    case TE_CLOSURE6:
+    case TE_CLOSURE7:
+        arity = ARITY(self->type);
+        for(i=0; i < arity; ++i)
+            n += te_dependencies(self->parameters[i], len-n, ptr+n);
+        break;
+    default:
+        break;
+    }
+    return n;
 }

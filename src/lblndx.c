@@ -8,7 +8,6 @@
  */
 #include "lblndx.h"
 #include "misc.h"
-#include "parkeyval.h"
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>

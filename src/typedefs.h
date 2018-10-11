@@ -4,6 +4,7 @@
 #include <stdint.h>
 #define FILENAMESIZE 200
 
+typedef struct AddrParMap AddrParMap;
 typedef struct Boot Boot;
 typedef struct BootChr BootChr;
 typedef struct Bounds Bounds;
@@ -18,9 +19,7 @@ typedef struct HashTabSeq HashTabSeq;
 typedef struct LblNdx LblNdx;
 typedef struct NameList NameList;
 typedef struct NodeStore NodeStore;
-typedef enum   ParamStatus ParamStatus;
-typedef enum   ParamType ParamType;
-typedef struct ParKeyVal ParKeyVal;
+typedef struct Param Param;
 typedef struct ParStore ParStore;
 typedef struct Point Point;
 typedef struct PointBuff PointBuff;
@@ -32,21 +31,10 @@ typedef struct SampNdx SampNdx;
 typedef struct State State;
 typedef struct StrDblMap StrDblMap;
 typedef struct StrInt StrInt;
+typedef struct StrParMap StrParMap;
 typedef struct Tokenizer Tokenizer;
 typedef struct DAFReader DAFReader;
 typedef struct RAFReader RAFReader;
-
-/// Distinguish between parameters that free, fixed, Gaussian, or
-/// constrained.  Free parameters can be changed during optimization;
-/// fixed ones never change; Gaussian ones are reset for each
-/// simulation replicate by sampling from a truncated normal
-/// distribution; Constrained ones are functions of one or more free
-/// parameters.
-enum ParamStatus {Free, Fixed, Gaussian, Constrained};
-
-/// Distinguish between parameters that describe population size,
-/// time, and gene flow.
-enum ParamType { TwoN, Time, MixFrac };
 
 #if 1
 #  define TIPID_SIZE 32
@@ -62,5 +50,13 @@ typedef uint64_t tipId_t;
 #define POISSON_COST 4
 #define LNL_COST 5
 #define COST KL_COST
+
+#define FREE 1
+#define FIXED 2
+#define CONSTRAINED 4
+#define TWON 8
+#define TIME 16
+#define MIXFRAC 32
+#define ARBITRARY 64
 
 #endif
