@@ -13,6 +13,7 @@
 #include <math.h>
 #include <stdbool.h>
 #include <ctype.h>
+#include <errno.h>
 
 static int isSitePatHdr(const char *s);
 
@@ -148,13 +149,24 @@ StrDblQueue *StrDblQueue_parseLegofit(const char *fname) {
                 continue;
             }
         }
-        char *valstr = buff;
+        char *end, *valstr = buff;
         char *name = strsep(&valstr, "=");
         if(name==NULL || valstr==NULL)
             continue;
         name = stripWhiteSpace(name);
         valstr = stripWhiteSpace(valstr);
-        queue=StrDblQueue_push(queue, name, strtod(valstr, NULL) );
+        errno=0;
+        double value = strtod(valstr, &end);
+        if(errno) {
+            fprintf(stderr, "%s:%d: bad float: %s (%s)\n",
+                    __FILE__,__LINE__, valstr, strerror(errno));
+            exit(EXIT_FAILURE);
+        }else if(end == valstr) {
+            fprintf(stderr, "%s:%d: bad float: %s\n",
+                    __FILE__,__LINE__, valstr);
+            exit(EXIT_FAILURE);
+        }
+        queue=StrDblQueue_push(queue, name, value);
     }
     assert(StrDblQueue_length(queue) > 0);
     return queue;
@@ -195,7 +207,7 @@ StrDblQueue *StrDblQueue_parseSitPat(const char *fname) {
             exit(EXIT_FAILURE);
         }
         if(!got_sitepat) {
-            if(isSitePatHdr(buff)) 
+            if(isSitePatHdr(buff))
                 got_sitepat=true;
             continue;
         }
