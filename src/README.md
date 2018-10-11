@@ -33,6 +33,8 @@ gene flow. The package consists of the following programs
   error (Efron and Tibshirani, 1993).
 * @ref clic "clic" calculates the "composite likelihood information
   criterion" (Varin and Vidoni, 2005).
+* @ref booma "booma" does bootstrap model averaging (Buckland et
+al. Biometrics, 53(2):603-618).
 
 # Nucleotide site patterns {#sitepat}
 
@@ -483,7 +485,7 @@ command. If no range is provided, legofit uses default ranges that
 differ, depending on the type of parameter. The default range is
 [1, 1e7] for `twoN` parameters, [0, 1e7] for `time` parameters, [0, 1]
 for `mixFrac` parameters, and [-`DBL_MAX`, `DBL_MAX`] for `param`
-parameters. 
+parameters.
 
 # Model selection {#modsel}
 
