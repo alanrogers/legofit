@@ -2,6 +2,7 @@
 #include "simsched.h"
 #include "state.h"
 #include "pointbuff.h"
+#include "misc.h"
 #include <getopt.h>
 #include <limits.h>
 #include <math.h>
@@ -12,17 +13,9 @@
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 
-#  define   CHECKMEM(x) do {                                \
-        if((x)==NULL) {                                     \
-            fprintf(stderr, "%s:%s:%d: allocation error\n", \
-                    __FILE__,__func__,__LINE__);            \
-            exit(EXIT_FAILURE);                             \
-        }                                                   \
-    } while(0)
-
 void        usage(void);
 double      objFunc(int dim, double x[dim], void *jdat, void *tdat);
-void        initStateVec(int ndx, void *void_p, int n, double x[n],
+void        initState(int ndx, void *void_p, int n, double x[n],
                          gsl_rng *rng);
 void prOpt(const char *opt, const char *description);
 
@@ -68,7 +61,7 @@ double objFunc(int dim, double x[dim], void *jdat /* NOTUSED */ ,
 /// from the argument. Otherwise, generate a random vector.
 ///
 /// For constrained optimization, make all initial vectors obey constraints.
-void initStateVec(int ndx, void *void_p, int n, double x[n], gsl_rng *rng){
+void initState(int ndx, void *void_p, int n, double x[n], gsl_rng *rng){
 	assert(void_p != NULL);
     double *v = (double *) void_p; // pointer to n-vector
     if(ndx == 0)
@@ -141,7 +134,7 @@ int main(int argc, char *argv[]) {
     time_t      currtime = time(NULL);
     unsigned    baseSeed = currtime % UINT_MAX;
     gsl_rng    *rng = gsl_rng_alloc(gsl_rng_taus);
-    CHECKMEM(rng);
+    assert(rng);
     gsl_rng_set(rng, baseSeed);
     long simreps = 1000;
     SimSched    *simSched = SimSched_new();
@@ -207,10 +200,10 @@ int main(int argc, char *argv[]) {
     printf("Using up to %d threads\n", nthreads);
 
     State *state = State_new(nPts, dim);
-    CHECKMEM(state);
+    assert(state);
     for(i=0; i < nPts; ++i) {
         double x[dim];
-        initStateVec(i, initVec, dim, x, rng);
+        initState(i, initVec, dim, x, rng);
         State_setVector(state, i, dim, x);
     }
 
@@ -244,8 +237,10 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    printf("Strategy: %s\n", diffEvStrategyLbl(strategy));
-    printf("nPts=%d F=%-4.2lg CR=%-4.2lg\n", nPts, F, CR);
+    if(verbose) {
+        printf("Strategy: %s\n", diffEvStrategyLbl(strategy));
+        printf("nPts=%d F=%-4.2lg CR=%-4.2lg\n", nPts, F, CR);
+    }
 
     // Number of parameters in quadratic model used to estimate
     // Hessian matrix: 1 intercept
@@ -285,22 +280,28 @@ int main(int argc, char *argv[]) {
     double      cost, yspread;
 
     int         status = diffev(dim, estimate, &cost, &yspread, dep, rng);
+    int ok=0;
     switch (status) {
     case 0:
-        printf("DiffEv converged. cost=%0.5lg yspread=%0.5lg\n",
-               cost, yspread);
-        printf("Fitted parameters:");
-        for(i = 0; i < dim; ++i)
-            printf(" %lf", estimate[i]);
-        putchar('\n');
+        if(verbose) {
+            printf("DiffEv converged. cost=%0.5lg yspread=%0.5lg\n",
+                   cost, yspread);
+            printf("Fitted parameters:");
+            for(i = 0; i < dim; ++i)
+                printf(" %lf", estimate[i]);
+            putchar('\n');
+        }
+        ok = 1;
         break;
     default:
-        printf("DiffEv FAILED\n");
+        ok = 0;
         break;
     }
 
     SimSched_free(simSched);
     gsl_rng_free(rng);
+
+    unitTstResult("diffev", ok ? "OK" : "FAIL");
 
     return 0;
 }

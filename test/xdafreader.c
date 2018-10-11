@@ -62,17 +62,21 @@ int main(int argc, char **argv) {
         if(DAFReader_allelesMatch(3, r))
             ++match;
         else {
-            printf("Mismatch\n");
-            DAFReader_printHdr(stdout);
-            for(i=0; i<3; ++i)
-                DAFReader_print(r[i], stdout);
             ++mismatch;
+            if(verbose){
+                printf("Mismatch\n");
+                DAFReader_printHdr(stdout);
+                for(i=0; i<3; ++i)
+                    DAFReader_print(r[i], stdout);
+            }
         }
 	}
-    printf("%ld/%ld (%lf%%) of SNPs have ancestral/derived"
-           " alleles that don't match.\n",
-           mismatch, match+mismatch,
-           100* mismatch / ((double) (match+mismatch)));
+    if(verbose) {
+        printf("%ld/%ld (%lf%%) of SNPs have ancestral/derived"
+               " alleles that don't match.\n",
+               mismatch, match+mismatch,
+               100* mismatch / ((double) (match+mismatch)));
+    }
 
     DAFReader_free(r[0]);
     DAFReader_free(r[1]);
