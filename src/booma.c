@@ -1,10 +1,10 @@
 /**
-@file bma.c
-@page bma
+@file booma.c
+@page booma
 @author Alan R. Rogers and Daniel Tabin
 @brief Bootstrap model averaging
 
-# `bma`: bootstrap model averaging
+# `booma`: bootstrap model averaging
 
 Bootstrap model averaging was proposed by Buckland et al (Biometrics,
 53(2):603-618). It can be used with weights provided by any method of
@@ -24,7 +24,7 @@ To construct confidence intervals, we average across models within
 each bootstrap replicate to obtain a bootstrap distribution of
 model-averaged estimates.
 
-Usage: bma <m1.msc> ... <mK.msc> -F <m1.flat> ... <mK.flat>
+Usage: booma <m1.msc> ... <mK.msc> -F <m1.flat> ... <mK.flat>
 
 Here, the "mX" arguments refer to model "X". The "msc" suffix stands
 for "model selection criterion". There are currently two options: @ref
@@ -58,13 +58,13 @@ rows in the `.bepe` or `.clic` files.
 In all types of input files, comments begin with a sharp character
 and are ignored.
 
-When `bma` runs, the first step is to calculate model weights,
+When `booma` runs, the first step is to calculate model weights,
 \f$w_{i}\f$, where \f$i\f$ runs across models. The value of
 \f$w_{i}\f$ is the fraction data sets (i.e. of rows in the `.bepe`
 files) for which \f$i\f$ is the best model (i.e. the one with the
 lowest badness value.
 
-In the next step, `bma` averages across models to obtain a
+In the next step, `booma` averages across models to obtain a
 model-averaged estimate of each parameter. This is done separately for
 each data set: first for the real data and then for each bootstrap
 replicate. Some parameters may be missing from some models. In this
@@ -72,11 +72,11 @@ case, the average runs only across models that include the parameter,
 and the weights are re-normalized so that they sum to 1 within this
 reduced set of models. If a parameter is present only in models with
 weight zero, its model-averaged value is undefined and prints as "nan"
-(not a number). 
+(not a number).
 
 Finally, the program uses the bootstrap distribution of model-averaged
 parameter estimates to construct a 95% confidence interval for each
-parameter. 
+parameter.
 
 The program produces two output files. The first of these is written
 to standard output and has the same form as the output of \ref
@@ -147,7 +147,7 @@ void ParNameLst_print(const ParNameLst * self, FILE * fp);
 unsigned ParNameLst_size(ParNameLst * self);
 
 const char *usageMsg =
-    "Usage: bma <m1.msc> ... <mK.msc> -F <m1.flat> ... <mK.flat>\n"
+    "Usage: booma <m1.msc> ... <mK.msc> -F <m1.flat> ... <mK.flat>\n"
     "\n"
     "Here, the \"mX\" arguments refer to model \"X\". The \"msc\" suffix\n"
     "stands for \"model selection criterion\". There are currently two\n"
@@ -505,7 +505,7 @@ void ParNameLst_print(const ParNameLst * self, FILE * fp) {
 /*
  * This file has two main functions. The first compiles if "TEST" is
  * defined provides a unit test for the functions in this file. The
- * second "main" compiles if "TEST" is not defined is produces the bma
+ * second "main" compiles if "TEST" is not defined is produces the booma
  * executable.
  */
 #ifdef TEST
@@ -603,7 +603,7 @@ int main(int argc, char **argv) {
     time_t currtime = time(NULL);
     int i, j, k, nmodels = 0, gotDashF = 0;
 
-    hdr("bma: bootstrap model average");
+    hdr("booma: bootstrap model average");
 #  if defined(__DATE__) && defined(__TIME__)
     printf("# Program was compiled: %s %s\n", __DATE__, __TIME__);
 #  endif

@@ -8,7 +8,7 @@ prof :=
 incl := -I/usr/local/include -I/opt/local/include
 
 targets := legosim legofit tabpat sitepat scrmpat daf raf numcores \
-     joinraf raf2daf bepe bma maub
+     joinraf raf2daf bepe booma maub
 pytargets := diverg.py bootci.py flatfile.py axt2raf.py
 tests := xzeroin xbinary
 
@@ -66,9 +66,9 @@ MAUB := maub.o
 maub : $(MAUB)
 	$(CC) $(CFLAGS) -o $@ $(MAUB) $(lib)
 
-BMA := bma.o misc.o strdblqueue.o strint.o tokenizer.o
-bma : $(BMA)
-	$(CC) $(CFLAGS) -o $@ $(BMA) $(lib)
+BOOMA := booma.o misc.o strdblqueue.o strint.o tokenizer.o
+booma : $(BOOMA)
+	$(CC) $(CFLAGS) -o $@ $(BOOMA) $(lib)
 
 TABPAT := tabpat.o misc.o binary.o lblndx.o dafreader.o \
   tokenizer.o strint.o boot.o error.o
