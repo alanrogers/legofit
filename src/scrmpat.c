@@ -22,7 +22,7 @@ bootstrap, writing each bootstrap replicate into a separate file.
        --infile <name>
           Input file name. Def: standard input
        --bootfile <name>
-          Bootstrap output file basename. Def: scrmpat.boot.
+          Bootstrap output file basename. Def: scrmpatX.bsr
        -r <x> or --bootreps <x>
           # of bootstrap replicates. Def: 0
        -b <x> or --blocksize <x>
@@ -104,7 +104,7 @@ interval:
     # Including singleton site patterns.
     # Number of site patterns: 10
     # Tabulated 12327755 SNPs
-    # bootstrap output file = scrmpat.boot
+    # bootstrap output file = scrmpatX.bsr
     # confidence level = 95%
     #       SitePat             E[count]          loBnd          hiBnd
                 x:y       340952.4592501 338825.6604586 342406.6670816
@@ -119,8 +119,8 @@ interval:
               y:n:d       100311.4411513  99292.9839140 101163.3457462
 
 Here, `loBnd` and `hiBnd` are the limits of a 95% confidence
-interval. The bootstrap output files look like `scrmpat.boot000`,
-`scrmpat.boot001`, and so on.
+interval. The bootstrap output files look like `scrmpat0.bsr`,
+`scrmpat1.bsr`, and so on.
 
 @copyright Copyright (c) 2018, Alan R. Rogers
 <rogers@anthro.utah.edu>. This file is released under the Internet
@@ -177,7 +177,7 @@ static void usage(void) {
     tellopt("--infile <name>",
             "Input file name. Def: standard input");
     tellopt("--bootfile <name>",
-            "Bootstrap output file basename. Def: scrmpat.boot.");
+            "Bootstrap output file basename. Def: scrmpatX.bsr");
     tellopt("-r <x> or --bootreps <x>", "# of bootstrap replicates. Def: 0");
     tellopt("-b <x> or --blocksize <x>",
             "# of SNPs per block in moving-blocks bootstrap. Def: 0.");
@@ -362,7 +362,7 @@ int main(int argc, char **argv) {
     }
     // Default boot file name
     if(bootfname[0] == '\0') {
-        const char *defName = "scrmpat.boot";
+        const char *defName = "scrmpat";
         status = snprintf(bootfname, sizeof bootfname, "%s", defName);
         if(status >= sizeof bootfname) {
             fprintf(stderr, "%s:%d: ERR: Filename %s is too large."
@@ -603,7 +603,7 @@ int main(int argc, char **argv) {
     memset(boottab, 0, sizeof boottab);
 
     if(bootreps > 0) {
-        printf("# %s = %s\n", "bootstrap output file", bootfname);
+        printf("# %s = %sX.bsr\n", "bootstrap output file", bootfname);
         printf("# %s = %4.2lf%%\n", "confidence level", 100 * conf);
 #ifndef NDEBUG
         Boot_sanityCheck(boot, __FILE__, __LINE__);
@@ -615,7 +615,7 @@ int main(int argc, char **argv) {
         // write an output file for each bootstrap replicate
         for(j = 0; j < bootreps; ++j) {
             char        buff[FILENAMESIZE + 3];
-            status = snprintf(buff, sizeof buff, "%s%03d", bootfname, j);
+            status = snprintf(buff, sizeof buff, "%s%d.bsr", bootfname, j);
             if(status >= sizeof buff)
                 DIE("buffer overflow in snprintf");
 

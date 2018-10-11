@@ -2,15 +2,19 @@
 ###
 #@file bootci.py
 #@page bootci
-#@brief Calculate confidence interval from legofit output files.
+#@brief Calculate confidence interval from a flat file.
 #
-#bootci.py: calculate confidence interval from legofit output
-#============================================================
+#bootci.py: calculate confidence interval from a flat file.
+#==========================================================
 #
-#    usage: bootci.py [options] <central_tendency> <boot1> <boot2> ...
+#    usage: bootci.py [options] <foo.flat>
 #
-#    where <central_tendency> is the legofit output for the real data
-#    and the <boot*> files are legofit output for bootstrap replicates.
+#    where <foo.flat> is a file with parameters in columns and data sets
+#    in rows. Such files are produced by flatfile.py and booma. The first
+#    row should contain a column header listing parameter names. The second
+#    should contain parameter estimates for the real data. Each succeeding
+#    row should contain a parameter estimate for a bootstrap replicate.
+#
 #    Options may include:
 #
 #      -c <x> or --conf <x>     Set confidence level.
@@ -19,14 +23,6 @@
 #
 #    The program writes to standard output.
 #
-#For example, suppose that we have run legofit against the real data
-#to produce a file called lancre.legofit, and we've run it against 50
-#bootstrap replicates to produce files boot1.legofit, boot2.legofit,
-#and so on. Then the command
-#
-#    bootci.py lancre.legofit boot*.legofit
-#
-#would read these files and print output like this
 #
 #    # bootci.py run at: 2017-01-06 22:32:58.916983
 #    # real data: lancre.legofit
@@ -86,10 +82,14 @@ def usage(msg1):
         print >> sys.stderr, msg1
     msg = \
         """
-usage: bootci.py [options] <central_tendency> <boot1> <boot2> ...
+usage: bootci.py [options] <foo.flat>
 
-where <central_tendency> is the legofit output for the real data
-and the <boot*> files are legofit output for bootstrap replicates.
+where <foo.flat> is a file with parameters in columns and data sets
+in rows. Such files are produced by flatfile.py and booma. The first
+row should contain a column header listing parameter names. The second
+should contain parameter estimates for the real data. Each succeeding
+row should contain a parameter estimate for a bootstrap replicate.
+
 Options may include:
 
   -c <x> or --conf <x>     Set confidence level.
@@ -101,40 +101,50 @@ The program writes to standard output.
     print >> sys.stderr, msg
     exit(1)
 
-# Parse legofit output file.  Return a tuple containing two lists:
-# first a list of parameter names; second a list of parameter
-# estimates.
-def parselegofit(fname):
+# Parse a flat file. Return (parnames, est, boot), where
+# parnames is a list of parameter names, est is a list of parameter
+# estimates, and boot is an array whose ij'th entry is the estimate
+# of the i'th parameter in the j'th bootstrap replicate.
+def parseflat(fname):
     ifile = open(fname, "r")
-    parmap = {}
-    estmap = {}
+
+    parnames = None
+    estimates = None
 
     for line in ifile:
+        # ignore comments and blank lines
         if line[0] == "#":
             continue
-        line = line.split("=")
-        if len(line) != 2:
+        line = line.strip().split("#")
+        line = line[0].strip()
+        
+        line = line.split()
+        if len(line) == 0:
             continue
 
-        key = line[0].strip()
-        key = key.replace("2","two")
-        if "Gaussian" in line[1]:
-            value = 1.0
-        else:
-            value = float(line[1].strip())
+        # header (first non-comment line) contains parameter names
+        if parnames == None:
+            parnames = line
+            npar = len(parnames)
+            boot = [[] for i in range(npar)] # an array of empty lists
+            continue
 
-        if key in parmap:
-            estmap[key] = value
-        else:
-            parmap[key] = value
+        if len(line) != npar:
+            print "npar=%d linelen=%d" % (npar, len(line))
+            print line
+        assert len(line) == npar
+
+        # line after header contains parameter estimates for real data
+        if estimates == None:
+            estimates = [float(x) for x in line]
+
+        # remaining lines contain bootstrap replicates
+        for i in range(npar):
+            boot[i].append(float(line[i]))
 
     ifile.close()
 
-    parnames = sorted(estmap.keys())
-    estimates = len(parnames)*[0.0]
-    for i in range(len(parnames)):
-        estimates[i] = estmap[parnames[i]]
-    return (parnames, estimates)
+    return (parnames, estimates, boot)
 
 # Interpolate in order to approximate the value v[p*(len-1)].  Raise
 # exception if len(v)==0.
@@ -151,8 +161,7 @@ def interpolate(p, v):
     return (1.0-w)*v[i] + w*v[j]
 
 conf = 0.95
-realdata = None
-bootnames = []
+fname = None
 lbl = None
 
 # Loop over command line arguments, ignoring the 0th.
@@ -176,45 +185,25 @@ while(True):
     elif sys.argv[i][0] == "-":
         usage("Unknown argument: %s" % sys.argv[i])
     else:
-        if realdata == None:
-            realdata = sys.argv[i]
-        else:
-            bootnames.append(sys.argv[i])
+        if fname != None:
+            usage("Only one input file is allowed")
+        fname = sys.argv[i]
     i += 1
 
-if len(bootnames) < 2:
-    usage("Command line must list at least 3 input files")
+if fname == None:
+    usage("Missing input file")
 
 print "# bootci.py run at: %s" % datetime.datetime.now()
-print "# real data:", realdata
-print "# bootstrap replicates:",
-for i in range(len(bootnames)):
-    print bootnames[i],
-print
+print "# input:", fname
 print "# %s: %0.3f" % ("confidence", conf)
 
-parnames, realEst = parselegofit(realdata)
-mat = []
-mat.append(realEst)
-
-for name in bootnames:
-    parnames2, estimates = parselegofit(name)
-
-    if parnames != parnames2:
-        print >> sys.stderr, "Input files estimate different parameters"
-        print >> sys.stderr, "  1:", parnames
-        print >> sys.stderr, "  2:", parnames2
-        exit(1)
-
-    mat.append(estimates)
-
-# transpose matrix, so that mat[i] is a list of estimates for a single
-# parameter.
-mat = zip(*mat)
-assert len(mat) == len(parnames)
+parnames, estimates, boot = parseflat(fname)
 
 # number of parameters
-npar = len(mat)
+npar = len(parnames)
+
+assert npar == len(estimates)
+assert npar == len(boot)
 
 tailProb = (1.0 - conf)/2.0
 
@@ -223,12 +212,12 @@ if lbl:
 else:
     print "%10s %15s %15s %15s" % ("par", "est", "low", "high")
 for i in range(npar):
-    v = sorted(mat[i])
+    v = sorted(boot[i])
     lowBnd = interpolate(tailProb, v)
     highBnd = interpolate(1.0-tailProb, v)
     if lbl:
         print "%10s %15.8f %15.8f %15.8f %s" % \
-            (parnames[i], realEst[i], lowBnd, highBnd, lbl)
+            (parnames[i], estimates[i], lowBnd, highBnd, lbl)
     else:
         print "%10s %15.8f %15.8f %15.8f" % \
-            (parnames[i], realEst[i], lowBnd, highBnd)
+            (parnames[i], estimates[i], lowBnd, highBnd)

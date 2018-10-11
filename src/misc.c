@@ -40,12 +40,16 @@
 /// addresses instead.
 /// Call like this: "dostacktrace(__FILE__, __LINE__)"
 void dostacktrace(const char *file, int line, FILE * ofp) {
+#ifndef NDEBUG    
     void       *callstack[CALLSTACK_SIZE];
     int         nsymbols = backtrace(callstack, CALLSTACK_SIZE);
 
     fprintf(ofp, "backtrace depth: %d\n", nsymbols);
     fprintf(ofp, "dostacktrace called from %s:%d:\n", file, line);
     backtrace_symbols_fd(callstack, nsymbols, fileno(ofp));
+#else
+    fprintf(ofp, "Stack trace not available because of NDEBUG option.\n");
+#endif    
 }
 
 /// Describe an option. For use in "usage" functions.
@@ -469,6 +473,19 @@ char *stripWhiteSpace(char *buff) {
     return s;
 }
 
+char* stripInternalWhiteSpace(char* buff) {
+  char* str = buff;
+  int x = 0;
+  for(int i = 0; buff[i]; ++i){
+    if(!(buff[i] == ' ')){
+      str[x] = str[i];
+      ++x;
+    }
+  }
+  str[x] = '\0';
+  return str;
+}
+
 /**
  * Return tokens separated by 1 or more spaces and/or tabs.
  *
@@ -663,4 +680,29 @@ int readline(int dim, char buff[dim], FILE *fp) {
     }
 
     return 0;
+}
+
+/// Strip leading pathname components; return a pointer
+/// to the filename. There is a standard library function for this,
+/// but it can't be used with const strings. This one can.
+/// Current code assumes that '/' is the path separator.
+/// If pathname ends with '/', this will return an empty string.
+const char *mybasename(const char *pathname) {
+    const char *p = rindex(pathname, '/');
+    if(p == NULL)
+        return pathname;
+    return p+1;
+}
+
+/// Return nonzero if name is legal; zero otherwise. Legal
+/// names begin with an alphabetic character and then continue
+/// with any number of letters, digits, underscores, colons,
+/// or periods".
+int legalName(const char *name) {
+    const char *legal =
+        "abcdefghijklmnopqrstuvwxyz"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ" "0123456789" "_:.";
+    if(!isalpha(name[0]))
+        return 0;
+    return strlen(name) == strspn(name, legal);
 }

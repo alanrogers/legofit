@@ -9,10 +9,10 @@
 #
 #    usage: flatfile.py [options] <file1> <file2> ...
 #
-#    where <file*> files are legofit output files, which must each
-#    estimate the same parameters
+#    where <file*> files are legofit output files.
 #    Options may include:
 #
+#      -t     or --transpose    Rows are parameters rather than data sets.
 #      -h     or --help         Print this message.
 #
 #    The program writes to standard output.
@@ -23,7 +23,7 @@
 #
 #    flatfile.py s2.legofit s2boot*.legofit
 #
-#All the legofit must estimate the same parameters.
+#Parameters that are missing from a .legofit file will print as "None".
 #
 #The output begins with two lines of comment, which begin with a sharp
 #character in column 1 and give (1) the date and time at which the
@@ -56,6 +56,7 @@ usage: flatfile.py [options] <file1> <file2> ...
 where the "file" arguments files are legofit output files
 Options may include:
 
+  -t     or --transpose    Rows are parameters rather than data sets.
   -h     or --help         Print this message.
 
 The program writes to standard output.
@@ -63,9 +64,8 @@ The program writes to standard output.
     print >> sys.stderr, msg
     exit(1)
 
-# Parse legofit output file.  Return a tuple containing two lists:
-# first a list of parameter names; second a list of parameter
-# estimates.
+# Parse legofit output file.  Return a map relating parameter names to
+# estimated parameter values.
 def parselegofit(fname):
     ifile = open(fname, "r")
     parmap = {}
@@ -79,26 +79,26 @@ def parselegofit(fname):
             continue
 
         key = line[0].strip()
-        key = key.replace("2","two")
         if "Gaussian" in line[1]:
             value = 1.0
         else:
             value = line[1].strip()
 
+        # In legofit output, pairs are printed twice. First as initial
+        # values, and second as estimates. This code adds a pair to
+        # parmap the first time it is seen and to estmap the second
+        # time. Thus, parmap will contain the initial values and
+        # estmap the estimates.
         if key in parmap:
             estmap[key] = value
         else:
             parmap[key] = value
 
     ifile.close()
-
-    parnames = sorted(estmap.keys())
-    estimates = len(parnames)*[0.0]
-    for i in range(len(parnames)):
-        estimates[i] = estmap[parnames[i]]
-    return (parnames, estimates)
+    return estmap
 
 fnames = []
+transpose = False
 
 # Loop over command line arguments, ignoring the 0th.
 i = 1
@@ -107,6 +107,8 @@ while(True):
         break
     elif sys.argv[i]=="-h" or sys.argv[i]=="--help":
         usage("")
+    elif sys.argv[i]=="-t" or sys.argv[i]=="--transpose":
+        transpose = True
     elif sys.argv[i][0] == "-":
         usage("Unknown argument: %s" % sys.argv[i])
     else:
@@ -122,29 +124,59 @@ for i in range(len(fnames)):
     print fnames[i],
 print
 
-mat = []
-npar = 0
+allmaps = []  # allmaps[i] is the dictionary for file i
+allnames = set([]) # set of all parameter names
 
+# Get allmaps and allnames.
 for name in fnames:
-    parnames2, estimates = parselegofit(name)
+    estmap = parselegofit(name)
+    if len(estmap) == 0:
+        print >> sys.stderr, "ERR: file %s has no parameters" % name
+        sys.exit(1)
+    allmaps.append(estmap)
+    allnames |= set(estmap.keys())
 
-    if npar == 0:
-        parnames = parnames2
-        npar = len(parnames)
-    elif parnames != parnames2:
-        print >> sys.stderr, "Input files estimate different parameters"
-        print >> sys.stderr, "  1:", parnames
-        print >> sys.stderr, "  2:", parnames2
-        exit(1)
+allnames = sorted(list(allnames))
+npar = len(allnames)
+nfile = len(fnames)
 
-    mat.append(estimates)
+# mat is a rectangular matrix, with missing parameters set to None.
+mat = nfile*[None]
+for i in range(nfile):
+    mat[i] = [None for j in range(npar)]
+    k = 0
+    for j in range(npar):
+        # If parameter name is in map i, then put the corresponding
+        # value into mat. Otherwise, it retains its initial value of
+        # None.
+        if allnames[j] in allmaps[i]:
+            mat[i][j] = allmaps[i][allnames[j]]
 
-for name in parnames:
-    print "%s" % name,
-print
-
-for row in mat:
-    for val in row:
-        print "%s" % val,
+if transpose:
+    nrows = npar
+    ncols = len(fnames)
+    print "param",
+    for j in range(ncols):
+        print fnames[j],
     print
+    for i in range(nrows):
+        print allnames[i],
+        for j in range(ncols):
+            if mat[j][i] == None:
+                print "NA",
+            else:
+                print mat[j][i],
+        print
+else:
+    for name in allnames:
+        print "%s" % name,
+    print
+
+    for row in mat:
+        for val in row:
+            if val == None:
+                print "NA",
+            else:
+                print "%s" % val,
+        print
 

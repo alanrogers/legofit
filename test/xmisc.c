@@ -182,5 +182,13 @@ int main(int argc, char **argv) {
     unitTstResult("readline", "OK");
 
     unlink(tmpfile);
+
+    const char *str = mybasename("/a/b/cde");
+    assert(0 == strcmp(str, "cde"));
+    str = mybasename("a/b/cde/");
+    assert(strlen(str) == 0);
+
+    unitTstResult("mybasename", "OK");
+
     return 0;
 }

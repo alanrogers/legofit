@@ -1,5 +1,4 @@
 #!/usr/bin/python
-from string import maketrans
 import sys
 import datetime
 
@@ -27,11 +26,6 @@ Writes to standard output.
     sys.stdout.flush()
     print >> sys.stderr, msg
     exit(1)
-
-# For converting from negative strand to positive strand
-nucleotides = "atgc"
-complements = "tacg"
-trtab = maketrans(nucleotides, complements)
 
 class SortError(Exception):
    """ Exception for unsorted input """
@@ -104,13 +98,7 @@ class Alignment:
                 % (endB - startB, netA)
             exit(1)
 
-        # If we're on the negative strand, then translate
-        # sB (but not sA) by complementing each nucleotide.
-        # See definition of trtab above.
         strand = line[7]
-        if strand == "-":
-            sB = sB.translate(trtab)
-
         self.qual = int(line[8])
 
         # Filter

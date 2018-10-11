@@ -38,6 +38,7 @@ char       *strlowercase(char *s);
 unsigned    strhash(const char *ss);
 int         stripchr(char *s, int c);
 char       *stripWhiteSpace(char *buff);
+char       *stripInternalWhiteSpace(char *buff);
 char       *nextWhitesepToken(char **str);
 int         tokenize(int dim, char *token[dim], char *s, const char *delim);
 void        strReplaceChr(char *s, int a, int b);
@@ -47,7 +48,8 @@ void        hdr(const char *msg);
 char       *strcenter(const char *text, unsigned width,
                       char *buff, size_t buffsize);
 int         readline(int dim, char buff[dim], FILE *fp);
-
+const char *mybasename(const char *name);
+int         legalName(const char *name);
 static inline double survival(double t, double twoN);
 
 #  define ERR(code, msg) do{                        \
@@ -67,7 +69,7 @@ static inline double survival(double t, double twoN);
 
 #  define   CHECKMEM(x) do {                                \
         if((x)==NULL) {                                     \
-            fprintf(stderr, "%s:%s:%d: allocation error\n", \
+            fprintf(stderr, "%s:%s:%d: NULL pointer\n",     \
                     __FILE__,__func__,__LINE__);            \
             exit(EXIT_FAILURE);                             \
         }                                                   \

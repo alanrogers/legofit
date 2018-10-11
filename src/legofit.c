@@ -105,6 +105,23 @@ diffev.c. In each row, the first entry is the value of the cost
 function at that point. The remaining entries give the free parameter
 values in the same order in which they are printed by legofit.
 
+The format of the state file changed in early July, 2018. Before that
+date, the state file did not include names of parameters. Parameter
+values in the state file had to be arranged in the same order as the
+free parameters in the .lgo file. If the .lgo and state files referred
+to different parameters or to the same parameters in a different
+order, parameters would get the wrong values. No error was detected
+unless this misassignment resulted in a tree that was not
+feasible--for example, one in which a segment of the population tree
+was older than its parent in the tree.
+
+The new state file format includes the names of parameters, and the
+input routine compares these against the names of free parameters in
+the .lgo file. The two lists must have the same parameters in the same
+order. Otherwise, legofit aborts with an error message. Old- and
+new-format state files can both be input using --stateIn arguments and
+can be intermingled in a single legofit run. 
+
 The `-1` option tells legofit to use singleton site patterns--patterns
 in which the derived allele is present in only a single sample. This
 is a bad idea with low-coverage sequence data. It also behaves poorly
@@ -180,7 +197,9 @@ Systems Consortium License, which can be found in file "LICENSE".
 #include "patprob.h"
 #include "simsched.h"
 #include "state.h"
+#include "pointbuff.h"
 #include <assert.h>
+#include <libgen.h>
 #include <float.h>
 #include <getopt.h>
 #include <gsl/gsl_sf_gamma.h>
@@ -244,7 +263,7 @@ void usage(void) {
             "add stage with <g> generations and <r> simulation reps");
     tellopt("-p <x> or --ptsPerDim <x>", "number of DE points per free var");
     tellopt("--stateIn <filename>",
-            "read initial state from file. Option may be repeated.");
+            "read initial state from new-style file. Option may be repeated.");
     tellopt("--stateOut <filename>",
             "write final state to file");
     tellopt("-1 or --singletons", "Use singleton site patterns");
@@ -307,7 +326,7 @@ int main(int argc, char **argv) {
     double u = 0.0;             // mutation rate per site per generation
     long nnuc = 0;              // number of nucleotides per haploid genome
 #endif
-    double ytol = 1e-4;         // stop when yspread <= ytol
+    double ytol = 3e-5;         // stop when yspread <= ytol
     int strategy = 2;
     int ptsPerDim = 10;
     int verbose = 0;
@@ -400,6 +419,10 @@ int main(int argc, char **argv) {
                         __FILE__, __LINE__);
                 exit(EXIT_FAILURE);
             }
+            if( access( stateOutName, F_OK ) != -1 ) {
+                // file already exists
+                fprintf(stderr, "Warning: overwriting file %s\n", stateOutName);
+            }
             stateOut = fopen(stateOutName, "w");
             if(stateOut == NULL) {
                 fprintf(stderr, "%s:%d: can't open \"%s\" for output.\n",
@@ -479,36 +502,51 @@ int main(int argc, char **argv) {
     }
     int npts = dim * ptsPerDim;
 
+    char *parnames[dim];
+    for(i=0; i<dim; ++i) {
+        parnames[i] = strdup(GPTree_getNameFree(gptree, i));
+        CHECKMEM(parnames[i]);
+    }
+
     // DiffEv state array is a matrix with a row for each point
     // and a column for each parameter.
-    State *state;
+    State *state=NULL;
     if(stateInNames) {
-        // read State from file
-        state = State_readList(stateInNames, npts,
-                               GPTree_nFree(gptree));
+        // read States from files
+        state = State_readList(stateInNames, npts, dim,
+                               (const char * const *) parnames);
         CHECKMEM(state);
         if(npts != State_npoints(state)) {
             fprintf(stderr, "Revising npts from %d to %d\n",
                     npts, State_npoints(state));
             npts = State_npoints(state);
         }
-
-        // Set gptree parameters from state array, so that
-        // initial parameter values, as printed, will represent
-        // one of the vectors in the state array.
+        // Copy 0'th point in State object into GPTree, replacing
+        // values specified in .lgo file.
         double x[dim];
         State_getVector(state, 0, dim, x);
         GPTree_setParams(gptree, dim, x);
-    } else {
+        if(!GPTree_feasible(gptree, 1)) {
+            fflush(stdout);
+            dostacktrace(__FILE__, __LINE__, stderr);
+            fprintf(stderr, "%s:%s:%d: stateIn points not feasible\n", __FILE__,
+                    __func__,__LINE__);
+            GPTree_printParStore(gptree, stderr);
+            exit(EXIT_FAILURE);
+        }
+  } else {
         // de novo State
         state = State_new(npts, dim);
         CHECKMEM(state);
+        for(i = 0; i < dim; ++i)
+            State_setName(state, i, GPTree_getNameFree(gptree, i));
         for(i = 0; i < npts; ++i) {
             double x[dim];
             initStateVec(i, gptree, dim, x, rng);
             State_setVector(state, i, dim, x);
         }
     }
+    assert(state);
 
     if(nThreads == 0)
         nThreads = ceil(0.75 * getNumCores());
@@ -551,6 +589,38 @@ int main(int argc, char **argv) {
 # error "Unknown cost function"
 #endif
 
+    // Construct name for output file to which we will write
+    // points for use in estimating Hessian matrix.
+    char ptsfname[200];
+    {
+        char a[200], b[200];
+        strcpy(a, basename(lgofname));
+        strcpy(b, basename(patfname));
+        char *chrptr = strrchr(a, '.');
+        if(chrptr)
+            *chrptr = '\0';
+        chrptr = strrchr(b, '.');
+        if(chrptr)
+            *chrptr = '\0';
+        int version = 1;
+        while(1) {
+            // increment version number until we find one that hasn't
+            // been used.
+            status=snprintf(ptsfname, sizeof ptsfname, "%s-%s-%d.pts", 
+                            a, b, version);
+            if(status >= sizeof ptsfname)
+                DIE("buffer overflow");
+            if( access( ptsfname, F_OK ) == -1 ) {
+                // file name doesn't exist, so use this name
+                break;
+            }else{
+                // increment version number and try again
+                ++version;
+            }
+        }
+    }
+    printf("# pts output file    : %s\n", ptsfname);
+
     // Observed site pattern frequencies
     BranchTab *rawObs = BranchTab_parse(patfname, &lblndx);
     if(doSing) {
@@ -588,6 +658,16 @@ int main(int argc, char **argv) {
         .simSched = simSched
     };
 
+    // Number of parameters in quadratic model used to estimate
+    // Hessian matrix: 1 intercept
+    // dim linear terms
+    // dim squared terms
+    // (dim*(dim-1))/2 cross product terms
+    unsigned nQuadPar = 1 + 2*dim + (dim*(dim-1))/2;
+
+    // Number of points to use in fitting quadratic model
+    unsigned nQuadPts = 10*nQuadPar;
+
     // parameters for Differential Evolution
     DiffEvPar dep = {
         .dim = dim,
@@ -609,6 +689,7 @@ int main(int argc, char **argv) {
         .state = state,
         .simSched = simSched,
         .ytol = ytol,
+        .pb = PointBuff_new(dim, nQuadPts)
     };
 
     double estimate[dim];
@@ -633,13 +714,6 @@ int main(int argc, char **argv) {
     BranchTab_divideBy(bt, (double) simreps);
     //    BranchTab_print(bt, stdout);
 
-    // Calculate AIC
-    BranchTab *prob = BranchTab_dup(bt);
-    BranchTab_normalize(prob);
-    double negLnL = BranchTab_negLnL(rawObs, prob);
-    double aic = 2.0*negLnL + 2.0*GPTree_nFree(gptree);
-    BranchTab_free(prob);
-
     const char *whyDEstopped;
     switch(destat) {
     case ReachedGoal:
@@ -660,14 +734,10 @@ int main(int argc, char **argv) {
 #if COST==LNL_COST
     printf("  relspread=%e", yspread / cost);
 #endif
-    printf(" AIC=%0.15g\n", aic);
+    putchar('\n');
 
     printf("Fitted parameter values\n");
-#if 1
     GPTree_printParStoreFree(gptree, stdout);
-#else
-    GPTree_printParStore(gptree, stdout);
-#endif
 
     // Put site patterns and branch lengths into arrays.
     unsigned npat = BranchTab_size(bt);
@@ -694,6 +764,82 @@ int main(int argc, char **argv) {
         fclose(stateOut);
     }
 
+#if COST==KL_COST || COST==LNL_COST
+    double S = BranchTab_sum(rawObs); // sum of site pattern counts
+    double entropy = BranchTab_entropy(obs); // -sum p ln(p)
+    if(nQuadPts != PointBuff_size(dep.pb)) {
+        fprintf(stderr,"Warning@%s:%d: expecting %u points; got %u\n",
+                __FILE__,__LINE__, nQuadPts, PointBuff_size(dep.pb));
+        nQuadPts = PointBuff_size(dep.pb);
+    }
+
+    assert( access( ptsfname, F_OK ) == -1 );
+
+    FILE *qfp = fopen(ptsfname, "w");
+    if(qfp == NULL) {
+        fprintf(stderr,"%s:%d: can't write file %s: using stdout\n",
+                __FILE__,__LINE__,ptsfname);
+        qfp = stdout;
+    }
+
+    // First line contains dimensions. Each row contains dim+1 values:
+    // first lnL, then dim parameter values.
+    fprintf(qfp, "%u %d\n", nQuadPts, dim);
+
+    // header
+    fprintf(qfp, "%s", "lnL");
+    for(i=0; i < dim; ++i)
+        fprintf(qfp, " %s", GPTree_getNameFree(gptree, i));
+    putc('\n', qfp);
+
+    double lnL;
+
+    // print estimate first
+#  if COST==KL_COST
+    lnL = -S*(cost + entropy);
+#  else
+    lnL = -cost;
+#  endif
+    fprintf(qfp, "%0.18lg", lnL);
+    for(i=0; i < dim; ++i)
+        fprintf(qfp, " %0.18lg", estimate[i]);
+    putc('\n', qfp);
+
+    // print contents of PointBuff, omitting any that exactly
+    // equal the point estimate
+    while(0 != PointBuff_size(dep.pb)) {
+        double c, par[dim];
+        c = PointBuff_pop(dep.pb, dim, par);
+
+        // Is current point the estimate? If so, skip it.
+        int is_estimate=1;
+        if(c != cost)
+            is_estimate=0;
+        for(i=0; is_estimate && i < dim; ++i) {
+            if(par[i] != estimate[i])
+                is_estimate = 0;
+        }
+        if(is_estimate)
+            continue;
+
+#  if COST==KL_COST
+        lnL = -S*(c + entropy); // Kullback-Leibler cost function
+#  else
+        lnL = -c;               // negLnL cost function
+#  endif
+        fprintf(qfp, "%0.18lg", lnL);
+        for(i=0; i < dim; ++i)
+            fprintf(qfp, " %0.18lg", par[i]);
+        putc('\n', qfp);
+    }
+    if(qfp != stdout) {
+        fclose(qfp);
+        fprintf(stderr,"%d points written to file %s\n",
+                nQuadPts, ptsfname);
+    }
+#endif
+
+    PointBuff_free(dep.pb);
     BranchTab_free(bt);
     BranchTab_free(rawObs);
     BranchTab_free(obs);
@@ -701,6 +847,10 @@ int main(int argc, char **argv) {
     GPTree_sanityCheck(gptree, __FILE__, __LINE__);
     GPTree_free(gptree);
     SimSched_free(simSched);
+    State_free(state);
+    for(i=0; i<dim; ++i)
+        free(parnames[i]);
+
     fprintf(stderr, "legofit is finished\n");
 
     return 0;

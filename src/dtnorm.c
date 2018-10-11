@@ -103,7 +103,7 @@ double dtnorm(const double mu, const double sigma, double a, double b,
         r = dtexp(rng, a, b);
 
     // Gaussian proposal
-    else if(a < 0.0 && b > 0.0 && bma > 1.0) {
+    else if(a <= 0.0 && b >= 0.0 && bma >= 1.0) {
         while(!stop) {
             r = gsl_ran_gaussian_ziggurat(rng, 1.0);
             stop = (r >= a) && (r <= b);
@@ -133,7 +133,7 @@ double dtnorm(const double mu, const double sigma, double a, double b,
     // Chopin's algorithm
     else {
         if(!(0.0 <= a && a <= 3.0)) {
-            fprintf(stderr,"%s:%d: (a,b) = (%lf, %lf)\n",
+            fprintf(stderr,"%s:%d: ERROR (a,b) = (%lf, %lf)\n",
                     __FILE__, __LINE__, a, b);
             exit(1);
         }

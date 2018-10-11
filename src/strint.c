@@ -22,7 +22,7 @@
 #  error STRINT_DIM must be a power of 2
 #endif
 
-#define MAXKEY 10
+#define MAXKEY 200
 
 /// A single element of a linked list
 typedef struct SILink {
@@ -40,6 +40,7 @@ SILink     *SILink_new(const char *key, int value, SILink * next);
 void        SILink_free(SILink * self);
 SILink     *SILink_insert(SILink * self, const char *key, int value);
 int         SILink_get(SILink * self, const char *key);
+int         SILink_exists(SILink * self, const char *key);
 void        SILink_print(const SILink * self, FILE *fp);
 unsigned    SILink_size(SILink *self);
 
@@ -97,8 +98,6 @@ SILink     *SILink_insert(SILink * self, const char *key, int value) {
 int SILink_get(SILink * self, const char *key) {
     if(self == NULL) {
 		errno = EDOM;
-        fprintf(stderr,"%s:%s:%d: unknown chromosome: %s\n",
-                __FILE__,__func__,__LINE__, key);
 		return -1;
     }
 
@@ -110,9 +109,24 @@ int SILink_get(SILink * self, const char *key) {
     else{
         assert(diff < 0);
 		errno = EDOM;
-        fprintf(stderr,"%s:%s:%d: unknown chromosome: %s\n",
-                __FILE__,__func__,__LINE__, key);
         return -1;
+    }
+}
+
+/// Return 1 if key is present in list, 0 otherwise.
+int SILink_exists(SILink * self, const char *key) {
+    if(self == NULL) {
+		return 0;
+    }
+
+    int diff = strcmp(key, self->key);
+    if(diff == 0)
+        return 1;
+    else if(diff > 0)
+        return SILink_exists(self->next, key);
+    else{
+        assert(diff < 0);
+        return 0;
     }
 }
 
@@ -125,7 +139,7 @@ void SILink_print(const SILink * self, FILE *fp) {
 }
 
 /// StrInt constructor
-StrInt     *StrInt_new(void) {
+StrInt *StrInt_new(void) {
     StrInt     *new = malloc(sizeof(*new));
     CHECKMEM(new);
     memset(new, 0, sizeof(*new));
@@ -156,6 +170,14 @@ int StrInt_get(StrInt * self, const char *key) {
     assert(h < STRINT_DIM);
     assert(self);
     return SILink_get(self->tab[h], key);
+}
+
+/// Return 1 if key exists in hash map; 0 otherwise.
+int StrInt_exists(StrInt * self, const char *key) {
+    unsigned    h = strhash(key) & (STRINT_DIM - 1u);
+    assert(h < STRINT_DIM);
+    assert(self);
+    return SILink_exists(self->tab[h], key);
 }
 
 /// Print a StrInt object
@@ -217,9 +239,11 @@ int main(int argc, char **argv) {
     }
 	errno = 0;
     fflush(stdout);
-    fprintf(stderr,"\"Unknown chromosome\" error should follow this line.\n");
 	assert(-1 == StrInt_get(si, "notthere"));
 	assert(errno == EDOM);
+
+    assert(0 == StrInt_exists(si, "notthere"));
+    assert(1 == StrInt_exists(si, "1"));
 
     if(verbose)
         StrInt_print(si, stdout);

@@ -2,9 +2,52 @@
 #include "error.h"
 #include "misc.h"
 #include <assert.h>
+#include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
+
+/**
+@file state.c
+@brief Read and write "state files", which describe the state of the optmizer.
+
+This file implements classes NameList and State. 
+
+NameList stores file names in a linked list. It is used for storing
+the names of state files while processing command-line arguments. Then
+State_readList uses this list of file names to construct a single
+State object.
+
+State records the parameter values and the cost value of each point in
+the swarm maintained by the differential evolution algorithm. There
+are functions for moving data into and out of the State object and for
+reading from and writing to files.
+
+The format of the state file changed in early July, 2018. Before that
+date, the state file did not include names of parameters. Parameter
+values in the state file had to be arranged in the same order as the
+free parameters in the .lgo file. If the .lgo and state files referred
+to different parameters or to the same parameters in a different
+order, parameters would get the wrong values. No error was detected
+unless this misassignment resulted in a tree that was not
+feasible--for example, one in which a segment of the population tree
+was older than its parent in the tree.
+
+The new state file format includes the names of parameters, and the
+input routine compares these against the names of free parameters in
+the .lgo file. The two lists must have the same parameters in the same
+order. Otherwise, legofit aborts with an error message. Old- and
+new-format state files can both be input using --stateIn arguments and
+can be intermingled in a single legofit run. 
+
+@copyright Copyright (c) 2018, Alan R. Rogers
+<rogers@anthro.utah.edu>. This file is released under the Internet
+Systems Consortium License, which can be found in file "LICENSE".
+*/
+
+typedef enum StateFile_t StateFile_t;
+enum StateFile_t {OLD=0, NEW=1, UNSET=2};
+
+static const char * file_format_2 = "format-2";
 
 struct NameList {
     char *name;
@@ -12,7 +55,9 @@ struct NameList {
 };
 
 struct State {
+    StateFile_t filetype;
     int npts, npar; // numbers of points and parameters
+    char **name;     // name[j] is name of j'th parameter
     double *cost;   // cost[i] is cost function at i'th point
     double **s;     // s[i][j]=value of j'th param at i'th point
 };
@@ -112,6 +157,9 @@ State *State_new(int npts, int npar) {
     self->npar = npar;
     self->cost = malloc(npts * sizeof(self->cost[0]));
     CHECKMEM(self->cost);
+    self->name = malloc(npar * sizeof(self->name[0]));
+    CHECKMEM(self->name);
+    memset(self->name, 0, npar * sizeof(self->name[0]));
     self->s = malloc(npts * sizeof(self->s[0]));
     CHECKMEM(self->s);
     for(i=0; i < npts; ++i) {
@@ -128,26 +176,128 @@ void State_free(State *self) {
     for(i=0; i < self->npts; ++i)
         free(self->s[i]);
     free(self->cost);
+    for(i=0; i < self->npar; ++i) {
+        if(self->name[i])
+            free(self->name[i]);
+    }
+    free(self->name);
     free(self->s);
     free(self);
 }
 
 // Construct a new State object by reading a file
-State *State_read(FILE *fp) {
-    int i, j, npts, npar, status;
+State *State_read(const char *fname, int npar, const char * const *name) {
+    int i, j, npts, npar2, status;
+    char buff[200];
     State *self = NULL;
-    status = fscanf(fp, "%d %d", &npts, &npar);
-    if(status != 2) {
-        fprintf(stderr,"%s:%d: status=%d\n", __FILE__,__LINE__,status);
+    FILE *fp = fopen(fname, "r");
+    if(fp == NULL) {
+        fprintf(stderr, "%s:%d: can't read file \"%s\"\n",
+                __FILE__,__LINE__, fname);
+        return NULL;
+    }
+
+    {
+        // Read first line and figure out whether we're in
+        // a new-format state file or an old-format file.
+        char fmt[200], dummy[200];
+        if(fgets(buff, sizeof(buff), fp) == NULL) {
+            fprintf(stderr,"%s:%d: empty state file \"%s\"\n",
+                    __FILE__,__LINE__, fname);
+            goto fail;
+        }
+        if(NULL == strchr(buff, '\n') && !feof(fp)) {
+            fprintf(stderr,"%s:%d: Buffer overflow reading \"%s\". size=%zu\n",
+                    __FILE__,__LINE__, fname, sizeof(buff));
+            goto fail;
+        }
+        status = sscanf(buff, "%d %d %s %s", &npts, &npar2, fmt, dummy);
+        switch(status) {
+        case 2:
+            self = State_new(npts, npar2);
+            CHECKMEM(self);
+            self->filetype = OLD;
+            break;
+        case 3:
+            self = State_new(npts, npar2);
+            CHECKMEM(self);
+            self->filetype = NEW;
+            if(0 != strcmp(file_format_2, fmt)) {
+                fprintf(stderr,"%s:%d: format error in file \"%s\"\n",
+                        __FILE__,__LINE__, fname);
+                fprintf(stderr,"  Old format: 1st line has 2 ints\n");
+                fprintf(stderr,"  New format: 2 ints, then \"%s\"\n",
+                        file_format_2);
+                fprintf(stderr,"  Got \"%s\" instead of \"%s\"\n",
+                        fmt, file_format_2);
+                fprintf(stderr,"  Input: %s", buff);
+                goto fail;
+            }
+            break;
+        default:
+            fprintf(stderr,"%s:%d: format error in file \"%s\"\n",
+                    __FILE__,__LINE__, fname);
+            fprintf(stderr,"  Old format: 1st line has 2 fields\n");
+            fprintf(stderr,"  New format: 3 fields\n");
+            fprintf(stderr,"  Input: %s", buff);
+            goto fail;
+        }
+    }
+
+    if(npar != npar2) {
+        fprintf(stderr,"%s:%d: --stateIn file \"%s\" and .lgo disagree about"
+                " number of free parameters",
+                __FILE__,__LINE__, fname);
         goto fail;
     }
-    self = State_new(npts, npar);
-    CHECKMEM(self);
+    
+    switch(self->filetype) {
+    case NEW:
+        // Read header containing parameter names
+        status = fscanf(fp, "%s", buff);
+        if(status != 1) {
+            fprintf(stderr,"%s:%d: status=%d\n", __FILE__,__LINE__,status);
+            goto fail;
+        }
+        if(0 != strcmp("cost", buff)) {
+            fprintf(stderr, "%s:%d: got \"%s\" instead of \"cost\""
+                    " reading new-format state file \"%s\"\n",
+                    __FILE__,__LINE__, buff, fname);
+            goto fail;
+        }
+        for(j=0; j < npar; ++j) {
+            status = fscanf(fp, "%s", buff);
+            if(status != 1) {
+                fprintf(stderr,"%s:%d: status=%d\n", __FILE__,__LINE__,status);
+                goto fail;
+            }
+            if(0 != strcmp(buff, name[j])) {
+                fprintf(stderr,"%s:%d: \"%s\" and .lgo file"
+                        " have inconsistent parameter names\n"
+                        "   %s != %s\n", __FILE__,__LINE__,
+                        fname, buff, name[j]);
+                goto fail;
+            }
+            self->name[j] = strdup(buff);
+            if(self->name[j] == NULL) {
+                fprintf(stderr,"%s:%d: bad strdup\n", __FILE__,__LINE__);
+                goto fail;
+            }
+        }
+        break;
+    case OLD:
+        break;
+    default:
+        fprintf(stderr,"%s:%d unknown filetype\n",__FILE__,__LINE__);
+    }
 
     for(i=0; i < npts; ++i) {
         status = fscanf(fp, "%lf", self->cost + i);
         if(status != 1) {
-            fprintf(stderr,"%s:%d: status=%d\n", __FILE__,__LINE__,status);
+            fprintf(stderr,"%s:%d: i=%d status=%d\n",
+                    __FILE__,__LINE__,i,status);
+            if(feof(fp))
+                fprintf(stderr,"  Unexpected EOF\n");
             goto fail;
         }
         for(j=0; j < npar; ++j) {
@@ -158,14 +308,34 @@ State *State_read(FILE *fp) {
             }
         }
     }
+
+    for(j=0; j < npar; ++j)
+        State_setName(self, j, name[j]);
+
+    fclose(fp);
+    fp = NULL;
     return self;
 
  fail:
-    fprintf(stderr,"%s:%d: Can't read state file\n",
-            __FILE__,__LINE__);
+    fprintf(stderr,"%s:%d: Can't read state file \"%s\"\n",
+            __FILE__,__LINE__, fname);
     if(self)
         State_free(self);
     return NULL;
+}
+
+/// Set name of parameter with index "ndx". Return 0 on success,
+/// abort on failure.
+int State_setName(State *self, int ndx, const char *name) {
+    assert(ndx < self->npar);
+    assert(ndx >= 0);
+
+    self->name[ndx] = strdup(name);
+    if(self->name[ndx] == NULL) {
+        fprintf(stderr,"%s:%d: bad strdup\n",__FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
+    return 0;
 }
 
 // Print State object to a file
@@ -177,8 +347,27 @@ int State_print(State *self, FILE *fp) {
         if(self->cost[i] < self->cost[imin])
             imin = i;
 
-    status = fprintf(fp, "%d %d\n", self->npts, self->npar);
+    status = fprintf(fp, "%d %d %s\n", self->npts, self->npar,
+                     file_format_2);
     if(status==0)
+        goto fail;
+
+    // write header containing column names
+    status = fprintf(fp, "%s", "cost");
+    if(status==0)
+        goto fail;
+    for(j=0; j < self->npar; ++j) {
+        if(self->name[j] == NULL) {
+            fprintf(stderr,"%s:%s:%d: parameter names undefined\n",
+                    __FILE__,__func__,__LINE__);
+            goto fail;
+        }
+        status = fprintf(fp, " %s", self->name[j]);
+        if(status == 0)
+            goto fail;
+    }
+    status = putc('\n', fp);
+    if(status == EOF)
         goto fail;
 
     // print point with minimum cost first
@@ -214,7 +403,8 @@ int State_print(State *self, FILE *fp) {
     return EIO;
 }
 
-State *State_readList(NameList *list, int npts, int npar) {
+// name is an array of npar char pointers
+State *State_readList(NameList *list, int npts, int npar, const char * const *name) {
     int nstates = NameList_size(list);
     if(nstates==0)
         return NULL;
@@ -223,23 +413,10 @@ State *State_readList(NameList *list, int npts, int npar) {
     NameList *node;
     int i, j, k;
 
+    // Create a State object from each file name in list.
     for(i=0, node=list; i<nstates; ++i, node=node->next) {
-
-        // Create a State object from each file name in list.
-        FILE *fp = fopen(node->name, "r");
-        state[i] = State_read(fp);
+        state[i] = State_read(node->name, npar, name);
         CHECKMEM(state[i]);
-        fclose(fp);
-
-        // Make sure dimensions are compatible.
-        if(npar != State_nparameters(state[i])) {
-            fprintf(stderr,"%s:%s:%d:"
-                    " input state file \"%s\" has"
-                    " incompatible dimensions.\n",
-                    __FILE__,__func__,__LINE__,
-                    node->name);
-            exit(EXIT_FAILURE);
-        }
     }
 
     // Make sure we're not asking for more points than exist
@@ -251,6 +428,8 @@ State *State_readList(NameList *list, int npts, int npar) {
 
     State *self = State_new(npts, npar);
     CHECKMEM(self);
+    for(j=0; j < npar; ++j)
+        State_setName(self, j, name[j]);
 
     // Figure out how many points to take from each State object.
     // The goal is to take nearly equal numbers.
@@ -283,7 +462,7 @@ State *State_readList(NameList *list, int npts, int npar) {
         }
     }
 
-    // Set vectors; free pointers in vector "state".
+    // Set vectors in self; free pointers in vector "state".
     k = 0; // index into self->s
     for(i=0; i < nstates; ++i) {
         for(j=0; j < npoints[i]; ++j) {

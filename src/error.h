@@ -11,7 +11,9 @@ enum {NO_ANCESTRAL_ALLELE=1000,
       BUFFER_OVERFLOW,
       BAD_RAF_INPUT,
       BAD_DAF_INPUT,
-      BAD_SORT};
+      BAD_SORT,
+      DIMENSION_MISMATCH,
+      NAME_MISMATCH};
 
 int mystrerror_r(int errnum, char *buff, size_t len);
 
