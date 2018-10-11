@@ -3,7 +3,7 @@ vpath %.c ../src
 opt :=  -O0 -fno-inline-functions -DDEBUG
 prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
-tests := xaddrparmap xbinary xbma xboot xbranchtab xdafreader xdiffev \
+tests := xaddrparmap xbinary xbooma xboot xbranchtab xdafreader xdiffev \
   xdtnorm xerror xgene xgptree xhessian xjobqueue xlblndx \
   xmisc xparam xparse xparstore xpointbuff xpopnode xpopnodetab \
   xrafreader xscrmreader xsimsched xstate xstrdblmap xstrdblqueue \
@@ -39,7 +39,7 @@ all : $(tests)
 test : $(tests)
 	-./xaddrparmap
 	-./xbinary
-	-./xbma
+	-./xbooma
 	-./xboot
 	-./xbranchtab
 	-./xdafreader
@@ -137,12 +137,12 @@ XRAFREADER := xrafreader.o rafreader.o misc.o lblndx.o tokenizer.o binary.o \
 xrafreader : $(XRAFREADER)
 	$(CC) $(CFLAGS) -o $@ $(XRAFREADER) $(lib)
 
-xbma.o : bma.c
-	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/bma.c
+xbooma.o : booma.c
+	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/booma.c
 
-XBMA := xbma.o misc.o strdblqueue.o strint.o tokenizer.o
-xbma : $(XBMA)
-	$(CC) $(CFLAGS) -o $@ $(XBMA) $(lib)
+XBOOMA := xbooma.o misc.o strdblqueue.o strint.o tokenizer.o
+xbooma : $(XBOOMA)
+	$(CC) $(CFLAGS) -o $@ $(XBOOMA) $(lib)
 
 xscrmreader.o : scrmreader.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/scrmreader.c

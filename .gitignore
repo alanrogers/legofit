@@ -3,7 +3,7 @@
 core
 depend
 bepe
-bma
+booma
 maub
 clic
 doc
@@ -11,7 +11,7 @@ raf
 raf2daf
 xaddrparmap
 xboot
-xbma
+xbooma
 xclic
 xdtnorm
 xhashtab
