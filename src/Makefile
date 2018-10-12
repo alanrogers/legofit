@@ -8,7 +8,7 @@ prof :=
 incl := -I/usr/local/include -I/opt/local/include
 
 targets := legosim legofit tabpat sitepat scrmpat daf raf numcores \
-     joinraf raf2daf bepe booma maub
+     joinraf raf2daf bepe booma maub pclgo
 pytargets := diverg.py bootci.py flatfile.py axt2raf.py
 tests := xzeroin xbinary
 
@@ -30,7 +30,7 @@ warn := \
  -Wundef \
  -Wwrite-strings
 
-CFLAGS := -g -std=gnu99 $(warn) $(incl) $(opt) $(prof) $(osargs)
+CFLAGS := -g -std=gnu99 $(warn) $(incl) $(opt) $(prof)
 
 lib := -L/usr/local/lib -lgsl -lgslcblas -lpthread -lm
 
@@ -57,6 +57,12 @@ LEGOFIT := legofit.o addrparmap.o patprob.o gptree.o binary.o jobqueue.o \
   tinyexpr.o state.o strparmap.o param.o pointbuff.o
 legofit : $(LEGOFIT)
 	$(CC) $(CFLAGS) -o $@ $(LEGOFIT) $(lib)
+
+PCLGO := pclgo.o misc.o strdblqueue.o gptree.o parstore.o param.o popnode.o \
+  gene.o addrparmap.o branchtab.o lblndx.o strparmap.o dtnorm.o dprintf.o \
+  tinyexpr.o tokenizer.o parse.o binary.o popnodetab.o
+pclgo : $(PCLGO)
+	$(CC) $(CFLAGS) -o $@ $(PCLGO) $(lib)
 
 BEPE := bepe.o misc.o strdblqueue.o
 bepe : $(BEPE)
