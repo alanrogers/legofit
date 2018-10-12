@@ -35,6 +35,9 @@ gene flow. The package consists of the following programs
   criterion" (Varin and Vidoni, 2005).
 * @ref booma "booma" does bootstrap model averaging (Buckland et
 al. Biometrics, 53(2):603-618).
+* @ref pclgo "pclgo" reads legofit output files produced from
+  simulation or bootstrap replicates and re-expresses free variables
+  in terms of principal components.
 
 # Nucleotide site patterns {#sitepat}
 
