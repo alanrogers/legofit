@@ -4,7 +4,7 @@
 @author Alan R. Rogers
 @brief Re-express free variables in terms of principal components.
 
-# `pclgo`: re-express free variables in terms of principal components.
+# pclgo: re-express free variables in terms of principal components.
 
 First run `legofit` on a series of bootstrap or simulation replicates
 to produce a series of .legofiles. All these `legofit` runs should use
