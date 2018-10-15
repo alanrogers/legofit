@@ -20,7 +20,7 @@ predicted site pattern frequencies and those of unobserved samples
 from the same statistical distribution. The best model is the one for
 which bepe reports the smallest value.
 
-    usage: bepe <realdat> <bdat1> <bdat2> ... -L <real.legofit> 
+    usage: bepe <realdat> <bdat1> <bdat2> ... -L <real.legofit>
      <b1.legofit> <b2.legofit> ...
 
      where realdat is the real data, each "bdat" file is the data
@@ -47,10 +47,10 @@ The first few lines of `bepe`'s output look like this:
     # bepe: bootstrap estimate of predictive error #
     #                 version 1.47                 #
     ################################################
-    
+
     # Program was compiled: Jul 29 2018 08:45:55
     # Program was run: Sun Jul 29 08:53:47 2018
-    
+
     #          bepe DataFile
     3.599051951e-07 mpqva1.txt
     3.937402126e-07 mpqvasing000
@@ -106,7 +106,7 @@ Note that bootstrap data file `mpqvasing001` is paired with `legofit`
 file `t3boot10.legofit`. This is a mistake. This data file should have
 been paired with `t3boot1.legofit`. The problem is that the wildcards
 characters (\*) expand to file names sorted in lexical order. Because
-of the leading zeroes in the data file names, a lexical sort 
+of the leading zeroes in the data file names, a lexical sort
 puts these names into into numerical order. But there are no leading
 zeroes in the `.legofit` filenames, so they sort in a different
 order. This generates a mismatch between the data files and the
@@ -150,7 +150,7 @@ const char *usageMsg =
 void usage(void) {
     fputs(usageMsg, stderr);
     exit(EXIT_FAILURE);
-} 
+}
 
 static void checkConsistency(const char *fname1, const char *fname2,
                              StrDblQueue *q1, StrDblQueue *q2) {
@@ -263,13 +263,6 @@ int main(int argc, char **argv) {
                 mybasename(legofname[i]));
     }
     putchar('\n');
-
-    // Echo command line
-    printf("# command line:\n#");
-    for(i = 0; i < argc; ++i)
-        printf(" %s", argv[i]);
-    putchar('\n');
-    fflush(stdout);
 
     return 0;
 }
