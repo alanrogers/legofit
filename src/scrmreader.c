@@ -13,10 +13,10 @@
 #include <errno.h>
 #include <stdlib.h>
 
-typedef struct FIFOstack FIFOstack;
+typedef struct UINTqueue UINTqueue;
 
-struct FIFOstack {
-    struct FIFOstack *next;
+struct UINTqueue {
+    struct UINTqueue *next;
     unsigned value;
 };
 
@@ -38,23 +38,23 @@ struct ScrmReader {
 
 unsigned *countSamples(Tokenizer *tkz, int *sampleDim, int *transpose);
 int readuntil(int n, const char *str, int dim, char buff[dim], FILE *fp);
-FIFOstack *FIFOstack_push(FIFOstack *prev, unsigned val);
-FIFOstack *FIFOstack_pop(FIFOstack *self, unsigned *value);
-FIFOstack *FIFOstack_free(FIFOstack *self);
-int FIFOstack_length(FIFOstack *self);
+UINTqueue *UINTqueue_push(UINTqueue *prev, unsigned val);
+UINTqueue *UINTqueue_pop(UINTqueue *self, unsigned *value);
+UINTqueue *UINTqueue_free(UINTqueue *self);
+int UINTqueue_length(UINTqueue *self);
 
 // Push a value onto the tail of the stack. Return pointer to new
 // head. Example:
 // 
-// FIFOstack *stack=NULL;
-// stack = FIFOstack_push(stack, 1u);
-// stack = FIFOstack_push(stack, 2u);
-FIFOstack *FIFOstack_push(FIFOstack *self, unsigned value) {
+// UINTqueue *stack=NULL;
+// stack = UINTqueue_push(stack, 1u);
+// stack = UINTqueue_push(stack, 2u);
+UINTqueue *UINTqueue_push(UINTqueue *self, unsigned value) {
     if(self != NULL) {
-        self->next = FIFOstack_push(self->next, value);
+        self->next = UINTqueue_push(self->next, value);
         return self;
     }
-    FIFOstack *new = malloc(sizeof(FIFOstack));
+    UINTqueue *new = malloc(sizeof(UINTqueue));
     CHECKMEM(new);
     new->value = value;
     new->next = NULL;
@@ -64,31 +64,31 @@ FIFOstack *FIFOstack_push(FIFOstack *self, unsigned value) {
 // Pop a value off the head of the stack. Return pointer to new
 // head. Example:
 // 
-// FIFOstack *stack=NULL;
-// stack = FIFOstack_push(stack, 1u);
-// stack = FIFOstack_push(stack, 2u);
+// UINTqueue *stack=NULL;
+// stack = UINTqueue_push(stack, 1u);
+// stack = UINTqueue_push(stack, 2u);
 //
 // unsigned x;
-// stack = FIFOstack_pop(stack, &x);  // x=1
-// stack = FIFOstack_pop(stack, &x);  // x=2
-FIFOstack *FIFOstack_pop(FIFOstack *self, unsigned *value) {
+// stack = UINTqueue_pop(stack, &x);  // x=1
+// stack = UINTqueue_pop(stack, &x);  // x=2
+UINTqueue *UINTqueue_pop(UINTqueue *self, unsigned *value) {
     if(self==NULL)
         return NULL;
     *value = self->value;
-    FIFOstack *next = self->next;
+    UINTqueue *next = self->next;
     free(self);
     return next;
 }
 
-int FIFOstack_length(FIFOstack *self) {
+int UINTqueue_length(UINTqueue *self) {
     if(self==NULL)
         return 0;
-    return 1 + FIFOstack_length(self->next);
+    return 1 + UINTqueue_length(self->next);
 }
 
-FIFOstack *FIFOstack_free(FIFOstack *self) {
+UINTqueue *UINTqueue_free(UINTqueue *self) {
     if(self) {
-        self->next = FIFOstack_free(self->next);
+        self->next = UINTqueue_free(self->next);
         free(self);
     }
     return NULL;
@@ -125,7 +125,7 @@ unsigned *countSamples(Tokenizer *tkz, int *sampleDim, int *transpose) {
     int i, j, k;
     long h;
     char *token, *end;
-    FIFOstack **fifo=NULL;  // array of FIFOstack objects, one per population
+    UINTqueue **fifo=NULL;  // array of UINTqueue objects, one per population
     int ntokens = Tokenizer_ntokens(tkz);
     int npops=0;
 
@@ -165,12 +165,12 @@ unsigned *countSamples(Tokenizer *tkz, int *sampleDim, int *transpose) {
                             " expecting a sample size\n",
                             __FILE__, __LINE__, token);
                     for(k=0; k<npops; ++k)
-                        fifo[k] = FIFOstack_free(fifo[k]);
+                        fifo[k] = UINTqueue_free(fifo[k]);
                     free(fifo);
                     return NULL;
                 }
                 if(h>0)
-                    fifo[j] = FIFOstack_push(fifo[j], (unsigned) h);
+                    fifo[j] = UINTqueue_push(fifo[j], (unsigned) h);
             }
             // advance to last argument of -I or -eI
             i += 1 + npops;
@@ -180,14 +180,14 @@ unsigned *countSamples(Tokenizer *tkz, int *sampleDim, int *transpose) {
 
     *sampleDim=0;
     for(j=0; j < npops; ++j)
-        *sampleDim += FIFOstack_length(fifo[j]);
+        *sampleDim += UINTqueue_length(fifo[j]);
     assert(*sampleDim > 0);
     unsigned *nsamples = malloc(*sampleDim * sizeof(nsamples[0]));
     CHECKMEM(nsamples);
     for(i=j=0; i < npops; ++i) {
         unsigned n;
         while(fifo[i]) {
-            fifo[i] = FIFOstack_pop(fifo[i], &n);
+            fifo[i] = UINTqueue_pop(fifo[i], &n);
             nsamples[j++] = n;
         }
     }
@@ -399,25 +399,25 @@ int main(int argc, char **argv) {
         verbose = 1;
     }
 
-    // test FIFOstack
-    FIFOstack *stack = NULL;
-    stack = FIFOstack_push(stack, 1u);
-    stack = FIFOstack_push(stack, 2u);
-    assert(2 == FIFOstack_length(stack));
+    // test UINTqueue
+    UINTqueue *stack = NULL;
+    stack = UINTqueue_push(stack, 1u);
+    stack = UINTqueue_push(stack, 2u);
+    assert(2 == UINTqueue_length(stack));
     unsigned x=0;
-    stack = FIFOstack_pop(stack, &x);
+    stack = UINTqueue_pop(stack, &x);
     assert(1u == x);
-    assert(1 == FIFOstack_length(stack));
-    stack = FIFOstack_pop(stack, &x);
+    assert(1 == UINTqueue_length(stack));
+    stack = UINTqueue_pop(stack, &x);
     assert(2u == x);
-    assert(0 == FIFOstack_length(stack));
+    assert(0 == UINTqueue_length(stack));
 
     stack = NULL;
-    stack = FIFOstack_push(stack, 1u);
-    stack = FIFOstack_push(stack, 2u);
-    stack = FIFOstack_free(stack);
+    stack = UINTqueue_push(stack, 1u);
+    stack = UINTqueue_push(stack, 2u);
+    stack = UINTqueue_free(stack);
     assert(stack == NULL);
-    unitTstResult("FIFOstack", "OK");
+    unitTstResult("UINTqueue", "OK");
 
     int i, sampleDim=0, transpose; 
     char buff[1000];
