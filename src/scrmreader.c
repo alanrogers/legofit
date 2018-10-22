@@ -43,12 +43,12 @@ UINTqueue *UINTqueue_pop(UINTqueue *self, unsigned *value);
 UINTqueue *UINTqueue_free(UINTqueue *self);
 int UINTqueue_length(UINTqueue *self);
 
-// Push a value onto the tail of the stack. Return pointer to new
+// Push a value onto the tail of the queue. Return pointer to new
 // head. Example:
 // 
-// UINTqueue *stack=NULL;
-// stack = UINTqueue_push(stack, 1u);
-// stack = UINTqueue_push(stack, 2u);
+// UINTqueue *queue=NULL;
+// queue = UINTqueue_push(queue, 1u);
+// queue = UINTqueue_push(queue, 2u);
 UINTqueue *UINTqueue_push(UINTqueue *self, unsigned value) {
     if(self != NULL) {
         self->next = UINTqueue_push(self->next, value);
@@ -61,16 +61,16 @@ UINTqueue *UINTqueue_push(UINTqueue *self, unsigned value) {
     return new;
 }
 
-// Pop a value off the head of the stack. Return pointer to new
+// Pop a value off the head of the queue. Return pointer to new
 // head. Example:
 // 
-// UINTqueue *stack=NULL;
-// stack = UINTqueue_push(stack, 1u);
-// stack = UINTqueue_push(stack, 2u);
+// UINTqueue *queue=NULL;
+// queue = UINTqueue_push(queue, 1u);
+// queue = UINTqueue_push(queue, 2u);
 //
 // unsigned x;
-// stack = UINTqueue_pop(stack, &x);  // x=1
-// stack = UINTqueue_pop(stack, &x);  // x=2
+// queue = UINTqueue_pop(queue, &x);  // x=1
+// queue = UINTqueue_pop(queue, &x);  // x=2
 UINTqueue *UINTqueue_pop(UINTqueue *self, unsigned *value) {
     if(self==NULL)
         return NULL;
@@ -125,18 +125,18 @@ unsigned *countSamples(Tokenizer *tkz, int *sampleDim, int *transpose) {
     int i, j, k;
     long h;
     char *token, *end;
-    UINTqueue **fifo=NULL;  // array of UINTqueue objects, one per population
+    UINTqueue **queue=NULL;  // array of UINTqueue objects, one per population
     int ntokens = Tokenizer_ntokens(tkz);
     int npops=0;
 
     // Read through tokens, looking for -I and -eI. Use these arguments
-    // to set npops and array of fifo stacks.
+    // to set npops and array of queues.
     for(i=1; i < ntokens; ++i) {
         token = Tokenizer_token(tkz, i);
         if(strcmp("-I", token) == 0 || strcmp("-eI", token) == 0) {
             if(npops == 0) {
                 // count populations and allocate nsamples
-                assert(fifo == NULL);
+                assert(queue == NULL);
                 for(j=i+2; j<ntokens; ++j) {
                     token = Tokenizer_token(tkz, j);
                     h = strtol(token, &end, 10);
@@ -150,13 +150,13 @@ unsigned *countSamples(Tokenizer *tkz, int *sampleDim, int *transpose) {
                             __FILE__,__LINE__);
                     return NULL;
                 }
-                fifo = malloc(npops * sizeof(fifo[0]));
-                CHECKMEM(fifo);
-                memset(fifo, 0, npops * sizeof(fifo[0]));
+                queue = malloc(npops * sizeof(queue[0]));
+                CHECKMEM(queue);
+                memset(queue, 0, npops * sizeof(queue[0]));
             }
-            // increment fifo stacks
+            // increment queues
             assert(npops > 0);
-            assert(fifo != NULL);
+            assert(queue != NULL);
             for(j=0; j < npops; ++j) {
                 token = Tokenizer_token(tkz, i+2+j);
                 h = strtol(token, &end, 10);
@@ -165,12 +165,12 @@ unsigned *countSamples(Tokenizer *tkz, int *sampleDim, int *transpose) {
                             " expecting a sample size\n",
                             __FILE__, __LINE__, token);
                     for(k=0; k<npops; ++k)
-                        fifo[k] = UINTqueue_free(fifo[k]);
-                    free(fifo);
+                        queue[k] = UINTqueue_free(queue[k]);
+                    free(queue);
                     return NULL;
                 }
                 if(h>0)
-                    fifo[j] = UINTqueue_push(fifo[j], (unsigned) h);
+                    queue[j] = UINTqueue_push(queue[j], (unsigned) h);
             }
             // advance to last argument of -I or -eI
             i += 1 + npops;
@@ -180,23 +180,23 @@ unsigned *countSamples(Tokenizer *tkz, int *sampleDim, int *transpose) {
 
     *sampleDim=0;
     for(j=0; j < npops; ++j)
-        *sampleDim += UINTqueue_length(fifo[j]);
+        *sampleDim += UINTqueue_length(queue[j]);
     assert(*sampleDim > 0);
     unsigned *nsamples = malloc(*sampleDim * sizeof(nsamples[0]));
     CHECKMEM(nsamples);
     for(i=j=0; i < npops; ++i) {
         unsigned n;
-        while(fifo[i]) {
-            fifo[i] = UINTqueue_pop(fifo[i], &n);
+        while(queue[i]) {
+            queue[i] = UINTqueue_pop(queue[i], &n);
             nsamples[j++] = n;
         }
     }
     assert(j == *sampleDim);
 #ifndef NDEBUG
     for(i=0; i < npops; ++i)
-        assert(fifo[i] == NULL);
+        assert(queue[i] == NULL);
 #endif
-    free(fifo);
+    free(queue);
 
     return nsamples;
 }
@@ -400,23 +400,23 @@ int main(int argc, char **argv) {
     }
 
     // test UINTqueue
-    UINTqueue *stack = NULL;
-    stack = UINTqueue_push(stack, 1u);
-    stack = UINTqueue_push(stack, 2u);
-    assert(2 == UINTqueue_length(stack));
+    UINTqueue *queue = NULL;
+    queue = UINTqueue_push(queue, 1u);
+    queue = UINTqueue_push(queue, 2u);
+    assert(2 == UINTqueue_length(queue));
     unsigned x=0;
-    stack = UINTqueue_pop(stack, &x);
+    queue = UINTqueue_pop(queue, &x);
     assert(1u == x);
-    assert(1 == UINTqueue_length(stack));
-    stack = UINTqueue_pop(stack, &x);
+    assert(1 == UINTqueue_length(queue));
+    queue = UINTqueue_pop(queue, &x);
     assert(2u == x);
-    assert(0 == UINTqueue_length(stack));
+    assert(0 == UINTqueue_length(queue));
 
-    stack = NULL;
-    stack = UINTqueue_push(stack, 1u);
-    stack = UINTqueue_push(stack, 2u);
-    stack = UINTqueue_free(stack);
-    assert(stack == NULL);
+    queue = NULL;
+    queue = UINTqueue_push(queue, 1u);
+    queue = UINTqueue_push(queue, 2u);
+    queue = UINTqueue_free(queue);
+    assert(queue == NULL);
     unitTstResult("UINTqueue", "OK");
 
     int i, sampleDim=0, transpose; 
