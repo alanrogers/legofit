@@ -5,9 +5,9 @@ prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
 tests := xaddrparmap xbinary xbooma xboot xbranchtab xdafreader xdiffev \
   xdtnorm xerror xgene xgptree xhessian xjobqueue xlblndx \
-  xmisc xparam xparse xparstore xpointbuff xpopnode xpopnodetab \
-  xrafreader xscrmreader xsimsched xstate xstrdblmap xstrdblqueue \
-  xstrint xstrparmap xtinyexpr xwraparound
+  xmisc xmspreader xparam xparse xparstore xpointbuff xpopnode \
+  xpopnodetab xrafreader xscrmreader xsimsched xstate xstrdblmap \
+  xstrdblqueue xstrint xstrparmap xtinyexpr xwraparound
 
 CC := gcc
 
@@ -52,6 +52,7 @@ test : $(tests)
 	-./xjobqueue
 	-./xlblndx
 	-./xmisc
+	-./xmspreader
 	-./xparam
 	-./xparse
 	-./xparstore
@@ -150,6 +151,13 @@ xscrmreader.o : scrmreader.c
 XSCRMREADER := xscrmreader.o misc.o tokenizer.o
 xscrmreader : $(XSCRMREADER)
 	$(CC) $(CFLAGS) -o $@ $(XSCRMREADER) $(lib)
+
+xmspreader.o : mspreader.c
+	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/mspreader.c
+
+XMSPREADER := xmspreader.o misc.o tokenizer.o
+xmspreader : $(XMSPREADER)
+	$(CC) $(CFLAGS) -o $@ $(XMSPREADER) $(lib)
 
 xparse.o : parse.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/parse.c

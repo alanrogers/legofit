@@ -5,7 +5,7 @@
 #include <stdio.h>
 
 // constructor
-MsprimeReader *MsprimeReader_new(FILE *fp);
+MsprimeReader *MsprimeReader_new(const char *fname);
 
 // destructor
 void MsprimeReader_free(MsprimeReader *self);
@@ -20,9 +20,6 @@ int MsprimeReader_next(MsprimeReader *self);
 // Return current chromosome.
 unsigned MsprimeReader_chr(MsprimeReader *self);
 
-// Return current nucleotide position.
-unsigned long MsprimeReader_nucpos(MsprimeReader *self);
-
 // Return the dimension of the array of samples
 int MsprimeReader_sampleDim(MsprimeReader *self);
 
@@ -31,4 +28,7 @@ int MsprimeReader_nsamples(MsprimeReader *self, int i);
 
 // Return frequency of derived allele in sample from population i.
 double MsprimeReader_daf(MsprimeReader *self, int i);
+
+// Return pointer to label of population i
+const char *MsprimeReader_lbl(MsprimeReader *self, int i);
 #endif
