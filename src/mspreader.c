@@ -19,7 +19,7 @@ struct MsprimeReader {
     char **lbl;
     double *daf;
     Tokenizer *tkz;
-    FILE *fp;
+    FILE *fp;  // not locally owned
 
     // Independent replicates in scrm output appear as separate
     // chromosomes, which are labelled by integers.
@@ -31,7 +31,7 @@ struct MsprimeReader {
     long start_data; // position in file of beginning of data
 };
 
-// destructor
+// destructor doesn't free self->fp
 void MsprimeReader_free(MsprimeReader *self) {
     assert(self);
     free(self->nsamples);
@@ -44,7 +44,7 @@ void MsprimeReader_free(MsprimeReader *self) {
 }
 
 // Allocate and initialize a new MsprimeReader from input stream.
-MsprimeReader *MsprimeReader_new(const char *fname) {
+MsprimeReader *MsprimeReader_new(FILE *fp) {
 
     char buff[128];
     int i, status;
@@ -54,13 +54,9 @@ MsprimeReader *MsprimeReader_new(const char *fname) {
     memset(self, 0, sizeof(MsprimeReader));
 
     self->chr = -1;
+    self->fp = fp;
+    assert(fp != NULL);
 
-    self->fp = fopen(fname, "r");
-    if(self->fp == NULL) {
-        fprintf(stderr,"%s:%d: can't real file \"%s\"\n",
-                __FILE__,__LINE__, fname);
-        goto new_fail;
-    }
     self->tkz = Tokenizer_new(sizeof(buff)/2);
 
     status = readline(sizeof(buff), buff, self->fp);
@@ -277,7 +273,6 @@ const char *MsprimeReader_lbl(MsprimeReader *self, int i) {
 #    error "Unit tests must be compiled without -DNDEBUG flag"
 #  endif
 
-// nsamples = [6, 6, 2, 2, 2]
 const char *tstInput =
     "npops = 4\n"
     "pop sampsize\n"
@@ -307,7 +302,8 @@ int main(int argc, char **argv) {
     fputs(tstInput, fp);
     fclose(fp);
 
-    MsprimeReader *r = MsprimeReader_new(tstfname);
+    fp = fopen(tstfname, "r");
+    MsprimeReader *r = MsprimeReader_new(fp);
     CHECKMEM(r);
 
     assert(-1 == MsprimeReader_chr(r));
@@ -389,6 +385,7 @@ int main(int argc, char **argv) {
     assert(0.0 == MsprimeReader_daf(r, 2));
     assert(0.0 == MsprimeReader_daf(r, 3));
 
+    fclose(fp);
     MsprimeReader_free(r);
     remove(tstfname);
     unitTstResult("MsprimeReader", "OK");

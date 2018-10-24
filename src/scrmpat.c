@@ -144,8 +144,6 @@ Systems Consortium License, which can be found in file "LICENSE".
 #include <string.h>
 #include <time.h>
 
-#define MAXCHR 2000               // maximum number of chromosomes
-
 typedef struct Stack Stack;
 
 /// Treat a vector of tipId_t values as a push-down stack.
@@ -432,7 +430,7 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
-    // Read the data to get dimensions: nchr=1 by fiat: rather than
+    // Read the data to get dimensions. nchr=1 by fiat: rather than
     // treating the independent replicates produced by scrm as
     // separate chromosomes, I concatenate them all into a single
     // chromosome and do a moving-blocks bootstrap on that. This

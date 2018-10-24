@@ -5,7 +5,7 @@
 #include <stdio.h>
 
 // constructor
-MsprimeReader *MsprimeReader_new(const char *fname);
+MsprimeReader *MsprimeReader_new(FILE *fp);
 
 // destructor
 void MsprimeReader_free(MsprimeReader *self);
