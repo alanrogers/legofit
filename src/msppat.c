@@ -12,7 +12,7 @@ writing each bootstrap replicate into a separate file.
 
 # Usage
 
-    Usage: msppat [options] 
+    Usage: msppat [options]
       where options may include:
        --infile <name>
           Input file name. Def: standard input
@@ -155,17 +155,13 @@ static void generatePatterns(int bit, int npops, Stack * stk, tipId_t pat,
                              int doSing);
 
 const char *useMsg =
-    "\nUsage: msppat [options]\n"
+    "\nUsage: msppat [options] <input_file>\n"
     "  where options may include:\n";
 
 /// Print usage message and die.
 static void usage(void) {
     fputs(useMsg, stderr);
-    fprintf(stderr, " Max number of input files: %lu.\n",
-            8 * sizeof(tipId_t));
     fputs("\nOptions may include:\n", stderr);
-    tellopt("--infile <name>",
-            "Input file name. Def: standard input");
     tellopt("--bootfile <name>",
             "Bootstrap output file basename. Def: msppatX.bsr");
     tellopt("-r <x> or --bootreps <x>", "# of bootstrap replicates. Def: 0");
@@ -244,7 +240,6 @@ int main(int argc, char **argv) {
 
     static struct option myopts[] = {
         // {char *name, int has_arg, int *flag, int val}
-        {"infile", required_argument, 0, 'i'},
         {"bootfile", required_argument, 0, 'f'},
         {"bootreps", required_argument, 0, 'r'},
         {"blocksize", required_argument, 0, 'b'},
@@ -257,7 +252,7 @@ int main(int argc, char **argv) {
 
     // command line arguments
     for(;;) {
-        i = getopt_long(argc, argv, "ab:c:hi:r:t:Fv", myopts, &optndx);
+        i = getopt_long(argc, argv, "ab:hr:FV", myopts, &optndx);
         if(i == -1)
             break;
         switch (i) {
@@ -286,14 +281,6 @@ int main(int argc, char **argv) {
         case 'h':
             usage();
             break;
-        case 'i':
-            ifp = fopen(optarg, "r");
-            if(ifp==NULL) {
-                fprintf(stderr,"%s:%d: can't open %s for input.\n",
-                        __FILE__,__LINE__, optarg);
-                exit(EXIT_FAILURE);
-            }
-            break;
         case 'V':
             printf("msppat version %s\n", VERSION);
             return 0;
@@ -311,9 +298,25 @@ int main(int argc, char **argv) {
         }
     }
 
-    // There should be no non-flag arguments
-    if(optind != argc)
+    // There can be one additional argument, the name of the input
+    // file.
+    switch(argc - optind) {
+    case 0:
+        ifp = stdin;
+        break;
+    case 1:
+        const char *fname = argv[optind + 1];
+        ifp = fopen(fname, "r");
+        if(ifp==NULL) {
+            fprintf(stderr,"%s:%d: can't open %s for input.\n",
+                    __FILE__,__LINE__, fname);
+            exit(EXIT_FAILURE);
+        }
+        break;
+    default:
+        fprintf(stderr,"Only one non-flag argument is allowed.\n");
         usage();
+    }
 
     if(logFixed || logAll) {
         logfile = fopen(logfname, "w");
@@ -334,13 +337,7 @@ int main(int argc, char **argv) {
                 __FILE__,__LINE__);
         exit(EXIT_FAILURE);
     }
-    if(n != MsprimeReader_sampleDim(r)) {
-        fprintf(stderr,"%s:%d:"
-                " Number (%d) of labels != dimension (%d) of sample array\n"
-                "in msprime output.\n",
-                __FILE__,__LINE__,n,MsprimeReader_sampleDim(r));
-        exit(EXIT_FAILURE);
-    }
+    int n = MsprimeReader_sampleDim(r);
 
     // Default boot file name
     if(bootfname[0] == '\0') {
@@ -355,21 +352,6 @@ int main(int argc, char **argv) {
     }
 
     printf("# msppat version %s\n", VERSION);
-    printf("# Population labels:");
-    for(i = 0; i < n; ++i)
-        printf(" %s", poplbl[i]);
-    putchar('\n');
-
-    // make sure labels are all different
-    for(i = 1; i < n; ++i) {
-        for(j = 0; j < i; ++j) {
-            if(0 == strcmp(poplbl[i], poplbl[j])) {
-                fprintf(stderr, "ERR: duplicate labels on command line.\n");
-                fprintf(stderr, "     duplicated label: %s\n", poplbl[i]);
-                exit(EXIT_FAILURE);
-            }
-        }
-    }
 
     unsigned long npat = (1UL << n) - 2UL;  // number of site patterns
     if(!doSing)
@@ -500,10 +482,6 @@ int main(int argc, char **argv) {
             q[j] = 1.0 - p[j];
         }
 
-        if(logAll) {
-            fprintf(logfile, "%5u %10lu\n", MsprimeReader_chr(r),
-                    MsprimeReader_nucpos(r));
-        }
         // Contribution of current snp to each site pattern.  Inner
         // loop considers each bit in current pattern.  If that bit is
         // on, multiply z by the derived allele frequency, p. If
@@ -584,7 +562,7 @@ int main(int argc, char **argv) {
             fclose(fp);
         }
     }
-    // print labels and binary representation of site patterns
+    // print labels and site patterns
     printf("# %13s %20s", "SitePat", "E[count]");
     if(bootreps > 0)
         printf(" %15s %15s", "loBnd", "hiBnd");

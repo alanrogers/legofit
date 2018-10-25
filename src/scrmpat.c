@@ -169,8 +169,6 @@ const char *useMsg =
 /// Print usage message and die.
 static void usage(void) {
     fputs(useMsg, stderr);
-    fprintf(stderr, " Max number of input files: %lu.\n",
-            8 * sizeof(tipId_t));
     fputs("\nOptions may include:\n", stderr);
     tellopt("--infile <name>",
             "Input file name. Def: standard input");
@@ -611,7 +609,7 @@ int main(int argc, char **argv) {
             fclose(fp);
         }
     }
-    // print labels and binary representation of site patterns
+    // print labels and site patterns
     printf("# %13s %20s", "SitePat", "E[count]");
     if(bootreps > 0)
         printf(" %15s %15s", "loBnd", "hiBnd");
