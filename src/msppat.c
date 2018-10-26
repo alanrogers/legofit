@@ -146,8 +146,7 @@ const char *useMsg =
 /// Print usage message and die.
 static void usage(void) {
     fputs(useMsg, stderr);
-    fputs("\nOptions may include:\n", stderr);
-    tellopt("--version", "Print version and exit");
+    tellopt("-V or --version", "Print version and exit");
     tellopt("-h or --help", "Print this message");
     exit(1);
 }
@@ -252,7 +251,7 @@ int main(int argc, char **argv) {
         }
         break;
     default:
-        fprintf(stderr,"Only one non-flag argument is allowed.\n");
+        fprintf(stderr,"Only one input file is allowed.\n");
         usage();
     }
 
