@@ -242,12 +242,14 @@ int main(int argc, char **argv) {
         ifp = stdin;
         break;
     case 1:
-        const char *fname = argv[optind + 1];
-        ifp = fopen(fname, "r");
-        if(ifp==NULL) {
-            fprintf(stderr,"%s:%d: can't open %s for input.\n",
-                    __FILE__,__LINE__, fname);
-            exit(EXIT_FAILURE);
+        {
+            char *fname = argv[optind + 1];
+            ifp = fopen(fname, "r");
+            if(ifp==NULL) {
+                fprintf(stderr,"%s:%d: can't open %s for input.\n",
+                        __FILE__,__LINE__, fname);
+                exit(EXIT_FAILURE);
+            }
         }
         break;
     default:
@@ -262,14 +264,6 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
     int n = MsprimeReader_sampleDim(r);
-
-    LblNdx lblndx;
-    LblNdx_init(&lblndx);
-    for(i=0; i < MsprimeReader_sampleDim(r); ++i) {
-        LblNdx_addSamples(&lblndx,
-                          MsprimeReader_nsamples(r, i),
-                          MsprimeReader_lbl(r, i))
-    }
 
     printf("# msppat version %s\n", VERSION);
 
@@ -304,7 +298,6 @@ int main(int argc, char **argv) {
 
     unsigned long nsites = 0, nbadaa = 0, nfixed = 0;
     long snpndx = -1;
-    int chrndx=0;
 
     // Read data
     fprintf(stderr, "Doing %s pass through data to tabulate patterns..\n",
@@ -375,6 +368,15 @@ int main(int argc, char **argv) {
         printf("# Monomorphic sites: %lu\n", nfixed);
     printf("# Sites used: %lu\n",
            nsites - nbadaa - nfixed);
+
+    // patLbl needs an object of type LblNdx
+    LblNdx lndx;
+    LblNdx_init(&lndx);
+    for(i=0; i < MsprimeReader_sampleDim(r); ++i) {
+        LblNdx_addSamples(&lndx,
+                          MsprimeReader_nsamples(r, i),
+                          MsprimeReader_lbl(r, i));
+    }
 
     // print labels and site patterns
     printf("# %13s %20s", "SitePat", "E[count]");
