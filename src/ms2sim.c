@@ -88,6 +88,31 @@
 
 void        usage(void);
 
+char *getline_realloc(size_t *buffsize, char buff[*buffsize], FILE *fp) {
+    do {
+        if(NULL == fgets(buff, *buffsize, fp)) {
+            errno = EIO;
+            return NULL;
+        }
+    } while(strempty(buff) || strcomment(buff));
+
+    while(!strchr(buff, '\n') && !feof(ifp)) {
+        // buffer overflow: reallocate
+        size_t oldsize = *buffsize;
+        *buffsize *= 2;
+        char *oldbuff = buff;
+        buff = realloc(buff, *buffsize);
+        if(buff == NULL) {
+            free(oldbuff);
+            errno = ENOMEM;
+            return NULL;
+        }
+        if(NULL = fgets(buff + oldsize, oldsize, fp))
+            return buff;
+    }
+}
+
+
 /**
  * Parse output of MS, produce gtp format, the input for eld.
  */
