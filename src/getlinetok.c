@@ -27,8 +27,9 @@ GetLineTok *GetLineTok_new(size_t buffsize, int maxtokens, FILE *fp) {
     return self;
 };
 
-/// Read a line into buff, reallocating if necessary.
-int GetLineTok_nextLine(GetLineTok *self) {
+/// Read a line and tokenize, reallocating if necessary.
+int GetLineTok_nextLine(GetLineTok *self, const char *sep,
+                        const char *extraneous) {
     do {
         if(NULL == fgets(self->buff, self->buffsize, self->fp))
             return EOF;
@@ -47,26 +48,24 @@ int GetLineTok_nextLine(GetLineTok *self) {
         }
         // Try to read the rest of the current line. If there is
         // nothing more to read, that's OK, because we've already
-        // filled the first half of self->buff, so return 0 to indicate
-        // success.
+        // filled the first half of self->buff.
         if(NULL == fgets(self->buff + oldsize, oldsize, self->fp))
-            return 0;
+            break;
     }
-    return 0;
-}
 
-int GetLineTok_tokenize(GetLineTok *self, const char *sep,
-                        const char *extraneous) {
+    // Tokenize, reallocating if necessary
     int n = strcount(self->buff, sep);
     if(n+1 > self->maxtokens) {
         Tokenizer_free(self->tkz);
         self->maxtokens = n+1;
         self->tkz = Tokenizer_new(self->maxtokens);
         if(self->tkz == NULL)
-            DIE("bad Tokenizer_new");
+            return ENOMEM;
     }
     Tokenizer_split(self->tkz, self->buff, sep);
-    return Tokenizer_strip(self->tkz, extraneous);
+    Tokenizer_strip(self->tkz, extraneous);
+
+    return 0;
 }
 
 int GetLineTok_ntokens(GetLineTok *self) {
