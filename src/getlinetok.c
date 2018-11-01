@@ -2,8 +2,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef struct GetLineTok GetLineTok;
-
 struct GetLineTok {
     size_t buffsize;
     int maxtokens;
@@ -11,6 +9,32 @@ struct GetLineTok {
     Tokenizer *tkz;
     FILE *fp; // not locally owned
 };
+
+int strcount(char *s, const char *sep);
+int strempty(const char *s);
+
+/// Return true if string contains only whitespace; false otherwise.
+int strempty(const char *s) {
+    const char *p = s;
+
+    while(isspace(*p))
+        ++p;
+    if(*p == '\0')
+        return true;
+    return false;
+}
+
+/// Count the characters in string "s" that are members of string
+/// "sep".
+int strcount(char *s, const char *sep) {
+    count=0;
+    while(*s) {
+        if(strchr(sep, *s))
+            ++count;
+        ++s;
+    }
+    return count;
+}
 
 GetLineTok *GetLineTok_new(size_t buffsize, int maxtokens, FILE *fp) {
     GetLineTok *self = malloc(sizeof(GetLineTok));
@@ -28,6 +52,7 @@ GetLineTok *GetLineTok_new(size_t buffsize, int maxtokens, FILE *fp) {
 };
 
 /// Read a line and tokenize, reallocating if necessary.
+/// Return 0 on success, EOF or ENOMEM on failure.
 int GetLineTok_nextLine(GetLineTok *self, const char *sep,
                         const char *extraneous) {
     do {
@@ -76,17 +101,6 @@ char *GetLineTok_token(Tokenizer * t, int index) {
     return Tokenizer_token(self->tkz, index);
 }
 
-/// Count the characters in string "s" that are members of string
-/// "sep".
-int strcount(char *s, const char *sep) {
-    count=0;
-    while(*s) {
-        if(strchr(sep, *s))
-            ++count;
-        ++s;
-    }
-    return count;
-}
 
 
     
