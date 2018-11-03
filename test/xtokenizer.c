@@ -43,6 +43,7 @@ int main(int argc, char **argv) {
     }
 
     tkz = Tokenizer_new(maxtokens);
+    CHECKMEM(tkz);
     assert(Tokenizer_ntokens(tkz) == 0);
     strcpy(str, "; now;   \t: \t is       ::the  ,time  \n,");
     sep = ";:,";
