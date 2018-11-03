@@ -18,7 +18,7 @@
 #endif
 
 int main(int argc, char **argv) {
-    int         maxtokens = 0;
+    int         maxtokens = 1;
     int         ntokens, verbose = 0, i;
     Tokenizer  *tkz;
     const char *sep;
