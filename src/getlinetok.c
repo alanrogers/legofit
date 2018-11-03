@@ -1,4 +1,4 @@
-#include "getlinetoc.h"
+#include "getlinetok.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -78,15 +78,6 @@ int GetLineTok_nextLine(GetLineTok *self, const char *sep,
             break;
     }
 
-    // Tokenize, reallocating if necessary
-    int n = strcount(self->buff, sep);
-    if(n+1 > self->maxtokens) {
-        Tokenizer_free(self->tkz);
-        self->maxtokens = n+1;
-        self->tkz = Tokenizer_new(self->maxtokens);
-        if(self->tkz == NULL)
-            return ENOMEM;
-    }
     Tokenizer_split(self->tkz, self->buff, sep);
     Tokenizer_strip(self->tkz, extraneous);
 

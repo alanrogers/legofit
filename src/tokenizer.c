@@ -44,18 +44,26 @@ Tokenizer  *Tokenizer_new(int maxTokens) {
 
     CHECKMEM(t);
 
-    t->tokptr = malloc(maxTokens * sizeof(t->tokptr[0]));
-    CHECKMEM(t->tokptr);
+    if(maxTokens == 0)
+        t->tokptr = NULL;
+    else {
+        t->tokptr = malloc(maxTokens * sizeof(t->tokptr[0]));
+        CHECKMEM(t->tokptr);
+    }
 
     t->maxTokens = maxTokens;
     return t;
 }
 
 /// Tokenizer destructor
-void Tokenizer_free(Tokenizer * t) {
-    assert(t);
-    free(t->tokptr);
-    free(t);
+void Tokenizer_free(Tokenizer * self) {
+    assert(self);
+    fprintf(stderr,"%s:%s:%d\n",__FILE__,__func__,__LINE__);
+    if(self->tokptr)
+        free(self->tokptr);
+    fprintf(stderr,"%s:%s:%d\n",__FILE__,__func__,__LINE__);
+    free(self);
+    fprintf(stderr,"%s:%s:%d\n",__FILE__,__func__,__LINE__);
 }
 
 /**
@@ -63,33 +71,34 @@ void Tokenizer_free(Tokenizer * t) {
  * the input string may be separated by any of the characters in
  * string "sep". Supress empty tokens. Return the number of tokens.
  */
-int Tokenizer_split(Tokenizer * t, char *buff, const char *sep) {
-    assert(t);
+int Tokenizer_split(Tokenizer * self, char *buff, const char *sep) {
+    assert(self);
     assert(buff);
     assert(sep);
-    char       *ptr = buff, *token;
+    char *ptr = buff, *token;
 
-    t->n = 0;
-    while(t->n < t->maxTokens && (token = strsep(&ptr, sep)) != NULL) {
+    self->n = 0;
+    while((token = strsep(&ptr, sep)) != NULL) {
         if(*token == '\0')
             continue;           // skip empty tokens
-        t->tokptr[t->n] = token;
-        ++(t->n);
-    }
-
-    if(t->n == t->maxTokens) {
-        char       *lastToken = t->tokptr[(t->n) - 1];
-        int         hiddenTokens = strCountSetChunks(lastToken, sep);
-
-        if(hiddenTokens > 0) {  /* buff has too many tokens */
-            fprintf(stderr, "ERR@%s:%d: too many tokens."
-                    " Recompile with maxTokens > %d\n",
-                    __FILE__, __LINE__, t->n + hiddenTokens);
-            exit(1);
+        if(self->n == self->maxTokens) {
+            // reallocate
+            int need = 1 + strCountSetChunks(ptr, sep);
+            fprintf(stderr,"%s:%s:%d: incr maxTokens from %d to %d\n",
+                    __FILE__,__func__,__LINE__,
+                    self->maxTokens, self->maxTokens+need);
+            fprintf(stderr,"ptr=\"%s\"\n", ptr);
+            self->maxTokens += need;
+            self->tokptr = realloc(self->tokptr, self->maxTokens);
+            if(self->tokptr == NULL)
+                DIE("bad realloc");
         }
+        assert(self->n < self->maxTokens);
+        self->tokptr[self->n] = token;
+        ++(self->n);
     }
 
-    return t->n;
+    return self->n;
 }
 
 /// Return pointer to token with given index

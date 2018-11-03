@@ -83,7 +83,6 @@
 #include <assert.h>
 #include <math.h>
 #include "misc.h"
-#include "ini.h"
 #include "tokenizer.h"
 
 void        usage(void);
