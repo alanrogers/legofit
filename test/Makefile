@@ -7,7 +7,7 @@ tests := xaddrparmap xbinary xbooma xboot xbranchtab xdafreader xdiffev \
   xdtnorm xerror xgene xgptree xhessian xjobqueue xlblndx \
   xmisc xmspreader xparam xparse xparstore xpointbuff xpopnode \
   xpopnodetab xrafreader xscrmreader xsimsched xstate xstrdblmap \
-  xstrdblqueue xstrint xstrparmap xtinyexpr xwraparound
+  xstrdblqueue xstrint xstrparmap xtinyexpr xtokenizer xwraparound
 
 CC := gcc
 
@@ -68,6 +68,7 @@ test : $(tests)
 	-./xstrint
 	-./xstrparmap
 	-./xtinyexpr
+	-./xtokenizer
 	-./xwraparound
 	@echo "ALL UNIT TESTS WERE COMPLETED."
 
@@ -110,6 +111,10 @@ xparam : $(XPARAM)
 XTINYEXPR := xtinyexpr.o tinyexpr.o misc.o
 xtinyexpr : $(XTINYEXPR)
 	$(CC) $(CFLAGS) -o $@ $(XTINYEXPR) $(lib)
+
+XTOKENIZER := xtokenizer.o tokenizer.o misc.o
+xtokenizer : $(XTOKENIZER)
+	$(CC) $(CFLAGS) -o $@ $(XTOKENIZER) $(lib)
 
 XHESSIAN := xhessian.o misc.o hessian.o
 xhessian : $(XHESSIAN)
