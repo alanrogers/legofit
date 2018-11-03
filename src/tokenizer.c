@@ -89,7 +89,8 @@ int Tokenizer_split(Tokenizer * self, char *buff, const char *sep) {
                     self->maxTokens, self->maxTokens+need);
             fprintf(stderr,"ptr=\"%s\"\n", ptr);
             self->maxTokens += need;
-            self->tokptr = realloc(self->tokptr, self->maxTokens);
+            self->tokptr = realloc(self->tokptr,
+                                   self->maxTokens * sizeof(self->tokptr[0]));
             if(self->tokptr == NULL)
                 DIE("bad realloc");
         }
