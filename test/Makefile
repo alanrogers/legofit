@@ -4,7 +4,7 @@ opt :=  -O0 -fno-inline-functions -DDEBUG
 prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
 tests := xaddrparmap xbinary xbooma xboot xbranchtab xdafreader xdiffev \
-  xdtnorm xerror xgene xgptree xhessian xjobqueue xlblndx \
+  xdtnorm xerror xgene xgetlinetok xgptree xhessian xjobqueue xlblndx \
   xmisc xmspreader xparam xparse xparstore xpointbuff xpopnode \
   xpopnodetab xrafreader xscrmreader xsimsched xstate xstrdblmap \
   xstrdblqueue xstrint xstrparmap xtinyexpr xtokenizer xwraparound
@@ -47,6 +47,7 @@ test : $(tests)
 	-./xdtnorm
 	-./xerror
 	-./xgene
+	-./xgetlinetok
 	-./xgptree
 	-./xhessian
 	-./xjobqueue
@@ -79,6 +80,10 @@ xbinary : $(XBINARY)
 XMISC := xmisc.o misc.o
 xmisc : $(XMISC)
 	$(CC) $(CFLAGS) -o $@ $(XMISC) $(lib)
+
+XGETLINETOK := xgetlinetok.o getlinetok.o misc.o tokenizer.o
+xgetlinetok : $(XGETLINETOK)
+	$(CC) $(CFLAGS) -o $@ $(XGETLINETOK) $(lib)
 
 XWRAPAROUND := xwraparound.o wraparound.o
 xwraparound : $(XWRAPAROUND)

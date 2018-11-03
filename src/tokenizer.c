@@ -26,7 +26,13 @@
  *
  * The memory allocated by Tokenizer_new is freed by Tokenizer_free.
  *
- * @copyright Copyright (c) 2014, Alan R. Rogers
+ * The argument to Tokenizer_new determines the initial size of an
+ * internal array of pointers to tokens. If Tokenizer_split is handed
+ * a string with more than this number of tokens, it will re-allocate
+ * the internal array. It is legal to initialize with
+ * Tokenizer_new(0).
+ *
+ * @copyright Copyright (c) 2014,2018 Alan R. Rogers
  * <rogers@anthro.utah.edu>. This file is released under the Internet
  * Systems Consortium License, which can be found in file "LICENSE".
  */
@@ -193,4 +199,8 @@ void Tokenizer_print(const Tokenizer * tkz, FILE * ofp) {
     for(i = 0; i < tkz->n; ++i)
         fprintf(ofp, " \"%s\"", tkz->tokptr[i]);
     putc('\n', ofp);
+}
+
+void Tokenizer_clear(Tokenizer *self) {
+    self->n = 0;
 }
