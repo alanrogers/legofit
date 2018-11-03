@@ -58,12 +58,9 @@ Tokenizer  *Tokenizer_new(int maxTokens) {
 /// Tokenizer destructor
 void Tokenizer_free(Tokenizer * self) {
     assert(self);
-    fprintf(stderr,"%s:%s:%d\n",__FILE__,__func__,__LINE__);
     if(self->tokptr)
         free(self->tokptr);
-    fprintf(stderr,"%s:%s:%d\n",__FILE__,__func__,__LINE__);
     free(self);
-    fprintf(stderr,"%s:%s:%d\n",__FILE__,__func__,__LINE__);
 }
 
 /**
@@ -84,10 +81,6 @@ int Tokenizer_split(Tokenizer * self, char *buff, const char *sep) {
         if(self->n == self->maxTokens) {
             // reallocate
             int need = 1 + strCountSetChunks(ptr, sep);
-            fprintf(stderr,"%s:%s:%d: incr maxTokens from %d to %d\n",
-                    __FILE__,__func__,__LINE__,
-                    self->maxTokens, self->maxTokens+need);
-            fprintf(stderr,"ptr=\"%s\"\n", ptr);
             self->maxTokens += need;
             self->tokptr = realloc(self->tokptr,
                                    self->maxTokens * sizeof(self->tokptr[0]));
