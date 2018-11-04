@@ -35,6 +35,7 @@ typedef struct StrDblMap StrDblMap;
 typedef struct StrInt StrInt;
 typedef struct StrParMap StrParMap;
 typedef struct Tokenizer Tokenizer;
+typedef struct UINTqueue UINTqueue;
 typedef struct DAFReader DAFReader;
 typedef struct RAFReader RAFReader;
 

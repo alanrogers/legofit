@@ -7,7 +7,8 @@ tests := xaddrparmap xbinary xbooma xboot xbranchtab xdafreader xdiffev \
   xdtnorm xerror xgene xgetlinetok xgptree xhessian xjobqueue xlblndx \
   xmisc xmspreader xparam xparse xparstore xpointbuff xpopnode \
   xpopnodetab xrafreader xscrmreader xsimsched xstate xstrdblmap \
-  xstrdblqueue xstrint xstrparmap xtinyexpr xtokenizer xwraparound
+  xstrdblqueue xstrint xstrparmap xtinyexpr xtokenizer xuintqueue \
+  xwraparound
 
 CC := gcc
 
@@ -70,6 +71,7 @@ test : $(tests)
 	-./xstrparmap
 	-./xtinyexpr
 	-./xtokenizer
+	-./xuintqueue
 	-./xwraparound
 	@echo "ALL UNIT TESTS WERE COMPLETED."
 
@@ -168,6 +170,10 @@ xmspreader.o : mspreader.c
 XMSPREADER := xmspreader.o misc.o tokenizer.o
 xmspreader : $(XMSPREADER)
 	$(CC) $(CFLAGS) -o $@ $(XMSPREADER) $(lib)
+
+XUINTQUEUE := xuintqueue.o uintqueue.o misc.o 
+xuintqueue : $(XUINTQUEUE)
+	$(CC) $(CFLAGS) -o $@ $(XUINTQUEUE) $(lib)
 
 xparse.o : parse.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/parse.c
