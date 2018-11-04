@@ -93,18 +93,9 @@ void        usage(void);
 void usage(void) {
     fprintf(stderr, "usage: ms2sim [options] [input_file_name]\n");
     fprintf(stderr, "   where options may include:\n");
-    tellopt("-t <x> or --maxTokens <x>", "maximum tokens per input line");
-    tellopt("-b <x> or --inBuffSize <x>", "size of input buffer");
     tellopt("-R <x> or --recombination <x>", "rate for adjacent nucleotides");
     tellopt("-h     or --help", "print this message");
 
-    fprintf(stderr, "  To figure out appropriate values for -t and -b,"
-            " execute the following at\n  the command line:\n\n"
-            "     grep positions ms.out | wc\n\n"
-            "  where \"ms.out\" is the ms output file.");
-    fprintf(stderr, " This command prints 3 numbers.\n"
-            "  Number of tokens must be as large as 2nd;"
-            " buffer size as large as the\n  3rd.");
     fprintf(stderr, " If no input file is given, ms2sim reads stdin.");
     fprintf(stderr, " ms2sim always writes\n  to standard output.\n");
 
@@ -112,18 +103,17 @@ void usage(void) {
 }
 
 int main(int argc, char **argv) {
-    long        maxtokens = 1000;
-    long        inBuffSize = 1000;
-    long        i, seq, site, ntokens;
+    long        maxtokens = 1<<8;
+    long        inBuffSize = 1<<9;
+    long        i, seq, site, ntokens, status;
     double      recombRate = 0.0;   /* rate for adjacent nucleotides */
-    double      twoN0 = 0.0;    /* pop size in epoch 0 */
     char       *ifname = NULL;
     FILE       *ifp = NULL;
     Tokenizer  *tkz = NULL;
     long        nseg, nseq, nnuc;
     long       *nucpos;         /* vector of nucleotide positions */
     double     *mappos;         /* vector of map positions (cM)   */
-    char       *buff, *buff2;
+    char       *buff=NULL, *buff2=NULL;
     int         optndx;
     time_t      currtime = time(NULL);
 
@@ -133,20 +123,8 @@ int main(int argc, char **argv) {
      */
     char       *m;
 
-    /* import definitions from initialization file */
-    Ini        *ini = Ini_new(INIFILE);
-
-    if(ini) {
-        Ini_setDbl(ini, "recombination", &recombRate, !MANDATORY);
-        twoN0 = Ini_twoN0(ini);
-        Ini_free(ini);
-        ini = NULL;
-    }
-
     static struct option myopts[] = {
         /* {char *name, int has_arg, int *flag, int val} */
-        {"maxTokens", required_argument, 0, 't'},
-        {"inBuffSize", required_argument, 0, 'b'},
         {"recombination", required_argument, 0, 'R'},
         {"help", no_argument, 0, 'h'},
         {NULL, 0, NULL, 0}
@@ -160,19 +138,13 @@ int main(int argc, char **argv) {
 
     /* flag arguments */
     for(;;) {
-        i = getopt_long(argc, argv, "t:b:", myopts, &optndx);
+        i = getopt_long(argc, argv, "R:h", myopts, &optndx);
         if(i == -1)
             break;
         switch (i) {
         case ':':
         case '?':
             usage();
-            break;
-        case 't':
-            maxtokens = strtol(optarg, NULL, 10);
-            break;
-        case 'b':
-            inBuffSize = strtol(optarg, NULL, 10);
             break;
         case 'R':
             recombRate = strtod(optarg, NULL);
@@ -195,9 +167,11 @@ int main(int argc, char **argv) {
     case 1:
         ifname = strdup(argv[optind]);
         ifp = fopen(ifname, "r");
-        if(ifp == NULL)
-            eprintf("ERR@%s:%d: couldn't open file \"%s\"\n",
+        if(ifp == NULL) {
+            fprintf(stderr, "%s:%d: couldn't open file \"%s\"\n",
                     __FILE__, __LINE__, ifname);
+            exit(EXIT_FAILURE);
+        }
         break;
     default:
         fprintf(stderr, "Only one input file is allowed\n");
@@ -208,27 +182,28 @@ int main(int argc, char **argv) {
     if(ifp == NULL)
         usage();
 
-    /* allocate memory */
-    tkz = Tokenizer_new(maxtokens);
-    buff = malloc(inBuffSize * sizeof(buff[0]));
-    checkmem(buff, __FILE__, __LINE__);
+    // allocate memory
+    GetLineTok *glt = GetLineTok(inBuffSize, maxtokens, ifp);
+    CHECKMEM(glt);
 
-    do {
-        if(NULL == fgets(buff, inBuffSize, ifp))
-            eprintf("ERR@%s:%d: Input file \"%s\" is empty\n",
-                    __FILE__, __LINE__, ifname);
-    } while(strempty(buff) || strcomment(buff));
+    status = GetLineTok_next(glt, " \t\n", " \t\n");
+    switch(status) {
+    case EOF:
+        DIE("Can't read input file");
+        break;
+    case ENOMEM:
+        DIE("out of memory");
+        break;
+    default:
+        DIE("this shouldn't happen");
+        break;
+    }
 
-    /* First line of input has MS command line */
-    if(!strchr(buff, '\n') && !feof(ifp))
-        eprintf("ERR@%s:%d: input buffer overflow."
-                " Curr buff size: inBuffSize=%d\n",
-                __FILE__, __LINE__, inBuffSize);
-    Tokenizer_split(tkz, buff, " \t\n");
-    ntokens = Tokenizer_strip(tkz, " \t\n");
+    // First line of input has MS command line
+    ntokens = GetLineTok_ntokens(glt);
 
-    if(ntokens < 1 || strcmp(Tokenizer_token(tkz, 0), "ms") != 0) {
-        fprintf(stderr, "1st line looks wrong:\n ");
+    if(ntokens < 1 || strcmp(GetLineTok_token(glt, 0), "ms") != 0) {
+        fprintf(stderr, "1st line looks wrong:\n");
         int         truncated = 0;
 
         if(ntokens > 10) {
@@ -236,122 +211,106 @@ int main(int argc, char **argv) {
             ntokens = 10;
         }
         for(i = 0; i < ntokens; ++i)
-            fprintf(stderr, " %s", Tokenizer_token(tkz, i));
+            fprintf(stderr, " %s", GetLineTok_token(glt, i));
         if(truncated)
             fprintf(stderr, " <%d more tokens>", truncated);
         putchar('\n');
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
-    printf("# %-12s =", "sim cmd");
+    printf("# %-12s =", "ms cmd");
     for(i = 0; i < ntokens; ++i)
-        printf(" %s", Tokenizer_token(tkz, (int) i));
+        printf(" %s", GetLineTok_token(glt, (int) i));
     putchar('\n');
     fflush(stdout);
 
-    i = Tokenizer_find(tkz, "-r");
+    i = GetLineTok_find(glt, "-r");
     if(i < ntokens) {
         double      fourNcMax = 0.0;
 
         ++i;
         if(i >= ntokens)
-            eprintf("ERR@%s:%d: missing argument to -r in ms command line",
-                    __FILE__, __LINE__);
-        fourNcMax = strtod(Tokenizer_token(tkz, (int) i), NULL);
+            DIE("missing argument to -r in ms command line");
+        fourNcMax = strtod(GetLineTok_token(glt, (int) i), NULL);
 
         ++i;
         if(i >= ntokens)
-            eprintf("ERR@%s:%d: missing argument to -r in ms command line",
-                    __FILE__, __LINE__);
-        nnuc = strtol(Tokenizer_token(tkz, (int) i), NULL, 10);
+            DIE("missing argument to -r in ms command line");
+        nnuc = strtol(GetLineTok_token(glt, (int) i), NULL, 10);
+    } else
+        DIE("-r absent from ms command line");
 
-        /* Make sure recombination rate makes sense */
-        if(twoN0 > 0.0) {
-            double      fourNcMaxExpected =
-                recombRate * twoN0 * 2 * (nnuc - 1);
-            double      err = fabs(fourNcMax - fourNcMaxExpected) / fourNcMax;
-
-            if(err > 1e-4) {
-                eprintf("ERR@%s:%d: fourNcMax=%lg; should be %lg; relerr=%le",
-                        __FILE__, __LINE__,
-                        fourNcMax, fourNcMaxExpected, err);
-                exit(1);
-            }
-        }
-    } else {
-        fprintf(stderr, "ERR: -r absent from ms command line\n");
-        exit(EXIT_FAILURE);
-    }
-
-    nseq = strtol(Tokenizer_token(tkz, 1), NULL, 10);
+    nseq = strtol(GetLineTok_token(glt, 1), NULL, 10);
     nseg = -1;
 
-    /* read input through nseg assignment */
+    // read input through nseg assignment
     while(1) {
-
-        if(NULL == fgets(buff, inBuffSize, ifp)) {
-            fprintf(stderr, "Error: segsites not found in input\n");
-            exit(1);
+        status = GetLineTok_next(glt, " \t\n", " \t\n");
+        switch(status) {
+        case EOF:
+            DIE("segsites not found in input");
+            break;
+        case ENOMEM:
+            DIE("out of memory");
+            break;
+        default:
+            DIE("this shouldn't happen");
+            break;
         }
 
-        if(!strchr(buff, '\n') && !feof(ifp))
-            eprintf("ERR@%s:%d: input buffer overflow."
-                    " buff size: %d\n", __FILE__, __LINE__, inBuffSize);
-
-        Tokenizer_split(tkz, buff, ":");
-        ntokens = Tokenizer_strip(tkz, " \t\n");
+        ntokens = GetLineTok_ntokens(glt);
         if(ntokens == 0)
             continue;
 
         if(strcmp(Tokenizer_token(tkz, 0), "segsites") == 0) {
-            /* got segsites: assign and break out of loop */
+            // got segsites: assign and break out of loop
             nseg = strtol(Tokenizer_token(tkz, 1), NULL, 10);
             break;
         }
     }
-    if(nseg <= 0)
-        eprintf("ERR@%s:%d: Number of segregating sites is %ld",
+    if(nseg <= 0) {
+        fprintf(stderr, "%s:%d: Number of segregating sites is %ld",
                 __FILE__, __LINE__, nseg);
-    if(nseg > maxtokens)
-        eprintf("ERR@%s:%d: The data have %ld segregating sites,"
-                " but I can accomodate only %ld.\n"
-                "Rerun using \"--maxTokens %ld\".\n",
-                __FILE__, __LINE__, nseg, maxtokens, nseg + 1);
-
-    if(NULL == fgets(buff, inBuffSize, ifp)) {
-        fprintf(stderr, "Error: positions not found in input\n");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
-    if(!strchr(buff, '\n') && !feof(ifp))
-        eprintf("ERR@%s:%d: input buffer overflow."
-                " buff size: %d", __FILE__, __LINE__, inBuffSize);
+    status = GetLineTok_next(glt, ":", " \t\n");
+    switch(status) {
+    case EOF:
+        DIE("positions not found in input");
+        break;
+    case ENOMEM:
+        DIE("out of memory");
+        break;
+    default:
+        DIE("this shouldn't happen");
+        break;
+    }
 
-    Tokenizer_split(tkz, buff, ":");
-    ntokens = Tokenizer_strip(tkz, " \t\n");
+    ntokens = GetLineTok_ntokens(glt);
     if(ntokens != 2)
-        eprintf("ERR@%s:%d: positions not found in input",
-                __FILE__, __LINE__);
+        DIE("positions not found in input");
 
-    buff2 = strdup(Tokenizer_token(tkz, 1));
+    Tokenizer *tkz = Tokenizer_new(0);
+    buff2 = strdup(GetLineTok_token(glt, 1));
     Tokenizer_split(tkz, buff2, " \t");
     ntokens = Tokenizer_strip(tkz, " \t");
     if(ntokens != nseg) {
         fflush(stdout);
-        fprintf(stderr, "@%s:%d:Parsing positions: ntokens=%ld != nseg=%ld\n",
+        fprintf(stderr, "%s:%d:Parsing positions: ntokens=%ld != nseg=%ld\n",
                 __FILE__, __LINE__, ntokens, nseg);
         Tokenizer_printSummary(tkz, stderr);
         exit(EXIT_FAILURE);
     }
 
     nucpos = malloc(nseg * sizeof(nucpos[0]));
-    checkmem(nucpos, __FILE__, __LINE__);
+    CHECKMEM(nucpos);
 
     mappos = malloc(nseg * sizeof(mappos[0]));
-    checkmem(mappos, __FILE__, __LINE__);
+    CHECKMEM(mappos);
 
     for(i = 0; i < ntokens; ++i) {
-        double      pos = strtod(Tokenizer_token(tkz, (int) i), 0);
+        double pos = strtod(Tokenizer_token(tkz, (int) i), 0);
 
         pos *= nnuc;            /* proportion of sites --> num of sites */
         mappos[i] = pos * recombRate * 0.01;
@@ -366,24 +325,28 @@ int main(int argc, char **argv) {
     printf("# %-12s = %d\n", "ploidy", 1);
 
     m = malloc(nseq * nseg * sizeof(m[0]));
-    checkmem(m, __FILE__, __LINE__);
+    CHECKMEM(m);
 
-    /* Read data, putting values into array "m" */
+    // Read data, putting values into array "m"
+    buff = malloc((100 + nseg) * sizeof(buff[0]));
+    CHECKMEM(buff);
     seq = 0;
     while(NULL != fgets(buff, inBuffSize, ifp)) {
 
-        if(!strchr(buff, '\n') && !feof(ifp))
-            eprintf("ERR@%s:%d: input buffer overflow."
+        if(!strchr(buff, '\n') && !feof(ifp)) {
+            fprintf(stderr, "%s:%d: input buffer overflow."
                     " Curr buff size: inBuffSize=%d\n",
                     __FILE__, __LINE__, inBuffSize);
+            exit(EXIT_FAILURE);
+        }
 
-        /* make sure input line has right number of sites */
+        // make sure input line has right number of sites
         i = strlen(buff);
         if(i == 0)
             continue;
 
         if(seq >= nseq) {
-            printf("ERR@%s:%d: seq=%ld >= nseq=%ld",
+            fprintf(stderr,"%s:%d: seq=%ld >= nseq=%ld",
                    __FILE__, __LINE__, seq, nseq);
             exit(EXIT_FAILURE);
         }
@@ -392,15 +355,18 @@ int main(int argc, char **argv) {
             --i;
             buff[i] = '\0';
         }
-        if(i != nseg)
-            eprintf("ERR@%s:%d input line has %ld chars; should have %d\n",
+        if(i != nseg) {
+            fprintf(stderr,
+                    "%s:%d input line has %ld chars; should have %d\n",
                     __FILE__, __LINE__, i, nseg);
+            exit(EXIT_FAILURE);
+        }
         memcpy(m + nseg * seq, buff, nseg * sizeof(m[0]));
         seq += 1;
     }
     assert(seq == nseq);
 
-    /* Output loop */
+    // Output loop
     printf("#%9s %10s %14s %7s %s\n", "snp_id", "nucpos", "mappos",
            "alleles", "genotypes");
     for(site = 0; site < nseg; ++site) {
@@ -417,13 +383,14 @@ int main(int argc, char **argv) {
 
     fclose(ifp);
     Tokenizer_free(tkz);
+    GetLineTok_free(glt);
     if(ifname)
         free(ifname);
     free(nucpos);
     free(mappos);
     free(buff);
-    free(m);
     free(buff2);
+    free(m);
 
     return 0;
 }
