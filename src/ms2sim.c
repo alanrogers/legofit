@@ -74,6 +74,9 @@
  * <rogers@anthro.utah.edu>. This file is released under the Internet
  * Systems Consortium License, which can be found in file "LICENSE".
  */
+#include "misc.h"
+#include "tokenizer.h"
+#include "uintqueue.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -82,10 +85,50 @@
 #include <getopt.h>
 #include <assert.h>
 #include <math.h>
-#include "misc.h"
-#include "tokenizer.h"
 
-void        usage(void);
+typedef struct MSSample MSSample;
+
+struct MSSample {
+    double age;
+    int nsamp;    // number of haploid samples
+    MSSample *next;
+};
+
+void      usage(void);
+unsigned *countSamples(Tokenizer *tkz, int *sampleDim);
+MSSample *MSSample_new(double age, int nsamp);
+int       MSSample_compare(MSSample *left, MSSample *right);
+MSSample *MSSample_insert(MSSample *node, MSSample *new);
+
+MSSample *MSSample_new(double age, int position, int nsamp) {
+    MSSample *self = malloc(sizeof(MSSample));
+    CHECKMEM(self);
+    memset(self, 0, sizeof(MSSample));
+    return self;
+}
+
+// Sort first by age then by position.
+int MSSample_compare(MSSample *left, MSSample *right) {
+    if(left->age > right->age)
+        return 1;
+    if(left->age < right->age)
+        return -1;
+    return 0;
+}
+
+/// Sort by increasing age. Within age categories, nodes that are
+/// inserted later sort as though they were older.
+MSSample *MSSample_insert(MSSample *node, MSSample *new) {
+    if(node == NULL)
+        return new;
+    int cmp = MSSample_compare(new, node);
+    if(cmp >= 0) {
+        node->next = MSSample_insert(node->next, new);
+        return node;
+    }
+    new->next = node;
+    return new;
+}
 
 /**
  * Parse output of MS, produce gtp format, the input for eld.
@@ -100,6 +143,146 @@ void usage(void) {
     fprintf(stderr, " ms2sim always writes\n  to standard output.\n");
 
     exit(EXIT_FAILURE);
+}
+
+// On input, glt should point to a tokenized string representing the
+// ms command line, and nsamples should point to an int.
+//
+// The function returns a newly-allocated array of ints, whose dimension
+// is *sampleDim, the number of populations specified on the ms command line.
+// The i'th entry in this array is the haploid sample size of population i.
+//
+// On error, the function returns NULL.
+unsigned *countSamples(GetLineTok *glt, int *sampleDim) {
+    /*
+      Here is the summary, from Hudson's msdoc.pdf, of the order in
+      which haplotypes are printed in ms output: "The ancient DNA
+      haplotypes are output after the haplotypes sampled in the
+      present. nsam parameter is the number of chromosomes sampled at
+      the present time. If multiple -eA switches are employed the
+      ancient DNA haplotypes are output after the present day
+      haplotypes in order from most recent to most ancient. If ancient
+      DNA is sampled at the same time from two or more different
+      subpopulations, the haplotypes are output in order of the -eA
+      switches on the command line."
+
+      In other words, samples are sorted first by age (youngest first)
+      and then by the order in which they appear on the command
+      line. The modern sample sizes are specified as arguments to -I
+      and the ancient ones as arguments to -eA.
+    */
+
+    if(strcmp("ms", GetLineTok_token(glt, 0)) != 0) {
+        fprintf(stderr,"%s:%d: input file is not ms output\n",
+                __FILE__,__LINE__);
+        return NULL;
+    }
+
+    int i, j, k;
+    long h;
+    char *token, *end;
+    UINTqueue **queue=NULL;  // array of UINTqueue objects, one per population
+    int ntokens = GetLineTok_ntokens(glt);
+    int npops=0;
+
+    // Read through tokens, looking for -I and -eA. Use these arguments
+    // to set npops and array of queues.
+    for(i=1; i < ntokens; ++i) {
+        token = GetLineTok_token(glt, i);
+        if(strcmp("-I", token) == 0) {
+            if(npops == 0) {
+                // count populations and allocate nsamples
+                assert(queue == NULL);
+                for(j=i+2; j<ntokens; ++j) {
+                    token = GetLineTok_token(glt, j);
+                    h = strtol(token, &end, 10);
+                    if(end==token || h < 0) // token isn't a nonnegative int
+                        break;
+                    else           // token is a nonnegative int
+                        ++npops;
+                }
+                if(npops == 0) {
+                    fprintf(stderr,"%s:%d: npops is zero\n",
+                            __FILE__,__LINE__);
+                    goto fail:
+                }
+                queue = malloc(npops * sizeof(queue[0]));
+                CHECKMEM(queue);
+                memset(queue, 0, npops * sizeof(queue[0]));
+            }
+            // increment queues
+            assert(npops > 0);
+            assert(queue != NULL);
+            for(j=0; j < npops; ++j) {
+                token = GetLineTok_token(glt, i+2+j);
+                h = strtol(token, &end, 10);
+                if(end == token || h < 0) {
+                    fprintf(stderr,"%s:%d: read \"%s\" when"
+                            " expecting a sample size\n",
+                            __FILE__, __LINE__, token);
+                    goto fail;
+                }
+                if(h>0)
+                    queue[j] = UINTqueue_push(queue[j], (unsigned) h);
+            }
+            // advance to last argument of -I or -eI
+            i += 1 + npops;
+        }else if(strcmp("-eA", token) == 0) {
+            token = GetLineTok_token(glt, i+2); // index of pop
+            j = -1 + strtod(token, &end, 10);
+            if(end == token || j < 0) {
+                fprintf(stderr,"%s:%d: illegal population index %d\n",
+                        __FILE__,__LINE__, j);
+                goto fail;
+            }
+            if(j >= npops) {
+                fprintf(stderr,"%s:%d: population index (%d) >="
+                        " npops (%d)\n",
+                        __FILE__,__LINE__, j, npops);
+                goto fail;
+            }
+            token = GetLineTok_token(glt, i+3); // index of pop
+            h = strtod(token, &end, 10);
+            if(end == token || h < 0) {
+                fprintf(stderr,"%s:%d: read \"%s\" when"
+                        " expecting a sample size\n",
+                        __FILE__, __LINE__, token);
+                goto fail;
+            }
+        }
+    }
+
+    *sampleDim=0;
+    for(j=0; j < npops; ++j)
+        *sampleDim += UINTqueue_length(queue[j]);
+    assert(*sampleDim > 0);
+    unsigned *nsamples = malloc(*sampleDim * sizeof(nsamples[0]));
+    CHECKMEM(nsamples);
+    for(i=j=0; i < npops; ++i) {
+        unsigned n;
+        while(queue[i]) {
+            queue[i] = UINTqueue_pop(queue[i], &n);
+            nsamples[j++] = n;
+        }
+    }
+    assert(j == *sampleDim);
+#ifndef NDEBUG
+    for(i=0; i < npops; ++i)
+        assert(queue[i] == NULL);
+#endif
+    free(queue);
+
+    return nsamples;
+
+ fail:
+    if(queue != NULL) {
+        for(k=0; k<npops; ++k) {
+            if(queue[k] != NULL)
+                queue[k] = UINTqueue_free(queue[k]);
+        }
+        free(queue);
+    }
+    return NULL;
 }
 
 int main(int argc, char **argv) {
