@@ -130,9 +130,7 @@ MSSample *MSSample_insert(MSSample *node, MSSample *new) {
     return new;
 }
 
-/**
- * Parse output of MS, produce gtp format, the input for eld.
- */
+/// Parse output of ms
 void usage(void) {
     fprintf(stderr, "usage: ms2sim [options] [input_file_name]\n");
     fprintf(stderr, "   where options may include:\n");
