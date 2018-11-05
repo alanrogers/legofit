@@ -4,10 +4,11 @@ opt :=  -O0 -fno-inline-functions -DDEBUG
 prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
 tests := xaddrparmap xbinary xbooma xboot xbranchtab xdafreader xdiffev \
-  xdtnorm xerror xgene xgptree xhessian xjobqueue xlblndx \
+  xdtnorm xerror xgene xgetlinetok xgptree xhessian xjobqueue xlblndx \
   xmisc xmspreader xparam xparse xparstore xpointbuff xpopnode \
   xpopnodetab xrafreader xscrmreader xsimsched xstate xstrdblmap \
-  xstrdblqueue xstrint xstrparmap xtinyexpr xtokenizer xwraparound
+  xstrdblqueue xstrint xstrparmap xtinyexpr xtokenizer xuintqueue \
+  xwraparound
 
 CC := gcc
 
@@ -47,6 +48,7 @@ test : $(tests)
 	-./xdtnorm
 	-./xerror
 	-./xgene
+	-./xgetlinetok
 	-./xgptree
 	-./xhessian
 	-./xjobqueue
@@ -69,6 +71,7 @@ test : $(tests)
 	-./xstrparmap
 	-./xtinyexpr
 	-./xtokenizer
+	-./xuintqueue
 	-./xwraparound
 	@echo "ALL UNIT TESTS WERE COMPLETED."
 
@@ -79,6 +82,10 @@ xbinary : $(XBINARY)
 XMISC := xmisc.o misc.o
 xmisc : $(XMISC)
 	$(CC) $(CFLAGS) -o $@ $(XMISC) $(lib)
+
+XGETLINETOK := xgetlinetok.o getlinetok.o misc.o tokenizer.o
+xgetlinetok : $(XGETLINETOK)
+	$(CC) $(CFLAGS) -o $@ $(XGETLINETOK) $(lib)
 
 XWRAPAROUND := xwraparound.o wraparound.o
 xwraparound : $(XWRAPAROUND)
@@ -163,6 +170,10 @@ xmspreader.o : mspreader.c
 XMSPREADER := xmspreader.o misc.o tokenizer.o
 xmspreader : $(XMSPREADER)
 	$(CC) $(CFLAGS) -o $@ $(XMSPREADER) $(lib)
+
+XUINTQUEUE := xuintqueue.o uintqueue.o misc.o 
+xuintqueue : $(XUINTQUEUE)
+	$(CC) $(CFLAGS) -o $@ $(XUINTQUEUE) $(lib)
 
 xparse.o : parse.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/parse.c

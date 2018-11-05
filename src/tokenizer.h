@@ -32,6 +32,7 @@ struct Tokenizer {
 };
 
 Tokenizer  *Tokenizer_new(int maxtok);
+void        Tokenizer_clear(Tokenizer *self);
 void        Tokenizer_free(Tokenizer * t);
 int         Tokenizer_split(Tokenizer * t, char *buff, const char *sep);
 char       *Tokenizer_token(Tokenizer * t, int index);

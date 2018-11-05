@@ -95,7 +95,7 @@ raf2daf : $(RAF2DAF)
 	$(CC) $(CFLAGS) -o $@ $(RAF2DAF) $(lib)
 
 SCRMPAT := scrmpat.o misc.o binary.o lblndx.o scrmreader.o \
-  tokenizer.o boot.o error.o
+  tokenizer.o boot.o error.o uintqueue.o
 scrmpat : $(SCRMPAT)
 	$(CC) $(CFLAGS) -o $@ $(SCRMPAT) $(lib)
 

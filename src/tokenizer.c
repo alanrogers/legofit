@@ -26,7 +26,13 @@
  *
  * The memory allocated by Tokenizer_new is freed by Tokenizer_free.
  *
- * @copyright Copyright (c) 2014, Alan R. Rogers
+ * The argument to Tokenizer_new determines the initial size of an
+ * internal array of pointers to tokens. If Tokenizer_split is handed
+ * a string with more than this number of tokens, it will re-allocate
+ * the internal array. It is legal to initialize with
+ * Tokenizer_new(0).
+ *
+ * @copyright Copyright (c) 2014,2018 Alan R. Rogers
  * <rogers@anthro.utah.edu>. This file is released under the Internet
  * Systems Consortium License, which can be found in file "LICENSE".
  */
@@ -58,12 +64,9 @@ Tokenizer  *Tokenizer_new(int maxTokens) {
 /// Tokenizer destructor
 void Tokenizer_free(Tokenizer * self) {
     assert(self);
-    fprintf(stderr,"%s:%s:%d\n",__FILE__,__func__,__LINE__);
     if(self->tokptr)
         free(self->tokptr);
-    fprintf(stderr,"%s:%s:%d\n",__FILE__,__func__,__LINE__);
     free(self);
-    fprintf(stderr,"%s:%s:%d\n",__FILE__,__func__,__LINE__);
 }
 
 /**
@@ -84,10 +87,6 @@ int Tokenizer_split(Tokenizer * self, char *buff, const char *sep) {
         if(self->n == self->maxTokens) {
             // reallocate
             int need = 1 + strCountSetChunks(ptr, sep);
-            fprintf(stderr,"%s:%s:%d: incr maxTokens from %d to %d\n",
-                    __FILE__,__func__,__LINE__,
-                    self->maxTokens, self->maxTokens+need);
-            fprintf(stderr,"ptr=\"%s\"\n", ptr);
             self->maxTokens += need;
             self->tokptr = realloc(self->tokptr,
                                    self->maxTokens * sizeof(self->tokptr[0]));
@@ -200,4 +199,8 @@ void Tokenizer_print(const Tokenizer * tkz, FILE * ofp) {
     for(i = 0; i < tkz->n; ++i)
         fprintf(ofp, " \"%s\"", tkz->tokptr[i]);
     putc('\n', ofp);
+}
+
+void Tokenizer_clear(Tokenizer *self) {
+    self->n = 0;
 }
