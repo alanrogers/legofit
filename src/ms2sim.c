@@ -90,30 +90,47 @@ typedef struct MSSample MSSample;
 
 struct MSSample {
     double age;
+    int pop;      // population
     int nsamp;    // number of haploid samples
     MSSample *next;
 };
 
 void      usage(void);
 unsigned *countSamples(Tokenizer *tkz, int *sampleDim);
-MSSample *MSSample_new(double age, int nsamp);
+MSSample *MSSample_new(double age, int pop, int nsamp);
 int       MSSample_compare(MSSample *left, MSSample *right);
 MSSample *MSSample_insert(MSSample *node, MSSample *new);
+MSSample *MSSample_collapse(MSSample *node);
+int       MSSample_length(MSSample *self);
 
-MSSample *MSSample_new(double age, int position, int nsamp) {
+MSSample *MSSample_new(double age, int pop, int nsamp) {
     MSSample *self = malloc(sizeof(MSSample));
     CHECKMEM(self);
     memset(self, 0, sizeof(MSSample));
     return self;
 }
 
-// Sort first by age then by position.
+void MSSample_free(MSSample *self) {
+    if(self == NULL)
+        return;
+    MSSample_free(self->next);
+    free(self);
+}
+
+// Sort by age.
 int MSSample_compare(MSSample *left, MSSample *right) {
     if(left->age > right->age)
         return 1;
     if(left->age < right->age)
         return -1;
+    // ages equal
     return 0;
+}
+
+int MSSample_length(MSSample *self) {
+    if(self == NULL)
+        return 0;
+    return 1 + MSSample_length(self->next);
 }
 
 /// Sort by increasing age. Within age categories, nodes that are
@@ -128,6 +145,22 @@ MSSample *MSSample_insert(MSSample *node, MSSample *new) {
     }
     new->next = node;
     return new;
+}
+
+/// Collapse adjacent nodes with the same age and population.
+MSSample *MSSample_collapse(MSSample *node) {
+    if(node == NULL)
+        return NULL;
+    while(node->next
+          && node->age == node->next->age
+          && node->pop == node->next->pop) {
+        node->nsamp += node->next->nsamp;
+        MSSample *tmp = node->next;
+        node->next = node->next->next;
+        free(tmp);
+    }
+    node->next = MSSample_collapse(node->next);
+    return node;
 }
 
 /// Parse output of ms
@@ -176,110 +209,90 @@ unsigned *countSamples(GetLineTok *glt, int *sampleDim) {
         return NULL;
     }
 
-    int i, j, k;
-    long h;
+    int i, j, k, npops=0, h;
     char *token, *end;
-    UINTqueue **queue=NULL;  // array of UINTqueue objects, one per population
+    MSSample *mss = NULL;
     int ntokens = GetLineTok_ntokens(glt);
-    int npops=0;
 
     // Read through tokens, looking for -I and -eA. Use these arguments
-    // to set npops and array of queues.
-    for(i=1; i < ntokens; ++i) {
+    // to set npops and push sample sizes into mss.
+    i = 1;
+    while(i < ntokens) {
         token = GetLineTok_token(glt, i);
         if(strcmp("-I", token) == 0) {
-            if(npops == 0) {
-                // count populations and allocate nsamples
-                assert(queue == NULL);
-                for(j=i+2; j<ntokens; ++j) {
-                    token = GetLineTok_token(glt, j);
-                    h = strtol(token, &end, 10);
-                    if(end==token || h < 0) // token isn't a nonnegative int
-                        break;
-                    else           // token is a nonnegative int
-                        ++npops;
-                }
-                if(npops == 0) {
-                    fprintf(stderr,"%s:%d: npops is zero\n",
-                            __FILE__,__LINE__);
-                    goto fail:
-                }
-                queue = malloc(npops * sizeof(queue[0]));
-                CHECKMEM(queue);
-                memset(queue, 0, npops * sizeof(queue[0]));
+            assert(npops == 0);
+            assert(mss == NULL);
+            token = GetLineTok_token(glt, i+1);
+            npops = strtol(token, &end, 10);
+            if(end==token || npops <= 0) {
+                fprintf(stderr,"%s:%d: illegal number of populations: %s\n",
+                        __FILE__,__LINE__, token);
+                goto fail;
             }
-            // increment queues
-            assert(npops > 0);
-            assert(queue != NULL);
-            for(j=0; j < npops; ++j) {
-                token = GetLineTok_token(glt, i+2+j);
+            for(j=0; j<npops; ++j) {
+                token = GetLineTok_token(glt, i+j+2);
                 h = strtol(token, &end, 10);
-                if(end == token || h < 0) {
-                    fprintf(stderr,"%s:%d: read \"%s\" when"
-                            " expecting a sample size\n",
-                            __FILE__, __LINE__, token);
+                if(end==token || h < 0) {
+                    fprintf(stderr,"%s:%d: illegal number of populations: %s\n",
+                            __FILE__,__LINE__, token);
                     goto fail;
                 }
-                if(h>0)
-                    queue[j] = UINTqueue_push(queue[j], (unsigned) h);
+                // time=0.0, pop=j+1, sample size = h
+                MSSample *new = MSSample_new(0.0, j+1, h);
+                mss = MSSample_insert(mss, new);
             }
-            // advance to last argument of -I or -eI
-            i += 1 + npops;
+            i += npops + 2;
+            continue;
         }else if(strcmp("-eA", token) == 0) {
-            token = GetLineTok_token(glt, i+2); // index of pop
-            j = -1 + strtod(token, &end, 10);
-            if(end == token || j < 0) {
-                fprintf(stderr,"%s:%d: illegal population index %d\n",
-                        __FILE__,__LINE__, j);
+            token = GetLineTok_token(glt, i+1);
+            double t = strtod(token, &end);
+            if(end==token || t < 0.0) {
+                fprintf(stderr,"%s:%d: illegal time: %s\n",
+                        __FILE__,__LINE__, token);
                 goto fail;
             }
-            if(j >= npops) {
-                fprintf(stderr,"%s:%d: population index (%d) >="
-                        " npops (%d)\n",
-                        __FILE__,__LINE__, j, npops);
+            token = GetLineTok_token(glt, i+2);
+            int pop = strtol(token, &end, 10);
+            if(end==token || pop < 1) {
+                fprintf(stderr,"%s:%d: illegal population: %s\n",
+                        __FILE__,__LINE__, token);
                 goto fail;
             }
-            token = GetLineTok_token(glt, i+3); // index of pop
-            h = strtod(token, &end, 10);
-            if(end == token || h < 0) {
-                fprintf(stderr,"%s:%d: read \"%s\" when"
-                        " expecting a sample size\n",
-                        __FILE__, __LINE__, token);
+            token = GetLineTok_token(glt, i+3);
+            h = strtol(token, &end, 10);
+            if(end==token || h <= 0) {
+                fprintf(stderr,"%s:%d: illegal sample size: %s\n",
+                        __FILE__,__LINE__, token);
                 goto fail;
             }
+            // time=t, pop=pop, sample size = h
+            MSSample *new = MSSample_new(t, pop, h);
+            mss = MSSample_insert(mss, new);
+            i += 4;
+            continue;
         }
+        i += 1;
     }
 
-    *sampleDim=0;
-    for(j=0; j < npops; ++j)
-        *sampleDim += UINTqueue_length(queue[j]);
-    assert(*sampleDim > 0);
-    unsigned *nsamples = malloc(*sampleDim * sizeof(nsamples[0]));
+    mss = MSSample_collapse(mss);
+    npops = MSSample_length(mss);
+
+    *sampleDim = npops;
+    unsigned *nsamples = malloc(npops * sizeof(nsamples[0]));
     CHECKMEM(nsamples);
-    for(i=j=0; i < npops; ++i) {
-        unsigned n;
-        while(queue[i]) {
-            queue[i] = UINTqueue_pop(queue[i], &n);
-            nsamples[j++] = n;
-        }
+    MSSample *node = mss;
+
+    for(i=0; i < npops; ++i) {
+        assert(node);
+        nsamples[i] = node->nsamp;
+        node = node->next;
     }
-    assert(j == *sampleDim);
-#ifndef NDEBUG
-    for(i=0; i < npops; ++i)
-        assert(queue[i] == NULL);
-#endif
-    free(queue);
+    MSSample_free(mss);
 
     return nsamples;
 
  fail:
-    if(queue != NULL) {
-        for(k=0; k<npops; ++k) {
-            if(queue[k] != NULL)
-                queue[k] = UINTqueue_free(queue[k]);
-        }
-        free(queue);
-    }
+    MSSample_free(mss);
     return NULL;
 }
 

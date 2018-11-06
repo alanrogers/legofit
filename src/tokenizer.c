@@ -104,14 +104,13 @@ int Tokenizer_split(Tokenizer * self, char *buff, const char *sep) {
 /// Return pointer to token with given index
 char       *Tokenizer_token(Tokenizer * t, int ndx) {
     assert(t);
-    if(t->n == 0) {
-        eprintf("ERR@%s:%d in Tokenizer_token:"
-                " tokenizer has 0 tokens\n", __FILE__, __LINE__);
+    if(t->n == 0) 
+        DIE("tokenizer has 0 tokens");
+    if(ndx >= t->n) {
+        fprintf(stderr, "%s:%s:%d: ndx=%d, but there are only %d tokens.\n",
+                __FILE__, __func__, __LINE__, ndx, t->n);
+        exit(EXIT_FAILURE);
     }
-    if(ndx >= t->n)
-        eprintf("ERR@%s:%d in Tokenizer_token:"
-                "\n   ndx=%d, which is too large;"
-                " There are only %d tokens.", __FILE__, __LINE__, ndx, t->n);
     return t->tokptr[ndx];
 }
 
