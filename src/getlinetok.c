@@ -26,6 +26,12 @@ static int strempty(const char *s) {
     return false;
 }
 
+void GetLineTok_free(GetLineTok *self) {
+    free(self->buff);
+    Tokenizer_free(self->tkz);
+    free(self);
+}
+
 GetLineTok *GetLineTok_new(size_t buffsize, int maxtokens, FILE *fp) {
     if(buffsize < 2)
         DIE("buffsize argument must be >1");

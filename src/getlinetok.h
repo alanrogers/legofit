@@ -10,5 +10,6 @@ int GetLineTok_next(GetLineTok *self, const char *sep,
 int GetLineTok_ntokens(GetLineTok *self);
 char *GetLineTok_token(GetLineTok * self, int index);
 void GetLineTok_print(GetLineTok *self, FILE *ofp);
+void GetLineTok_free(GetLineTok *self);
 
 #endif

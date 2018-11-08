@@ -78,6 +78,7 @@ int main(int argc, char **argv) {
     assert(EOF == GetLineTok_next(glt, sep, extraneous));
     assert(0 == GetLineTok_ntokens(glt));
 
+    GetLineTok_free(glt);
     fclose(fp);
     remove(fname);
     unitTstResult("GetLineTok", "OK");
