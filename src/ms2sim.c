@@ -303,15 +303,8 @@ int main(int argc, char **argv) {
     long        nseg, nseq;
     long       *nucpos;         /* vector of nucleotide positions */
     double     *mappos;         /* vector of map positions (cM)   */
-    char       *buff=NULL, *buff2=NULL;
     int         optndx;
     time_t      currtime = time(NULL);
-
-    /*
-     * A matrix of dimension nseq X nseg. To access element for
-     * given seq and site: m[nseg*seq + site];
-     */
-    char       *m;
 
     static struct option myopts[] = {
         /* {char *name, int has_arg, int *flag, int val} */
@@ -374,6 +367,11 @@ int main(int argc, char **argv) {
         LblNdx_addSamples(&lndx, 1, poplbl[i]);
     }
 
+    printf("npops = %d\n", n);
+    printf("pop sampsize\n");
+    for(i=0; i < n; ++i)
+        printf("%s %u\n", poplbl[i], nsamples[i]);
+
     // allocate memory
     GetLineTok *glt = GetLineTok(inBuffSize, maxtokens, stdin);
     CHECKMEM(glt);
@@ -405,21 +403,50 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
-    printf("# %-12s =", "ms cmd");
-    for(i = 0; i < ntokens; ++i)
-        printf(" %s", GetLineTok_token(glt, (int) i));
-    putchar('\n');
-    fflush(stdout);
-
     nseq = strtol(GetLineTok_token(glt, 1), NULL, 10);
     nseg = -1;
 
-    // read input through nseg assignment
+    // A matrix of dimension nseq X nseg. To access element for
+    // given seq and site: m[nseg*seq + site];
+    char *m=NULL;
+
+    // each iterations processes one replicate
     while(1) {
-        status = GetLineTok_next(glt, " \t\n", " \t\n");
+        // read input through segsites assignment
+        while(1) {
+            status = GetLineTok_next(glt, " \t", " \t\n");
+            switch(status) {
+            case EOF:
+                DIE("segsites not found in input");
+                break;
+            case ENOMEM:
+                DIE("out of memory");
+                break;
+            default:
+                DIE("this shouldn't happen");
+                break;
+            }
+
+            ntokens = GetLineTok_ntokens(glt);
+            if(ntokens == 0)
+                continue;
+
+            if(strcmp(Tokenizer_token(tkz, 0), "segsites") == 0) {
+                // got positions: break out of loop
+                nseg = strtol(Tokenizer_token(tkz, 1), NULL, 10);
+                break;
+            }
+        }
+        if(nseg <= 0) {
+            fprintf(stderr, "%s:%d: Number of segregating sites is %ld",
+                    __FILE__, __LINE__, nseg);
+            exit(EXIT_FAILURE);
+        }
+
+        status = GetLineTok_next(glt, ":", " \t\n");
         switch(status) {
         case EOF:
-            DIE("segsites not found in input");
+            DIE("positions not found in input");
             break;
         case ENOMEM:
             DIE("out of memory");
@@ -430,101 +457,85 @@ int main(int argc, char **argv) {
         }
 
         ntokens = GetLineTok_ntokens(glt);
-        if(ntokens == 0)
-            continue;
+        if(ntokens != 2)
+            DIE("positions not found in input");
 
-        if(strcmp(Tokenizer_token(tkz, 0), "segsites") == 0) {
-            // got segsites: assign and break out of loop
-            nseg = strtol(Tokenizer_token(tkz, 1), NULL, 10);
-            break;
+        m = malloc(nseq * nseg * sizeof(m[0]));
+        CHECKMEM(m);
+
+        // Read data, putting values into array "m"
+        size_t buffsize = (100 + nseg) * sizeof(buff[0]);
+        char *buff = malloc(buffsize);
+        CHECKMEM(buff);
+        seq = 0;
+        while(1) {
+            char *p = fgets(buff, inBuffSize, stdin);
+            if(p == NULL)
+                goto done;
+
+            if(!strchr(buff, '\n') && !feof(stdin)) {
+                fprintf(stderr, "%s:%d: input buffer overflow."
+                        " Curr buff size: inBuffSize=%d\n",
+                        __FILE__, __LINE__, inBuffSize);
+                exit(EXIT_FAILURE);
+            }
+
+            // make sure input line has right number of sites
+            i = strlen(buff);
+            if(i == 0)
+                goto done_reading_replicate;
+
+            if(seq >= nseq) {
+                fprintf(stderr,"%s:%d: seq=%ld >= nseq=%ld",
+                        __FILE__, __LINE__, seq, nseq);
+                exit(EXIT_FAILURE);
+            }
+
+            while(isspace(buff[i - 1])) {
+                --i;
+                buff[i] = '\0';
+            }
+            if(i != nseg) {
+                fprintf(stderr,
+                        "%s:%d input line has %ld chars; should have %d\n",
+                        __FILE__, __LINE__, i, nseg);
+                exit(EXIT_FAILURE);
+            }
+            memcpy(m + nseg * seq, buff, nseg * sizeof(m[0]));
+            seq += 1;
         }
-    }
-    if(nseg <= 0) {
-        fprintf(stderr, "%s:%d: Number of segregating sites is %ld",
-                __FILE__, __LINE__, nseg);
-        exit(EXIT_FAILURE);
-    }
+    done_reading_replicate:
+        assert(seq == nseq);
 
-    status = GetLineTok_next(glt, ":", " \t\n");
-    switch(status) {
-    case EOF:
-        DIE("positions not found in input");
-        break;
-    case ENOMEM:
-        DIE("out of memory");
-        break;
-    default:
-        DIE("this shouldn't happen");
-        break;
-    }
-
-    ntokens = GetLineTok_ntokens(glt);
-    if(ntokens != 2)
-        DIE("positions not found in input");
-
-    printf("# %-12s = %ld\n", "segsites", nseg);
-    printf("# %-12s = %ld\n", "nsequences", nseq);
-    printf("# %-12s = %d\n", "ploidy", 1);
-
-    m = malloc(nseq * nseg * sizeof(m[0]));
-    CHECKMEM(m);
-
-    // Read data, putting values into array "m"
-    buff = malloc((100 + nseg) * sizeof(buff[0]));
-    CHECKMEM(buff);
-    seq = 0;
-    while(NULL != fgets(buff, inBuffSize, stdin)) {
-
-        if(!strchr(buff, '\n') && !feof(stdin)) {
-            fprintf(stderr, "%s:%d: input buffer overflow."
-                    " Curr buff size: inBuffSize=%d\n",
-                    __FILE__, __LINE__, inBuffSize);
-            exit(EXIT_FAILURE);
+        // output
+        double nderived, daf[n];
+        int start = 0;
+        for(int site = 0; site < nseg; ++site) {
+            for(int pop=0; pop < n; ++pop) {
+                nderived = 0.0;
+                for(int seq=start;  seq < start + nsamples[pop]; ++seq) {
+                    nderived += ('1' == m[nseg*seq + site]);
+                }
+            }
         }
+        for(site = 0; site < nseg; ++site) {
+            printf("%10ld %10ld %14.12lf %7s ",
+                   site, nucpos[site], mappos[site], "01");
 
-        // make sure input line has right number of sites
-        i = strlen(buff);
-        if(i == 0)
-            continue;
-
-        if(seq >= nseq) {
-            fprintf(stderr,"%s:%d: seq=%ld >= nseq=%ld",
-                   __FILE__, __LINE__, seq, nseq);
-            exit(EXIT_FAILURE);
+            for(seq = 0; seq < nseq; ++seq)
+                printf("%c", m[nseg * seq + site]);
+            putchar('\n');
         }
-
-        while(isspace(buff[i - 1])) {
-            --i;
-            buff[i] = '\0';
-        }
-        if(i != nseg) {
-            fprintf(stderr,
-                    "%s:%d input line has %ld chars; should have %d\n",
-                    __FILE__, __LINE__, i, nseg);
-            exit(EXIT_FAILURE);
-        }
-        memcpy(m + nseg * seq, buff, nseg * sizeof(m[0]));
-        seq += 1;
+        free(m);
     }
-    assert(seq == nseq);
-
-    // Output loop
-    printf("#%9s %10s %14s %7s %s\n", "snp_id", "nucpos", "mappos",
-           "alleles", "genotypes");
-    for(site = 0; site < nseg; ++site) {
-        printf("%10ld %10ld %14.12lf %7s ",
-               site, nucpos[site], mappos[site], "01");
-
-        for(seq = 0; seq < nseq; ++seq)
-            printf("%c", m[nseg * seq + site]);
-        putchar('\n');
-    }
+ done:
+    if(m != NULL)
+        free(m);
 
     GetLineTok_free(glt);
     free(nucpos);
     free(mappos);
     free(buff);
-    free(buff2);
     free(m);
 
     return 0;
