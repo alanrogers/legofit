@@ -7,69 +7,9 @@
  * # ms2sim, a program that converts `ms` output into sim format
  *
  * This program is written in C, because the conversion involves
- * transposing a large matrix, and this is faster in C.  If you run it
- * like "ms2sim my_input_file_name", it will allocate internal arrays
- * using default values. If your `ms` output is large, these arrays will
- * be too small. The program will print an error message and abort. To
- * avoid this problem, run the (unix or linux) command "grep positions
- * ms.out | wc". This will print 3 numbers. The number of tokens must be
- * as large as 2nd; buffer size as large as the 3rd. You can set these
- * values using the `--maxTokens` and `--inBuffSize` arguments.
+ * transposing a large matrix, and this is faster in C.  
  *
- * For example, I used `ms` to produce a file called `ms.out`. To find out
- * how large to set the arrays, I executed
- *
- *     grep positions ms.out | wc
- *
- * which produced the output
- *
- *     1   89366 1161757
- *
- * This indicates that I need to accomodate input lines with 89366 tokens
- * and 1161757 characters. So I ran `ms2sim` like this:
- *
- *     ms2sim --maxTokens 89370 --inBuffSize 1161800 ms.out > ms.gtp
- *
- * This reads input from file `ms.out` and writes to file `ms.gtp`.
- * The first few lines of `ms.gtp` look like this:
- *
- *     # ms2sim was run Sat Feb  2 11:15:05 2013
- *     # cmd line     = ms2sim -t 89370 -b 1161800 ms.out
- *     # sim cmd      = ms 50 1 -t 20000 -r 20000 1000000
- *     # segsites     = 89365
- *     # nsequences   = 50
- *     # recomb rate per site = 1e-06
- *     # ploidy       = 1
- *     #   snp_id     nucpos         mappos alleles genotypes
- *              0          1 0.000000006802      01 0011000000...
- *              1          6 0.000000061255      01 0000000000...
- *
- * In this example, I've truncated the genotypes on the right in order
- * to fit them on the page.
- *
- * Here is the usage message:
- *
- *     usage: ms2sim [options] [input_file_name]
- *        where options may include:
- *        -t \<x\> or --maxTokens \<x\>
- *           maximum tokens per input line
- *        -b \<x\> or --inBuffSize \<x\>
- *           size of input buffer
- *        -R \<x\> or --recombination \<x\>
- *           rate for adjacent nucleotides
- *        -h     or --help
- *           print this message
- *       To figure out appropriate values for -t and -b, execute the
- *       following at the command line:
- *
- *          grep positions ms.out | wc
- *
- *       where "ms.out" is the ms output file. This command prints 3 numbers.
- *       Number of tokens must be as large as 2nd; buffer size as large as the
- *       3rd. If no input file is given, ms2sim reads stdin. ms2sim
- *       always writes to standard output.
- *
- * @copyright Copyright (c) 2014, Alan R. Rogers
+ * @copyright Copyright (c) 2018, Alan R. Rogers
  * <rogers@anthro.utah.edu>. This file is released under the Internet
  * Systems Consortium License, which can be found in file "LICENSE".
  */
@@ -403,7 +343,14 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
-    nseq = strtol(GetLineTok_token(glt, 1), NULL, 10);
+    // Set nseq by counting the samples in each subdivision. This should
+    // equal the 2nd argument of ms, but the current version of ms does
+    // not enforce this. I've reported this as a bug to Dick Hudson. We
+    // get the relevant number by summing across nsamples.
+    nseq = 0;
+    for(i = 0; i < n; ++i)
+        nseq += nsamples[i];
+
     nseg = -1;
 
     // A matrix of dimension nseq X nseg. To access element for
@@ -412,7 +359,7 @@ int main(int argc, char **argv) {
 
     // each iterations processes one replicate
     while(1) {
-        // read input through segsites assignment
+        // set nseg, number of segregating sites in this replicate
         while(1) {
             status = GetLineTok_next(glt, " \t", " \t\n");
             switch(status) {
@@ -443,6 +390,7 @@ int main(int argc, char **argv) {
             exit(EXIT_FAILURE);
         }
 
+        // skip positions line
         status = GetLineTok_next(glt, ":", " \t\n");
         switch(status) {
         case EOF:
@@ -455,7 +403,6 @@ int main(int argc, char **argv) {
             DIE("this shouldn't happen");
             break;
         }
-
         ntokens = GetLineTok_ntokens(glt);
         if(ntokens != 2)
             DIE("positions not found in input");
@@ -471,7 +418,7 @@ int main(int argc, char **argv) {
         while(1) {
             char *p = fgets(buff, inBuffSize, stdin);
             if(p == NULL)
-                goto done;
+                goto no_more_data;
 
             if(!strchr(buff, '\n') && !feof(stdin)) {
                 fprintf(stderr, "%s:%d: input buffer overflow."
@@ -520,13 +467,13 @@ int main(int argc, char **argv) {
                 }
                 start += nsamples[pop];
                 daf = nderived / ((double) nsamples[pop]);
-                printf(" %f", daf);
+                printf(" %lf", daf);
             }
             putchar('\n');
         }
         free(m);
     }
- done:
+ no_more_data:
     if(m != NULL)
         free(m);
 
