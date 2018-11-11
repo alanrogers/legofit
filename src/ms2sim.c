@@ -508,22 +508,20 @@ int main(int argc, char **argv) {
         assert(seq == nseq);
 
         // output
-        double nderived, daf[n];
-        int start = 0;
-        for(int site = 0; site < nseg; ++site) {
-            for(int pop=0; pop < n; ++pop) {
-                nderived = 0.0;
-                for(int seq=start;  seq < start + nsamples[pop]; ++seq) {
-                    nderived += ('1' == m[nseg*seq + site]);
-                }
-            }
-        }
+        double nderived, daf;
+        int site, start, pop, seq;
         for(site = 0; site < nseg; ++site) {
-            printf("%10ld %10ld %14.12lf %7s ",
-                   site, nucpos[site], mappos[site], "01");
-
-            for(seq = 0; seq < nseq; ++seq)
-                printf("%c", m[nseg * seq + site]);
+            for(pop=start=0; pop < n; ++pop) {
+                nderived = 0.0;
+                for(seq=start;  seq < start + nsamples[pop]; ++seq) {
+                    assert(seq < nseq);
+                    if('1' == m[nseg*seq + site])
+                        ++nderived;
+                }
+                start += nsamples[pop];
+                daf = nderived / ((double) nsamples[pop]);
+                printf(" %f", daf);
+            }
             putchar('\n');
         }
         free(m);
