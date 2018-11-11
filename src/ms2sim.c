@@ -236,13 +236,12 @@ unsigned *countSamples(GetLineTok *glt, int *sampleDim) {
 }
 
 int main(int argc, char **argv) {
+    size_t      buffsize = 1<<9;
     long        maxtokens = 1<<8;
-    long        inBuffSize = 1<<9;
-    long        i, seq, site, ntokens, status;
-    double      recombRate = 0.0;   /* rate for adjacent nucleotides */
+    long        i, ntokens, status;
+    long        site, start, pop, seq;
     long        nseg, nseq;
-    long       *nucpos;         /* vector of nucleotide positions */
-    double     *mappos;         /* vector of map positions (cM)   */
+    double      recombRate = 0.0;   /* rate for adjacent nucleotides */
     int         optndx;
     time_t      currtime = time(NULL);
 
@@ -313,7 +312,7 @@ int main(int argc, char **argv) {
         printf("%s %u\n", poplbl[i], nsamples[i]);
 
     // allocate memory
-    GetLineTok *glt = GetLineTok(inBuffSize, maxtokens, stdin);
+    GetLineTok *glt = GetLineTok(buffsize, maxtokens, stdin);
     CHECKMEM(glt);
 
     status = GetLineTok_next(glt, " \t", " \t\n");
@@ -411,19 +410,19 @@ int main(int argc, char **argv) {
         CHECKMEM(m);
 
         // Read data, putting values into array "m"
-        size_t buffsize = (100 + nseg) * sizeof(buff[0]);
+        buffsize = (100 + nseg) * sizeof(buff[0]);
         char *buff = malloc(buffsize);
         CHECKMEM(buff);
         seq = 0;
         while(1) {
-            char *p = fgets(buff, inBuffSize, stdin);
+            char *p = fgets(buff, buffsize, stdin);
             if(p == NULL)
                 goto no_more_data;
 
             if(!strchr(buff, '\n') && !feof(stdin)) {
                 fprintf(stderr, "%s:%d: input buffer overflow."
-                        " Curr buff size: inBuffSize=%d\n",
-                        __FILE__, __LINE__, inBuffSize);
+                        " Curr buff size: buffsize=%d\n",
+                        __FILE__, __LINE__, buffsize);
                 exit(EXIT_FAILURE);
             }
 
@@ -456,7 +455,6 @@ int main(int argc, char **argv) {
 
         // output
         double nderived, daf;
-        int site, start, pop, seq;
         for(site = 0; site < nseg; ++site) {
             for(pop=start=0; pop < n; ++pop) {
                 nderived = 0.0;
@@ -478,8 +476,6 @@ int main(int argc, char **argv) {
         free(m);
 
     GetLineTok_free(glt);
-    free(nucpos);
-    free(mappos);
     free(buff);
     free(m);
 
