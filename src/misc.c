@@ -341,6 +341,23 @@ int compareLongs(const void *void_x, const void *void_y) {
 }
 
 /**
+ * Compare two ints.
+ *
+ * Function interprets its arguments as pointers to ints.
+ *
+ * @param void_x,void_y Pointers to the two integers, cast as pointers
+ * to voids.
+ * @returns -1, 0, or 1 depending on whether the first arg is <,
+ * ==, or > the second.
+ */
+int compareInts(const void *void_x, const void *void_y) {
+    const int *x = (const int *) void_x;
+    const int *y = (const int *) void_y;
+
+    return (*x < *y) ? -1 : (*x > *y) ? 1 : 0;
+}
+
+/**
  * Compare two doubles.
  *
  * Function interprets its arguments as pointers to doubles.

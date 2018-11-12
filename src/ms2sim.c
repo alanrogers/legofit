@@ -258,17 +258,18 @@ int main(int argc, char **argv) {
     long        nsite, nseq;
     time_t      currtime = time(NULL);
 
-    printf("# ms2sim was run %s", ctime(&currtime));
-    printf("# cmd lines");
+    fprintf(stderr, "ms2sim was run %s", ctime(&currtime));
+    fprintf(stderr,"cmd line:");
     for(i = 0; i < argc; ++i)
-        printf(" %s", argv[i]);
-    putchar('\n');
+        fprintf(stderr, " %s", argv[i]);
+    putc('\n', stderr);
 
     int n = argc-1;  // number of population labels
     if(n == 0)
         usage();
 
     char       *poplbl[n];  // array of population labels
+    int         order[n];   // sort order of populations in output
     LblNdx      lndx;
     LblNdx_init(&lndx);
 
@@ -280,25 +281,44 @@ int main(int argc, char **argv) {
         usage();
     }
 
-    // Set poplbl array
+    // Set poplbl and order arrays
     for(i=1, j=0; i < argc; ++i) {
         if(argv[i][0] == '-')
             usage();
-        poplbl[j] = argv[i];
-        if(strchr(poplbl[j], ':') != NULL) {
-            fprintf(stderr,"Label (%s) is illegal because it includes ':'\n",
-                    poplbl[j]);
-            exit(EXIT_FAILURE);
-        }
+        char *arg = strdup(argv[i]);
+        poplbl[j] = strsep(&arg, ":");
+        if(poplbl[j]==NULL)
+            usage();
+        if(arg == NULL)
+            order[j] = j;
+        else
+            order[j] = strtol(arg, NULL, 10);
         LblNdx_addSamples(&lndx, 1, poplbl[j]);
         ++j;
     }
     assert(j == n);
 
-    // order in which populations are printed
-    int order[n];
-    for(i=0; i<n; ++i)
-        order[i] = i;
+    // Make sure order array is legal
+    {
+        int sorted[n];
+        memcpy(sorted, order, sizeof(sorted));
+        qsort(sorted, (size_t) n, sizeof(sorted[0]), compareInts);
+        for(i=0; i<n; ++i) {
+            if(sorted[i] != i) {
+                fprintf(stderr,"%s:%d: invalid label indices\n",
+                        __FILE__,__LINE__);
+                fprintf(stderr,"unsorted:");
+                for(j=0; j<n; ++j)
+                    fprintf(stderr," %d", order[j]);
+                putc('\n', stderr);
+                fprintf(stderr,"sorted:");
+                for(j=0; j<n; ++j)
+                    fprintf(stderr," %d", sorted[j]);
+                putc('\n', stderr);
+                exit(EXIT_FAILURE);
+            }
+        }
+    }
 
     // allocate memory
     LineReader *lr = LineReader_new(buffsize);

@@ -91,6 +91,7 @@ MsprimeReader *MsprimeReader_new(FILE *fp) {
         fprintf(stderr,"%s:%d: 1st line of input should look like"
                 " \"npops = <positive integer>\"\n",
                 __FILE__,__LINE__);
+        Tokenizer_print(self->tkz, stderr);
         exit(EXIT_FAILURE);
     }
 
