@@ -21,7 +21,6 @@
 #include <stdlib.h>
 #include <time.h>
 #include <ctype.h>
-#include <getopt.h>
 #include <assert.h>
 #include <math.h>
 
@@ -104,13 +103,10 @@ MSSample *MSSample_collapse(MSSample *node) {
 
 /// Parse output of ms
 void usage(void) {
-    fprintf(stderr, "usage: ms2sim [options] [input_file_name]\n");
+    fprintf(stderr, "usage: ms2sim [options]\n");
     fprintf(stderr, "   where options may include:\n");
-    tellopt("-R <x> or --recombination <x>", "rate for adjacent nucleotides");
     tellopt("-h     or --help", "print this message");
-
-    fprintf(stderr, " If no input file is given, ms2sim reads stdin.");
-    fprintf(stderr, " ms2sim always writes\n  to standard output.\n");
+    fprintf(stderr, " Reads from stdin; writes to stdout.\n");
 
     exit(EXIT_FAILURE);
 }
@@ -236,21 +232,14 @@ unsigned *countSamples(GetLineTok *glt, int *sampleDim) {
 }
 
 int main(int argc, char **argv) {
+    size_t      obuffsize;
     size_t      buffsize = 1<<9;
     long        maxtokens = 1<<8;
-    long        i, ntokens, status;
+    long        i, j, ntokens, status;
     long        site, start, pop, seq;
     long        nseg, nseq;
-    double      recombRate = 0.0;   /* rate for adjacent nucleotides */
-    int         optndx;
     time_t      currtime = time(NULL);
-
-    static struct option myopts[] = {
-        /* {char *name, int has_arg, int *flag, int val} */
-        {"recombination", required_argument, 0, 'R'},
-        {"help", no_argument, 0, 'h'},
-        {NULL, 0, NULL, 0}
-    };
+    char *token;
 
     printf("# ms2sim was run %s", ctime(&currtime));
     printf("# %-12s =", "cmd line");
@@ -258,33 +247,17 @@ int main(int argc, char **argv) {
         printf(" %s", argv[i]);
     putchar('\n');
 
-    /* flag arguments */
-    for(;;) {
-        i = getopt_long(argc, argv, "R:h", myopts, &optndx);
-        if(i == -1)
-            break;
-        switch (i) {
-        case ':':
-        case '?':
+    /* command-line arguments */
+    int n = 0;
+    for(i=0; i < argc; ++i) {
+        if(argv[i][0] == '-')
             usage();
-            break;
-        case 'R':
-            recombRate = strtod(optarg, NULL);
-            break;
-        case 'h':
-            usage();
-            break;
-        default:
-            usage();
-        }
+        ++n;
     }
-
-    // remaining options: population labels
-    int         n = argc - optind;  // number of population labels
     if(n == 0)
         usage();
 
-    char       *poplbl[n];
+    char       *poplbl[n];  // array of population labels
     LblNdx      lndx;
     LblNdx_init(&lndx);
 
@@ -295,15 +268,21 @@ int main(int argc, char **argv) {
                 n, 8 * sizeof(tipId_t));
         usage();
     }
-    // Parse remaining arguments, each of which should be an arbitrary
-    // label.
-    for(i = 0; i < n; ++i) {
-        poplbl[i] = argv[i + optind];
-        if(poplbl[i] == NULL
-           || strlen(poplbl[i]) == 0
-           || strchr(poplbl[i], ':') != NULL)
+
+    // Set poplbl array
+    for(i = j = 0; i < argc; ++i) {
+        if(argv[i][0] == '-')
+            continue;
+        poplbl[j] = argv[i];
+        if(poplbl[j] == NULL || strlen(poplbl[j]) == 0)
             usage();
-        LblNdx_addSamples(&lndx, 1, poplbl[i]);
+        if(strchr(poplbl[j], ':') != NULL) {
+            fprintf(stderr,"Label (%s) is illegal because it includes ':'\n",
+                    poplbl[j]);
+            exit(EXIT_FAILURE);
+        }
+        LblNdx_addSamples(&lndx, 1, poplbl[j]);
+        ++j;
     }
 
     printf("npops = %d\n", n);
@@ -331,6 +310,7 @@ int main(int argc, char **argv) {
     // First line of input has MS command line
     int sampleDim=0;
     unsigned *nsamples = countSamples(glt, &sampleDim);
+    GetLineTok_free(glt);
 
     if(n != sampleDim) {
         fprintf(stderr, 
@@ -342,10 +322,9 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
-    // Set nseq by counting the samples in each subdivision. This should
-    // equal the 2nd argument of ms, but the current version of ms does
-    // not enforce this. I've reported this as a bug to Dick Hudson. We
-    // get the relevant number by summing across nsamples.
+    // Set nseq by counting the samples in each subdivision. This will
+    // not equal the 2nd argument of ms if there are any ancient
+    // samples.
     nseq = 0;
     for(i = 0; i < n; ++i)
         nseq += nsamples[i];
@@ -356,29 +335,34 @@ int main(int argc, char **argv) {
     // given seq and site: m[nseg*seq + site];
     char *m=NULL;
 
-    // each iterations processes one replicate
+    // buffer and its size
+    obuffsize = buffsize = 2048;
+    char *buff = malloc(buffsize);
+    CHECKMEM(buff);
+
+    Tokenizer *tkz = Tokenizer_new(128);
+
+    // Each iteration processes one replicate
     while(1) {
         // set nseg, number of segregating sites in this replicate
         while(1) {
-            status = GetLineTok_next(glt, " \t", " \t\n");
-            switch(status) {
-            case EOF:
+            do{
+                status = readline(buffsize, buff, stdin);
+                if(status == BUFFER_OVERFLOW) {
+                    buffsize *= 2;
+                    buff = realloc(buff, buffsize);
+                    CHECKMEM(buff);
+                }
+            }while(status == BUFFER_OVERFLOW);
+            if(status == EOF)
                 DIE("segsites not found in input");
-                break;
-            case ENOMEM:
-                DIE("out of memory");
-                break;
-            default:
-                DIE("this shouldn't happen");
-                break;
-            }
 
-            ntokens = GetLineTok_ntokens(glt);
+            Tokenizer_split(tkz, buff, " \t");
+            ntokens = Tokenizer_strip(tkz, "\n");
             if(ntokens == 0)
                 continue;
-
-            if(strcmp(Tokenizer_token(tkz, 0), "segsites") == 0) {
-                // got positions: break out of loop
+            if(strcmp(buff, "segsites:") == 0) {
+                // got segsites: break out of loop
                 nseg = strtol(Tokenizer_token(tkz, 1), NULL, 10);
                 break;
             }
@@ -390,20 +374,15 @@ int main(int argc, char **argv) {
         }
 
         // skip positions line
-        status = GetLineTok_next(glt, ":", " \t\n");
-        switch(status) {
-        case EOF:
-            DIE("positions not found in input");
-            break;
-        case ENOMEM:
-            DIE("out of memory");
-            break;
-        default:
-            DIE("this shouldn't happen");
-            break;
-        }
-        ntokens = GetLineTok_ntokens(glt);
-        if(ntokens != 2)
+        do{
+            status = readline(buffsize, buff, stdin);
+            if(status == BUFFER_OVERFLOW) {
+                buffsize *= 2;
+                buff = realloc(buff, buffsize);
+                CHECKMEM(buff);
+            }
+        }while(status == BUFFER_OVERFLOW);
+        if(status == EOF)
             DIE("positions not found in input");
 
         m = malloc(nseq * nseg * sizeof(m[0]));
@@ -411,7 +390,7 @@ int main(int argc, char **argv) {
 
         // Read data, putting values into array "m"
         buffsize = (100 + nseg) * sizeof(buff[0]);
-        char *buff = malloc(buffsize);
+        buff = malloc(buffsize);
         CHECKMEM(buff);
         seq = 0;
         while(1) {
@@ -470,12 +449,12 @@ int main(int argc, char **argv) {
             putchar('\n');
         }
         free(m);
+        free(buff);
     }
  no_more_data:
     if(m != NULL)
         free(m);
 
-    GetLineTok_free(glt);
     free(buff);
     free(m);
 
