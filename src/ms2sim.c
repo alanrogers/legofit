@@ -264,13 +264,7 @@ int main(int argc, char **argv) {
         printf(" %s", argv[i]);
     putchar('\n');
 
-    /* command-line arguments */
-    int n = 0;
-    for(i=1; i < argc; ++i) {
-        if(argv[i][0] == '-')
-            usage();
-        ++n;
-    }
+    int n = argc-1;  // number of population labels
     if(n == 0)
         usage();
 
@@ -288,6 +282,8 @@ int main(int argc, char **argv) {
 
     // Set poplbl array
     for(i=1, j=0; i < argc; ++i) {
+        if(argv[i][0] == '-')
+            usage();
         poplbl[j] = argv[i];
         if(strchr(poplbl[j], ':') != NULL) {
             fprintf(stderr,"Label (%s) is illegal because it includes ':'\n",
@@ -297,6 +293,12 @@ int main(int argc, char **argv) {
         LblNdx_addSamples(&lndx, 1, poplbl[j]);
         ++j;
     }
+    assert(j == n);
+
+    // order in which populations are printed
+    int order[n];
+    for(i=0; i<n; ++i)
+        order[i] = i;
 
     // allocate memory
     LineReader *lr = LineReader_new(buffsize);
@@ -328,7 +330,7 @@ int main(int argc, char **argv) {
     printf("npops = %d\n", n);
     printf("pop sampsize\n");
     for(i=0; i < n; ++i)
-        printf("%s %u\n", poplbl[i], nsamples[i]);
+        printf("%s %u\n", poplbl[order[i]], nsamples[order[i]]);
     fflush(stdout);
 
     // Set nseq by counting the samples in each subdivision. This will
@@ -426,7 +428,7 @@ int main(int argc, char **argv) {
         assert(seq == nseq);
 
         // output
-        double nderived, daf;
+        double nderived, daf[n];
         for(site = 0; site < nsite; ++site) {
             for(pop=start=0; pop < n; ++pop) {
                 nderived = 0.0;
@@ -435,11 +437,13 @@ int main(int argc, char **argv) {
                     if('1' == m[nsite*seq + site])
                         ++nderived;
                 }
-                daf = nderived / ((double) nsamples[pop]);
+                daf[pop] = nderived / ((double) nsamples[pop]);
+                start += nsamples[pop];
+            }
+            for(pop=0; pop < n; ++pop) {
                 if(pop > 0)
                     putchar(' ');
-                printf("%lf", daf);
-                start += nsamples[pop];
+                printf("%lf", daf[order[pop]]);
             }
             putchar('\n');
         }
