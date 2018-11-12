@@ -15,6 +15,7 @@
  */
 #include "misc.h"
 #include "tokenizer.h"
+#include "linereader.h"
 #include "uintqueue.h"
 #include <stdio.h>
 #include <string.h>
@@ -291,26 +292,20 @@ int main(int argc, char **argv) {
         printf("%s %u\n", poplbl[i], nsamples[i]);
 
     // allocate memory
-    GetLineTok *glt = GetLineTok(buffsize, maxtokens, stdin);
-    CHECKMEM(glt);
+    LineReader *lr = LineReader_new(buffsize);
+    CHECKMEM(lr);
+    Tokenizer *tkz = Tokenizer_new(maxtokens);
+    CHECKMEM(tkz);
 
-    status = GetLineTok_next(glt, " \t", " \t\n");
-    switch(status) {
-    case EOF:
+    char *line = LineReader_next(lr, stdin);
+    if(line == NULL)
         DIE("No input");
-        break;
-    case ENOMEM:
-        DIE("out of memory");
-        break;
-    default:
-        DIE("this shouldn't happen");
-        break;
-    }
+    Tokenizer_split(tkz, line, " \n");
+    ntokens = Tokenizer_strip(tkz, " \t\n");
 
     // First line of input has MS command line
     int sampleDim=0;
-    unsigned *nsamples = countSamples(glt, &sampleDim);
-    GetLineTok_free(glt);
+    unsigned *nsamples = countSamples(tkz, &sampleDim);
 
     if(n != sampleDim) {
         fprintf(stderr, 
@@ -329,42 +324,26 @@ int main(int argc, char **argv) {
     for(i = 0; i < n; ++i)
         nseq += nsamples[i];
 
-    nseg = -1;
-
     // A matrix of dimension nseq X nseg. To access element for
     // given seq and site: m[nseg*seq + site];
     char *m=NULL;
 
-    // buffer and its size
-    obuffsize = buffsize = 2048;
-    char *buff = malloc(buffsize);
-    CHECKMEM(buff);
-
-    Tokenizer *tkz = Tokenizer_new(128);
-
     // Each iteration processes one replicate
     while(1) {
         // set nseg, number of segregating sites in this replicate
-        while(1) {
-            do{
-                status = readline(buffsize, buff, stdin);
-                if(status == BUFFER_OVERFLOW) {
-                    buffsize *= 2;
-                    buff = realloc(buff, buffsize);
-                    CHECKMEM(buff);
-                }
-            }while(status == BUFFER_OVERFLOW);
-            if(status == EOF)
+        nseg = -1;
+        while(nseg == -1) {
+            line = LineReader_next(lr, stdin);
+            if(line == NULL)
                 DIE("segsites not found in input");
 
             Tokenizer_split(tkz, buff, " \t");
             ntokens = Tokenizer_strip(tkz, "\n");
             if(ntokens == 0)
                 continue;
-            if(strcmp(buff, "segsites:") == 0) {
-                // got segsites: break out of loop
+            if(0 == strcmp("segsites:", Tokenizer_token(tkz, 0))) {
+                // got segsites
                 nseg = strtol(Tokenizer_token(tkz, 1), NULL, 10);
-                break;
             }
         }
         if(nseg <= 0) {
@@ -374,39 +353,23 @@ int main(int argc, char **argv) {
         }
 
         // skip positions line
-        do{
-            status = readline(buffsize, buff, stdin);
-            if(status == BUFFER_OVERFLOW) {
-                buffsize *= 2;
-                buff = realloc(buff, buffsize);
-                CHECKMEM(buff);
-            }
-        }while(status == BUFFER_OVERFLOW);
-        if(status == EOF)
-            DIE("positions not found in input");
+        line = LineReader_next(lr, stdin);
+        if(line == NULL || 0 != strncmp(line, "positions:", 10))
+            DIE("segsites not found in input");
 
         m = malloc(nseq * nseg * sizeof(m[0]));
         CHECKMEM(m);
 
         // Read data, putting values into array "m"
-        buffsize = (100 + nseg) * sizeof(buff[0]);
-        buff = malloc(buffsize);
-        CHECKMEM(buff);
         seq = 0;
         while(1) {
-            char *p = fgets(buff, buffsize, stdin);
-            if(p == NULL)
+            line = LineReader_next(lr, stdin);
+            if(line == NULL || 0 != strncmp(line, "positions:", 10))
+                DIE("segsites not found in input");
+            if(line == NULL)
                 goto no_more_data;
 
-            if(!strchr(buff, '\n') && !feof(stdin)) {
-                fprintf(stderr, "%s:%d: input buffer overflow."
-                        " Curr buff size: buffsize=%d\n",
-                        __FILE__, __LINE__, buffsize);
-                exit(EXIT_FAILURE);
-            }
-
-            // make sure input line has right number of sites
-            i = strlen(buff);
+            i = strlen(line);
             if(i == 0)
                 goto done_reading_replicate;
 
@@ -416,9 +379,9 @@ int main(int argc, char **argv) {
                 exit(EXIT_FAILURE);
             }
 
-            while(isspace(buff[i - 1])) {
+            while(isspace(line[i - 1])) {
                 --i;
-                buff[i] = '\0';
+                line[i] = '\0';
             }
             if(i != nseg) {
                 fprintf(stderr,
@@ -426,7 +389,7 @@ int main(int argc, char **argv) {
                         __FILE__, __LINE__, i, nseg);
                 exit(EXIT_FAILURE);
             }
-            memcpy(m + nseg * seq, buff, nseg * sizeof(m[0]));
+            memcpy(m + nseg * seq, line, nseg * sizeof(m[0]));
             seq += 1;
         }
     done_reading_replicate:
