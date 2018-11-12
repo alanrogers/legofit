@@ -19,13 +19,12 @@ static int strempty(const char *s) {
     while(isspace(*p))
         ++p;
     if(*p == '\0')
-        return true;
-    return false;
+        return 1;
+    return 0;
 }
 
 void LineReader_free(LineReader *self) {
     free(self->buff);
-    Tokenizer_free(self->tkz);
     free(self);
 }
 
@@ -33,31 +32,25 @@ LineReader *LineReader_new(size_t buffsize) {
     if(buffsize < 2)
         DIE("buffsize argument must be >1");
     LineReader *self = malloc(sizeof(LineReader));
-    if(self==NULL)
-        DIE("bad malloc");
+    CHECKMEM(self);
     self->buffsize = buffsize;
     self->buff = malloc(buffsize);
-    if(self->buff == NULL)
-        DIE("bad malloc");
+    CHECKMEM(self->buff);
     self->buff[0] = '\0';
     return self;
 };
 
-/// Return pointer to buff on success, NULL on EOF.
+/// Read next line. Return pointer to buff on success, NULL on EOF.
 /// Abort if allocation fails.
-char *LineReader_read(LineReader *self, FILE *fp) {
-    self->buff[0] = '\0';
-    do {
-        if(NULL == fgets(self->buff, self->buffsize, fp))
-            return NULL;
-    } while(strempty(self->buff));
+char *LineReader_next(LineReader *self, FILE *fp) {
+    if(NULL == fgets(self->buff, self->buffsize, fp))
+        return NULL;
 
     while(!strchr(self->buff, '\n') && !feof(self->fp)) {
         assert(strlen(self->buff) == self->buffsize-1);
         // buffer overflow: reallocate
         size_t oldsize = strlen(self->buff);
         self->buffsize *= 2;
-        char *oldbuff = self->buff;
         self->buff = realloc(self->buff, self->buffsize);
         CHECKMEM(self->buff);
         // Try to read the rest of the current line. If there is
@@ -65,8 +58,9 @@ char *LineReader_read(LineReader *self, FILE *fp) {
         // filled the first half of self->buff.
         if(NULL == fgets(self->buff + oldsize,
                          self->buffsize - oldsize,
-                         fp))
+                         fp)) {
             break;
+        }
     }
 
     return self->buff;
