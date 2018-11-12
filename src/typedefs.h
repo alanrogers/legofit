@@ -18,6 +18,7 @@ typedef struct GPTree GPTree;
 typedef struct HashTab HashTab;
 typedef struct HashTabSeq HashTabSeq;
 typedef struct LblNdx LblNdx;
+typedef struct LineReader LineReader;
 typedef struct MsprimeReader MsprimeReader;
 typedef struct NameList NameList;
 typedef struct NodeStore NodeStore;

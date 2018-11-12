@@ -10,19 +10,6 @@ struct LineReader {
     char *buff;
 };
 
-static int strempty(const char *s);
-
-/// Return true if string contains only whitespace; false otherwise.
-static int strempty(const char *s) {
-    const char *p = s;
-
-    while(isspace(*p))
-        ++p;
-    if(*p == '\0')
-        return 1;
-    return 0;
-}
-
 void LineReader_free(LineReader *self) {
     free(self->buff);
     free(self);
@@ -46,10 +33,11 @@ char *LineReader_next(LineReader *self, FILE *fp) {
     if(NULL == fgets(self->buff, self->buffsize, fp))
         return NULL;
 
-    while(!strchr(self->buff, '\n') && !feof(self->fp)) {
-        assert(strlen(self->buff) == self->buffsize-1);
-        // buffer overflow: reallocate
+    // check for buffer overflow; reallocate if necessary
+    while(!strchr(self->buff, '\n') && !feof(fp)) {
+        // buffer overflow
         size_t oldsize = strlen(self->buff);
+        assert(oldsize == self->buffsize-1);
         self->buffsize *= 2;
         self->buff = realloc(self->buff, self->buffsize);
         CHECKMEM(self->buff);
