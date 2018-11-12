@@ -366,7 +366,7 @@ int main(int argc, char **argv) {
     char *m=NULL;
 
     // Each iteration processes one replicate
-    while(1) {
+    for(int replicate=0; 1; ++replicate) {
         // set nsite, number of segregating sites in this replicate
         nsite = -1;
         while(nsite == -1) {
@@ -460,11 +460,9 @@ int main(int argc, char **argv) {
                 daf[pop] = nderived / ((double) nsamples[pop]);
                 start += nsamples[pop];
             }
-            for(pop=0; pop < n; ++pop) {
-                if(pop > 0)
-                    putchar(' ');
-                printf("%lf", daf[order[pop]]);
-            }
+            printf("%d", replicate);
+            for(pop=0; pop < n; ++pop)
+                printf(" %lf", daf[order[pop]]);
             putchar('\n');
         }
         fflush(stdout);
@@ -475,6 +473,8 @@ int main(int argc, char **argv) {
 
     LineReader_free(lr);
     Tokenizer_free(tkz);
+    for(i=0; i<n; ++i)
+        free(poplbl[i]);
 
     return 0;
 }
