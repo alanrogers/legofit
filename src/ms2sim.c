@@ -335,9 +335,9 @@ int main(int argc, char **argv) {
         while(nseg == -1) {
             line = LineReader_next(lr, stdin);
             if(line == NULL)
-                DIE("segsites not found in input");
+                goto no_more_data;
 
-            Tokenizer_split(tkz, buff, " \t");
+            Tokenizer_split(tkz, line, " \t");
             ntokens = Tokenizer_strip(tkz, "\n");
             if(ntokens == 0)
                 continue;
@@ -366,8 +366,6 @@ int main(int argc, char **argv) {
             line = LineReader_next(lr, stdin);
             if(line == NULL || 0 != strncmp(line, "positions:", 10))
                 DIE("segsites not found in input");
-            if(line == NULL)
-                goto no_more_data;
 
             i = strlen(line);
             if(i == 0)
@@ -412,13 +410,13 @@ int main(int argc, char **argv) {
             putchar('\n');
         }
         free(m);
-        free(buff);
     }
  no_more_data:
     if(m != NULL)
         free(m);
 
-    free(buff);
+    LineReader_free(lr);
+    Tokenizer_free(tkz);
     free(m);
 
     return 0;
