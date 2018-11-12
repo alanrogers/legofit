@@ -1,14 +1,14 @@
 destination := $(HOME)/bin
 global_destination := $(HOME)/group/bin
-opt := -DNDEBUG -O3  -finline-functions  # For full optimization
-#opt := -O0 -fno-inline-functions -rdynamic -DDEBUG     # For debugging
+#opt := -DNDEBUG -O3  -finline-functions  # For full optimization
+opt := -O0 -fno-inline-functions -rdynamic -DDEBUG     # For debugging
 #opt := -O3  -finline-functions  # Optimization + debugging
 #prof := -pg -rdynamic                    # For profiling
 prof :=
 incl := -I/usr/local/include -I/opt/local/include
 
 targets := legosim legofit tabpat sitepat scrmpat daf raf numcores \
-     joinraf raf2daf bepe booma maub pclgo msppat
+     joinraf raf2daf bepe booma maub pclgo msppat ms2sim
 pytargets := diverg.py bootci.py flatfile.py axt2raf.py
 tests := xzeroin xbinary
 
@@ -103,6 +103,10 @@ MSPPAT := msppat.o misc.o binary.o lblndx.o mspreader.o \
   tokenizer.o error.o
 msppat : $(MSPPAT)
 	$(CC) $(CFLAGS) -o $@ $(MSPPAT) $(lib)
+
+MS2SIM := ms2sim.o binary.o misc.o lblndx.o linereader.o tokenizer.o
+ms2sim : $(MS2SIM)
+	$(CC) $(CFLAGS) -o $@ $(MS2SIM) $(lib)
 
 DAF := daf.o misc.o
 daf : $(DAF)

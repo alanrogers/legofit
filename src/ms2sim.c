@@ -41,11 +41,16 @@ int       MSSample_compare(MSSample *left, MSSample *right);
 MSSample *MSSample_insert(MSSample *node, MSSample *new);
 MSSample *MSSample_collapse(MSSample *node);
 int       MSSample_length(MSSample *self);
+void      MSSample_free(MSSample *self);
+void      MSSample_print(MSSample *self, FILE *fp);
 
 MSSample *MSSample_new(double age, int pop, int nsamp) {
     MSSample *self = malloc(sizeof(MSSample));
     CHECKMEM(self);
     memset(self, 0, sizeof(MSSample));
+    self->age = age;
+    self->pop = pop;
+    self->nsamp = nsamp;
     return self;
 }
 
@@ -99,20 +104,31 @@ MSSample *MSSample_collapse(MSSample *node) {
         free(tmp);
     }
     node->next = MSSample_collapse(node->next);
+    if(node->nsamp == 0) {
+        MSSample *tmp = node;
+        node = node->next;
+        free(tmp);
+    }
     return node;
+}
+
+void MSSample_print(MSSample *self, FILE *fp) {
+    if(self == NULL) 
+        return;
+    fprintf(stderr,"MSSample: age=%0.8lg, pop=%d, nsamp=%d\n",
+            self->age, self->pop, self->nsamp);
+    MSSample_print(self->next, fp);
 }
 
 /// Parse output of ms
 void usage(void) {
-    fprintf(stderr, "usage: ms2sim [options]\n");
-    fprintf(stderr, "   where options may include:\n");
-    tellopt("-h     or --help", "print this message");
-    fprintf(stderr, " Reads from stdin; writes to stdout.\n");
+    fprintf(stderr, "usage: ms2sim\n");
+    fprintf(stderr, "Reads from stdin; writes to stdout.\n");
 
     exit(EXIT_FAILURE);
 }
 
-// On input, glt should point to a tokenized string representing the
+// On input, tkz should point to a tokenized string representing the
 // ms command line, and nsamples should point to an int.
 //
 // The function returns a newly-allocated array of ints, whose dimension
@@ -120,7 +136,7 @@ void usage(void) {
 // The i'th entry in this array is the haploid sample size of population i.
 //
 // On error, the function returns NULL.
-unsigned *countSamples(GetLineTok *glt, int *sampleDim) {
+unsigned *countSamples(Tokenizer *tkz, int *sampleDim) {
     /*
       Here is the summary, from Hudson's msdoc.pdf, of the order in
       which haplotypes are printed in ms output: "The ancient DNA
@@ -139,26 +155,26 @@ unsigned *countSamples(GetLineTok *glt, int *sampleDim) {
       and the ancient ones as arguments to -eA.
     */
 
-    if(strcmp("ms", GetLineTok_token(glt, 0)) != 0) {
+    if(strcmp("ms", Tokenizer_token(tkz, 0)) != 0) {
         fprintf(stderr,"%s:%d: input file is not ms output\n",
                 __FILE__,__LINE__);
         return NULL;
     }
 
-    int i, j, k, npops=0, h;
+    int i, j, npops=0, h;
     char *token, *end;
     MSSample *mss = NULL;
-    int ntokens = GetLineTok_ntokens(glt);
+    int ntokens = Tokenizer_ntokens(tkz);
 
     // Read through tokens, looking for -I and -eA. Use these arguments
     // to set npops and push sample sizes into mss.
     i = 1;
     while(i < ntokens) {
-        token = GetLineTok_token(glt, i);
+        token = Tokenizer_token(tkz, i);
         if(strcmp("-I", token) == 0) {
             assert(npops == 0);
             assert(mss == NULL);
-            token = GetLineTok_token(glt, i+1);
+            token = Tokenizer_token(tkz, i+1);
             npops = strtol(token, &end, 10);
             if(end==token || npops <= 0) {
                 fprintf(stderr,"%s:%d: illegal number of populations: %s\n",
@@ -166,7 +182,7 @@ unsigned *countSamples(GetLineTok *glt, int *sampleDim) {
                 goto fail;
             }
             for(j=0; j<npops; ++j) {
-                token = GetLineTok_token(glt, i+j+2);
+                token = Tokenizer_token(tkz, i+j+2);
                 h = strtol(token, &end, 10);
                 if(end==token || h < 0) {
                     fprintf(stderr,"%s:%d: illegal number of populations: %s\n",
@@ -180,21 +196,21 @@ unsigned *countSamples(GetLineTok *glt, int *sampleDim) {
             i += npops + 2;
             continue;
         }else if(strcmp("-eA", token) == 0) {
-            token = GetLineTok_token(glt, i+1);
+            token = Tokenizer_token(tkz, i+1);
             double t = strtod(token, &end);
             if(end==token || t < 0.0) {
                 fprintf(stderr,"%s:%d: illegal time: %s\n",
                         __FILE__,__LINE__, token);
                 goto fail;
             }
-            token = GetLineTok_token(glt, i+2);
+            token = Tokenizer_token(tkz, i+2);
             int pop = strtol(token, &end, 10);
             if(end==token || pop < 1) {
                 fprintf(stderr,"%s:%d: illegal population: %s\n",
                         __FILE__,__LINE__, token);
                 goto fail;
             }
-            token = GetLineTok_token(glt, i+3);
+            token = Tokenizer_token(tkz, i+3);
             h = strtol(token, &end, 10);
             if(end==token || h <= 0) {
                 fprintf(stderr,"%s:%d: illegal sample size: %s\n",
@@ -211,6 +227,8 @@ unsigned *countSamples(GetLineTok *glt, int *sampleDim) {
     }
 
     mss = MSSample_collapse(mss);
+    fprintf(stderr,"Order of samples in output:\n");
+    MSSample_print(mss, stderr);
     npops = MSSample_length(mss);
 
     *sampleDim = npops;
@@ -233,24 +251,22 @@ unsigned *countSamples(GetLineTok *glt, int *sampleDim) {
 }
 
 int main(int argc, char **argv) {
-    size_t      obuffsize;
     size_t      buffsize = 1<<9;
     long        maxtokens = 1<<8;
-    long        i, j, ntokens, status;
+    long        i, j, ntokens;
     long        site, start, pop, seq;
-    long        nseg, nseq;
+    long        nsite, nseq;
     time_t      currtime = time(NULL);
-    char *token;
 
     printf("# ms2sim was run %s", ctime(&currtime));
-    printf("# %-12s =", "cmd line");
+    printf("# cmd lines");
     for(i = 0; i < argc; ++i)
         printf(" %s", argv[i]);
     putchar('\n');
 
     /* command-line arguments */
     int n = 0;
-    for(i=0; i < argc; ++i) {
+    for(i=1; i < argc; ++i) {
         if(argv[i][0] == '-')
             usage();
         ++n;
@@ -271,12 +287,8 @@ int main(int argc, char **argv) {
     }
 
     // Set poplbl array
-    for(i = j = 0; i < argc; ++i) {
-        if(argv[i][0] == '-')
-            continue;
+    for(i=1, j=0; i < argc; ++i) {
         poplbl[j] = argv[i];
-        if(poplbl[j] == NULL || strlen(poplbl[j]) == 0)
-            usage();
         if(strchr(poplbl[j], ':') != NULL) {
             fprintf(stderr,"Label (%s) is illegal because it includes ':'\n",
                     poplbl[j]);
@@ -286,18 +298,14 @@ int main(int argc, char **argv) {
         ++j;
     }
 
-    printf("npops = %d\n", n);
-    printf("pop sampsize\n");
-    for(i=0; i < n; ++i)
-        printf("%s %u\n", poplbl[i], nsamples[i]);
-
     // allocate memory
     LineReader *lr = LineReader_new(buffsize);
     CHECKMEM(lr);
     Tokenizer *tkz = Tokenizer_new(maxtokens);
     CHECKMEM(tkz);
 
-    char *line = LineReader_next(lr, stdin);
+    char *line;  // not locally owned. Freed by LineReader_free.
+    line = LineReader_next(lr, stdin);
     if(line == NULL)
         DIE("No input");
     Tokenizer_split(tkz, line, " \n");
@@ -317,6 +325,12 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
+    printf("npops = %d\n", n);
+    printf("pop sampsize\n");
+    for(i=0; i < n; ++i)
+        printf("%s %u\n", poplbl[i], nsamples[i]);
+    fflush(stdout);
+
     // Set nseq by counting the samples in each subdivision. This will
     // not equal the 2nd argument of ms if there are any ancient
     // samples.
@@ -324,15 +338,16 @@ int main(int argc, char **argv) {
     for(i = 0; i < n; ++i)
         nseq += nsamples[i];
 
-    // A matrix of dimension nseq X nseg. To access element for
-    // given seq and site: m[nseg*seq + site];
+    // A matrix of dimension nseq X nsite. To access element for
+    // given seq and site: m[nsite*seq + site];
+    size_t mdim = 0;
     char *m=NULL;
 
     // Each iteration processes one replicate
     while(1) {
-        // set nseg, number of segregating sites in this replicate
-        nseg = -1;
-        while(nseg == -1) {
+        // set nsite, number of segregating sites in this replicate
+        nsite = -1;
+        while(nsite == -1) {
             line = LineReader_next(lr, stdin);
             if(line == NULL)
                 goto no_more_data;
@@ -343,51 +358,68 @@ int main(int argc, char **argv) {
                 continue;
             if(0 == strcmp("segsites:", Tokenizer_token(tkz, 0))) {
                 // got segsites
-                nseg = strtol(Tokenizer_token(tkz, 1), NULL, 10);
+                nsite = strtol(Tokenizer_token(tkz, 1), NULL, 10);
             }
         }
-        if(nseg <= 0) {
-            fprintf(stderr, "%s:%d: Number of segregating sites is %ld",
-                    __FILE__, __LINE__, nseg);
+        if(nsite <= 0) {
+            fprintf(stderr, "%s:%d: Illegal number of sites: %ld",
+                    __FILE__, __LINE__, nsite);
             exit(EXIT_FAILURE);
         }
 
         // skip positions line
         line = LineReader_next(lr, stdin);
         if(line == NULL || 0 != strncmp(line, "positions:", 10))
-            DIE("segsites not found in input");
+            DIE("positions not found in input");
 
-        m = malloc(nseq * nseg * sizeof(m[0]));
-        CHECKMEM(m);
+        size_t need = nseq * nsite * sizeof(m[0]);
+        if(need > mdim) {
+            mdim = need;
+            m = realloc(m, mdim);
+            CHECKMEM(m);
+        }
 
         // Read data, putting values into array "m"
         seq = 0;
         while(1) {
             line = LineReader_next(lr, stdin);
-            if(line == NULL || 0 != strncmp(line, "positions:", 10))
-                DIE("segsites not found in input");
+            if(line == NULL) {
+                if(seq == nseq)
+                    goto done_reading_replicate;
+                DIE("missing genotypes in input");
+            }
 
-            i = strlen(line);
-            if(i == 0)
+            // len is length line excluding trailing whitespace
+            long len;
+            for(len=0; line[len] != '\0'; ++len)
+                ;
+            while(isspace(line[len - 1])) {
+                --len;
+                line[len] = '\0';
+            }
+            assert(len == strlen(line));
+
+            if(len == 0)
                 goto done_reading_replicate;
 
             if(seq >= nseq) {
-                fprintf(stderr,"%s:%d: seq=%ld >= nseq=%ld",
-                        __FILE__, __LINE__, seq, nseq);
+                fprintf(stderr,"%s:%d: too many sequences: %ld (max=%ld)\n",
+                        __FILE__, __LINE__, seq+1, nseq);
+                fprintf(stderr,"line:");
+                for(j=0; j<50 && line[j]!='\0'; ++j)
+                    putc(line[j], stderr);
+                putc('\n', stderr);
                 exit(EXIT_FAILURE);
             }
 
-            while(isspace(line[i - 1])) {
-                --i;
-                line[i] = '\0';
-            }
-            if(i != nseg) {
+            if(len != nsite) {
                 fprintf(stderr,
-                        "%s:%d input line has %ld chars; should have %d\n",
-                        __FILE__, __LINE__, i, nseg);
+                        "%s:%d input line has %ld chars; should have %ld\n",
+                        __FILE__, __LINE__, len, nsite);
                 exit(EXIT_FAILURE);
             }
-            memcpy(m + nseg * seq, line, nseg * sizeof(m[0]));
+
+            memcpy(m + nsite * seq, line, nsite * sizeof(m[0]));
             seq += 1;
         }
     done_reading_replicate:
@@ -395,21 +427,23 @@ int main(int argc, char **argv) {
 
         // output
         double nderived, daf;
-        for(site = 0; site < nseg; ++site) {
+        for(site = 0; site < nsite; ++site) {
             for(pop=start=0; pop < n; ++pop) {
                 nderived = 0.0;
                 for(seq=start;  seq < start + nsamples[pop]; ++seq) {
                     assert(seq < nseq);
-                    if('1' == m[nseg*seq + site])
+                    if('1' == m[nsite*seq + site])
                         ++nderived;
                 }
-                start += nsamples[pop];
                 daf = nderived / ((double) nsamples[pop]);
-                printf(" %lf", daf);
+                if(pop > 0)
+                    putchar(' ');
+                printf("%lf", daf);
+                start += nsamples[pop];
             }
             putchar('\n');
         }
-        free(m);
+        fflush(stdout);
     }
  no_more_data:
     if(m != NULL)
@@ -417,7 +451,6 @@ int main(int argc, char **argv) {
 
     LineReader_free(lr);
     Tokenizer_free(tkz);
-    free(m);
 
     return 0;
 }
