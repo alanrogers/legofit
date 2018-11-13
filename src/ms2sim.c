@@ -475,6 +475,7 @@ int main(int argc, char **argv) {
     Tokenizer_free(tkz);
     for(i=0; i<n; ++i)
         free(poplbl[i]);
+    free(nsamples);
 
     return 0;
 }
