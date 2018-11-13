@@ -415,7 +415,7 @@ int main(int argc, char **argv) {
             long len;
             for(len=0; line[len] != '\0'; ++len)
                 ;
-            while(isspace(line[len - 1])) {
+            while(len > 0 && isspace(line[len - 1])) {
                 --len;
                 line[len] = '\0';
             }
