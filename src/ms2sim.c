@@ -20,7 +20,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <time.h>
 #include <ctype.h>
 #include <assert.h>
 #include <math.h>
@@ -227,8 +226,6 @@ unsigned *countSamples(Tokenizer *tkz, int *sampleDim) {
     }
 
     mss = MSSample_collapse(mss);
-    fprintf(stderr,"Order of samples in output:\n");
-    MSSample_print(mss, stderr);
     npops = MSSample_length(mss);
 
     *sampleDim = npops;
@@ -256,13 +253,6 @@ int main(int argc, char **argv) {
     long        i, j, ntokens;
     long        site, start, pop, seq;
     long        nsite, nseq;
-    time_t      currtime = time(NULL);
-
-    fprintf(stderr, "ms2sim was run %s", ctime(&currtime));
-    fprintf(stderr,"cmd line:");
-    for(i = 0; i < argc; ++i)
-        fprintf(stderr, " %s", argv[i]);
-    putc('\n', stderr);
 
     int n = argc-1;  // number of population labels
     if(n == 0)
