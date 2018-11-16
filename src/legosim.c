@@ -134,7 +134,7 @@ int main(int argc, char **argv) {
     int         i, j;
     int         doSing=0;  // nonzero => use singleton site patterns
     time_t      currtime = time(NULL);
-	unsigned long pid = (unsigned long) getpid();
+    unsigned long pid = (unsigned long) getpid();
     double      lo_twoN = 1.0, hi_twoN = 1e6;  // twoN bounds
     double      lo_t = 0.0, hi_t = 1e6;        // t bounds
     double      U=0.0;          // mutations pre gen per haploid genome
@@ -210,17 +210,17 @@ int main(int argc, char **argv) {
             .hi_t = hi_t
     };
     GPTree *gptree = GPTree_new(fname, bnd);
-	LblNdx lblndx = GPTree_getLblNdx(gptree);
+    LblNdx lblndx = GPTree_getLblNdx(gptree);
 
     int dim = GPTree_nFree(gptree);
     double x[dim];
     GPTree_getParams(gptree, dim, x);
 
     // No need to lock rngseed, because only 1 thread is running.
-	rngseed = currtime^pid;
+    rngseed = currtime^pid;
     gsl_rng  *rng = gsl_rng_alloc(gsl_rng_taus);
     gsl_rng_set(rng, rngseed);
-	rngseed = (rngseed == ULONG_MAX ? 0 : rngseed+1);
+    rngseed = (rngseed == ULONG_MAX ? 0 : rngseed+1);
 
     BranchTab *bt = patprob(gptree, nreps, doSing, rng);
     BranchTab_divideBy(bt, (double) nreps);
