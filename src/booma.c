@@ -277,13 +277,21 @@ int ModSelCrit_compare(ModSelCrit * x, ModSelCrit * y) {
     int i, diff;
 
     diff = x->dim - y->dim;
-    if(diff)
+    if(diff) {
+        fprintf(stderr,"%s:%s:%d: inconsistent dimensions: %d != %d\n",
+                __FILE__,__func__,__LINE__, x->dim, y->dim);
         return diff;
+    }
 
     for(i = 0; i < x->dim; ++i) {
         diff = strcmp(x->fname[i], y->fname[i]);
-        if(diff)
+        if(diff) {
+            fprintf(stderr,"%s:%s:%d: inconsistent names for data file %d:\n"
+                    "  %s != %s\n",
+                    __FILE__,__func__,__LINE__,
+                    i, x->fname[i], y->fname[i]);
             return diff;
+        }
     }
     return 0;
 }
