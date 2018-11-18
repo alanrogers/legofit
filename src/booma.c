@@ -286,8 +286,8 @@ int ModSelCrit_compare(ModSelCrit * x, ModSelCrit * y) {
     for(i = 0; i < x->dim; ++i) {
         diff = strcmp(x->fname[i], y->fname[i]);
         if(diff) {
-            fprintf(stderr,"%s:%s:%d: inconsistent names for data file %d:\n"
-                    "  %s != %s\n",
+            fprintf(stderr,"%s:%s:%d: inconsistent data file names\n"
+                    " data file %d: %s != %s\n",
                     __FILE__,__func__,__LINE__,
                     i, x->fname[i], y->fname[i]);
             return diff;
