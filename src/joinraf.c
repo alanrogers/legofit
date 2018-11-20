@@ -40,7 +40,8 @@ static void usage(void);
 const char *useMsg =
     "\nUsage: joinraf <in_1> <in_2> ...\n"
     "   where <in_i> are input files in raf format."
-    "   Writes to standard output.\n";
+    "   Writes to standard output.\n"
+    "   Each input file should summarize the same number of genomes.\n";
 
 /// Print usage message and die.
 static void usage(void) {
@@ -64,6 +65,9 @@ int main(int argc, char **argv) {
         r[i] = RAFReader_new(argv[i+1]);
 
     printf("# joinraf version %s\n", VERSION);
+
+    fprintf(stderr,"Warning: each input file should summarize the same"
+            " number of genomes.\n");  
 
     // Iterate through raf files
     printf("#%s\t%s\t%s\t%s\t%s\n", "chr", "pos", "ref", "alt", "raf");
