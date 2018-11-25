@@ -135,7 +135,7 @@ int main(int argc, char **argv) {
     int         doSing=0;  // nonzero => use singleton site patterns
     time_t      currtime = time(NULL);
     unsigned long pid = (unsigned long) getpid();
-    double      lo_twoN = 1.0, hi_twoN = 1e6;  // twoN bounds
+    double      lo_twoN = 0.0, hi_twoN = DBL_MAX;  // twoN bounds
     double      lo_t = 0.0, hi_t = 1e6;        // t bounds
     double      U=0.0;          // mutations pre gen per haploid genome
     int         optndx;
