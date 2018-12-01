@@ -5,7 +5,7 @@ prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
 tests := xaddrparmap xbinary xbooma xboot xbranchtab xdafreader xdiffev \
   xdtnorm xerror xgene xgetlinetok xgptree xhessian xjobqueue xlblndx \
-  xlinereader xmisc xmspreader xparam xparse xparstore xpointbuff xpopnode \
+  xlinereader xmisc xsimreader xparam xparse xparstore xpointbuff xpopnode \
   xpopnodetab xrafreader xscrmreader xsimsched xstate xstrdblmap \
   xstrdblqueue xstrint xstrparmap xtinyexpr xtokenizer xuintqueue \
   xwraparound
@@ -55,7 +55,7 @@ test : $(tests)
 	-./xlblndx
 	-./xlinereader
 	-./xmisc
-	-./xmspreader
+	-./xsimreader
 	-./xparam
 	-./xparse
 	-./xparstore
@@ -169,14 +169,14 @@ XSCRMREADER := xscrmreader.o misc.o tokenizer.o
 xscrmreader : $(XSCRMREADER)
 	$(CC) $(CFLAGS) -o $@ $(XSCRMREADER) $(lib)
 
-xmspreader.o : mspreader.c
-	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/mspreader.c
+xsimreader.o : simreader.c
+	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/simreader.c
 
-XMSPREADER := xmspreader.o misc.o tokenizer.o
-xmspreader : $(XMSPREADER)
-	$(CC) $(CFLAGS) -o $@ $(XMSPREADER) $(lib)
+XSIMREADER := xsimreader.o misc.o tokenizer.o
+xsimreader : $(XSIMREADER)
+	$(CC) $(CFLAGS) -o $@ $(XSIMREADER) $(lib)
 
-XUINTQUEUE := xuintqueue.o uintqueue.o misc.o 
+XUINTQUEUE := xuintqueue.o uintqueue.o misc.o
 xuintqueue : $(XUINTQUEUE)
 	$(CC) $(CFLAGS) -o $@ $(XUINTQUEUE) $(lib)
 

@@ -8,7 +8,7 @@ prof :=
 incl := -I/usr/local/include -I/opt/local/include
 
 targets := legosim legofit tabpat sitepat scrmpat daf raf numcores \
-     joinraf raf2daf bepe booma maub pclgo msppat ms2sim
+     joinraf raf2daf bepe booma maub pclgo simpat ms2sim
 pytargets := diverg.py bootci.py flatfile.py axt2raf.py
 tests := xzeroin xbinary
 
@@ -99,10 +99,10 @@ SCRMPAT := scrmpat.o misc.o binary.o lblndx.o scrmreader.o \
 scrmpat : $(SCRMPAT)
 	$(CC) $(CFLAGS) -o $@ $(SCRMPAT) $(lib)
 
-MSPPAT := msppat.o misc.o binary.o lblndx.o mspreader.o \
+SIMPAT := simpat.o misc.o binary.o lblndx.o simreader.o \
   tokenizer.o error.o
-msppat : $(MSPPAT)
-	$(CC) $(CFLAGS) -o $@ $(MSPPAT) $(lib)
+simpat : $(SIMPAT)
+	$(CC) $(CFLAGS) -o $@ $(SIMPAT) $(lib)
 
 MS2SIM := ms2sim.o binary.o misc.o lblndx.o linereader.o tokenizer.o
 ms2sim : $(MS2SIM)

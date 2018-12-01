@@ -1,10 +1,10 @@
 /**
-@file mspreader.c
-@page mspreader
-@brief Interface to msprime output files.
+@file simreader.c
+@page simreader
+@brief Interface to output files produced by ms2sim and msprime.
 */
 
-#include "mspreader.h"
+#include "simreader.h"
 #include "misc.h"
 #include "tokenizer.h"
 #include "error.h"
@@ -13,7 +13,7 @@
 #include <errno.h>
 #include <stdlib.h>
 
-struct MsprimeReader {
+struct SimReader {
     int sampleDim;
     unsigned *nsamples;
     char **lbl;
@@ -32,7 +32,7 @@ struct MsprimeReader {
 };
 
 // destructor doesn't free self->fp
-void MsprimeReader_free(MsprimeReader *self) {
+void SimReader_free(SimReader *self) {
     assert(self);
     free(self->nsamples);
     for(int i=0; i < self->sampleDim; ++i)
@@ -43,15 +43,15 @@ void MsprimeReader_free(MsprimeReader *self) {
     free(self);
 }
 
-// Allocate and initialize a new MsprimeReader from input stream.
-MsprimeReader *MsprimeReader_new(FILE *fp) {
+// Allocate and initialize a new SimReader from input stream.
+SimReader *SimReader_new(FILE *fp) {
 
     char buff[128];
     int i, status;
 
-    MsprimeReader *self = malloc(sizeof(MsprimeReader));
+    SimReader *self = malloc(sizeof(SimReader));
     CHECKMEM(self);
-    memset(self, 0, sizeof(MsprimeReader));
+    memset(self, 0, sizeof(SimReader));
 
     self->chr = -1;
     self->fp = fp;
@@ -179,7 +179,7 @@ MsprimeReader *MsprimeReader_new(FILE *fp) {
 
 // Rewind input to beginning of data and reset chr. Doesn't work
 // if input is stdin.
-int MsprimeReader_rewind(MsprimeReader *self) {
+int SimReader_rewind(SimReader *self) {
     assert(self->fp != stdin);
     errno = 0;
     fseek(self->fp, self->start_data, SEEK_SET);
@@ -190,8 +190,8 @@ int MsprimeReader_rewind(MsprimeReader *self) {
     return 0;
 }
 
-// Move MsprimeReader to next nucleotide site.
-int MsprimeReader_next(MsprimeReader *self) {
+// Move SimReader to next nucleotide site.
+int SimReader_next(SimReader *self) {
     char buff[128];
     int status, ntokens=0;
     do{
@@ -240,29 +240,29 @@ int MsprimeReader_next(MsprimeReader *self) {
 }
 
 // Return current chromosome.
-unsigned MsprimeReader_chr(MsprimeReader *self) {
+unsigned SimReader_chr(SimReader *self) {
     return self->chr;
 }
 
 // Return number of populations.
-int MsprimeReader_sampleDim(MsprimeReader *self) {
+int SimReader_sampleDim(SimReader *self) {
     return self->sampleDim;
 }
 
 // Return number of samples from population i.
-int MsprimeReader_nsamples(MsprimeReader *self, int i) {
+int SimReader_nsamples(SimReader *self, int i) {
     assert(i < self->sampleDim);
     return self->nsamples[i];
 }
 
 // Return frequency of derived allele in sample from population i.
-double MsprimeReader_daf(MsprimeReader *self, int i) {
+double SimReader_daf(SimReader *self, int i) {
     assert(i < self->sampleDim);
     assert(self->chr >= 0);
     return self->daf[i];
 }
 
-const char *MsprimeReader_lbl(MsprimeReader *self, int i) {
+const char *SimReader_lbl(SimReader *self, int i) {
     assert(i < self->sampleDim);
     assert(self->chr >= 0);
     return self->lbl[i];
@@ -304,93 +304,93 @@ int main(int argc, char **argv) {
     fclose(fp);
 
     fp = fopen(tstfname, "r");
-    MsprimeReader *r = MsprimeReader_new(fp);
+    SimReader *r = SimReader_new(fp);
     CHECKMEM(r);
 
-    assert(-1 == MsprimeReader_chr(r));
-    int dim = MsprimeReader_sampleDim(r);
+    assert(-1 == SimReader_chr(r));
+    int dim = SimReader_sampleDim(r);
     assert(4 == dim);
-    
+
     int i, status;
 
     for(i=0; i<dim; ++i) {
-        assert(1 == MsprimeReader_nsamples(r, i));
+        assert(1 == SimReader_nsamples(r, i));
     }
 
     // test mspreader
 
-    status = MsprimeReader_next(r);
+    status = SimReader_next(r);
     assert(status==0);
-    assert(0 == MsprimeReader_chr(r));
-    assert(1.0 == MsprimeReader_daf(r, 0));
-    assert(0.0 == MsprimeReader_daf(r, 1));
-    assert(0.0 == MsprimeReader_daf(r, 2));
-    assert(0.0 == MsprimeReader_daf(r, 3));
+    assert(0 == SimReader_chr(r));
+    assert(1.0 == SimReader_daf(r, 0));
+    assert(0.0 == SimReader_daf(r, 1));
+    assert(0.0 == SimReader_daf(r, 2));
+    assert(0.0 == SimReader_daf(r, 3));
     if(verbose) {
-        for(i=0; i<MsprimeReader_sampleDim(r); ++i) {
-            printf("lbl[%d]=%s ", i, MsprimeReader_lbl(r, i));
-            printf("daf[%d]=%g\n", i, MsprimeReader_daf(r, i));
+        for(i=0; i<SimReader_sampleDim(r); ++i) {
+            printf("lbl[%d]=%s ", i, SimReader_lbl(r, i));
+            printf("daf[%d]=%g\n", i, SimReader_daf(r, i));
         }
     }
 
-    status = MsprimeReader_next(r);
+    status = SimReader_next(r);
     if(status) {
-        fprintf(stderr,"%s:%d: ERR MsprimeReader_next returned %d\n",
+        fprintf(stderr,"%s:%d: ERR SimReader_next returned %d\n",
                 __FILE__,__LINE__, status);
         exit(EXIT_FAILURE);
     }
-    assert(0 == MsprimeReader_chr(r));
-    assert(0.0 == MsprimeReader_daf(r, 0));
-    assert(1.0 == MsprimeReader_daf(r, 1));
-    assert(0.0 == MsprimeReader_daf(r, 2));
-    assert(0.0 == MsprimeReader_daf(r, 3));
+    assert(0 == SimReader_chr(r));
+    assert(0.0 == SimReader_daf(r, 0));
+    assert(1.0 == SimReader_daf(r, 1));
+    assert(0.0 == SimReader_daf(r, 2));
+    assert(0.0 == SimReader_daf(r, 3));
 
-    status = MsprimeReader_next(r);
+    status = SimReader_next(r);
     if(status) {
-        fprintf(stderr,"%s:%d: ERR MsprimeReader_next returned %d\n",
+        fprintf(stderr,"%s:%d: ERR SimReader_next returned %d\n",
                 __FILE__,__LINE__, status);
         exit(EXIT_FAILURE);
     }
-    assert(1 == MsprimeReader_chr(r));
-    assert(0.0 == MsprimeReader_daf(r, 0));
-    assert(1.0 == MsprimeReader_daf(r, 1));
-    assert(1.0 == MsprimeReader_daf(r, 2));
-    assert(1.0 == MsprimeReader_daf(r, 3));
-        
-    status = MsprimeReader_next(r);
-    if(status) {
-        fprintf(stderr,"%s:%d: ERR MsprimeReader_next returned %d\n",
-                __FILE__,__LINE__, status);
-        exit(EXIT_FAILURE);
-    }
-    assert(1 == MsprimeReader_chr(r));
-    assert(1.0 == MsprimeReader_daf(r, 0));
-    assert(0.0 == MsprimeReader_daf(r, 1));
-    assert(0.0 == MsprimeReader_daf(r, 2));
-    assert(0.0 == MsprimeReader_daf(r, 3));
+    assert(1 == SimReader_chr(r));
+    assert(0.0 == SimReader_daf(r, 0));
+    assert(1.0 == SimReader_daf(r, 1));
+    assert(1.0 == SimReader_daf(r, 2));
+    assert(1.0 == SimReader_daf(r, 3));
 
-    status = MsprimeReader_rewind(r);
+    status = SimReader_next(r);
     if(status) {
-        fprintf(stderr,"%s:%d: MsprimeReader_rewind returned %d\n",
+        fprintf(stderr,"%s:%d: ERR SimReader_next returned %d\n",
+                __FILE__,__LINE__, status);
+        exit(EXIT_FAILURE);
+    }
+    assert(1 == SimReader_chr(r));
+    assert(1.0 == SimReader_daf(r, 0));
+    assert(0.0 == SimReader_daf(r, 1));
+    assert(0.0 == SimReader_daf(r, 2));
+    assert(0.0 == SimReader_daf(r, 3));
+
+    status = SimReader_rewind(r);
+    if(status) {
+        fprintf(stderr,"%s:%d: SimReader_rewind returned %d\n",
                 __FILE__,__LINE__,status);
     }
 
-    status = MsprimeReader_next(r);
+    status = SimReader_next(r);
     if(status) {
-        fprintf(stderr,"%s:%d: MsprimeReader_next returned %d\n",
+        fprintf(stderr,"%s:%d: SimReader_next returned %d\n",
                 __FILE__,__LINE__,status);
     }
-    assert(0 == MsprimeReader_chr(r));
-    assert(1.0 == MsprimeReader_daf(r, 0));
-    assert(0.0 == MsprimeReader_daf(r, 1));
-    assert(0.0 == MsprimeReader_daf(r, 2));
-    assert(0.0 == MsprimeReader_daf(r, 3));
+    assert(0 == SimReader_chr(r));
+    assert(1.0 == SimReader_daf(r, 0));
+    assert(0.0 == SimReader_daf(r, 1));
+    assert(0.0 == SimReader_daf(r, 2));
+    assert(0.0 == SimReader_daf(r, 3));
 
     fclose(fp);
-    MsprimeReader_free(r);
+    SimReader_free(r);
     remove(tstfname);
-    unitTstResult("MsprimeReader", "OK");
-    
+    unitTstResult("SimReader", "OK");
+
     return 0;
 }
 

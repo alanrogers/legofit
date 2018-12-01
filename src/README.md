@@ -18,6 +18,8 @@ gene flow. The package consists of the following programs
   and generates moving-blocks bootstrap replicates.
 * @ref scrmpat "scrmpat" tabulates site patterns from output generated
   by the `scrm` coalescent simulator.
+* @ref simpat "simpat" tabulates site patterns from the output of
+  `ms2sim` or [msprime](https://github.com/tskit-dev/msprime).
 * @ref legosim "legosim" predicts site pattern counts from
   assumptions about population history.
 * @ref legofit "legofit" estimates parameters from site pattern
