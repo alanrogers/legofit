@@ -2,12 +2,13 @@
  * @file ms2sim.c
  * @page ms2sim
  * @brief ms2sim translates output from Dick Hudson's `ms` program
- * into "sim" format.
+ * into "sim" format, which is described on the @ref simpat "simpat"
+ * page.
  *
  * # ms2sim, a program that converts `ms` output into sim format
  *
  * This program is written in C, because the conversion involves
- * transposing a large matrix, and this is faster in C.  
+ * transposing a large matrix, and this is faster in C.
  *
  * @copyright Copyright (c) 2018, Alan R. Rogers
  * <rogers@anthro.utah.edu>. This file is released under the Internet
@@ -112,7 +113,7 @@ MSSample *MSSample_collapse(MSSample *node) {
 }
 
 void MSSample_print(MSSample *self, FILE *fp) {
-    if(self == NULL) 
+    if(self == NULL)
         return;
     fprintf(stderr,"MSSample: age=%0.8lg, pop=%d, nsamp=%d\n",
             self->age, self->pop, self->nsamp);
@@ -328,7 +329,7 @@ int main(int argc, char **argv) {
     unsigned *nsamples = countSamples(tkz, &sampleDim);
 
     if(n != sampleDim) {
-        fprintf(stderr, 
+        fprintf(stderr,
                 "%s:%d: number of labels on command line doesn't match\n"
                 " number of subdivisions in ms input.\n",
                 __FILE__,__LINE__);
