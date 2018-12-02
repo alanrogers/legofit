@@ -10,7 +10,6 @@ typedef struct BootChr BootChr;
 typedef struct Bounds Bounds;
 typedef struct BranchTab BranchTab;
 typedef struct Constraint Constraint;
-typedef struct El El;
 typedef struct Gene Gene;
 typedef struct GetLineTok GetLineTok;
 typedef struct GPTree GPTree;

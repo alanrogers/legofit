@@ -24,6 +24,8 @@
 # error PNT_DIM must be a power of 2
 #endif
 
+typedef struct El El;
+
 /// A single key-value pair, with a pointer to the next one.
 /// Within each bin of the hash table, key-value pairs are
 /// stored in a sorted linked list.
