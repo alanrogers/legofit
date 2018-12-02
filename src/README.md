@@ -614,6 +614,71 @@ the contribution of each site pattern. Thus, it will tell you which
 site patterns are responsible for a poor fit between observed and
 expected site pattern frequencies.
 
+A typical legofit analysis involves several stages:
+
+1. Write a .lgo file describing the model of interest. Let us call
+   this file a.lgo. The value of one time parameter must be specified
+   as a fixed parameter in order to calibrate the molecular clock. If
+   singletons are excluded (the default) two time parameters must be
+   fixed in order to specify the length of an interval. It may be
+   possible to fix some additional parameters, if their values do not
+   affect site pattern frequencies. (More on this below.) But in
+   general, you want most variables to be free in this initial model
+   to avoid introducing bias. Run legofit on the real data and each
+   bootstrap replicate, using the `--stateOut` option. I'll assume
+   that the results are in files named a1.legofit (estimates from the
+   real data), a1.state (`--stateOut` file for the real data),
+   a1boot0.legofit (estimates from 0'th bootstrap replicate),
+   a1boot0.state (`--stateOut` file for this replicate), and so
+   on. The command for bootstrap replicate 2 might look like this:
+<pre class="fragment">
+legofit -1 --tol 3e-5 -S 5000@10000 -S 1000@100000 -S 1000@1000000 \
+--stateOut a1boot2.state a.lgo boot2.opf > a1boot2.legofit
+</pre>
+Here `boot2.opf` is the data file for bootstrap replicate 2. This
+   will generate two output files: a1boot2.legofit will contain the
+   estimates from bootstrap replicate 2 in stage 1 of the
+   analysis. a1boot2.state is the corresponding state file.
+
+2. In a complex model, there may be multiple local optima. If so, the
+   various .legofit files may be scattered among these optima. To
+   address this problem, restart legofit for each data file, using the
+   `--stateIn` option multiple times. For example:
+<pre class="fragment">
+legofit -1 --tol 2e-5 -S 1000@2000000 a.lgo boot2.opf \
+  --stateIn a1.state \
+  --stateIn a1boot0.state \
+  --stateIn a1boot1.state \
+  --stateIn a1boot2.state \
+  ...
+  --stateIn a1boot49.statep > a2boot2.legofit
+</pre>
+The `--stateIn` argument has been used here 51 times: once for
+the real data and once for each of the 50 bootstrap replicates. This
+re-starts the optimizer with an initial swarm of points that is spread
+across all the local optima found during stage 1 of the
+analysis. Legofit is then able to choose among local optima.
+
+3. Use pclgo to re-express the free variables of a.lgo in terms of
+   principal components. Optionally, you can use the `--tol` argument
+   of pclgo to reduce the dimension of the parameter space. See the
+   @ref pclgo "pclgo" page for instructions on using this program to
+   construct a new file--let's call it b.lgo--in which all free
+   variables are principal components. Repeat stages 1 and 2 for this
+   new .lgo file.
+
+4. You may want to repeat stage 3 several times with different values
+   of the `--tol` parameter. You can then use @ref bepe "bepe" and
+   @ref booma "booma" to choose among a.lgo, b.lgo, and so on.
+
+I mentioned above that some variables do not affect site pattern
+frequencies. As an example, consider the case in which there is a
+single modern sample from population Y, a single ancient sample from
+Z, and there is gene flow from Z into Y. If the gene flow is more
+recent than the ancient sample, its timing will not affect site
+pattern frequencies. The time of admixture should therefore be
+declared as a fixed variable with an arbitrary value in the .lgo file.
+
 ## Sort order of site patterns
 
 The sort order of site patterns is determined by the order of command

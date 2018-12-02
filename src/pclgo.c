@@ -15,7 +15,35 @@ of the .lgo file, re-expressing all the free variables as linear
 functions of the principle components. In the rewrite, all the free
 variables are principal component scores and are therefore
 uncorrelated. The output of pclgo is not a complete .lgo file. It must
-be integrated into the .lgo file using a text editor.
+be integrated into a new .lgo file.
+
+You can do this with a text editor. But here is a trick that uses the
+unix shell:
+
+    (grep ^# a.lgo; pclgo a.lgo a2.legofit a2boot*.legofit;\
+     grep -v ^# a.lgo | egrep -v "\<free\>") > b.lgo
+
+This assumes that you have used `a.lgo` to analyze a real data set and
+several bootstrap replicates. The legofit output files are named
+`a2.legofit` (for the real data), and `a2boot*.legofit` (for the
+bootstrap replicates). The parentheses group the pipeline within it so
+that we can redirect the output with a single `>`. Within the
+parentheses, the first command pulls the comments out of a.lgo and
+writes then to standard output. They will end up at the top of
+`b.lgo`. Next, the `pclgo` command writes lines in `.lgo` format,
+which define variables called "pc1", "pc2", etc., which refer to
+principal components. Following these, `pclgo` writes lines that
+re-express all the free variables of `a.lgo` as linear functions of
+the principal components. Following the `pclgo` command is a `grep -v`
+command that excludes comments. Its output is piped to an `egrep`
+command that excludes the free variables of `a.lgo`. All of this gets
+written into `b.lgo`. The result is a .lgo file that re-expresses all
+the free variables of `a.lgo` as functions of principal components.
+
+By default, `pclgo` uses all principal components and therefore does
+not reduce the dimension of the search space. To reduce dimension, try
+`pclgo --tol 0.001`. This would exclude principal components that
+account for less than a fraction 0.001 of the variance.
 
 @copyright Copyright (c) 2018, Alan R. Rogers
 <rogers@anthro.utah.edu>. This file is released under the Internet
