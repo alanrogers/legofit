@@ -6,40 +6,43 @@ Legofit is a computer package that uses counts of nucleotide site
 patterns to estimate the history of population size, subdivision, and
 gene flow. The package consists of the following programs
 
-* @ref daf "daf" writes genetic data into the ".daf" format,
-  which is used by @ref tabpat "tabpat".
-* @ref tabpat "tabpat" reads ".daf" files for several
-  populations, tabulates "nucleotide site patterns" (explained below),
-  and generates moving-blocks bootstrap replicates.
-* @ref raf "raf" writes genetic data into the ".raf" format,
-  which is used by @ref sitepat "sitepat".
-* @ref sitepat "sitepat" reads ".raf" files for several
-  populations, tabulates "nucleotide site patterns" (explained below),
-  and generates moving-blocks bootstrap replicates.
-* @ref scrmpat "scrmpat" tabulates site patterns from output generated
-  by the `scrm` coalescent simulator.
-* @ref simpat "simpat" tabulates site patterns from the output of
-  `ms2sim` or [msprime](https://github.com/tskit-dev/msprime).
-* @ref legosim "legosim" predicts site pattern counts from
-  assumptions about population history.
-* @ref legofit "legofit" estimates parameters from site pattern
-  counts.
+* @ref bepe "bepe" calculates the "bootstrap estimate of prediction
+  error (Efron and Tibshirani, 1993).
+* @ref booma "booma" does bootstrap model averaging (Buckland et
+al. Biometrics, 53(2):603-618).
+* @ref clic "clic" calculates the "composite likelihood information
+  criterion" (Varin and Vidoni, 2005).
 * @ref bootci "bootci.py" reads a flat file to generate bootstrap
   confidence intervals.
+* @ref daf "daf" writes genetic data into the ".daf" format,
+  which is used by @ref tabpat "tabpat".
+* @ref diverg "diverg.py" compares two distributions of site
+  pattern frequencies, using the Kullback-Leibler (KL) divergence.
 * @ref flatfile "flatfile.py" reads a list of legofit output
   files and writes a flat file with a row for each legofit file and a
   column for each parameter.
-* @ref diverg "diverg.py" compares two distributions of site
-  pattern frequencies, using the Kullback-Leibler (KL) divergence.
-* @ref bepe "bepe" calculates the "bootstrap estimate of prediction
-  error (Efron and Tibshirani, 1993).
-* @ref clic "clic" calculates the "composite likelihood information
-  criterion" (Varin and Vidoni, 2005).
-* @ref booma "booma" does bootstrap model averaging (Buckland et
-al. Biometrics, 53(2):603-618).
+* @ref legofit "legofit" estimates parameters from site pattern
+  counts.
+* @ref legosim "legosim" predicts site pattern counts from
+  assumptions about population history.
+* @ref ms2sim "ms2sim" reads the output of the [ms][] coalescent
+  simulator and rewrites it in "sim" format, which can be piped to
+  @ref simpat "simpat" to tabulate site pattern frequencies.
 * @ref pclgo "pclgo" reads legofit output files produced from
   simulation or bootstrap replicates and re-expresses free variables
   in terms of principal components.
+* @ref raf "raf" writes genetic data into the ".raf" format,
+  which is used by @ref sitepat "sitepat".
+* @ref scrmpat "scrmpat" tabulates site patterns from output generated
+  by the [scrm][] coalescent simulator.
+* @ref simpat "simpat" tabulates site patterns from the output of
+  `ms2sim` or [msprime][].
+* @ref sitepat "sitepat" reads ".raf" files for several
+  populations, tabulates "nucleotide site patterns" (explained below),
+  and generates moving-blocks bootstrap replicates.
+* @ref tabpat "tabpat" reads ".daf" files for several
+  populations, tabulates "nucleotide site patterns" (explained below),
+  and generates moving-blocks bootstrap replicates.
 
 # Nucleotide site patterns {#sitepat}
 
@@ -85,9 +88,7 @@ populations, *X*, *Y*, *N*, and *D*.
       y:n:d    91388.250
 
 The `E[count]` column shows numbers that can be thought of loosely as
-counts of site patterns in a genome-wide sample. The last line tells
-us that the *ynd* site pattern occurs at over 100,000 nucleotide
-sites.
+counts of site patterns in a genome-wide sample.
 
 These number cannot really be counts, because they aren't
 integers. This reflects the fact that our sample includes more than
@@ -98,24 +99,22 @@ haploid genome drawn at random from the larger sample of each
 population, would exhibit this site pattern. For example, suppose we
 have samples from three populations, *X*, *Y*, and *N*, and let
 \f$p_{iX}\f$, \f$p_{iY}\f$, and \f$p_{iN}\f$ represent the frequencies
-of the derived allele at the *i*th SNP in these three
-samples. Then site pattern *xy* occurs at SNP *i* with
-probability \f$z_i = p_{iX}p_{iY}(1-p_{iN})\f$ (Patterson et al 2010,
-Science, 328(5979):S129).  Aggregating over SNPs, \f$I_{xy} = \sum_i
-z_i\f$ summarizes the information in the data about this site
-pattern. These are the numbers that appear in the 2nd column of the
-table above.
+of the derived allele at SNP *i* in these three samples. Then site
+pattern *xy* occurs at SNP *i* with probability \f$z_i =
+p_{iX}p_{iY}(1-p_{iN})\f$ (Patterson et al 2010, Science,
+328(5979):S129).  Aggregating over SNPs, \f$I_{xy} = \sum_i z_i\f$
+summarizes the information in the data about this site pattern. These
+are the numbers that appear in the 2nd column of the table above.
 
 Tables such as the one above are generated by programs @ref tabpat
-"tabpat", @ref sitepat "sitepat", and @ref scrmpat "scrmpat".
+"tabpat", @ref sitepat "sitepat", @ref scrmpat "scrmpat", and @ref
+simpat "simpat".
 
 # Installation and testing
 
-The package is available at
-[github](https://github.com/alanrogers/legofit). Before compiling, you must
-install two libraries: `pthreads` and
-[`gsl`](http://www.gnu.org/software/gsl). You will need not only the
-libraries themselves but also several header files, such as
+The package is available at [github][]. Before compiling, you must
+install two libraries: `pthreads` and [gsl][]. You will need not only
+the libraries themselves but also several header files, such as
 `pthread.h`. I didn't need to install `pthreads`, because it came
 bundled with the Gnu C compiler. But the gsl was an extra. Under
 ubuntu Linux, you can install it like this:
@@ -165,6 +164,21 @@ directory `src`. Within this directory, type
 
 to test the source file `boot.c`.  To run all unit tests, type
 "make". This will take awhile, as some of the unit tests are slow.
+
+# Sort order
+
+Several programs require that input be sorted in some
+fashion. Problems can arise if sort order is not consistent. Sort
+order depends on locale settings, which may vary from user to user and
+from machine to machine.
+
+To ensure a consistent sort order under Unix-like operating systems
+(linux or osx), type "LC_ALL=C" on the same line and just before any
+command that sorts. Or put
+
+    export LC_ALL=C
+
+into the `.bashrc` file (or equivalent) in your home directory.
 
 # Genetic input data
 
@@ -328,14 +342,13 @@ The parser interprets "-1.2" as a number, not as an operator (-)
 followed by a number (1.2). Lacking an operator, the parser aborts. On
 the other hand, this works fine:
 
-    twoN constrained twoNxy=1e4 -Txy  # Fails
+    twoN constrained twoNxy=1e4 -Txy  # OK
 
 Because "-Txy" cannot be interpreted as a literal number, legofit
 treats it as an operator (-) followed by a variable name.
 
-In previous versions of `Legofit`, only free parameters could be used
-in constraint formulas. In the current version, all types of parameter
-can be used. Independent variables must be declared in the .lgo file
+All types of parameter can be used in constraint
+equation. Independent variables must be declared in the .lgo file
 before they are used in a constraint equation. The parser can
 recognize complex mathematical expressions and knows about the
 standard mathematical functions. The y'th power of x can be written
@@ -354,6 +367,13 @@ binary operator ("+", "-", "*", or "/"). For example,
     twoN constrained twoNxy=1e4 -
 	  1.2*Txy +
 	  0.01*Txy*Txyn # Constraint spread across 3 lines.
+
+Although the constraint syntax is very flexible, we don't recommend
+using all this flexibility. It's best to define constrained variables
+as linear functions of principal components. The principal components
+are then defined as free variables, and all other variables are either
+fixed or are linear functions of principal components. The @ref pclgo
+"pclgo" program can be used to rewrite a `.lgo` file in this fashion.
 
 We have one more variable to declare:
 
@@ -526,18 +546,19 @@ See the @ref legosim "legosim" documentation for details.
 
 ## Simulating site patterns
 
-The preferred approach is to do simulations using
-[scrm](https://scrm.github.io/), a software package written by Paul
-R. Staab, Sha Zhu, Dirk Metzler and Gerton Lunter. It does coalescent
-simulations with linkage and recombination. Our own program @ref
-scrmpat "scrmpat" tabulates site pattern frequencies from `scrm`
-output.
+The package provides support for tabulating site patterns from several
+coalescent simulators. To study the output of [ms][], pipe the results
+through @ref ms2sim "ms2sim" and then @ref simpat "simpat". For
+[scrm][], use the `-transpose-segsites` option, and pipe the output
+through @ref scrmpat "scrmpat". The authors of [msprime][] recommend
+running their software within a Python script. Within such a script,
+it is easy to generate output in the form required by @ref simpat
+"simpat".
 
 For less sophisticated simulations, use the `-U` option of @ref
 legosim "legosim". This assumes free recombination between nucleotide
-sites. This is not ideal, because it ignores genetic linkage, but it
-reads the same input files as `legosim`, is very fast, and generates
-output in the form of site pattern frequencies.
+sites and generates site pattern frequencies with unrealistically
+narrow sampling distributions.
 
 ## Estimating parameters from genetic data
 
@@ -646,4 +667,12 @@ To avoid this bias, it is best to work with complete genomes rather
 than just the variant sites. Alternatively, one could call variant
 sites jointly using all genomes to be included in the analysis.
 
+[ms]: http://home.uchicago.edu/rhudson1/source/mksamples.html
 
+[scrm]: https://scrm.github.io
+
+[msprime]: https://github.com/tskit-dev/msprime
+
+[github]: https://github.com/alanrogers/legofit "GitHub"
+
+[gsl]: http://www.gnu.org/software/gsl

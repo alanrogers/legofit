@@ -5,7 +5,9 @@
  * into "sim" format, which is described on the @ref simpat "simpat"
  * page.
  *
- * # ms2sim, a program that converts `ms` output into sim format
+ * # ms2sim, a program that converts `ms` output into sim format, which
+ * can be piped to @ref simpat "simpat", which tabulates site pattern
+ * frequencies.
  *
  * This program is written in C, because the conversion involves
  * transposing a large matrix, and this is faster in C.
