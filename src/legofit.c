@@ -45,9 +45,8 @@ Two arguments are required:
    provides counts of site patterns in the data.
 
 Legofit estimates the values of all the parameters that are declared
-as "free" (rather than "fixed", "gaussian", or "constrained") in the
-.lgo file. It does this by minimizing a "cost function", which
-measures the difference between observed and expected
+as "free" in the .lgo file. It does this by minimizing a "cost
+function", which measures the difference between observed and expected
 values. Currently, the cost function is the negative of composite
 likelihood.  Other options are available via compile-time option (see
 `typedefs.h`). I don't yet know which cost function is best.
@@ -120,7 +119,7 @@ input routine compares these against the names of free parameters in
 the .lgo file. The two lists must have the same parameters in the same
 order. Otherwise, legofit aborts with an error message. Old- and
 new-format state files can both be input using --stateIn arguments and
-can be intermingled in a single legofit run. 
+can be intermingled in a single legofit run.
 
 The `-1` option tells legofit to use singleton site patterns--patterns
 in which the derived allele is present in only a single sample. This
@@ -606,7 +605,7 @@ int main(int argc, char **argv) {
         while(1) {
             // increment version number until we find one that hasn't
             // been used.
-            status=snprintf(ptsfname, sizeof ptsfname, "%s-%s-%d.pts", 
+            status=snprintf(ptsfname, sizeof ptsfname, "%s-%s-%d.pts",
                             a, b, version);
             if(status >= sizeof ptsfname)
                 DIE("buffer overflow");

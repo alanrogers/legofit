@@ -11,12 +11,6 @@
  * that value is returned, so that it can be stored in the distributed
  * data structure.
  *
- * In fact, it maintains 3 such vectors: one each for free parameters,
- * fixed parameters, and Gaussian parameters. ParStore knows how to
- * perturb Gaussian parameters by sampling from a truncated Gaussian
- * distribution. Fixed parameters never change. Free ones are manipulated
- * from outside via function calls.
- *
  * @copyright Copyright (c) 2016, Alan R. Rogers
  * <rogers@anthro.utah.edu>. This file is released under the Internet
  * Systems Consortium License, which can be found in file "LICENSE".
@@ -54,7 +48,7 @@ struct ParStore {
     int nPar;
 
     // These 3 pointers are the heads of linked lists of free
-    // parameters, fixed parameters, and constrained parameters. 
+    // parameters, fixed parameters, and constrained parameters.
     // The objects in these lists can also be accessed through
     // array "vec".
     Param *freePar, *fixedPar, *constrainedPar;
@@ -328,7 +322,7 @@ double *ParStore_findPtr(ParStore * self, unsigned * type,
 }
 
 /// Return 1 if ptr is the address of a constrained parameter; 0
-/// otherwise.  
+/// otherwise.
 int ParStore_isConstrained(const ParStore * self, const double *ptr) {
     assert(self);
     Param *par = AddrParMap_search(self->byaddr, ptr);
