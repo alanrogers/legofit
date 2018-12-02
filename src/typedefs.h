@@ -11,7 +11,6 @@ typedef struct Bounds Bounds;
 typedef struct BranchTab BranchTab;
 typedef struct Constraint Constraint;
 typedef struct El El;
-typedef struct Exception Exception;
 typedef struct Gene Gene;
 typedef struct GetLineTok GetLineTok;
 typedef struct GPTree GPTree;
