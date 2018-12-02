@@ -55,7 +55,7 @@ Expected counts are estimated by computer simulation, and optimization
 is done using the "differential evolution" (DE) algorithm.  The DE
 algorithm maintains a swarm of points, each at a different set of
 parameter values. The objective function is evaluated at these points
-in a multithreaded job queue, so the program runs fasted on a machine
+in a multithreaded job queue, so the program runs fastest on a machine
 with lots of cores. You can set the number of threads using the `-t`
 argument. By default, the program uses 3/4 as many threads as there
 are processors on the machine---usually the number of hypercores.
@@ -123,11 +123,12 @@ can be intermingled in a single legofit run.
 
 The `-1` option tells legofit to use singleton site patterns--patterns
 in which the derived allele is present in only a single sample. This
-is a bad idea with low-coverage sequence data. It also behaves poorly
-with archaic DNA, because singletons are likely to be sequencing
-artifacts. With high-quality modern DNA, it may one day prove
-useful. To use it, you need to generate a data set that contains
-singletons, by using the `-1` option of @\ref tabpat "tabpat".
+is a bad idea with low-coverage sequence data, because singletons are
+likely to be sequencing errors. We use this option routinely now with
+high-coverage data. To use it, you need to generate a data set that
+contains singletons, by using the `-1` option of @\ref tabpat
+"tabpat", @ref sitepat "sitepat", @ref scrmpat "scrmpat", or @ref
+simpat "simpat".
 
 2017-08-26: The convergence criterion has been changed. In the
 previous code, differential evolution (DE) iterations stopped when
