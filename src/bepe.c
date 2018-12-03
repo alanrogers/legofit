@@ -13,8 +13,8 @@ section 17.6 of *An introduction to the bootstrap*, (Efron and
 Tibshirani, 1993).  This method provides a solution to the problem of
 @ref modsel "overfitting".
 
-Bepe does this by using bootstrap replicates as a proxy for samples
-from the underlying (and usually unknown) statistical
+Bepe does this by using bootstrap or simulation replicates as a proxy
+for samples from the underlying (and usually unknown) statistical
 distribution. Its value estimates the mean squared error between
 predicted site pattern frequencies and those of unobserved samples
 from the same statistical distribution. The best model is the one for
@@ -24,13 +24,14 @@ which bepe reports the smallest value.
      <b1.legofit> <b2.legofit> ...
 
      where realdat is the real data, each "bdat" file is the data
-     for one bootstrap replicate, and each "b#.legofit" file is the
-     legofit output from the corresponding bootstrap replicate
-     Must include realdat file and at least 2 bootstrap replicates.
+     for one bootstrap or simulation replicate, and each "b#.legofit"
+     file is the legofit output from the corresponding bootstrap
+     replicate Must include realdat file and at least 2 bootstrap
+     replicates.
 
     Options:
-       -h or --help
-       print this message
+       -h or --help   : print this message
+       -n or --nobias : omit bias correction
 
 In typical usage, one would type something like
 
@@ -40,6 +41,22 @@ This usage assumes that your computer's shell or command interpreter sorts
 the files globbed by `boot*.txt` and `boot*.legofit` in a consistent order,
 so that the i'th .legofit file is the output produced from the i'th
 bootstrap data file.
+
+The lines of data in `bepe`'s output are arranged according to the
+order in which data files are listed on the command line. It is
+important that this order be consistent, if multiple `.bepe` files are
+to be compared using @ref booma "booma". (Otherwise, `booma` will
+abort with an error.) Consistency problems can arise because of
+differences in locale settings on different machines. The example
+command in the preceding paragraph may generate file names in
+different orders on different machines. To ensure a consistent order
+on Unix-like operating systems (linux and osx), set the LC_ALL
+environment parameter as part of the `bepe` command:
+
+    LC_ALL=C bepe realdat.txt boot*.txt -L real.legofit boot*.legofit
+
+This ensures that file names will be listed in the same order,
+regardless of the locale setting of the local machine.
 
 The first few lines of `bepe`'s output look like this:
 
@@ -139,13 +156,15 @@ static void checkConsistency(const char *fname1, const char *fname2,
 
 //vars
 const char *usageMsg =
-    "usage: bepe <realdat> <bdat1> <bdat2> ... -L <real.legofit>\n"
+    "usage: bepe [options] <realdat> <bdat1> <bdat2> ... -L <real.legofit>\n"
     " <b1.legofit> <b2.legofit> ...\n" "\n"
     " where realdat is the real data, each \"bdat\" file is the data\n"
-    " for one bootstrap replicate, and each \"b#.legofit\" file is the\n"
-    " legofit output from the corresponding bootstrap replicate\n"
+    " for one bootstrap or simulation replicate, and each \"b#.legofit\"\n"
+    " file is the legofit output from the corresponding bootstrap replicate\n"
     " Must include realdat file and at least 2 bootstrap replicates.\n" "\n"
-    "Options:\n" "   -h or --help\n" "   print this message\n";
+    "Options:\n"
+    "   -h or --help   : print this message\n"
+    "   -n or --nobias : omit bias correction\n";
 
 void usage(void) {
     fputs(usageMsg, stderr);
@@ -170,19 +189,25 @@ int main(int argc, char **argv) {
 #if defined(__DATE__) && defined(__TIME__)
     printf("# Program was compiled: %s %s\n", __DATE__, __TIME__);
 #endif
-    printf("# Program was run: %s\n", ctime(&currtime));
+    printf("# Program was run: %s", ctime(&currtime));
 
     int i, j;
     int nfiles=0, nLegoFiles=0;
-    int gotDashL = 0;
+    int gotDashL = 0, fixbias = 1;
 
     for(i = 1; i < argc; i++) {
         if(argv[i][0] == '-') {
             if(strcmp(argv[i], "-L") == 0) {
                 gotDashL = 1;
                 continue;
-            }else
+            }else if(strcmp(argv[i], "-n") == 0
+                     || strcmp(argv[i], "--nobias") == 0) {
+                fixbias = 0;
+                continue;
+            }else {
+                fprintf(stderr,"unknown flag argument: %s\n", argv[i]);
                 usage();
+            }
         }
         if(gotDashL)
             ++nLegoFiles;
@@ -197,8 +222,10 @@ int main(int argc, char **argv) {
         usage();
     }
 
-    if(nfiles < 3)
+    if(nfiles < 3) {
+        fprintf(stderr,"nfiles=%d; need at least 3\n", nfiles);
         usage();
+    }
 
     const char *datafname[nfiles], *legofname[nfiles];
     gotDashL=0;
@@ -209,9 +236,8 @@ int main(int argc, char **argv) {
                 gotDashL = 1;
                 assert(j==nfiles);
                 j = 0;
-                continue;
-            }else
-                usage();
+            }
+            continue;
         }
         if(gotDashL)
             legofname[j++] = argv[i];
@@ -219,6 +245,12 @@ int main(int argc, char **argv) {
             datafname[j++] = argv[i];
     }
     assert(j==nfiles);
+
+    if(fixbias)
+        fputs("# Correcting for bootstrap bias\n", stdout);
+    else
+        fputs("# Not correcting for bootstrap bias\n", stdout);
+    putchar('\n');
 
     // Read data and bootstrap files into an arrays of queues
     StrDblQueue *data_queue[nfiles];
@@ -248,7 +280,8 @@ int main(int argc, char **argv) {
             if(j==i)
                 continue;
             msd += StrDblQueue_msd(data_queue[i], lego_queue[j]);
-            bias += StrDblQueue_msd(data_queue[j], lego_queue[j]);
+            if(fixbias)
+                bias += StrDblQueue_msd(data_queue[j], lego_queue[j]);
         }
         bepe = (msd+bias)/(nfiles-1);
         printf("%15.10lg %s\n", bepe, mybasename(datafname[i]));
