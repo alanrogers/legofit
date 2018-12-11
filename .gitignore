@@ -18,6 +18,7 @@ pclgo
 raf
 raf2daf
 scrmpat
+simpat
 sitepat
 tabpat
 tabpat.log
@@ -53,6 +54,7 @@ xpopnodetab
 xrafreader
 xsampndx
 xscrmreader
+xsimreader
 xsimsched
 xstate
 xstrdblmap
