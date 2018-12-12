@@ -1,7 +1,7 @@
 /**
 @file booma.c
 @page booma
-@author Alan R. Rogers and Daniel Tabin
+@author Alan R. Rogers and Daniel R. Tabin
 @brief Bootstrap model averaging
 
 # `booma`: bootstrap model averaging
