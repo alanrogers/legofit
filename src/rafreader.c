@@ -399,6 +399,7 @@ int RAFReader_alleleCheck(int n, RAFReader * r[n]) {
         if(altMissing && !currAltMissing) {
             altMissing = 0;
             alt = r[i]->alt;
+            snprintf(r[0]->alt, sizeof(r[0]->alt), "%s", alt);
             continue;
         }
         if(!altMissing && !currAltMissing && 0 != strcmp(alt, r[i]->alt))
