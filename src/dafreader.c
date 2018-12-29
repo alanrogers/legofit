@@ -19,7 +19,8 @@
 
 #define MAXFIELDS 5
 
-int         iscomment(const char *s);
+int iscomment(const char *s);
+int DAFReader_cmp(const DAFReader *lhs, const DAFReader *rhs);
 
 /// DAFReader constructor
 DAFReader  *DAFReader_new(const char *fname) {
@@ -227,8 +228,112 @@ int DAFReader_rewind(DAFReader * self) {
     return fseek(self->fp, 0L, SEEK_SET);
 }
 
+/**
+   Compare two DAFReader objects. If the "chr" fields differ, return
+   positive if lhs->chr > rhs->chr; return negative if the reverse
+   inequality holds. Otherwise return positive, 0, or negative to
+   match the sign of lhs->nucpos - rhs->nucpos.
+ */
+int DAFReader_cmp(const DAFReader *lhs, const DAFReader *rhs) {
+    int c = strcmp(lhs->chr, rhs->chr);
+    if(c)
+        return c;
+    if(lhs->nucpos > rhs->nucpos)
+        return 1;
+    if(lhs->nucpos < rhs->nucpos)
+        return -1;
+    return 0;
+}
+
 #define MAX(X,Y) ((X) > (Y) ? (X) : (Y))
 #define MIN(X,Y) ((X) > (Y) ? (Y) : (X))
+
+#if 1
+
+int DAFReader_multiNext(int n, DAFReader * r[n]) {
+    int i, imax, status, diff, atsamepos;
+
+    for(i = 0; i < n; ++i) {
+        if( (status = DAFReader_next(r[i])) )
+            return status;
+    }
+
+    // bits indicate whether readers are at maximum
+    const tipId_t unity = 1u;
+    tipId_t atmax = unity;
+    imax = 0;
+
+    while(1) {
+
+        tipId_t currbit;
+
+        // Set values of atmax and atsamepos. The i'th bit of
+        // atmax is 1 if the i'th reader is at the maximum position
+        // and is 0 otherwise. atsamepos is 1 if all readers are
+        // at the same position, 0 otherwise.
+        atsamepos = 1;
+        for(i = 0; i < n; ++i) {
+            currbit = unity << i;
+            if( atmax & currbit ) {
+                // reader i is at current maximum
+                continue;
+            }
+            diff = DAFReader_cmp(r[i], r[imax]);
+            if(diff > 0) {
+                // found new maximum
+                atmax = currbit;
+                imax = i;
+                atsamepos = 0;
+            } else if(diff < 0) {
+                atsamepos = 0;
+            }else
+                atmax |= currbit;
+        }
+
+        // If all readers are at the same position, then we're done.
+        if(atsamepos) {
+            assert(n == num1bits(atmax));
+            break;
+        }
+
+        // Increment readers that are not at the maximum position.
+        for(i=0; i < n; ++i) {
+            currbit = unity << i;
+
+            while(0 == (atmax & currbit) ) {
+                if( (status = DAFReader_next(r[i])) )
+                    return status;
+                diff = DAFReader_cmp(r[i], r[imax]);
+                if(diff > 0) {
+                    // found new maximum
+                    atmax = currbit;
+                    imax = i;
+                } else if(diff == 0) {
+                    atmax |= currbit;
+                }
+            }
+        }
+    }
+
+    // Make sure reference allele isn't fixed in readers. If it's
+    // fixed, then we can't call the ancestral allele.
+    double maxp, minp;
+    maxp = minp = DAFReader_daf(r[0]);
+    for(i=1; i < n; ++i) {
+        double p = DAFReader_daf(r[i]); // derived allele freq
+        minp = fmin(minp, p);
+        maxp = fmax(maxp, p);
+    }
+    if(maxp == 0.0 || minp == 1.0)
+        return NO_ANCESTRAL_ALLELE;
+
+    if(!DAFReader_allelesMatch(n, r))
+        return ALLELE_MISMATCH;
+
+    return 0;
+}
+
+#else
 
 /// Advance an array of DAFReaders to the next shared position.
 /// @return 0 on success or EOF on end of file.
@@ -333,19 +438,36 @@ int DAFReader_multiNext(int n, DAFReader * r[n]) {
     return 0;
 }
 
+#endif
+
 /// Return 1 if ancestral and derived alleles of all readers match; 0
 /// otherwise
 int DAFReader_allelesMatch(int n, DAFReader * r[n]) {
     char  *aa = r[0]->aa;
     char  *da = r[0]->da;
-    int    daNotMissing = (0!=strcmp(".", da));
+    int    daMissing = (0==strcmp(".", da));
+    int    aaMissing = (0==strcmp(".", aa));
     int   i;
     for(i = 1; i < n; ++i) {
         if(0!=strcmp(aa, r[i]->aa))
             return 0;
-        if(daNotMissing
-           && 0!=strcmp(".", r[i]->da)
+        int curr_da_missing = (0 == strcmp(".", r[i]->da));
+        int curr_aa_missing = (0 == strcmp(".", r[i]->aa));
+        if(daMissing && !curr_da_missing) {
+            daMissing = 0;
+            da = r[i]->da;
+            strcpy(r[0]->da, da);
+        }
+        if(aaMissing && !curr_aa_missing) {
+            aaMissing = 0;
+            aa = r[i]->aa;
+            strcpy(r[0]->aa, aa);
+        }
+        if(!daMissing && !curr_da_missing
            && 0!=strcmp(da, r[i]->da))
+            return 0;
+        if(!aaMissing && !curr_aa_missing
+           && 0!=strcmp(aa, r[i]->aa))
             return 0;
     }
     return 1;
