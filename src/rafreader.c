@@ -279,7 +279,10 @@ int RAFReader_multiNext(int n, RAFReader * r[n]) {
             return status;
     }
 
-    // bits indicate whether readers are at maximum
+    // Bits indicate whether readers are at maximum position.
+    // We begin by assuming that reader 0 is the maximum, so
+    // the initial value of atmax has only the 0th bit turned
+    // on.
     const tipId_t unity = 1u;
     tipId_t atmax = unity;
     imax = 0;
