@@ -86,11 +86,11 @@ SITEPAT := sitepat.o misc.o binary.o lblndx.o rafreader.o \
 sitepat : $(SITEPAT)
 	$(CC) $(CFLAGS) -o $@ $(SITEPAT) $(lib)
 
-JOINRAF := joinraf.o rafreader.o error.o tokenizer.o misc.o
+JOINRAF := joinraf.o rafreader.o error.o tokenizer.o misc.o binary.o
 joinraf : $(JOINRAF)
 	$(CC) $(CFLAGS) -o $@ $(JOINRAF) $(lib)
 
-RAF2DAF := raf2daf.o rafreader.o error.o tokenizer.o misc.o
+RAF2DAF := raf2daf.o rafreader.o error.o tokenizer.o misc.o binary.o
 raf2daf : $(RAF2DAF)
 	$(CC) $(CFLAGS) -o $@ $(RAF2DAF) $(lib)
 

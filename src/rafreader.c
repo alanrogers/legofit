@@ -20,6 +20,7 @@
 #define MAXFIELDS 5
 
 int iscomment(const char *s);
+int RAFReader_cmp(const RAFReader *lhs, const RAFReader *rhs);
 
 /// RAFReader constructor
 RAFReader *RAFReader_new(const char *fname) {
@@ -243,8 +244,106 @@ int RAFReader_rewind(RAFReader * self) {
     return fseek(self->fp, 0L, SEEK_SET);
 }
 
+/**
+   Compare two RAFReader objects. If the "chr" fields differ, return
+   positive if lhs->chr > rhs->chr; return negative if the reverse
+   inequality holds. Otherwise return positive, 0, or negative to
+   match the sign of lhs->nucpos - rhs->nucpos.
+ */
+int RAFReader_cmp(const RAFReader *lhs, const RAFReader *rhs) {
+    int c = strcmp(lhs->chr, rhs->chr);
+    if(c)
+        return c;
+    if(lhs->nucpos > rhs->nucpos)
+        return 1;
+    if(lhs->nucpos < rhs->nucpos)
+        return -1;
+    return 0;
+}
+
 #define MAX(X,Y) ((X) > (Y) ? (X) : (Y))
 #define MIN(X,Y) ((X) > (Y) ? (Y) : (X))
+
+#if 1
+
+/// Advance an array of RAFReaders to the next shared position, and
+/// set derived allele frequency within each RAFReader.
+/// @param[in] n number of RAFReader objects in array
+/// @param[in] r array of RAFReader objects. Last one should be outgroup.
+/// @return 0 on success, or one of several error codes on failure.
+int RAFReader_multiNext(int n, RAFReader * r[n]) {
+    int i, imax, status, diff, atsamepos;
+
+    for(i = 0; i < n; ++i) {
+        if( (status = RAFReader_next(r[i])) )
+            return status;
+    }
+
+    // bits indicate whether readers are at maximum
+    const tipId_t unity = 1u;
+    tipId_t atmax = unity;
+    imax = 0;
+
+    while(1) {
+
+        tipId_t currbit;
+
+        // Set values of atmax and atsamepos. The i'th bit of
+        // atmax is 1 if the i'th reader is at the maximum position
+        // and is 0 otherwise. atsamepos is 1 if all readers are
+        // at the same position, 0 otherwise.
+        atsamepos = 1;
+        for(i = 0; i < n; ++i) {
+            currbit = unity << i;
+            if( atmax & currbit ) {
+                // reader i is at current maximum
+                continue;
+            }
+            diff = RAFReader_cmp(r[i], r[imax]);
+            if(diff > 0) {
+                // found new maximum
+                atmax = currbit;
+                imax = i;
+                atsamepos = 0;
+            } else if(diff < 0) {
+                atsamepos = 0;
+            }else
+                atmax |= currbit;
+        }
+
+        // If all readers are at the same position, then we're done.
+        if(atsamepos) {
+            assert(n == num1bits(atmax));
+            break;
+        }
+
+        // Increment readers that are not at the maximum position.
+        for(i=0; i < n; ++i) {
+            currbit = unity << i;
+
+            while(0 == (atmax & currbit) ) {
+                if( (status = RAFReader_next(r[i])) )
+                    return status;
+                diff = RAFReader_cmp(r[i], r[imax]);
+                if(diff > 0) {
+                    // found new maximum
+                    atmax = currbit;
+                    imax = i;
+                } else if(diff == 0) {
+                    atmax |= currbit;
+                }
+            }
+        }
+    }
+
+    // Make sure REF and ALT are consistent across readers
+    if((status = RAFReader_alleleCheck(n, r)))
+        return status;
+
+    return 0;
+}
+
+#else
 
 /// Advance an array of RAFReaders to the next shared position, and
 /// set derived allele frequency within each RAFReader.
@@ -339,6 +438,8 @@ int RAFReader_multiNext(int n, RAFReader * r[n]) {
 
     return 0;
 }
+
+#endif
 
 /// Set derived allele frequency within each RAFReader.
 /// @param[in] n number of RAFReader objects in array
