@@ -77,12 +77,12 @@ booma : $(BOOMA)
 	$(CC) $(CFLAGS) -o $@ $(BOOMA) $(lib)
 
 TABPAT := tabpat.o misc.o binary.o lblndx.o dafreader.o \
-  tokenizer.o strint.o boot.o error.o
+  tokenizer.o strint.o boot.o error.o boot.o
 tabpat : $(TABPAT)
 	$(CC) $(CFLAGS) -o $@ $(TABPAT) $(lib)
 
 SITEPAT := sitepat.o misc.o binary.o lblndx.o rafreader.o \
-  tokenizer.o strint.o boot.o error.o
+  tokenizer.o strint.o boot.o error.o boot.o
 sitepat : $(SITEPAT)
 	$(CC) $(CFLAGS) -o $@ $(SITEPAT) $(lib)
 
