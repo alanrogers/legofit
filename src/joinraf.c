@@ -62,7 +62,7 @@ int main(int argc, char **argv) {
 
     if(n > 8*sizeof(bits_t)) {
         fprintf(stderr, "Error: %d input files. Max is %lu.\n",
-                n, 8*sizeof(tipId_t));
+                n, 8*sizeof(bits_t));
         exit(EXIT_FAILURE);
     }
 
