@@ -187,7 +187,7 @@ const char *useMsg =
 static void usage(void) {
     fputs(useMsg, stderr);
     fprintf(stderr, " Maximum number of input files: %lu plus outgroup.\n",
-            8 * sizeof(tipId_t));
+            8 * sizeof(bits_t));
     fputs("\nOptions may include:\n", stderr);
     tellopt("-f <name> or --bootfile <name>",
             "Bootstrap output file basename. Def: sitepat.boot.");
@@ -234,13 +234,14 @@ static void Stack_push(Stack * self, tipId_t x) {
 /// stack.
 static void
 generatePatterns(int bit, int npops, Stack * stk, tipId_t pat, int doSing) {
-    assert(sizeof(tipId_t) < sizeof(unsigned long long));
+    assert(sizeof(tipId_t) < sizeof(tipId_t));
+    const tipId_t unity = 1;
     if(bit == npops) {
         // Recursion stops here. If current pattern is
         // legal, then push it onto the stack. Then return.
 
         // Exclude patterns with all bits on, or all bits off.
-        if(pat == 0 || pat == (1ULL << npops) - 1ULL)
+        if(pat == 0 || pat == (unity << npops) - unity)
             return;
         // Exclude singleton patterns unless "doSing" is true.
         if(!doSing && isPow2(pat))
@@ -248,7 +249,7 @@ generatePatterns(int bit, int npops, Stack * stk, tipId_t pat, int doSing) {
         Stack_push(stk, pat);
         return;
     }
-    tipId_t     on = 1UL << bit;
+    tipId_t     on = unity << bit;
     generatePatterns(bit + 1, npops, stk, pat | on, doSing);    // curr bit on
     generatePatterns(bit + 1, npops, stk, pat, doSing); // curr bit off
 }

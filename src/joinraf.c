@@ -46,7 +46,9 @@ const char *useMsg =
 /// Print usage message and die.
 static void usage(void) {
     fputs(useMsg, stderr);
-    exit(1);
+    fprintf(stderr, "Maximum number of input files: %lu\n",
+            8*sizeof(bits_t));
+    exit(EXIT_FAILURE);
 }
 
 int main(int argc, char **argv) {
@@ -57,6 +59,12 @@ int main(int argc, char **argv) {
     int         n = argc - 1;  // number of input files
     if(n == 0)
         usage();
+
+    if(n > 8*sizeof(bits_t)) {
+        fprintf(stderr, "Error: %d input files. Max is %lu.\n",
+                n, 8*sizeof(tipId_t));
+        exit(EXIT_FAILURE);
+    }
 
     RAFReader  *r[n];
 

@@ -6,6 +6,8 @@
 
 #define RAFSTRSIZE 20
 
+typedef uint64_t bits_t;
+
 struct RAFReader {
     char       *fname;
     FILE       *fp;

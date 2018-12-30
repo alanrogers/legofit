@@ -37,7 +37,8 @@ const char *tstInput[3] = {
     "1\t1\ta\tt\t0.5\n"
     "1\t2\ta\t.\t0.5\n"
     "10\t1\ta\tt\t1e-1\n"
-    "10\t200\tg\tc\t1\n",
+    "10\t200\tg\tc\t1\n"
+    "10\t201\tg\tc\t1\n",
 
     "#chr\tpos\tref\talt\traf\n"
     "1\t1\ta\t.\t1\n"

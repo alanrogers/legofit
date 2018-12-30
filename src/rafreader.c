@@ -264,8 +264,6 @@ int RAFReader_cmp(const RAFReader *lhs, const RAFReader *rhs) {
 #define MAX(X,Y) ((X) > (Y) ? (X) : (Y))
 #define MIN(X,Y) ((X) > (Y) ? (Y) : (X))
 
-#if 1
-
 /// Advance an array of RAFReaders to the next shared position, and
 /// set derived allele frequency within each RAFReader.
 /// @param[in] n number of RAFReader objects in array
@@ -283,13 +281,20 @@ int RAFReader_multiNext(int n, RAFReader * r[n]) {
     // We begin by assuming that reader 0 is the maximum, so
     // the initial value of atmax has only the 0th bit turned
     // on.
-    const tipId_t unity = 1u;
-    tipId_t atmax = unity;
+    const bits_t unity = 1u;
+    bits_t atmax = unity;
     imax = 0;
+
+    static int firstTime=1;
+
+    if(firstTime) {
+        firstTime = 0;
+        RAFReader_printHdr(stderr);
+    }
 
     while(1) {
 
-        tipId_t currbit;
+        bits_t currbit;
 
         // Set values of atmax and atsamepos. The i'th bit of
         // atmax is 1 if the i'th reader is at the maximum position
@@ -320,6 +325,13 @@ int RAFReader_multiNext(int n, RAFReader * r[n]) {
             break;
         }
 
+        fprintf(stderr,"SKIPPING SNP\n");
+        for(i=0; i<n; ++i) {
+            currbit = unity << i;
+            if( !(atmax & currbit) )
+                RAFReader_print(r[i], stderr);
+        }
+
         // Increment readers that are not at the maximum position.
         for(i=0; i < n; ++i) {
             currbit = unity << i;
@@ -345,104 +357,6 @@ int RAFReader_multiNext(int n, RAFReader * r[n]) {
 
     return 0;
 }
-
-#else
-
-/// Advance an array of RAFReaders to the next shared position, and
-/// set derived allele frequency within each RAFReader.
-/// @param[in] n number of RAFReader objects in array
-/// @param[in] r array of RAFReader objects. Last one should be outgroup.
-/// @return 0 on success, or one of several error codes on failure.
-int RAFReader_multiNext(int n, RAFReader * r[n]) {
-    int i, status;
-    unsigned long maxnuc = 0, minnuc = ULONG_MAX;
-    int imaxchr;                // index of reader with maximum chromosome position
-    int onSameChr;              // indicates whether all readers are on same chromosome.
-    int diff;
-    char currchr[RAFSTRSIZE] = { '\0' };    // current chromosome
-
-    // Set index, imaxchr, of reader with maximum
-    // chromosome values in lexical sort order, and
-    // set boolean flag, onSameChr, which indicates
-    // whether all readers are on same chromosome.
-    if((status = RAFReader_next(r[0])))
-        return status;
-
-    imaxchr = 0;
-    onSameChr = 1;
-    for(i = 1; i < n; ++i) {
-        if((status = RAFReader_next(r[i])))
-            return status;
-
-        diff = strcmp(r[i]->chr, r[imaxchr]->chr);
-        if(diff > 0) {
-            onSameChr = 0;
-            imaxchr = i;
-        } else if(diff < 0)
-            onSameChr = 0;
-    }
-
-    // Loop until both chr and position are homogeneous.
-    do {
-        // get them all on the same chromosome
-        while(!onSameChr) {
-            onSameChr = 1;
-            for(i = 0; i < n; ++i) {
-                if(i == imaxchr)
-                    continue;
-                while((diff = strcmp(r[i]->chr, r[imaxchr]->chr)) < 0) {
-                    if((status = RAFReader_next(r[i])))
-                        return status;
-                }
-                assert(diff >= 0);
-                if(diff > 0) {
-                    imaxchr = i;
-                    onSameChr = 0;
-                }
-            }
-        }
-
-        assert(onSameChr);
-        maxnuc = minnuc = r[0]->nucpos;
-        for(i = 1; i < n; ++i) {
-            maxnuc = MAX(maxnuc, r[i]->nucpos);
-            minnuc = MIN(minnuc, r[i]->nucpos);
-        }
-
-        // currchr records current chromosome
-        status = snprintf(currchr, sizeof currchr, "%s", r[0]->chr);
-        if(status >= sizeof currchr) {
-            fprintf(stderr, "%s:%d: buffer overflow\n", __FILE__, __LINE__);
-            return BUFFER_OVERFLOW;
-        }
-        // Now get them all on the same position. Have to keep
-        // checking chr in case one file moves to another chromosome.
-        for(i = 0; onSameChr && i < n; ++i) {
-            // Increment each reader so long as we're all on the same
-            // chromosome and the reader's nucpos is low.
-            while(onSameChr && r[i]->nucpos < maxnuc) {
-                if((status = RAFReader_next(r[i])))
-                    return status;
-                diff = strcmp(r[i]->chr, currchr);
-                if(diff != 0) {
-                    // Assertion should succeed because RAFReader_next
-                    // guarantees that chromosomes are in sort order.
-                    assert(diff > 0);
-                    onSameChr = 0;
-                    imaxchr = i;
-                }
-            }
-        }
-    } while(!onSameChr || minnuc != maxnuc);
-
-    // Make sure REF and ALT are consistent across readers
-    if((status = RAFReader_alleleCheck(n, r)))
-        return status;
-
-    return 0;
-}
-
-#endif
 
 /// Set derived allele frequency within each RAFReader.
 /// @param[in] n number of RAFReader objects in array
