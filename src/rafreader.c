@@ -272,6 +272,8 @@ int RAFReader_cmp(const RAFReader *lhs, const RAFReader *rhs) {
 int RAFReader_multiNext(int n, RAFReader * r[n]) {
     int i, imax, status, diff, atsamepos;
 
+    assert(n <= 8*sizeof(bits_t));
+
     for(i = 0; i < n; ++i) {
         if( (status = RAFReader_next(r[i])) )
             return status;
