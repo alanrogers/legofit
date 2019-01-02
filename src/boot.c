@@ -212,7 +212,6 @@ void BootChr_add(BootChr * self, long snpndx, int pat, double z) {
     if( !(snpndx < self->nsnp) ) {
         fprintf(stderr,"%s:%d: snpndx=%ld self->nsnp=%ld\n",
                 __FILE__,__LINE__,snpndx, self->nsnp);
-        dostacktrace(__FILE__, __LINE__, stderr);
     }
 #endif
     assert(snpndx < self->nsnp);
@@ -302,7 +301,7 @@ Boot *Boot_new(int nchr, long nsnp[nchr], long nrep, int npat,
     // self->cum[i] is number of SNPs preceding chr i.
     self->cum[0] = 0;
     for(int i=1; i < nchr; ++i)
-        self->cum[i] = self->cum[i-1] + nsnp[i];
+        self->cum[i] = self->cum[i-1] + nsnp[i-1];
 
     self->bc = BootChr_new(0, self->nsnp, nrep, npat, blocksize, rng);
     CHECKMEM(self->bc);
@@ -326,7 +325,7 @@ void Boot_free(Boot * self) {
  * @param [in] z the contribution of the snp to the site pattern.
  */
 void Boot_add(Boot * self, int chr, long snpndx, int pat, double z) {
-    BootChr_add(self->bc, self->cum[snpndx] + snpndx, pat, z);
+    BootChr_add(self->bc, self->cum[chr] + snpndx, pat, z);
 }
 
 /// Add to an array the site pattern counts from the bootstrap
