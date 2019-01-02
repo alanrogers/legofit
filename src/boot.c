@@ -30,7 +30,12 @@ struct BootChr {
 /// An array of BootChr pointers.
 struct Boot {
     int nchr;                   ///< number of chromosomes
-    BootChr **bc;               ///< bc[i]: bootstrap for i'th chromosome
+    long nsnp;                  ///< number of SNPs summed across chromosomes
+
+    /// cum[i] is number of SNPs preceding chromosome i
+    long *cum;
+
+    BootChr *bc;                ///< bc: pointer to bootstrap
 };
 
 /// Contains the data for a bootstrap confidence interval.
@@ -203,6 +208,13 @@ long BootChr_multiplicity(const BootChr * self, long snpndx, long rep) {
  */
 void BootChr_add(BootChr * self, long snpndx, int pat, double z) {
     assert(pat < self->npat);
+#ifndef NDEBUG
+    if( !(snpndx < self->nsnp) ) {
+        fprintf(stderr,"%s:%d: snpndx=%ld self->nsnp=%ld\n",
+                __FILE__,__LINE__,snpndx, self->nsnp);
+        dostacktrace(__FILE__, __LINE__, stderr);
+    }
+#endif
     assert(snpndx < self->nsnp);
     if(!(z >= 0))
         fprintf(stderr, "%s:%s:%d: z=%lf\n", __FILE__, __func__, __LINE__, z);
@@ -278,21 +290,30 @@ Boot *Boot_new(int nchr, long nsnp[nchr], long nrep, int npat,
     Boot *self = malloc(sizeof(Boot));
     CHECKMEM(self);
     self->nchr = nchr;
-    self->bc = calloc(nchr, sizeof(BootChr *));
+
+    self->cum = malloc(nchr * sizeof(self->cum[0]));
+    CHECKMEM(self->cum);
+
+    // totsnp is the total number of SNPs, summed across chromosomes
+    self->nsnp = 0;
+    for(int i=0; i < nchr; ++i)
+        self->nsnp += nsnp[i];
+
+    // self->cum[i] is number of SNPs preceding chr i.
+    self->cum[0] = 0;
+    for(int i=1; i < nchr; ++i)
+        self->cum[i] = self->cum[i-1] + nsnp[i];
+
+    self->bc = BootChr_new(0, self->nsnp, nrep, npat, blocksize, rng);
     CHECKMEM(self->bc);
 
-    for(int i = 0; i < nchr; ++i) {
-        self->bc[i] = BootChr_new(i, nsnp[i], nrep, npat, blocksize, rng);
-        CHECKMEM(self->bc[i]);
-    }
     return self;
 }
 
 /// Destructor for class Boot.
 void Boot_free(Boot * self) {
-    for(int i = 0; i < self->nchr; ++i)
-        BootChr_free(self->bc[i]);
-    free(self->bc);
+    BootChr_free(self->bc);
+    free(self->cum);
     free(self);
 }
 
@@ -305,7 +326,7 @@ void Boot_free(Boot * self) {
  * @param [in] z the contribution of the snp to the site pattern.
  */
 void Boot_add(Boot * self, int chr, long snpndx, int pat, double z) {
-    BootChr_add(self->bc[chr], snpndx, pat, z);
+    BootChr_add(self->bc, self->cum[snpndx] + snpndx, pat, z);
 }
 
 /// Add to an array the site pattern counts from the bootstrap
@@ -326,14 +347,12 @@ void Boot_aggregate(Boot * self, int rep, int npat, double count[npat]) {
             exit(EXIT_FAILURE);
         }
 #endif
-    for(i = 0; i < self->nchr; ++i)
-        BootChr_aggregate(self->bc[i], rep, npat, count);
+    BootChr_aggregate(self->bc, rep, npat, count);
 }
 
 #ifndef NDEBUG
 void Boot_sanityCheck(const Boot * self, const char *file, int line) {
-    for(int i = 0; i < self->nchr; ++i)
-        BootChr_sanityCheck(self->bc[i], file, line);
+    BootChr_sanityCheck(self->bc, file, line);
 }
 #endif
 
