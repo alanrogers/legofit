@@ -12,8 +12,8 @@
 #  include "typedefs.h"
 #  include <gsl/gsl_rng.h>
 
-BootChr    *BootChr_new(long nsnp, long nrep, int npat, long blocksize,
-                        gsl_rng * rng);
+BootChr    *BootChr_new(int chrndx, long nsnp, long nrep, int npat,
+                        long blocksize, gsl_rng * rng);
 
 #  ifndef NDEBUG
 void        BootChr_sanityCheck(const BootChr * self, const char *file,

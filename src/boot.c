@@ -61,8 +61,8 @@ long adjustBlockLength(long lengthWanted, int nsnp) {
 }
 
 /// Constructor for class BootChr.
-BootChr *BootChr_new(long nsnp, long nrep, int npat, long blocksize,
-                     gsl_rng * rng) {
+BootChr *BootChr_new(int chrndx, long nsnp, long nrep, int npat,
+                     long blocksize, gsl_rng * rng) {
     long i, j;
     assert(blocksize > 0);
     if(nrep == 0)
@@ -70,9 +70,10 @@ BootChr *BootChr_new(long nsnp, long nrep, int npat, long blocksize,
 
     if(blocksize > nsnp) {
         fprintf(stderr,
-                "ERR@%s:%d: in BootChr_new, nsnp must be >blocksize.\n"
-                " Instead, nsnp=%ld, blocksize=%ld.\n",
-                __FILE__, __LINE__, nsnp, blocksize);
+                "%s:%s:%d: blocksize=%ld, which must be <nsnp for"
+                " each chromosome.\n"
+                " However, chromosome %d has nsnp=%ld\n",
+                __FILE__, __func__, __LINE__, blocksize, chrndx, nsnp);
         fprintf(stderr, " Use --blocksize argument"
                 " to reduce blocksize.\n");
         exit(1);
@@ -281,7 +282,7 @@ Boot *Boot_new(int nchr, long nsnp[nchr], long nrep, int npat,
     CHECKMEM(self->bc);
 
     for(int i = 0; i < nchr; ++i) {
-        self->bc[i] = BootChr_new(nsnp[i], nrep, npat, blocksize, rng);
+        self->bc[i] = BootChr_new(i, nsnp[i], nrep, npat, blocksize, rng);
         CHECKMEM(self->bc[i]);
     }
     return self;

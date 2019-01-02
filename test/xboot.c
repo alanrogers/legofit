@@ -61,7 +61,7 @@ int main(int argc, char **argv) {
     assert(Dbl_near(interpolate(0.5, v, 5), 2.0));
     unitTstResult("interpolate", "OK");
 
-    bootchr = BootChr_new(nsnp[0], nReps, npat, blockLength, rng);
+    bootchr = BootChr_new(0, nsnp[0], nReps, npat, blockLength, rng);
     if(verbose)
         BootChr_print(bootchr, stdout);
 
