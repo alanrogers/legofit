@@ -513,7 +513,7 @@ void ParNameLst_print(const ParNameLst * self, FILE * fp) {
 /*
  * This file has two main functions. The first compiles if "TEST" is
  * defined provides a unit test for the functions in this file. The
- * second "main" compiles if "TEST" is not defined is produces the booma
+ * second "main" compiles if "TEST" is not defined it produces the booma
  * executable.
  */
 #ifdef TEST

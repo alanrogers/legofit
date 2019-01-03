@@ -23,8 +23,8 @@
 #include <time.h>
 
 int main(int argc, char **argv) {
-    int         nchr = 3;
-    long        nsnp[nchr];
+    long        nsnp[] = {8, 10, 15};
+    int         nchr = (sizeof nsnp)/(sizeof nsnp[0]);
     long        nReps = 10;
     int         npat = 10;
     long        blockLength = 3;
@@ -34,20 +34,19 @@ int main(int argc, char **argv) {
     time_t      currtime = time(NULL);
     gsl_rng    *rng = gsl_rng_alloc(gsl_rng_taus);
 
-    nsnp[0] = 8;
-    nsnp[1] = 10;
-    nsnp[2] = 15;
-
     switch (argc) {
     case 1:
         break;
     case 2:
-        if(strncmp(argv[1], "-v", 2) != 0)
-            eprintf("usage: xboot [-v]\n");
+        if(strncmp(argv[1], "-v", 2) != 0) {
+            fprintf(stderr,"usage: xboot [-v]\n");
+            exit(EXIT_FAILURE);
+        }
         verbose = 1;
         break;
     default:
-        eprintf("usage: xboot [-v]\n");
+        fprintf(stderr,"usage: xboot [-v]\n");
+        exit(EXIT_FAILURE);
     }
 
     gsl_rng_set(rng, (unsigned) currtime);
