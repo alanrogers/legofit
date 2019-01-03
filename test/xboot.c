@@ -33,7 +33,6 @@ int main(int argc, char **argv) {
     long        i, j;
     time_t      currtime = time(NULL);
     gsl_rng    *rng = gsl_rng_alloc(gsl_rng_taus);
-    BootChr       *bootchr;
 
     nsnp[0] = 8;
     nsnp[1] = 10;

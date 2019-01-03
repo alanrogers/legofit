@@ -15,27 +15,19 @@
 #include <assert.h>
 #include <gsl/gsl_rng.h>
 
-/// Contains the all data involved in a moving blocks bootstrap of
-/// a single chromosome.
-struct BootChr {
-    long blocksize;             ///< number of SNPs per block
-    long nrep;                  ///< number of bootstrap replicates 
-    long nsnp;                  ///< number of snps
-    long nblock;                ///< number of blocks
-    int npat;                   ///< number of site patterns
-    double **count;             ///< count[i][j]: j'th site pattern in i'th rep
-    long **start;               ///< start[i][j] = start of j'th block in i'th rep
-};
-
-/// An array of BootChr pointers.
+/// Contains the all data involved in a moving blocks bootstrap
 struct Boot {
-    int nchr;                   ///< number of chromosomes
-    long nsnp;                  ///< number of SNPs summed across chromosomes
+    int nchr;              ///< number of chromosomes
+    long nsnp;             ///< number of snps (across all chromosomes)
+    long blocksize;        ///< number of SNPs per block
+    long nrep;             ///< number of bootstrap replicates 
+    long nblock;           ///< number of blocks
+    int npat;              ///< number of site patterns
+    double **count;        ///< count[i][j]: j'th site pattern in i'th rep
+    long **start;          ///< start[i][j] = start of j'th block in i'th rep
 
     /// cum[i] is number of SNPs preceding chromosome i
     long *cum;
-
-    BootChr *bc;                ///< bc: pointer to bootstrap
 };
 
 /// Contains the data for a bootstrap confidence interval.
@@ -46,8 +38,10 @@ struct BootConf {
     double *low, *high;         ///< confidence bounds
 };
 
-long LInt_div_round(long num, long denom);
-static void BootChr_allocArrays(BootChr * self);
+long   LInt_div_round(long num, long denom);
+double interpolate(double p, double *v, long len);
+long   adjustBlockLength(long lengthWanted, int nsnp);
+long   Boot_multiplicity(const Boot * self, long snpndx, long rep);
 
 /// Divide num by denom and round the result to the nearest integer.
 long LInt_div_round(long num, long denom) {
@@ -65,59 +59,52 @@ long adjustBlockLength(long lengthWanted, int nsnp) {
     return LInt_div_round(nsnp, nblock);
 }
 
-/// Constructor for class BootChr.
-BootChr *BootChr_new(int chrndx, long nsnp, long nrep, int npat,
+/// Constructor for class Boot.
+Boot *Boot_new(int nchr, long nsnpvec[nchr], long nrep, int npat,
                      long blocksize, gsl_rng * rng) {
     long i, j;
     assert(blocksize > 0);
     if(nrep == 0)
         return NULL;
 
-    if(blocksize > nsnp) {
+    Boot *self = malloc(sizeof(Boot));
+    CHECKMEM(self);
+    self->nchr = nchr;
+
+    self->cum = malloc(nchr * sizeof(self->cum[0]));
+    CHECKMEM(self->cum);
+
+    // self->nsnp is the total number of SNPs, summed across chromosomes
+    self->nsnp = 0;
+    for(i=0; i < nchr; ++i)
+        self->nsnp += nsnpvec[i];
+
+    // self->cum[i] is number of SNPs preceding chr i.
+    self->cum[0] = 0;
+    for(i=1; i < nchr; ++i)
+        self->cum[i] = self->cum[i-1] + nsnpvec[i-1];
+
+    self->nrep = nrep;
+    self->npat = npat;
+    self->blocksize = blocksize = adjustBlockLength(blocksize, self->nsnp);
+
+    if(self->blocksize > self->nsnp) {
         fprintf(stderr,
-                "%s:%s:%d: blocksize=%ld, which must be <nsnp for"
-                " each chromosome.\n"
-                " However, chromosome %d has nsnp=%ld\n",
-                __FILE__, __func__, __LINE__, blocksize, chrndx, nsnp);
+                "%s:%s:%d: blocksize must be < nsnp.\n"
+                "    However, blocksize=%ld and nsnp=%ld\n",
+                __FILE__, __func__, __LINE__,
+                self->blocksize, self->nsnp);
         fprintf(stderr, " Use --blocksize argument"
                 " to reduce blocksize.\n");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
-    BootChr *self = malloc(sizeof(BootChr));
-    CHECKMEM(self);
-
-    self->nsnp = nsnp;
-    self->nrep = nrep;
-    self->blocksize = adjustBlockLength(blocksize, nsnp);
-    self->npat = npat;
-    self->nblock = LInt_div_round(nsnp, blocksize);
+    self->nblock = LInt_div_round(self->nsnp, self->blocksize);
 
     // Block start positions are uniform on [0, nsnp-blocksize+1).
-    unsigned long endpos;
-    endpos = nsnp - self->blocksize + 1;
+    unsigned long endpos = self->nsnp - self->blocksize + 1;
 
-    BootChr_allocArrays(self);
-
-    for(i = 0; i < self->nrep; ++i) {
-        for(j = 0; j < self->nblock; ++j)
-            self->start[i][j] = gsl_rng_uniform_int(rng, endpos);
-
-        qsort(self->start[i], (size_t) self->nblock,
-              sizeof(self->start[0][0]), compareLongs);
-    }
-
-#ifndef NDEBUG
-    BootChr_sanityCheck(self, __FILE__, __LINE__);
-#endif
-    return self;
-}
-
-/// Allocate BootChr's arrays.
-static void BootChr_allocArrays(BootChr * self) {
-
-    long i;
-
+    // Allocate arrays
     self->start = calloc((unsigned long) self->nrep, sizeof(self->start[0]));
     CHECKMEM(self->start);
 
@@ -133,11 +120,31 @@ static void BootChr_allocArrays(BootChr * self) {
                                 sizeof(self->count[i][0]));
         CHECKMEM(self->count[i]);
     }
+
+    // For each replicate, define sorted array of block starting positions.
+    for(i = 0; i < self->nrep; ++i) {
+        for(j = 0; j < self->nblock; ++j)
+            self->start[i][j] = gsl_rng_uniform_int(rng, endpos);
+
+        qsort(self->start[i], (size_t) self->nblock,
+              sizeof(self->start[0][0]), compareLongs);
+    }
+
+#ifndef NDEBUG
+    Boot_sanityCheck(self, __FILE__, __LINE__);
+#endif
+    return self;
 }
 
 #ifndef NDEBUG
-void BootChr_sanityCheck(const BootChr * self, const char *file, int line) {
+void Boot_sanityCheck(const Boot * self, const char *file, int line) {
     long i, j;
+    REQUIRE(self->nchr > 0, file, line);
+    REQUIRE(self->nsnp >= self->cum[self->cum[self->nchr - 1]],
+            file, line);
+    REQUIRE(self->cum[0] == 0, file, line);
+    for(i=1; i < self->nchr; ++i)
+        REQUIRE(self->cum[i] > self->cum[i-1], file, line);
     REQUIRE(self->blocksize > 0, file, line);
     REQUIRE(self->blocksize < 100000, file, line);
     REQUIRE(self != NULL, file, line);
@@ -170,7 +177,7 @@ void BootChr_sanityCheck(const BootChr * self, const char *file, int line) {
 
 /// How many copies of snp with index snpndx are present in a given
 /// repetition (rep)? 
-long BootChr_multiplicity(const BootChr * self, long snpndx, long rep) {
+long Boot_multiplicity(const Boot * self, long snpndx, long rep) {
     long lndx, hndx, lowtarget;
 
     assert(snpndx < self->nsnp);
@@ -200,123 +207,6 @@ long BootChr_multiplicity(const BootChr * self, long snpndx, long rep) {
 }
 
 /**
- * Add one site pattern contribution to a BootChr structure.
- * @param [inout] self The BootChr structure to modify.
- * @param [in] snpndx The index of the current snp.
- * @param [in] pat The index of the current site pattern.
- * @param [in] z the contribution of the snp to the site pattern.
- */
-void BootChr_add(BootChr * self, long snpndx, int pat, double z) {
-    assert(pat < self->npat);
-#ifndef NDEBUG
-    if( !(snpndx < self->nsnp) ) {
-        fprintf(stderr,"%s:%d: snpndx=%ld self->nsnp=%ld\n",
-                __FILE__,__LINE__,snpndx, self->nsnp);
-    }
-#endif
-    assert(snpndx < self->nsnp);
-    if(!(z >= 0))
-        fprintf(stderr, "%s:%s:%d: z=%lf\n", __FILE__, __func__, __LINE__, z);
-    assert(z >= 0.0);
-    for(register int rep = 0; rep < self->nrep; ++rep) {
-
-        // w is the number times the current snp is represented
-        // in the current bootstrap replicate.
-        register long w = BootChr_multiplicity(self, snpndx, rep);
-
-        self->count[rep][pat] += w * z;
-    }
-}
-
-/// Return number of bootstrap repetitions
-long BootChr_nrep(const BootChr * self) {
-    assert(self);
-    return self->nrep;
-}
-
-/// Return number of site patterns
-long BootChr_npat(const BootChr * self) {
-    assert(self);
-    return self->npat;
-}
-
-/// Return number of blocks
-long BootChr_nblock(const BootChr * self) {
-    assert(self);
-    return self->nblock;
-}
-
-/// Return number of SNPs
-long BootChr_nsnp(const BootChr * self) {
-    assert(self);
-    return self->nsnp;
-}
-
-/// Destructor
-void BootChr_free(BootChr * self) {
-#ifndef NDEBUG
-    BootChr_sanityCheck(self, __FILE__, __LINE__);
-#endif
-
-    for(int i = 0; i < self->nrep; ++i) {
-        free(self->start[i]);
-        free(self->count[i]);
-    }
-    free(self->start);
-    free(self->count);
-    free(self);
-}
-
-/// Add to an array the site pattern counts from the bootstrap
-/// replicate of a single chromosome.
-/// @param [in] self Points to a BootChr object.
-/// @param [in] the index of the bootstrap replicate
-/// @param [in] npat the number of site patterns
-/// @param [out] count An array of doubles. The function will add to
-/// count[i] the contribution of site pattern i in bootstrap replicate
-/// rep. 
-void BootChr_aggregate(BootChr * self, int rep, int npat, double count[npat]) {
-    assert(self);
-    assert(npat == self->npat);
-    int j;
-    for(j = 0; j < self->npat; ++j)
-        count[j] += self->count[rep][j];
-}
-
-/// Constructor for class Boot.
-Boot *Boot_new(int nchr, long nsnp[nchr], long nrep, int npat,
-               long blocksize, gsl_rng * rng) {
-    Boot *self = malloc(sizeof(Boot));
-    CHECKMEM(self);
-    self->nchr = nchr;
-
-    self->cum = malloc(nchr * sizeof(self->cum[0]));
-    CHECKMEM(self->cum);
-
-    // totsnp is the total number of SNPs, summed across chromosomes
-    self->nsnp = 0;
-    for(int i=0; i < nchr; ++i)
-        self->nsnp += nsnp[i];
-
-    // self->cum[i] is number of SNPs preceding chr i.
-    self->cum[0] = 0;
-    for(int i=1; i < nchr; ++i)
-        self->cum[i] = self->cum[i-1] + nsnp[i-1];
-
-    self->bc = BootChr_new(0, self->nsnp, nrep, npat, blocksize, rng);
-    CHECKMEM(self->bc);
-
-    return self;
-}
-
-/// Destructor for class Boot.
-void Boot_free(Boot * self) {
-    BootChr_free(self->bc);
-    free(self->cum);
-    free(self);
-}
-
-/**
  * Add one site pattern contribution to a Boot structure.
  * @param [inout] self The Boot structure to modify.
  * @param [in] chr The index of the chromosome to modify.
@@ -325,11 +215,38 @@ void Boot_free(Boot * self) {
  * @param [in] z the contribution of the snp to the site pattern.
  */
 void Boot_add(Boot * self, int chr, long snpndx, int pat, double z) {
-    BootChr_add(self->bc, self->cum[chr] + snpndx, pat, z);
+    assert(pat < self->npat);
+    assert(snpndx < self->nsnp);
+    assert(z >= 0.0);
+    snpndx  += self->cum[chr];
+    for(register int rep = 0; rep < self->nrep; ++rep) {
+
+        // w is the number times the current snp is represented
+        // in the current bootstrap replicate.
+        register long w = Boot_multiplicity(self, snpndx, rep);
+
+        self->count[rep][pat] += w * z;
+    }
 }
 
-/// Add to an array the site pattern counts from the bootstrap
-/// replicate of an entire genome.
+/// Destructor
+void Boot_free(Boot * self) {
+#ifndef NDEBUG
+    Boot_sanityCheck(self, __FILE__, __LINE__);
+#endif
+
+    for(int i = 0; i < self->nrep; ++i) {
+        free(self->start[i]);
+        free(self->count[i]);
+    }
+    free(self->start);
+    free(self->count);
+    free(self->cum);
+    free(self);
+}
+
+/// Add to an array the site pattern counts from a bootstrap
+/// replicate.
 /// @param [in] self Points to a Boot object.
 /// @param [in] the index of the bootstrap replicate
 /// @param [in] npat the number of site patterns
@@ -337,23 +254,23 @@ void Boot_add(Boot * self, int chr, long snpndx, int pat, double z) {
 /// count[i] the contribution of site pattern i in bootstrap replicate
 /// rep. 
 void Boot_aggregate(Boot * self, int rep, int npat, double count[npat]) {
+    assert(self);
+    assert(npat == self->npat);
     int i;
-#ifndef NDEBUG
-    for(i = 0; i < npat; ++i)
-        if(!(count[i] == 0.0)) {
-            fprintf(stderr, "%s:%d: count argument not initialized in %s.\n",
-                    __FILE__, __LINE__, __func__);
-            exit(EXIT_FAILURE);
-        }
-#endif
-    BootChr_aggregate(self->bc, rep, npat, count);
-}
 
 #ifndef NDEBUG
-void Boot_sanityCheck(const Boot * self, const char *file, int line) {
-    BootChr_sanityCheck(self->bc, file, line);
-}
+    for(i = 0; i < npat; ++i) {
+        if(count[i] != 0.0) {
+            fprintf(stderr, "%s:%s:%d: count not initialized.\n",
+                    __FILE__, __func__, __LINE__);
+            exit(EXIT_FAILURE);
+        }
+    }
 #endif
+
+    for(i = 0; i < self->npat; ++i)
+        count[i] += self->count[rep][i];
+}
 
 /// Interpolate in order to approximate the value v[p*(len-1)].
 /// Return NaN if len==0.
@@ -407,12 +324,12 @@ void confidenceBounds(double *lowBnd, double *highBnd, double confidence,
     *highBnd = interpolate(1.0 - tailProb, v, len);
 }
 
-/// Print a BootChr object
-void BootChr_print(const BootChr * self, FILE * ofp) {
+/// Print a Boot object
+void Boot_print(const Boot * self, FILE * ofp) {
     long rep, j;
 
     fprintf(ofp,
-            "BootChr_print: nsnp=%ld nrep=%ld blocksize=%ld nblock=%ld\n",
+            "Boot_print: nsnp=%ld nrep=%ld blocksize=%ld nblock=%ld\n",
             self->nsnp, self->nrep, self->blocksize, self->nblock);
 
     fprintf(ofp, "Block starts:\n");
@@ -434,8 +351,10 @@ void BootChr_print(const BootChr * self, FILE * ofp) {
 
 #ifndef NDEBUG
 
-/** For debugging BootChr_multiplicity */
-unsigned BootChr_multiplicity_slow(BootChr * self, long snp, long rep) {
+unsigned Boot_multiplicity_slow(Boot * self, long snp, long rep);
+
+/** For debugging Boot_multiplicity */
+unsigned Boot_multiplicity_slow(Boot * self, long snp, long rep) {
     unsigned i, n = 0;
 
     for(i = 0; i < self->nblock; ++i) {
