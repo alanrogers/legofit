@@ -1,3 +1,4 @@
+
 vpath %.c ../src
 
 opt :=  -O0 -fno-inline-functions -DDEBUG
@@ -196,7 +197,10 @@ XGENE := xgene.o branchtab.o misc.o binary.o tokenizer.o lblndx.o
 xgene : $(XGENE)
 	$(CC) $(CFLAGS) -o $@ $(XGENE) $(lib)
 
-XBOOT := xboot.o misc.o boot.o binary.o
+xboot.o : boot.o
+	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/boot.c
+
+XBOOT := xboot.o misc.o binary.o
 xboot : $(XBOOT)
 	$(CC) $(CFLAGS) -o $@ $(XBOOT) $(lib)
 

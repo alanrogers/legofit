@@ -2,7 +2,7 @@
  * @file boot.h
  * @author Alan R. Rogers
  * @brief Header for boot.c.
- * @copyright Copyright (c) 2016 Alan R. Rogers
+ * @copyright Copyright (c) 2016,2018 Alan R. Rogers
  * <rogers@anthro.utah.edu>. This file is released under the Internet
  * Systems Consortium License, which can be found in file "LICENSE".
  */

@@ -38,26 +38,68 @@ struct BootConf {
     double *low, *high;         ///< confidence bounds
 };
 
-long   LInt_div_round(long num, long denom);
 double interpolate(double p, double *v, long len);
-long   adjustBlockLength(long lengthWanted, int nsnp);
+long   LInt_div_round(long num, long denom);
+long   adjustBlockLength(long lengthWanted, long nsnp);
 long   Boot_multiplicity(const Boot * self, long snpndx, long rep);
 
 /// Divide num by denom and round the result to the nearest integer.
 long LInt_div_round(long num, long denom) {
     assert(denom != 0L);
     ldiv_t quotrem = ldiv(num, denom);
-    if(2L * quotrem.rem > denom)
+    if(2L * quotrem.rem >= denom)
         return 1L + quotrem.quot;
     return quotrem.quot;
 }
 
+#if 1
 /// Return a blocksize that is as close as possible to lengthWanted
 /// while still making length*nblock close to nsnp.
-long adjustBlockLength(long lengthWanted, int nsnp) {
+long adjustBlockLength(long lengthWanted, long nsnp) {
+    if(lengthWanted >= nsnp)
+        return nsnp;
     long nblock = LInt_div_round(nsnp, lengthWanted);
-    return LInt_div_round(nsnp, nblock);
+    assert(nblock > 0L);
+    long blocksize = LInt_div_round(nsnp, nblock);
+    fprintf(stderr,"%s: (%ld, %ld) -> %ld\n",
+            __func__, lengthWanted, nsnp, blocksize);
+    return blocksize;
 }
+#else
+/// Return a blocksize that is as close as possible to lengthWanted
+/// while still making length*nblock == nsnp.
+long adjustBlockLength(long lengthWanted, long nsnp) {
+    fprintf(stderr,"%s:%d: lengthWanted=%ld nsnp=%ld\n",
+            __FILE__,__LINE__,lengthWanted, nsnp);
+    ldiv_t quotrem = ldiv(nsnp, lengthWanted);
+    long nblock = quotrem.quot;
+    if(nblock == 0)
+        return nsnp;
+    long length1, length2;
+    quotrem = ldiv(nsnp, nblock);
+    length1 = quotrem.quot;
+    fprintf(stderr,"%s:%d: length1=%ld\n", __FILE__,__LINE__,length1);
+    if(length1 == lengthWanted) {
+        fprintf(stderr,"%s:%d: length1==lengthWanted\n",
+                __FILE__,__LINE__);
+        return length1;
+    }else if(length1 > lengthWanted) {
+        fprintf(stderr,"%s:%d: length1>lengthWanted\n",
+                __FILE__,__LINE__);
+        quotrem = ldiv(nsnp, nblock+1);
+    }else {
+        assert(length1 < lengthWanted);
+        fprintf(stderr,"%s:%d: length1<lengthWanted\n",
+                __FILE__,__LINE__);
+        quotrem = ldiv(nsnp, nblock-1);
+    }
+    length2 = quotrem.quot;
+    fprintf(stderr,"%s:%d: length2=%ld\n", __FILE__,__LINE__,length2);
+    if(labs(length1 - lengthWanted) < labs(length2 - lengthWanted))
+        return length1;
+    return length2;
+}
+#endif
 
 /// Constructor for class Boot.
 Boot *Boot_new(int nchr, long nsnpvec[nchr], long nrep, int npat,
@@ -86,19 +128,19 @@ Boot *Boot_new(int nchr, long nsnpvec[nchr], long nrep, int npat,
 
     self->nrep = nrep;
     self->npat = npat;
-    self->blocksize = blocksize = adjustBlockLength(blocksize, self->nsnp);
 
-    if(self->blocksize > self->nsnp) {
+    if(blocksize >= self->nsnp) {
         fprintf(stderr,
                 "%s:%s:%d: blocksize must be < nsnp.\n"
                 "    However, blocksize=%ld and nsnp=%ld\n",
                 __FILE__, __func__, __LINE__,
-                self->blocksize, self->nsnp);
+                blocksize, self->nsnp);
         fprintf(stderr, " Use --blocksize argument"
                 " to reduce blocksize.\n");
         exit(EXIT_FAILURE);
     }
 
+    self->blocksize = blocksize = adjustBlockLength(blocksize, self->nsnp);
     self->nblock = LInt_div_round(self->nsnp, self->blocksize);
 
     // Block start positions are uniform on [0, nsnp-blocksize+1).
@@ -354,6 +396,7 @@ void Boot_print(const Boot * self, FILE * ofp) {
 #include <string.h>
 #include <assert.h>
 #include <unistd.h>
+#include <time.h>
 
 #ifdef NDEBUG
 #error "Unit tests must be compiled without -DNDEBUG flag"
@@ -408,77 +451,57 @@ int main(int argc, char **argv) {
 
     double      v[] = { 0.0, 1.0, 2.0, 3.0, 4.0, 5.0 };
 
+    long totsnps = 0;
+    for(i=0; i < nchr; ++i)
+        totsnps += nsnp[i];
+
     assert(Dbl_near(interpolate(0.0, v, 6), 0.0));
     assert(Dbl_near(interpolate(1.0, v, 6), 5.0));
     assert(Dbl_near(interpolate(0.5, v, 6), 2.5));
     assert(Dbl_near(interpolate(0.5, v, 5), 2.0));
     unitTstResult("interpolate", "OK");
 
-    bootchr = BootChr_new(0, nsnp[0], nReps, npat, blockLength, rng);
+    assert( 2L == LInt_div_round(11L, 6L) );
+    assert( 1L == LInt_div_round(7L, 6L) );
+    assert( 1L == LInt_div_round(6L, 6L) );
+    assert( 1L == LInt_div_round(5L, 6L) );
+    assert( 1L == LInt_div_round(3L, 6L) );
+    assert( 0L == LInt_div_round(2L, 6L) );
+    assert( 0L == LInt_div_round(0L, 6L) );
+    unitTstResult("LInt_div_round", "OK");
+
+    for(i = 90; i <= 110; ++i)
+        (void) adjustBlockLength(i, 10000);
+
+    exit(0);
+
+    fprintf(stderr,"adjusted block length: %ld\n",
+            adjustBlockLength(101L, 10000L));
+    assert(100L == adjustBlockLength(101L, 10000L));
+    unitTstResult("adjustBlockLength", "OK");
+
+    Boot *boot = Boot_new(nchr, nsnp, nReps, npat, blockLength, rng);
     if(verbose)
-        BootChr_print(bootchr, stdout);
+        Boot_print(boot, stdout);
+    Boot_sanityCheck(boot, __FILE__, __LINE__);
 
-    assert(nsnp[0] == BootChr_nsnp(bootchr));
-    assert(nReps == BootChr_nrep(bootchr));
-    assert(npat == BootChr_npat(bootchr));
-    assert(BootChr_nblock(bootchr) ==
-           floor(0.5+(nsnp[0]/((double) blockLength))));
-
-    long        isnp, irep;
-
-    for(isnp = 0; isnp < nsnp[0]; ++isnp) {
-        for(irep = 0; irep < nReps; ++irep) {
-            long        m1 = BootChr_multiplicity_slow(bootchr, isnp, irep);
-            long        m2 = BootChr_multiplicity(bootchr, isnp, irep);
-
-            assert(m1 == m2);
-        }
-    }
-    unitTstResult("BootChr_new", "OK");
-
-    for(i=0; i < npat; ++i) {
-        long snp = gsl_rng_uniform_int(rng, nsnp[0]);
-        BootChr_add(bootchr, snp, i, 1.0);
-    }
-
-    for(i=0; i < nReps; ++i) {
-        double count[npat];
-        memset(count, 0, sizeof count);
-        BootChr_aggregate(bootchr, i, npat, count);
-        if(verbose) {
-            printf("rep %2ld:", i);
-            for(j=0; j < npat; ++j)
-                printf(" %6.2lf", count[j]);
-            putchar('\n');
-        }
-    }
-
-    if(verbose && nReps <= 5 && BootChr_nblock(bootchr) <= 50)
-        BootChr_print(bootchr, stdout);
+    assert(totsnps == boot->nsnp);
+    assert(nReps == boot->nrep);
+    assert(npat == boot->npat);
+    assert(boot->nblock == floor(0.5+(totsnps/((double) blockLength))));
 
     long        snp, rep, m, slow;
 
-    for(i = 0; i < 100; ++i) {
-        rep = gsl_rng_uniform_int(rng, nReps);
-        snp = gsl_rng_uniform_int(rng, nsnp[0]);
-        m = BootChr_multiplicity(bootchr, snp, rep);
-        slow = BootChr_multiplicity_slow(bootchr, snp, rep);
-        if(m != slow)
-            eprintf("Boot_multiplicity FAILED@$s:%d:"
-                    "rep=%ld snp=%ld m=%ld != slow=%ld\n",
-                    __FILE__, __LINE__, rep, snp, m, slow);
-    }
+    Boot_free(boot);
 
-    BootChr_free(bootchr);
-
-    unitTstResult("BootChr", "OK");
-
-    Boot *boot = Boot_new(nchr, nsnp, nReps, npat, blockLength, rng);
+    boot = Boot_new(nchr, nsnp, nReps, npat, blockLength, rng);
+    Boot_sanityCheck(boot, __FILE__, __LINE__);
 
     for(i=0; i < nchr; ++i) {
         for(j=0; j < npat; ++j) {
             snp = gsl_rng_uniform_int(rng, nsnp[i]);
             Boot_add(boot, i, snp, j, 1.0);
+            Boot_sanityCheck(boot, __FILE__, __LINE__);
         }
     }
 
@@ -493,6 +516,20 @@ int main(int argc, char **argv) {
             putchar('\n');
         }
     }
+
+    for(i = 0; i < 100; ++i) {
+        rep = gsl_rng_uniform_int(rng, nReps);
+        snp = gsl_rng_uniform_int(rng, totsnps);
+        m = Boot_multiplicity(boot, snp, rep);
+        slow = Boot_multiplicity_slow(boot, snp, rep);
+        if(m != slow) {
+            fprintf(stderr, "Boot_multiplicity FAILED@%s:%d:"
+                    "rep=%ld snp=%ld m=%ld != slow=%ld\n",
+                    __FILE__, __LINE__, rep, snp, m, slow);
+            exit(EXIT_FAILURE);
+        }
+    }
+
     Boot_free(boot);
 
     unitTstResult("Boot", "OK");
