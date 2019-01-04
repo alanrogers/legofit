@@ -1,4 +1,3 @@
-
 vpath %.c ../src
 
 opt :=  -O0 -fno-inline-functions -DDEBUG
@@ -166,7 +165,7 @@ xbooma : $(XBOOMA)
 xscrmreader.o : scrmreader.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/scrmreader.c
 
-XSCRMREADER := xscrmreader.o misc.o tokenizer.o
+XSCRMREADER := xscrmreader.o misc.o tokenizer.o uintqueue.o
 xscrmreader : $(XSCRMREADER)
 	$(CC) $(CFLAGS) -o $@ $(XSCRMREADER) $(lib)
 
@@ -190,19 +189,20 @@ XPARSE := xparse.o popnodetab.o misc.o tokenizer.o gptree.o lblndx.o \
 xparse : $(XPARSE)
 	$(CC) $(CFLAGS) -o $@ $(XPARSE) $(lib)
 
+xboot.o : boot.c
+	echo making xboot.o
+	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/boot.c
+
+XBOOT := xboot.o misc.o binary.o
+xboot : $(XBOOT)
+	$(CC) $(CFLAGS) -o $@ $(XBOOT) $(lib)
+
 xgene.o : gene.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/gene.c
 
 XGENE := xgene.o branchtab.o misc.o binary.o tokenizer.o lblndx.o
 xgene : $(XGENE)
 	$(CC) $(CFLAGS) -o $@ $(XGENE) $(lib)
-
-xboot.o : boot.o
-	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/boot.c
-
-XBOOT := xboot.o misc.o binary.o
-xboot : $(XBOOT)
-	$(CC) $(CFLAGS) -o $@ $(XBOOT) $(lib)
 
 xpopnode.o : popnode.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/popnode.c

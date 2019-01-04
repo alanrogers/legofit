@@ -336,8 +336,6 @@ int main(int argc, char **argv) {
     // behaved. So this code sets nchr=1, calculates the total number
     // of snps, and then uses these dimensions to allocate a bootstrap
     // object.
-    long        nsnp[1];
-    nsnp[0] = 0;
 
     unsigned long nsites = 0, nbadaa = 0, nfixed = 0;
     long snpndx = -1;

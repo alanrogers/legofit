@@ -40,7 +40,6 @@ struct BootConf {
 
 double interpolate(double p, double *v, long len);
 long   LInt_div_round(long num, long denom);
-long   adjustBlockLength(long lengthWanted, long nsnp);
 long   Boot_multiplicity(const Boot * self, long snpndx, long rep);
 
 /// Divide num by denom and round the result to the nearest integer.
@@ -51,55 +50,6 @@ long LInt_div_round(long num, long denom) {
         return 1L + quotrem.quot;
     return quotrem.quot;
 }
-
-#if 1
-/// Return a blocksize that is as close as possible to lengthWanted
-/// while still making length*nblock close to nsnp.
-long adjustBlockLength(long lengthWanted, long nsnp) {
-    if(lengthWanted >= nsnp)
-        return nsnp;
-    long nblock = LInt_div_round(nsnp, lengthWanted);
-    assert(nblock > 0L);
-    long blocksize = LInt_div_round(nsnp, nblock);
-    fprintf(stderr,"%s: (%ld, %ld) -> %ld\n",
-            __func__, lengthWanted, nsnp, blocksize);
-    return blocksize;
-}
-#else
-/// Return a blocksize that is as close as possible to lengthWanted
-/// while still making length*nblock == nsnp.
-long adjustBlockLength(long lengthWanted, long nsnp) {
-    fprintf(stderr,"%s:%d: lengthWanted=%ld nsnp=%ld\n",
-            __FILE__,__LINE__,lengthWanted, nsnp);
-    ldiv_t quotrem = ldiv(nsnp, lengthWanted);
-    long nblock = quotrem.quot;
-    if(nblock == 0)
-        return nsnp;
-    long length1, length2;
-    quotrem = ldiv(nsnp, nblock);
-    length1 = quotrem.quot;
-    fprintf(stderr,"%s:%d: length1=%ld\n", __FILE__,__LINE__,length1);
-    if(length1 == lengthWanted) {
-        fprintf(stderr,"%s:%d: length1==lengthWanted\n",
-                __FILE__,__LINE__);
-        return length1;
-    }else if(length1 > lengthWanted) {
-        fprintf(stderr,"%s:%d: length1>lengthWanted\n",
-                __FILE__,__LINE__);
-        quotrem = ldiv(nsnp, nblock+1);
-    }else {
-        assert(length1 < lengthWanted);
-        fprintf(stderr,"%s:%d: length1<lengthWanted\n",
-                __FILE__,__LINE__);
-        quotrem = ldiv(nsnp, nblock-1);
-    }
-    length2 = quotrem.quot;
-    fprintf(stderr,"%s:%d: length2=%ld\n", __FILE__,__LINE__,length2);
-    if(labs(length1 - lengthWanted) < labs(length2 - lengthWanted))
-        return length1;
-    return length2;
-}
-#endif
 
 /// Constructor for class Boot.
 Boot *Boot_new(int nchr, long nsnpvec[nchr], long nrep, int npat,
@@ -140,7 +90,7 @@ Boot *Boot_new(int nchr, long nsnpvec[nchr], long nrep, int npat,
         exit(EXIT_FAILURE);
     }
 
-    self->blocksize = blocksize = adjustBlockLength(blocksize, self->nsnp);
+    self->blocksize = blocksize;
     self->nblock = LInt_div_round(self->nsnp, self->blocksize);
 
     // Block start positions are uniform on [0, nsnp-blocksize+1).
@@ -469,16 +419,6 @@ int main(int argc, char **argv) {
     assert( 0L == LInt_div_round(2L, 6L) );
     assert( 0L == LInt_div_round(0L, 6L) );
     unitTstResult("LInt_div_round", "OK");
-
-    for(i = 90; i <= 110; ++i)
-        (void) adjustBlockLength(i, 10000);
-
-    exit(0);
-
-    fprintf(stderr,"adjusted block length: %ld\n",
-            adjustBlockLength(101L, 10000L));
-    assert(100L == adjustBlockLength(101L, 10000L));
-    unitTstResult("adjustBlockLength", "OK");
 
     Boot *boot = Boot_new(nchr, nsnp, nReps, npat, blockLength, rng);
     if(verbose)

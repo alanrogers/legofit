@@ -19,13 +19,9 @@
 #endif
 
 int main(int argc, char **argv) {
-    int         verbose = 0;
     if(argc > 1) {
-        if(argc != 2 || 0 != strcmp(argv[1], "-v")) {
-            fprintf(stderr, "usage: xuintqueue [-v]\n");
-            exit(EXIT_FAILURE);
-        }
-        verbose = 1;
+        fprintf(stderr, "usage: xuintqueue\n");
+        exit(EXIT_FAILURE);
     }
 
     UINTqueue *queue = NULL;
