@@ -179,9 +179,11 @@ static void generatePatterns(int bit, int npops, Stack * stk, tipId_t pat,
 const char *useMsg =
     "\nUsage: sitepat [options] <x>=<in_1> <y>=<in_2> ... outgroup=<in_K>\n"
     "   where <x> and <y> are arbitrary labels, and <in_i> are input\n"
-    "   files in raf format.  If input file name ends with .gz, input is\n"
-    "   decompressed using gunzip. Writes to standard output. Labels may\n"
-    "   not include the character \":\". Final label must be \"outgroup\".\n";
+    "   files in raf format. Labels may not include the character \":\".\n"
+    "   Final label must be \"outgroup\". Writes to standard output.\n"
+    "\n"
+    "   If input file name ends with .gz, input is decompressed using\n"
+    "   gunzip.\n";
 
 /// Print usage message and die.
 static void usage(void) {
@@ -491,7 +493,7 @@ int main(int argc, char **argv) {
                 fprintf(stderr, "%s:%d: ERR: can't rewind input stream.\n",
                         __FILE__, __LINE__);
                 fprintf(stderr, "  If --bootreps > 0, inputs must be"
-                        " files, not pipes.\n");
+                        " uncompressed files, not pipes.\n");
                 exit(EXIT_FAILURE);
             }
         }
