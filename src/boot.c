@@ -30,14 +30,6 @@ struct Boot {
     long *cum;
 };
 
-/// Contains the data for a bootstrap confidence interval.
-struct BootConf {
-    long nrep;                  ///< repetitions
-    long blocksize;             ///< nucleotide positions per block
-    double confidence;          ///< size of confidence region
-    double *low, *high;         ///< confidence bounds
-};
-
 double interpolate(double p, double *v, long len);
 long   LInt_div_round(long num, long denom);
 long   Boot_multiplicity(const Boot * self, long snpndx, long rep);
@@ -132,8 +124,7 @@ Boot *Boot_new(int nchr, long nsnpvec[nchr], long nrep, int npat,
 void Boot_sanityCheck(const Boot * self, const char *file, int line) {
     long i, j;
     REQUIRE(self->nchr > 0, file, line);
-    REQUIRE(self->nsnp >= self->cum[self->cum[self->nchr - 1]],
-            file, line);
+    REQUIRE(self->nsnp >= self->cum[self->nchr - 1], file, line);
     REQUIRE(self->cum[0] == 0, file, line);
     for(i=1; i < self->nchr; ++i)
         REQUIRE(self->cum[i] > self->cum[i-1], file, line);
