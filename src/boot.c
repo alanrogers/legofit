@@ -123,11 +123,12 @@ Boot *Boot_new(int nchr, long nsnpvec[nchr], long nrep, int npat,
 #ifndef NDEBUG
 void Boot_sanityCheck(const Boot * self, const char *file, int line) {
     long i, j;
+    REQUIRE(self != NULL, file, line);
     REQUIRE(self->nchr > 0, file, line);
     REQUIRE(self->nsnp >= self->cum[self->nchr - 1], file, line);
     REQUIRE(self->cum[0] == 0, file, line);
     for(i=1; i < self->nchr; ++i)
-        REQUIRE(self->cum[i] > self->cum[i-1], file, line);
+        REQUIRE(self->cum[i] >= self->cum[i-1], file, line);
     REQUIRE(self->blocksize > 0, file, line);
     REQUIRE(self->blocksize < 100000, file, line);
     REQUIRE(self != NULL, file, line);
@@ -214,6 +215,7 @@ void Boot_add(Boot * self, int chr, long snpndx, int pat, double z) {
 
 /// Destructor
 void Boot_free(Boot * self) {
+    assert(self);
 #ifndef NDEBUG
     Boot_sanityCheck(self, __FILE__, __LINE__);
 #endif
