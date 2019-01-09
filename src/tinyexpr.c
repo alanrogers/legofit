@@ -95,7 +95,11 @@ te_variable *te_variable_new(const char *name, void *address) {
     if(self==NULL)
         return NULL;
     memset(self, 0, sizeof(te_variable));
+
+    // This pointer is not freed by te_variable_free. The resulting memory
+    // leak is not important, unless te_variable_new is called many times.
     self->name = strdup(name);
+    
     self->address = address;
     return self;
 }
@@ -113,7 +117,15 @@ void te_variable_free(te_variable *self) {
     if(self==NULL)
         return;
     te_variable_free(self->next);
-    free((char *) self->name);
+    /* Not freeing self->name.
+     * This variable sometimes points to character constants, which
+     * cannot be freed. In other cases, it points to strings generated
+     * by strdup, which ought to be freed. I'm not doing so, and this
+     * constitutes a memory leak. But the number of these leaked strings
+     * is never large, at least in legofit.
+     *
+     * free((char *) self->name);
+     */
     free(self);
 }
 
