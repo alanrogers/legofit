@@ -1,4 +1,32 @@
 #!/usr/bin/python
+
+###
+#@file axt2raf.py
+#@page axt2raf
+#@brief Convert axt format to raf format
+#
+#axt2raf.py: convert axt format to raf format
+#============================================
+#
+#The axt format is used to describe the segments of one genome that
+#align to another. For example, there are axt files that describe
+#the alignment of the chimpanzee reference sequence to human
+#one. Given such a file, axt2raf.py will generate a .raf file that
+#maps the bases of the chimpanzee sequence onto human coordinates.
+#Because reference genomes are haploid, the output .raf file will have
+#only 0s and 1s as reference allele frequencies.
+#
+#    usage: axt2raf.py [options] [inputfile]
+#    where options may include:
+#
+#       -minlen <x>  : set min alignment length to <x> base pairs
+#       -minqual <x> : set min alignment quality to <x>
+#
+#    Program reads from "inputfile" if provided, or otherwise from
+#    standard input. Input should be in axt format.
+#
+#    Writes to standard output.
+
 import sys
 import datetime
 

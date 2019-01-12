@@ -6,6 +6,8 @@ Legofit is a computer package that uses counts of nucleotide site
 patterns to estimate the history of population size, subdivision, and
 gene flow. The package consists of the following programs
 
+* @ref axt2raf "axt2raf" reads an axt file and writes a file in raf
+  format. 
 * @ref bepe "bepe" calculates the "bootstrap estimate of prediction
   error (Efron and Tibshirani, 1993).
 * @ref booma "booma" does bootstrap model averaging (Buckland et
@@ -44,7 +46,7 @@ al. Biometrics, 53(2):603-618).
   populations, tabulates "nucleotide site patterns" (explained below),
   and generates moving-blocks bootstrap replicates.
 
-# Nucleotide site patterns {#sitepat}
+# Nucleotide site patterns {#sitepattern}
 
 These programs all operate on "nucleotide site patterns", which are
 summary statistics not influenced by recent population size but rich
@@ -165,7 +167,7 @@ directory `src`. Within this directory, type
 to test the source file `boot.c`.  To run all unit tests, type
 "make". This will take awhile, as some of the unit tests are slow.
 
-# Sort order
+# Sort order {#sortorder}
 
 Several programs require that input be sorted in some
 fashion. Problems can arise if sort order is not consistent. Sort
@@ -244,7 +246,8 @@ column 2. There should be no duplicate (chromosome, position) pairs.
 
 The suffix "raf" stands for "reference allele frequency". See the @ref
 raf "raf" command for instructions on translating from "vcf" or "bcf"
-format into "raf".
+format into "raf". See @ref axt2raf "axt2raf" for translating from
+"axt" format into "raf".
 
 The "raf" file is simple and looks like this:
 

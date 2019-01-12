@@ -12,12 +12,15 @@ replicate into a separate file.
 
 # Usage
 
-    Usage: sitepat [options] <x>=<in1> <y>=<in2> ...
-       where <x> and <y> are arbitrary labels, and <in1> and <in2> are input
-       files in raf format. If input file name ends with .gz, input is
-       decompressed using gunzip. Writes to standard output. Labels
-       may not include the character ":". Maximum number of input files: 32.
-
+    Usage: sitepat [options] <x>=<in_1> <y>=<in_2> ... outgroup=<in_K>
+       where <x> and <y> are arbitrary labels, and <in_i> are input
+       files in raf format. Labels may not include the character ":".
+       Final label must be "outgroup". Writes to standard output.
+    
+       If input file name ends with .gz, input is decompressed using
+       gunzip.
+     Maximum number of input files: 64 plus outgroup.
+    
     Options may include:
        -f <name> or --bootfile <name>
           Bootstrap output file basename. Def: sitepat.boot.
@@ -28,13 +31,18 @@ replicate into a separate file.
        -1 or --singletons
           Use singleton site patterns
        -m or --logMismatch
-          log AA/DA mismatches to sitepat.log
+          Log REF mismatches to sitepat.log
        -A or --logAA
-          log sites with uncallable ancestral alleles
-       -a or --logAll
-          log all sites to sitepat.log
+          Log sites with uncallable ancestral allele
+       --version
+          Print version and exit
        -h or --help
           Print this message
+
+Reference genomes are often useful as outgroups, but they must first
+be aligned to the target genome. These alignments are typically
+distributed in axt format. To convert from axt format to raf format,
+see @ref axt2raf "axt2raf".
 
 # Example
 
@@ -43,18 +51,21 @@ into raf format. To save space, you may want to compress the ".raf"
 files using the external utility "gzip". The names of these compressed
 files should end in ".gz", and `sitepat` will use an external utility
 (gunzip) to decompress them. If `gunzip` has not been installed,
-`sitepat` cannot read compressed input files.
+`sitepat` cannot read compressed input files. At present, gzipped
+files cannot be used to generate bootstraps.
 
 Let us assume you have generated raf files, and that directory ~/raf
 contains a separate raf file for each population. We want to compare 4
 populations, whose .raf files are `yri.raf`, `ceu.raf`, `altai.raf`,
-and `denisova.raf`. The following command will do this, putting the
-results into `obs.txt`.
+and `denisova.raf`. Ancestral alleles are to be called using
+`chimp.raf` as an outgroup. The following command will do this,
+putting the results into `obs.txt`.
 
-    sitepat x=~/raf/yri.raf \
-           y=~/raf/ceu.raf \
-           n=~/raf/altai.raf \
-           d=~/raf/denisova.raf > obs.txt
+    sitepat x=raf/yri.raf \
+           y=raf/ceu.raf \
+           n=raf/altai.raf \
+           d=raf/denisova.raf \
+           outgroup=raf/chimp.raf > obs.txt
 
 Here, "x", "y", "n", and "d" are labels that will be used to identify
 site patterns in the output. For example, site pattern "x:y" refers to
@@ -93,17 +104,19 @@ subsamples consisting of a single haploid genome from each
 population.
 
 In the raf files used as input, chromosomes should appear in lexical
-order. Within each chromosome, nucleotides should appear in numerical
+order. (See @ref sortorder "this link" for advice about lexical sorting.) 
+Within each chromosome, nucleotides should appear in numerical  
 order. There should be no duplicate (chromosome, position)
 pairs. Otherwise, the program aborts with an error.
 
 To generate a bootstrap, use the `--bootreps` option:
 
     sitepat --bootreps 50 \
-           x=~/raf/yri.raf \
-           y=~/raf/ceu.raf \
-           n=~/raf/altai.raf \
-           d=~/raf/denisova.raf > obs.txt
+           x=raf/yri.raf \
+           y=raf/ceu.raf \
+           n=raf/altai.raf \
+           d=raf/denisova.raf \
+           outgroup=raf/chimp.raf > obs.txt
 
 This will generate not only the primary output file, `obs.txt`, but also
 50 additional files, each representing a single bootstrap
@@ -136,7 +149,7 @@ Here, `loBnd` and `hiBnd` are the limits of a 95% confidence
 interval. The bootstrap output files look like `sitepat.boot000`,
 `sitepat.boot001`, and so on.
 
-@copyright Copyright (c) 2016, Alan R. Rogers
+@copyright Copyright (c) 2016,2019 Alan R. Rogers
 <rogers@anthro.utah.edu>. This file is released under the Internet
 Systems Consortium License, which can be found in file "LICENSE".
 */
