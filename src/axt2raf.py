@@ -55,10 +55,6 @@ Writes to standard output.
     print >> sys.stderr, msg
     exit(1)
 
-class SortError(Exception):
-   """ Exception for unsorted input """
-   pass
-
 class Alignment:
     def __init__(self):
         self.initialized = False
@@ -66,7 +62,7 @@ class Alignment:
     def read(self,infile):
         while True:
             # read until we get a non-blank line
-            line=f.readline()
+            line=infile.readline()
             if line == '':    # end of file
                 self.initialized = False
                 return self
@@ -75,8 +71,8 @@ class Alignment:
                 continue
             break             # non-blank, non-comment
         line = line.split()
-        sA=f.readline()
-        sB=f.readline()
+        sA=infile.readline()
+        sB=infile.readline()
         if sB == '':
             self.initialized = False # signal end of file
             self.reject = True
@@ -178,16 +174,16 @@ class Alignment:
             if self.alt[i] not in "-n" and self.ref[i] not in "-n":
                 print "%s\t%d\t%s\t%s\t%f" % (self.chr, pos, self.ref[i],\
                                                   self.alt[i], self.raf[i])
-            pos = pos + 1
+            pos += 1
         self.initialized = False
         return self
 
     # Define "+=" operator, which merges two alignments
     def __iadd__(self, other):
         if not self.initialized:
-            raise ValueError, "Alignment not initialized"
+            raise ValueError, "lhs Alignment not initialized"
         if not other.initialized:
-            raise ValueError, "Alignment not initialized"
+            raise ValueError, "rhs Alignment not initialized"
         if self.chr != other.chr:
             raise ValueError, "Chromosomes don't match"
         if self.start > other.start:
