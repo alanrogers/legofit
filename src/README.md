@@ -23,6 +23,11 @@ al. Biometrics, 53(2):603-618).
 * @ref flatfile "flatfile.py" reads a list of legofit output
   files and writes a flat file with a row for each legofit file and a
   column for each parameter.
+* @ref flatpat "flatpat.py" reads a list of files containing site
+  pattern frequencies. These may include the output of tabulation
+  programs such as sitepat, scrmpat, and simpat, or the output of
+  legofit or legosim. Writes a flat file with a column for each site
+  pattern and a row for each input file.
 * @ref legofit "legofit" estimates parameters from site pattern
   counts.
 * @ref legosim "legosim" predicts site pattern counts from
