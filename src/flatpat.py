@@ -38,7 +38,6 @@ def process_file(fname):
             lbl.append(line[0])
             currfrq = line[1]
             frq.append(currfrq)
-            s += currfrq
 
     f.close()
 
