@@ -22,7 +22,6 @@ def process_file(fname):
 
     lbl = []
     frq = []
-    s = 0.0
 
     # Fill arrays of labels and frequencies
     reading_patterns = False
@@ -37,15 +36,11 @@ def process_file(fname):
             continue
         if reading_patterns:
             lbl.append(line[0])
-            currfrq = float(line[1])
+            currfrq = line[1]
             frq.append(currfrq)
             s += currfrq
 
     f.close()
-
-    # Normalize probabilities
-    for i in range(len(frq)):
-        frq[i] /= s
 
     return (lbl, frq)
     
