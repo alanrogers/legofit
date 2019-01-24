@@ -6,6 +6,18 @@
 
 # `clic`: calculate the composite likelihood information criterion.
 
+This program is experimental, and we don't yet recommend using it for
+data analysis. The clic statistic involves the expected value of mixed
+second partial derivatives of the likelihood function with respect to
+pairs of parameter values. Our code calculates this using an
+approximation, which we don't yet trust. Our skepticism arises from
+the following test. Our composite likelihood function becomes full
+likelihood when used with simulated data in which nucleotide sites are
+statistically independent. In this case, clic should reduce to
+AIC. Yet in our experiments, it does not. We suspect that our
+approximation is to blame and are therefore skeptical of our
+implementation of clic.
+
 This program, like it's sibling @ref bepe "bepe", provides a tool for
 selecting among models that differ in complexity. It implements the
 "composite likelihood information criterion" (CLIC) of Varin and Vidoni
@@ -56,6 +68,8 @@ int main(int argc, char **argv){
     int i, j;
     int verbose=0;
     int nfiles=0;
+
+    fprintf(stderr,"This program is experimental and should not be trusted.\n");
 
     // Command line arguments specify file names
     if(argc < 4)
@@ -125,6 +139,7 @@ int main(int argc, char **argv){
         assert(queue[i] == NULL); // check that queues are freed
     }
 
+    printf("#This program is experimental and should not be trusted.\n");
     if(verbose) {
         // Print data matrix with column header
         for(j=0; j < npar; ++j)
