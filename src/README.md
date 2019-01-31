@@ -160,8 +160,9 @@ Then `cd` back into the `legofit` directory and type
     sudo make ginstall     # install into /usr/local/bin
 
 This installation will work under unix-like operating systems, such as
-linux and Apple's osx. I haven't tried to port this software to
-Windows.
+linux and Apple's osx. I'm told that it also compiles under
+Windows. If you use Windows, I suggest running Legofit under the
+Windows Linux Subsystem.
 
 The directory `test` contains a unit test for many of the .c files in
 directory `src`. Within this directory, type
