@@ -209,6 +209,7 @@ int main(int argc, char **argv){
             fprintf(stderr, "   %s has %d; %s has %d\n",
                     lgofname, GPTree_nFree(gptree),
                     repfname[0], npar);
+            GPTree_printParStoreFree(gptree, stderr);
             exit(EXIT_FAILURE);
         }
 
@@ -338,7 +339,11 @@ int main(int argc, char **argv){
         putchar('#');
         for(j=0; j<8 && i+j<npar; ++j) {
             char lbl[10];
-            snprintf(lbl, sizeof(lbl), "pc%d", i+j+1);
+            status = snprintf(lbl, sizeof(lbl), "pc%d", i+j+1);
+            if(status >= sizeof lbl) {
+                fprintf(stderr,"%s:%d: buffer overflow\n",__FILE__,__LINE__);
+                exit(EXIT_FAILURE);
+            }
             printf(" %8s", lbl);
         }
         fputs("\n#", stdout);
