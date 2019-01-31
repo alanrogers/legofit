@@ -715,8 +715,7 @@ int main(int argc, char **argv) {
     double w[nmodels];
     memset(w, 0, nmodels * sizeof(w[0]));
     for(i = 0; i < nrows; ++i) {
-        int jbest = 0;
-        int nbest = 0;
+        int jbest = 0, nbest = 0;
         double best = DBL_MAX;
         for(j = 0; j < nmodels; ++j) {
             double badness = ModSelCrit_badness(msc[j], i);
