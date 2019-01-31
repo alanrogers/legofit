@@ -713,7 +713,7 @@ int main(int argc, char **argv) {
     // which i is the best model. If the best score is shared by several
     // models, each of them gets an equal share of the weight.
     double w[nmodels];
-    memset(w, 0, nmodels * sizeof(w[0]));
+    memset(w, 0, sizeof w);
     for(i = 0; i < nrows; ++i) {
         int jbest = 0, nbest = 0;
         double best = DBL_MAX;
