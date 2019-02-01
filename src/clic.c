@@ -59,6 +59,7 @@ int main(int argc, char **argv){
     printf("# Program was compiled: %s %s\n", __DATE__, __TIME__);
 #endif
     printf("# Program was run: %s", ctime(&currtime));
+    putchar('\n');
 
     // first pass through arguments counts file names
     for(i=1; i<argc; ++i) {
@@ -249,13 +250,5 @@ int main(int argc, char **argv){
         printf("%15.10lg %s\n", clic, mybasename(ptsfname[k]));
     }
     
-    // Echo input files
-    printf("# %2s %18s %18s\n", "i", "ptsfile[i]", "legofile[i]");
-    for(i = 0; i < nfiles; ++i) {
-        printf("# %2d %18s %18s\n", i,
-                mybasename(ptsfname[i]),
-                mybasename(legofname[i]));
-    }
-    putchar('\n');
     return 0;
  }
