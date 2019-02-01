@@ -28,7 +28,11 @@ Hessian hessian(const char *fname) {
     if(status != 1)
         DIE("bad fscanf");
     
-    assert(0 == strcmp(buff, "lnL"));
+    if(0 != strcmp(buff, "lnL")) {
+        fprintf(stderr,"%s:%d: expecting \"lnL\"; got \"%s\"\n",
+                __FILE__,__LINE__, stderr);
+        exit(EXIT_FAILURE);
+    }
     for(i=0; i<npar; ++i) {
         status = fscanf(fp, "%s", parname[i]);
         if(status != 1)

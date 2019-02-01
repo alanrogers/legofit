@@ -69,8 +69,6 @@ int main(int argc, char **argv){
     int verbose=0;
     int nfiles=0;
 
-    fprintf(stderr,"This program is experimental and should not be trusted.\n");
-
     // Command line arguments specify file names
     if(argc < 4)
         usage();
@@ -125,7 +123,7 @@ int main(int argc, char **argv){
     // Use the queues to populate an array of parameter names
     // and a matrix of parameter values. Rows are bootstrap
     // replicates; columns are parameters.
-    int npar = StrDblQueue_length(queue[0]);
+    const int npar = StrDblQueue_length(queue[0]);
     char *parname[npar];
     double datmat[nfiles][npar];
     for(i=0; i < nfiles; ++i) {
@@ -139,7 +137,6 @@ int main(int argc, char **argv){
         assert(queue[i] == NULL); // check that queues are freed
     }
 
-    printf("#This program is experimental and should not be trusted.\n");
     if(verbose) {
         // Print data matrix with column header
         for(j=0; j < npar; ++j)
@@ -157,10 +154,9 @@ int main(int argc, char **argv){
     make_covar_matrix(nfiles, npar, datmat, c_matrix);
 
     //Check to see if matrix is negative
-    if(gsl_matrix_isnonneg (c_matrix)) {
-        fprintf(stderr, "%s: %d: Warning!  Covar matrix isn't negative."
-           "  This is likely due to error!\n", __FILE__,__LINE__);
-    }
+    if(gsl_matrix_isnonneg (c_matrix))
+        fprintf(stderr, "%s: %d: Warning!  Covar matrix isn't negative.\n",
+                __FILE__,__LINE__);
 
     if(verbose) {
         // Print it
@@ -175,6 +171,10 @@ int main(int argc, char **argv){
         }
     }
 
+    // allocate matrix to hold product H*c_matrix
+    gsl_matrix *HC = gsl_matrix_alloc(npar, npar);
+
+    // Build hessian matrix from ptsfname
     Hessian hesobj = hessian(ptsfname);
     gsl_matrix *H = hesobj.hessian;
     char **Hparname = hesobj.parname;
@@ -204,9 +204,6 @@ int main(int argc, char **argv){
                 ptsfname, bootfname[0]);
         exit(EXIT_FAILURE);
     }
-
-    // allocate matrix to hold product H*c_matrix
-    gsl_matrix *HC = gsl_matrix_alloc(npar,npar);
 
     // form matrix product HC = H*c_matrix
     gsl_blas_dgemm(CblasNoTrans, // don't transpose H
