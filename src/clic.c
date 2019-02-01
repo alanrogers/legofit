@@ -80,8 +80,6 @@ int main(int argc, char **argv){
         usage();
     }
 
-    fprintf(stderr,"%s:%d: nfiles=%d\n", __FILE__,__LINE__, nfiles);
-
     // 2nd pass builds array of bootstrap filenames
     const char *ptsfname[nfiles], *legofname[nfiles];
     gotDashL=0;
@@ -125,7 +123,6 @@ int main(int argc, char **argv){
     // and a matrix of parameter values. Rows are legofit files;
     // columns are parameters.
     const int npar = StrDblQueue_length(queue[0]);
-    fprintf(stderr,"%s:%d: npar=%d\n", __FILE__,__LINE__, npar);
     char *parname[npar];
     double datmat[nfiles][npar];
     for(i=0; i < nfiles; ++i) {
@@ -152,10 +149,7 @@ int main(int argc, char **argv){
     }
 
     // Make covariance matrix
-    fprintf(stderr, "%s:%d: allocating %d X %d matrix\n",
-            __FILE__,__LINE__, npar, npar);
     gsl_matrix *c_matrix = gsl_matrix_alloc(npar,npar);
-    fprintf(stderr,"%s:%d\n", __FILE__,__LINE__);
     make_covar_matrix(nfiles, npar, datmat, c_matrix);
 
     //Check to see if matrix is negative
@@ -211,10 +205,7 @@ int main(int argc, char **argv){
         }
 
         // allocate matrix to hold product H*c_matrix
-        fprintf(stderr, "%s:%d: allocating %d X %d matrix\n",
-                __FILE__,__LINE__, npar, npar);
         gsl_matrix *HC = gsl_matrix_alloc(npar, npar);
-        fprintf(stderr,"%s:%d\n", __FILE__,__LINE__);
 
         // form matrix product HC = H*c_matrix
         gsl_blas_dgemm(CblasNoTrans, // don't transpose H
