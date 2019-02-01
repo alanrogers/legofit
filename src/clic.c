@@ -144,7 +144,10 @@ int main(int argc, char **argv){
     }
 
     // Make covariance matrix
+    fprintf(stderr, "%s:%d: allocating %d X %d matrix\n",
+            __FILE__,__LINE__, npar, npar);
     gsl_matrix *c_matrix = gsl_matrix_alloc(npar,npar);
+    fprintf(stderr,"%s:%d\n", __FILE__,__LINE__);
     make_covar_matrix(nfiles, npar, datmat, c_matrix);
 
     //Check to see if matrix is negative
@@ -166,7 +169,10 @@ int main(int argc, char **argv){
     }
 
     // allocate matrix to hold product H*c_matrix
+    fprintf(stderr, "%s:%d: allocating %d X %d matrix\n",
+            __FILE__,__LINE__, npar, npar);
     gsl_matrix *HC = gsl_matrix_alloc(npar, npar);
+    fprintf(stderr,"%s:%d\n", __FILE__,__LINE__);
 
     // loop over pts files
     printf("#%14s %s\n", "clic", "PtsFile");
