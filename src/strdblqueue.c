@@ -144,7 +144,7 @@ StrDblQueue *StrDblQueue_parseLegofit(const char *fname) {
                 got_fitted=1;
             continue;
         }else if(got_fitted) {
-            if(NULL != strstr(buff, "constrained")) {
+            if(NULL != strstr(buff, "Constrained")) {
                 got_fitted = 0;
                 continue;
             }

@@ -710,20 +710,35 @@ int main(int argc, char **argv) {
     }
 
     // Calculate weights, w[i].  w[i] is the fraction of data sets for
-    // which i is the best model.
+    // which i is the best model. If the best score is shared by several
+    // models, each of them gets an equal share of the weight.
     double w[nmodels];
-    memset(w, 0, nmodels * sizeof(w[0]));
+    memset(w, 0, sizeof w);
     for(i = 0; i < nrows; ++i) {
-        int jbest = 0;
+        int jbest = 0, nbest = 0;
         double best = DBL_MAX;
         for(j = 0; j < nmodels; ++j) {
             double badness = ModSelCrit_badness(msc[j], i);
             if(badness < best) {
                 best = badness;
                 jbest = j;
+                nbest = 1;
+            }else if(badness == best)
+                ++nbest;
+        }
+        assert(nbest >= 1);
+        if(nbest == 1) {
+            // no ties: all weight goes to one model
+            w[jbest] += 1.0;
+        }else{
+            // distribute weight across ties
+            double share = 1.0/nbest;
+            for(j = 0; j < nmodels; ++j) {
+                double badness = ModSelCrit_badness(msc[j], i);
+                if(badness == best)
+                    w[j] += share;
             }
         }
-        w[jbest] += 1.0;
     }
     for(j = 0; j < nmodels; ++j)
         w[j] /= nrows;
