@@ -131,7 +131,7 @@ typedef struct ParNameLst {
 void usage(void);
 ModSelCrit *ModSelCrit_new(const char *fname);
 void ModSelCrit_free(ModSelCrit * self);
-int ModSelCrit_compare(ModSelCrit * x, ModSelCrit * y);
+int ModSelCrit_compare(ModSelCrit * x, ModSelCrit * y, int isBepe);
 int ModSelCrit_dim(ModSelCrit * self);
 double ModSelCrit_badness(ModSelCrit * self, int ndx);
 ModPar *ModPar_new(const char *fname, ParNameLst ** namelist);
@@ -146,6 +146,7 @@ void ParNameLst_free(ParNameLst * self);
 int ParNameLst_exists(ParNameLst * self, const char *name);
 void ParNameLst_print(const ParNameLst * self, FILE * fp);
 unsigned ParNameLst_size(ParNameLst * self);
+int strbepe(const char *s);
 
 const char *usageMsg =
     "Usage: booma <m1.msc> ... <mK.msc> -F <m1.flat> ... <mK.flat>\n"
@@ -180,6 +181,17 @@ const char *usageMsg =
 void usage(void) {
     fputs(usageMsg, stderr);
     exit(EXIT_FAILURE);
+}
+
+/// Return 1 if string ends with ".bepe", 0 otherwise
+int strbepe(const char *s) {
+    int len = strlen(s);
+    if(len < 5)
+        return 0;
+    s += len-5;
+    if(strcmp(s, ".bepe") == 0)
+        return 1;
+    return 0;
 }
 
 /// Construct a new object of type ModSelCrit by parsing a file.
@@ -274,7 +286,7 @@ void ModSelCrit_free(ModSelCrit * self) {
 }
 
 // Compares dimensions and filenames. Return 0 if x and y agree.
-int ModSelCrit_compare(ModSelCrit * x, ModSelCrit * y) {
+int ModSelCrit_compare(ModSelCrit * x, ModSelCrit * y, int isBepe) {
     int i, diff;
 
     diff = x->dim - y->dim;
@@ -284,7 +296,9 @@ int ModSelCrit_compare(ModSelCrit * x, ModSelCrit * y) {
         return diff;
     }
 
-    for(i = 0; i < x->dim; ++i) {
+    // data file names must agree only if the model selection criterion
+    // is bepe.
+    for(i = 0; isBepe && i < x->dim; ++i) {
         diff = strcmp(x->fname[i], y->fname[i]);
         if(diff) {
             fprintf(stderr,"%s:%s:%d: inconsistent data file names\n"
@@ -540,6 +554,11 @@ int main(int argc, char **argv) {
 
     FILE *fp;
 
+    assert(1 == strbepe("asdf.bepe"));
+    assert(1 == strbepe(".bepe"));
+    assert(0 == strbepe("aa.bep"));
+    unitTstResult("strbepe", "OK");
+
     const char *mscFile = "tst.msc";
     fp = fopen(mscFile, "w");
     assert(fp);
@@ -673,13 +692,28 @@ int main(int argc, char **argv) {
             mscnames[j++] = argv[i];
     }
 
+    int isBepe = strbepe(mscnames[0]);
+    for(i=1; i<nmodels; ++i) {
+        if(isBepe != strbepe(mscnames[i])) {
+            fprintf(stderr,"%s:%d: inconsistent MSC file types.\n",
+                    __FILE__,__LINE__);
+            if(isBepe)
+                fprintf(stderr," %s is a .bepe file; %s isn't\n",
+                        mscnames[0], mscnames[i]);
+            else
+                fprintf(stderr," %s is a .bepe file; %s isn't\n",
+                        mscnames[i], mscnames[0]);
+            exit(EXIT_FAILURE);
+        }
+    }
+
     ModSelCrit *msc[nmodels];
 
     // Parse msc files and check for consistency
     for(i = 0; i < nmodels; ++i) {
         msc[i] = ModSelCrit_new(mscnames[i]);
         if(i > 0) {
-            if(ModSelCrit_compare(msc[0], msc[i])) {
+            if(ModSelCrit_compare(msc[0], msc[i], isBepe)) {
                 fprintf(stderr, "%s:%d: inconsistent files: %s and %s\n",
                         __FILE__, __LINE__, mscnames[0], mscnames[i]);
                 exit(EXIT_FAILURE);
