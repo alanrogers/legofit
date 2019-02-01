@@ -80,6 +80,8 @@ int main(int argc, char **argv){
         usage();
     }
 
+    fprintf(stderr,"%s:%d: nfiles=%d\n", __FILE__,__LINE__, nfiles);
+
     // 2nd pass builds array of bootstrap filenames
     const char *ptsfname[nfiles], *legofname[nfiles];
     gotDashL=0;
@@ -118,6 +120,7 @@ int main(int argc, char **argv){
     // and a matrix of parameter values. Rows are legofit files;
     // columns are parameters.
     const int npar = StrDblQueue_length(queue[0]);
+    fprintf(stderr,"%s:%d: npar=%d\n", __FILE__,__LINE__, npar);
     char *parname[npar];
     double datmat[nfiles][npar];
     for(i=0; i < nfiles; ++i) {
