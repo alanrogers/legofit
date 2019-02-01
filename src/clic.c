@@ -106,6 +106,11 @@ int main(int argc, char **argv){
     StrDblQueue *queue[nfiles];
     for(i=0; i < nfiles; ++i) {
         queue[i] = StrDblQueue_parseLegofit(legofname[i]);
+        if(queue[i] == NULL) {
+            fprintf(stderr,"%s:%d: could not parse legofit file \"%s\"\n",
+                    __FILE__,__LINE__, legofname[i]);
+            exit(EXIT_FAILURE);
+        }
         if(i>0) {
             if(StrDblQueue_compare(queue[0], queue[i])) {
                 fprintf(stderr, "%s:%d: inconsistent parameters in"
@@ -171,12 +176,6 @@ int main(int argc, char **argv){
         }
     }
 
-    // allocate matrix to hold product H*c_matrix
-    fprintf(stderr, "%s:%d: allocating %d X %d matrix\n",
-            __FILE__,__LINE__, npar, npar);
-    gsl_matrix *HC = gsl_matrix_alloc(npar, npar);
-    fprintf(stderr,"%s:%d\n", __FILE__,__LINE__);
-
     // loop over pts files
     printf("#%14s %s\n", "clic", "PtsFile");
     for(k=0; k < nfiles; ++k) {
@@ -210,6 +209,12 @@ int main(int argc, char **argv){
                     ptsfname[k], legofname[0]);
             exit(EXIT_FAILURE);
         }
+
+        // allocate matrix to hold product H*c_matrix
+        fprintf(stderr, "%s:%d: allocating %d X %d matrix\n",
+                __FILE__,__LINE__, npar, npar);
+        gsl_matrix *HC = gsl_matrix_alloc(npar, npar);
+        fprintf(stderr,"%s:%d\n", __FILE__,__LINE__);
 
         // form matrix product HC = H*c_matrix
         gsl_blas_dgemm(CblasNoTrans, // don't transpose H
