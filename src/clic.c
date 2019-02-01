@@ -162,7 +162,6 @@ int main(int argc, char **argv){
            "  This is likely due to error!\n", __FILE__,__LINE__);
     }
 
-
     if(verbose) {
         // Print it
         for (j = 0; j < npar; j++)
@@ -198,6 +197,7 @@ int main(int argc, char **argv){
             mismatch=1;
         }
     }
+
     if(mismatch) {
         fprintf(stderr,"%s:%d: mismatch between parameters"
                 " in files %s and %s\n", __FILE__,__LINE__,
@@ -240,8 +240,7 @@ int main(int argc, char **argv){
      */
     double clic = -2.0*(lnL + trace);
 
-    printf("clic: %0.8lg\n %u parameters\n"
-           "trace: %lg\n", clic, npar, trace);
+    printf("clic: %0.8lg\n", clic);
 
     gsl_matrix_free(H);
     gsl_matrix_free(HC);
