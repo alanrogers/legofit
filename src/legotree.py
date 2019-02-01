@@ -1,61 +1,61 @@
 #!/usr/bin/python
 
 ###
-#@file lego_tree.py
-#@page diverg
+#@file legotree.py
+#@page legotree
 #@brief Draw phylogenetic trees from lgo input files
 #
-#diverg.py: Draw phylogenetic trees from lgo input files
+#legotree.py: Draw phylogenetic trees from lgo input files
 #=================================================================
 #
 #Legotree constructs a tree from legofit input files. Legotree is
-#implemented in python and requires python packages numpy and matplotlib. 
-#   
-#Legotree is run with the command   
-#   
+#implemented in python and requires python packages numpy and matplotlib.
+#
+#Legotree is run with the command
+#
 #   legotree input.lgo
 #
-#\image html figure_1.png
+#@image html figure_1.png
 #
-#The basic command will produce an appropriately scaled tree. Admixture 
-#events are shown in colored lines. By default, the tree is scaled to 
-#generations. The timescale of the tree can be changed with the command 
+#The basic command will produce an appropriately scaled tree. Admixture
+#events are shown in colored lines. By default, the tree is scaled to
+#generations. The timescale of the tree can be changed with the command
 #line argument "gentime," converting generations to desired generation
-#length in years. 
+#length in years.
 #
 #   legotree input.lgo gentime=25
 #
-#\image html figure_2.png
+#@image html figure_2.png
 #
 #The text on the tree can be adjusted with "text_size"
 #
 #   legotree input.lgo gentime=25 text_size=18
 #
-##\image html figure_3.png
+##@image html figure_3.png
 #
-#If modelling populations with deep ancestry, you may want to scale the 
-#tree so recent history events are more apparent visually. You can do 
-#this with the "shrink" command. When this option is used, the labels 
+#If modelling populations with deep ancestry, you may want to scale the
+#tree so recent history events are more apparent visually. You can do
+#this with the "shrink" command. When this option is used, the labels
 #are moved from the y-axis onto the tree. This option is off by default.
 #
 #   legotree input.lgo gentime=25 text_size=18 shrink=True
 #
-##\image html figure_4.png
+##@image html figure_4.png
 #
 #By default legotree will include any admixture events you include in
-#the lgo file. Sometimes you may want to include admixture events 
+#the lgo file. Sometimes you may want to include admixture events
 #in your lgo file that have an admixture value of 0. If you would like
 #to omit those admixture events from your tree you can use the option
-#"allmix," which is on by default. 
+#"allmix," which is on by default.
 #
 #   legotree input.lgo gentime=25 text_size=18 shrink=True allmix=False
 #
-##\image html figure_5.png
+##@image html figure_5.png
 #
 #Finally, legotree displays the tree rather than saving it as a file.
-#This allows you to manipulate the size of the figure before saving. 
+#This allows you to manipulate the size of the figure before saving.
 #If you wish to save directly, you can turn the "show" option to a
-#file name. 
+#file name.
 #
 #   legotree input.lgo gentime=25 text_size=18 shrink=True allmix=False
 #       show=outputtree.png
@@ -102,7 +102,7 @@ class lego_tree:
         self.segs = np.array([i.split()[1] for i in input if i.split()[0] == 'segment'])
         self.mix = sub_input(input,"mix")
         self.pieces = np.array([piece(i) for i in self.segs]) #This should be something iterable containing objects of class piece
-        
+
         self.N = sub_input(input,"twoN")
         self.times = sub_input(input,"time")
         self.full_seg = sub_input(input,"segment")
@@ -116,7 +116,7 @@ class lego_tree:
                 child[i.split()[-1]].append(i.split()[1])
             except:
                 child[i.split()[-1]] = [i.split()[1]]
-        if len(self.mix) > 0: 
+        if len(self.mix) > 0:
             for i in self.mix:
                 parent[i.split()[1] ] = [i.split()[3]]
                 try:
@@ -134,12 +134,14 @@ class lego_tree:
                 i.children = child[i.name]
             except:
                 pass
-            i.parents = [self.pieces[np.where(self.segs == j)[0][0]] for j in i.parents]
-            i.children = [self.pieces[np.where(self.segs == j)[0][0]] for j in i.children]
+            i.parents = [self.pieces[np.where(self.segs == j)[0][0]]
+                         for j in i.parents]
+            i.children = [self.pieces[np.where(self.segs == j)[0][0]]
+                          for j in i.children]
 
         self.tips = [i for i in self.pieces if len(i.children) == 0]
         self.nodes = [i for i in self.pieces if len(i.children) ==2]
-        
+
 
         for i,j in enumerate(self.tips):
             j.x = i
@@ -222,13 +224,16 @@ if __name__ == "__main__":
         try:
             show = arg_vals["show"]
         except:
-            show = True    
+            show = True
 
     for i in arg_vals.keys():
         if i not in ['shrink','allmix','text_size','gentime','tlabels','show']:
             print "Argument " + str(i) + " not understood"
 
-    colors = ['#e6194b', '#3cb44b', '#4363d8', '#f58231', '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe', '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000', '#aaffc3', '#808000', '#ffd8b1', '#000075', '#808080', '#ffffff']
+    colors = ['#e6194b', '#3cb44b', '#4363d8', '#f58231', '#911eb4',
+              '#46f0f0', '#f032e6', '#bcf60c', '#fabebe', '#008080',
+              '#e6beff', '#9a6324', '#fffac8', '#800000', '#aaffc3',
+              '#808000', '#ffd8b1', '#000075', '#808080', '#ffffff']
     tree = lego_tree("tree",open(sys.argv[1]).readlines())
     get_obj = {}
     for i in tree.pieces:
@@ -275,7 +280,7 @@ if __name__ == "__main__":
                 plt.plot([node.x,(final-b)/m],[node.y,final],solid_capstyle="round",linewidth = 27,color = 'lightgray',label = dest.name,zorder = 0)
             else:
                 plt.plot([node.x,dest.x],[node.y,dest.y],solid_capstyle="round",linewidth = 27,color = 'lightgray',label = dest.name,zorder = 0)
-            
+
     if len(tree.mix) > 0:
         for col_i,m in enumerate(tree.mixes.keys()):
             p = tree.pieces[np.where([i.name == m for i in tree.pieces])[0][0]].parents[0]
@@ -299,7 +304,7 @@ if __name__ == "__main__":
 
             ### make lines going up and down from the admixture event
             plt.plot([p.x,node_down(p).x],[p.y,node_down(p).y],color = colors[col_i],alpha = .5,linewidth=2,solid_capstyle='round',zorder = len(tree.segs)+1,ls='--')
-            
+
             plt.plot([q.x,(q.y + .5*(node_up(q).y -q.y)-w[1])/w[0]],[q.y,q.y + .5*(node_up(q).y -q.y)],color = colors[col_i],alpha = .5,linewidth=2,solid_capstyle='round',zorder = len(tree.segs)+1,ls='--')
             #if q.name =='xy2':
             #    break
@@ -311,14 +316,14 @@ if __name__ == "__main__":
 
             #plt.plot([i.x-.2,i.x+.2],[i.y,i.y],linewidth = 3,color = 'black',alpha = 0.4)
             perp = -1/m
-        
+
             new_b = i.y - perp * (i.x)
 
             ax.plot([i.x-.1,i.x+.1],[perp*(i.x-.1)+new_b,perp*(i.x+.1)+new_b],linewidth = 2,color = 'black',alpha = 0.5)
 
             #and add the segment label
             plt.annotate(i.name,xy=[i.x-0.1,i.y],zorder = len(tree.segs)+3,fontsize = text_size)
-   
+
     plt.ylim([-1000,root.y + 0.1 * root.y])
     plt.xlim([-0.5,len(tree.tips)-0.5])
     plt.xticks([i.x for i in tree.tips],[i.name for i in tree.tips],fontsize = text_size)
@@ -340,7 +345,7 @@ if __name__ == "__main__":
             plt.fill_between([tip.x -0.33,tip.x+1],[tip.y,tip.y],[tip.y-h,tip.y-h],color = 'white',zorder=2)
         else:
             plt.fill_between([tip.x -0.33,tip.x+0.33],[tip.y,tip.y],[tip.y-h,tip.y-h],color = 'white',zorder=2)
-        
+
         m,b = np.polyfit([tip.x,node_up(tip).x],[tip.y,node_up(tip).y],1)
         final = -root.y
 
