@@ -28,6 +28,7 @@ Systems Consortium License, which can be found in file "LICENSE".
 #include <assert.h>
 #include <string.h>
 #include <math.h>
+#include <time.h>
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_blas.h>
 
@@ -51,6 +52,13 @@ int main(int argc, char **argv){
     int i, j, k;
     int verbose=0, nfiles=0, nLegoFiles=0;
     int gotDashL = 0;
+    time_t currtime = time(NULL);
+
+    hdr("clic: composite likelihood information criterion");
+#if defined(__DATE__) && defined(__TIME__)
+    printf("# Program was compiled: %s %s\n", __DATE__, __TIME__);
+#endif
+    printf("# Program was run: %s", ctime(&currtime));
 
     // first pass through arguments counts file names
     for(i=1; i<argc; ++i) {
