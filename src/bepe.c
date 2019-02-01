@@ -252,9 +252,8 @@ int main(int argc, char **argv) {
         fputs("# Not correcting for bootstrap bias\n", stdout);
     putchar('\n');
 
-    // Read data and bootstrap files into an arrays of queues
-    StrDblQueue *data_queue[nfiles];
-    StrDblQueue *lego_queue[nfiles];
+    // Read data and legofit files into an arrays of queues
+    StrDblQueue *data_queue[nfiles], *lego_queue[nfiles];
     for(i = 0; i < nfiles; ++i) {
         lego_queue[i] = StrDblQueue_parseSitPat(legofname[i]);
         data_queue[i] = StrDblQueue_parseSitPat(datafname[i]);

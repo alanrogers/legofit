@@ -62,7 +62,8 @@ When `booma` runs, the first step is to calculate model weights,
 \f$w_{i}\f$, where \f$i\f$ runs across models. The value of
 \f$w_{i}\f$ is the fraction data sets (i.e. of rows in the `.bepe`
 files) for which \f$i\f$ is the best model (i.e. the one with the
-lowest badness value.
+lowest badness value. If the best score is shared by several models,
+they receive equal weights.
 
 In the next step, `booma` averages across models to obtain a
 model-averaged estimate of each parameter. This is done separately for
@@ -731,9 +732,10 @@ int main(int argc, char **argv) {
             // no ties: all weight goes to one model
             w[jbest] += 1.0;
         }else{
-            // distribute weight across ties
+            // distribute weight across ties. jbest is the index
+            // of the first of the tied models.
             double share = 1.0/nbest;
-            for(j = 0; j < nmodels; ++j) {
+            for(j = jbest; j < nmodels; ++j) {
                 double badness = ModSelCrit_badness(msc[j], i);
                 if(badness == best)
                     w[j] += share;
