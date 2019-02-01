@@ -6,32 +6,14 @@
 
 # `clic`: calculate the composite likelihood information criterion.
 
-This program is experimental, and we don't yet recommend using it for
-data analysis. The clic statistic involves the expected value of mixed
-second partial derivatives of the likelihood function with respect to
-pairs of parameter values. Our code calculates this using an
-approximation, which we don't yet trust. Our skepticism arises from
-the following test. Our composite likelihood function becomes full
-likelihood when used with simulated data in which nucleotide sites are
-statistically independent. In this case, clic should reduce to
-AIC. Yet in our experiments, it does not. We suspect that our
-approximation is to blame and are therefore skeptical of our
-implementation of clic.
-
 This program, like it's sibling @ref bepe "bepe", provides a tool for
 selecting among models that differ in complexity. It implements the
 "composite likelihood information criterion" (CLIC) of Varin and Vidoni
 (2005, Biometrika 92(3):519-528).
 
 CLIC is a generalization of Akaike's information criterion (AIC). It
-reduces to AIC when full likelihood is available and is used in an
-analogous fashion.
-
-Our definition of clic is -2 times the criterion defined by Varin and
-Vidoni. We multiply by -2 to make our criterion consistent with
-AIC. Because of this change, the best model is the one that minimizes
-our version of clic. In the version of Varin and Vidoni, the best
-model has the maximal value.
+reduces to -AIC/2 when full likelihood is available. The optimal model
+is the one with the lowest value of CLIC.
 
 @copyright Copyright (c) 2018, Alan R. Rogers
 <rogers@anthro.utah.edu>. This file is released under the Internet
@@ -220,22 +202,15 @@ int main(int argc, char **argv){
         trace += gsl_matrix_get(HC, i, i);
 
     /*
-      This is proportional to the information criterion of Varin,
-      Cristiano and Vidoni, Paolo. 2005. A note on composite
-      likelihood inference and model selection. Biometrika
-      92(3):519-528. Eqn 5, p 523.
+      This is the information criterion of Varin, Cristiano and
+      Vidoni, Paolo. 2005. A note on composite likelihood inference
+      and model selection. Biometrika 92(3):519-528. Eqn 5, p 523.
 
       Note that "trace" should be negative at a local maximum. Under
       full likelihood, "trace" is -k, where k is the number of
-      parameters, and clic reduces to aic.
-
-      Varin and Vidoni define their information criterion as lnL +
-      trace. We multiply by -2 for consistency with AIC. In the
-      version of Varin and Vidoni, the best model is the one that
-      maximizes their information criterion. In our version, the best
-      model minimizes clic.
+      parameters, and clic reduces to -AIC/2.
      */
-    double clic = -2.0*(lnL + trace);
+    double clic = lnL + trace;
 
     printf("clic: %0.8lg\n", clic);
 
