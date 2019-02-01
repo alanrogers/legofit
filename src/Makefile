@@ -8,7 +8,7 @@ prof :=
 incl := -I/usr/local/include -I/opt/local/include
 
 targets := legosim legofit tabpat sitepat scrmpat daf raf numcores \
-     joinraf raf2daf bepe booma maub pclgo simpat ms2sim
+     joinraf raf2daf bepe booma maub pclgo simpat ms2sim clic
 pytargets := diverg.py bootci.py flatfile.py axt2raf.py flatpat.py
 tests := xzeroin xbinary
 
@@ -67,6 +67,10 @@ pclgo : $(PCLGO)
 BEPE := bepe.o misc.o strdblqueue.o
 bepe : $(BEPE)
 	$(CC) $(CFLAGS) -o $@ $(BEPE) $(lib)
+
+CLIC := clic.o hessian.o strdblqueue.o misc.o
+clic : $(CLIC)
+	$(CC) $(CFLAGS) -o $@ $(CLIC) $(lib)
 
 MAUB := maub.o
 maub : $(MAUB)
