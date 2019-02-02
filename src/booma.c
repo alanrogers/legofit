@@ -794,7 +794,8 @@ int main(int argc, char **argv) {
 
     for(i = 0; i < nrows; ++i) {
         // i indexes data sets
-        for(j = 0, node = parnames; j < npar && node != NULL;
+        for(j = 0, node = parnames;
+            j < npar && node != NULL;
             ++j, node = node->next) {
             // j indexes parameters
             // par is the name of the current parameter
