@@ -105,7 +105,7 @@ double PointBuff_pop(PointBuff *self, int n, double param[n]) {
     if(self->curpts == 0) {
         fprintf(stderr,"%s:%d: can't pop an empty PointBufff\n",
                 __FILE__, __LINE__);
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     // Move to last filled position in buffer.
