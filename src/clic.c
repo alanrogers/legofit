@@ -237,15 +237,17 @@ int main(int argc, char **argv){
         free(Hparname);
 
         /*
-          This is the information criterion of Varin, Cristiano and
-          Vidoni, Paolo. 2005. A note on composite likelihood inference
-          and model selection. Biometrika 92(3):519-528. Eqn 5, p 523.
+          This is the negative of the information criterion of Varin,
+          Cristiano and Vidoni, Paolo. 2005. A note on composite
+          likelihood inference and model selection. Biometrika
+          92(3):519-528. Eqn 5, p 523. We take the negative so that
+          the selected model is the one minimizing clic.
 
           Note that "trace" should be negative at a local maximum. Under
           full likelihood, "trace" is -k, where k is the number of
           parameters, and clic reduces to -AIC/2.
         */
-        double clic = lnL + trace;
+        double clic = -(lnL + trace);
 
         printf("%15.10lg %s\n", clic, mybasename(ptsfname[k]));
     }
