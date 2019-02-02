@@ -245,7 +245,7 @@ int main(int argc, char **argv){
 
           Note that "trace" should be negative at a local maximum. Under
           full likelihood, "trace" is -k, where k is the number of
-          parameters, and clic reduces to -AIC/2.
+          parameters, and clic reduces to AIC/2.
         */
         double clic = -(lnL + trace);
 
