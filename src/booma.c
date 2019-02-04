@@ -63,9 +63,7 @@ When `booma` runs, the first step is to calculate model weights,
 \f$w_{i}\f$ is the fraction data sets (i.e. of rows in the `.bepe` or
 `.clic` files) for which \f$i\f$ is the best model (i.e. the one with
 the lowest badness value. If the best score is shared by several
-models, they receive equal weights. If a parameter is present only in
-models with weight zero, its model-averaged value is undefined, and
-the booma will print "nan".
+models, they receive equal weights.
 
 In the next step, `booma` averages across models to obtain a
 model-averaged estimate of each parameter. This is done separately for
