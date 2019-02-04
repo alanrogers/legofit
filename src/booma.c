@@ -60,10 +60,12 @@ and are ignored.
 
 When `booma` runs, the first step is to calculate model weights,
 \f$w_{i}\f$, where \f$i\f$ runs across models. The value of
-\f$w_{i}\f$ is the fraction data sets (i.e. of rows in the `.bepe`
-files) for which \f$i\f$ is the best model (i.e. the one with the
-lowest badness value. If the best score is shared by several models,
-they receive equal weights.
+\f$w_{i}\f$ is the fraction data sets (i.e. of rows in the `.bepe` or
+`.clic` files) for which \f$i\f$ is the best model (i.e. the one with
+the lowest badness value. If the best score is shared by several
+models, they receive equal weights. If a parameter is present only in
+models with weight zero, its model-averaged value is undefined, and
+the booma will print "nan".
 
 In the next step, `booma` averages across models to obtain a
 model-averaged estimate of each parameter. This is done separately for
@@ -651,8 +653,11 @@ int main(int argc, char **argv) {
                 if(strcmp(argv[i], "-F") == 0) {
                     gotDashF = 1;
                     continue;
-                } else
+                } else {
+                    fprintf(stderr,"%s:%d: illegal argument: %s\n",
+                            __FILE__,__LINE__, argv[i]);
                     usage();
+                }
             }
             if(gotDashF)
                 ++nflat;
@@ -668,8 +673,11 @@ int main(int argc, char **argv) {
         }
     }
 
-    if(nmodels < 2)
+    if(nmodels < 2) {
+        fprintf(stderr,"%s:%d: need at least 2 models; got %d\n",
+                __FILE__,__LINE__, nmodels);
         usage();
+    }
 
     const char *mscnames[nmodels];
     const char *flatnames[nmodels];
@@ -683,8 +691,11 @@ int main(int argc, char **argv) {
                 gotDashF = 1;
                 j = 0;
                 continue;
-            } else
+            } else {
+                fprintf(stderr,"%s:%d: illegal argument: %s\n",
+                        __FILE__,__LINE__, argv[i]);
                 usage();
+            }
         }
         if(gotDashF)
             flatnames[j++] = argv[i];
@@ -812,6 +823,10 @@ int main(int argc, char **argv) {
                 } else
                     exist[k] = 0;
             }
+
+            // Average over models in which par exists. If all
+            // such models have zero weight, then wsum will equal
+            // zero and avg[i][j] will be NaN.
             avg[i][j] = 0.0;
             for(k = 0; k < nmodels; ++k) {
                 if(!exist[k])
