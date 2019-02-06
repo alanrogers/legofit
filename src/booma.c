@@ -128,10 +128,12 @@ typedef struct ParNameLst {
     char name[MAXNAME];
 } ParNameLst;
 
+typedef enum MscType { MSC_BEPE, MSC_CLIC, MSC_UNKNOWN} MscType;
+
 void usage(void);
 ModSelCrit *ModSelCrit_new(const char *fname);
 void ModSelCrit_free(ModSelCrit * self);
-int ModSelCrit_compare(ModSelCrit * x, ModSelCrit * y, int isBepe);
+int ModSelCrit_compare(ModSelCrit * x, ModSelCrit * y, MscType msctype);
 int ModSelCrit_dim(ModSelCrit * self);
 double ModSelCrit_badness(ModSelCrit * self, int ndx);
 ModPar *ModPar_new(const char *fname, ParNameLst ** namelist);
@@ -146,7 +148,10 @@ void ParNameLst_free(ParNameLst * self);
 int ParNameLst_exists(ParNameLst * self, const char *name);
 void ParNameLst_print(const ParNameLst * self, FILE * fp);
 unsigned ParNameLst_size(ParNameLst * self);
-int strbepe(const char *s);
+MscType Msc_classify(const char *s);
+const char * Msc_name(MscType msctype);
+char * clic_datafname(char *fname, char **end);
+int cliccmp(char *x, char *y);
 
 const char *usageMsg =
     "Usage: booma <m1.msc> ... <mK.msc> -F <m1.flat> ... <mK.flat>\n"
@@ -184,14 +189,81 @@ void usage(void) {
 }
 
 /// Return 1 if string ends with ".bepe", 0 otherwise
-int strbepe(const char *s) {
+MscType Msc_classify(const char *s) {
     int len = strlen(s);
     if(len < 5)
         return 0;
     s += len-5;
     if(strcmp(s, ".bepe") == 0)
-        return 1;
-    return 0;
+        return MSC_BEPE;
+    if(strcmp(s, ".clic") == 0)
+        return MSC_CLIC;
+    return MSC_UNKNOWN;
+}
+
+const char * Msc_name(MscType msctype) {
+    if(msctype == MSC_BEPE)
+        return "bepe";
+    if(msctype == MSC_CLIC)
+        return "clic";
+    return "unknown";
+}
+
+/// Parse a file name of form "abc-dataname-def.pts".
+/// Function returns pointer to character after the first dash.
+/// On return *end points to the second dash. If fname doesn't have
+/// exactly two dashes, return NULL.
+char * clic_datafname(char *fname, char **end) {
+    char *begin = strchr(fname, '-');
+
+    if(begin == NULL) {
+        // no dashes: abort
+        return NULL;
+    }
+
+    begin += 1;
+
+    *end = strchr(begin, '-');
+
+    if(*end == NULL) {
+        // no second dash
+        return NULL;
+    }
+    
+    if(NULL != strchr((*end)+1, '-')) {
+        // more than two dashes: abort
+        return NULL;
+    }
+
+    return begin;
+}
+
+/** Compare two .pts file names, which must be of form
+"abc-name-def.pts". Only the portion between the two dashes is
+compared. It is illegal for a name to have more or fewer than two
+dashes.  */
+int cliccmp(char *xarg, char *yarg) {
+    char *x, *y, *xend, *yend;
+
+    x = clic_datafname(xarg, &xend);
+    if(x == NULL) {
+        fprintf(stderr,"%s:%d: illegal .pts file name: \"%s\"\n",
+                __FILE__,__LINE__,xarg);
+        exit(EXIT_FAILURE);
+    }
+
+    y = clic_datafname(yarg, &yend);
+    if(y == NULL) {
+        fprintf(stderr,"%s:%d: illegal .pts file name: \"%s\"\n",
+                __FILE__,__LINE__,yarg);
+        exit(EXIT_FAILURE);
+    }
+
+    int xlen = xend - x;
+    int ylen = yend - y;
+    if(xlen != ylen)
+        return xlen-ylen;
+    return strncmp(x, y, xlen);
 }
 
 /// Construct a new object of type ModSelCrit by parsing a file.
@@ -286,7 +358,7 @@ void ModSelCrit_free(ModSelCrit * self) {
 }
 
 // Compares dimensions and filenames. Return 0 if x and y agree.
-int ModSelCrit_compare(ModSelCrit * x, ModSelCrit * y, int isBepe) {
+int ModSelCrit_compare(ModSelCrit * x, ModSelCrit * y, MscType msctype) {
     int i, diff;
 
     diff = x->dim - y->dim;
@@ -296,17 +368,36 @@ int ModSelCrit_compare(ModSelCrit * x, ModSelCrit * y, int isBepe) {
         return diff;
     }
 
-    // data file names must agree only if the model selection criterion
-    // is bepe.
-    for(i = 0; isBepe && i < x->dim; ++i) {
-        diff = strcmp(x->fname[i], y->fname[i]);
-        if(diff) {
-            fprintf(stderr,"%s:%s:%d: inconsistent data file names\n"
-                    " data file %d: %s != %s\n",
-                    __FILE__,__func__,__LINE__,
-                    i, x->fname[i], y->fname[i]);
-            return diff;
+    // Make sure data files are consistent.
+    switch(msctype) {
+    case MSC_BEPE:
+        for(i = 0; i < x->dim; ++i) {
+            diff = strcmp(x->fname[i], y->fname[i]);
+            if(diff) {
+                fprintf(stderr,"%s:%s:%d: inconsistent data file names\n"
+                        " data file %d: %s != %s\n",
+                        __FILE__,__func__,__LINE__,
+                        i, x->fname[i], y->fname[i]);
+                return diff;
+            }
         }
+        break;
+    case MSC_CLIC:
+        for(i = 0; i < x->dim; ++i) {
+            diff = cliccmp(x->fname[i], y->fname[i]);
+            if(diff) {
+                fprintf(stderr,"%s:%s:%d: inconsistent .pts file names for"
+                        " clic value %d: %s, %s\n",
+                        __FILE__,__func__,__LINE__,
+                        i, x->fname[i], y->fname[i]);
+                return diff;
+            }
+        }
+        break;
+    default:
+        fprintf(stderr,"%s:%d: bad MscType: %s\n",
+                __FILE__,__LINE__,Msc_name(msctype));
+        exit(EXIT_FAILURE);
     }
     return 0;
 }
@@ -554,10 +645,24 @@ int main(int argc, char **argv) {
 
     FILE *fp;
 
-    assert(1 == strbepe("asdf.bepe"));
-    assert(1 == strbepe(".bepe"));
-    assert(0 == strbepe("aa.bep"));
-    unitTstResult("strbepe", "OK");
+    assert(MSC_BEPE == Msc_classify("asdf.bepe"));
+    assert(MSC_BEPE == Msc_classify(".bepe"));
+    assert(MSC_CLIC == Msc_classify("asdf.clic"));
+    assert(MSC_CLIC == Msc_classify(".clic"));
+    assert(MSC_UNKNOWN == Msc_classify("aa.bep"));
+    unitTstResult("Msc_classify", "OK");
+
+    char * fname1 = strdup("abc-sim23-2.pts");
+    char * fname2 = strdup("def-sim23-3.pts");
+    char * fname3 = strdup("ghi-sim24-4.pts");
+    assert( 0 == cliccmp(fname1, fname1) );
+    assert( 0 == cliccmp(fname1, fname2) );
+    assert( 0 != cliccmp(fname1, fname3) );
+    assert( 0 != cliccmp(fname2, fname3) );
+    free(fname1);
+    free(fname2);
+    free(fname3);
+    unitTstResult("cliccmp", "OK");
 
     const char *mscFile = "tst.msc";
     fp = fopen(mscFile, "w");
@@ -566,9 +671,9 @@ int main(int argc, char **argv) {
     fclose(fp);
     ModSelCrit *msc = ModSelCrit_new(mscFile);
     ModSelCrit *msc2 = ModSelCrit_new(mscFile);
-    assert(ModSelCrit_compare(msc, msc2) == 0);
+    assert(ModSelCrit_compare(msc, msc2, MSC_BEPE) == 0);
     msc2->fname[0][0] += 1;
-    assert(ModSelCrit_compare(msc, msc2) != 0);
+    assert(ModSelCrit_compare(msc, msc2, MSC_BEPE) != 0);
     assert(ModSelCrit_dim(msc) == 2);
     assert(ModSelCrit_badness(msc, 0) == 0.01);
     assert(ModSelCrit_badness(msc, 1) == 0.02);
@@ -701,17 +806,15 @@ int main(int argc, char **argv) {
             mscnames[j++] = argv[i];
     }
 
-    int isBepe = strbepe(mscnames[0]);
+    MscType msctype = Msc_classify(mscnames[0]);
     for(i=1; i<nmodels; ++i) {
-        if(isBepe != strbepe(mscnames[i])) {
+        MscType currtype = Msc_classify(mscnames[i]);
+        if(msctype != currtype) {
             fprintf(stderr,"%s:%d: inconsistent MSC file types.\n",
                     __FILE__,__LINE__);
-            if(isBepe)
-                fprintf(stderr," %s is a .bepe file; %s isn't\n",
-                        mscnames[0], mscnames[i]);
-            else
-                fprintf(stderr," %s is a .bepe file; %s isn't\n",
-                        mscnames[i], mscnames[0]);
+            fprintf(stderr," type of %s is \"%s\"; type of %s is \"%s\"\n",
+                    mscnames[0], Msc_name(msctype),
+                    mscnames[i], Msc_name(currtype));
             exit(EXIT_FAILURE);
         }
     }
@@ -722,7 +825,7 @@ int main(int argc, char **argv) {
     for(i = 0; i < nmodels; ++i) {
         msc[i] = ModSelCrit_new(mscnames[i]);
         if(i > 0) {
-            if(ModSelCrit_compare(msc[0], msc[i], isBepe)) {
+            if(ModSelCrit_compare(msc[0], msc[i], msctype)) {
                 fprintf(stderr, "%s:%d: inconsistent files: %s and %s\n",
                         __FILE__, __LINE__, mscnames[0], mscnames[i]);
                 exit(EXIT_FAILURE);
