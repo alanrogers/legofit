@@ -97,7 +97,7 @@ int main(int argc, char **argv){
         if(argv[i][0] == '-') {
             if(strcmp(argv[i], "-L") == 0) {
                 gotDashL = 1;
-                assert(j==nfiles);
+                assert(k==nfiles);
             }
             continue;
         }
