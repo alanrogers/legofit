@@ -272,7 +272,7 @@ int main(int argc, char **argv) {
 
     // i is the file against which all others are being compared.
     // j indexes the other files.
-    printf("#%14s %s\n", "bepe", "DataFile");
+    printf("#%14s %15s %15s\n", "bepe", "DataFile", "LegofitFile");
     for(i=0; i<nfiles; ++i) {
         double msd = 0.0, bias=0.0, bepe;
         for(j=0; j < nfiles; ++j) {
@@ -283,16 +283,9 @@ int main(int argc, char **argv) {
                 bias += StrDblQueue_msd(data_queue[j], lego_queue[j]);
         }
         bepe = (msd+bias)/(nfiles-1);
-        printf("%15.10lg %s\n", bepe, mybasename(datafname[i]));
-    }
-    putchar('\n');
-
-    // Echo input files
-    printf("# %2s %18s %18s\n", "i", "datfile[i]", "legofile[i]");
-    for(i = 0; i < nfiles; ++i) {
-        printf("# %2d %18s %18s\n", i,
-                mybasename(datafname[i]),
-                mybasename(legofname[i]));
+        printf("%15.10lg %15s %15s\n", bepe, 
+               mybasename(datafname[i]),
+               mybasename(legofname[i]));
     }
     putchar('\n');
 

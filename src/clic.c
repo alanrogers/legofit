@@ -180,7 +180,7 @@ int main(int argc, char **argv){
     }
 
     // loop over pts files
-    printf("#%14s %s\n", "clic", "PtsFile");
+    printf("#%14s %20s %15s\n", "clic", "PtsFile", "LegofitFile");
     for(k=0; k < nfiles; ++k) {
         // Build hessian matrix from ptsfname
         Hessian hesobj = hessian(ptsfname[k]);
@@ -249,7 +249,9 @@ int main(int argc, char **argv){
         */
         double clic = -(lnL + trace);
 
-        printf("%15.10lg %s\n", clic, mybasename(ptsfname[k]));
+        printf("%15.10lg %20s %15s\n", clic,
+               mybasename(ptsfname[k]),
+               mybasename(legofname[k]));
     }
     
     return 0;
