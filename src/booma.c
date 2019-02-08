@@ -95,7 +95,7 @@ for the *i*th bootstrap replicate.
 Systems Consortium License, which can be found in file "LICENSE".
 */
 
-#include "strdblqueue.h"
+#include "string.h"
 #include "strint.h"
 #include "tokenizer.h"
 #include "misc.h"
@@ -229,7 +229,7 @@ char * clic_datafname(char *fname, char **end) {
         // no second dash
         return NULL;
     }
-    
+
     if(NULL != strchr((*end)+1, '-')) {
         // more than two dashes: abort
         return NULL;
