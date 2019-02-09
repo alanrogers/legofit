@@ -109,7 +109,8 @@ Systems Consortium License, which can be found in file "LICENSE".
 typedef struct ModSelCrit {
     int dim;
     double *c;                  // c[i] is the criterion for the i'th data set
-    char **fname;               // fname[i] points to name of i'th data set
+    char **fname;               // array of data file names
+    char **legofname;           // array of legofit file names
 } ModSelCrit;
 
 // Data from one file as produced by flatfile.py
@@ -119,8 +120,8 @@ typedef struct ModPar {
     // indices.
     double *par;                // par[i*ncols + j] is i'th par in j'th data set
     char *fname;                // name of input file
-    int ninputfiles;            // equals 0 or nrows
-    char **inputfile;           // inputfile[i] points to name of i'th input file
+    int nlegofiles;            // equals 0 or nrows
+    char **legofname;           // legofname[i] points to name of i'th input file
 } ModPar;
 
 // Linked list of parameter names
@@ -155,7 +156,7 @@ MscType Msc_classify(const char *s);
 const char * Msc_name(MscType msctype);
 char * clic_datafname(char *fname, char **end);
 int cliccmp(char *x, char *y);
-int compareLegofitFiles(ModSelCrit *msc, ModPar *modpar);
+int legofitFileMismatch(ModSelCrit *msc, ModPar *modpar);
 
 const char *usageMsg =
     "Usage: booma <m1.msc> ... <mK.msc> -F <m1.flat> ... <mK.flat>\n"
@@ -192,16 +193,17 @@ void usage(void) {
     exit(EXIT_FAILURE);
 }
 
-int compareLegofitFiles(ModSelCrit *msc, ModPar *modpar) {
-    if(msc->dim != modpar->ninputfiles) {
-        fprintf(stderr,"%s:%d: ModSelCrit has %d input files but ModPar has %d\n",
-                __FILE__,__LINE__, msc->dim, modpar->ninputfiles);
+int legofitFileMismatch(ModSelCrit *msc, ModPar *modpar) {
+    if(msc->dim != modpar->nlegofiles) {
+        fprintf(stderr,"%s:%d: ModSelCrit has %d input files"
+                " but ModPar has %d\n",
+                __FILE__,__LINE__, msc->dim, modpar->nlegofiles);
         return 1;
     }
     for(int i = 0; i < msc->dim; ++i) {
-        if(0 != strcmp(msc->fname[i], modpar->inputfile[i])) {
-            fprintf(stderr,"%s:%d: input file name mismatch: %s != %s\n",
-                    __FILE__,__LINE__, msc->fname[i], modpar->inputfile[i]);
+        if(0 != strcmp(msc->legofname[i], modpar->legofname[i])) {
+            fprintf(stderr,"%s:%d: file name mismatch: %s != %s\n",
+                    __FILE__,__LINE__, msc->legofname[i], modpar->legofname[i]);
             return 1;
         }
     }
@@ -326,12 +328,14 @@ ModSelCrit *ModSelCrit_new(const char *fname) {
     msc->dim = dim;
     msc->c = malloc(dim * sizeof(msc->c[0]));
     msc->fname = malloc(dim * sizeof(msc->fname[0]));
-    if(msc->c == NULL || msc->fname == NULL) {
+    msc->legofname = malloc(dim * sizeof(msc->legofname[0]));
+    if(msc->c == NULL || msc->fname == NULL || msc->legofname == NULL) {
         fprintf(stderr, "%s:%d: bad malloc\n", __FILE__, __LINE__);
         exit(EXIT_FAILURE);
     }
 
-    int line = 0;
+    int ntokens, line = 0;
+    Tokenizer *tkz = Tokenizer_new(4);
     rewind(fp);
     while(1) {
         if(fgets(buff, sizeof buff, fp) == NULL)
@@ -341,21 +345,30 @@ ModSelCrit *ModSelCrit_new(const char *fname) {
                     __FILE__, __LINE__, sizeof(buff));
             exit(EXIT_FAILURE);
         }
-        char *next = stripWhiteSpace(buff);
-        assert(next);
-        if(*next == '#' || strlen(next) == 0)
+        ntokens = Tokenizer_split(tkz, buff, " ");
+        ntokens = Tokenizer_strip(tkz, " \n");
+        if(ntokens == 0)
             continue;
-        char *valstr = strsep(&next, " \t");
-        next = stripWhiteSpace(next);
-        if(valstr == NULL || next == NULL || strlen(next) == 0) {
-            fprintf(stderr, "%s:%d: can't parse file %s\n",
-                    __FILE__, __LINE__, fname);
+        char *tok0 = Tokenizer_token(tkz, 0);
+        if(*tok0 == '#')
+            continue;
+        if(ntokens != 3) {
+            fprintf(stderr,
+                    "%s:%d: bad clic or bepe file:"
+                    " has %d columns rather than 3\n",
+                    __FILE__,__LINE__, ntokens);
+            Tokenizer_print(tkz, stderr);
             exit(EXIT_FAILURE);
         }
         assert(line < msc->dim);
-        msc->c[line] = strtod(valstr, NULL);
-        msc->fname[line] = strdup(next);
+        msc->c[line] = strtod(tok0, NULL);
+        msc->fname[line] = strdup(Tokenizer_token(tkz, 1));
         if(msc->fname[line] == NULL) {
+            fprintf(stderr, "%s:%d: bad strdup\n", __FILE__, __LINE__);
+            exit(EXIT_FAILURE);
+        }
+        msc->legofname[line] = strdup(Tokenizer_token(tkz, 2));
+        if(msc->legofname[line] == NULL) {
             fprintf(stderr, "%s:%d: bad strdup\n", __FILE__, __LINE__);
             exit(EXIT_FAILURE);
         }
@@ -371,8 +384,11 @@ void ModSelCrit_free(ModSelCrit * self) {
     for(i = 0; i < self->dim; ++i) {
         if(self->fname[i])
             free(self->fname[i]);
+        if(self->legofname[i])
+            free(self->legofname[i]);
     }
     free(self->fname);
+    free(self->legofname);
     free(self->c);
     free(self);
 }
@@ -449,8 +465,8 @@ ModPar *ModPar_new(const char *fname, ParNameLst ** namelist) {
     CHECKMEM(self->parndx);
     self->fname = strdup(fname);
     CHECKMEM(self->fname);
-    self->ninputfiles = 0;
-    self->inputfile = NULL;
+    self->nlegofiles = 0;
+    self->legofname = NULL;
 
     // 1st pass counts rows and columns. Creates hash map.
     int i, j, k, nrows = 0, ncols = 0, ntokens;
@@ -521,19 +537,20 @@ ModPar *ModPar_new(const char *fname, ParNameLst ** namelist) {
            && 0 == strcmp("input", Tokenizer_token(tkz, 1))
            && 0 == strcmp("files:", Tokenizer_token(tkz, 2))) {
             // Read list of input files
-            self->ninputfiles = Tokenizer_ntokens(tkz) - 3;
-            if(self->ninputfiles != self->nrows) {
+            self->nlegofiles = Tokenizer_ntokens(tkz) - 3;
+            if(self->nlegofiles != self->nrows) {
                 fprintf(stderr,"%s:%d: mismatch between number of rows and\n"
                         "number of files in .flat file\n"
                         "%d rows != %d .flat files\n",
-                        __FILE__,__LINE__, nrows, self->ninputfiles);
+                        __FILE__,__LINE__, nrows, self->nlegofiles);
                 exit(EXIT_FAILURE);
             }
-            self->inputfile = malloc(self->ninputfiles * sizeof(self->inputfile[0]));
-            CHECKMEM(self->inputfile);
-            for(k=0; k < self->ninputfiles; ++k) {
-                self->inputfile[k] = strdup(Tokenizer_token(tkz, k+3));
-                CHECKMEM(self->inputfile[k]);
+            self->legofname = malloc(self->nlegofiles *
+                                     sizeof(self->legofname[0]));
+            CHECKMEM(self->legofname);
+            for(k=0; k < self->nlegofiles; ++k) {
+                self->legofname[k] = strdup(Tokenizer_token(tkz, k+3));
+                CHECKMEM(self->legofname[k]);
             }
             continue;
         }else if(*buff == '#')
@@ -566,10 +583,10 @@ void ModPar_free(ModPar * self) {
     StrInt_free(self->parndx);
     free(self->par);
     free(self->fname);
-    if(self->ninputfiles > 0) {
-        for(int i=0; i < self->ninputfiles; ++i)
-            free(self->inputfile[i]);
-        free(self->inputfile);
+    if(self->nlegofiles > 0) {
+        for(int i=0; i < self->nlegofiles; ++i)
+            free(self->legofname[i]);
+        free(self->legofname);
     }
     free(self);
 }
@@ -580,14 +597,14 @@ int ModPar_exists(ModPar * self, const char *parname) {
 }
 
 char *ModPar_dataFileName(ModPar *self, int i) {
-    if(self->ninputfiles == 0) {
+    if(self->nlegofiles == 0) {
         fprintf(stderr,"%s:%d: can't return file name because files names have"
                 " not been set\n",
                 __FILE__,__LINE__);
         exit(EXIT_FAILURE);
     }
-    assert(i < self->ninputfiles);
-    return(self->inputfile[i]);
+    assert(i < self->nlegofiles);
+    return(self->legofname[i]);
 }
 
 double ModPar_value(ModPar * self, int row, const char *parname) {
@@ -922,8 +939,9 @@ int main(int argc, char **argv) {
                     ModPar_nrows(modpar[i]), nrows);
             exit(EXIT_FAILURE);
         }
-        if(0 != compareLegofitFiles(msc[i], modpar[i])) {
-            fprintf(stderr,"%s:%d: mismatch between legofit file names in %s and %s\n",
+        if(legofitFileMismatch(msc[i], modpar[i])) {
+            fprintf(stderr,"%s:%d: mismatch between legofit file names"
+                    " in %s and %s\n",
                     __FILE__,__LINE__, mscnames[i], flatnames[i]);
             exit(EXIT_FAILURE);
         }

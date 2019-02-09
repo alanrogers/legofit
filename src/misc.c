@@ -40,7 +40,7 @@
 /// addresses instead.
 /// Call like this: "dostacktrace(__FILE__, __LINE__)"
 void dostacktrace(const char *file, int line, FILE * ofp) {
-#ifndef NDEBUG    
+#ifndef NDEBUG
     void       *callstack[CALLSTACK_SIZE];
     int         nsymbols = backtrace(callstack, CALLSTACK_SIZE);
 
@@ -49,7 +49,7 @@ void dostacktrace(const char *file, int line, FILE * ofp) {
     backtrace_symbols_fd(callstack, nsymbols, fileno(ofp));
 #else
     fprintf(ofp, "Stack trace not available because of NDEBUG option.\n");
-#endif    
+#endif
 }
 
 /// Describe an option. For use in "usage" functions.
@@ -297,6 +297,8 @@ void unitTstResult(const char *facility, const char *result) {
  * belonging to set.
  */
 int strCountSetChunks(const char *str, const char *sep) {
+    assert(str);
+    assert(sep);
     int         nchunks = 0, i;
 
     while(*str != '\0') {

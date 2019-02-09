@@ -86,7 +86,9 @@ int Tokenizer_split(Tokenizer * self, char *buff, const char *sep) {
             continue;           // skip empty tokens
         if(self->n == self->maxTokens) {
             // reallocate
-            int need = 1 + strCountSetChunks(ptr, sep);
+            int need = 1;
+            if(ptr)
+                need += strCountSetChunks(ptr, sep);
             self->maxTokens += need;
             self->tokptr = realloc(self->tokptr,
                                    self->maxTokens * sizeof(self->tokptr[0]));
@@ -104,7 +106,7 @@ int Tokenizer_split(Tokenizer * self, char *buff, const char *sep) {
 /// Return pointer to token with given index
 char       *Tokenizer_token(Tokenizer * t, int ndx) {
     assert(t);
-    if(t->n == 0) 
+    if(t->n == 0)
         DIE("tokenizer has 0 tokens");
     if(ndx >= t->n) {
         fprintf(stderr, "%s:%s:%d: ndx=%d, but there are only %d tokens.\n",
