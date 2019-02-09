@@ -713,10 +713,19 @@ void ParNameLst_print(const ParNameLst * self, FILE * fp) {
 #  endif
 
 const char *mscInput =
-    "# comment\n" "\n" "# comment\n" "0.01 foo\n" "0.02 bar\n";
+    "# comment\n"
+    "\n"
+    "# comment\n"
+    "0.01 foo foo.legofit\n"
+    "0.02 bar bar.legofit\n";
 
 const char *flatInput =
-    "# comment\n" "\n" "# comment\n" "par1 par2\n" "1.0  2.0\n" "3e+0 4\n";
+    "# comment\n" "\n"
+    "# comment\n"
+    "# input files: foo.legofit bar.legofit\n"
+    "par1 par2\n"
+    "1.0  2.0\n"
+    "3e+0 4\n";
 
 int main(int argc, char **argv) {
     int verbose = 0;
