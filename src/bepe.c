@@ -31,7 +31,6 @@ which bepe reports the smallest value.
 
     Options:
        -h or --help   : print this message
-       -n or --nobias : omit bias correction
 
 In typical usage, one would type something like
 
@@ -68,7 +67,6 @@ The first few lines of `bepe`'s output look like this:
 
     # Program was compiled: Feb  8 2019 15:26:39
     # Program was run: Fri Feb  8 15:31:50 2019
-    # Not correcting for bootstrap bias
 
     #          bepe        DataFile     LegofitFile
     1.908861378e-07        sim0.opf    a2-0.legofit
@@ -112,8 +110,7 @@ const char *usageMsg =
     " file is the legofit output from the corresponding bootstrap replicate\n"
     " Must include realdat file and at least 2 bootstrap replicates.\n" "\n"
     "Options:\n"
-    "   -h or --help   : print this message\n"
-    "   -n or --nobias : omit bias correction\n";
+    "   -h or --help   : print this message\n";
 
 void usage(void) {
     fputs(usageMsg, stderr);
@@ -142,16 +139,12 @@ int main(int argc, char **argv) {
 
     int i, j;
     int nfiles=0, nLegoFiles=0;
-    int gotDashL = 0, fixbias = 1;
+    int gotDashL = 0;
 
     for(i = 1; i < argc; i++) {
         if(argv[i][0] == '-') {
             if(strcmp(argv[i], "-L") == 0) {
                 gotDashL = 1;
-                continue;
-            }else if(strcmp(argv[i], "-n") == 0
-                     || strcmp(argv[i], "--nobias") == 0) {
-                fixbias = 0;
                 continue;
             }else {
                 fprintf(stderr,"unknown flag argument: %s\n", argv[i]);
@@ -195,10 +188,6 @@ int main(int argc, char **argv) {
     }
     assert(j==nfiles);
 
-    if(fixbias)
-        fputs("# Correcting for bootstrap bias\n", stdout);
-    else
-        fputs("# Not correcting for bootstrap bias\n", stdout);
     putchar('\n');
 
     // Read data and legofit files into an arrays of queues
@@ -228,8 +217,7 @@ int main(int argc, char **argv) {
             if(j==i)
                 continue;
             msd += StrDblQueue_msd(data_queue[i], lego_queue[j]);
-            if(fixbias)
-                bias += StrDblQueue_msd(data_queue[j], lego_queue[j]);
+            bias += StrDblQueue_msd(data_queue[j], lego_queue[j]);
         }
         bepe = (msd+bias)/(nfiles-1);
         printf("%15.10lg %15s %15s\n", bepe,
