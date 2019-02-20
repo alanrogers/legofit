@@ -258,19 +258,26 @@ while True:
     if b.initialized == False:
         break
     if a.chr > b.chr:
+        # chromosomes missorted
         sys.stdout.flush()
         print >> sys.stderr, \
             "Chromosomes missorted: %s > %s" % (a.chr, b.chr)
         exit(1)
     elif a.chr == b.chr:
+        # same chromosome
         if a.start > b.start:
             sys.stdout.flush()
             print >> sys.stderr, \
                 "Start positions missorted: %d > %d" % (a.start, b.start)
             exit(1)
         if overlap(a, b):
+            # alignments overlap, so merge b into a; don't print
             a += b
             continue
+    # We get here in either of two cases: (1) same chromosome and
+    # no overlap, or (2) new (correctly sorted) chromosome. Either
+    # way, we print the old alignment and then swap so that b becomes
+    # the old alignment, "a", on the next pass through the loop.
     a.pr()
     a, b = b, a # swap a and b
 
