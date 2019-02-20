@@ -16,7 +16,7 @@ allele.
 
 This can be generated from a vcf file as follows:
 
-  bcftools query -f '%CHROM\t%POS\t%REF\t%ALT[\t%GT]\n' fname.vcf.gz
+    bcftools query -f '%CHROM\t%POS\t%REF\t%ALT[\t%GT]\n' fname.vcf.gz
 
 Output is in 5 columns, separated by tabs:
 
