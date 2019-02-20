@@ -257,16 +257,22 @@ while True:
     b.read(f)
     if b.initialized == False:
         break
-    if a.start > b.start:
+    if a.chr > b.chr:
         sys.stdout.flush()
         print >> sys.stderr, \
-            "Start positions missorted: %d > %d" % (a.start, b.start)
+            "Chromosomes missorted: %s > %s" % (a.chr, b.chr)
         exit(1)
-    if overlap(a, b):
-        a += b
-    else:
-        a.pr()
-        a, b = b, a # swap a and b
+    elif a.chr == b.chr:
+        if a.start > b.start:
+            sys.stdout.flush()
+            print >> sys.stderr, \
+                "Start positions missorted: %d > %d" % (a.start, b.start)
+            exit(1)
+        if overlap(a, b):
+            a += b
+            continue
+    a.pr()
+    a, b = b, a # swap a and b
 
 if a.initialized:
     a.pr()
