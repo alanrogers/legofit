@@ -28,6 +28,8 @@ al. Biometrics, 53(2):603-618).
   programs such as sitepat, scrmpat, and simpat, or the output of
   legofit or legosim. Writes a flat file with a column for each site
   pattern and a row for each input file.
+* @ref joinraf "joinraf" joins several raf files line by line to make a
+  new raf file.
 * @ref legofit "legofit" estimates parameters from site pattern
   counts.
 * @ref legosim "legosim" predicts site pattern counts from
