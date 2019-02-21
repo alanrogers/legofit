@@ -74,9 +74,6 @@ int main(int argc, char **argv) {
 
     printf("# joinraf version %s\n", VERSION);
 
-    fprintf(stderr,"Warning: each input file should summarize the same"
-            " number of genomes.\n");  
-
     // Iterate through raf files
     printf("#%s\t%s\t%s\t%s\t%s\n", "chr", "pos", "ref", "alt", "raf");
     done=0;
