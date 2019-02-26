@@ -18,8 +18,7 @@ replicate into a separate file.
        Final label must be "outgroup". Writes to standard output.
     
        If input file name ends with .gz, input is decompressed using
-       gunzip.
-     Maximum number of input files: 64 plus outgroup.
+       gunzip. Maximum number of input files: 64 plus outgroup.
     
     Options may include:
        -f <name> or --bootfile <name>
@@ -51,8 +50,7 @@ into raf format. To save space, you may want to compress the ".raf"
 files using the external utility "gzip". The names of these compressed
 files should end in ".gz", and `sitepat` will use an external utility
 (gunzip) to decompress them. If `gunzip` has not been installed,
-`sitepat` cannot read compressed input files. At present, gzipped
-files cannot be used to generate bootstraps.
+`sitepat` cannot read compressed input files.
 
 Let us assume you have generated raf files, and that directory ~/raf
 contains a separate raf file for each population. We want to compare 4
@@ -505,8 +503,6 @@ int main(int argc, char **argv) {
             if(status) {
                 fprintf(stderr, "%s:%d: ERR: can't rewind input stream.\n",
                         __FILE__, __LINE__);
-                fprintf(stderr, "  If --bootreps > 0, inputs must be"
-                        " uncompressed files, not pipes.\n");
                 exit(EXIT_FAILURE);
             }
         }
