@@ -49,8 +49,13 @@ Before running `sitepat`, use @ref raf "raf" to convert the input data
 into raf format. To save space, you may want to compress the ".raf"
 files using the external utility "gzip". The names of these compressed
 files should end in ".gz", and `sitepat` will use an external utility
-(gunzip) to decompress them. If `gunzip` has not been installed,
+(`gunzip`) to decompress them. If `gunzip` has not been installed,
 `sitepat` cannot read compressed input files.
+
+When making bootstraps (using the `-r` or `--bootreps` options),
+sitepat must read the data files twice. If the files are compressed,
+they must be decompressed twice. It may be faster to use uncompressed
+input files when making bootstraps.
 
 Let us assume you have generated raf files, and that directory ~/raf
 contains a separate raf file for each population. We want to compare 4
