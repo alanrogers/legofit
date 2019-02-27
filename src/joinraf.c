@@ -69,8 +69,11 @@ int main(int argc, char **argv) {
     RAFReader  *r[n];
 
     // Each argument should be the name of an input file.
-    for(i = 0; i < n; ++i)
+    printf("# Input files:\n");
+    for(i = 0; i < n; ++i) {
         r[i] = RAFReader_new(argv[i+1]);
+        printf("# %s\n", argv[i+1]);
+    }
 
     printf("# joinraf version %s\n", VERSION);
 
