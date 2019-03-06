@@ -21,7 +21,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
-#include <unistd.h>
 #ifdef _WIN32
 #include <windows.h>
 #elif defined(MACOS)
