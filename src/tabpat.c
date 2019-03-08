@@ -363,7 +363,7 @@ int main(int argc, char **argv) {
     }
     // Default boot file name
     if(bootfname[0] == '\0') {
-        const char *defName = "tabpat.boot";
+        const char *defName = "boot";
         status = snprintf(bootfname, sizeof bootfname, "%s", defName);
         if(status >= sizeof bootfname) {
             fprintf(stderr, "%s:%d: ERR: Filename %s is too large."
@@ -602,7 +602,7 @@ int main(int argc, char **argv) {
     memset(boottab, 0, sizeof boottab);
 
     if(bootreps > 0) {
-        printf("# %s = %s\n", "bootstrap output file", bootfname);
+        printf("# %s = %s*.opf\n", "bootstrap output files", bootfname);
         printf("# %s = %4.2lf%%\n", "confidence level", 100 * conf);
 #ifndef NDEBUG
         Boot_sanityCheck(boot, __FILE__, __LINE__);
@@ -613,8 +613,8 @@ int main(int argc, char **argv) {
 
         // write an output file for each bootstrap replicate
         for(j = 0; j < bootreps; ++j) {
-            char        buff[FILENAMESIZE + 3];
-            status = snprintf(buff, sizeof buff, "%s%d", bootfname, j);
+            char        buff[FILENAMESIZE + 7];
+            status = snprintf(buff, sizeof buff, "%s%d.opf", bootfname, j);
             if(status >= sizeof buff)
                 DIE("buffer overflow in snprintf");
 
