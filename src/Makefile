@@ -9,7 +9,7 @@ incl := -I/usr/local/include -I/opt/local/include
 
 targets := legosim legofit tabpat sitepat scrmpat daf raf numcores \
      joinraf raf2daf bepe booma maub pclgo simpat ms2sim clic
-pytargets := diverg.py bootci.py flatfile.py axt2raf.py flatpat.py
+pytargets := diverg.py bootci.py flatfile.py axt2raf.py flatpat.py legotree.py
 tests := xzeroin xbinary
 
 CC := gcc
