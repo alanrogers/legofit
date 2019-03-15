@@ -16,10 +16,10 @@ replicate into a separate file.
        where <x> and <y> are arbitrary labels, and <in_i> are input
        files in raf format. Labels may not include the character ":".
        Final label must be "outgroup". Writes to standard output.
-    
+
        If input file name ends with .gz, input is decompressed using
        gunzip. Maximum number of input files: 64 plus outgroup.
-    
+
     Options may include:
        -f <name> or --bootfile <name>
           Bootstrap output file basename. Def: sitepat.boot.
@@ -107,8 +107,8 @@ subsamples consisting of a single haploid genome from each
 population.
 
 In the raf files used as input, chromosomes should appear in lexical
-order. (See @ref sortorder "this link" for advice about lexical sorting.) 
-Within each chromosome, nucleotides should appear in numerical  
+order. (See @ref sortorder "this link" for advice about lexical sorting.)
+Within each chromosome, nucleotides should appear in numerical
 order. There should be no duplicate (chromosome, position)
 pairs. Otherwise, the program aborts with an error.
 
@@ -400,7 +400,7 @@ int main(int argc, char **argv) {
 
     // Default boot file name
     if(bootfname[0] == '\0') {
-        const char *defName = "sitepat.boot";
+        const char *defName = "boot";
         status = snprintf(bootfname, sizeof bootfname, "%s", defName);
         if(status >= sizeof bootfname) {
             fprintf(stderr, "%s:%d: ERR: Filename %s is too large."
@@ -649,7 +649,7 @@ int main(int argc, char **argv) {
     memset(boottab, 0, sizeof boottab);
 
     if(bootreps > 0) {
-        printf("# %s = %s\n", "bootstrap output file", bootfname);
+        printf("# %s = %s*.opf\n", "bootstrap output files", bootfname);
         printf("# %s = %4.2lf%%\n", "confidence level", 100 * conf);
 #ifndef NDEBUG
         Boot_sanityCheck(boot, __FILE__, __LINE__);
@@ -660,8 +660,8 @@ int main(int argc, char **argv) {
 
         // write an output file for each bootstrap replicate
         for(j = 0; j < bootreps; ++j) {
-            char        buff[FILENAMESIZE + 3];
-            status = snprintf(buff, sizeof buff, "%s%d", bootfname, j);
+            char        buff[FILENAMESIZE + 7];
+            status = snprintf(buff, sizeof buff, "%s%d.opf", bootfname, j);
             if(status >= sizeof buff)
                 DIE("buffer overflow in snprintf");
 
