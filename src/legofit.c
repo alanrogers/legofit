@@ -362,6 +362,11 @@ int main(int argc, char **argv) {
             break;
         case 't':
             nThreads = strtol(optarg, NULL, 10);
+            if(nThreads <= 0) {
+                fprintf(stderr,"%s:%d: number of threads must be positive\n",
+                        __FILE__,__LINE__);
+                usage();
+            }
             break;
         case 'F':
             F = strtod(optarg, 0);
@@ -708,7 +713,7 @@ int main(int argc, char **argv) {
     if(GPTree_setParams(gptree, dim, estimate)) {
         fprintf(stderr, "%s:%d: free params violate constraints\n",
                 __FILE__, __LINE__);
-        exit(1);
+        exit(EXIT_FAILURE);
     }
     BranchTab *bt = patprob(gptree, simreps, doSing, rng);
     BranchTab_divideBy(bt, (double) simreps);
