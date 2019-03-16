@@ -10,7 +10,7 @@
 @file state.c
 @brief Read and write "state files", which describe the state of the optmizer.
 
-This file implements classes NameList and State. 
+This file implements classes NameList and State.
 
 NameList stores file names in a linked list. It is used for storing
 the names of state files while processing command-line arguments. Then
@@ -37,7 +37,7 @@ input routine compares these against the names of free parameters in
 the .lgo file. The two lists must have the same parameters in the same
 order. Otherwise, legofit aborts with an error message. Old- and
 new-format state files can both be input using --stateIn arguments and
-can be intermingled in a single legofit run. 
+can be intermingled in a single legofit run.
 
 @copyright Copyright (c) 2018, Alan R. Rogers
 <rogers@anthro.utah.edu>. This file is released under the Internet
@@ -250,7 +250,7 @@ State *State_read(const char *fname, int npar, const char * const *name) {
                 __FILE__,__LINE__, fname);
         goto fail;
     }
-    
+
     switch(self->filetype) {
     case NEW:
         // Read header containing parameter names

@@ -696,12 +696,16 @@ DEStatus diffev(int dim, double estimate[dim], double *loCost, double *yspread,
         // stage. We need to recalculate all objective function
         // values using the newly changed number of simulation
         // replicates.
-        for(i = 0; i < nPts; i++) {
+        for(i = 0; i < nPts; ++i) {
             // calculate objective function values in parallel
             TaskArg_setArray(targ[i], dim, (*pold)[i]);
             JobQueue_addJob(jq, taskfun, targ[i]);
         }
         JobQueue_waitOnJobs(jq);
+
+        // push initial points onto PointBuff
+        for(i=0; stage==0 && i < nPts; ++i)
+            PointBuff_push(dep.pb, targ[i]->cost, dim, targ[i]->v);
 
         cmin = HUGE_VAL;
         imin = INT_MAX;
