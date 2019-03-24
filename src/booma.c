@@ -850,8 +850,8 @@ int main(int argc, char **argv) {
         }
     }
 
-    if(nmodels < 2) {
-        fprintf(stderr,"%s:%d: need at least 2 models; got %d\n",
+    if(nmodels < 1) {
+        fprintf(stderr,"%s:%d: need at least 1 model; got %d\n",
                 __FILE__,__LINE__, nmodels);
         usage();
     }
