@@ -82,13 +82,15 @@ def usage(msg1):
         print >> sys.stderr, msg1
     msg = \
         """
-usage: bootci.py [options] <foo.flat>
+usage: bootci.py [options] [input.flat]
 
-where <foo.flat> is a file with parameters in columns and data sets
+where input.flat is a file with parameters in columns and data sets
 in rows. Such files are produced by flatfile.py and booma. The first
 row should contain a column header listing parameter names. The second
 should contain parameter estimates for the real data. Each succeeding
 row should contain a parameter estimate for a bootstrap replicate.
+
+If no input file is specified, bootci.py reads standard input.
 
 Options may include:
 
@@ -105,8 +107,7 @@ The program writes to standard output.
 # parnames is a list of parameter names, est is a list of parameter
 # estimates, and boot is an array whose ij'th entry is the estimate
 # of the i'th parameter in the j'th bootstrap replicate.
-def parseflat(fname):
-    ifile = open(fname, "r")
+def parseflat(ifile):
 
     parnames = None
     estimates = None
@@ -117,7 +118,7 @@ def parseflat(fname):
             continue
         line = line.strip().split("#")
         line = line[0].strip()
-        
+
         line = line.split()
         if len(line) == 0:
             continue
@@ -142,8 +143,6 @@ def parseflat(fname):
         for i in range(npar):
             boot[i].append(float(line[i]))
 
-    ifile.close()
-
     return (parnames, estimates, boot)
 
 # Interpolate in order to approximate the value v[p*(len-1)].  Raise
@@ -162,6 +161,7 @@ def interpolate(p, v):
 
 conf = 0.95
 fname = None
+ifile = sys.stdin
 lbl = None
 
 # Loop over command line arguments, ignoring the 0th.
@@ -191,13 +191,17 @@ while(True):
     i += 1
 
 if fname == None:
-    usage("Missing input file")
+    fname = "stdin"
+else:
+    ifile = open(fname, "r")
 
 print "# bootci.py run at: %s" % datetime.datetime.now()
 print "# input:", fname
 print "# %s: %0.3f" % ("confidence", conf)
 
-parnames, estimates, boot = parseflat(fname)
+parnames, estimates, boot = parseflat(ifile)
+if ifile != sys.stdin:
+    ifile.close()
 
 # number of parameters
 npar = len(parnames)
