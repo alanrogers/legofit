@@ -76,15 +76,17 @@ The first few lines of `bepe`'s output look like this:
     1.917256551e-07       sim12.opf   a2-12.legofit
 
 Many of the lines begin with the comment character (#) so that they
-can be removed easily in downstream processing. Each uncommented line
-refers to a particular data sets, whose names are given in columns
-2-3. Typically, the first file is the real data, and the others are
-bootstrap replicates. Column 1 (bepe) gives the mean squared
-difference between the site pattern frequencies in this data set, and
-the predictions obtained from all the other data sets. Bepe also
-includes a bias correction, which is described by Efron and
-Tibshirani. The predicted values are taken from the various
-`.legofit` files.
+can be removed easily in downstream processing. Uncommented lines
+refer to particular data sets, whose names are given in columns
+2-3. The order of these lines reflects the order in which files are
+listed on the command line. If you are analyzing real data plus
+bootstrap replicates, it is useful to list the real data file first on
+the command line, so that its bebe value will appear first in the
+output. Column 1 (bepe) gives the mean squared difference between the
+site pattern frequencies in this data set, and the predictions
+obtained from all the other data sets. Bepe also includes a bias
+correction, which is described by Efron and Tibshirani. The predicted
+values are taken from the various `.legofit` files.
 
 @copyright Copyright (c) 2018, Alan R. Rogers
 <rogers@anthro.utah.edu>. This file is released under the Internet
@@ -193,8 +195,8 @@ int main(int argc, char **argv) {
     // Read data and legofit files into an arrays of queues
     StrDblQueue *data_queue[nfiles], *lego_queue[nfiles];
     for(i = 0; i < nfiles; ++i) {
-        lego_queue[i] = StrDblQueue_parseSitPat(legofname[i]);
-        data_queue[i] = StrDblQueue_parseSitPat(datafname[i]);
+        lego_queue[i] = StrDblQueue_parseSitePat(legofname[i]);
+        data_queue[i] = StrDblQueue_parseSitePat(datafname[i]);
         StrDblQueue_normalize(lego_queue[i]);
         StrDblQueue_normalize(data_queue[i]);
         if(i==0) {

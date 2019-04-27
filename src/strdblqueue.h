@@ -32,7 +32,7 @@ void         StrDblQueue_print(const StrDblQueue *self, FILE *fp);
 int          StrDblQueue_compare(StrDblQueue *lhs, StrDblQueue *rhs);
 // StrDbl      *StrDblQueue_get(StrDblQueue *self, StrDbl *strdbl, int index);
 StrDblQueue *StrDblQueue_parseLegofit(const char *fname);
-StrDblQueue *StrDblQueue_parseSitPat(const char *fname);
+StrDblQueue *StrDblQueue_parseSitePat(const char *fname);
 double StrDblQueue_msd(const StrDblQueue *a, const StrDblQueue *b);
 void StrDblQueue_normalize(StrDblQueue *self);
 void make_covar_matrix(int nfiles, int npar, double array[nfiles][npar],

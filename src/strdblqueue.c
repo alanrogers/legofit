@@ -187,7 +187,7 @@ static int isSitePatHdr(const char *s) {
 // Parse a data file. Return an object of type
 // StrDblQueue, which contains the site pattern names and their
 // frequencies.
-StrDblQueue *StrDblQueue_parseSitPat(const char *fname) {
+StrDblQueue *StrDblQueue_parseSitePat(const char *fname) {
     FILE *fp = fopen(fname, "r");
     if(fp==NULL) {
         fprintf(stderr,"%s:%d: can't read file \"%s\"\n",
