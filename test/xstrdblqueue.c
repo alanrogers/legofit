@@ -181,8 +181,8 @@ int main(int argc, char **argv){
       StrDblQueue_print(d,stderr);
     }
 
-    e = StrDblQueue_parseSitPat("s1boot0.legofit");
-    f = StrDblQueue_parseSitPat("s1boot0.legofit");
+    e = StrDblQueue_parseSitePat("s1boot0.legofit");
+    f = StrDblQueue_parseSitePat("s1boot0.legofit");
 
     assert(StrDblQueue_compare(e,f) == 0);
 
