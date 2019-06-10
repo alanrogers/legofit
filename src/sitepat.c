@@ -601,15 +601,15 @@ int main(int argc, char **argv) {
         // on, multiply z by the derived allele frequency, p. If
         // that bit is off, multiply by q=1-p. In the end, z is Prod
         // p[j]^bit[j] * q[j]^(1-bit[j]) where bit[j] is the value (0
-        // or 1) of the j'th bit.
+        // or 1) of the j'th bit in the pattern.
         for(i = 0; i < npat; ++i) {
             tipId_t     pattern = pat[i];
             double      z = 1.0;
             for(j = 0; j < m; ++j) {
-                if(pattern & 1u)
-                    z *= p[j];
+                if(pattern & 1u) // Is bit j "on" in current pattern?
+                    z *= p[j];   // yes
                 else
-                    z *= q[j];
+                    z *= q[j];   // no
                 pattern >>= 1u;
             }
             if(!isfinite(z)) {
