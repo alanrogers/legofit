@@ -607,9 +607,9 @@ int main(int argc, char **argv) {
             double      z = 1.0;
             for(j = 0; j < m; ++j) {
                 if(pattern & 1u) // Is bit j "on" in current pattern?
-                    z *= p[j];   // yes
+                    z *= p[j];
                 else
-                    z *= q[j];   // no
+                    z *= q[j];
                 pattern >>= 1u;
             }
             if(!isfinite(z)) {
