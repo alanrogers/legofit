@@ -192,7 +192,7 @@ State *State_read(const char *fname, int npar, const char * const *name) {
     State *self = NULL;
     FILE *fp = fopen(fname, "r");
     if(fp == NULL) {
-        fprintf(stderr, "%s:%d: can't read file \"%s\"\n",
+        fprintf(stderr, "%s:%d: can't read state file \"%s\"\n",
                 __FILE__,__LINE__, fname);
         return NULL;
     }
