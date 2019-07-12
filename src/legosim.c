@@ -153,6 +153,7 @@ int main(int argc, char **argv) {
 
     // command line arguments
     for(;;) {
+        char *end;
         i = getopt_long(argc, argv, "i:t:U:1h", myopts, &optndx);
         if(i == -1)
             break;
@@ -162,10 +163,18 @@ int main(int argc, char **argv) {
             usage();
             break;
         case 'i':
-            nreps = strtol(optarg, 0, 10);
+            nreps = strtol(optarg, &end, 10);
+            if(*end != '\0') {
+                fprintf(stderr,"Can't parse %s as an integer\n", optarg);
+                exit(EXIT_FAILURE);
+            }
             break;
         case 'U':
-            U = strtod(optarg,NULL);
+            U = strtod(optarg,&end);
+            if(*end != '\0') {
+                fprintf(stderr,"Can't parse %s as a float\n", optarg);
+                exit(EXIT_FAILURE);
+            }
             break;
         case '1':
             doSing=1;
