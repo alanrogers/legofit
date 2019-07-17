@@ -303,15 +303,6 @@ int RAFReader_multiNext(int n, RAFReader * r[n]) {
     bits_t atmax = unity;
     imax = 0;
 
-#if 0
-    static int firstTime=1;
-
-    if(firstTime) {
-        firstTime = 0;
-        RAFReader_printHdr(stderr);
-    }
-#endif
-
     while(1) {
 
         bits_t currbit;
@@ -322,7 +313,7 @@ int RAFReader_multiNext(int n, RAFReader * r[n]) {
         // at the same position, 0 otherwise.
         atsamepos = 1;
         for(i = 0; i < n; ++i) {
-            currbit = unity << i;
+            currbit = unity << i;  // bit i on; all others off
             if( atmax & currbit ) {
                 // reader i is at current maximum
                 continue;
@@ -336,7 +327,7 @@ int RAFReader_multiNext(int n, RAFReader * r[n]) {
             } else if(diff < 0) {
                 atsamepos = 0;
             }else
-                atmax |= currbit;
+                atmax |= currbit;  // turn on bit i in atmax
         }
 
         // If all readers are at the same position, then we're done.
@@ -344,15 +335,6 @@ int RAFReader_multiNext(int n, RAFReader * r[n]) {
             assert(n == num1bits(atmax));
             break;
         }
-
-#if 0
-        fprintf(stderr,"SKIPPING SNP\n");
-        for(i=0; i<n; ++i) {
-            currbit = unity << i;
-            if( !(atmax & currbit) )
-                RAFReader_print(r[i], stderr);
-        }
-#endif
 
         // Increment readers that are not at the maximum position.
         for(i=0; i < n; ++i) {
