@@ -18,7 +18,8 @@ replicate into a separate file.
        Final label must be "outgroup". Writes to standard output.
 
        If input file name ends with .gz, input is decompressed using
-       gunzip. Maximum number of input files: 64 plus outgroup.
+       gunzip. Maximum number of input files: 64 plus outgroup. Minimum is
+       2 plus outgroup.
 
     Options may include:
        -f <name> or --bootfile <name>
@@ -352,7 +353,7 @@ int main(int argc, char **argv) {
     // remaining options: input files
     int         n = argc - optind;  // number of input files
     int         m = n-1;            // number excluding outgroup
-    if(n == 0)
+    if(m < 2)
         usage();
 
     char       *poplbl[n];

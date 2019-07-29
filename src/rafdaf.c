@@ -59,7 +59,7 @@ const char *useMsg =
     "   where <x> and <y> are arbitrary labels, and <in_i> are input\n"
     "   files in raf format. Labels may not include the character \":\".\n"
     "   Final label must be \"outgroup\". Writes derived allele frequencies\n"
-    "   to standard output.\n"
+    "   to standard output. Minimum number of input files: 2 plus outgroup.\n"
     "\n"
     "   If input file name ends with .gz, input is decompressed using\n"
     "   gunzip.\n";
@@ -108,7 +108,7 @@ int main(int argc, char **argv) {
     // remaining options: input files
     int         n = argc - optind;  // number of input files
     int         m = n-1;            // number excluding outgroup
-    if(n == 0)
+    if(m < 2)
         usage();
 
     char       *poplbl[n];
