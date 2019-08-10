@@ -287,7 +287,11 @@ The "raf" file is simple and looks like this:
 
 Columns are separated by single tab characters.  The first line
 (beginning with "#") is an optional comment, which is used here to
-label the columns. The columns are as follows:
+label the columns. Lines whose first non-white character is "#" are
+interpreted as comments and are ignored during input. They can occur
+anywhere in the .raf file.
+
+The columns of a .raf file are as follows:
 
 1. Character strings that label chromosomes or scaffolds.
 2. Position of the site on the chromosome or scaffold, measured in base
@@ -302,6 +306,9 @@ label the columns. The columns are as follows:
 The lines should be sorted lexically by chromosome. Within
 chromosomes, they should be sorted in ascending numerical order of
 column 2. There should be no duplicate (chromosome, position) pairs.
+
+Raf files can be concatenated easily, by standard tools such as the
+linux command `cat`.
 
 # Describing population history in an lgo file {#lgo}
 
