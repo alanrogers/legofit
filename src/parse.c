@@ -17,9 +17,9 @@
  * population tree.  The input file begins with a series of "segment"
  * statements that define each of the segments in the tree. The
  * segment statements also provide the time (backwards from the
- * present) at which the segment starts, and the size, twoN, of the
- * population. Optionally, it also provides the number of haploid
- * samples observed in this segment of the tree.
+ * present in generations) at which the segment starts, and the size,
+ * twoN, of the  population. Optionally, it also provides the number
+ * of haploid samples observed in this segment of the tree.
  *
  * The statements that follow the segment statements describe how the
  * segments are connected. The "mix" statement is used when a segment
