@@ -131,7 +131,7 @@ numcores : $(NUMCORES)
 
 zeroin.o : zeroin.h
 
-TRY := try.o
+TRY := try.o binary.o
 try : $(TRY)
 	$(CC) $(CFLAGS) -o $@ $(TRY) $(lib)
 
