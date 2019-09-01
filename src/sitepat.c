@@ -254,9 +254,9 @@ static void Stack_push(Stack * self, tipId_t x) {
 static void
 generatePatterns(int bit, int npops, Stack * stk, tipId_t pat, int doSing) {
     if(npops >= 8*sizeof(tipId_t)) {
-        fprintf(stderr,"%s:%s:%d: %d is too many populations: max is %d\n",
+        fprintf(stderr,"%s:%s:%d: %d is too many populations: max is %lu\n",
                 __FILE__,__func__,__LINE__,
-                npops, 8*sizeof(tipID_t) - 1);
+                npops, 8*sizeof(tipId_t) - 1);
         exit(EXIT_FAILURE);
     }
     const tipId_t unity = 1;
@@ -370,7 +370,7 @@ int main(int argc, char **argv) {
     // Number of inputs must be smaller than the number of bits in an object of
     // type tipId_t.
     if(m > 8*sizeof(tipId_t) - 1) {
-        fprintf(stderr, "Error: %d input files. Max is %d.\n",
+        fprintf(stderr, "Error: %d input files. Max is %lu.\n",
                 n, 8*sizeof(tipId_t) - 1);
         usage();
     }
