@@ -224,13 +224,11 @@ StrDblQueue *StrDblQueue_parseSitePat(const char *fname) {
 }
 
 void StrDblQueue_normalize(StrDblQueue* self){
-  int length = StrDblQueue_length(self);
   double total = 0;
   StrDblQueue* temp;
 
-  for(temp = self; temp; temp = temp->next){
+  for(temp = self; temp; temp = temp->next)
     total += temp->strdbl.val;
-  }
 
   assert(isfinite(total));
   if(total == 0.0) {
@@ -239,11 +237,8 @@ void StrDblQueue_normalize(StrDblQueue* self){
       exit(EXIT_FAILURE);
   }
 
-  temp = self;
-  for(int i = 0; i < length; i++){
+  for(temp = self; temp; temp = temp->next)
     temp->strdbl.val /= total;
-    temp = temp->next;
-  }
 }
 
 // Calculate mean squared deviation between the values of
@@ -280,6 +275,16 @@ double StrDblQueue_msd(const StrDblQueue *a, const StrDblQueue *b) {
     assert(isfinite(msd));
     assert(n>0);
     return msd/n;
+}
+
+static void checkConsistency(const char *fname1, const char *fname2,
+                             StrDblQueue *q1, StrDblQueue *q2) {
+    if(StrDblQueue_compare(q1, q2)) {
+        fprintf(stderr, "%s:%d: inconsistent site patterns in"
+                " files %s and %s\n", __FILE__, __LINE__,
+                fname1, fname2);
+        exit(EXIT_FAILURE);
+    }
 }
 
 // On input, nfiles and npar are the number of rows and columns in
