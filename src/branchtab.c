@@ -318,14 +318,14 @@ void BranchTab_plusEquals(BranchTab *lhs, BranchTab *rhs) {
 /// the total branch length associated with that site pattern, and
 /// sumsqr[i] is the corresponding sum of squared branch lengths.
 void BranchTab_toArrays(BranchTab *self, unsigned n, tipId_t key[n],
-						double value[n], double sumsqr[n]) {
+                        double value[n], double sumsqr[n]) {
     int i, j=0;
     for(i=0; i<BT_DIM; ++i) {
         BTLink *link;
         for(link=self->tab[i]; link!=NULL; link=link->next) {
             if(j >= n)
                 eprintf("%s:%s:%d: buffer overflow\n",
-						__FILE__,__func__,__LINE__);
+                        __FILE__,__func__,__LINE__);
             key[j] = link->key;
             value[j] = link->value;
 #if COST==CHISQR_COST
@@ -398,6 +398,36 @@ BranchTab *BranchTab_parse(const char *fname, const LblNdx *lblndx) {
     fclose(fp);
     Tokenizer_free(tkz);
     return self;
+}
+
+void tipId_makeMap(int map[sizeof tipId_t], tipId_t collapse) {
+    int n = sizeof tipId_t;
+    int i, min = n, cntr=0;
+    tipId_t bit = 1;
+
+    for(i=0; i < n; ++i, bit <<= 1) {
+        if( collapse & bit) {
+            if(min == n) {
+                min = i;
+            }else
+                ++cntr;
+            map[i] = min;
+        }else
+            map[i] = i - cntr;
+    }
+}
+
+tipId_t tipId_collapse(tipId_t id, tipId_t x) {
+    int n1bits = num1bits(x);
+    if(n1bits <= 1 || id==0) {
+        return id;
+    }
+    int minbit;
+    for(minbit=0; 0 == (1u & (x>>minbit)); ++minbit)
+        ;
+    
+    
+
 }
 
 #if COST==CHISQR_COST

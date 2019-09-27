@@ -277,7 +277,7 @@ double StrDblQueue_msd(const StrDblQueue *a, const StrDblQueue *b) {
     return msd/n;
 }
 
-static void checkConsistency(const char *fname1, const char *fname2,
+void checkConsistency(const char *fname1, const char *fname2,
                              StrDblQueue *q1, StrDblQueue *q2) {
     if(StrDblQueue_compare(q1, q2)) {
         fprintf(stderr, "%s:%d: inconsistent site patterns in"

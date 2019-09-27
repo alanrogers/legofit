@@ -35,8 +35,8 @@ StrDblQueue *StrDblQueue_parseLegofit(const char *fname);
 StrDblQueue *StrDblQueue_parseSitePat(const char *fname);
 double StrDblQueue_msd(const StrDblQueue *a, const StrDblQueue *b);
 void StrDblQueue_normalize(StrDblQueue *self);
-static void checkConsistency(const char *fname1, const char *fname2,
-                             StrDblQueue *q1, StrDblQueue *q2);
+void checkConsistency(const char *fname1, const char *fname2,
+                      StrDblQueue *q1, StrDblQueue *q2);
 void make_covar_matrix(int nfiles, int npar, double array[nfiles][npar],
                       gsl_matrix *cov);
 
