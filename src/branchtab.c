@@ -400,12 +400,15 @@ BranchTab *BranchTab_parse(const char *fname, const LblNdx *lblndx) {
     return self;
 }
 
-void tipId_makeMap(tipId_t map[sizeof tipId_t], tipId_t collapse) {
-    int n = sizeof tipId_t;
+BranchTab *BranchTab_collapse(BranchTab *old, tipId_t collapse) {
+    int n = 8 * sizeof tipId_t; // number of bits
+
+    // Make map, an array whose i'th entry is an unsigned integer
+    // with one bit on and the rest off. The on bit indicates the
+    // position in the new id of the i'th bit in the old id.
+    tipIt_t map[n];
     int i, min = n, cntr=0;
     tipId_t bit = 1u;
-    tipId_t min=0; // turn on the minimum bit in collapse
-
     for(i=0; i < n; ++i, bit <<= 1) {
         if( collapse & bit) {
             if(min == n) {
@@ -416,29 +419,17 @@ void tipId_makeMap(tipId_t map[sizeof tipId_t], tipId_t collapse) {
         }else
             map[i] = bit >> cntr;
     }
+
+    BranchTab *new = malloc(sizeof BranchTab);
 }
 
 tipId_t collapse(size_t n, tipId_t map[n], tipId_t old) {
     assert(n == sizeof tipId_t);
     tipId_t new = 0u, bit=1u;
-    int i;
-    for(i=0; i<n; ++i, bit <<= 1)
+    for(int i=0; i<n; ++i, bit <<= 1)
         if( old & bit )
             new |= map[i];
     return new;
-}
-
-tipId_t tipId_collapse(tipId_t id, tipId_t x) {
-    int n1bits = num1bits(x);
-    if(n1bits <= 1 || id==0) {
-        return id;
-    }
-    int minbit;
-    for(minbit=0; 0 == (1u & (x>>minbit)); ++minbit)
-        ;
-    
-    
-
 }
 
 #if COST==CHISQR_COST
