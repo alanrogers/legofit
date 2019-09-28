@@ -400,21 +400,32 @@ BranchTab *BranchTab_parse(const char *fname, const LblNdx *lblndx) {
     return self;
 }
 
-void tipId_makeMap(int map[sizeof tipId_t], tipId_t collapse) {
+void tipId_makeMap(tipId_t map[sizeof tipId_t], tipId_t collapse) {
     int n = sizeof tipId_t;
     int i, min = n, cntr=0;
-    tipId_t bit = 1;
+    tipId_t bit = 1u;
+    tipId_t min=0; // turn on the minimum bit in collapse
 
     for(i=0; i < n; ++i, bit <<= 1) {
         if( collapse & bit) {
             if(min == n) {
-                min = i;
+                min = bit;
             }else
                 ++cntr;
             map[i] = min;
         }else
-            map[i] = i - cntr;
+            map[i] = bit >> cntr;
     }
+}
+
+tipId_t collapse(size_t n, tipId_t map[n], tipId_t old) {
+    assert(n == sizeof tipId_t);
+    tipId_t new = 0u, bit=1u;
+    int i;
+    for(i=0; i<n; ++i, bit <<= 1)
+        if( old & bit )
+            new |= map[i];
+    return new;
 }
 
 tipId_t tipId_collapse(tipId_t id, tipId_t x) {
