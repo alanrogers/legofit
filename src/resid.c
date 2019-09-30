@@ -49,6 +49,7 @@ void usage(void) {
 int main(int argc, char **argv) {
 
     time_t currtime = time(NULL);
+    tipId_t collapse = 014; // collapse A and V
 
     hdr("resid: calculate residuals");
 #if defined(__DATE__) && defined(__TIME__)
@@ -128,6 +129,7 @@ int main(int argc, char **argv) {
                          lego_queue[0], lego_queue[i]);
         checkConsistency(datafname[0], legofname[i],
                          data_queue[0], data_queue[i]);
+        
     }
 
     // i is the file against which all others are being compared.

@@ -321,3 +321,4 @@ void make_covar_matrix(int nfiles, int npar, double array[nfiles][npar],
        }
    }
 }
+

@@ -1,6 +1,7 @@
 #ifndef STR_DBL_QUEUE
 #define STR_DBL_QUEUE
 
+#include "lblndx.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -33,7 +34,7 @@ int          StrDblQueue_compare(StrDblQueue *lhs, StrDblQueue *rhs);
 // StrDbl      *StrDblQueue_get(StrDblQueue *self, StrDbl *strdbl, int index);
 StrDblQueue *StrDblQueue_parseLegofit(const char *fname);
 StrDblQueue *StrDblQueue_parseSitePat(const char *fname);
-double StrDblQueue_msd(const StrDblQueue *a, const StrDblQueue *b);
+double       StrDblQueue_msd(const StrDblQueue *a, const StrDblQueue *b);
 void StrDblQueue_normalize(StrDblQueue *self);
 void checkConsistency(const char *fname1, const char *fname2,
                       StrDblQueue *q1, StrDblQueue *q2);

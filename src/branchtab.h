@@ -30,4 +30,5 @@ double        BranchTab_KLdiverg(const BranchTab *obs, const BranchTab *expt);
 double        BranchTab_negLnL(const BranchTab *obs, const BranchTab *expt);
 double        BranchTab_poissonCost(const BranchTab *obs, const BranchTab *expt,
                                     double u, long nnuc, double n);
+BranchTab    *BranchTab_collapse(BranchTab *old, tipId_t collapse);
 #endif
