@@ -348,7 +348,6 @@ BranchTab *BranchTab_parse(const char *fname, const LblNdx *lblndx) {
 
     int         ntokens;
     char        buff[500];
-    char        lblbuff[100];
     Tokenizer  *tkz = Tokenizer_new(50);
 
     while(1) {
@@ -369,7 +368,15 @@ BranchTab *BranchTab_parse(const char *fname, const LblNdx *lblndx) {
         if(ntokens == 0)
             continue;
 
-        char *tok = Tokenizer_token(tkz, 1);
+        char *tok = Tokenizer_token(tkz, 0);
+        tipId_t key=LblNdx_getTipId(lblndx, tok);
+        if(key==0) {
+            fprintf(stderr,"%s:%s:%d: can't find id for label %s\n",
+                    __FILE__,__func__,__LINE__, tok);
+            exit(EXIT_FAILURE);
+        }
+
+        tok = Tokenizer_token(tkz, 1);
         errno = 0;
         double prob = strtod(tok, NULL);
         if(errno) {
@@ -380,21 +387,6 @@ BranchTab *BranchTab_parse(const char *fname, const LblNdx *lblndx) {
             exit(EXIT_FAILURE);
         }
 
-        snprintf(lblbuff, sizeof(lblbuff), "%s", Tokenizer_token(tkz, 0));
-        Tokenizer_split(tkz, lblbuff, ":");
-        ntokens = Tokenizer_strip(tkz, " \t\n");
-        assert(ntokens > 0);
-        tipId_t key=0, id;
-
-        // Get tipId corresponding to label
-        for(int i=0; i < ntokens; ++i) {
-            tok = Tokenizer_token(tkz, i);
-            id = LblNdx_getTipId(lblndx, tok);
-            if(id == 0)
-                eprintf("%s:%s:%d: unrecognized label, %s, in input.\n",
-                        __FILE__,__func__,__LINE__, tok);
-            key |= id;
-        }
         BranchTab_add(self, key, prob);
     }
     fclose(fp);
