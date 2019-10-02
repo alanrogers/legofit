@@ -207,6 +207,11 @@ int main(int argc, char **argv) {
     assert(status==BUFFER_OVERFLOW);
     assert(strlen(dst) < sizeof(dst));
 
+    src = "abcdef";
+    status = strnncopy(sizeof(dst), dst, 0, src);
+    assert(status==0);
+    assert(strlen(dst) == 0);
+
     unitTstResult("strnncopy", "OK");
     
     return 0;
