@@ -132,6 +132,31 @@ int main(int argc, char **argv) {
         
     }
 
+    LblNdx lndx;
+    LblNdx_init(&lndx);
+    StrDblQue *sdq;
+    for(sdq=data_queue[0]; sdq; sdq = sdq->next) {
+        char *s = sdq->strdbl.str;
+        while(1) {
+            char *colon = strchr(s, ':');
+            char buff[100];
+            int i, len;
+            if(colon == NULL) {
+                LblNdx_addSamples(&lndx, 1u, s);
+                break;
+            }
+            len = colon - s;
+            status = strnncopy(sizeof(buff), buff, len, s);
+            if(status) {
+                fprintf(stderr,"%s:%d: buffer overflow\n",
+                        __FILE__,__LINE__);
+                exit(EXIT_FAILURE);
+            }
+            LblNdx_addSamples(&lndx, 1u, buff);
+            s = colon+1;
+        }
+    }
+
     // i is the file against which all others are being compared.
     // j indexes the other files.
     printf("#%14s %15s %15s\n", "bepe", "DataFile", "LegofitFile");
