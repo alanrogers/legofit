@@ -42,6 +42,8 @@ al. Biometrics, 53(2):603-618).
   in terms of principal components.
 * @ref raf "raf" writes genetic data into the ".raf" format,
   which is used by @ref sitepat "sitepat".
+* @ref rafdaf "rafdaf" reads several ".raf" files and writes derived
+  allele frequencies for each position in the genome.
 * @ref scrmpat "scrmpat" tabulates site patterns from output generated
   by the [scrm][] coalescent simulator.
 * @ref simpat "simpat" tabulates site patterns from the output of
