@@ -55,6 +55,8 @@ void        BTLink_printShallow(const BTLink * self, FILE *fp);
 void        BTLink_print(const BTLink * self, FILE *fp);
 BTLink     *BTLink_dup(const BTLink *self);
 int         BTLink_equals(const BTLink *lhs, const BTLink *rhs);
+static void make_map(size_t n, tipId_t map[n], tipId_t collapse);
+static tipId_t remap_bits(size_t n, tipId_t map[n], tipId_t old);
 
 #if TIPID_SIZE==32
 static inline uint32_t tipIdHash(uint32_t key);
@@ -171,10 +173,10 @@ void BTLink_printShallow(const BTLink * self, FILE *fp) {
     if(self == NULL)
         return;
 #if COST==CHISQR_COST
-    fprintf(fp, " [%lu, %lf, %lf]",
+    fprintf(fp, " [%lo, %lf, %lf]",
            (unsigned long) self->key, self->value, self->sumsqr);
 #else
-    fprintf(fp, " [%lu, %lf]", (unsigned long) self->key, self->value);
+    fprintf(fp, " [%lo, %lf]", (unsigned long) self->key, self->value);
 #endif
 }
 
@@ -318,14 +320,14 @@ void BranchTab_plusEquals(BranchTab *lhs, BranchTab *rhs) {
 /// the total branch length associated with that site pattern, and
 /// sumsqr[i] is the corresponding sum of squared branch lengths.
 void BranchTab_toArrays(BranchTab *self, unsigned n, tipId_t key[n],
-						double value[n], double sumsqr[n]) {
+                        double value[n], double sumsqr[n]) {
     int i, j=0;
     for(i=0; i<BT_DIM; ++i) {
         BTLink *link;
         for(link=self->tab[i]; link!=NULL; link=link->next) {
             if(j >= n)
                 eprintf("%s:%s:%d: buffer overflow\n",
-						__FILE__,__func__,__LINE__);
+                        __FILE__,__func__,__LINE__);
             key[j] = link->key;
             value[j] = link->value;
 #if COST==CHISQR_COST
@@ -344,9 +346,8 @@ BranchTab *BranchTab_parse(const char *fname, const LblNdx *lblndx) {
     BranchTab *self = BranchTab_new();
     CHECKMEM(self);
 
-    int         i, ntokens;
+    int         ntokens;
     char        buff[500];
-    char        lblbuff[100];
     Tokenizer  *tkz = Tokenizer_new(50);
 
     while(1) {
@@ -367,7 +368,15 @@ BranchTab *BranchTab_parse(const char *fname, const LblNdx *lblndx) {
         if(ntokens == 0)
             continue;
 
-        char *tok = Tokenizer_token(tkz, 1);
+        char *tok = Tokenizer_token(tkz, 0);
+        tipId_t key=LblNdx_getTipId(lblndx, tok);
+        if(key==0) {
+            fprintf(stderr,"%s:%s:%d: can't find id for label %s\n",
+                    __FILE__,__func__,__LINE__, tok);
+            exit(EXIT_FAILURE);
+        }
+
+        tok = Tokenizer_token(tkz, 1);
         errno = 0;
         double prob = strtod(tok, NULL);
         if(errno) {
@@ -378,26 +387,67 @@ BranchTab *BranchTab_parse(const char *fname, const LblNdx *lblndx) {
             exit(EXIT_FAILURE);
         }
 
-        snprintf(lblbuff, sizeof(lblbuff), "%s", Tokenizer_token(tkz, 0));
-        Tokenizer_split(tkz, lblbuff, ":");
-        ntokens = Tokenizer_strip(tkz, " \t\n");
-        assert(ntokens > 0);
-        tipId_t key=0, id;
-
-        // Get tipId corresponding to label
-        for(i=0; i < ntokens; ++i) {
-            tok = Tokenizer_token(tkz, i);
-            id = LblNdx_getTipId(lblndx, tok);
-            if(id == 0)
-                eprintf("%s:%s:%d: unrecognized label, %s, in input.\n",
-                        __FILE__,__func__,__LINE__, tok);
-            key |= id;
-        }
         BranchTab_add(self, key, prob);
     }
     fclose(fp);
     Tokenizer_free(tkz);
     return self;
+}
+
+BranchTab *BranchTab_collapse(BranchTab *old, tipId_t collapse) {
+    int n = 8 * sizeof(tipId_t); // number of bits
+
+    // Make map, an array whose i'th entry is an unsigned integer
+    // with one bit on and the rest off. The on bit indicates the
+    // position in the new id of the i'th bit in the old id.
+    tipId_t map[n];
+    make_map(n, map, collapse);
+
+    // Create a new BranchTab
+    BranchTab *new = BranchTab_new();
+    for(int i=0; i < BT_DIM; ++i) {
+        BTLink *el;
+        for(el = old->tab[i]; el; el = el->next)
+            BranchTab_add(new, remap_bits(n, map, el->key), el->value);
+    }
+    return new;
+}
+
+// Make map, an array whose i'th entry is an unsigned integer with one
+// bit on and the rest off. The on bit indicates the position in the
+// new id of the i'th bit in the old id.
+//
+// All bits equal to 1 in collapse are mapped to the minimum bit in
+// collapse. All bits with positions below that of this mininum bit
+// are mapped to their original position. Aits that are above the
+// minumum bit and are off in collapse are shifted right by "shift"
+// places, where shift is one less than the number of on bits in
+// collapse that are to the right of the bit in question.
+static void make_map(size_t n, tipId_t map[n], tipId_t collapse) {
+    int i, min = n, shift=0;
+    tipId_t bit = 1u;
+    for(i=0; i < n; ++i, bit <<= 1) {
+        if( collapse & bit ) {
+            if(min == n) {
+                min = bit;
+            }else
+                ++shift;
+            map[i] = min;
+        }else
+            map[i] = bit >> shift;
+    }
+}
+
+// Remap the bits in a tipId_t variable. Array "map" specifies how
+// the bits should be rearranged. Function returns the remapped
+// value of "old".
+static tipId_t remap_bits(size_t n, tipId_t map[n], tipId_t old) {
+    assert(n == 8*sizeof(tipId_t));
+    tipId_t new = 0u, bit=1u;
+    for(int i=0; i<n; ++i, bit <<= 1)
+        if( old & bit )
+            new |= map[i];
+    return new;
 }
 
 #if COST==CHISQR_COST
@@ -739,6 +789,7 @@ double BranchTab_negLnL(const BranchTab *obs, const BranchTab *expt) {
 
 #ifdef TEST
 
+#include "binary.h"
 #include <string.h>
 #include <assert.h>
 #include <unistd.h>
@@ -857,10 +908,48 @@ int main(int argc, char **argv) {
 
     if(verbose)
         BranchTab_print(bt, stdout);
+
+    // test make_map and remap_bits
+    size_t n = 8*sizeof(tipId_t);
+    tipId_t map[n];
+    tipId_t id1, id2, id3;
+    id1 = 04444;
+    id2 = 033333;
+    make_map(n, map, id1);
+    id3 = remap_bits(n, map, id2);
+    if(verbose) {
+        puts("id1: ");
+        printBits(sizeof(id1), &id1, stdout);
+        puts("id2: ");
+        printBits(sizeof(id2), &id2, stdout);
+        puts("id3: ");
+        printBits(sizeof(id3), &id3, stdout);
+    }
+    assert(04 == remap_bits(n, map, id1));
+    assert(04 == remap_bits(n, map, 040));
+    assert(04 == remap_bits(n, map, 0400));
+    assert(04 == remap_bits(n, map, 04000));
+    assert(0100 == remap_bits(n, map, 0200));
+    assert(0400 == remap_bits(n, map, 02000));
+    assert(02000 == remap_bits(n, map, 020000));
+    assert(03773 == remap_bits(n, map, id2));
+    unitTstResult("make_map", "OK");
+    unitTstResult("remap_bits", "OK");
+
+    BranchTab_free(bt2);
+    bt2 = BranchTab_collapse(bt, 03);
+    if(verbose) {
+        printf("size before collapse: %u; after: %u\n",
+               BranchTab_size(bt), BranchTab_size(bt2));
+        BranchTab_print(bt2, stdout);
+    }
+    assert(BranchTab_size(bt) > BranchTab_size(bt2));
+    assert(Dbl_near(BranchTab_sum(bt), BranchTab_sum(bt2)));
+    
     BranchTab_free(bt);
     BranchTab_free(bt2);
     GPTree_free(g);
-	unitTstResult("BranchTab", "untested");
+    unitTstResult("BranchTab", "untested");
     unlink(tstFname);
     unlink(tstPatProbFname);
 }

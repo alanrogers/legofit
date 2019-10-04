@@ -253,7 +253,12 @@ static void Stack_push(Stack * self, tipId_t x) {
 /// stack.
 static void
 generatePatterns(int bit, int npops, Stack * stk, tipId_t pat, int doSing) {
-    assert(npops < 8*sizeof(tipId_t));
+    if(npops >= 8*sizeof(tipId_t)) {
+        fprintf(stderr,"%s:%s:%d: %d is too many populations: max is %lu\n",
+                __FILE__,__func__,__LINE__,
+                npops, 8*sizeof(tipId_t) - 1);
+        exit(EXIT_FAILURE);
+    }
     const tipId_t unity = 1;
     if(bit == npops) {
         // Recursion stops here. If current pattern is
@@ -362,11 +367,11 @@ int main(int argc, char **argv) {
     LblNdx_init(&lndx);
     RAFReader  *r[n];
 
-    // Number of inputs can't exceed number of bits in an object of
+    // Number of inputs must be smaller than the number of bits in an object of
     // type tipId_t.
-    if(m > 8 * sizeof(tipId_t)) {
+    if(m > 8*sizeof(tipId_t) - 1) {
         fprintf(stderr, "Error: %d input files. Max is %lu.\n",
-                n, 8*sizeof(tipId_t) + 1);
+                n, 8*sizeof(tipId_t) - 1);
         usage();
     }
     // Parse remaining arguments, each of which should be of form

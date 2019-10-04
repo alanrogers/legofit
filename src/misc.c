@@ -724,3 +724,28 @@ int legalName(const char *name) {
         return 0;
     return strlen(name) == strspn(name, legal);
 }
+
+// Copy characters from src to dst until either a '\0' character is
+// encountered or m characters have been copied.  Make sure src is
+// terminated with '\0'. If dst is too small to hold null-terminated
+// string, return BUFFER_OVERFLOW. Otherwise, return 0.
+int strnncopy(size_t n, char dst[n], size_t m, const char src[m]) {
+    if(n==0)
+        return BUFFER_OVERFLOW;
+    int i;
+    for(i=0; i < m; ++i) {
+        if(i >= n) {
+            dst[n-1] = '\0';
+            return BUFFER_OVERFLOW;
+        }
+        dst[i] = src[i];
+        if(dst[i] == '\0')
+            return 0;
+    }
+    if(i >= n) {
+        dst[n-1] = '\0';
+        return BUFFER_OVERFLOW;
+    }
+    dst[i] = '\0';
+    return 0;
+}

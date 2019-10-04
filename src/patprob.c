@@ -44,7 +44,7 @@ int simfun(void *varg, void *tdata) {
     SimArg    *arg = (SimArg *) varg;
     gsl_rng   *rng = (gsl_rng *) tdata;
 
-	assert(GPTree_feasible(arg->gptree, 0));
+    assert(GPTree_feasible(arg->gptree, 0));
     GPTree_simulate(arg->gptree, arg->branchtab, rng, arg->nreps,
                     arg->doSing);
 
@@ -59,7 +59,7 @@ SimArg    *SimArg_new(const GPTree *gptree, unsigned nreps, int doSing) {
     a->nreps = nreps;
     a->doSing = doSing;
     a->gptree = GPTree_dup(gptree);
-	assert(GPTree_feasible(a->gptree, 0));
+    assert(GPTree_feasible(a->gptree, 0));
     a->branchtab = BranchTab_new();
 
     return a;

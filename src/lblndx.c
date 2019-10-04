@@ -13,6 +13,7 @@
 #include <assert.h>
 
 int         comparePtrs(const void *void_x, const void *void_y);
+tipId_t     LblNdx_getTipId_1(const LblNdx *self, const char *lbl);
 
 /// Set everything to zero.
 void LblNdx_init(LblNdx * self) {
@@ -76,12 +77,13 @@ int         LblNdx_equals(const LblNdx *lhs, const LblNdx *rhs) {
     return 1;
 }
 
-/// Reverse lookup. Return tipId_t value corresponding to
-/// label. For the i'th label, this value equals the i'th power of 2.
-/// If label is not present in LblNdx, return 0.
-tipId_t     LblNdx_getTipId(const LblNdx *self, const char *lbl) {
+// Return tipId_t value corresponding to a label. The label should
+// refer to a single population. In other words, it should not contain
+// the ":" character. For the i'th label, this value equals the i'th
+// power of 2.
+tipId_t     LblNdx_getTipId_1(const LblNdx *self, const char *lbl) {
     unsigned i;
-    tipId_t rval = 1;
+    const tipId_t unity = 1;
 
     for(i=0; i < self->n; ++i) {
         if(0 == strcmp(lbl, self->lbl[i]))
@@ -90,7 +92,48 @@ tipId_t     LblNdx_getTipId(const LblNdx *self, const char *lbl) {
     if(i == self->n)
         return 0;
 
-    rval <<= i;
+    return unity << i;
+}
+
+/// Reverse lookup. Return tipId_t value corresponding to
+/// label, which may be composite. The parts of a composite
+/// label are delimited by the ':' character. If label (or any of its
+/// parts) is not present in LblNdx, return 0. 
+tipId_t LblNdx_getTipId(const LblNdx *self, const char *lbl) {
+    char buff[200];
+    const char *start=lbl, *end;
+    int i, len;
+    tipId_t rval = 0, id;
+    while(1) {
+        end = strchr(start, ':');
+
+        // Not a composite label
+        if(end == NULL) {
+            id = LblNdx_getTipId_1(self, start);
+            if(id == 0)
+                return 0;
+            rval |= id;
+            break; // loop exit
+        }
+
+        // composite label: copy first component into
+        // buff, get id of that component, and "or" the
+        // component id into the return value.
+        len = end - start;
+        if(len > sizeof(buff)) {
+            fprintf(stderr, "%s:%s:%d: buffer overflow\n",
+                    __FILE__,__func__,__LINE__);
+            exit(EXIT_FAILURE);
+        }
+        for(i=0; i<len; ++i)
+            buff[i] = start[i];
+        buff[len] = '\0';
+        id = LblNdx_getTipId_1(self, buff);
+        if(id == 0)
+            return 0;
+        rval |= id;
+        start = end+1;
+    }
     return rval;
 }
 
@@ -227,6 +270,16 @@ int main(int argc, char **argv) {
     assert(0 == strcmp("A", LblNdx_lbl(&lndx, 0)));
     assert(0 == strcmp("B.0", LblNdx_lbl(&lndx, 1)));
     assert(0 == strcmp("B.1", LblNdx_lbl(&lndx, 2)));
+
+    assert(01u == LblNdx_getTipId(&lndx, "A"));
+    assert(02u == LblNdx_getTipId(&lndx, "B.0"));
+    assert(04u == LblNdx_getTipId(&lndx, "B.1"));
+    assert(03u == LblNdx_getTipId(&lndx, "A:B.0"));
+    assert(05u == LblNdx_getTipId(&lndx, "A:B.1"));
+    assert(06u == LblNdx_getTipId(&lndx, "B.0:B.1"));
+    assert(07u == LblNdx_getTipId(&lndx, "A:B.0:B.1"));
+    assert(07u == LblNdx_getTipId(&lndx, "B.0:A:B.1"));
+    assert(0u == LblNdx_getTipId(&lndx, "x:A:B.1"));
 
     for(i=0; i < LblNdx_size(&lndx); ++i) {
         assert((1u << i) == LblNdx_getTipId(&lndx, LblNdx_lbl(&lndx, i)));
