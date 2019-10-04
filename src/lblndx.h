@@ -18,7 +18,7 @@ void        LblNdx_sanityCheck(const LblNdx *self, const char *file, int line);
 int         LblNdx_equals(const LblNdx *lhs, const LblNdx *rhs);
 tipId_t     LblNdx_getTipId(const LblNdx *self, const char *lbl);
 void        LblNdx_print(const LblNdx *self, FILE *fp);
-
+int         LblNdx_collapse(LblNdx *self, tipId_t collapse, const char *lbl);
 char       *patLbl(size_t n, char buff[n], tipId_t tid, const LblNdx * lblndx);
 void        orderpat(int n, unsigned order[n], tipId_t tid[n]);
 int         compare_tipId(const void *void_x, const void *void_y);

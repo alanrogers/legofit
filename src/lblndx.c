@@ -269,16 +269,17 @@ static int make_map(size_t n, int map[n], tipId_t collapse) {
  */
 int LblNdx_collapse(LblNdx *self, tipId_t collapse, const char *lbl) {
     int status;
-    int collapse_size = num1bits(collapse);
 
-    if(collapse_size > self->n)
+    // Most significant set bit in collapse cannot be at position
+    // greater than self->n.
+    if(self->n < (8*sizeof(tipId_t)) - nlz(collapse))
         return EDOM;
 
     // Make map, an array whose i'th entry is an unsigned integer
     // with one bit on and the rest off. The on bit indicates the
     // position in the new id of the i'th bit in the old id.
-    tipId_t map[n];
-    int min = make_map(n, map, collapse);
+    int map[self->n];
+    int min = make_map(self->n, map, collapse);
 
     // Rewrite LblNdx object
     for(int i=0; i < self->n; ++i) {
@@ -293,7 +294,7 @@ int LblNdx_collapse(LblNdx *self, tipId_t collapse, const char *lbl) {
                 return BUFFER_OVERFLOW;
         }
     }
-    self->n -= collapse_size - 1;
+    self->n -= num1bits(collapse) - 1;
     return 0;
 }
 
@@ -357,6 +358,9 @@ int main(int argc, char **argv) {
     LblNdx_addSamples(&lndx2, 2, "B");
 
     assert(LblNdx_equals(&lndx, &lndx2));
+
+    // test LblNdx_collapse
+	unitTstResult("LblNdx_collapse", "untested");
 
 	unitTstResult("LblNdx", "OK");
 
