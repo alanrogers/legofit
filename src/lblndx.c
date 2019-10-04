@@ -6,6 +6,7 @@
  * <rogers@anthro.utah.edu>. This file is released under the Internet
  * Systems Consortium License, which can be found in file "LICENSE".
  */
+#include "error.h"
 #include "lblndx.h"
 #include "misc.h"
 #include <stdio.h>
@@ -102,7 +103,7 @@ tipId_t     LblNdx_getTipId_1(const LblNdx *self, const char *lbl) {
 tipId_t LblNdx_getTipId(const LblNdx *self, const char *lbl) {
     char buff[200];
     const char *start=lbl, *end;
-    int i, len;
+    int len;
     tipId_t rval = 0, id;
     while(1) {
         end = strchr(start, ':');
@@ -120,14 +121,17 @@ tipId_t LblNdx_getTipId(const LblNdx *self, const char *lbl) {
         // buff, get id of that component, and "or" the
         // component id into the return value.
         len = end - start;
-        if(len > sizeof(buff)) {
-            fprintf(stderr, "%s:%s:%d: buffer overflow\n",
-                    __FILE__,__func__,__LINE__);
+        int status = strnncopy(sizeof(buff), buff, len, start);
+        switch(status) {
+        case 0:
+            break;
+        case BUFFER_OVERFLOW:
+            fprintf(stderr,"%s:%d: buffer overflow\n", __FILE__,__LINE__);
+            exit(EXIT_FAILURE);
+        default:
+            fprintf(stderr,"%s:%d: unknown error\n", __FILE__,__LINE__);
             exit(EXIT_FAILURE);
         }
-        for(i=0; i<len; ++i)
-            buff[i] = start[i];
-        buff[len] = '\0';
         id = LblNdx_getTipId_1(self, buff);
         if(id == 0)
             return 0;
@@ -232,6 +236,65 @@ void orderpat(int n, unsigned ord[n], tipId_t pat[n]) {
     qsort(ptr, (size_t) n, sizeof(ptr[0]), comparePtrs);
     for(i=0; i<n; ++i)
         ord[i] = ptr[i]-pat;
+}
+
+// Make map, an array whose i'th entry is the index in the new LblNdx
+// of the i'th entry in the old LblNdx. Returns the index of the bit
+// into which all "on" bits of "collapse" are mapped.
+static int make_map(size_t n, int map[n], tipId_t collapse) {
+    int i, min = n, shift=0;
+    tipId_t bit = 1u;
+    for(i=0; i < n; ++i, bit <<= 1) {
+        if( collapse & bit ) {
+            if(min == n) {
+                min = i;
+            }else
+                ++shift;
+            map[i] = min;
+        }else
+            map[i] = i - shift;
+    }
+    return min;
+}
+
+/**
+ * Reduce dimension of LblNdx object by collapsing several entries into a single
+ * entry. The "on" bits of "collapse" indicate the entries to be collapsed.
+ * they are collapsed into the entry indicated by the bit in the lowest position.
+ * "lbl" is the label assigned to this entry. The dimension of the rewritten
+ * LblNdx object is reduced by one less than the number of "on" bits in "collapse".
+ * The function returns 0 on success, EDOM if the number of "on" bits
+ * in "collapse" exceeds self->n, and BUFFER_OVERFLOW if any of the
+ * write operations would overflow.
+ */
+int LblNdx_collapse(LblNdx *self, tipId_t collapse, const char *lbl) {
+    int status;
+    int collapse_size = num1bits(collapse);
+
+    if(collapse_size > self->n)
+        return EDOM;
+
+    // Make map, an array whose i'th entry is an unsigned integer
+    // with one bit on and the rest off. The on bit indicates the
+    // position in the new id of the i'th bit in the old id.
+    tipId_t map[n];
+    int min = make_map(n, map, collapse);
+
+    // Rewrite LblNdx object
+    for(int i=0; i < self->n; ++i) {
+        int j = map[i];
+        if(j == min) {
+            status = snprintf(self->lbl[j], POPNAMESIZE, "%s", lbl);
+            if(status >= sizeof(POPNAMESIZE))
+                return BUFFER_OVERFLOW;
+        }else{
+            status = snprintf(self->lbl[j], POPNAMESIZE, "%s", self->lbl[i]);
+            if(status >= sizeof(POPNAMESIZE))
+                return BUFFER_OVERFLOW;
+        }
+    }
+    self->n -= collapse_size - 1;
+    return 0;
 }
 
 #ifdef TEST

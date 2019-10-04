@@ -50,6 +50,21 @@ uint64_t rev64(uint64_t x) {
     return x;
 }
 
+/// Number of leading zeroes in 32-bit unsigned integer
+/// From p 99 of Hacker's Delight, 2nd edition
+int nlz(tipId_t x) {
+    assert(sizeof(tipId_t) == 4);
+    if(x == 0)
+        return 32;
+    int n = 1;
+    if((x >> 16) == 0) {n += 16; x <<= 16;}
+    if((x >> 24) == 0) {n += 8; x <<= 8;}
+    if((x >> 28) == 0) {n += 4; x <<= 4;}
+    if((x >> 30) == 0) {n += 2; x <<= 2;}
+    n -= (x >> 31);
+    return n;
+}
+
 /// Print the bits in an object of size "size", pointed to by
 /// "ptr". Assumes little endian   
 void printBits(size_t size, void const * const ptr, FILE *fp) {

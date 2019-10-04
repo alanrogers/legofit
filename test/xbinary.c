@@ -143,6 +143,31 @@ int main(int argc, char **argv) {
         printf("64-bit key %llu -> hash %u\n", (long long unsigned) key64,
                uint64Hash(key64));
 
+    // Test nlz
+    tipId_t tid;
+    if(verbose) {
+        for(tid = 0; tid <= 16; ++tid)
+            printf("nlz(%#08x) = %d\n", tid, nlz(tid));
+    }
+
+    assert( 32 == nlz(0) );
+    assert( 31 == nlz(1) );
+    assert( 30 == nlz(2) );
+    assert( 30 == nlz(3) );
+    assert( 29 == nlz(4) );
+    assert( 29 == nlz(5) );
+    assert( 29 == nlz(6) );
+    assert( 28 == nlz(8) );
+    assert( 28 == nlz(9) );
+    assert( 27 == nlz(16) );
+    assert( 27 == nlz(18) );
+    assert( 26 == nlz(32) );
+    assert( 25 == nlz(64) );
+    assert( 24 == nlz(128) );
+    assert( 23 == nlz(256) );
+    assert(  0 == nlz(0xffffffff) );
+    unitTstResult("nlz", "OK");
+
     unitTstResult("binary", "OK");
     return 0;
 }

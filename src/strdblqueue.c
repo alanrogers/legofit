@@ -298,26 +298,25 @@ void make_covar_matrix(int nfiles, int npar, double array[nfiles][npar],
                       gsl_matrix *cov){
    assert(npar == cov->size1);
    assert(npar == cov->size2);
-   double param_averages[npar];
-   double covar_sum;
+   double mean[npar];
    int i, j, k;
 
    for(i = 0; i < npar; i++){
-       param_averages[i] = 0;
+       mean[i] = 0;
        for (j = 0; j < nfiles; j++){
-           param_averages[i] += array[j][i];
+           mean[i] += array[j][i];
        }
-       param_averages[i] /= nfiles;
+       mean[i] /= nfiles;
    }
 
    for(i = 0; i < npar; i++){
        for (j = 0; j < npar; j++){
-           covar_sum = 0;
+           double covsum = 0;
            for (k = 0; k < nfiles; k++){
-               covar_sum += (array[k][j] - param_averages[j])
-                   * (array[k][i] - param_averages[i]);
+               covsum += (array[k][j] - mean[j])
+                   * (array[k][i] - mean[i]);
            }
-           gsl_matrix_set(cov, i, j, covar_sum/nfiles);
+           gsl_matrix_set(cov, i, j, covsum/nfiles);
        }
    }
 }

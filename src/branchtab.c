@@ -424,8 +424,8 @@ BranchTab *BranchTab_collapse(BranchTab *old, tipId_t collapse) {
 // places, where shift is one less than the number of on bits in
 // collapse that are to the right of the bit in question.
 static void make_map(size_t n, tipId_t map[n], tipId_t collapse) {
-    int i, min = n, shift=0;
-    tipId_t bit = 1u;
+    int i, shift=0;
+    tipId_t min = n, bit = 1u;
     for(i=0; i < n; ++i, bit <<= 1) {
         if( collapse & bit ) {
             if(min == n) {
