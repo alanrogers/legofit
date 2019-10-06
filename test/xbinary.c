@@ -166,6 +166,25 @@ int main(int argc, char **argv) {
     assert( 24 == nlz(128) );
     assert( 23 == nlz(256) );
     assert(  0 == nlz(0xffffffff) );
+
+    assert( 64 == nlz64(0) );
+    assert( 63 == nlz64(1) );
+    assert( 62 == nlz64(2) );
+    assert( 62 == nlz64(3) );
+    assert( 61 == nlz64(4) );
+    assert( 61 == nlz64(5) );
+    assert( 61 == nlz64(6) );
+    assert( 60 == nlz64(8) );
+    assert( 60 == nlz64(9) );
+    assert( 59 == nlz64(16) );
+    assert( 59 == nlz64(18) );
+    assert( 58 == nlz64(32) );
+    assert( 57 == nlz64(64) );
+    assert( 56 == nlz64(128) );
+    assert( 55 == nlz64(256) );
+    assert( 32 == nlz64(0xffffffffLU) );
+    assert( 0 == nlz64(0xffffffffffffffffLU) );
+    
     unitTstResult("nlz", "OK");
 
     unitTstResult("binary", "OK");

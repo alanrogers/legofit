@@ -15,6 +15,7 @@ uint64_t    rev64(uint64_t x);
 uint32_t    uint32Hash( uint32_t key);
 uint32_t    uint64Hash(uint64_t key);
 int         nlz(tipId_t x);
+int         nlz64(uint64_t x);
 static inline int isPow2(tipId_t x);
 
 static inline int isPow2(tipId_t x) {

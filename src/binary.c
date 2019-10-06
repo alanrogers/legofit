@@ -13,13 +13,7 @@ Systems Consortium License, which can be found in file "LICENSE".
 #include <stdint.h>
 #include <assert.h>
 
-/// Return x after reversing the order of the bits.
-tipId_t reverseBits(tipId_t x) {
-    if(sizeof(x)==4)
-        return rev32(x);
-    assert(sizeof(x) == 8);
-    return rev64(x);
-}
+static int nlz32(uint32_t x);
 
 /// Reverse bits in a 32-bit integer.  p 129 of Hacker's Delight, 2nd
 /// edn.
@@ -50,10 +44,20 @@ uint64_t rev64(uint64_t x) {
     return x;
 }
 
+/// Return x after reversing the order of the bits.
+tipId_t reverseBits(tipId_t x) {
+#if TIPID_SIZE==32
+    return rev32(x);
+#elif TIPID_SIZE==64    
+    return rev64(x);
+#else
+#   error "unsupported tipId_t size"
+#endif    
+}
+
 /// Number of leading zeroes in 32-bit unsigned integer
 /// From p 99 of Hacker's Delight, 2nd edition
-int nlz(tipId_t x) {
-    assert(sizeof(tipId_t) == 4);
+static int nlz32(uint32_t x) {
     if(x == 0)
         return 32;
     int n = 1;
@@ -63,6 +67,32 @@ int nlz(tipId_t x) {
     if((x >> 30) == 0) {n += 2; x <<= 2;}
     n -= (x >> 31);
     return n;
+}
+
+/// 64-bit version of algorithm on p 99 of Hacker's
+/// Delight, 2nd edition.
+int nlz64(uint64_t x) {
+    if(x == 0)
+        return 64;
+    int n = 1;
+    if((x>>32) == 0) {n += 32; x <<= 32;};
+    if((x>>48) == 0) {n += 16; x <<= 16;};
+    if((x>>56) == 0) {n += 8; x <<= 8;};
+    if((x>>60) == 0) {n += 4; x <<= 4;};
+    if((x>>62) == 0) {n += 2; x <<= 2;};
+    n -= (x >> 63);
+    return n;
+}
+
+/// Number of leading zeroes in tipId_t variable.
+int nlz(tipId_t x) {
+#if TIPID_SIZE==32    
+    return nlz32(x);
+#elif TIPID_SIZE==64    
+    return nlz64(x);
+#else
+#   error "unsupported tipId_t size"
+#endif    
 }
 
 /// Print the bits in an object of size "size", pointed to by
