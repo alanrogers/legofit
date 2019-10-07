@@ -258,26 +258,26 @@ static int make_map(size_t n, int map[n], tipId_t collapse) {
 }
 
 /**
- * Reduce dimension of LblNdx object by collapsing several entries into a single
- * entry. The "on" bits of "collapse" indicate the entries to be collapsed.
- * they are collapsed into the entry indicated by the bit in the lowest position.
- * "lbl" is the label assigned to this entry. The dimension of the rewritten
- * LblNdx object is reduced by one less than the number of "on" bits in "collapse".
- * The function returns 0 on success, EDOM if the number of "on" bits
- * in "collapse" exceeds self->n, and BUFFER_OVERFLOW if any of the
- * write operations would overflow.
+ * Reduce dimension of LblNdx object by collapsing several entries
+ * into a single entry. The "on" bits of "collapse" indicate the
+ * entries to be collapsed.  they are collapsed into the entry
+ * indicated by the bit in the lowest position.  "lbl" is the label
+ * assigned to this entry. The dimension of the rewritten LblNdx
+ * object is reduced by one less than the number of "on" bits in
+ * "collapse".  The function returns 0 on success, EDOM if the number
+ * of "on" bits in "collapse" exceeds self->n, and BUFFER_OVERFLOW if
+ * any of the write operations would overflow.
  */
 int LblNdx_collapse(LblNdx *self, tipId_t collapse, const char *lbl) {
     int status;
 
     // Most significant set bit in collapse cannot be at position
     // greater than self->n.
-    if(self->n < (8*sizeof(tipId_t)) - nlz(collapse))
+    if(self->n < TIPID_SIZE - nlz(collapse))
         return EDOM;
 
-    // Make map, an array whose i'th entry is an unsigned integer
-    // with one bit on and the rest off. The on bit indicates the
-    // position in the new id of the i'th bit in the old id.
+    // Make map, an array whose i'th entry is the index in the new id
+    // of the i'th bit in the old id.
     int map[self->n];
     int min = make_map(self->n, map, collapse);
 
@@ -360,9 +360,42 @@ int main(int argc, char **argv) {
     assert(LblNdx_equals(&lndx, &lndx2));
 
     // test LblNdx_collapse
-	unitTstResult("LblNdx_collapse", "untested");
+    assert(3u == LblNdx_size(&lndx));
+    tipId_t collapse = 06u; // collapse bits 2 and 3
+    int status = LblNdx_collapse(&lndx, collapse, "D");
+    switch(status) {
+    case 0:
+        break;
+    case EDOM:
+        fprintf(stderr,"%s:%d: bad input to LblNdx_collapse\n",
+                __FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    case BUFFER_OVERFLOW:
+        fprintf(stderr,"%s:%d: buffer overflow in LblNdx_collapse\n",
+                __FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    default:
+        fprintf(stderr,"%s:%d: unknown error in LblNdx_collapse\n",
+                __FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
+    if(verbose)
+        LblNdx_print(&lndx, stdout);
+    assert(2 == LblNdx_size(&lndx));
+    assert(0 == strcmp("A", LblNdx_lbl(&lndx, 0)));
+    assert(0 == strcmp("D", LblNdx_lbl(&lndx, 1)));
+    assert(1 == LblNdx_getTipId(&lndx, "A"));
+    assert(2 == LblNdx_getTipId(&lndx, "D"));
+    assert(3 == LblNdx_getTipId(&lndx, "A:D"));
+           
+    assert(3u == LblNdx_size(&lndx2));
+    collapse = 011u; // illegal: bit too large
+    status = LblNdx_collapse(&lndx, collapse, "D");
+    assert(status == EDOM);
 
-	unitTstResult("LblNdx", "OK");
+    unitTstResult("LblNdx_collapse", "OK");
+
+    unitTstResult("LblNdx", "OK");
 
     return 0;
 }
