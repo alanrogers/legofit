@@ -55,8 +55,8 @@ tipId_t reverseBits(tipId_t x) {
 #endif    
 }
 
-/// Number of leading zeroes in 32-bit unsigned integer
-/// From p 99 of Hacker's Delight, 2nd edition
+/// Number of leading zeroes in 32-bit unsigned integer.  From p 99 of
+/// Hacker's Delight, 2nd edition
 static int nlz32(uint32_t x) {
     if(x == 0)
         return 32;
@@ -69,8 +69,8 @@ static int nlz32(uint32_t x) {
     return n;
 }
 
-/// 64-bit version of algorithm on p 99 of Hacker's
-/// Delight, 2nd edition.
+/// Number of leading zeroes in 64-bit unsigned integer.  64-bit
+/// version of algorithm on p 99 of Hacker's Delight, 2nd edition.
 int nlz64(uint64_t x) {
     if(x == 0)
         return 64;
