@@ -315,6 +315,24 @@ void BranchTab_plusEquals(BranchTab *lhs, BranchTab *rhs) {
     }
 }
 
+/// Subtract each entry in table rhs to table lhs
+void BranchTab_minusEquals(BranchTab *lhs, BranchTab *rhs) {
+    assert(!lhs->frozen && !rhs->frozen);
+    int i;
+    for(i=0; i<BT_DIM; ++i) {
+        BTLink *link;
+        for(link=rhs->tab[i]; link!=NULL; link=link->next) {
+            double x = BranchTab_get(lhs, link->key);
+            if(isnan(x)) {
+                fprintf(stderr,"%s:%s:%d: incompatible arguments\n",
+                        __FILE__,__func__,__LINE__);
+                exit(EXIT_FAILURE);
+            }
+            BranchTab_add(lhs, link->key, -link->value);
+        }
+    }
+}
+
 /// Fill arrays key, value, and square with values in BranchTab.
 /// On return, key[i] is the id of the i'th site pattern, value[i] is
 /// the total branch length associated with that site pattern, and
@@ -890,24 +908,31 @@ int main(int argc, char **argv) {
 
     if(verbose)
         BranchTab_print(bt, stdout);
-    BranchTab_free(bt);
 
-	Bounds   bnd = {
-		.lo_twoN = 0.0,
-		.hi_twoN = 1e7,
-		.lo_t = 0.0,
-		.hi_t = HUGE_VAL
-	};
-    GPTree *g = GPTree_new(tstFname, bnd);
-    LblNdx lblndx = GPTree_getLblNdx(g);
-
-    bt = BranchTab_parse(tstPatProbFname, &lblndx);
 
     BranchTab *bt2 = BranchTab_dup(bt);
     assert(BranchTab_equals(bt, bt2));
 
     if(verbose)
         BranchTab_print(bt, stdout);
+
+    // Test  _plusEquals, _minusEquals, and _dup
+    BranchTab_minusEquals(bt, bt2);
+    for(i=0; i<25; ++i)
+        assert(0.0 == BranchTab_get(bt, key[i]));
+
+    BranchTab_free(bt);
+
+    Bounds   bnd = {
+                    .lo_twoN = 0.0,
+                    .hi_twoN = 1e7,
+                    .lo_t = 0.0,
+                    .hi_t = HUGE_VAL
+    };
+    GPTree *g = GPTree_new(tstFname, bnd);
+    LblNdx lblndx = GPTree_getLblNdx(g);
+
+    bt = BranchTab_parse(tstPatProbFname, &lblndx);
 
     // test make_map and remap_bits
     size_t n = 8*sizeof(tipId_t);

@@ -12,6 +12,7 @@ void          BranchTab_add(BranchTab * self, tipId_t key, double value);
 unsigned      BranchTab_size(BranchTab * self);
 void          BranchTab_print(const BranchTab *self, FILE *fp);
 void          BranchTab_plusEquals(BranchTab *lhs, BranchTab *rhs);
+void          BranchTab_minusEquals(BranchTab *lhs, BranchTab *rhs);
 void          BranchTab_toArrays(BranchTab *self, unsigned n, tipId_t key[n],
                                  double value[n], double sqr[n]);
 int           BranchTab_divideBy(BranchTab *self, double denom);

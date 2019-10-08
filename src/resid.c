@@ -24,6 +24,7 @@ Systems Consortium License, which can be found in file "LICENSE".
 
 #include "strdblqueue.h"
 #include "misc.h"
+#include "branchtab.h"
 #include <strings.h>
 #include <time.h>
 
@@ -33,13 +34,14 @@ void usage(void);
 //vars
 const char *usageMsg =
     "usage: resid [options] <realdat> <bdat1> <bdat2> ... -L <real.legofit>\n"
-    " <b1.legofit> <b2.legofit> ...\n" "\n"
+    " <b1.legofit> <b2.legofit> ... [-M c=a+b ...]\n" "\n"
     " where realdat is the real data, each \"bdat\" file is the data\n"
     " for one bootstrap or simulation replicate, and each \"b#.legofit\"\n"
     " file is the legofit output from the corresponding bootstrap replicate\n"
     " Must include at least one data file and one .legofit file.\n" "\n"
     "Options:\n"
-    "   -h or --help   : print this message\n";
+    "   -h or --help   : print this message\n"
+    "   -M c=a+b       : map populations a and b into a single symbol, c\n";
 
 void usage(void) {
     fputs(usageMsg, stderr);
@@ -49,7 +51,7 @@ void usage(void) {
 int main(int argc, char **argv) {
 
     time_t currtime = time(NULL);
-    tipId_t collapse = 014; // collapse A and V
+    //    tipId_t collapse = 014; // collapse A and V
 
     hdr("resid: calculate residuals");
 #if defined(__DATE__) && defined(__TIME__)
@@ -129,49 +131,97 @@ int main(int argc, char **argv) {
                          lego_queue[0], lego_queue[i]);
         checkConsistency(datafname[0], legofname[i],
                          data_queue[0], data_queue[i]);
-        
     }
 
+    // number of site patterns and an array of patterns
+    int npat = StrDblQueue_length(lego_queue[0]);
+    j=0;
+    char *pat[npat];
+
+    // Create LblNdx object with an entry for each population
+    tipId_t tid;
     LblNdx lndx;
     LblNdx_init(&lndx);
-    StrDblQue *sdq;
+    StrDblQueue *sdq;
     for(sdq=data_queue[0]; sdq; sdq = sdq->next) {
         char *s = sdq->strdbl.str;
+        if(j >= npat) {
+            fprintf(stderr,"%s:%d: buffer overflow\n",__FILE__,__LINE__);
+            exit(EXIT_FAILURE);
+        }
+        pat[j++] = strdup(s);
         while(1) {
             char *colon = strchr(s, ':');
             char buff[100];
-            int i, len;
+            int len;
             if(colon == NULL) {
-                LblNdx_addSamples(&lndx, 1u, s);
+                tid = LblNdx_getTipId(&lndx, s);
+                if(tid == 0)
+                    LblNdx_addSamples(&lndx, 1u, s);
                 break;
             }
             len = colon - s;
-            status = strnncopy(sizeof(buff), buff, len, s);
+            int status = strnncopy(sizeof(buff), buff, len, s);
             if(status) {
                 fprintf(stderr,"%s:%d: buffer overflow\n",
                         __FILE__,__LINE__);
                 exit(EXIT_FAILURE);
             }
-            LblNdx_addSamples(&lndx, 1u, buff);
+            tid = LblNdx_getTipId(&lndx, s);
+            if(tid == 0)
+                LblNdx_addSamples(&lndx, 1u, buff);
             s = colon+1;
         }
     }
 
-    // i is the file against which all others are being compared.
-    // j indexes the other files.
-    printf("#%14s %15s %15s\n", "bepe", "DataFile", "LegofitFile");
+    // resid[i*nfiles + j] is residual for pattern i in file j
+    double mat[npat*nfiles];
+
     for(i=0; i<nfiles; ++i) {
-        double msd = 0.0, bias=0.0, bepe;
-        for(j=0; j < nfiles; ++j) {
-            if(j==i)
-                continue;
-            msd += StrDblQueue_msd(data_queue[i], lego_queue[j]);
-            bias += StrDblQueue_msd(data_queue[j], lego_queue[j]);
+        StrDbl strdbl;
+
+        // Convert queues to BranchTab objects
+        BranchTab *resid = BranchTab_new();
+        while(data_queue[i] != NULL) {
+            data_queue[i] = StrDblQueue_pop(data_queue[i], &strdbl);
+            tid = LblNdx_getTipId(&lndx, strdbl.str);
+            BranchTab_add(resid, tid, strdbl.val);
         }
-        bepe = (msd+bias)/(nfiles-1);
-        printf("%15.10lg %15s %15s\n", bepe,
-               mybasename(datafname[i]),
-               mybasename(legofname[i]));
+        BranchTab *fitted = BranchTab_new();
+        while(lego_queue[i] != NULL) {
+            lego_queue[i] = StrDblQueue_pop(lego_queue[i], &strdbl);
+            tid = LblNdx_getTipId(&lndx, strdbl.str);
+            BranchTab_add(fitted, tid, strdbl.val);
+        }
+
+        // Normalize the BranchTabs
+        if(BranchTab_normalize(resid))
+            DIE("can't normalize empty BranchTab");
+        if(BranchTab_normalize(fitted))
+            DIE("can't normalize empty BranchTab");
+
+        // calculate residuals for current pair of files
+        BranchTab_minusEquals(resid, fitted);
+
+        // store residual in matrix
+        for(j=0; j < npat; ++j) {
+            tid = LblNdx_getTipId(&lndx, pat[j]);
+            mat[j*nfiles + i] = BranchTab_get(resid, tid);
+        }
+        BranchTab_free(resid);
+        BranchTab_free(fitted);
+    }
+
+    // output
+    printf("%-10s", "SitePat");
+    for(j=0; j < nfiles; ++j) 
+        printf(" %12.12s", legofname[j]);
+    putchar('\n');
+    for(i=0; i<npat; ++i) {
+        printf("%-10s", pat[i]);
+        for(j=0; j < nfiles; ++j) 
+            printf(" %12.9lf", mat[i*nfiles + j]);
+        putchar('\n');
     }
     putchar('\n');
 
