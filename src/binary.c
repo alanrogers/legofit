@@ -192,9 +192,9 @@ uint32_t uint32Hash( uint32_t key) {
 
 /// Hash function for a 64-bit integer.
 uint32_t uint64Hash(uint64_t key) {
-  key = (~key) + (key << 18); // key = (key << 18) - key - 1;
+  key = (~key) + (key << 18);
   key = key ^ (key >> 31);
-  key = key * 21; // key = (key + (key << 2)) + (key << 4);
+  key = key * 21;
   key = key ^ (key >> 11);
   key = key + (key << 6);
   key = key ^ (key >> 22);

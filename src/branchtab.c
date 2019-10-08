@@ -253,6 +253,11 @@ double BranchTab_get(BranchTab * self, tipId_t key) {
 /// old one.
 void BranchTab_add(BranchTab * self, tipId_t key, double value) {
     assert(!self->frozen);
+    if(key==0) {
+        fprintf(stderr,"%s:%d: tipId_t mustn't equal 0\n",
+                __FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
     unsigned h = tipIdHash(key) & (BT_DIM-1u);
     assert(h < BT_DIM);
     assert(self);

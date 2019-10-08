@@ -185,12 +185,22 @@ int main(int argc, char **argv) {
         while(data_queue[i] != NULL) {
             data_queue[i] = StrDblQueue_pop(data_queue[i], &strdbl);
             tid = LblNdx_getTipId(&lndx, strdbl.str);
+            if(tid == 0) {
+                fprintf(stderr,"%s:%d:unknown label (%s)\n",
+                        __FILE__,__LINE__,strdbl.str);
+                exit(EXIT_FAILURE);
+            }
             BranchTab_add(resid, tid, strdbl.val);
         }
         BranchTab *fitted = BranchTab_new();
         while(lego_queue[i] != NULL) {
             lego_queue[i] = StrDblQueue_pop(lego_queue[i], &strdbl);
             tid = LblNdx_getTipId(&lndx, strdbl.str);
+            if(tid == 0) {
+                fprintf(stderr,"%s:%d:unknown label (%s)\n",
+                        __FILE__,__LINE__,strdbl.str);
+                exit(EXIT_FAILURE);
+            }
             BranchTab_add(fitted, tid, strdbl.val);
         }
 
