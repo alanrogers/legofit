@@ -749,3 +749,18 @@ int strnncopy(size_t n, char dst[n], size_t m, const char src[m]) {
     dst[i] = '\0';
     return 0;
 }
+
+// Count the number of character c in string s. Every string
+// is assumed to have exactly one copy of the '\0' character.
+int strchrcnt(const char *s, int c) {
+    if(c == '\0')
+        return 1;
+    char *p = strchr(s, c);
+    int n=0;
+    while(p != NULL) {
+        ++n;
+        s = p+1;
+        p = strchr(s, c);
+    }
+    return n;
+}

@@ -28,8 +28,56 @@ Systems Consortium License, which can be found in file "LICENSE".
 #include <strings.h>
 #include <time.h>
 
+struct Mapping {
+    char *lhs, *rhs;
+};
+
+typedef struct Mapping Mapping;
+
 // Function prototypes
 void usage(void);
+int Mapping_size(Mapping *self);
+Mapping *Mapping_new(const char *lhs, const char *rhs);
+void Mapping_free(Mapping *self);
+void Mapping_push(Mapping *self, const char *str);
+const char *Mapping_lhs(Mapping *self);
+const char *Mapping_rhs(Mapping *self);
+void Mapping_print(Mapping *self, FILE *fp);
+
+Mapping *Mapping_new(const char *lhs, const char *rhs) {
+    Mapping *self = malloc(sizeof(Mapping));
+    CHECKMEM(self);
+    self->lhs = strdup(lhs);
+    CHECKMEM(self->lhs);
+    self->rhs = strdup(rhs);
+    CHECKMEM(self->rhs);
+    return self;
+}
+
+void Mapping_free(Mapping *self) {
+    free(self->rhs);
+    free(self->lhs);
+    free(self);
+}
+
+int Mapping_size(Mapping *self) {
+    return 1 + strchrcnt(self->rhs, ':');
+}
+
+// Get label of left-hand side
+const char *Mapping_lhs(Mapping *self) {
+    return self->lhs;
+}
+
+// Get label describing populations to be collapsed
+const char *Mapping_rhs(Mapping *self) {
+    return self->rhs;
+}
+
+
+void Mapping_print(Mapping *self, FILE *fp) {
+    fprintf(fp, "# %s = %s\n", self->lhs, self->rhs);
+}
 
 //vars
 const char *usageMsg =
@@ -51,22 +99,28 @@ void usage(void) {
 int main(int argc, char **argv) {
 
     time_t currtime = time(NULL);
-    //    tipId_t collapse = 014; // collapse A and V
 
     hdr("resid: calculate residuals");
 #if defined(__DATE__) && defined(__TIME__)
     printf("# Program was compiled: %s %s\n", __DATE__, __TIME__);
 #endif
     printf("# Program was run: %s", ctime(&currtime));
+    fflush(stdout);
+    
+    enum input_state { DATA, LEGO, REMAP };
 
+    enum input_state state = DATA;
+    int status = 0;
     int i, j;
-    int nfiles=0, nLegoFiles=0;
-    int gotDashL = 0;
+    int nfiles=0, nLegoFiles=0, nmapping=0;
 
     for(i = 1; i < argc; i++) {
         if(argv[i][0] == '-') {
             if(strcmp(argv[i], "-L") == 0) {
-                gotDashL = 1;
+                state = LEGO;
+                continue;
+            }else if(strcmp(argv[i], "M") == 0) {
+                state = REMAP;
                 continue;
             }else if(strcmp(argv[i], "-h") == 0 ||
                      strcmp(argv[i], "--help") == 0) {
@@ -76,10 +130,20 @@ int main(int argc, char **argv) {
                 usage();
             }
         }
-        if(gotDashL)
-            ++nLegoFiles;
-        else
+        switch(state) {
+        case DATA:
             ++nfiles;
+            break;
+        case LEGO:
+            ++nLegoFiles;
+            break;
+        case REMAP:
+            ++nmapping;
+            break;
+        default:
+            fprintf(stderr,"%s:%d: unknown state\n",__FILE__,__LINE__);
+            exit(EXIT_FAILURE);
+        }
     }
     if(nfiles != nLegoFiles) {
         fprintf(stderr, "%s:%d\n"
@@ -94,27 +158,63 @@ int main(int argc, char **argv) {
         usage();
     }
 
+    fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
+
     const char *datafname[nfiles], *legofname[nfiles];
-    gotDashL=0;
-    j=0;
+    Mapping *mapping[nmapping];
+    memset(mapping, 0, nmapping * sizeof(*mapping));
+    state = DATA;
+    int idata, ilego, imapping;
+    idata=ilego=imapping=0;
     for(i = 1; i < argc; i++) {
         if(argv[i][0] == '-') {
             if(strcmp(argv[i], "-L") == 0) {
-                gotDashL = 1;
-                assert(j==nfiles);
-                j = 0;
+                state = LEGO;
+                continue;
+            }else if(strcmp(argv[i], "M") == 0) {
+                state = REMAP;
+                continue;
+            }else if(strcmp(argv[i], "-h") == 0 ||
+                     strcmp(argv[i], "--help") == 0) {
+                usage();
+            }else{
+                fprintf(stderr,"unknown flag argument: %s\n", argv[i]);
+                usage();
             }
-            continue;
         }
-        if(gotDashL)
-            legofname[j++] = argv[i];
-        else
-            datafname[j++] = argv[i];
+        switch(state){
+        case DATA:
+            datafname[idata++] = argv[i];
+            break;
+        case LEGO:
+            legofname[ilego++] = argv[i];
+            break;
+        case REMAP:
+            {
+                // parse string of form a=b:c:d
+                char *next = argv[i];
+                char *token = strsep(&next, "=");
+                mapping[imapping] = Mapping_new(token, next);
+                CHECKMEM(mapping[imapping]);
+            }
+            ++imapping;
+            break;
+        default:
+            fprintf(stderr,"%s:%d: unknown state\n",__FILE__,__LINE__);
+            exit(EXIT_FAILURE);
+        }
     }
-    assert(j==nfiles);
+    assert(idata==nfiles);
+    assert(ilego==nfiles);
+    assert(imapping==nmapping);
 
     putchar('\n');
+    fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
 
+    for(imapping=0; imapping < nmapping; ++imapping)
+        Mapping_print(mapping[imapping], stdout);
+
+    fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
     // Read data and legofit files into an arrays of queues
     StrDblQueue *data_queue[nfiles], *lego_queue[nfiles];
     for(i = 0; i < nfiles; ++i) {
@@ -133,23 +233,17 @@ int main(int argc, char **argv) {
                          data_queue[0], data_queue[i]);
     }
 
-    // number of site patterns and an array of patterns
-    int npat = StrDblQueue_length(lego_queue[0]);
-    j=0;
-    char *pat[npat];
-
+    fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
     // Create LblNdx object with an entry for each population
     tipId_t tid;
     LblNdx lndx;
     LblNdx_init(&lndx);
+    LblNdx lndx2 = lndx;
+    tipId_t collapse[nmapping];
+    collapse[0] = 0;
     StrDblQueue *sdq;
     for(sdq=data_queue[0]; sdq; sdq = sdq->next) {
         char *s = sdq->strdbl.str;
-        if(j >= npat) {
-            fprintf(stderr,"%s:%d: buffer overflow\n",__FILE__,__LINE__);
-            exit(EXIT_FAILURE);
-        }
-        pat[j++] = strdup(s);
         while(1) {
             char *colon = strchr(s, ':');
             char buff[100];
@@ -161,7 +255,7 @@ int main(int argc, char **argv) {
                 break;
             }
             len = colon - s;
-            int status = strnncopy(sizeof(buff), buff, len, s);
+            status = strnncopy(sizeof(buff), buff, len, s);
             if(status) {
                 fprintf(stderr,"%s:%d: buffer overflow\n",
                         __FILE__,__LINE__);
@@ -174,12 +268,32 @@ int main(int argc, char **argv) {
         }
     }
 
-    // resid[i*nfiles + j] is residual for pattern i in file j
-    double mat[npat*nfiles];
+    fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
+    // number of site patterns
+    int npat = 0;
 
+    // Arrays to be allocated once we have the collapsed dimension.
+    // resid[i*nfiles + j] is residual for pattern i in file j
+    double *mat = NULL;
+    tipId_t *pat = NULL;
+
+    // Apply remappings in sequence to produce a vector of collapse
+    // integers and a single LblNdx object, which describes the result
+    // of all remappings.
+    for(imapping=0; imapping < nmapping; ++imapping) {
+        const char *rhs = Mapping_rhs(mapping[imapping]);
+        collapse[imapping] = LblNdx_getTipId(&lndx2, rhs);
+        LblNdx_collapse(&lndx2, collapse[imapping],
+                        Mapping_lhs(mapping[imapping]));
+    }
+
+    fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
+    // Each pass through the loop calculates residuals for a pair
+    // of files: a data file and a legofit file.
     for(i=0; i<nfiles; ++i) {
         StrDbl strdbl;
 
+        fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
         // Convert queues to BranchTab objects
         BranchTab *resid = BranchTab_new();
         while(data_queue[i] != NULL) {
@@ -192,18 +306,59 @@ int main(int argc, char **argv) {
             }
             BranchTab_add(resid, tid, strdbl.val);
         }
+        fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
         BranchTab *fitted = BranchTab_new();
         while(lego_queue[i] != NULL) {
+            fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
             lego_queue[i] = StrDblQueue_pop(lego_queue[i], &strdbl);
+            fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
             tid = LblNdx_getTipId(&lndx, strdbl.str);
+            fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
             if(tid == 0) {
                 fprintf(stderr,"%s:%d:unknown label (%s)\n",
                         __FILE__,__LINE__,strdbl.str);
                 exit(EXIT_FAILURE);
             }
+            fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
             BranchTab_add(fitted, tid, strdbl.val);
+            fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
         }
 
+        fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
+        // Collapse BranchTab objects by applying all remappings one
+        // after the other.
+        for(imapping=0; imapping < nmapping; ++imapping) {
+            BranchTab *tmp;
+            tmp = BranchTab_collapse(resid, collapse[imapping]);
+            BranchTab_free(resid);
+            resid = tmp;
+
+            tmp = BranchTab_collapse(fitted, collapse[imapping]);
+            BranchTab_free(fitted);
+            fitted = tmp;
+        }
+
+        fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
+        // Set npat, pat. Allocate mat.
+        if(npat==0) {
+            double *frq = NULL, *sqr = NULL;
+            npat = BranchTab_size(resid);
+            mat = malloc(npat * nfiles * sizeof(*mat));
+            pat = malloc(npat * sizeof(*pat));
+            frq = malloc(npat * sizeof(*frq));
+            sqr = malloc(npat * sizeof(*sqr));
+            CHECKMEM(mat);
+            CHECKMEM(pat);
+            CHECKMEM(frq);
+            CHECKMEM(sqr);
+            memset(mat, 255u, npat*nfiles*sizeof(*mat));
+            BranchTab_toArrays(resid, npat, pat, frq, sqr);
+            qsort(pat, (size_t) npat, sizeof(pat[0]), compare_tipId);
+            free(frq);
+            free(sqr);
+        }
+
+        fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
         // Normalize the BranchTabs
         if(BranchTab_normalize(resid))
             DIE("can't normalize empty BranchTab");
@@ -213,27 +368,38 @@ int main(int argc, char **argv) {
         // calculate residuals for current pair of files
         BranchTab_minusEquals(resid, fitted);
 
+        fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
         // store residual in matrix
-        for(j=0; j < npat; ++j) {
-            tid = LblNdx_getTipId(&lndx, pat[j]);
-            mat[j*nfiles + i] = BranchTab_get(resid, tid);
-        }
+        for(j=0; j < npat; ++j)
+            mat[j*nfiles + i] = BranchTab_get(resid, pat[j]);
+
         BranchTab_free(resid);
         BranchTab_free(fitted);
+        fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
     }
+    fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
 
-    // output
+    // output: remove suffix from file names and truncate
     printf("%-10s", "SitePat");
-    for(j=0; j < nfiles; ++j) 
-        printf(" %12.12s", legofname[j]);
+    for(j=0; j < nfiles; ++j) {
+        char *p = strrchr(legofname[j], '.');
+        if(p)
+            *p = '\0';
+        printf(" %13.13s", legofname[j]);
+    }
     putchar('\n');
     for(i=0; i<npat; ++i) {
-        printf("%-10s", pat[i]);
+        char lbl[100];
+        patLbl(sizeof(lbl), lbl, pat[i], &lndx2);
+        printf("%-10s", lbl);
         for(j=0; j < nfiles; ++j) 
-            printf(" %12.9lf", mat[i*nfiles + j]);
+            printf(" %13.10lf", mat[i*nfiles + j]);
         putchar('\n');
     }
     putchar('\n');
 
+    free(mat);
+    free(pat);
+    
     return 0;
 }

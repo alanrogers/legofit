@@ -213,6 +213,15 @@ int main(int argc, char **argv) {
     assert(strlen(dst) == 0);
 
     unitTstResult("strnncopy", "OK");
+
+    // test strchrcnt
+    assert(1 == strchrcnt("asd", '\0'));
+    assert(1 == strchrcnt("asd", 'a'));
+    assert(0 == strchrcnt("asd", 'e'));
+    assert(3 == strchrcnt("a,s,,d", ','));
+    assert(4 == strchrcnt(",,,,", ','));
+    
+    unitTstResult("strchrcnt", "OK");
     
     return 0;
 }
