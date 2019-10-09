@@ -119,7 +119,7 @@ int main(int argc, char **argv) {
             if(strcmp(argv[i], "-L") == 0) {
                 state = LEGO;
                 continue;
-            }else if(strcmp(argv[i], "M") == 0) {
+            }else if(strcmp(argv[i], "-M") == 0) {
                 state = REMAP;
                 continue;
             }else if(strcmp(argv[i], "-h") == 0 ||
@@ -171,7 +171,7 @@ int main(int argc, char **argv) {
             if(strcmp(argv[i], "-L") == 0) {
                 state = LEGO;
                 continue;
-            }else if(strcmp(argv[i], "M") == 0) {
+            }else if(strcmp(argv[i], "-M") == 0) {
                 state = REMAP;
                 continue;
             }else if(strcmp(argv[i], "-h") == 0 ||
@@ -194,6 +194,13 @@ int main(int argc, char **argv) {
                 // parse string of form a=b:c:d
                 char *next = argv[i];
                 char *token = strsep(&next, "=");
+                if(NULL==strchr(next, ':')) {
+                    fprintf(stderr,"%s:%d remapping (%s) in wrong format.\n"
+                            "Expecting 2 or more labels separated by ':'"
+                            " characters.\n",
+                            __FILE__,__LINE__,next);
+                    exit(EXIT_FAILURE);
+                }
                 mapping[imapping] = Mapping_new(token, next);
                 CHECKMEM(mapping[imapping]);
             }
@@ -204,11 +211,11 @@ int main(int argc, char **argv) {
             exit(EXIT_FAILURE);
         }
     }
+    putchar('\n');
     assert(idata==nfiles);
     assert(ilego==nfiles);
     assert(imapping==nmapping);
 
-    putchar('\n');
     fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
 
     for(imapping=0; imapping < nmapping; ++imapping)
@@ -234,6 +241,7 @@ int main(int argc, char **argv) {
     }
 
     fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
+
     // Create LblNdx object with an entry for each population
     tipId_t tid;
     LblNdx lndx;
@@ -269,6 +277,7 @@ int main(int argc, char **argv) {
     }
 
     fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
+
     // number of site patterns
     int npat = 0;
 
@@ -288,6 +297,7 @@ int main(int argc, char **argv) {
     }
 
     fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
+
     // Each pass through the loop calculates residuals for a pair
     // of files: a data file and a legofit file.
     for(i=0; i<nfiles; ++i) {
