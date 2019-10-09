@@ -54,16 +54,10 @@ StrDblQueue *StrDblQueue_pop(StrDblQueue *self, StrDbl *strdbl) {
     if(self==NULL)
         return NULL;
     assert(strdbl != NULL);
-    fprintf(stderr,"%s:%d: self=%lx strdbl=%lx\n",
-            __FILE__,__LINE__,(long unsigned) self, (long unsigned) strdbl);
-    fprintf(stderr,"%s:%d: strdbl=(%s,%lf)\n",__FILE__,__LINE__,
-            self->strdbl.str, self->strdbl.val);
-    fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
     strdbl->val = self->strdbl.val;
     strcpy(strdbl->str, self->strdbl.str);
     StrDblQueue *next = self->next;
     free(self);
-    fprintf(stderr,"%s:%d %s returning\n",__FILE__,__LINE__, __func__);
     return next;
 }
 
