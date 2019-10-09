@@ -242,7 +242,6 @@ int main(int argc, char **argv) {
     tipId_t tid;
     LblNdx lndx;
     LblNdx_init(&lndx);
-    LblNdx lndx2 = lndx;
     tipId_t collapse[nmapping];
     if(nmapping > 0)
         memset(collapse, 0, nmapping*sizeof(collapse[0]));
@@ -272,6 +271,9 @@ int main(int argc, char **argv) {
             s = colon+1;
         }
     }
+
+    // Now that lndx has been set, create a copy.
+    LblNdx lndx2 = lndx;
 
     // number of site patterns
     int npat = 0;
@@ -381,9 +383,7 @@ int main(int argc, char **argv) {
     putchar('\n');
     for(i=0; i<npat; ++i) {
         char lbl[100];
-        fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
         patLbl(sizeof(lbl), lbl, pat[i], &lndx2);
-        fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
         printf("%-10s", lbl);
         for(j=0; j < nfiles; ++j) 
             printf(" %13.10lf", mat[i*nfiles + j]);

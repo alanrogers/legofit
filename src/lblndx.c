@@ -156,6 +156,13 @@ char       *patLbl(size_t n, char buff[n], tipId_t tid, const LblNdx * lblndx) {
     int         i, nbits;
     char        lbl[100];
 
+    if(TIPID_SIZE - nlz(tid) > lblndx->n) {
+        fprintf(stderr,"%s:%d: LblNdx only allows for %d bits;"
+                " tid has %d.\n",
+                __FILE__,__LINE__, lblndx->n,
+                TIPID_SIZE - nlz(tid));
+        exit(EXIT_FAILURE);
+    }
     nbits = getBits(tid, maxbits, bit);
     buff[0] = '\0';
     for(i = 0; i < nbits; ++i) {
