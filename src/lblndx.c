@@ -276,8 +276,6 @@ static int make_map(size_t n, int map[n], tipId_t collapse) {
  * any of the write operations would overflow.
  */
 int LblNdx_collapse(LblNdx *self, tipId_t collapse, const char *lbl) {
-    int status;
-
     // Most significant set bit in collapse cannot be at position
     // greater than self->n.
     if(self->n < TIPID_SIZE - nlz(collapse))
@@ -292,14 +290,11 @@ int LblNdx_collapse(LblNdx *self, tipId_t collapse, const char *lbl) {
     for(int i=0; i < self->n; ++i) {
         int j = map[i];
         if(j == min) {
-            status = snprintf(self->lbl[j], POPNAMESIZE, "%s", lbl);
-            if(status >= sizeof(POPNAMESIZE))
+            if(strlen(lbl) > POPNAMESIZE-1)
                 return BUFFER_OVERFLOW;
-        }else{
-            status = snprintf(self->lbl[j], POPNAMESIZE, "%s", self->lbl[i]);
-            if(status >= sizeof(POPNAMESIZE))
-                return BUFFER_OVERFLOW;
-        }
+            strcpy(self->lbl[j], lbl);
+        }else
+            strcpy(self->lbl[j], self->lbl[i]);
     }
     self->n -= num1bits(collapse) - 1;
     return 0;
