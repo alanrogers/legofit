@@ -16,6 +16,32 @@ fitted site pattern frequencies--for each data set.
 
 Optionally, the user can specify one or more remappings, each of which
 tells `resid` to collapse several populations into a single population.
+For example,
+
+    resid data.opf -L data.legofit -M n=a:v r=n:x
+
+would calculate residuals assuming that data.opf contains observed
+pattern frequencies, and data.legofit contains fitted values, as
+produced by legofit. Before producing output, it would apply two
+remappings. First, populations "a" and "v" would be collapsed into a
+single population called "n". Then, "n" and "x" would be pooled into
+"r". The labels "n" and "r" must not be present in the original data.
+
+Note that the second remapping remaps "n", which was defined in the
+first. This is legal, but it would not work if the two remappings had
+been listed in opposite order. The labels listed on the right side of
+a remapping must be defined previously, either in the original data or
+in a previous remapping.
+
+It is also possible to list multiple sets of data and .legofit
+files. For example,
+
+    resid data.opf boot/boot*.opf -L b2.legofit b2boot*.legofit
+
+The output (printed to stdout) consists of a table in which the ij'th
+entry is the residual for the i'th site pattern in the j'th pair of
+files. The columns are labeled with the names of the .legofit files
+with suffix removed, and the rows are labeled with the site patterns.
 
 @copyright Copyright (c) 2019, Alan R. Rogers
 <rogers@anthro.utah.edu>. This file is released under the Internet
@@ -289,6 +315,12 @@ int main(int argc, char **argv) {
     for(imapping=0; imapping < nmapping; ++imapping) {
         const char *rhs = Mapping_rhs(mapping[imapping]);
         collapse[imapping] = LblNdx_getTipId(&lndx2, rhs);
+        if(collapse[imapping] == 0) {
+            fprintf(stderr,"%s:%d: Remapping %d contains undefined label.\n",
+                    __FILE__,__LINE__, imapping);
+            Mapping_print(mapping[imapping], stderr);
+            exit(EXIT_FAILURE);
+        }
         LblNdx_collapse(&lndx2, collapse[imapping],
                         Mapping_lhs(mapping[imapping]));
     }
