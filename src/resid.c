@@ -107,15 +107,17 @@ void Mapping_print(Mapping *self, FILE *fp) {
 
 //vars
 const char *usageMsg =
-    "usage: resid [options] <realdat> <bdat1> <bdat2> ... -L <real.legofit>\n"
-    " <b1.legofit> <b2.legofit> ... [-M c=a+b ...]\n" "\n"
-    " where realdat is the real data, each \"bdat\" file is the data\n"
-    " for one bootstrap or simulation replicate, and each \"b#.legofit\"\n"
-    " file is the legofit output from the corresponding bootstrap replicate\n"
-    " Must include at least one data file and one .legofit file.\n" "\n"
+    "\nusage: resid [options] <d1>  <d2> ... -L <f1> <f2> ..."
+    " [-M c=a:b d=c:e:f ...]\n\n"
+    "where <d1>, <d2>, ... are names of files containing observed\n"
+    "site pattern frequencies, and <f1>, <f2>, ... contain the\n"
+    "corresponding fitted values as produced by legofit. Must include\n"
+    "at least one data file and one file of fitted values. The optional\n"
+    "-M argument introduces one or more remappings, which collapse two\n"
+    "or more populations into a single label. Data files must precede\n"
+    "the -L and -M arguments on the command line.\n\n"
     "Options:\n"
-    "   -h or --help   : print this message\n"
-    "   -M c=a+b       : map populations a and b into a single symbol, c\n";
+    "   -h or --help   : print this message.\n";
 
 void usage(void) {
     fputs(usageMsg, stderr);
