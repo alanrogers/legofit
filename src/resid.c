@@ -323,10 +323,16 @@ int main(int argc, char **argv) {
             Mapping_print(mapping[imapping], stderr);
             exit(EXIT_FAILURE);
         }
+        fprintf(stderr,"%s:%d: collapse=0%o\n",__FILE__,__LINE__,
+                collapse[imapping]);
+        printBits(sizeof(collapse[imapping]), collapse+imapping, stderr);
+        LblNdx_print(&lndx2, stderr);
         LblNdx_collapse(&lndx2, collapse[imapping],
                         Mapping_lhs(mapping[imapping]));
+        fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
     }
 
+    fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
     // Each pass through the loop calculates residuals for a pair
     // of files: a data file and a legofit file.
     for(i=0; i<nfiles; ++i) {
@@ -406,6 +412,7 @@ int main(int argc, char **argv) {
         BranchTab_free(fitted);
     }
 
+    fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
     // output: remove suffix from file names and truncate
     printf("%-10s", "SitePat");
     for(j=0; j < nfiles; ++j) {
@@ -415,6 +422,7 @@ int main(int argc, char **argv) {
         printf(" %13.13s", legofname[j]);
     }
     putchar('\n');
+    fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
     for(i=0; i<npat; ++i) {
         char lbl[100];
         patLbl(sizeof(lbl), lbl, pat[i], &lndx2);
@@ -425,6 +433,7 @@ int main(int argc, char **argv) {
     }
     putchar('\n');
 
+    fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
     free(mat);
     free(pat);
     
