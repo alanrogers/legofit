@@ -292,17 +292,10 @@ int LblNdx_collapse(LblNdx *self, tipId_t collapse, const char *lbl) {
         if(j == min) {
             if(strlen(lbl) > POPNAMESIZE-1)
                 return BUFFER_OVERFLOW;
-            fprintf(stderr,"%s:%d:i=%d j=%d\n",
-                    __FILE__,__LINE__,i,j);
             strcpy(self->lbl[j], lbl);
-            fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
-        }else {
-            fprintf(stderr,"%s:%d:i=%d j=%d\n",
-                    __FILE__,__LINE__,i,j);
+        }else if(i!=j)
             strcpy(self->lbl[j], self->lbl[i]);
-        }
     }
-    fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
     self->n -= num1bits(collapse) - 1;
     return 0;
 }
