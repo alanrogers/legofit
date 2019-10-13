@@ -15,6 +15,8 @@
 
 int         comparePtrs(const void *void_x, const void *void_y);
 tipId_t     LblNdx_getTipId_1(const LblNdx *self, const char *lbl);
+static      int make_map(size_t n, int map[n], tipId_t collapse);
+static      void make_rm_map(size_t n, int map[n], tipId_t remove);
 
 /// Set everything to zero.
 void LblNdx_init(LblNdx * self) {
@@ -264,6 +266,20 @@ static int make_map(size_t n, int map[n], tipId_t collapse) {
     return min;
 }
 
+// Make map, an array whose i'th entry is the index in the new LblNdx
+// of the i'th entry in the old LblNdx.
+static void make_rm_map(size_t n, int map[n], tipId_t remove) {
+    int i, shift=0;
+    tipId_t bit = 1u;
+    for(i=0; i < n; ++i, bit <<= 1) {
+        if( remove & bit ) {
+            ++shift;
+            map[i] = -1;
+        }else
+            map[i] = i - shift;
+    }
+}
+
 /**
  * Reduce dimension of LblNdx object by collapsing several entries
  * into a single entry. The "on" bits of "collapse" indicate the
@@ -297,6 +313,27 @@ int LblNdx_collapse(LblNdx *self, tipId_t collapse, const char *lbl) {
             strcpy(self->lbl[j], self->lbl[i]);
     }
     self->n -= num1bits(collapse) - 1;
+    return 0;
+}
+
+int LblNdx_rmPops(LblNdx *self, tipId_t remove) {
+    // Most significant set bit in remove cannot be at position
+    // greater than self->n.
+    if(self->n < TIPID_SIZE - nlz(remove))
+        return EDOM;
+
+    // Make map, an array whose i'th entry is the index in the new id
+    // of the i'th bit in the old id.
+    int map[self->n];
+    make_rm_map(self->n, map, remove);
+
+    // Rewrite LblNdx object
+    for(int i=0; i < self->n; ++i) {
+        int j = map[i];
+        if(j >= 0 && j!=i)
+            strcpy(self->lbl[j], self->lbl[i]);
+    }
+    self->n -= num1bits(remove);
     return 0;
 }
 
@@ -394,9 +431,44 @@ int main(int argc, char **argv) {
     collapse = 011u; // illegal: bit too large
     status = LblNdx_collapse(&lndx, collapse, "D");
     assert(status == EDOM);
-
     unitTstResult("LblNdx_collapse", "OK");
 
+    // test LblNdx_rmPops
+    lndx = lndx2;
+    assert(3u == LblNdx_size(&lndx));
+    tipId_t remove = 06u; // remove bits 2 and 3
+    status = LblNdx_rmPops(&lndx, remove);
+    switch(status) {
+    case 0:
+        break;
+    case EDOM:
+        fprintf(stderr,"%s:%d: bad input to LblNdx_rmPops\n",
+                __FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    case BUFFER_OVERFLOW:
+        fprintf(stderr,"%s:%d: buffer overflow in LblNdx_rmPops\n",
+                __FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    default:
+        fprintf(stderr,"%s:%d: unknown error in LblNdx_rmPops\n",
+                __FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
+    if(verbose) {
+        printf("after LblNdx_rmPops...\n");
+        LblNdx_print(&lndx, stdout);
+    }
+    assert(1 == LblNdx_size(&lndx));
+    assert(1 == LblNdx_size(&lndx));
+    assert(0 == strcmp("A", LblNdx_lbl(&lndx, 0)));
+    assert(1 == LblNdx_getTipId(&lndx, "A"));
+           
+    assert(3u == LblNdx_size(&lndx2));
+    remove = 011u; // illegal: bit too large
+    status = LblNdx_rmPops(&lndx2, remove);
+    assert(status == EDOM);
+    unitTstResult("LblNdx_rmPops", "OK");
+    
     unitTstResult("LblNdx", "OK");
 
     return 0;

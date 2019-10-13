@@ -20,7 +20,12 @@ are provided, columns are labeled with their names, after stripping
 suffixes and leading pathnames. Otherwise, column labels are based on
 the names of data files.
 
-Optionally, the user can specify one or more remappings, each of which
+Optionally, the used can specify a colon-separated list of population 
+labels to delete from the output:
+
+   resid data.opf -D x:y
+
+In addition, the user can specify one or more remappings, each of which
 tells `resid` to collapse several populations into a single population.
 For example,
 
@@ -39,10 +44,15 @@ been listed in opposite order. The labels listed on the right side of
 a remapping must be defined previously, either in the original data or
 in a previous remapping.
 
+Deletions are applied before remappings, so it is illegal to remap
+labels that have been deleted using -D.
+
 It is also possible to list multiple sets of data and .legofit
 files. For example,
 
     resid data.opf boot/boot*.opf -L b2.legofit b2boot*.legofit
+
+This would generate a column for each pair of .opf/.legofit files.
 
 @copyright Copyright (c) 2019, Alan R. Rogers
 <rogers@anthro.utah.edu>. This file is released under the Internet
@@ -108,15 +118,18 @@ void Mapping_print(Mapping *self, FILE *fp) {
 
 //vars
 const char *usageMsg =
-    "\nusage: resid [options] <d1>  <d2> ... -L <f1> <f2> ..."
-    " [-M c=a:b d=c:e:f ...]\n\n"
+    "\nusage: resid [options] <d1>  <d2> ... [-L <f1> <f2> ...]"
+    " [-D x:y:z] \\\n"
+    "   [-M c=a:b d=c:e:f ...]\n\n"
     "where <d1>, <d2>, ... are names of files containing observed\n"
     "site pattern frequencies, and <f1>, <f2>, ... contain the\n"
     "corresponding fitted values as produced by legofit. Must include\n"
-    "at least one data file and one file of fitted values. The optional\n"
-    "-M argument introduces one or more remappings, which collapse two\n"
-    "or more populations into a single label. Data files must precede\n"
-    "the -L and -M arguments on the command line.\n\n"
+    "at least one data file. Fitted files are optional. If present, their\n"
+    "number must equal that of the data files. The optional -D argument\n"
+    "introduces a colon-separated list of populations to delete. The\n"
+    "optional -M argument introduces one or more remappings, which collapse\n"
+    "two or more populations into a single label. Data files must precede\n"
+    "the -L, -D, and -M arguments on the command line.\n\n"
     "Options:\n"
     "   -h or --help   : print this message.\n";
 
@@ -136,17 +149,21 @@ int main(int argc, char **argv) {
     printf("# Program was run: %s", ctime(&currtime));
     fflush(stdout);
     
-    enum input_state { DATA, LEGO, REMAP };
+    enum input_state { DATA, LEGO, DELETE, REMAP };
 
     enum input_state state = DATA;
     int status = 0;
     int i, j;
     int nDataFiles=0, nLegoFiles=0, nmapping=0;
+    char *deleteStr = NULL;
 
     for(i = 1; i < argc; i++) {
         if(argv[i][0] == '-') {
             if(strcmp(argv[i], "-L") == 0) {
                 state = LEGO;
+                continue;
+            }else if(strcmp(argv[i], "-D") == 0) {
+                state = DELETE;
                 continue;
             }else if(strcmp(argv[i], "-M") == 0) {
                 state = REMAP;
@@ -165,6 +182,13 @@ int main(int argc, char **argv) {
             break;
         case LEGO:
             ++nLegoFiles;
+            break;
+        case DELETE:
+            if(deleteStr != NULL) {
+                fprintf(stderr,"Only one delete string is allowed.\n");
+                usage();
+            }
+            deleteStr = strdup(argv[i]);
             break;
         case REMAP:
             ++nmapping;
@@ -207,6 +231,9 @@ int main(int argc, char **argv) {
             if(strcmp(argv[i], "-L") == 0) {
                 state = LEGO;
                 continue;
+            }else if(strcmp(argv[i], "-D") == 0) {
+                state = DELETE;
+                continue;
             }else if(strcmp(argv[i], "-M") == 0) {
                 state = REMAP;
                 continue;
@@ -221,6 +248,8 @@ int main(int argc, char **argv) {
         switch(state){
         case DATA:
             datafname[idata++] = argv[i];
+            break;
+        case DELETE:
             break;
         case LEGO:
             legofname[ilego++] = argv[i];
@@ -251,6 +280,8 @@ int main(int argc, char **argv) {
     assert(idata==nDataFiles);
     assert(ilego==nLegoFiles);
     assert(imapping==nmapping);
+
+    printf("# deleting: %s\n", deleteStr);
 
     for(imapping=0; imapping < nmapping; ++imapping)
         Mapping_print(mapping[imapping], stdout);
@@ -292,7 +323,6 @@ int main(int argc, char **argv) {
         char *s = sdq->strdbl.str;
         while(1) {
             char *colon = strchr(s, ':');
-            char buff[100];
             int len;
             if(colon == NULL) {
                 tid = LblNdx_getTipId(&lndx, s);
@@ -300,6 +330,7 @@ int main(int argc, char **argv) {
                     LblNdx_addSamples(&lndx, 1u, s);
                 break;
             }
+            char buff[100];
             len = colon - s;
             status = strnncopy(sizeof(buff), buff, len, s);
             if(status) {
@@ -324,6 +355,20 @@ int main(int argc, char **argv) {
     // resid[i*nDataFiles + j] is residual for pattern i in file j
     double *mat = NULL;
     tipId_t *pat = NULL;
+
+    // Parse deleteStr to set delete, and then delete pops from
+    // lndx2.
+    tipId_t delete = 0;
+    if(deleteStr != NULL) {
+        delete = LblNdx_getTipId(&lndx, deleteStr);
+        if(delete==0) {
+            fprintf(stderr,"%s:%d: delete string (%s) includes"
+                    " nonexistent populations.\n",
+                    __FILE__,__LINE__, deleteStr);
+            exit(EXIT_FAILURE);
+        }
+        LblNdx_rmPops(&lndx2, delete);
+    }
 
     // Apply remappings in sequence to produce a vector of collapse
     // integers and a single LblNdx object, which describes the result
@@ -370,10 +415,23 @@ int main(int argc, char **argv) {
             BranchTab_add(fitted, tid, strdbl.val);
         }
 
-        // Collapse BranchTab objects by applying all remappings one
-        // after the other.
+        BranchTab *tmp;
+
+        // deletions
+        if(delete) {
+            tmp = BranchTab_rmPops(resid, delete);
+            BranchTab_free(resid);
+            resid = tmp;
+
+            if(nLegoFiles) {
+                tmp = BranchTab_rmPops(fitted, delete);
+                BranchTab_free(fitted);
+                fitted = tmp;
+            }
+        }
+
+        // remappings
         for(imapping=0; imapping < nmapping; ++imapping) {
-            BranchTab *tmp;
             tmp = BranchTab_collapse(resid, collapse[imapping]);
             BranchTab_free(resid);
             resid = tmp;

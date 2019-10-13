@@ -56,6 +56,7 @@ void        BTLink_print(const BTLink * self, FILE *fp);
 BTLink     *BTLink_dup(const BTLink *self);
 int         BTLink_equals(const BTLink *lhs, const BTLink *rhs);
 static void make_map(size_t n, tipId_t map[n], tipId_t collapse);
+static void make_rm_map(size_t n, tipId_t map[n], tipId_t remove);
 static tipId_t remap_bits(size_t n, tipId_t map[n], tipId_t old);
 
 #if TIPID_SIZE==32
@@ -417,6 +418,7 @@ BranchTab *BranchTab_parse(const char *fname, const LblNdx *lblndx) {
     return self;
 }
 
+/// Map two or more populations into a single population.
 BranchTab *BranchTab_collapse(BranchTab *old, tipId_t collapse) {
     int n = 8 * sizeof(tipId_t); // number of bits
 
@@ -432,6 +434,29 @@ BranchTab *BranchTab_collapse(BranchTab *old, tipId_t collapse) {
         BTLink *el;
         for(el = old->tab[i]; el; el = el->next)
             BranchTab_add(new, remap_bits(n, map, el->key), el->value);
+    }
+    return new;
+}
+
+/// Remove populations
+BranchTab *BranchTab_rmPops(BranchTab *old, tipId_t remove) {
+    int n = 8 * sizeof(tipId_t); // number of bits
+
+    // Make map, an array whose i'th entry is an unsigned integer
+    // with one bit on and the rest off. The on bit indicates the
+    // position in the new id of the i'th bit in the old id.
+    tipId_t map[n];
+    make_rm_map(n, map, remove);
+
+    // Create a new BranchTab
+    BranchTab *new = BranchTab_new();
+    for(int i=0; i < BT_DIM; ++i) {
+        BTLink *el;
+        for(el = old->tab[i]; el; el = el->next) {
+            tipId_t id = remap_bits(n, map, el->key);
+            if(id)
+                BranchTab_add(new, id, el->value);
+        }
     }
     return new;
 }
@@ -456,6 +481,18 @@ static void make_map(size_t n, tipId_t map[n], tipId_t collapse) {
             }else
                 ++shift;
             map[i] = min;
+        }else
+            map[i] = bit >> shift;
+    }
+}
+
+static void make_rm_map(size_t n, tipId_t map[n], tipId_t remove) {
+    int i, shift=0;
+    tipId_t bit = 1u;
+    for(i=0; i < n; ++i, bit <<= 1) {
+        if( remove & bit ) {
+            ++shift;
+            map[i] = 0;
         }else
             map[i] = bit >> shift;
     }
@@ -948,6 +985,7 @@ int main(int argc, char **argv) {
     make_map(n, map, id1);
     id3 = remap_bits(n, map, id2);
     if(verbose) {
+        printf("After make_map and remap_bits...\n");
         puts("id1: ");
         printBits(sizeof(id1), &id1, stdout);
         puts("id2: ");
@@ -975,7 +1013,39 @@ int main(int argc, char **argv) {
     }
     assert(BranchTab_size(bt) > BranchTab_size(bt2));
     assert(Dbl_near(BranchTab_sum(bt), BranchTab_sum(bt2)));
+    unitTstResult("BranchTab_collapse", "OK");
     
+    // test make_rm_map
+    memset(map, 0, sizeof(map));
+    id1 = 044;
+    id2 = 077;
+    make_rm_map(n, map, id1);
+    id3 = remap_bits(n, map, id2);
+    if(verbose) {
+        printf("After make_rm_map and remap_bits...\n");
+        puts("id1: ");
+        printBits(sizeof(id1), &id1, stdout);
+        puts("id2: ");
+        printBits(sizeof(id2), &id2, stdout);
+        puts("id3: ");
+        printBits(sizeof(id3), &id3, stdout);
+    }
+    assert(017 == id3);
+    assert(03 == remap_bits(n, map, 07));
+    assert(04 == remap_bits(n, map, 010));
+    unitTstResult("make_rm_map", "OK");
+
+    BranchTab_free(bt2);
+    bt2 = BranchTab_rmPops(bt, 06);
+    if(verbose) {
+        printf("size before rmPops: %u; after: %u\n",
+               BranchTab_size(bt), BranchTab_size(bt2));
+        BranchTab_print(bt2, stdout);
+    }
+    assert(BranchTab_size(bt) > BranchTab_size(bt2));
+    assert(BranchTab_sum(bt) >= BranchTab_sum(bt2));
+    unitTstResult("BranchTab_rmPops", "OK");
+
     BranchTab_free(bt);
     BranchTab_free(bt2);
     GPTree_free(g);

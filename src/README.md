@@ -44,7 +44,8 @@ al. Biometrics, 53(2):603-618).
   which is used by @ref sitepat "sitepat".
 * @ref rafdaf "rafdaf" reads several ".raf" files and writes derived
   allele frequencies for each position in the genome.
-* @ref resid "resid" calculate residuals, optionally mapping multiple
+* @ref resid "resid" prints site pattern frequencies or residuals,
+  optionally deleting some population labels and/or mapping multiple 
   population labels into single labels.
 * @ref scrmpat "scrmpat" tabulates site patterns from output generated
   by the [scrm][] coalescent simulator.
