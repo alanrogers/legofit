@@ -330,6 +330,10 @@ int main(int argc, char **argv) {
                     LblNdx_addSamples(&lndx, 1u, s);
                 break;
             }
+
+            // The tokens in s are separated by colons. Copy
+            // token into a NULL-terminated string that can
+            // be passed to LblNdx_addSamples.
             char buff[100];
             len = colon - s;
             status = strnncopy(sizeof(buff), buff, len, s);
@@ -338,6 +342,8 @@ int main(int argc, char **argv) {
                         __FILE__,__LINE__);
                 exit(EXIT_FAILURE);
             }
+
+            // Add label unless it's already there.
             tid = LblNdx_getTipId(&lndx, s);
             if(tid == 0)
                 LblNdx_addSamples(&lndx, 1u, buff);
