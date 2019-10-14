@@ -1,12 +1,11 @@
 #! /usr/bin/env python3
-
 ###
-#@file lego_tree.py
-#@page diverg
+#@file legotree.py
+#@page legotree
 #@brief Draw phylogenetic trees from lgo input files
 #
-#diverg.py: Draw phylogenetic trees from lgo input files
-#=================================================================
+#legotree.py: Draw phylogenetic trees from lgo input files
+#==========================================================
 #
 #Legotree constructs a tree from legofit input files. Legotree is
 #implemented in python and requires python packages numpy and matplotlib. 
