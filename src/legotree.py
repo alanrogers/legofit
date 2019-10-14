@@ -300,9 +300,16 @@ if __name__ == "__main__":
             show = arg_vals["show"]
         except:
             show = True    
+    try:
+        width = arg_vals['width']
+        if int(width) != float(width):
+            print("Provided line width is not an integer, rounding to nearest integer.")
+        width = int(width)
+    except:
+        width = 27
 
     for i in arg_vals.keys():
-        if i not in ['shrink','allmix','textsize','gentime','tlabels','show','method','lgo']:
+        if i not in ['shrink','allmix','textsize','gentime','tlabels','show','method','lgo','width']:
             print("Argument " + str(i) + " not understood")
 
     colors = ['#e6194b', '#3cb44b', '#4363d8', '#f58231', '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe', '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000', '#aaffc3', '#808000', '#ffd8b1', '#000075', '#808080', '#ffffff']
@@ -312,6 +319,14 @@ if __name__ == "__main__":
         get_obj[i.name] = i
 
 
+    ## Check if parents are older than children ##
+
+    for piece in tree.pieces:
+        for parent in piece.parents:
+            if parent.y <= piece.y:
+                print ("Parent " + parent.name + " is younger or of the same age as child " + piece.name+"." )
+                sys.exit()
+            
     ####### And Graph #########
 
     #
@@ -344,7 +359,7 @@ if __name__ == "__main__":
         #plt.yticks([i.time_label for i in pieces])
 
     root = [i for i in tree.pieces if len(i.parents) == 0][0]
-    plt.plot([root.x,root.x],[root.y,root.y+.1*root.y],linewidth = 27,color='lightgray',zorder=0)  
+    plt.plot([root.x,root.x],[root.y,root.y+.1*root.y],linewidth = width,color='lightgray',zorder=0)  
     #plt.plot([root.x,root.x],[root.y,root.y+.1*root.y], label='some 1 data unit wide line', linewidth=7, alpha=1,color='lightgray',zorder=0)
     for node in tree.nodes:
         if shrink != True and method != "log":
@@ -354,11 +369,11 @@ if __name__ == "__main__":
             if dest in tree.tips:
                 m,b = np.polyfit([node.x,dest.x],[node.y,dest.y],1)
                 final = -root.y
-                #plt.plot([node.x,(final-b)/m],[node.y,final],solid_capstyle="round",linewidth = 27,color = 'lightgray',label = dest.name,zorder = 0)
-                plt.plot([node.x,dest.x],[node.y,dest.y],solid_capstyle="round",linewidth = 27,color = 'lightgray',label = dest.name,zorder = 0)
+                #plt.plot([node.x,(final-b)/m],[node.y,final],solid_capstyle="round",linewidth = width,color = 'lightgray',label = dest.name,zorder = 0)
+                plt.plot([node.x,dest.x],[node.y,dest.y],solid_capstyle="round",linewidth = width,color = 'lightgray',label = dest.name,zorder = 0)
                 #ax.set_ylim([0,root.y])
             else:
-                plt.plot([node.x,dest.x],[node.y,dest.y],solid_capstyle="round",linewidth = 27,color = 'lightgray',label = dest.name,zorder = 0)
+                plt.plot([node.x,dest.x],[node.y,dest.y],solid_capstyle="round",linewidth = width,color = 'lightgray',label = dest.name,zorder = 0)
             
     if len(tree.mix) > 0:
         for col_i,m in enumerate(tree.mixes.keys()):
@@ -367,7 +382,7 @@ if __name__ == "__main__":
 
             if allmix == False and tree.frac[tree.mixfrac[p.children[0].name]] == 0:
                 continue
-
+            
             z = np.polyfit([node_up(p).x,node_down(p).x],[node_up(p).y,node_down(p).y],1)
             new_px = (p.y - z[1]) / z[0]
             p.x = new_px
@@ -375,14 +390,14 @@ if __name__ == "__main__":
             w = np.polyfit([node_up(q).x,node_down(q).x],[node_up(q).y,node_down(q).y],1)
             new_qx = (q.y - w[1]) / w[0]
             q.x = new_qx
-
+            
             #if time[seg_time[m]] == 0:
             #    continue
             plt.plot([p.x,q.x],[p.y,q.y],color = colors[col_i],alpha = .5,linewidth=2,zorder = len(tree.segs)+1,ls='--')
             plt.annotate(p.time_label,xy=[np.mean([p.x,q.x]),p.y],zorder = len(tree.segs)+3,fontsize = text_size,color = colors[col_i])
 
             ### make lines going up and down from the admixture event
-            plt.plot([p.x,node_down(p).x],[p.y,node_down(p).y],color = colors[col_i],alpha = .5,linewidth=2,solid_capstyle='round',zorder = len(tree.segs)+1,ls='--')
+            #plt.plot([p.x,node_down(p).x],[p.y,node_down(p).y],color = colors[col_i],alpha = .5,linewidth=2,solid_capstyle='round',zorder = len(tree.segs)+1,ls='--')
             
             #plt.plot([q.x,(q.y + .5*(node_up(q).y -q.y)-w[1])/w[0]],[q.y,q.y + .5*(node_up(q).y -q.y)],color = colors[col_i],alpha = .5,linewidth=2,solid_capstyle='round',zorder = len(tree.segs)+1,ls='--')
             #if q.name =='xy2':
@@ -398,7 +413,7 @@ if __name__ == "__main__":
         
             new_b = i.y - perp * (i.x)
 
-            ax.plot([i.x-.1,i.x+.1],[perp*(i.x-.1)+new_b,perp*(i.x+.1)+new_b],linewidth = 2,color = 'black',alpha = 0.5)
+            #ax.plot([i.x-.1,i.x+.1],[perp*(i.x-.1)+new_b,perp*(i.x+.1)+new_b],linewidth = 2,color = 'black',alpha = 0.5)
 
             #and add the segment label
             plt.annotate(i.name,xy=[i.x-0.1,i.y],zorder = len(tree.segs)+3,fontsize = text_size)
@@ -413,8 +428,9 @@ if __name__ == "__main__":
     #Just an adjuster
     h = root.y*0.2
 
+    limitlen = plt.ylim()[1] - plt.ylim()[0]
     for i in tree.tips:
-        plt.annotate(i.name,xy=[i.x-.01,i.y-plt.ylim()[1]*.06],fontsize = text_size)
+        plt.annotate(i.name,xy=[i.x-.01,i.y-limitlen*.04],fontsize = text_size)
 
     if gentime == 1:
         if shrink != True:
@@ -458,4 +474,4 @@ if __name__ == "__main__":
     if show==True:
         plt.show()
     else:
-        plt.savefig(show)
+        plt.savefig(show,dpi=200)
