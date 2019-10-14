@@ -23,13 +23,13 @@
 #line argument "gentime," converting generations to desired generation
 #length in years. 
 #
-#   legotree input.lgo gentime=25
+#   legotree input.lgo --gentime 25
 #
 #\image html figure_2.png
 #
 #The text on the tree can be adjusted with "text_size"
 #
-#   legotree input.lgo gentime=25 text_size=18
+#   legotree input.lgo --gentime 25 --text_size 18
 #
 ##\image html figure_3.png
 #
@@ -38,7 +38,7 @@
 #this with the "shrink" command. When this option is used, the labels 
 #are moved from the y-axis onto the tree. This option is off by default.
 #
-#   legotree input.lgo gentime=25 text_size=18 shrink=True
+#   legotree input.lgo --gentime 25 --text_size 18 --shrink True
 #
 ##\image html figure_4.png
 #
@@ -48,7 +48,7 @@
 #to omit those admixture events from your tree you can use the option
 #"allmix," which is on by default. 
 #
-#   legotree input.lgo gentime=25 text_size=18 shrink=True allmix=False
+#   legotree input.lgo --gentime 25 --text_size 18 --shrink True --allmix False
 #
 ##\image html figure_5.png
 #
@@ -57,8 +57,8 @@
 #If you wish to save directly, you can turn the "show" option to a
 #file name. 
 #
-#   legotree input.lgo gentime=25 text_size=18 shrink=True allmix=False
-#       show=outputtree.png
+#   legotree input.lgo --gentime 25 --text_size 18 --shrink True --allmix False
+#       --show outputtree.png
 #
 #Any questions or bug reports can be sent to
 #   nathan.harris@anthro.utah.edu
@@ -75,9 +75,19 @@ def get_slope(a,b):
     return (b.y - a.y) / (b.x - a.x)
 
 def sub_input(input,string):
+    inds = [i for i,j in enumerate(input[:-1]) if j.split()[0] == string]
+    for i in inds:
+        counter = 0
+        while input[i+counter].split()[-1] == "-" or input[i+counter].split()[-1] == "+":
+            if counter != 0:
+                input[i] += input[i+counter]
+            counter += 1
+        if counter != 0:
+            input[i] += input[i+counter]
+
     temp = [i for i in input if len(i.split()) > 0 and i.split()[0] == string]
     temp = [re.sub("="," = ",i) for i in temp]
-    temp = [re.sub(" +"," ",i) for i in temp]
+    temp = [re.sub(" +"," ",i) for i in temp] #replace multiple spaces with one space
     return temp
 
 def node_down(x):
@@ -181,13 +191,21 @@ class lego_tree:
         for i,j in enumerate(self.tips):
             j.x = i
 
+        PCA = {}
+        self.pcs = sub_input(input,"param")
+        for i in self.pcs:
+            PCA[i.split()[-3]] = float(i.split()[-1])
+
         time = {}
         for i in self.times:
             if i.split()[1] != 'constrained':
                 time[i.split()[2]] = float(i.split()[4])
         for i in self.times:
             if i.split()[1] == 'constrained':
-                time[i.split()[2]] = eval(''.join(i.split('#')[0].split()[4:]),time)
+                if "pc" in i:
+                    time[i.split()[2]] = int(eval(''.join(i.split('#')[0].split()[4:]),PCA))
+                else:
+                    time[i.split()[2]] = int(eval(''.join(i.split('#')[0].split()[4:]),time)) #feed it a dictionary for evalulating
 
         seg_time = {}
         for i in self.full_seg:
@@ -228,7 +246,7 @@ class lego_tree:
 if __name__ == "__main__":
     arg_vals = {}
     target =  sys.argv[1]
-    print target
+    print(target)
     try:
         args = sys.argv[2:]
     except:
@@ -271,7 +289,7 @@ if __name__ == "__main__":
 
     for i in arg_vals.keys():
         if i not in ['shrink','allmix','textsize','gentime','tlabels','show']:
-            print "Argument " + str(i) + " not understood"
+            print("Argument " + str(i) + " not understood")
 
     colors = ['#e6194b', '#3cb44b', '#4363d8', '#f58231', '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe', '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000', '#aaffc3', '#808000', '#ffd8b1', '#000075', '#808080', '#ffffff']
     tree = lego_tree("tree",open(target).readlines())
@@ -292,10 +310,11 @@ if __name__ == "__main__":
     ####shrink#####
     if shrink == True:
         for i in tree.pieces:
+            #if i.y != 0:
+            #    i.y = np.log(i.y)
             if i.y > tree.adj_time:
                 i.time_label = i.y
                 i.y = tree.adj_time + 0.1*i.y
-
             if i not in tree.mids and i not in tree.tips:
                 plt.annotate(i.name +'  ' + str(int(i.time_label)),xy=[i.x+0.1,i.y],fontsize = text_size)
             elif i in tree.tips and i.y !=0:
