@@ -36,6 +36,15 @@ int mystrerror_r(int errnum, char *buff, size_t len) {
     case NAME_MISMATCH:
         rval = snprintf(buff, len, "Inconsistent variable names");
         break;
+    case TOO_MANY_PARENTS:
+        rval = snprintf(buff, len, "Too many parents");
+        break;
+    case TOO_MANY_CHILDREN:
+        rval = snprintf(buff, len, "Too many children");
+        break;
+    case DATE_MISMATCH:
+        rval = snprintf(buff, len, "Date mismatch");
+        break;
     default:
         status = strerror_r(errnum, buff, len);
     }
