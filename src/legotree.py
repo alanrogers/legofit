@@ -40,6 +40,12 @@
 #
 #   legotree input.lgo --gentime 25 --text_size 18 --shrink True
 #
+#Additionally you can use the --method flag to specify the type of shrink.
+#By default this is set to "log" and will take the natural log of the 
+#time in generations or years. Setting --method to "long" will shrink long 
+#branches near the root of the tree only.
+#
+#
 ##\image html figure_4.png
 #
 #By default legotree will include any admixture events you include in
@@ -245,10 +251,10 @@ class lego_tree:
 
 if __name__ == "__main__":
     arg_vals = {}
-    target =  sys.argv[1]
-    print(target)
+    #target =  sys.argv[1]
+    #print(target)
     try:
-        args = sys.argv[2:]
+        args = sys.argv[1:]
     except:
         pass
     
@@ -257,8 +263,12 @@ if __name__ == "__main__":
         arg_vals[args[i].split("--")[-1]] = args[i+1]
         #arg_vals[i.split('=')[0]] = i.split("=")[1]
 
-
-    #set defaults
+    #set defaults and check for lgo
+    try:
+        target = arg_vals["lgo"]
+    except:
+        print("No .lgo file provided. Please specify the lgo file you wish to use with the --lgo flag.")
+        sys.exit()
     try:
         shrink = eval(arg_vals["shrink"])
     except:
@@ -292,7 +302,7 @@ if __name__ == "__main__":
             show = True    
 
     for i in arg_vals.keys():
-        if i not in ['shrink','allmix','textsize','gentime','tlabels','show','method']:
+        if i not in ['shrink','allmix','textsize','gentime','tlabels','show','method','lgo']:
             print("Argument " + str(i) + " not understood")
 
     colors = ['#e6194b', '#3cb44b', '#4363d8', '#f58231', '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe', '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000', '#aaffc3', '#808000', '#ffd8b1', '#000075', '#808080', '#ffffff']
@@ -317,26 +327,27 @@ if __name__ == "__main__":
             if method == "log":
                 if i.y != 0:
                     i.y = np.log(i.y)
-            if i.y > tree.adj_time:
-                i.time_label = i.y
-                i.y = tree.adj_time + 0.1*i.y
-            if i not in tree.mids and i not in tree.tips:
-                plt.annotate(i.name +'  ' + str(int(i.time_label)),xy=[i.x+0.1,i.y],fontsize = text_size)
-            elif i in tree.tips and i.y !=0:
-                plt.annotate(str(int(i.time_label)),xy=[i.x+0.1,i.y],fontsize = text_size)
+            else:
+                if i.y > tree.adj_time:
+                    i.time_label = i.y
+                    i.y = tree.adj_time + 0.1*i.y
+                if i not in tree.mids and i not in tree.tips:
+                    plt.annotate(i.name +'  ' + str(int(i.time_label)),xy=[i.x+0.1,i.y],fontsize = text_size)
+                elif i in tree.tips and i.y !=0:
+                    plt.annotate(str(int(i.time_label)),xy=[i.x+0.1,i.y],fontsize = text_size)
             #elif i in tree.mids and i.name in tree.mixes.keys() and i.name not in tree.mixfrac.values():
             #    plt.annotate(str(int(i.time_label)),xy=[i.x+0.1,i.y],fontsize = text_size)
-
-
-        ax.spines['left'].set_visible(False)
-        plt.yticks([])
+                plt.yticks([])
+                ax.spines['left'].set_visible(False)
+        
+        
         #plt.yticks([i.time_label for i in pieces])
 
     root = [i for i in tree.pieces if len(i.parents) == 0][0]
     plt.plot([root.x,root.x],[root.y,root.y+.1*root.y],linewidth = 27,color='lightgray',zorder=0)  
     #plt.plot([root.x,root.x],[root.y,root.y+.1*root.y], label='some 1 data unit wide line', linewidth=7, alpha=1,color='lightgray',zorder=0)
     for node in tree.nodes:
-        if shrink != True:
+        if shrink != True and method != "log":
             plt.annotate(node.name,xy=[node.x-0.3,node.y],zorder = len(tree.segs)+3,fontsize = text_size)
         for dest in node.children:
             dest = node_down(dest)
@@ -406,9 +417,15 @@ if __name__ == "__main__":
         plt.annotate(i.name,xy=[i.x-.01,i.y-plt.ylim()[1]*.06],fontsize = text_size)
 
     if gentime == 1:
-        plt.ylabel('Generations ago',fontsize = text_size)
+        if shrink != True:
+            plt.ylabel('Generations ago',fontsize = text_size)
+        elif method == "log":
+            plt.ylabel("Natural log of generations ago")
     else:
-        plt.ylabel('Years ago',fontsize = text_size)
+        if shrink != True:
+            plt.ylabel('Years ago',fontsize = text_size)
+        elif method == "log":
+            plt.ylabel("Natural log of years ago")
     #ax.plot(ax.get_xlim(),ax.get_ylim(),ls='--')
 
     for lab in tlabels:
