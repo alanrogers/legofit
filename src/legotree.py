@@ -249,6 +249,7 @@ class lego_tree:
 
 
 if __name__ == "__main__":
+    
     arg_vals = {}
     #target =  sys.argv[1]
     #print(target)
@@ -329,6 +330,7 @@ if __name__ == "__main__":
     ####### And Graph #########
 
     #
+    plt.ioff() #prevent the automatic showing of graphing windows. 
     fig, ax = plt.subplots(figsize=(16,9))
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
@@ -429,7 +431,7 @@ if __name__ == "__main__":
 
     limitlen = plt.ylim()[1] - plt.ylim()[0]
     for i in tree.tips:
-        plt.annotate(i.name,xy=[i.x-.01,i.y-limitlen*.04],fontsize = text_size)
+        plt.annotate(i.name,xy=[i.x-.01,i.y-limitlen*.045],fontsize = text_size)
 
     if gentime == 1:
         if shrink != True:
