@@ -33,7 +33,8 @@ al. Biometrics, 53(2):603-618).
 * @ref legofit "legofit" estimates parameters from site pattern
   counts.
 * @ref legosim "legosim" predicts site pattern counts from
-  assumptions about population history.
+assumptions about population history.
+* @ref legotree "legotree.py" makes a graph from a .lgo file.
 * @ref ms2sim "ms2sim" reads the output of the [ms][] coalescent
   simulator and rewrites it in "sim" format, which can be piped to
   @ref simpat "simpat" to tabulate site pattern frequencies.
@@ -42,6 +43,11 @@ al. Biometrics, 53(2):603-618).
   in terms of principal components.
 * @ref raf "raf" writes genetic data into the ".raf" format,
   which is used by @ref sitepat "sitepat".
+* @ref rafdaf "rafdaf" reads several ".raf" files and writes derived
+  allele frequencies for each position in the genome.
+* @ref resid "resid" prints site pattern frequencies or residuals,
+  optionally deleting some population labels and/or mapping multiple 
+  population labels into single labels.
 * @ref scrmpat "scrmpat" tabulates site patterns from output generated
   by the [scrm][] coalescent simulator.
 * @ref simpat "simpat" tabulates site patterns from the output of

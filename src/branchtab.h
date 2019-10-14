@@ -12,6 +12,7 @@ void          BranchTab_add(BranchTab * self, tipId_t key, double value);
 unsigned      BranchTab_size(BranchTab * self);
 void          BranchTab_print(const BranchTab *self, FILE *fp);
 void          BranchTab_plusEquals(BranchTab *lhs, BranchTab *rhs);
+void          BranchTab_minusEquals(BranchTab *lhs, BranchTab *rhs);
 void          BranchTab_toArrays(BranchTab *self, unsigned n, tipId_t key[n],
                                  double value[n], double sqr[n]);
 int           BranchTab_divideBy(BranchTab *self, double denom);
@@ -30,4 +31,6 @@ double        BranchTab_KLdiverg(const BranchTab *obs, const BranchTab *expt);
 double        BranchTab_negLnL(const BranchTab *obs, const BranchTab *expt);
 double        BranchTab_poissonCost(const BranchTab *obs, const BranchTab *expt,
                                     double u, long nnuc, double n);
+BranchTab    *BranchTab_collapse(BranchTab *old, tipId_t collapse);
+BranchTab    *BranchTab_rmPops(BranchTab *old, tipId_t remove);
 #endif

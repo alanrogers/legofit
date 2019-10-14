@@ -190,5 +190,38 @@ int main(int argc, char **argv) {
 
     unitTstResult("mybasename", "OK");
 
+    char dst[5];
+    const char *src = "abcd";
+    status = strnncopy(sizeof(dst), dst, 3, src);
+    assert(status==0);
+    assert(0 == strcmp(dst, "abc"));
+    assert(strlen(dst) == 3);
+
+    src = "abcde";
+    status = strnncopy(sizeof(dst), dst, 5, src);
+    assert(status==BUFFER_OVERFLOW);
+    assert(strlen(dst) < sizeof(dst));
+
+    src = "abcdef";
+    status = strnncopy(sizeof(dst), dst, 6, src);
+    assert(status==BUFFER_OVERFLOW);
+    assert(strlen(dst) < sizeof(dst));
+
+    src = "abcdef";
+    status = strnncopy(sizeof(dst), dst, 0, src);
+    assert(status==0);
+    assert(strlen(dst) == 0);
+
+    unitTstResult("strnncopy", "OK");
+
+    // test strchrcnt
+    assert(1 == strchrcnt("asd", '\0'));
+    assert(1 == strchrcnt("asd", 'a'));
+    assert(0 == strchrcnt("asd", 'e'));
+    assert(3 == strchrcnt("a,s,,d", ','));
+    assert(4 == strchrcnt(",,,,", ','));
+    
+    unitTstResult("strchrcnt", "OK");
+    
     return 0;
 }

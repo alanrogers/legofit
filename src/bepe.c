@@ -100,8 +100,6 @@ Systems Consortium License, which can be found in file "LICENSE".
 
 // Function prototypes
 void usage(void);
-static void checkConsistency(const char *fname1, const char *fname2,
-                             StrDblQueue *q1, StrDblQueue *q2);
 
 //vars
 const char *usageMsg =
@@ -117,16 +115,6 @@ const char *usageMsg =
 void usage(void) {
     fputs(usageMsg, stderr);
     exit(EXIT_FAILURE);
-}
-
-static void checkConsistency(const char *fname1, const char *fname2,
-                             StrDblQueue *q1, StrDblQueue *q2) {
-    if(StrDblQueue_compare(q1, q2)) {
-        fprintf(stderr, "%s:%d: inconsistent site patterns in"
-                " files %s and %s\n", __FILE__, __LINE__,
-                fname1, fname2);
-        exit(EXIT_FAILURE);
-    }
 }
 
 int main(int argc, char **argv) {
