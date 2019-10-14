@@ -292,7 +292,7 @@ if __name__ == "__main__":
             show = True    
 
     for i in arg_vals.keys():
-        if i not in ['shrink','allmix','textsize','gentime','tlabels','show'.'method']:
+        if i not in ['shrink','allmix','textsize','gentime','tlabels','show','method']:
             print("Argument " + str(i) + " not understood")
 
     colors = ['#e6194b', '#3cb44b', '#4363d8', '#f58231', '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe', '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000', '#aaffc3', '#808000', '#ffd8b1', '#000075', '#808080', '#ffffff']
