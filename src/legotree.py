@@ -314,7 +314,7 @@ if __name__ == "__main__":
     ####shrink#####
     if shrink == True:
         for i in tree.pieces:
-            if method == "log"
+            if method == "log":
                 if i.y != 0:
                     i.y = np.log(i.y)
             if i.y > tree.adj_time:
