@@ -264,6 +264,10 @@ if __name__ == "__main__":
     except:
         shrink=False
     try:
+        method = arg_vals["method"]
+    except:
+        method = "log"
+    try:
         allmix=eval(arg_vals['allmix'])
     except:
         allmix = True
@@ -288,7 +292,7 @@ if __name__ == "__main__":
             show = True    
 
     for i in arg_vals.keys():
-        if i not in ['shrink','allmix','textsize','gentime','tlabels','show']:
+        if i not in ['shrink','allmix','textsize','gentime','tlabels','show'.'method']:
             print("Argument " + str(i) + " not understood")
 
     colors = ['#e6194b', '#3cb44b', '#4363d8', '#f58231', '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe', '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000', '#aaffc3', '#808000', '#ffd8b1', '#000075', '#808080', '#ffffff']
@@ -310,8 +314,9 @@ if __name__ == "__main__":
     ####shrink#####
     if shrink == True:
         for i in tree.pieces:
-            #if i.y != 0:
-            #    i.y = np.log(i.y)
+            if method == "log"
+                if i.y != 0:
+                    i.y = np.log(i.y)
             if i.y > tree.adj_time:
                 i.time_label = i.y
                 i.y = tree.adj_time + 0.1*i.y
