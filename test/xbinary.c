@@ -143,6 +143,50 @@ int main(int argc, char **argv) {
         printf("64-bit key %llu -> hash %u\n", (long long unsigned) key64,
                uint64Hash(key64));
 
+    // Test nlz
+    tipId_t tid;
+    if(verbose) {
+        for(tid = 0; tid <= 16; ++tid)
+            printf("nlz(%#08x) = %d\n", tid, nlz(tid));
+    }
+
+    assert( 32 == nlz(0) );
+    assert( 31 == nlz(1) );
+    assert( 30 == nlz(2) );
+    assert( 30 == nlz(3) );
+    assert( 29 == nlz(4) );
+    assert( 29 == nlz(5) );
+    assert( 29 == nlz(6) );
+    assert( 28 == nlz(8) );
+    assert( 28 == nlz(9) );
+    assert( 27 == nlz(16) );
+    assert( 27 == nlz(18) );
+    assert( 26 == nlz(32) );
+    assert( 25 == nlz(64) );
+    assert( 24 == nlz(128) );
+    assert( 23 == nlz(256) );
+    assert(  0 == nlz(0xffffffff) );
+
+    assert( 64 == nlz64(0) );
+    assert( 63 == nlz64(1) );
+    assert( 62 == nlz64(2) );
+    assert( 62 == nlz64(3) );
+    assert( 61 == nlz64(4) );
+    assert( 61 == nlz64(5) );
+    assert( 61 == nlz64(6) );
+    assert( 60 == nlz64(8) );
+    assert( 60 == nlz64(9) );
+    assert( 59 == nlz64(16) );
+    assert( 59 == nlz64(18) );
+    assert( 58 == nlz64(32) );
+    assert( 57 == nlz64(64) );
+    assert( 56 == nlz64(128) );
+    assert( 55 == nlz64(256) );
+    assert( 32 == nlz64(0xffffffffLU) );
+    assert( 0 == nlz64(0xffffffffffffffffLU) );
+    
+    unitTstResult("nlz", "OK");
+
     unitTstResult("binary", "OK");
     return 0;
 }

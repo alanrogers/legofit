@@ -6,6 +6,7 @@
  * <rogers@anthro.utah.edu>. This file is released under the Internet
  * Systems Consortium License, which can be found in file "LICENSE".
  */
+#include "error.h"
 #include "lblndx.h"
 #include "misc.h"
 #include <stdio.h>
@@ -13,6 +14,9 @@
 #include <assert.h>
 
 int         comparePtrs(const void *void_x, const void *void_y);
+tipId_t     LblNdx_getTipId_1(const LblNdx *self, const char *lbl);
+static      int make_map(size_t n, int map[n], tipId_t collapse);
+static      void make_rm_map(size_t n, int map[n], tipId_t remove);
 
 /// Set everything to zero.
 void LblNdx_init(LblNdx * self) {
@@ -76,12 +80,13 @@ int         LblNdx_equals(const LblNdx *lhs, const LblNdx *rhs) {
     return 1;
 }
 
-/// Reverse lookup. Return tipId_t value corresponding to
-/// label. For the i'th label, this value equals the i'th power of 2.
-/// If label is not present in LblNdx, return 0.
-tipId_t     LblNdx_getTipId(const LblNdx *self, const char *lbl) {
+// Return tipId_t value corresponding to a label. The label should
+// refer to a single population. In other words, it should not contain
+// the ":" character. For the i'th label, this value equals the i'th
+// power of 2.
+tipId_t     LblNdx_getTipId_1(const LblNdx *self, const char *lbl) {
     unsigned i;
-    tipId_t rval = 1;
+    const tipId_t unity = 1;
 
     for(i=0; i < self->n; ++i) {
         if(0 == strcmp(lbl, self->lbl[i]))
@@ -90,7 +95,51 @@ tipId_t     LblNdx_getTipId(const LblNdx *self, const char *lbl) {
     if(i == self->n)
         return 0;
 
-    rval <<= i;
+    return unity << i;
+}
+
+/// Reverse lookup. Return tipId_t value corresponding to
+/// label, which may be composite. The parts of a composite
+/// label are delimited by the ':' character. If label (or any of its
+/// parts) is not present in LblNdx, return 0. 
+tipId_t LblNdx_getTipId(const LblNdx *self, const char *lbl) {
+    char buff[200];
+    const char *start=lbl, *end;
+    int len;
+    tipId_t rval = 0, id;
+    while(1) {
+        end = strchr(start, ':');
+
+        // Not a composite label
+        if(end == NULL) {
+            id = LblNdx_getTipId_1(self, start);
+            if(id == 0)
+                return 0;
+            rval |= id;
+            break; // loop exit
+        }
+
+        // composite label: copy first component into
+        // buff, get id of that component, and "or" the
+        // component id into the return value.
+        len = end - start;
+        int status = strnncopy(sizeof(buff), buff, len, start);
+        switch(status) {
+        case 0:
+            break;
+        case BUFFER_OVERFLOW:
+            fprintf(stderr,"%s:%d: buffer overflow\n", __FILE__,__LINE__);
+            exit(EXIT_FAILURE);
+        default:
+            fprintf(stderr,"%s:%d: unknown error\n", __FILE__,__LINE__);
+            exit(EXIT_FAILURE);
+        }
+        id = LblNdx_getTipId_1(self, buff);
+        if(id == 0)
+            return 0;
+        rval |= id;
+        start = end+1;
+    }
     return rval;
 }
 
@@ -109,6 +158,13 @@ char       *patLbl(size_t n, char buff[n], tipId_t tid, const LblNdx * lblndx) {
     int         i, nbits;
     char        lbl[100];
 
+    if(TIPID_SIZE - nlz(tid) > lblndx->n) {
+        fprintf(stderr,"%s:%d: LblNdx only allows for %d bits;"
+                " tid has %d.\n",
+                __FILE__,__LINE__, lblndx->n,
+                TIPID_SIZE - nlz(tid));
+        exit(EXIT_FAILURE);
+    }
     nbits = getBits(tid, maxbits, bit);
     buff[0] = '\0';
     for(i = 0; i < nbits; ++i) {
@@ -191,6 +247,96 @@ void orderpat(int n, unsigned ord[n], tipId_t pat[n]) {
         ord[i] = ptr[i]-pat;
 }
 
+// Make map, an array whose i'th entry is the index in the new LblNdx
+// of the i'th entry in the old LblNdx. Returns the index of the bit
+// into which all "on" bits of "collapse" are mapped.
+static int make_map(size_t n, int map[n], tipId_t collapse) {
+    int i, min = n, shift=0;
+    tipId_t bit = 1u;
+    for(i=0; i < n; ++i, bit <<= 1) {
+        if( collapse & bit ) {
+            if(min == n) {
+                min = i;
+            }else
+                ++shift;
+            map[i] = min;
+        }else
+            map[i] = i - shift;
+    }
+    return min;
+}
+
+// Make map, an array whose i'th entry is the index in the new LblNdx
+// of the i'th entry in the old LblNdx.
+static void make_rm_map(size_t n, int map[n], tipId_t remove) {
+    int i, shift=0;
+    tipId_t bit = 1u;
+    for(i=0; i < n; ++i, bit <<= 1) {
+        if( remove & bit ) {
+            ++shift;
+            map[i] = -1;
+        }else
+            map[i] = i - shift;
+    }
+}
+
+/**
+ * Reduce dimension of LblNdx object by collapsing several entries
+ * into a single entry. The "on" bits of "collapse" indicate the
+ * entries to be collapsed.  they are collapsed into the entry
+ * indicated by the bit in the lowest position.  "lbl" is the label
+ * assigned to this entry. The dimension of the rewritten LblNdx
+ * object is reduced by one less than the number of "on" bits in
+ * "collapse".  The function returns 0 on success, EDOM if the number
+ * of "on" bits in "collapse" exceeds self->n, and BUFFER_OVERFLOW if
+ * any of the write operations would overflow.
+ */
+int LblNdx_collapse(LblNdx *self, tipId_t collapse, const char *lbl) {
+    // Most significant set bit in collapse cannot be at position
+    // greater than self->n.
+    if(self->n < TIPID_SIZE - nlz(collapse))
+        return EDOM;
+
+    // Make map, an array whose i'th entry is the index in the new id
+    // of the i'th bit in the old id.
+    int map[self->n];
+    int min = make_map(self->n, map, collapse);
+
+    // Rewrite LblNdx object
+    for(int i=0; i < self->n; ++i) {
+        int j = map[i];
+        if(j == min) {
+            if(strlen(lbl) > POPNAMESIZE-1)
+                return BUFFER_OVERFLOW;
+            strcpy(self->lbl[j], lbl);
+        }else if(i!=j)
+            strcpy(self->lbl[j], self->lbl[i]);
+    }
+    self->n -= num1bits(collapse) - 1;
+    return 0;
+}
+
+int LblNdx_rmPops(LblNdx *self, tipId_t remove) {
+    // Most significant set bit in remove cannot be at position
+    // greater than self->n.
+    if(self->n < TIPID_SIZE - nlz(remove))
+        return EDOM;
+
+    // Make map, an array whose i'th entry is the index in the new id
+    // of the i'th bit in the old id.
+    int map[self->n];
+    make_rm_map(self->n, map, remove);
+
+    // Rewrite LblNdx object
+    for(int i=0; i < self->n; ++i) {
+        int j = map[i];
+        if(j >= 0 && j!=i)
+            strcpy(self->lbl[j], self->lbl[i]);
+    }
+    self->n -= num1bits(remove);
+    return 0;
+}
+
 #ifdef TEST
 
 #  include <string.h>
@@ -228,6 +374,16 @@ int main(int argc, char **argv) {
     assert(0 == strcmp("B.0", LblNdx_lbl(&lndx, 1)));
     assert(0 == strcmp("B.1", LblNdx_lbl(&lndx, 2)));
 
+    assert(01u == LblNdx_getTipId(&lndx, "A"));
+    assert(02u == LblNdx_getTipId(&lndx, "B.0"));
+    assert(04u == LblNdx_getTipId(&lndx, "B.1"));
+    assert(03u == LblNdx_getTipId(&lndx, "A:B.0"));
+    assert(05u == LblNdx_getTipId(&lndx, "A:B.1"));
+    assert(06u == LblNdx_getTipId(&lndx, "B.0:B.1"));
+    assert(07u == LblNdx_getTipId(&lndx, "A:B.0:B.1"));
+    assert(07u == LblNdx_getTipId(&lndx, "B.0:A:B.1"));
+    assert(0u == LblNdx_getTipId(&lndx, "x:A:B.1"));
+
     for(i=0; i < LblNdx_size(&lndx); ++i) {
         assert((1u << i) == LblNdx_getTipId(&lndx, LblNdx_lbl(&lndx, i)));
     }
@@ -242,7 +398,78 @@ int main(int argc, char **argv) {
 
     assert(LblNdx_equals(&lndx, &lndx2));
 
-	unitTstResult("LblNdx", "OK");
+    // test LblNdx_collapse
+    assert(3u == LblNdx_size(&lndx));
+    tipId_t collapse = 06u; // collapse bits 2 and 3
+    int status = LblNdx_collapse(&lndx, collapse, "D");
+    switch(status) {
+    case 0:
+        break;
+    case EDOM:
+        fprintf(stderr,"%s:%d: bad input to LblNdx_collapse\n",
+                __FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    case BUFFER_OVERFLOW:
+        fprintf(stderr,"%s:%d: buffer overflow in LblNdx_collapse\n",
+                __FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    default:
+        fprintf(stderr,"%s:%d: unknown error in LblNdx_collapse\n",
+                __FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
+    if(verbose)
+        LblNdx_print(&lndx, stdout);
+    assert(2 == LblNdx_size(&lndx));
+    assert(0 == strcmp("A", LblNdx_lbl(&lndx, 0)));
+    assert(0 == strcmp("D", LblNdx_lbl(&lndx, 1)));
+    assert(1 == LblNdx_getTipId(&lndx, "A"));
+    assert(2 == LblNdx_getTipId(&lndx, "D"));
+    assert(3 == LblNdx_getTipId(&lndx, "A:D"));
+           
+    assert(3u == LblNdx_size(&lndx2));
+    collapse = 011u; // illegal: bit too large
+    status = LblNdx_collapse(&lndx, collapse, "D");
+    assert(status == EDOM);
+    unitTstResult("LblNdx_collapse", "OK");
+
+    // test LblNdx_rmPops
+    lndx = lndx2;
+    assert(3u == LblNdx_size(&lndx));
+    tipId_t remove = 06u; // remove bits 2 and 3
+    status = LblNdx_rmPops(&lndx, remove);
+    switch(status) {
+    case 0:
+        break;
+    case EDOM:
+        fprintf(stderr,"%s:%d: bad input to LblNdx_rmPops\n",
+                __FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    case BUFFER_OVERFLOW:
+        fprintf(stderr,"%s:%d: buffer overflow in LblNdx_rmPops\n",
+                __FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    default:
+        fprintf(stderr,"%s:%d: unknown error in LblNdx_rmPops\n",
+                __FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
+    if(verbose) {
+        printf("after LblNdx_rmPops...\n");
+        LblNdx_print(&lndx, stdout);
+    }
+    assert(1 == LblNdx_size(&lndx));
+    assert(1 == LblNdx_size(&lndx));
+    assert(0 == strcmp("A", LblNdx_lbl(&lndx, 0)));
+    assert(1 == LblNdx_getTipId(&lndx, "A"));
+           
+    assert(3u == LblNdx_size(&lndx2));
+    remove = 011u; // illegal: bit too large
+    status = LblNdx_rmPops(&lndx2, remove);
+    assert(status == EDOM);
+    unitTstResult("LblNdx_rmPops", "OK");
+    
+    unitTstResult("LblNdx", "OK");
 
     return 0;
 }
