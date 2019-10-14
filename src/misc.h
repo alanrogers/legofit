@@ -31,6 +31,7 @@ unsigned    Dbl_first_geq(double val, unsigned len, double v[len]);
 long        long_first_geq(long val, long *v, long len);
 long        long_last_leq(long val, long *v, long len);
 int         strCountSetChunks(const char *str, const char *sep);
+int         strchrcnt(const char *s, int c);
 void       *memdup(const void *p, size_t n);
 double      KLdiverg(int n, const double o[n], const double e[n]);
 double      sum_double(int n, const double x[n]);
@@ -51,6 +52,7 @@ char       *strcenter(const char *text, unsigned width,
 int         readline(int dim, char buff[dim], FILE *fp);
 const char *mybasename(const char *name);
 int         legalName(const char *name);
+int         strnncopy(size_t n, char dst[n], size_t m, const char src[m]);
 static inline double survival(double t, double twoN);
 
 #  define ERR(code, msg) do{                        \
