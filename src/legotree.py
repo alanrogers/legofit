@@ -243,9 +243,31 @@ if __name__ == "__main__":
     
     inds = [i for i,j in enumerate(args) if "--" in j]
     for i in inds:
-        arg_vals[args[i].split("--")[-1]] = args[i+1]
+        try:
+            arg_vals[args[i].split("--")[-1]] = args[i+1]
+        except:
+            if "--help" in args:
+                help = 1
         #arg_vals[i.split('=')[0]] = i.split("=")[1]
+    if help == 1 or len(args) == 0:
+        print("\nLegotree is a diagnostic tool that takes input files for the Legofit package and \nconstructs a tree. Legotree requires python 3, numpy, matplotib, descartes, and shapely.")
+        print ("\nlegotree options: ")
+        print ("--lgo\t\tThis is the only required option. Input file must be in legofit lgo format.",
+        "\n--shrink\tReshapes the tree to potentially allow better visual inspection. "
+        "\n--method\tDetermines the shrink method to use.  Takes the values log (default) or \n\t\tlong. log sets the y-axis (time) to a log scale. long shortens the top \n\t\tbranches by a fixed fraction. As of now this fraction is determined by the \n\t\tscript and not by the user.",
+        "\n--arrow\t\tDraw arrows on admixture lines to indicate the direction of admixture. \n\t\tTakes values True (default) or False.",
+        "\n--mixtimes\tPut admixtures times on admixture lines. This is especially useful when two \n\t\tadmixture events are close in time and lines overlap. Take the values \n\t\tTrue (default) or False.",
+        "\n--allmix\tIf True (default) draws all admixture events even if the admixture fraction \n\t\tis zero. A value of False will result in only showing admixture events with \n\t\ta non-zero admixture fraction.",
+        "\n--textsize\tAdjust text size. Must be an integer. Default is 12.",
+        "\n--tlabels\tForces legotree to draw times at particular tree features. ",
+        "\n--gentime\tBy default lgo files use generations. gentime allows the conversion of \n\t\tgenerations to years by providing the generation time.",
+        "\n--width\t\tChanges the width of tree branches. Argument should be an integer. Default is 27.",
+        "\n--legend\tShows a legend for admixture events. Takes the values True \n\t\t(default) or False.",
+        "\n--show\t\tDetermines if the tree should be shown or saved. Takes the values True \n\t\t(default), which shows the graph, and <filename.png> which saves the image \n\t\tto the specified name."
+        )
 
+
+        sys.exit()
     errortracker = 0
     #set defaults and check for lgo
     try:
