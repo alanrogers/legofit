@@ -117,37 +117,6 @@ class piece:
         self.y = None
         self.time_label = None
 
-'''class data_linewidth_plot():
-    def __init__(self, x, y, **kwargs):
-        self.ax = kwargs.pop("ax", plt.gca())
-        self.fig = self.ax.get_figure()
-        self.lw_data = kwargs.pop("linewidth", 1)
-        self.lw = 1
-        self.fig.canvas.draw()
-
-        self.ppd = 72./self.fig.dpi
-        self.trans = self.ax.transData.transform
-        self.linehandle, = self.ax.plot([],[],**kwargs)
-        if "label" in kwargs: kwargs.pop("label")
-        self.line, = self.ax.plot(x, y, **kwargs)
-        self.line.set_color(self.linehandle.get_color())
-        self._resize()
-        self.cid = self.fig.canvas.mpl_connect('draw_event', self._resize)
-
-    def _resize(self, event=None):
-        lw =  ((self.trans((1, self.lw_data))-self.trans((0, 0)))*self.ppd)[1] #changed this last index
-        #If it is a 1 lw will be in terms of y axis size, 0 will be in terms of x axis size
-        if lw != self.lw:
-            self.line.set_linewidth(lw)
-            self.lw = lw
-            self._redraw_later()
-
-    def _redraw_later(self):
-        self.timer = self.fig.canvas.new_timer(interval=10)
-        self.timer.single_shot = True
-        self.timer.add_callback(lambda : self.fig.canvas.draw_idle())
-        self.timer.start()'''
-
 class lego_tree:
     def __init__(self,name,input):
         self.name = name
@@ -234,7 +203,7 @@ class lego_tree:
 
             self.mixes={}
             for m in self.mix:
-                self.mixes[m.split()[1]] = m.split() [-1]
+                self.mixes[m.split()[1]] = [ m.split()[-1], m.split()[-3] ]
 
             oldest_mix = np.max([time[seg_time[i]] for i in self.mixes.keys()])
             node_times = np.sort([i.y for i in self.nodes])
@@ -252,7 +221,19 @@ class lego_tree:
 
 if __name__ == "__main__":
     
-    arg_vals = {}
+    arg_vals = {
+        "mixtimes":"True",
+        "method":"log",
+        "legend":"True",
+        "shrink":False,
+        "arrow":"True",
+        "allmix":"True",
+        "textsize":12,
+        "gentime":1,
+        "tlabels":[],
+        "show":True,
+        "width":27
+    }
     #target =  sys.argv[1]
     #print(target)
     try:
@@ -265,56 +246,100 @@ if __name__ == "__main__":
         arg_vals[args[i].split("--")[-1]] = args[i+1]
         #arg_vals[i.split('=')[0]] = i.split("=")[1]
 
+    errortracker = 0
     #set defaults and check for lgo
     try:
         target = arg_vals["lgo"]
     except:
         print("No .lgo file provided. Please specify the lgo file you wish to use with the --lgo flag.")
-        sys.exit()
+        errortracker += 1
     try:
         shrink = eval(arg_vals["shrink"])
     except:
-        shrink=False
+        print("Invalid --shrink argument provided. Shrink must be True or False (default).")
+        errortracker += 1
+    
     try:
         method = arg_vals["method"]
+        if method not in ["long","log"]:
+            print ("Invalid --method argument. Method must be log (default) or long.")
+            errortracker += 1
     except:
-        method = "log"
+        print ("Invalid --method argument. Method must be log (default) or long.")
+        errortracker += 1
+
     try:
-        allmix=eval(arg_vals['allmix'])
+        arrow = eval(arg_vals["arrow"])
+        if arrow not in [True, False]:
+            print( "Invalid --arrow argument. Arrow must be set to True (default) or False.")
+            errortracker += 1
     except:
-        allmix = True
+        print( "Invalid --arrow argument. Arrow must be set to True (default) or False.")
+        errortracker += 1
     try:
-        text_size = float(arg_vals["textsize"])
+        legend = eval(arg_vals["legend"])
+        if arrow not in [True, False]:
+            print( "Invalid --legend argument. legend must be set to True (default) or False.")
+            errortracker += 1
     except:
-        text_size = 12
+        print( "Invalid --legend argument. legend must be set to True (default) or False.")
+        errortracker += 1
+    try:
+        text_size = int(arg_vals["textsize"])
+    except:
+        print( "Text size argument cannot be coerced to integer." )
+        errortracker += 1
+    try:
+        tlabels = arg_vals["tlabels"].split(',')
+        #This needs to be checked against the lgo file somehow.
+    except:
+        tlabels = arg_vals['tlabels']
     try:
         gentime=float(arg_vals["gentime"])
     except:
-        gentime = 1.0
-    try:
-        tlabels = arg_vals["tlabels"].split(',')
-    except:
-        tlabels = []
+        print ("Gentime provided is not a number.")
+        errortracker += 1
     try:
         show = eval(arg_vals["show"])
     except:
         try:
             show = arg_vals["show"]
         except:
-            show = True    
+            show = True   
+    try:
+        allmix = eval(arg_vals["allmix"])
+    except:
+        print("Invalid --allmix argument provided. allmix must be True (default) or False.")
+        errortracker += 1
     try:
         width = arg_vals['width']
         if int(width) != float(width):
             print("Provided line width is not an integer, rounding to nearest integer.")
         width = int(width)
     except:
-        width = 27
+        print ("Argument provided to --width is not a number.")
+        errortracker += 1
+
+    try:
+        mixtimes = eval(arg_vals["mixtimes"])
+        if mixtimes not in [True, False]:
+            print ("Invalid --mixtimes argument provided. mixtimes must be True (default) or False.")
+            errortracker += 1
+    except:
+        print ("Invalid --mixtimes argument provided. mixtimes must be True (default) or False.")
+        errortracker += 1
+    
+    if errortracker >= 1:
+        print ("Found " + str(errortracker) + " argument error(s). Exiting.")
+        sys.exit()
+        
 
     for i in arg_vals.keys():
-        if i not in ['shrink','allmix','textsize','gentime','tlabels','show','method','lgo','width']:
+        if i not in ['shrink','allmix','textsize','gentime','tlabels','show','method','lgo','width','legend','arrow','mixtimes']:
             print("Argument " + str(i) + " not understood")
 
-    colors = ['#e6194b', '#3cb44b', '#4363d8', '#f58231', '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe', '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000', '#aaffc3', '#808000', '#ffd8b1', '#000075', '#808080', '#ffffff']
+    colors = ['#e6194b', '#3cb44b', '#4363d8', '#f58231', '#911eb4', '#f032e6', '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000', '#aaffc3', '#808000', '#ffd8b1', '#000075', '#808080', '#ffffff']
+    #badcolors = ['#fabebe', '#bcf60c', '#46f0f0']
     tree = lego_tree("tree",open(target).readlines())
     get_obj = {}
     for i in tree.pieces:
@@ -335,6 +360,7 @@ if __name__ == "__main__":
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
     ax.spines['bottom'].set_visible(False)
+    ax.tick_params(axis="y",labelsize=text_size)
 
 
     ####shrink#####
@@ -371,15 +397,24 @@ if __name__ == "__main__":
                 m,b = np.polyfit([node.x,dest.x],[node.y,dest.y],1)
                 final = -root.y
                 #plt.plot([node.x,(final-b)/m],[node.y,final],solid_capstyle="round",linewidth = width,color = 'lightgray',label = dest.name,zorder = 0)
-                plt.plot([node.x,dest.x],[node.y,dest.y],solid_capstyle="round",linewidth = width,color = 'lightgray',label = dest.name,zorder = 0)
+                plt.plot([node.x,dest.x],[node.y,dest.y],solid_capstyle="round",linewidth = width,color = 'lightgray',zorder = 0)#,label = dest.name)
                 #ax.set_ylim([0,root.y])
             else:
-                plt.plot([node.x,dest.x],[node.y,dest.y],solid_capstyle="round",linewidth = width,color = 'lightgray',label = dest.name,zorder = 0)
+                plt.plot([node.x,dest.x],[node.y,dest.y],solid_capstyle="round",linewidth = width,color = 'lightgray',zorder = 0)#,label = dest.name)
             
     if len(tree.mix) > 0:
-        for col_i,m in enumerate(tree.mixes.keys()):
-            p = tree.pieces[np.where([i.name == m for i in tree.pieces])[0][0]].parents[0]
-            q = tree.pieces[np.where([i.name == tree.mixes[m] for i in tree.pieces])[0][0]]
+        for col_i,key in enumerate(tree.mixes.keys()):
+            m = tree.mixes[key]
+            if m[1].startswith("m"):
+                pass
+            else:
+                print("Admixture fraction not understood or mix statement out of order. Be sure the mix lines in your lgo file take the form: mix a from b + mFraction * c")
+                sys.exit()
+
+            #admixture events occur mid branch, we use polyfit to get the equation of the line so we can 
+            #get the point where the admixture lines should be. 
+            p = tree.pieces[np.where([i.name == key for i in tree.pieces])[0][0]].parents[0]
+            q = tree.pieces[np.where([i.name == tree.mixes[key][0] for i in tree.pieces])[0][0]]
 
             if allmix == False and tree.frac[tree.mixfrac[p.children[0].name]] == 0:
                 continue
@@ -397,17 +432,22 @@ if __name__ == "__main__":
 
             ## Colored admixture line ##
 
-            plt.plot([p.x,q.x],[p.y,q.y],color = colors[col_i],alpha = .5,linewidth=3,zorder = len(tree.segs)+1,ls=(0, (3, randint(2,7))) )
-
+            plt.plot([p.x,q.x],[p.y,q.y],color = colors[col_i],alpha = .5,linewidth=3,zorder = len(tree.segs)+1,ls=(0, (6, randint(2,7))), label = str(m[1]))
+            
+            if legend == True:
+                plt.legend(handlelength=1,fontsize=text_size)
+            
+            
             ## Arrow ##
+            if arrow == True:
+                if q.x > p.x: #Check the direction of admixture
+                    adj = 1
+                else:
+                    adj = -1
+                plt.arrow(p.x+0.25*adj, p.y, -0.25*adj, p.y-q.y,length_includes_head=True, head_width=.2,head_length=.1, lw=0, color = colors[col_i])
 
-            if q.x > p.x:
-                adj = 1
-            else:
-                adj = -1
-            plt.arrow(p.x+0.25*adj, p.y, -0.25*adj, p.y-q.y,length_includes_head=True, head_width=.2,head_length=.1, lw=0, color = colors[col_i])
-
-            #plt.annotate(p.time_label,xy=[np.mean([p.x,q.x]),p.y],zorder = len(tree.segs)+3,fontsize = text_size,color = colors[col_i])
+            if mixtimes == True:
+                plt.annotate(p.time_label,xy=[np.mean([p.x,q.x]),p.y],zorder = len(tree.segs)+3,fontsize = text_size,color = colors[col_i])
 
             ### make lines going up and down from the admixture event
             #plt.plot([p.x,node_down(p).x],[p.y,node_down(p).y],color = colors[col_i],alpha = .5,linewidth=2,solid_capstyle='round',zorder = len(tree.segs)+1,ls='--')
@@ -463,26 +503,7 @@ if __name__ == "__main__":
 
     #This is the white blocks near tips
     
-    '''for i,tip in enumerate(tree.tips):
 
-        if i == len(tree.tips) -1:
-            plt.fill_between([tip.x -0.33,tip.x+1],[tip.y,tip.y],[tip.y-h,tip.y-h],color = 'white',zorder=2)
-        else:
-            plt.fill_between([tip.x -0.33,tip.x+0.33],[tip.y,tip.y],[tip.y-h,tip.y-h],color = 'white',zorder=2)
-        
-        m,b = np.polyfit([tip.x,node_up(tip).x],[tip.y,node_up(tip).y],1)
-        final = -root.y
-
-        ring_mixed = Polygon([(tip.x-.3,tip.y), (tip.x+.3,tip.y), ((final-b)/m +.3, final), ((final-b)/m -.3, final)])
-        ax = fig.add_subplot(111)
-        ring_patch = PolygonPatch(ring_mixed,color='white',zorder=2)
-        ax.add_patch(ring_patch)
-
-        line_x = [(tip.y-h-b)/m,(final-b)/m]
-        line_y = [tip.y-h,final]
-
-        plt.plot(line_x,line_y,solid_capstyle="round",linewidth = 30,color = 'blue',label = dest.name,zorder =2)
-        #plt.scatter(tip.x,tip.y,s=900,marker='v',color='red',zorder=2)'''
     plt.tight_layout()
     if show==True:
         plt.show()
@@ -490,3 +511,54 @@ if __name__ == "__main__":
         plt.savefig(show,dpi=200)
     plt.clf()
     plt.close()
+
+'''for i,tip in enumerate(tree.tips):
+    if i == len(tree.tips) -1:
+        plt.fill_between([tip.x -0.33,tip.x+1],[tip.y,tip.y],[tip.y-h,tip.y-h],color = 'white',zorder=2)
+    else:
+        plt.fill_between([tip.x -0.33,tip.x+0.33],[tip.y,tip.y],[tip.y-h,tip.y-h],color = 'white',zorder=2)
+    
+    m,b = np.polyfit([tip.x,node_up(tip).x],[tip.y,node_up(tip).y],1)
+    final = -root.y
+
+    ring_mixed = Polygon([(tip.x-.3,tip.y), (tip.x+.3,tip.y), ((final-b)/m +.3, final), ((final-b)/m -.3, final)])
+    ax = fig.add_subplot(111)
+    ring_patch = PolygonPatch(ring_mixed,color='white',zorder=2)
+    ax.add_patch(ring_patch)
+
+    line_x = [(tip.y-h-b)/m,(final-b)/m]
+    line_y = [tip.y-h,final]
+
+    plt.plot(line_x,line_y,solid_capstyle="round",linewidth = 30,color = 'blue',label = dest.name,zorder =2)
+    #plt.scatter(tip.x,tip.y,s=900,marker='v',color='red',zorder=2)'''
+
+'''class data_linewidth_plot():
+    def __init__(self, x, y, **kwargs):
+        self.ax = kwargs.pop("ax", plt.gca())
+        self.fig = self.ax.get_figure()
+        self.lw_data = kwargs.pop("linewidth", 1)
+        self.lw = 1
+        self.fig.canvas.draw()
+
+        self.ppd = 72./self.fig.dpi
+        self.trans = self.ax.transData.transform
+        self.linehandle, = self.ax.plot([],[],**kwargs)
+        if "label" in kwargs: kwargs.pop("label")
+        self.line, = self.ax.plot(x, y, **kwargs)
+        self.line.set_color(self.linehandle.get_color())
+        self._resize()
+        self.cid = self.fig.canvas.mpl_connect('draw_event', self._resize)
+
+    def _resize(self, event=None):
+        lw =  ((self.trans((1, self.lw_data))-self.trans((0, 0)))*self.ppd)[1] #changed this last index
+        #If it is a 1 lw will be in terms of y axis size, 0 will be in terms of x axis size
+        if lw != self.lw:
+            self.line.set_linewidth(lw)
+            self.lw = lw
+            self._redraw_later()
+
+    def _redraw_later(self):
+        self.timer = self.fig.canvas.new_timer(interval=10)
+        self.timer.single_shot = True
+        self.timer.add_callback(lambda : self.fig.canvas.draw_idle())
+        self.timer.start()'''
