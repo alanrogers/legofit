@@ -35,8 +35,8 @@ struct PopNode {
 
 PopNode    *PopNode_new(double *twoN, bool twoNfree, double *start,
                         bool startFree, NodeStore *ns);
-void        PopNode_addChild(PopNode * parent, PopNode * child);
-void        PopNode_mix(PopNode * child, double *mPtr, bool mixFree,
+int         PopNode_addChild(PopNode * parent, PopNode * child);
+int         PopNode_mix(PopNode * child, double *mPtr, bool mixFree,
                         PopNode * introgressor, PopNode * native);
 void        PopNode_newGene(PopNode * self, unsigned ndx);
 void        PopNode_addSample(PopNode * self, Gene * gene);
