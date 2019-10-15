@@ -97,7 +97,7 @@ PopNode    *PopNode_root(PopNode * self) {
         r0 = PopNode_root(self->parent[0]);
         r1 = PopNode_root(self->parent[1]);
         if(r0 != r1) {
-            fprintf(stderr, "%s:%s:%d: Node has multiple roots\n",
+            fprintf(stderr, "%s:%s:%d: Population network has multiple roots\n",
                     __FILE__, __func__, __LINE__);
             exit(EXIT_FAILURE);
         }
