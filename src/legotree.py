@@ -75,6 +75,7 @@ import sys
 from shapely.geometry.polygon import Polygon 
 from descartes import PolygonPatch
 import re
+from random import randint
 
 def get_slope(a,b):
     return (b.y - a.y) / (b.x - a.x)
@@ -116,7 +117,7 @@ class piece:
         self.y = None
         self.time_label = None
 
-class data_linewidth_plot():
+'''class data_linewidth_plot():
     def __init__(self, x, y, **kwargs):
         self.ax = kwargs.pop("ax", plt.gca())
         self.fig = self.ax.get_figure()
@@ -145,7 +146,7 @@ class data_linewidth_plot():
         self.timer = self.fig.canvas.new_timer(interval=10)
         self.timer.single_shot = True
         self.timer.add_callback(lambda : self.fig.canvas.draw_idle())
-        self.timer.start()
+        self.timer.start()'''
 
 class lego_tree:
     def __init__(self,name,input):
@@ -192,7 +193,7 @@ class lego_tree:
         self.tips = [i for i in self.pieces if len(i.children) == 0]
         self.nodes = [i for i in self.pieces if len(i.children) ==2]
         
-
+        #assign each tip an x value. These are arbitrary,  but affect the tree visually
         for i,j in enumerate(self.tips):
             j.x = i
 
@@ -219,6 +220,7 @@ class lego_tree:
             i.y = time[seg_time[i.name]]
         for node in self.nodes:
             node.x = np.mean([node_down(i).x for i in node.children])
+        #A parent is also between its children
 
         for i in self.pieces:
             i.y *= gentime
@@ -328,9 +330,7 @@ if __name__ == "__main__":
                 sys.exit()
             
     ####### And Graph #########
-
-    #
-    plt.ioff() #prevent the automatic showing of graphing windows. 
+ 
     fig, ax = plt.subplots(figsize=(16,9))
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
@@ -394,8 +394,20 @@ if __name__ == "__main__":
             
             #if time[seg_time[m]] == 0:
             #    continue
-            plt.plot([p.x,q.x],[p.y,q.y],color = colors[col_i],alpha = .5,linewidth=2,zorder = len(tree.segs)+1,ls='--')
-            plt.annotate(p.time_label,xy=[np.mean([p.x,q.x]),p.y],zorder = len(tree.segs)+3,fontsize = text_size,color = colors[col_i])
+
+            ## Colored admixture line ##
+
+            plt.plot([p.x,q.x],[p.y,q.y],color = colors[col_i],alpha = .5,linewidth=3,zorder = len(tree.segs)+1,ls=(0, (3, randint(2,7))) )
+
+            ## Arrow ##
+
+            if q.x > p.x:
+                adj = 1
+            else:
+                adj = -1
+            plt.arrow(p.x+0.25*adj, p.y, -0.25*adj, p.y-q.y,length_includes_head=True, head_width=.2,head_length=.1, lw=0, color = colors[col_i])
+
+            #plt.annotate(p.time_label,xy=[np.mean([p.x,q.x]),p.y],zorder = len(tree.segs)+3,fontsize = text_size,color = colors[col_i])
 
             ### make lines going up and down from the admixture event
             #plt.plot([p.x,node_down(p).x],[p.y,node_down(p).y],color = colors[col_i],alpha = .5,linewidth=2,solid_capstyle='round',zorder = len(tree.segs)+1,ls='--')
@@ -437,12 +449,12 @@ if __name__ == "__main__":
         if shrink != True:
             plt.ylabel('Generations ago',fontsize = text_size)
         elif method == "log":
-            plt.ylabel("Natural log of generations ago")
+            plt.ylabel("Natural log of generations ago",fontsize = text_size)
     else:
         if shrink != True:
             plt.ylabel('Years ago',fontsize = text_size)
         elif method == "log":
-            plt.ylabel("Natural log of years ago")
+            plt.ylabel("Natural log of years ago", fontsize = text_size)
     #ax.plot(ax.get_xlim(),ax.get_ylim(),ls='--')
 
     for lab in tlabels:
@@ -471,8 +483,10 @@ if __name__ == "__main__":
 
         plt.plot(line_x,line_y,solid_capstyle="round",linewidth = 30,color = 'blue',label = dest.name,zorder =2)
         #plt.scatter(tip.x,tip.y,s=900,marker='v',color='red',zorder=2)'''
-
+    plt.tight_layout()
     if show==True:
         plt.show()
     else:
         plt.savefig(show,dpi=200)
+    plt.clf()
+    plt.close()
