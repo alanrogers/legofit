@@ -75,6 +75,7 @@ import sys
 from shapely.geometry.polygon import Polygon 
 from descartes import PolygonPatch
 import re
+from random import randint
 
 def get_slope(a,b):
     return (b.y - a.y) / (b.x - a.x)
@@ -115,37 +116,6 @@ class piece:
         self.x = None
         self.y = None
         self.time_label = None
-
-class data_linewidth_plot():
-    def __init__(self, x, y, **kwargs):
-        self.ax = kwargs.pop("ax", plt.gca())
-        self.fig = self.ax.get_figure()
-        self.lw_data = kwargs.pop("linewidth", 1)
-        self.lw = 1
-        self.fig.canvas.draw()
-
-        self.ppd = 72./self.fig.dpi
-        self.trans = self.ax.transData.transform
-        self.linehandle, = self.ax.plot([],[],**kwargs)
-        if "label" in kwargs: kwargs.pop("label")
-        self.line, = self.ax.plot(x, y, **kwargs)
-        self.line.set_color(self.linehandle.get_color())
-        self._resize()
-        self.cid = self.fig.canvas.mpl_connect('draw_event', self._resize)
-
-    def _resize(self, event=None):
-        lw =  ((self.trans((1, self.lw_data))-self.trans((0, 0)))*self.ppd)[1] #changed this last index
-        #If it is a 1 lw will be in terms of y axis size, 0 will be in terms of x axis size
-        if lw != self.lw:
-            self.line.set_linewidth(lw)
-            self.lw = lw
-            self._redraw_later()
-
-    def _redraw_later(self):
-        self.timer = self.fig.canvas.new_timer(interval=10)
-        self.timer.single_shot = True
-        self.timer.add_callback(lambda : self.fig.canvas.draw_idle())
-        self.timer.start()
 
 class lego_tree:
     def __init__(self,name,input):
@@ -192,7 +162,7 @@ class lego_tree:
         self.tips = [i for i in self.pieces if len(i.children) == 0]
         self.nodes = [i for i in self.pieces if len(i.children) ==2]
         
-
+        #assign each tip an x value. These are arbitrary,  but affect the tree visually
         for i,j in enumerate(self.tips):
             j.x = i
 
@@ -219,6 +189,7 @@ class lego_tree:
             i.y = time[seg_time[i.name]]
         for node in self.nodes:
             node.x = np.mean([node_down(i).x for i in node.children])
+        #A parent is also between its children
 
         for i in self.pieces:
             i.y *= gentime
@@ -232,7 +203,7 @@ class lego_tree:
 
             self.mixes={}
             for m in self.mix:
-                self.mixes[m.split()[1]] = m.split() [-1]
+                self.mixes[m.split()[1]] = [ m.split()[-1], m.split()[-3] ]
 
             oldest_mix = np.max([time[seg_time[i]] for i in self.mixes.keys()])
             node_times = np.sort([i.y for i in self.nodes])
@@ -249,7 +220,20 @@ class lego_tree:
 
 
 if __name__ == "__main__":
-    arg_vals = {}
+    
+    arg_vals = {
+        "mixtimes":"True",
+        "method":"log",
+        "legend":"True",
+        "shrink":False,
+        "arrow":"True",
+        "allmix":"True",
+        "textsize":12,
+        "gentime":1,
+        "tlabels":[],
+        "show":True,
+        "width":27
+    }
     #target =  sys.argv[1]
     #print(target)
     try:
@@ -259,65 +243,146 @@ if __name__ == "__main__":
     
     inds = [i for i,j in enumerate(args) if "--" in j]
     for i in inds:
-        arg_vals[args[i].split("--")[-1]] = args[i+1]
+        try:
+            arg_vals[args[i].split("--")[-1]] = args[i+1]
+        except:
+            if "--help" in args:
+                help = 1
         #arg_vals[i.split('=')[0]] = i.split("=")[1]
+    if help == 1 or len(args) == 0:
+        print("\nLegotree is a diagnostic tool that takes input files for the Legofit package and \nconstructs a tree. Legotree requires python 3, numpy, matplotib, descartes, and shapely.")
+        print ("\nlegotree options: ")
+        print ("--lgo\t\tThis is the only required option. Input file must be in legofit lgo format.",
+        "\n--shrink\tReshapes the tree to potentially allow better visual inspection. "
+        "\n--method\tDetermines the shrink method to use.  Takes the values log (default) or \n\t\tlong. log sets the y-axis (time) to a log scale. long shortens the top \n\t\tbranches by a fixed fraction. As of now this fraction is determined by the \n\t\tscript and not by the user.",
+        "\n--arrow\t\tDraw arrows on admixture lines to indicate the direction of admixture. \n\t\tTakes values True (default) or False.",
+        "\n--mixtimes\tPut admixtures times on admixture lines. This is especially useful when two \n\t\tadmixture events are close in time and lines overlap. Take the values \n\t\tTrue (default) or False.",
+        "\n--allmix\tIf True (default) draws all admixture events even if the admixture fraction \n\t\tis zero. A value of False will result in only showing admixture events with \n\t\ta non-zero admixture fraction.",
+        "\n--textsize\tAdjust text size. Must be an integer. Default is 12.",
+        "\n--tlabels\tForces legotree to draw times at particular tree features. ",
+        "\n--gentime\tBy default lgo files use generations. gentime allows the conversion of \n\t\tgenerations to years by providing the generation time.",
+        "\n--width\t\tChanges the width of tree branches. Argument should be an integer. Default is 27.",
+        "\n--legend\tShows a legend for admixture events. Takes the values True \n\t\t(default) or False.",
+        "\n--show\t\tDetermines if the tree should be shown or saved. Takes the values True \n\t\t(default), which shows the graph, and <filename.png> which saves the image \n\t\tto the specified name."
+        )
 
+
+        sys.exit()
+    errortracker = 0
     #set defaults and check for lgo
     try:
         target = arg_vals["lgo"]
     except:
         print("No .lgo file provided. Please specify the lgo file you wish to use with the --lgo flag.")
-        sys.exit()
+        errortracker += 1
     try:
         shrink = eval(arg_vals["shrink"])
     except:
-        shrink=False
+        print("Invalid --shrink argument provided. Shrink must be True or False (default).")
+        errortracker += 1
+    
     try:
         method = arg_vals["method"]
+        if method not in ["long","log"]:
+            print ("Invalid --method argument. Method must be log (default) or long.")
+            errortracker += 1
     except:
-        method = "log"
+        print ("Invalid --method argument. Method must be log (default) or long.")
+        errortracker += 1
+
     try:
-        allmix=eval(arg_vals['allmix'])
+        arrow = eval(arg_vals["arrow"])
+        if arrow not in [True, False]:
+            print( "Invalid --arrow argument. Arrow must be set to True (default) or False.")
+            errortracker += 1
     except:
-        allmix = True
+        print( "Invalid --arrow argument. Arrow must be set to True (default) or False.")
+        errortracker += 1
     try:
-        text_size = float(arg_vals["textsize"])
+        legend = eval(arg_vals["legend"])
+        if arrow not in [True, False]:
+            print( "Invalid --legend argument. legend must be set to True (default) or False.")
+            errortracker += 1
     except:
-        text_size = 12
+        print( "Invalid --legend argument. legend must be set to True (default) or False.")
+        errortracker += 1
+    try:
+        text_size = int(arg_vals["textsize"])
+    except:
+        print( "Text size argument cannot be coerced to integer." )
+        errortracker += 1
+    try:
+        tlabels = arg_vals["tlabels"].split(',')
+        #This needs to be checked against the lgo file somehow.
+    except:
+        tlabels = arg_vals['tlabels']
     try:
         gentime=float(arg_vals["gentime"])
     except:
-        gentime = 1.0
-    try:
-        tlabels = arg_vals["tlabels"].split(',')
-    except:
-        tlabels = []
+        print ("Gentime provided is not a number.")
+        errortracker += 1
     try:
         show = eval(arg_vals["show"])
     except:
         try:
             show = arg_vals["show"]
         except:
-            show = True    
+            show = True   
+    try:
+        allmix = eval(arg_vals["allmix"])
+    except:
+        print("Invalid --allmix argument provided. allmix must be True (default) or False.")
+        errortracker += 1
+    try:
+        width = arg_vals['width']
+        if int(width) != float(width):
+            print("Provided line width is not an integer, rounding to nearest integer.")
+        width = int(width)
+    except:
+        print ("Argument provided to --width is not a number.")
+        errortracker += 1
+
+    try:
+        mixtimes = eval(arg_vals["mixtimes"])
+        if mixtimes not in [True, False]:
+            print ("Invalid --mixtimes argument provided. mixtimes must be True (default) or False.")
+            errortracker += 1
+    except:
+        print ("Invalid --mixtimes argument provided. mixtimes must be True (default) or False.")
+        errortracker += 1
+    
+    if errortracker >= 1:
+        print ("Found " + str(errortracker) + " argument error(s). Exiting.")
+        sys.exit()
+        
 
     for i in arg_vals.keys():
-        if i not in ['shrink','allmix','textsize','gentime','tlabels','show','method','lgo']:
+        if i not in ['shrink','allmix','textsize','gentime','tlabels','show','method','lgo','width','legend','arrow','mixtimes']:
             print("Argument " + str(i) + " not understood")
 
-    colors = ['#e6194b', '#3cb44b', '#4363d8', '#f58231', '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe', '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000', '#aaffc3', '#808000', '#ffd8b1', '#000075', '#808080', '#ffffff']
+    colors = ['#e6194b', '#3cb44b', '#4363d8', '#f58231', '#911eb4', '#f032e6', '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000', '#aaffc3', '#808000', '#ffd8b1', '#000075', '#808080', '#ffffff']
+    #badcolors = ['#fabebe', '#bcf60c', '#46f0f0']
     tree = lego_tree("tree",open(target).readlines())
     get_obj = {}
     for i in tree.pieces:
         get_obj[i.name] = i
 
 
-    ####### And Graph #########
+    ## Check if parents are older than children ##
 
-    #
+    for piece in tree.pieces:
+        for parent in piece.parents:
+            if parent.y <= piece.y:
+                print ("Parent " + parent.name + " is younger or of the same age as child " + piece.name+"." )
+                sys.exit()
+            
+    ####### And Graph #########
+ 
     fig, ax = plt.subplots(figsize=(16,9))
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
     ax.spines['bottom'].set_visible(False)
+    ax.tick_params(axis="y",labelsize=text_size)
 
 
     ####shrink#####
@@ -343,7 +408,7 @@ if __name__ == "__main__":
         #plt.yticks([i.time_label for i in pieces])
 
     root = [i for i in tree.pieces if len(i.parents) == 0][0]
-    plt.plot([root.x,root.x],[root.y,root.y+.1*root.y],linewidth = 27,color='lightgray',zorder=0)  
+    plt.plot([root.x,root.x],[root.y,root.y+.1*root.y],linewidth = width,color='lightgray',zorder=0)  
     #plt.plot([root.x,root.x],[root.y,root.y+.1*root.y], label='some 1 data unit wide line', linewidth=7, alpha=1,color='lightgray',zorder=0)
     for node in tree.nodes:
         if shrink != True and method != "log":
@@ -353,20 +418,29 @@ if __name__ == "__main__":
             if dest in tree.tips:
                 m,b = np.polyfit([node.x,dest.x],[node.y,dest.y],1)
                 final = -root.y
-                #plt.plot([node.x,(final-b)/m],[node.y,final],solid_capstyle="round",linewidth = 27,color = 'lightgray',label = dest.name,zorder = 0)
-                plt.plot([node.x,dest.x],[node.y,dest.y],solid_capstyle="round",linewidth = 27,color = 'lightgray',label = dest.name,zorder = 0)
+                #plt.plot([node.x,(final-b)/m],[node.y,final],solid_capstyle="round",linewidth = width,color = 'lightgray',label = dest.name,zorder = 0)
+                plt.plot([node.x,dest.x],[node.y,dest.y],solid_capstyle="round",linewidth = width,color = 'lightgray',zorder = 0)#,label = dest.name)
                 #ax.set_ylim([0,root.y])
             else:
-                plt.plot([node.x,dest.x],[node.y,dest.y],solid_capstyle="round",linewidth = 27,color = 'lightgray',label = dest.name,zorder = 0)
+                plt.plot([node.x,dest.x],[node.y,dest.y],solid_capstyle="round",linewidth = width,color = 'lightgray',zorder = 0)#,label = dest.name)
             
     if len(tree.mix) > 0:
-        for col_i,m in enumerate(tree.mixes.keys()):
-            p = tree.pieces[np.where([i.name == m for i in tree.pieces])[0][0]].parents[0]
-            q = tree.pieces[np.where([i.name == tree.mixes[m] for i in tree.pieces])[0][0]]
+        for col_i,key in enumerate(tree.mixes.keys()):
+            m = tree.mixes[key]
+            if m[1].startswith("m"):
+                pass
+            else:
+                print("Admixture fraction not understood or mix statement out of order. Be sure the mix lines in your lgo file take the form: mix a from b + mFraction * c")
+                sys.exit()
+
+            #admixture events occur mid branch, we use polyfit to get the equation of the line so we can 
+            #get the point where the admixture lines should be. 
+            p = tree.pieces[np.where([i.name == key for i in tree.pieces])[0][0]].parents[0]
+            q = tree.pieces[np.where([i.name == tree.mixes[key][0] for i in tree.pieces])[0][0]]
 
             if allmix == False and tree.frac[tree.mixfrac[p.children[0].name]] == 0:
                 continue
-
+            
             z = np.polyfit([node_up(p).x,node_down(p).x],[node_up(p).y,node_down(p).y],1)
             new_px = (p.y - z[1]) / z[0]
             p.x = new_px
@@ -374,14 +448,31 @@ if __name__ == "__main__":
             w = np.polyfit([node_up(q).x,node_down(q).x],[node_up(q).y,node_down(q).y],1)
             new_qx = (q.y - w[1]) / w[0]
             q.x = new_qx
-
+            
             #if time[seg_time[m]] == 0:
             #    continue
-            plt.plot([p.x,q.x],[p.y,q.y],color = colors[col_i],alpha = .5,linewidth=2,zorder = len(tree.segs)+1,ls='--')
-            plt.annotate(p.time_label,xy=[np.mean([p.x,q.x]),p.y],zorder = len(tree.segs)+3,fontsize = text_size,color = colors[col_i])
+
+            ## Colored admixture line ##
+
+            plt.plot([p.x,q.x],[p.y,q.y],color = colors[col_i],alpha = .5,linewidth=3,zorder = len(tree.segs)+1,ls=(0, (6, randint(2,7))), label = str(m[1]))
+            
+            if legend == True:
+                plt.legend(handlelength=1,fontsize=text_size)
+            
+            
+            ## Arrow ##
+            if arrow == True:
+                if q.x > p.x: #Check the direction of admixture
+                    adj = 1
+                else:
+                    adj = -1
+                plt.arrow(p.x+0.25*adj, p.y, -0.25*adj, p.y-q.y,length_includes_head=True, head_width=.2,head_length=.1, lw=0, color = colors[col_i])
+
+            if mixtimes == True:
+                plt.annotate(p.time_label,xy=[np.mean([p.x,q.x]),p.y],zorder = len(tree.segs)+3,fontsize = text_size,color = colors[col_i])
 
             ### make lines going up and down from the admixture event
-            plt.plot([p.x,node_down(p).x],[p.y,node_down(p).y],color = colors[col_i],alpha = .5,linewidth=2,solid_capstyle='round',zorder = len(tree.segs)+1,ls='--')
+            #plt.plot([p.x,node_down(p).x],[p.y,node_down(p).y],color = colors[col_i],alpha = .5,linewidth=2,solid_capstyle='round',zorder = len(tree.segs)+1,ls='--')
             
             #plt.plot([q.x,(q.y + .5*(node_up(q).y -q.y)-w[1])/w[0]],[q.y,q.y + .5*(node_up(q).y -q.y)],color = colors[col_i],alpha = .5,linewidth=2,solid_capstyle='round',zorder = len(tree.segs)+1,ls='--')
             #if q.name =='xy2':
@@ -397,7 +488,7 @@ if __name__ == "__main__":
         
             new_b = i.y - perp * (i.x)
 
-            ax.plot([i.x-.1,i.x+.1],[perp*(i.x-.1)+new_b,perp*(i.x+.1)+new_b],linewidth = 2,color = 'black',alpha = 0.5)
+            #ax.plot([i.x-.1,i.x+.1],[perp*(i.x-.1)+new_b,perp*(i.x+.1)+new_b],linewidth = 2,color = 'black',alpha = 0.5)
 
             #and add the segment label
             plt.annotate(i.name,xy=[i.x-0.1,i.y],zorder = len(tree.segs)+3,fontsize = text_size)
@@ -412,19 +503,20 @@ if __name__ == "__main__":
     #Just an adjuster
     h = root.y*0.2
 
+    limitlen = plt.ylim()[1] - plt.ylim()[0]
     for i in tree.tips:
-        plt.annotate(i.name,xy=[i.x-.01,i.y-plt.ylim()[1]*.06],fontsize = text_size)
+        plt.annotate(i.name,xy=[i.x-.01,i.y-limitlen*.045],fontsize = text_size)
 
     if gentime == 1:
         if shrink != True:
             plt.ylabel('Generations ago',fontsize = text_size)
         elif method == "log":
-            plt.ylabel("Natural log of generations ago")
+            plt.ylabel("Natural log of generations ago",fontsize = text_size)
     else:
         if shrink != True:
             plt.ylabel('Years ago',fontsize = text_size)
         elif method == "log":
-            plt.ylabel("Natural log of years ago")
+            plt.ylabel("Natural log of years ago", fontsize = text_size)
     #ax.plot(ax.get_xlim(),ax.get_ylim(),ls='--')
 
     for lab in tlabels:
@@ -433,28 +525,62 @@ if __name__ == "__main__":
 
     #This is the white blocks near tips
     
-    '''for i,tip in enumerate(tree.tips):
 
-        if i == len(tree.tips) -1:
-            plt.fill_between([tip.x -0.33,tip.x+1],[tip.y,tip.y],[tip.y-h,tip.y-h],color = 'white',zorder=2)
-        else:
-            plt.fill_between([tip.x -0.33,tip.x+0.33],[tip.y,tip.y],[tip.y-h,tip.y-h],color = 'white',zorder=2)
-        
-        m,b = np.polyfit([tip.x,node_up(tip).x],[tip.y,node_up(tip).y],1)
-        final = -root.y
-
-        ring_mixed = Polygon([(tip.x-.3,tip.y), (tip.x+.3,tip.y), ((final-b)/m +.3, final), ((final-b)/m -.3, final)])
-        ax = fig.add_subplot(111)
-        ring_patch = PolygonPatch(ring_mixed,color='white',zorder=2)
-        ax.add_patch(ring_patch)
-
-        line_x = [(tip.y-h-b)/m,(final-b)/m]
-        line_y = [tip.y-h,final]
-
-        plt.plot(line_x,line_y,solid_capstyle="round",linewidth = 30,color = 'blue',label = dest.name,zorder =2)
-        #plt.scatter(tip.x,tip.y,s=900,marker='v',color='red',zorder=2)'''
-
+    plt.tight_layout()
     if show==True:
         plt.show()
     else:
-        plt.savefig(show)
+        plt.savefig(show,dpi=200)
+    plt.clf()
+    plt.close()
+
+'''for i,tip in enumerate(tree.tips):
+    if i == len(tree.tips) -1:
+        plt.fill_between([tip.x -0.33,tip.x+1],[tip.y,tip.y],[tip.y-h,tip.y-h],color = 'white',zorder=2)
+    else:
+        plt.fill_between([tip.x -0.33,tip.x+0.33],[tip.y,tip.y],[tip.y-h,tip.y-h],color = 'white',zorder=2)
+    
+    m,b = np.polyfit([tip.x,node_up(tip).x],[tip.y,node_up(tip).y],1)
+    final = -root.y
+
+    ring_mixed = Polygon([(tip.x-.3,tip.y), (tip.x+.3,tip.y), ((final-b)/m +.3, final), ((final-b)/m -.3, final)])
+    ax = fig.add_subplot(111)
+    ring_patch = PolygonPatch(ring_mixed,color='white',zorder=2)
+    ax.add_patch(ring_patch)
+
+    line_x = [(tip.y-h-b)/m,(final-b)/m]
+    line_y = [tip.y-h,final]
+
+    plt.plot(line_x,line_y,solid_capstyle="round",linewidth = 30,color = 'blue',label = dest.name,zorder =2)
+    #plt.scatter(tip.x,tip.y,s=900,marker='v',color='red',zorder=2)'''
+
+'''class data_linewidth_plot():
+    def __init__(self, x, y, **kwargs):
+        self.ax = kwargs.pop("ax", plt.gca())
+        self.fig = self.ax.get_figure()
+        self.lw_data = kwargs.pop("linewidth", 1)
+        self.lw = 1
+        self.fig.canvas.draw()
+
+        self.ppd = 72./self.fig.dpi
+        self.trans = self.ax.transData.transform
+        self.linehandle, = self.ax.plot([],[],**kwargs)
+        if "label" in kwargs: kwargs.pop("label")
+        self.line, = self.ax.plot(x, y, **kwargs)
+        self.line.set_color(self.linehandle.get_color())
+        self._resize()
+        self.cid = self.fig.canvas.mpl_connect('draw_event', self._resize)
+
+    def _resize(self, event=None):
+        lw =  ((self.trans((1, self.lw_data))-self.trans((0, 0)))*self.ppd)[1] #changed this last index
+        #If it is a 1 lw will be in terms of y axis size, 0 will be in terms of x axis size
+        if lw != self.lw:
+            self.line.set_linewidth(lw)
+            self.lw = lw
+            self._redraw_later()
+
+    def _redraw_later(self):
+        self.timer = self.fig.canvas.new_timer(interval=10)
+        self.timer.single_shot = True
+        self.timer.add_callback(lambda : self.fig.canvas.draw_idle())
+        self.timer.start()'''
