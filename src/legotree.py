@@ -132,17 +132,17 @@ class lego_tree:
         parent = {}
         child = {}
         for i in self.derive:
-            parent[i.split(' ')[1]] = [i.split()[-1]]
+            parent[i.split()[1]] = [i.split()[-1]]
             try:
-                kid = child[i.split()[-1]]
-                child[i.split()[-1]].append(i.split()[1])
+                kid = child[i.split()[-1]] #i.split()[-1] is the parent
+                child[i.split()[-1]].append(i.split()[1]) #check if parent has a child entry, and append child if so
             except:
-                child[i.split()[-1]] = [i.split()[1]]
+                child[i.split()[-1]] = [i.split()[1]] #if not create parent and attach child to it
         if len(self.mix) > 0: 
             for i in self.mix:
                 parent[i.split()[1] ] = [i.split()[3]]
                 try:
-                    kid = child[i.split()[-1]]
+                    kid = child[i.split()[3]]
                     child[i.split()[3]].append(i.split()[1])
                 except:
                     child[i.split()[3]] = [i.split()[1]]
@@ -516,7 +516,8 @@ if __name__ == "__main__":
             plt.ylabel("$log_{10}$ generations ago",fontsize = text_size)
     else:
         if shrink != True:
-            plt.ylabel('Years ago',fontsize = text_size)
+            #plt.yticks(ticks=plt.yticks()[0][1:],labels=plt.yticks()[0][1:]/1000.)
+            plt.ylabel('Thousand years ago',fontsize = text_size)
         elif method == "log":
             plt.ylabel("$log_{10}$ years ago", fontsize = text_size)
     #ax.plot(ax.get_xlim(),ax.get_ylim(),ls='--')
