@@ -66,6 +66,7 @@
 #include "parse.h"
 #include "parstore.h"
 #include "popnode.h"
+#include "error.h"
 #include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -100,7 +101,8 @@ void parseParam(char *next, unsigned type, ParStore * parstore,
 void parseSegment(char *next, PopNodeTab * poptbl, SampNdx * sndx,
                   LblNdx * lndx, ParStore * parstore,
                   NodeStore * ns, const char *orig);
-void parseDerive(char *next, PopNodeTab * poptbl, const char *orig);
+void parseDerive(char *next, PopNodeTab * poptbl, ParStore * parstore,
+                 const char *orig);
 void parseMix(char *next, PopNodeTab * poptbl, ParStore * parstore,
               const char *orig);
 int get_one_line(size_t n, char buff[n], FILE * fp);
@@ -385,7 +387,8 @@ void parseSegment(char *next, PopNodeTab * poptbl, SampNdx * sndx,
 /// @param[in] next unparsed portion of input line
 /// @param[inout] poptbl associates names of segments
 /// with pointers to them.
-void parseDerive(char *next, PopNodeTab * poptbl, const char *orig) {
+void parseDerive(char *next, PopNodeTab * poptbl, ParStore * parstore,
+                 const char *orig) {
     char *childName, *parName, *tok;
 
     // Read name of child
@@ -431,7 +434,31 @@ void parseDerive(char *next, PopNodeTab * poptbl, const char *orig) {
         fprintf(stderr, "input: %s\n", orig);
         exit(EXIT_FAILURE);
     }
-    PopNode_addChild(parNode, childNode);
+    int status = PopNode_addChild(parNode, childNode);
+    switch(status){
+    case 0:
+        break;
+    case TOO_MANY_PARENTS:
+        fprintf(stderr,"%s:%d: node has too many parents\n",
+                __FILE__,__LINE__);
+        fprintf(stderr, " Input: %s\n", orig);
+        exit(EXIT_FAILURE);
+    case TOO_MANY_CHILDREN:
+        fprintf(stderr,"%s:%d: node has too many children\n",
+                __FILE__,__LINE__);
+        fprintf(stderr, " Input: %s\n", orig);
+        exit(EXIT_FAILURE);
+    case DATE_MISMATCH:
+        ParStore_print(parstore, stderr);
+        fprintf(stderr,"%s:%d: date mismatch\n",__FILE__,__LINE__);
+        fprintf(stderr, " Input: %s\n", orig);
+        exit(EXIT_FAILURE);
+    default:
+        fprintf(stderr,"%s:%d: unknown error (%d)\n",
+                __FILE__,__LINE__,status);
+        fprintf(stderr, " Input: %s\n", orig);
+        exit(EXIT_FAILURE);
+    }
 }
 
 /// Parse a line of input describing gene flow.
@@ -513,7 +540,32 @@ void parseMix(char *next, PopNodeTab * poptbl, ParStore * parstore,
         exit(EXIT_FAILURE);
     }
 
-    PopNode_mix(childNode, mPtr, mtype & FREE, parNode1, parNode0);
+    int status = PopNode_mix(childNode, mPtr, mtype & FREE, parNode1,
+                             parNode0);
+    switch(status){
+    case 0:
+        break;
+    case TOO_MANY_PARENTS:
+        fprintf(stderr,"%s:%d: node has too many parents\n",
+                __FILE__,__LINE__);
+        fprintf(stderr, " Input: %s\n", orig);
+        exit(EXIT_FAILURE);
+    case TOO_MANY_CHILDREN:
+        fprintf(stderr,"%s:%d: node has too many children\n",
+                __FILE__,__LINE__);
+        fprintf(stderr, " Input: %s\n", orig);
+        exit(EXIT_FAILURE);
+    case DATE_MISMATCH:
+        ParStore_print(parstore, stderr);
+        fprintf(stderr,"%s:%d: date mismatch\n",__FILE__,__LINE__);
+        fprintf(stderr, " Input: %s\n", orig);
+        exit(EXIT_FAILURE);
+    default:
+        fprintf(stderr,"%s:%d: unknown error (%d)\n",
+                __FILE__,__LINE__,status);
+        fprintf(stderr, " Input: %s\n", orig);
+        exit(EXIT_FAILURE);
+    }
 }
 
 // Read a line into buff, skipping blank lines; strip comments and
@@ -612,7 +664,7 @@ PopNode *mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, ParStore * parstore,
         else if(0 == strcmp(token, "mix"))
             parseMix(next, poptbl, parstore, orig);
         else if(0 == strcmp(token, "derive"))
-            parseDerive(next, poptbl, orig);
+            parseDerive(next, poptbl, parstore, orig);
         else
             ILLEGAL_INPUT(token, orig);
     }

@@ -18,6 +18,7 @@
 #include "gene.h"
 #include "misc.h"
 #include "parstore.h"
+#include "error.h"
 #include "dtnorm.h"
 #include <stdbool.h>
 #include <string.h>
@@ -96,7 +97,7 @@ PopNode    *PopNode_root(PopNode * self) {
         r0 = PopNode_root(self->parent[0]);
         r1 = PopNode_root(self->parent[1]);
         if(r0 != r1) {
-            fprintf(stderr, "%s:%s:%d: Node has multiple roots\n",
+            fprintf(stderr, "%s:%s:%d: Population network has multiple roots\n",
                     __FILE__, __func__, __LINE__);
             exit(EXIT_FAILURE);
         }
@@ -220,23 +221,34 @@ PopNode    *PopNode_new(double *twoN, bool twoNfree, double *start,
 }
 
 /// Connect parent and child
-void PopNode_addChild(PopNode * parent, PopNode * child) {
-    if(parent->nchildren > 1)
-        eprintf("%s:%s:%d: Can't add child because parent already has %d.\n",
+int PopNode_addChild(PopNode * parent, PopNode * child) {
+    if(parent->nchildren > 1) {
+        fprintf(stderr,
+                "%s:%s:%d: Can't add child because parent already has %d.\n",
                 __FILE__, __func__, __LINE__, parent->nchildren);
-    if(child->nparents > 1)
-        eprintf("%s:%s:%d: Can't add parent because child already has %d.\n",
+        return TOO_MANY_CHILDREN;
+    }
+    if(child->nparents > 1) {
+        fprintf(stderr,
+                "%s:%s:%d: Can't add parent because child already has %d.\n",
                 __FILE__, __func__, __LINE__, child->nparents);
-    if(*child->start > *parent->start)
-        eprintf("%s:%s:%d: Child start (%lf) must be <= parent start (%lf)\n",
+        return TOO_MANY_PARENTS;
+    }
+    if(*child->start > *parent->start) {
+        fprintf(stderr,
+                "%s:%s:%d: Child start (%lf) must be <= parent start (%lf)\n",
                 __FILE__, __func__, __LINE__, *child->start, *parent->start);
+        return DATE_MISMATCH;
+    }
     if(child->end == NULL) {
         child->end = parent->start;
     } else {
-        if(child->end != parent->start)
-            eprintf("%s:%s:%d: Date mismatch."
+        if(child->end != parent->start) {
+            fprintf(stderr, "%s:%s:%d: Date mismatch."
                     " child->end=%p != %p = parent->start\n",
                     __FILE__, __func__, __LINE__, child->end, parent->start);
+        return DATE_MISMATCH;
+    }
     }
     parent->child[parent->nchildren] = child;
     child->parent[child->nparents] = parent;
@@ -244,6 +256,7 @@ void PopNode_addChild(PopNode * parent, PopNode * child) {
     ++child->nparents;
     PopNode_sanityCheck(parent, __FILE__, __LINE__);
     PopNode_sanityCheck(child, __FILE__, __LINE__);
+    return 0;
 }
 
 /// Check sanity of PopNode
@@ -278,36 +291,47 @@ void PopNode_addSample(PopNode * self, Gene * gene) {
 /// @param[in] mixFree 1 if mPtr is a free parameter; 0 otherwise
 /// @param[inout] introgressor pointer to the introgressing parent
 /// @param[inout] native pointer to the native parent
-void PopNode_mix(PopNode * child, double *mPtr, bool mixFree,
+int PopNode_mix(PopNode * child, double *mPtr, bool mixFree,
                  PopNode * introgressor, PopNode * native) {
 
-    if(introgressor->nchildren > 1)
-        eprintf("%s:%s:%d:"
+    if(introgressor->nchildren > 1) {
+        fprintf(stderr,"%s:%s:%d:"
                 " Can't add child because introgressor already has %d.\n",
                 __FILE__, __func__, __LINE__, introgressor->nchildren);
-    if(native->nchildren > 1)
-        eprintf("%s:%s:%d:"
+        return TOO_MANY_CHILDREN;
+    }
+    if(native->nchildren > 1) {
+        fprintf(stderr,"%s:%s:%d:"
                 " Can't add child because native parent already has %d.\n",
                 __FILE__, __func__, __LINE__, native->nchildren);
-    if(child->nparents > 0)
-        eprintf("%s:%s:%d:"
+        return TOO_MANY_CHILDREN;
+    }
+    if(child->nparents > 0) {
+        fprintf(stderr, "%s:%s:%d:"
                 " Can't add 2 parents because child already has %d.\n",
                 __FILE__, __func__, __LINE__, child->nparents);
+        return TOO_MANY_PARENTS;
+    }
     if(child->end != NULL) {
-        if(child->end != introgressor->start)
-            eprintf("%s:%s:%d: Date mismatch."
+        if(child->end != introgressor->start) {
+            fprintf(stderr,"%s:%s:%d: Date mismatch."
                     " child->end=%p != %p=introgressor->start\n",
                     __FILE__, __func__, __LINE__,
                     child->end, introgressor->start);
-        if(child->end != native->start)
-            eprintf("%s:%s:%d: Date mismatch."
+            return DATE_MISMATCH;
+        }
+        if(child->end != native->start) {
+            fprintf(stderr, "%s:%s:%d: Date mismatch."
                     " child->end=%p != %p=native->start\n",
                     __FILE__, __func__, __LINE__, child->end, native->start);
+            return DATE_MISMATCH;
+        }
     } else if(native->start != introgressor->start) {
-        eprintf("%s:%s:%d: Date mismatch."
+        fprintf(stderr, "%s:%s:%d: Date mismatch."
                 "native->start=%p != %p=introgressor->start\n",
                 __FILE__, __func__, __LINE__,
                 native->start, introgressor->start);
+        return DATE_MISMATCH;
     } else
         child->end = native->start;
 
@@ -323,6 +347,7 @@ void PopNode_mix(PopNode * child, double *mPtr, bool mixFree,
     PopNode_sanityCheck(child, __FILE__, __LINE__);
     PopNode_sanityCheck(introgressor, __FILE__, __LINE__);
     PopNode_sanityCheck(native, __FILE__, __LINE__);
+    return 0;
 }
 
 /// Allocates a new Gene and puts it into the array within
@@ -744,7 +769,8 @@ int main(int argc, char **argv) {
     PopNode_addSample(p1, g2);
     assert(p1->nsamples == 2);
 
-    PopNode_addChild(p1, p0);
+    int status=PopNode_addChild(p1, p0);
+    assert(status==0);
     assert(p1->nchildren == 1);
     assert(p0->nparents == 1);
     assert(p1->child[0] == p0);

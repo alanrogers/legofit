@@ -281,7 +281,8 @@ int main(int argc, char **argv) {
     assert(ilego==nLegoFiles);
     assert(imapping==nmapping);
 
-    printf("# deleting: %s\n", deleteStr);
+    if(deleteStr)
+        printf("# deleting: %s\n", deleteStr);
 
     for(imapping=0; imapping < nmapping; ++imapping)
         Mapping_print(mapping[imapping], stdout);
