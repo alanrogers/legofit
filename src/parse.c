@@ -449,9 +449,9 @@ void parseDerive(char *next, PopNodeTab * poptbl, ParStore * parstore,
         fprintf(stderr, " Input: %s\n", orig);
         exit(EXIT_FAILURE);
     case DATE_MISMATCH:
+        ParStore_print(parstore, stderr);
         fprintf(stderr,"%s:%d: date mismatch\n",__FILE__,__LINE__);
         fprintf(stderr, " Input: %s\n", orig);
-        ParStore_print(parstore, stderr);
         exit(EXIT_FAILURE);
     default:
         fprintf(stderr,"%s:%d: unknown error (%d)\n",
@@ -556,9 +556,9 @@ void parseMix(char *next, PopNodeTab * poptbl, ParStore * parstore,
         fprintf(stderr, " Input: %s\n", orig);
         exit(EXIT_FAILURE);
     case DATE_MISMATCH:
+        ParStore_print(parstore, stderr);
         fprintf(stderr,"%s:%d: date mismatch\n",__FILE__,__LINE__);
         fprintf(stderr, " Input: %s\n", orig);
-        ParStore_print(parstore, stderr);
         exit(EXIT_FAILURE);
     default:
         fprintf(stderr,"%s:%d: unknown error (%d)\n",
