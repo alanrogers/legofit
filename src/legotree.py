@@ -132,17 +132,17 @@ class lego_tree:
         parent = {}
         child = {}
         for i in self.derive:
-            parent[i.split(' ')[1]] = [i.split()[-1]]
+            parent[i.split()[1]] = [i.split()[-1]]
             try:
-                kid = child[i.split()[-1]]
-                child[i.split()[-1]].append(i.split()[1])
+                kid = child[i.split()[-1]] #i.split()[-1] is the parent
+                child[i.split()[-1]].append(i.split()[1]) #check if parent has a child entry, and append child if so
             except:
-                child[i.split()[-1]] = [i.split()[1]]
+                child[i.split()[-1]] = [i.split()[1]] #if not create parent and attach child to it
         if len(self.mix) > 0: 
             for i in self.mix:
                 parent[i.split()[1] ] = [i.split()[3]]
                 try:
-                    kid = child[i.split()[-1]]
+                    kid = child[i.split()[3]]
                     child[i.split()[3]].append(i.split()[1])
                 except:
                     child[i.split()[3]] = [i.split()[1]]
@@ -390,7 +390,7 @@ if __name__ == "__main__":
         for i in tree.pieces:
             if method == "log":
                 if i.y != 0:
-                    i.y = np.log(i.y)
+                    i.y = np.log10(i.y)
             else:
                 if i.y > tree.adj_time:
                     i.time_label = i.y
@@ -461,12 +461,14 @@ if __name__ == "__main__":
             
             
             ## Arrow ##
+            sca = 0.017*np.sum(np.abs(plt.ylim()))
+
             if arrow == True:
                 if q.x > p.x: #Check the direction of admixture
                     adj = 1
                 else:
                     adj = -1
-                plt.arrow(p.x+0.25*adj, p.y, -0.25*adj, p.y-q.y,length_includes_head=True, head_width=.2,head_length=.1, lw=0, color = colors[col_i])
+                plt.arrow(p.x+0.25*adj, p.y, -0.25*adj, p.y-q.y,length_includes_head=True, head_width=sca,head_length=.1, lw=0, color = colors[col_i])
 
             if mixtimes == True:
                 plt.annotate(p.time_label,xy=[np.mean([p.x,q.x]),p.y],zorder = len(tree.segs)+3,fontsize = text_size,color = colors[col_i])
@@ -511,29 +513,29 @@ if __name__ == "__main__":
         if shrink != True:
             plt.ylabel('Generations ago',fontsize = text_size)
         elif method == "log":
-            plt.ylabel("Natural log of generations ago",fontsize = text_size)
+            plt.ylabel("$log_{10}$ generations ago",fontsize = text_size)
     else:
         if shrink != True:
-            plt.ylabel('Years ago',fontsize = text_size)
+            #plt.yticks(ticks=plt.yticks()[0][1:],labels=plt.yticks()[0][1:]/1000.)
+            plt.ylabel('Thousand years ago',fontsize = text_size)
         elif method == "log":
-            plt.ylabel("Natural log of years ago", fontsize = text_size)
+            plt.ylabel("$log_{10}$ years ago", fontsize = text_size)
     #ax.plot(ax.get_xlim(),ax.get_ylim(),ls='--')
 
     for lab in tlabels:
         i = get_obj[lab]
         plt.annotate(str(int(i.time_label)),xy=[i.x+0.1,i.y],fontsize = text_size)
 
-    #This is the white blocks near tips
-    
 
     plt.tight_layout()
     if show==True:
         plt.show()
     else:
         plt.savefig(show,dpi=200)
-    plt.clf()
-    plt.close()
+    #plt.clf()
+    #plt.close()
 
+    #This is the white blocks near tips
 '''for i,tip in enumerate(tree.tips):
     if i == len(tree.tips) -1:
         plt.fill_between([tip.x -0.33,tip.x+1],[tip.y,tip.y],[tip.y-h,tip.y-h],color = 'white',zorder=2)

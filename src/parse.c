@@ -441,18 +441,22 @@ void parseDerive(char *next, PopNodeTab * poptbl, ParStore * parstore,
     case TOO_MANY_PARENTS:
         fprintf(stderr,"%s:%d: node has too many parents\n",
                 __FILE__,__LINE__);
+        fprintf(stderr, " Input: %s\n", orig);
         exit(EXIT_FAILURE);
     case TOO_MANY_CHILDREN:
         fprintf(stderr,"%s:%d: node has too many children\n",
                 __FILE__,__LINE__);
+        fprintf(stderr, " Input: %s\n", orig);
         exit(EXIT_FAILURE);
     case DATE_MISMATCH:
         fprintf(stderr,"%s:%d: date mismatch\n",__FILE__,__LINE__);
+        fprintf(stderr, " Input: %s\n", orig);
         ParStore_print(parstore, stderr);
         exit(EXIT_FAILURE);
     default:
         fprintf(stderr,"%s:%d: unknown error (%d)\n",
                 __FILE__,__LINE__,status);
+        fprintf(stderr, " Input: %s\n", orig);
         exit(EXIT_FAILURE);
     }
 }
@@ -544,18 +548,22 @@ void parseMix(char *next, PopNodeTab * poptbl, ParStore * parstore,
     case TOO_MANY_PARENTS:
         fprintf(stderr,"%s:%d: node has too many parents\n",
                 __FILE__,__LINE__);
+        fprintf(stderr, " Input: %s\n", orig);
         exit(EXIT_FAILURE);
     case TOO_MANY_CHILDREN:
         fprintf(stderr,"%s:%d: node has too many children\n",
                 __FILE__,__LINE__);
+        fprintf(stderr, " Input: %s\n", orig);
         exit(EXIT_FAILURE);
     case DATE_MISMATCH:
         fprintf(stderr,"%s:%d: date mismatch\n",__FILE__,__LINE__);
+        fprintf(stderr, " Input: %s\n", orig);
         ParStore_print(parstore, stderr);
         exit(EXIT_FAILURE);
     default:
         fprintf(stderr,"%s:%d: unknown error (%d)\n",
                 __FILE__,__LINE__,status);
+        fprintf(stderr, " Input: %s\n", orig);
         exit(EXIT_FAILURE);
     }
 }
