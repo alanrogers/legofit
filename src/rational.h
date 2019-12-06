@@ -1,5 +1,5 @@
-#ifndef ARR_RATIONAL
-#define ARR_RATIONAL
+#ifndef ARR_RATIONAL_H
+#define ARR_RATIONAL_H
 
 #include <stdio.h>
 typedef struct Rational Rational;

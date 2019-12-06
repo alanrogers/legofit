@@ -1,3 +1,19 @@
+/**
+@file rational.c
+@page rational
+@author Alan R. Rogers
+@brief Exact arithmetic with rational numbers.
+
+# `rational`: a library for exact arithmetic with rational numbers
+
+Compile with
+
+    -fsanitize=undefined,integer -fno-sanitize-recover=undefined,integer
+
+@copyright Copyright (c) 2016, Alan R. Rogers
+<rogers@anthro.utah.edu>. This file is released under the Internet
+Systems Consortium License, which can be found in file "LICENSE".
+*/
 #include "rational.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -123,14 +139,14 @@ int Rational_eq(Rational x, Rational y) {
     return 0;
 }
 
-/// Convert to a long double
+/// Convert to long double
 long double Rational_ldbl(Rational x) {
     long double num = x.num;
     long double den = x.den;
     return num/den;
 }
 
-/// Convert to a double
+/// Convert to double
 double Rational_dbl(Rational x) {
     double num = x.num;
     double den = x.den;

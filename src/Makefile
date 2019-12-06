@@ -30,7 +30,16 @@ warn := \
  -Wundef \
  -Wwrite-strings
 
-CFLAGS := -g -std=gnu99 $(warn) $(incl) $(opt) $(prof)
+# Abort on integer overflow or underflow
+ifeq ($(shell uname -s), Darwin)
+    # clang syntax
+    ubsan := -fsanitize=undefined,integer -fno-sanitize-recover=undefined,integer
+else
+    # gcc syntax
+    ubsan := -fsanitize=undefined -fno-sanitize-recover=undefined
+endif
+
+CFLAGS := -g -std=gnu99 $(ubsan) $(warn) $(incl) $(opt) $(prof)
 
 lib := -L/usr/local/lib -lgsl -lgslcblas -lpthread -lm
 
