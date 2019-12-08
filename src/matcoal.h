@@ -2,5 +2,6 @@
 #define ARR_MATCOAL_H
 
 int MatCoal_initExterns(int n);
+void MatCoal_freeExterns(void);
 
 #endif

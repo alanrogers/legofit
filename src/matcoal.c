@@ -1,4 +1,5 @@
 #include "rational.h"
+#include "matcoal.h"
 #include "misc.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -41,10 +42,10 @@ static int **offset;
 // array. (i,j)th element of k'th matrix is bmat[k][i*k + j]
 static double **bmat = NULL;
 
-// beta[i] = i*(i-1)/2. beta[0] and beta[1] are not used.
+// beta[i] = (i+1)*(i+2)/2, i=0..(nsamples-2)
 static double *beta = NULL;
 
-// Initialize matrices for epochs in which there are nlin Lineages.
+// Initialize arrays for epochs in which there are nLin Lineages.
 static void init_dim(int nLin) {
     int i, j, ii, jj;
     const int dim = nLin-1;
@@ -116,6 +117,8 @@ static void init_dim(int nLin) {
 
     bmat[nLin] = malloc(dim * (dim+1) * sizeof(**bmat));
     CHECKMEM(bmat[nLin]);
+
+    // Convert B to floating point.
     for(i=0; i<dim; ++i)
         for(j=0; j<=dim; ++j)
             bmat[nLin][i*nLin + j] = Rational_ldbl(B[i][j]);
@@ -128,7 +131,7 @@ int MatCoal_initExterns(int n) {
     offset = malloc( (nsamples+1) * sizeof(offset[0]));
     CHECKMEM(offset);
         
-    beta = malloc( (nsamples+1) * sizeof(beta[0]));
+    beta = malloc( (nsamples-1) * sizeof(beta[0]));
     CHECKMEM(beta);
 
     cmat = malloc( (nsamples+1) *sizeof(cmat[0]));
@@ -136,9 +139,8 @@ int MatCoal_initExterns(int n) {
 
     cmat[0] = cmat[1] = NULL;
     offset[0] = offset[1] = NULL;
-    beta[0]=beta[1]=0.0;
     for(k=2; k <= nsamples; ++k) {
-        beta[k] = (k*(k-1))/2;
+        beta[k-2] = (k*(k-1))/2;
 
         init_dim(k);
     }
@@ -162,6 +164,26 @@ void MatCoal_freeExterns(void) {
     }
 
     free(beta);
+    free(cmat);
+    free(bmat);
+    free(offset);
 
     nsamples = 0;
+}
+
+
+int MatCoal_project(int dim, double ans[dim], double v) {
+    int i, j;
+    double expn[dim];
+
+    for(i=0; i<dim; ++i)
+        expn[i] = exp(-v*beta[i]);
+
+    // Multiply matrix cmat[dim+2] times vector expn
+    for(i=0; i<dim; ++i) {
+        ans[i] = 0.0;
+        // right-to-left sum accumulates small numbers first
+        for(j=dim-1; j >= i; --j)
+            ans[i] += cmat[dim+2][offset[dim+2] + j] * expn[j];
+    }
 }
