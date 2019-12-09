@@ -201,8 +201,6 @@ void MatCoal_ciLen(int dim, double ans[dim], double v) {
     // Multiply matrix bmat[dim-1] times vector expn
     for(i=0; i<dim; ++i) {
         ans[i] = 0.0;
-        // Right-to-left sum accumulates small numbers first
-        // to reduce error.
         for(j=dim-1; j >= i; --j)
             ans[i] += bmat[dim-1][i*(dim+1) + j] * expn[j];
         ans[i] += bmat[dim-1][i*(dim+1)];
