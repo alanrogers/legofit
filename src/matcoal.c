@@ -26,38 +26,38 @@ static int nsamples = 0;
 
 // Array of pointers to matrices of scaled column eigenvectors
 // Each matrix is upper triangular and is stored as an array.
-// cmat[k] is a matrix of dimension kXk. The first two entries,
-// cmat[0] and cmat[1], are NULL.
+// cmat[k] is a matrix of dimension (k+2)X(k+2) and is used
+// in epochs with k+3 lineages.
 static double **cmat = NULL;
 
 // offset[k] is a pointer to an array of k offsets, which are
-// used to address elements of the triangular matrix cmat[k]. The
-// first two entries of offset, which correspond to nonexistent
-// matrices of dimension 0 and 1, are NULL
+// used to address elements of the triangular matrix cmat[k].
 static int **offset;
 
 // Array of pointers to matrices for calculating expected branch
-// lengths. First two pointers are NULL. For k>1, kth matrix is
-// rectangular, with dimension (k-1) X k, but allocated as a linear
-// array. (i,j)th element of k'th matrix is bmat[k][i*k + j]
+// lengths. The kth matrix is rectangular, with dimension (k+2) X
+// (k+3), but allocated as a linear array. (i,j)th element of k'th
+// matrix is bmat[k][i*(k+3) + j]
 static double **bmat = NULL;
 
-// beta[i] = (i+1)*(i+2)/2, i=0..(nsamples-2)
+// The i'th entry is (i+2) choose 2
 static double *beta = NULL;
 
 // Initialize arrays for epochs in which there are nLin Lineages.
-static void init_dim(int nLin) {
+// For an epoch with n lineages, dim=n-1, and k=n-2.
+static void init_dim(int dim) {
     int i, j, ii, jj;
-    const int dim = nLin-1;
-    size_t size = sizeof(cmat[nLin][0]) * (dim*(dim+1))/2;
-    cmat[nLin] = malloc(size);
-    CHECKMEM(cmat[nLin]);
+    int k = dim-1; // index into external arrays
+    int nLin = dim+1; // number of lineages in epoch.
+    size_t size = sizeof(cmat[k][0]) * (dim*(dim+1))/2;
+    cmat[k] = malloc(size);
+    CHECKMEM(cmat[k]);
 
     // Offsets into cmat (a triangular matrix)
-    offset[nLin] = malloc(dim*sizeof(offset[nLin][0]));
-    CHECKMEM(offset[nLin]);
+    offset[k] = malloc(dim*sizeof(offset[k][0]));
+    CHECKMEM(offset[k]);
     for(i=0; i < dim; ++i)
-        offset[nLin][i] = ((2*dim - 1 - i)*i)/2;
+        offset[k][i] = ((2*dim - 1 - i)*i)/2;
 
     // Calculate matrices of eigenvectors in exact rational arithmetic
     Rational cvec[dim][dim], rvec[dim][dim], m;
@@ -87,7 +87,7 @@ static void init_dim(int nLin) {
     for(ii=0; ii<dim; ++ii) {
         for(jj=ii; jj<dim; ++jj) {
             cvec[ii][jj] = Rational_mul(cvec[ii][jj], rvec[jj][dim-1]);
-            cmat[nLin][offset[nLin][ii] + jj] = Rational_ldbl(cvec[ii][jj]);
+            cmat[k][offset[k][ii] + jj] = Rational_ldbl(cvec[ii][jj]);
         }
     }
 
@@ -115,34 +115,31 @@ static void init_dim(int nLin) {
         for(j=0; j<=dim; ++j)
             B[i][j] = Rational_mul(B[i][j], negBetaInv[i]);
 
-    bmat[nLin] = malloc(dim * (dim+1) * sizeof(**bmat));
-    CHECKMEM(bmat[nLin]);
+    bmat[k] = malloc(dim * (dim+1) * sizeof(**bmat));
+    CHECKMEM(bmat[k]);
 
     // Convert B to floating point.
     for(i=0; i<dim; ++i)
         for(j=0; j<=dim; ++j)
-            bmat[nLin][i*nLin + j] = Rational_ldbl(B[i][j]);
+            bmat[k][i*nLin + j] = Rational_ldbl(B[i][j]);
 }
 
 int MatCoal_initExterns(int n) {
     nsamples = n;
     int k;
 
-    offset = malloc( (nsamples+1) * sizeof(offset[0]));
+    offset = malloc( (nsamples-2) * sizeof(offset[0]));
     CHECKMEM(offset);
         
-    beta = malloc( (nsamples-1) * sizeof(beta[0]));
+    beta = malloc( (nsamples-2) * sizeof(beta[0]));
     CHECKMEM(beta);
 
-    cmat = malloc( (nsamples+1) *sizeof(cmat[0]));
+    cmat = malloc( (nsamples-2) *sizeof(cmat[0]));
     CHECKMEM(cmat);
 
-    cmat[0] = cmat[1] = NULL;
-    offset[0] = offset[1] = NULL;
     for(k=2; k <= nsamples; ++k) {
         beta[k-2] = (k*(k-1))/2;
-
-        init_dim(k);
+        init_dim(k-2);
     }
 
     return 0;
@@ -171,19 +168,43 @@ void MatCoal_freeExterns(void) {
     nsamples = 0;
 }
 
-
-int MatCoal_project(int dim, double ans[dim], double v) {
+/// Calculate the probability that, after v units of coalescent time,
+/// there are 2,3,...(dim+1) lines of descent.
+void MatCoal_project(int dim, double ans[dim], double v) {
     int i, j;
     double expn[dim];
 
     for(i=0; i<dim; ++i)
         expn[i] = exp(-v*beta[i]);
 
-    // Multiply matrix cmat[dim+2] times vector expn
+    // Multiply matrix cmat[dim-1] times vector expn
     for(i=0; i<dim; ++i) {
         ans[i] = 0.0;
-        // right-to-left sum accumulates small numbers first
+        // Right-to-left sum accumulates small numbers first
+        // to reduce error.
         for(j=dim-1; j >= i; --j)
-            ans[i] += cmat[dim+2][offset[dim+2] + j] * expn[j];
+            ans[i] += cmat[dim-1][offset[dim][i] + j] * expn[j];
+    }
+}
+
+/// Vector of expected lengths of coalescent intervals during which
+/// there were 2,3,...(dim+1) lines of descent. To get the expected
+/// length of the interval with 1 line of descent, subtract the sum
+/// of ans from v.
+void MatCoal_ciLen(int dim, double ans[dim], double v) {
+    int i, j;
+    double expn[dim];
+
+    for(i=0; i<dim; ++i)
+        expn[i] = exp(-v*beta[i]);
+
+    // Multiply matrix bmat[dim-1] times vector expn
+    for(i=0; i<dim; ++i) {
+        ans[i] = 0.0;
+        // Right-to-left sum accumulates small numbers first
+        // to reduce error.
+        for(j=dim-1; j >= i; --j)
+            ans[i] += bmat[dim-1][i*(dim+1) + j] * expn[j];
+        ans[i] += bmat[dim-1][i*(dim+1)];
     }
 }
