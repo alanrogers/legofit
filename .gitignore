@@ -42,6 +42,8 @@ xhessian
 xjobqueue
 xlblndx
 xlinereader
+xmatcoal
+xmpfrmatcoal
 xmisc
 xmspreader
 xparam
@@ -53,6 +55,7 @@ xpointbuff
 xpopnode
 xpopnodetab
 xrafreader
+xrational
 xsampndx
 xscrmreader
 xsimreader
