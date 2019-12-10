@@ -3,62 +3,85 @@
 #include "misc.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <assert.h>
 
-static void init_dim(int nLin);
+typedef struct MatCoal MatCoal;
+
+static MatCoal * MatCoal_new(int nLin);
+static void MatCoal_free(MatCoal *self);
+static void MatCoal_print(MatCoal *self, FILE *fp);
+
+// Data for an epoch with nLin lineages.
+struct MatCoal {
+    int nLin; // number of lineages in epoch
+
+    // Array of dimension nLin-1. The i'th entry is (i+2) choose 2.
+    // For example, if nLin=3, then beta has two entries: 2 choose 2
+    // and 3 choose 2.  
+    double *beta;
+    
+    /*
+      Layout of upper triangular matrix cmat is row major:
+
+      00 01 02 03 04  row 0: offset = 0
+      xx 11 12 13 14  row 1: offset = dim-1
+      xx xx 22 23 24  row 2: offset = 2*dim - 3
+      xx xx xx 33 34  row 3: offset = 3*dim - 6
+      xx xx xx xx 44  row 4: offset = 4*dim - 10
+
+      offset[i] = i*dim - i*(i+1)/2 = ((2*dim - 1 - i)*i)/2
+      x[i][j] is array[offset[i] + j]
+
+      Number of stored elements is dim*(dim+1)/2. dim=nLin-1.
+    */
+    // Matrix of scaled column eigenvectors
+    double *cmat;
+
+    // Array of dim offsets, used to address elements of cmat.
+    int *offset;
+
+    // Matrix for calculating expected lengths of coalescent
+    // intervals.  bmat is rectangular with dimension dim X nLin,
+    // stored as a linear array. The ij-th element is bmat[i*nLin + j]
+    double *bmat;
+};
 
 // Number of haploid samples in the data. 0 until initialized
 static int nsamples = 0;
 
-/*
-  Layout of upper triangular matrices is row major:
+// Array of pointers to MatCoal objects. There are nsamples-1 entries
+// in the array, and the i'th entry refers to an epoch that has
+// i+2 lineages at the recent end of the epoch. The arrays for that
+// epoch have i+1 rows.
+static MatCoal **matcoal = NULL;
 
-  00 01 02 03 04  row 0: offset = 0
-  xx 11 12 13 14  row 1: offset = dim-1
-  xx xx 22 23 24  row 2: offset = 2*dim - 3
-  xx xx xx 33 34  row 3: offset = 3*dim - 6
-  xx xx xx xx 44  row 4: offset = 4*dim - 10
+// Allocate and initialize an object of type MatCoal.
+static MatCoal * MatCoal_new(int nLin) {
+    long i, j, ii, jj, dim = nLin - 1;
 
-  offset[i] = i*dim - i*(i+1)/2 = ((2*dim - 1 - i)*i)/2
-  x[i][j] is array[offset[i] + j]
+    MatCoal *self = malloc(sizeof(MatCoal));
+    CHECKMEM(self);
+    memset(self, 0, sizeof(MatCoal));
 
-  Number of stored elements is dim*(dim+1)/2.
- */
+    self->nLin = nLin;
 
-// Array of pointers to matrices of scaled column eigenvectors
-// Each matrix is upper triangular and is stored as an array.
-// cmat[k] is a matrix of dimension (k+2)X(k+2) and is used
-// in epochs with k+3 lineages.
-static double **cmat = NULL;
 
-// offset[k] is a pointer to an array of k offsets, which are
-// used to address elements of the triangular matrix cmat[k].
-static int **offset;
+    // i'th entry of beta is (i+2) choose 2
+    self->beta = malloc(dim * sizeof(self->beta[0]));
+    for(i=0; i<dim; ++i)
+        self->beta[i] = ((i+2)*(i+1))/2;
 
-// Array of pointers to matrices for calculating expected branch
-// lengths. The kth matrix is rectangular, with dimension (k+2) X
-// (k+3), but allocated as a linear array. (i,j)th element of k'th
-// matrix is bmat[k][i*(k+3) + j]
-static double **bmat = NULL;
-
-// The i'th entry is (i+2) choose 2
-static double *beta = NULL;
-
-// Initialize arrays for epochs in which there are nLin Lineages.
-// For an epoch with n lineages, dim=n-1, and k=n-2.
-static void init_dim(int dim) {
-    int i, j, ii, jj;
-    int k = dim-1; // index into external arrays
-    int nLin = dim+1; // number of lineages in epoch.
-    size_t size = sizeof(cmat[k][0]) * (dim*(dim+1))/2;
-    cmat[k] = malloc(size);
-    CHECKMEM(cmat[k]);
+    size_t size = sizeof(self->cmat[0]) * (dim*(dim+1))/2;
+    self->cmat = malloc(size);
+    CHECKMEM(self->cmat);
 
     // Offsets into cmat (a triangular matrix)
-    offset[k] = malloc(dim*sizeof(offset[k][0]));
-    CHECKMEM(offset[k]);
+    self->offset = malloc( dim * sizeof(self->offset[0]));
+    CHECKMEM(self->offset);
     for(i=0; i < dim; ++i)
-        offset[k][i] = ((2*dim - 1 - i)*i)/2;
-
+        self->offset[i] = ((2*dim - 1 - i)*i)/2;
+    
     // Calculate matrices of eigenvectors in exact rational arithmetic
     Rational cvec[dim][dim], rvec[dim][dim], m;
 
@@ -66,7 +89,7 @@ static void init_dim(int dim) {
         for(j=0; j<dim; ++j)
             rvec[i][j] = cvec[i][j] = Rational_zero;
     
-    for(j=2; j <= nLin; ++j) {
+    for(j=2; j <= self->nLin; ++j) {
         jj = j-2;
         long lambda = -j*(j-1);
         cvec[jj][jj] = rvec[jj][jj] = Rational_unity;
@@ -75,7 +98,7 @@ static void init_dim(int dim) {
             m = Rational_set(i*(i+1), i*(i-1) + lambda);
             cvec[ii][jj] = Rational_mul(cvec[ii+1][jj],m);
         }
-        for(i=j+1; i <= nLin; ++i) {
+        for(i=j+1; i <= self->nLin; ++i) {
             ii = i-2;
             m = Rational_set(i*(i-1), i*(i-1) + lambda);
             rvec[jj][ii] = Rational_mul(rvec[jj][ii-1], m);
@@ -83,14 +106,14 @@ static void init_dim(int dim) {
     }
 
     // Calculate coefficients of exponentials in x(t)
-    // Convert to floating point and store in cmat[nLin]
+    // Convert to floating point and store in cmat.
     for(ii=0; ii<dim; ++ii) {
         for(jj=ii; jj<dim; ++jj) {
             cvec[ii][jj] = Rational_mul(cvec[ii][jj], rvec[jj][dim-1]);
-            cmat[k][offset[k][ii] + jj] = Rational_ldbl(cvec[ii][jj]);
+            self->cmat[self->offset[ii] + jj] = Rational_ldbl(cvec[ii][jj]);
         }
     }
-
+    
     // beta[i] is (i+2) choose 2
     Rational negBetaInv[dim];
     for(i=0; i<dim; ++i) {
@@ -115,38 +138,36 @@ static void init_dim(int dim) {
         for(j=0; j<=dim; ++j)
             B[i][j] = Rational_mul(B[i][j], negBetaInv[i]);
 
-    bmat[k] = malloc(dim * (dim+1) * sizeof(**bmat));
-    CHECKMEM(bmat[k]);
+    self->bmat = malloc(dim * (dim+1) * sizeof(self->bmat[0]));
+    CHECKMEM(self->bmat);
 
     // Convert B to floating point.
     for(i=0; i<dim; ++i)
         for(j=0; j<=dim; ++j)
-            bmat[k][i*nLin + j] = Rational_ldbl(B[i][j]);
+            self->bmat[i*self->nLin + j] = (double) Rational_ldbl(B[i][j]);
+
+    return self;
 }
 
-int MatCoal_initExterns(int n) {
-    nsamples = n;
-    int k;
+void MatCoal_initExterns(long nsamp) {
+    matcoal = malloc((nsamp-1) * sizeof(matcoal[0]));
+    CHECKMEM(matcoal);
 
-    offset = malloc( (nsamples-2) * sizeof(offset[0]));
-    CHECKMEM(offset);
-        
-    beta = malloc( (nsamples-2) * sizeof(beta[0]));
-    CHECKMEM(beta);
+    nsamples = nsamp;
 
-    cmat = malloc( (nsamples-2) *sizeof(cmat[0]));
-    CHECKMEM(cmat);
+    for(long i=2; i <= nsamp; ++i)
+        matcoal[i-2] = MatCoal_new(i);
+}
 
-    for(k=2; k <= nsamples; ++k) {
-        beta[k-2] = (k*(k-1))/2;
-        init_dim(k-2);
-    }
-
-    return 0;
+static void MatCoal_free(MatCoal *self) {
+    free(self->beta);
+    free(self->cmat);
+    free(self->offset);
+    free(self->bmat);
+    free(self);
 }
 
 void MatCoal_freeExterns(void) {
-    int i;
     if(nsamples == 0) {
         fprintf(stderr,"%s:%s:%d: can't free externs, because they"
                 " aren't allocated.\n",
@@ -154,16 +175,10 @@ void MatCoal_freeExterns(void) {
         exit(EXIT_FAILURE);
     }
     
-    for(i=2; i<nsamples; ++i) {
-        free(cmat[i]);
-        free(bmat[i]);
-        free(offset[i]);
-    }
+    for(int i=0; i < nsamples-1; ++i)
+        MatCoal_free(matcoal[i]);
 
-    free(beta);
-    free(cmat);
-    free(bmat);
-    free(offset);
+    free(matcoal);
 
     nsamples = 0;
 }
@@ -172,18 +187,23 @@ void MatCoal_freeExterns(void) {
 /// there are 2,3,...(dim+1) lines of descent.
 void MatCoal_project(int dim, double ans[dim], double v) {
     int i, j;
+    int ndx = dim-1;
+    MatCoal *mc = matcoal[ndx];
+    assert(dim == mc->nLin - 1);
+    
     double expn[dim];
 
     for(i=0; i<dim; ++i)
-        expn[i] = exp(-v*beta[i]);
+        expn[i] = exp(-v*mc->beta[i]);
 
     // Multiply matrix cmat[dim-1] times vector expn
     for(i=0; i<dim; ++i) {
         ans[i] = 0.0;
         // Right-to-left sum accumulates small numbers first
         // to reduce error.
-        for(j=dim-1; j >= i; --j)
-            ans[i] += cmat[dim-1][offset[dim][i] + j] * expn[j];
+        for(j=dim-1; j >= i; --j) {
+            ans[i] += mc->cmat[mc->offset[i] + j] * expn[j];
+        }
     }
 }
 
@@ -193,16 +213,53 @@ void MatCoal_project(int dim, double ans[dim], double v) {
 /// of ans from v.
 void MatCoal_ciLen(int dim, double ans[dim], double v) {
     int i, j;
+    int ndx = dim-1;
+    MatCoal *mc = matcoal[ndx];
+    assert(dim == mc->nLin - 1);
+
     double expn[dim];
 
     for(i=0; i<dim; ++i)
-        expn[i] = exp(-v*beta[i]);
+        expn[i] = exp(-v*mc->beta[i]);
 
     // Multiply matrix bmat[dim-1] times vector expn
     for(i=0; i<dim; ++i) {
         ans[i] = 0.0;
-        for(j=dim-1; j >= i; --j)
-            ans[i] += bmat[dim-1][i*(dim+1) + j] * expn[j];
-        ans[i] += bmat[dim-1][i*(dim+1)];
+        for(j=dim; j > i; --j)
+            ans[i] += mc->bmat[i*(dim+1) + j] * expn[j-1];
+        ans[i] += mc->bmat[i*(dim+1)];
+    }
+}
+
+void MatCoal_printAll(FILE *fp) {
+    fprintf(fp, "nsamples=%d\n", nsamples);
+    for(int i=0; i < nsamples-1; ++i)
+        MatCoal_print(matcoal[i], fp);
+}
+
+
+// Print print a MatCoal object
+static void MatCoal_print(MatCoal *self, FILE *fp) {
+    int i, j, dim = self->nLin-1;
+
+    fprintf(fp, "\nnLin=%d\n", self->nLin);
+    fprintf(fp, "beta:");
+    for(i=0; i < dim; ++i)
+        fprintf(fp, " %lf", self->beta[i]);
+    putc('\n', fp);
+
+    fprintf(fp, "cmat:\n");
+    for(i=0; i<dim; ++i) {
+        for(j=0; j<i; ++j)
+            fprintf(fp," 0");
+        for(j=i; j<dim; ++j)
+            fprintf(fp," %lf", self->cmat[self->offset[i] + j]);
+        putc('\n', fp);
+    }
+    fprintf(fp, "bmat:\n");
+    for(i=0; i<dim; ++i) {
+        for(j=0; j<=dim; ++j)
+            fprintf(fp," %lf", self->bmat[i*(dim+1) + j]);
+        putc('\n', fp);
     }
 }

@@ -5,10 +5,10 @@ prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
 tests := xaddrparmap xbinary xbooma xboot xbranchtab xdafreader xdiffev \
   xdtnorm xerror xgene xgetlinetok xgptree xhessian xjobqueue xlblndx \
-  xlinereader xmisc xsimreader xparam xparse xparstore xpointbuff xpopnode \
-  xpopnodetab xrafreader xscrmreader xsimsched xstate xstrdblmap \
-  xstrdblqueue xstrint xstrparmap xtinyexpr xtokenizer xuintqueue \
-  xwraparound
+  xlinereader xmisc xmpfrmatcoal xsimreader xparam xparse xparstore \
+  xpointbuff xpopnode xpopnodetab xrafreader xrational xscrmreader \
+  xsimsched xstate xstrdblmap xstrdblqueue xstrint xstrparmap xtinyexpr \
+  xtokenizer xuintqueue xwraparound xmatcoal
 
 CC := gcc
 
@@ -54,7 +54,9 @@ test : $(tests)
 	-./xjobqueue
 	-./xlblndx
 	-./xlinereader
+	-./xmatcoal
 	-./xmisc
+	-./xmpfrmatcoal
 	-./xsimreader
 	-./xparam
 	-./xparse
@@ -63,6 +65,7 @@ test : $(tests)
 	-./xpopnode
 	-./xpopnodetab
 	-./xrafreader
+	-./xrational
 	-./xscrmreader
 	-./xsimsched
 	-./xstate
@@ -75,6 +78,14 @@ test : $(tests)
 	-./xuintqueue
 	-./xwraparound
 	@echo "ALL UNIT TESTS WERE COMPLETED."
+
+XMATCOAL := xmatcoal.o matcoal.o misc.o rational.o
+xmatcoal : $(XMATCOAL)
+	$(CC) $(CFLAGS) -o $@ $(XMATCOAL) $(lib)
+
+XRATIONAL := xrational.o rational.o misc.o
+xrational : $(XRATIONAL)
+	$(CC) $(CFLAGS) -o $@ $(XRATIONAL) $(lib)
 
 XBINARY := xbinary.o binary.o misc.o
 xbinary : $(XBINARY)
@@ -161,6 +172,13 @@ xbooma.o : booma.c
 XBOOMA := xbooma.o misc.o strdblqueue.o strint.o tokenizer.o
 xbooma : $(XBOOMA)
 	$(CC) $(CFLAGS) -o $@ $(XBOOMA) $(lib)
+
+xmpfrmatcoal.o : mpfrmatcoal.c
+	$(CC) $(CFLAGS) -c -DTEST -o $@ mpfrmatcoal.c
+
+XMPFRMATCOAL := xmpfrmatcoal.o misc.o strdblqueue.o strint.o tokenizer.o
+xmpfrmatcoal : $(XMPFRMATCOAL)
+	$(CC) $(CFLAGS) -o $@ $(XMPFRMATCOAL) $(lib) -lmpfr
 
 xscrmreader.o : scrmreader.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/scrmreader.c
