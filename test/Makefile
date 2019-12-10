@@ -83,6 +83,10 @@ XMATCOAL := xmatcoal.o matcoal.o misc.o rational.o
 xmatcoal : $(XMATCOAL)
 	$(CC) $(CFLAGS) -o $@ $(XMATCOAL) $(lib)
 
+XMPFRMATCOAL2 := xmpfrmatcoal2.o mpfrmatcoal2.o misc.o rational.o
+xmpfrmatcoal2 : $(XMPFRMATCOAL2)
+	$(CC) $(CFLAGS) -o $@ $(XMPFRMATCOAL2) $(lib) -lmpfr
+
 XRATIONAL := xrational.o rational.o misc.o
 xrational : $(XRATIONAL)
 	$(CC) $(CFLAGS) -o $@ $(XRATIONAL) $(lib)
