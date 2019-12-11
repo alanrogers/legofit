@@ -79,13 +79,13 @@ test : $(tests)
 	-./xwraparound
 	@echo "ALL UNIT TESTS WERE COMPLETED."
 
-XMATCOAL := xmatcoal.o matcoal.o misc.o rational.o
+XMATCOAL := xmatcoal.o matcoal.o misc.o rational.o mpfrmatcoal.o
 xmatcoal : $(XMATCOAL)
-	$(CC) $(CFLAGS) -o $@ $(XMATCOAL) $(lib)
+	$(CC) $(CFLAGS) -o $@ $(XMATCOAL) $(lib) -lmpfr
 
-XMPFRMATCOAL2 := xmpfrmatcoal2.o mpfrmatcoal2.o misc.o rational.o
-xmpfrmatcoal2 : $(XMPFRMATCOAL2)
-	$(CC) $(CFLAGS) -o $@ $(XMPFRMATCOAL2) $(lib) -lmpfr
+XMPFRMATCOAL := xmpfrmatcoal.o mpfrmatcoal.o misc.o rational.o
+xmpfrmatcoal : $(XMPFRMATCOAL)
+	$(CC) $(CFLAGS) -o $@ $(XMPFRMATCOAL) $(lib) -lmpfr
 
 XRATIONAL := xrational.o rational.o misc.o
 xrational : $(XRATIONAL)
@@ -176,13 +176,6 @@ xbooma.o : booma.c
 XBOOMA := xbooma.o misc.o strdblqueue.o strint.o tokenizer.o
 xbooma : $(XBOOMA)
 	$(CC) $(CFLAGS) -o $@ $(XBOOMA) $(lib)
-
-xmpfrmatcoal.o : mpfrmatcoal.c
-	$(CC) $(CFLAGS) -c -DTEST -o $@ mpfrmatcoal.c
-
-XMPFRMATCOAL := xmpfrmatcoal.o misc.o strdblqueue.o strint.o tokenizer.o
-xmpfrmatcoal : $(XMPFRMATCOAL)
-	$(CC) $(CFLAGS) -o $@ $(XMPFRMATCOAL) $(lib) -lmpfr
 
 xscrmreader.o : scrmreader.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/scrmreader.c

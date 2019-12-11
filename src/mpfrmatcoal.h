@@ -1,5 +1,5 @@
-#ifndef ARR_MPFRMATCOAL2_H
-#define ARR_MPFRMATCOAL2_H
+#ifndef ARR_MPFRMATCOAL_H
+#define ARR_MPFRMATCOAL_H
 
 #include <stdio.h>
 

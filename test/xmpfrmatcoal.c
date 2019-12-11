@@ -1,13 +1,13 @@
 /**
- * @file xmpfrmatcoal2.c
+ * @file xmpfrmatcoal.c
  * @author Alan R. Rogers
- * @brief Test mpfrmatcoal2.c.
+ * @brief Test mpfrmatcoal.c.
  * @copyright Copyright (c) 2019, Alan R. Rogers
  * <rogers@anthro.utah.edu>. This file is released under the Internet
  * Systems Consortium License, which can be found in file "LICENSE".
  */
 
-#include "mpfrmatcoal2.h"
+#include "mpfrmatcoal.h"
 #include <stdio.h>
 #include <math.h>
 

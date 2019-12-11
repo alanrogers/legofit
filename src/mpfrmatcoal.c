@@ -1,5 +1,5 @@
 #include "rational.h"
-#include "mpfrmatcoal2.h"
+#include "mpfrmatcoal.h"
 #include "misc.h"
 #include <stdio.h>
 #include <stdlib.h>
