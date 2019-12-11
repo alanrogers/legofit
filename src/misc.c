@@ -379,8 +379,8 @@ int compareDoubles(const void *void_x, const void *void_y) {
 double KLdiverg(int n, const double o[n], const double e[n]) {
     int i;
     double kl=0.0;
-    assert(Dbl_near(1.0, sum_double(n, o)));
-    assert(Dbl_near(1.0, sum_double(n, e)));
+    assert(Dbl_near(1.0, sumDbl(n, o)));
+    assert(Dbl_near(1.0, sumDbl(n, e)));
     for(i = 0; i < n; ++i) {
         if(o[i]==0.0 && e[i]==0.0)
             continue;
@@ -391,20 +391,14 @@ double KLdiverg(int n, const double o[n], const double e[n]) {
     return kl;
 }
 
-/// Sum an array of doubles. Unwrapped loop.
-double sum_double(int n, const double x[n]) {
-    register double rval;
-    register int i, m;
+/// Sum an array of doubles.
+double sumDbl(int n, const double x[n]) {
+    register long double rval = 0.0;
 
     assert(n >= 0);
 
-    rval = 0.0;
-    m = n % 5;
-    for(i = 0; i < m; ++i)
+    for(register int i = 0; i < n; ++i)
         rval += x[i];
-
-    for(i = m; i < n; i += 5)
-        rval += x[i] + x[i + 1] + x[i + 2] + x[i + 3] + x[i + 4];
 
     return rval;
 }

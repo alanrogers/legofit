@@ -94,6 +94,7 @@ int main(int argc, char **argv) {
             err = maxAbsErr(dim, ans, ans2);
             maxerr = fmax(maxerr, err);
         }
+
         v = INFINITY;
 
         MatCoal_project(dim, ans, v);
