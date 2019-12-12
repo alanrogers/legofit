@@ -54,7 +54,7 @@ test : $(tests)
 	@echo "ALL UNIT TESTS WERE COMPLETED."
 
 LINEAGES := lineages.o misc.o lblndx.o binary.o
-lineages : $(lineages)
+lineages : $(LINEAGES)
 	$(CC) $(CFLAGS) -o $@ $(LINEAGES) $(lib)
 
 LEGOSIM := legosim.o addrparmap.o patprob.o gptree.o binary.o jobqueue.o \
