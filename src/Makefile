@@ -53,10 +53,6 @@ test : $(tests)
 	-./xzeroin
 	@echo "ALL UNIT TESTS WERE COMPLETED."
 
-STIRLING2 := stirling2.o misc.o
-stirling2 : $(STIRLING2)
-	$(CC) $(CFLAGS) -o $@ $(STIRLING2) $(lib)
-
 LINEAGES := lineages.o misc.o lblndx.o binary.o
 lineages : $(LINEAGES)
 	$(CC) $(CFLAGS) -o $@ $(LINEAGES) $(lib)

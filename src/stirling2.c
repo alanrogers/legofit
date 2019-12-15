@@ -1,12 +1,7 @@
+#include "stirling2.h"
 #include "misc.h"
 #include <stdio.h>
 #include <string.h>
-
-typedef struct Stirling2 Stirling2;
-
-void Stirling2_free(Stirling2 *self);
-Stirling2 *Stirling2_new(long unsigned nmax);
-long unsigned Stirling2_val(Stirling2 *self, long unsigned n, long unsigned k);
 
 // Stirling numbers of the second kind.
 // S(n,k) is the number of ways of partitioning a set of n objects
@@ -72,17 +67,3 @@ long unsigned Stirling2_val(Stirling2 *self, long unsigned n, long unsigned k) {
     return self->s[self->offset[n] + k];
 }
 
-int main(void) {
-    // overflows at nmax = 27
-    long unsigned nmax = 10, n, k;
-
-    Stirling2 *s = Stirling2_new(nmax);
-    CHECKMEM(s);
-
-    for(n=0; n<=nmax; ++n) {
-        for(k=0; k<=n; ++k)
-            printf(" %5lu", Stirling2_val(s, n, k));
-        putchar('\n');
-    }
-    return 0;
-}

@@ -7,8 +7,8 @@ tests := xaddrparmap xbinary xbooma xboot xbranchtab xdafreader xdiffev \
   xdtnorm xerror xgene xgetlinetok xgptree xhessian xjobqueue xlblndx \
   xlinereader xmisc xmpfrmatcoal xsimreader xparam xparse xparstore \
   xpointbuff xpopnode xpopnodetab xrafreader xrational xscrmreader \
-  xsimsched xstate xstrdblmap xstrdblqueue xstrint xstrparmap xtinyexpr \
-  xtokenizer xuintqueue xwraparound xmatcoal
+  xsimsched xstate xstirling2 xstrdblmap xstrdblqueue xstrint xstrparmap \
+  xtinyexpr xtokenizer xuintqueue xwraparound xmatcoal
 
 CC := gcc
 
@@ -58,6 +58,7 @@ test : $(tests)
 	-./xmisc
 	-./xmpfrmatcoal
 	-./xsimreader
+	-./xstirling2
 	-./xparam
 	-./xparse
 	-./xparstore
@@ -98,6 +99,10 @@ xbinary : $(XBINARY)
 XMISC := xmisc.o misc.o
 xmisc : $(XMISC)
 	$(CC) $(CFLAGS) -o $@ $(XMISC) $(lib)
+
+XSTIRLING2 := xstirling2.o stirling2.o misc.o
+xstirling2 : $(XSTIRLING2)
+	$(CC) $(CFLAGS) -o $@ $(XSTIRLING2) $(lib)
 
 XGETLINETOK := xgetlinetok.o getlinetok.o misc.o tokenizer.o
 xgetlinetok : $(XGETLINETOK)
