@@ -7,8 +7,8 @@ tests := xaddrparmap xbinary xbooma xboot xbranchtab xdafreader xdiffev \
   xdtnorm xerror xgene xgetlinetok xgptree xhessian xjobqueue xlblndx \
   xlinereader xmisc xmpfrmatcoal xsimreader xparam xparse xparstore \
   xpointbuff xpopnode xpopnodetab xrafreader xrational xscrmreader \
-  xsimsched xstate xstirling2 xstrdblmap xstrdblqueue xstrint xstrparmap \
-  xtinyexpr xtokenizer xuintqueue xwraparound xmatcoal
+  xsetpart xsimsched xstate xstirling2 xstrdblmap xstrdblqueue xstrint \
+  xstrparmap xtinyexpr xtokenizer xuintqueue xwraparound xmatcoal
 
 CC := gcc
 
@@ -28,7 +28,16 @@ warn := \
  -Wundef \
  -Wwrite-strings
 
-CFLAGS := -g -std=gnu99 $(warn) $(incl) $(opt) $(prof) $(osargs)
+# Abort on integer overflow or underflow
+ifeq ($(shell uname -s), Darwin)
+    # clang syntax
+    ubsan := -fsanitize=undefined,integer -fno-sanitize-recover=undefined,integer
+else
+    # gcc syntax
+    ubsan := -fsanitize=undefined -fno-sanitize-recover=undefined
+endif
+
+CFLAGS := -g -std=gnu99 $(warn) $(ubsan) $(incl) $(opt) $(prof) $(osargs)
 
 lib := -L/usr/local/lib -lgsl -lgslcblas -lpthread -lm
 
@@ -68,6 +77,7 @@ test : $(tests)
 	-./xrafreader
 	-./xrational
 	-./xscrmreader
+	-./xsetpart
 	-./xsimsched
 	-./xstate
 	-./xstrdblmap
@@ -103,6 +113,10 @@ xmisc : $(XMISC)
 XSTIRLING2 := xstirling2.o stirling2.o misc.o
 xstirling2 : $(XSTIRLING2)
 	$(CC) $(CFLAGS) -o $@ $(XSTIRLING2) $(lib)
+
+XSETPART := xsetpart.o setpart.o stirling2.o misc.o
+xsetpart : $(XSETPART)
+	$(CC) $(CFLAGS) -o $@ $(XSETPART) $(lib)
 
 XGETLINETOK := xgetlinetok.o getlinetok.o misc.o tokenizer.o
 xgetlinetok : $(XGETLINETOK)
