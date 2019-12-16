@@ -8,10 +8,10 @@
 
 static void generateSetPartitions(SetPart *self);
 static void f(int mu, int nu, int sigma, SetPart *self, unsigned n, 
-              unsigned a[n+1]);
+              unsigned char a[n+1]);
 static void b(int mu, int nu, int sigma, SetPart *self, unsigned n,
-              unsigned a[n+1]);
-static void visit(SetPart *self, int n, unsigned a[n+1]);
+              unsigned char a[n+1]);
+static void visit(SetPart *self, int n, unsigned char a[n+1]);
 
 struct SetPart {
     unsigned n; // size of set
@@ -28,7 +28,10 @@ struct SetPart {
     // The matrix is stored as a 1-dimensional array. The entry for
     // row i and column j is at ndx[i*n + j], where 0 <= i < k, and 0 <=
     // j < n.
-    unsigned *ndx;
+    //
+    // Using unsigned char to save memory, because this code is not
+    // practicable for values too large to hold in an unsigned char.
+    unsigned char *ndx;
 };
 
 SetPart *SetPart_new(unsigned nelements, unsigned nsubdivisions,
@@ -87,10 +90,11 @@ long unsigned SetPart_nPartitions(SetPart *self) {
 void SetPart_getPartition(const SetPart *self, long unsigned i,
                           unsigned n, unsigned p[n]) {
     assert(n == self->n);
-    memcpy(p, self->ndx + i*self->n, self->n * sizeof(self->ndx[0]));
+    for(int j=0; j<n; ++j)
+        p[j] = self->ndx[i*self->n + j];
 }
 
-static void visit(SetPart *self, int n, unsigned a[n+1]) {
+static void visit(SetPart *self, int n, unsigned char a[n+1]) {
     assert(n == self->n);
     // The first entry of a is used by functions f and b but
     // is not part of the answer, so a+1 is the address of
@@ -108,7 +112,7 @@ static void visit(SetPart *self, int n, unsigned a[n+1]) {
 static void generateSetPartitions(SetPart *self) {
     unsigned n = self->n;
     unsigned m = self->m;
-    unsigned a[n+1];
+    unsigned char a[n+1];
     memset(a, 0, (n+1)*sizeof(a[0]));
     for(int j=1; j <= m; ++j)
         a[n-m+j] = j-1;
@@ -121,7 +125,7 @@ static void generateSetPartitions(SetPart *self) {
 
 // Forward recursion
 static void f(int mu, int nu, int sigma, SetPart *self, unsigned n, 
-              unsigned a[n+1]) {
+              unsigned char a[n+1]) {
     if(mu == 2)
         visit(self, n, a);
     else
@@ -154,7 +158,7 @@ static void f(int mu, int nu, int sigma, SetPart *self, unsigned n,
 
 // Backward recursion
 static void b(int mu, int nu, int sigma, SetPart *self, unsigned n,
-              unsigned a[n+1]) {
+              unsigned char a[n+1]) {
     if( nu == mu+1 ) {
         while( a[nu] < mu-1) {
             visit(self, n, a);

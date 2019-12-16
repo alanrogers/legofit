@@ -66,7 +66,7 @@ int main(int argc, char **argv) {
         SetPart_getPartition(sp, k, nelem, p);
         if(verbose) {
             for(i=0; i < nelem; ++i) {
-                printf("%d", p[i]);
+                printf("%u", p[i]);
                 if(i < nelem-1)
                     putchar(' ');
             }
