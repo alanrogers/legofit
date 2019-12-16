@@ -39,9 +39,14 @@ SetPart *SetPart_new(unsigned nelements, unsigned nsubdivisions,
 
     self->n = nelements;
     self->m = nsubdivisions;
-    long unsigned npart = Stirling2_val(s, self->n, self->m);
     self->k = 0;
-    self->ndx = malloc(npart * self->n * sizeof(self->ndx[0]));
+    long unsigned npart = Stirling2_val(s, self->n, self->m);
+    size_t size = sizeof(self->ndx[0]) * npart * self->n;
+    fprintf(stderr,"%s:%d: allocating %zu bytes\n",
+            __FILE__,__LINE__, size);
+    self->ndx = malloc(size);
+    fprintf(stderr,"%s:%d: malloc returned %p\n",
+            __FILE__,__LINE__, (void *) self->ndx);
     CHECKMEM(self->ndx);
 
     generateSetPartitions(self);
