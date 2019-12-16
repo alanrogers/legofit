@@ -96,6 +96,10 @@ static void generateSetPartitions(SetPart *self) {
     memset(a, 0, (n+1)*sizeof(a[0]));
     for(int j=1; j <= m; ++j)
         a[n-m+j] = j-1;
+    if(m==1) {
+        visit(self, n, a);
+        return;
+    }
     f(m, n, 0, self, n, a);
 }
 

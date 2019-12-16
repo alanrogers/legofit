@@ -69,6 +69,11 @@ void Stirling2_free(Stirling2 *self) {
 /// of n elements into k subsets.
 long unsigned Stirling2_val(Stirling2 *self, long unsigned n, long unsigned k) {
     assert(n <= self->nmax);
+    if(!(k <= n)) {
+        dostacktrace(__FILE__,__LINE__,stderr);
+        fprintf(stderr,"%s:%s:%d: n=%lu k=%lu\n",
+                __FILE__,__func__,__LINE__,n, k);
+    }
     assert(k <= n);
     long unsigned ndx = self->offset[n] + k;
     assert( ndx < self->nElements );

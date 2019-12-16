@@ -38,12 +38,12 @@ int main(int argc, char **argv) {
             i += 1;
             if(i == argc)
                 usage();
-            nelem = strtol(argv[i], NULL, 10);
+            nelem = strtoul(argv[i], NULL, 10);
         }else if(strcmp(argv[i], "-m") == 0) {
             i += 1;
             if(i == argc)
                 usage();
-            nsub = strtol(argv[i], NULL, 10);
+            nsub = strtoul(argv[i], NULL, 10);
         }else
             usage();
     }
