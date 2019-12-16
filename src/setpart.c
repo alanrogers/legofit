@@ -33,6 +33,13 @@ struct SetPart {
 
 SetPart *SetPart_new(unsigned nelements, unsigned nsubdivisions,
                      Stirling2 *s) {
+    if(nsubdivisions > nelements) {
+        fprintf(stderr,
+                "%s:%s:%d: ERROR nsubdivisions (%u) > nelements (%u)\n",
+                __FILE__,__func__,__LINE__,
+                nsubdivisions, nelements);
+        exit(EXIT_FAILURE);
+    }
     SetPart *self = malloc(sizeof(SetPart));
     CHECKMEM(self);
     memset(self, 0, sizeof(SetPart));
@@ -42,11 +49,15 @@ SetPart *SetPart_new(unsigned nelements, unsigned nsubdivisions,
     self->k = 0;
     long unsigned npart = Stirling2_val(s, self->n, self->m);
     size_t size = sizeof(self->ndx[0]) * npart * self->n;
+#if 0    
     fprintf(stderr,"%s:%d: allocating %zu bytes\n",
             __FILE__,__LINE__, size);
+#endif    
     self->ndx = malloc(size);
+#if 0    
     fprintf(stderr,"%s:%d: malloc returned %p\n",
             __FILE__,__LINE__, (void *) self->ndx);
+#endif    
     CHECKMEM(self->ndx);
 
     generateSetPartitions(self);
