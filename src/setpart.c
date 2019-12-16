@@ -79,9 +79,7 @@ static void visit(SetPart *self, int n, unsigned a[n+1]) {
     // The first entry of a is used by functions f and b but
     // is not part of the answer, so a+1 is the address of
     // the first of the n entries to be copied.
-    for(int i=0; i<n; ++i)
-        self->ndx[self->k * self->n + i] = a[i+1];
-    //    memcpy(self->ndx + self->k*self->n, a+1, n*sizeof(self->ndx[0]));
+    memcpy(self->ndx + self->k*self->n, a+1, n*sizeof(self->ndx[0]));
     self->k += 1;
 }
 
