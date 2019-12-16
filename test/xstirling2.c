@@ -27,7 +27,7 @@ void usage(void) {
 int main(int argc, char **argv) {
 
     int i, verbose = 0;
-    long unsigned nmax = 10, n, k; // overflows at nmax = 27
+    long unsigned nmax = 10, n; // overflows at nmax = 27
 
     for(i=1; i<argc; ++i) {
         if(strcmp(argv[i], "-v") == 0)
@@ -44,11 +44,8 @@ int main(int argc, char **argv) {
     Stirling2 *s = Stirling2_new(nmax);
     CHECKMEM(s);
 
-    for(n=0; verbose && n<=nmax; ++n) {
-        for(k=0; k<=n; ++k)
-            printf(" %5lu", Stirling2_val(s, n, k));
-        putchar('\n');
-    }
+    if(verbose)
+        Stirling2_print(s, stdout);
 
     assert(Stirling2_val(s, 0, 0) == 1);
     for(n=1; n <= nmax; ++n) {
