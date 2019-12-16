@@ -3,8 +3,6 @@
 #include <stdio.h>
 #include <string.h>
 
-int stirling_dbg = 0; // 1 for debug output
-
 // Stirling numbers of the second kind.
 // S(n,k) is the number of ways of partitioning a set of n objects
 // into k subsets.
@@ -74,15 +72,6 @@ long unsigned Stirling2_val(Stirling2 *self, long unsigned n, long unsigned k) {
     assert(k <= n);
     long unsigned ndx = self->offset[n] + k;
     assert( ndx < self->nElements );
-    if(stirling_dbg) {
-        fprintf(stderr,"%s:%s:%d: nmax = %lu\n",
-                __FILE__,__func__,__LINE__,self->nmax);
-        Stirling2_print(self, stderr);
-        fprintf(stderr,"%s:%s:%d: n=%lu k=%lu, returning %lu\n",
-                __FILE__,__func__,__LINE__,
-                n, k,
-                self->s[ndx]);
-    }
     return self->s[ndx];
 }
 

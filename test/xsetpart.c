@@ -27,8 +27,6 @@ void usage(void) {
     exit(EXIT_FAILURE);
 }
 
-extern int stirling_dbg;
-
 int main(int argc, char **argv) {
     int i, verbose = 0;
     unsigned nelem = 6, nsub = 3; // overflows at nmax = 27
@@ -60,11 +58,6 @@ int main(int argc, char **argv) {
 
     assert(nelem == SetPart_sizeOfSet(sp));
     assert(nsub == SetPart_nSubsets(sp));
-    stirling_dbg = 1;
-    fprintf(stderr,"%s:%d: npart=%lu should be %lu\n",
-            __FILE__,__LINE__, npart,
-            Stirling2_val(stirling2, nelem, nsub));
-    stirling_dbg = 0;
     assert(npart == Stirling2_val(stirling2, nelem, nsub));
 
     unsigned p[nelem];

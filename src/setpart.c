@@ -18,12 +18,12 @@ struct SetPart {
     unsigned m; // number of subsets
     long unsigned k; // number of ways to partition n into k subsets
 
-    // A matrix of dimension k X n.  The ij'th entry specifies the
-    // subset to which element j belongs in the i'th partition. It is
-    // an index into the n-dimensional array representing the original
-    // set. For example, suppose that n=4, m = 2, and m[1] =
-    // [0,1,0,1]. This means that the 0th and 1th elements belong to
-    // subset 0 and the 1th and 3rd to subset 1.
+    // A matrix of dimension npart X nelements.  The ij'th entry
+    // specifies the subset to which element j belongs in the i'th
+    // partition. It is an index into the n-dimensional array
+    // representing the original set. For example, suppose that n=4, m
+    // = 2, and m[1] = [0,1,0,1]. This means that the 0th and 1th
+    // elements belong to subset 0 and the 1th and 3rd to subset 1.
     //
     // The matrix is stored as a 1-dimensional array. The entry for
     // row i and column j is at ndx[i*n + j], where 0 <= i < k, and 0 <=
@@ -41,7 +41,7 @@ SetPart *SetPart_new(unsigned nelements, unsigned nsubdivisions,
     self->m = nsubdivisions;
     long unsigned npart = Stirling2_val(s, self->n, self->m);
     self->k = 0;
-    self->ndx = malloc(self->k * self->n * sizeof(self->ndx[0]));
+    self->ndx = malloc(npart * self->n * sizeof(self->ndx[0]));
     CHECKMEM(self->ndx);
 
     generateSetPartitions(self);

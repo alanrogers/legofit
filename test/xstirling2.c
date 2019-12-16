@@ -75,6 +75,8 @@ int main(int argc, char **argv) {
         assert(Stirling2_val(s, 6, 5) == 15);
     }
 
+    Stirling2_free(s);
+
     unitTstResult("Stirling2", "OK");
     return 0;
 }
