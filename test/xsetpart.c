@@ -8,13 +8,49 @@
  */
 
 #include "setpart.h"
-#include "stirling2.h"
 #include "misc.h"
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
 
 void usage(void);
+int visit(unsigned n, unsigned a[n], void *data);
+
+typedef struct VisitDat VisitDat;
+
+// Data manipulated by visit function.
+struct VisitDat {
+    int verbose;
+    unsigned nsubdivisions;
+    unsigned long count;
+};
+
+/// Function to process partition. This function prints
+/// the partition if verbose!=0, checks that it is valid,
+/// and counts the partitions. Returns non-zero if an error is found.
+int visit(unsigned n, unsigned a[n], void *data) {
+    VisitDat *vdat = (VisitDat *) data;
+    if(vdat->verbose) {
+        for(int i=0; i<n; ++i) {
+            printf("%d", a[i]);
+            if(i < n-1)
+                putchar(' ');
+        }
+        putchar('\n');
+    }
+    unsigned max = 0;
+    int status=0;
+    for(int i=0; i<n; ++i) {
+        if(a[i] > max) {
+            if(a[i] != max+1)
+                ++status;
+            max = a[i];
+        }
+    }
+    if(max != 1 + vdat->nsubdivisions)
+        ++status;
+    return status;
+}
 
 void usage(void) {
     fprintf(stderr,"usage: xsetpart [options]\n");
@@ -29,7 +65,7 @@ void usage(void) {
 
 int main(int argc, char **argv) {
     int i, verbose = 0;
-    unsigned nelem = 6, nsub = 3; // overflows at nmax = 27
+    unsigned nelem = 6, nsub = 3;
 
     for(i=1; i<argc; ++i) {
         if(strcmp(argv[i], "-v") == 0)
@@ -48,41 +84,12 @@ int main(int argc, char **argv) {
             usage();
     }
 
-    Stirling2 *stirling2 = Stirling2_new(nelem);
-    CHECKMEM(stirling2);
+    VisitDat vdat = {.verbose = verbose, 
+                     .nsubdivisions = nsub,
+                     .count=0};
 
-    SetPart *sp = SetPart_new(nelem, nsub, stirling2);
-    CHECKMEM(sp);
+    int status = traverseSetPartitions(nelem, nsub, visit, &vdat);
 
-    long unsigned k, npart = SetPart_nPartitions(sp);
-
-    assert(nelem == SetPart_sizeOfSet(sp));
-    assert(nsub == SetPart_nSubsets(sp));
-    assert(npart == Stirling2_val(stirling2, nelem, nsub));
-
-    unsigned p[nelem];
-
-    for(k=0; k < npart; ++k) {
-        SetPart_getPartition(sp, k, nelem, p);
-        if(verbose) {
-            for(i=0; i < nelem; ++i) {
-                printf("%u", p[i]);
-                if(i < nelem-1)
-                    putchar(' ');
-            }
-            putchar('\n');
-        }
-        assert(p[0] == 0);
-        unsigned max = 0;
-        for(i=1; i<nelem; ++i) {
-            if(p[i] > max) {
-                assert(p[i] = max+1);
-                max = p[i];
-            }
-        }
-        assert(max == nsub - 1);
-    }
-    SetPart_free(sp);
-    unitTstResult("SetPart", "OK");
+    unitTstResult("SetPart", status==0 ? "OK" : "FAIL");
     return 0;
 }

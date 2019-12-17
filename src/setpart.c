@@ -1,107 +1,16 @@
 #include "setpart.h"
-#include "stirling2.h"
 #include "misc.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 
-static void generateSetPartitions(SetPart *self);
-static void f(int mu, int nu, int sigma, SetPart *self, unsigned n, 
-              unsigned char a[n+1]);
-static void b(int mu, int nu, int sigma, SetPart *self, unsigned n,
-              unsigned char a[n+1]);
-static void visit(SetPart *self, int n, unsigned char a[n+1]);
-
-struct SetPart {
-    unsigned n; // size of set
-    unsigned m; // number of subsets
-    long unsigned k; // number of ways to partition n into k subsets
-
-    // A matrix of dimension npart X nelements.  The ij'th entry
-    // specifies the subset to which element j belongs in the i'th
-    // partition. It is an index into the n-dimensional array
-    // representing the original set. For example, suppose that n=4, m
-    // = 2, and m[1] = [0,1,0,1]. This means that the 0th and 1th
-    // elements belong to subset 0 and the 1th and 3rd to subset 1.
-    //
-    // The matrix is stored as a 1-dimensional array. The entry for
-    // row i and column j is at ndx[i*n + j], where 0 <= i < k, and 0 <=
-    // j < n.
-    //
-    // Using unsigned char to save memory, because this code is not
-    // practicable for values too large to hold in an unsigned char.
-    unsigned char *ndx;
-};
-
-SetPart *SetPart_new(unsigned nelements, unsigned nsubdivisions,
-                     Stirling2 *s) {
-    if(nsubdivisions > nelements) {
-        fprintf(stderr,
-                "%s:%s:%d: ERROR nsubdivisions (%u) > nelements (%u)\n",
-                __FILE__,__func__,__LINE__,
-                nsubdivisions, nelements);
-        exit(EXIT_FAILURE);
-    }
-    SetPart *self = malloc(sizeof(SetPart));
-    CHECKMEM(self);
-    memset(self, 0, sizeof(SetPart));
-
-    self->n = nelements;
-    self->m = nsubdivisions;
-    self->k = 0;
-    long unsigned npart = Stirling2_val(s, self->n, self->m);
-    size_t size = sizeof(self->ndx[0]) * npart * self->n;
-#if 0    
-    fprintf(stderr,"%s:%d: allocating %zu bytes\n",
-            __FILE__,__LINE__, size);
-#endif    
-    self->ndx = malloc(size);
-#if 0    
-    fprintf(stderr,"%s:%d: malloc returned %p\n",
-            __FILE__,__LINE__, (void *) self->ndx);
-#endif    
-    CHECKMEM(self->ndx);
-
-    generateSetPartitions(self);
-    assert(npart == self->k);
-    return self;
-}
-
-void SetPart_free(SetPart *self) {
-    free( self->ndx );
-    free(self);
-}
-
-unsigned SetPart_sizeOfSet(SetPart *self) {
-    return self->n;
-}
-
-unsigned SetPart_nSubsets(SetPart *self) {
-    return self->m;
-}
-
-long unsigned SetPart_nPartitions(SetPart *self) {
-    return self->k;
-}
-
-/// Fill array p with the indices of the subsets into which
-/// the n array elements are assigned by the i'th partition.
-void SetPart_getPartition(const SetPart *self, long unsigned i,
-                          unsigned n, unsigned p[n]) {
-    assert(n == self->n);
-    for(int j=0; j<n; ++j)
-        p[j] = self->ndx[i*self->n + j];
-}
-
-static void visit(SetPart *self, int n, unsigned char a[n+1]) {
-    assert(n == self->n);
-    // The first entry of a is used by functions f and b but
-    // is not part of the answer, so a+1 is the address of
-    // the first of the n entries to be copied.
-    memcpy(self->ndx + self->k*self->n, a+1, n*sizeof(self->ndx[0]));
-    self->k += 1;
-}
+static int f(int mu, int nu, int sigma, unsigned n, 
+              unsigned a[n+1], int (*visit)(unsigned n, unsigned a[n],
+                                            void *data), void *data);
+static int b(int mu, int nu, int sigma, unsigned n,
+              unsigned a[n+1], int (*visit)(unsigned n, unsigned a[n],
+                                            void *data), void *data);
 
 /// Generate all ways of partitioning a set of n objects into m
 /// non-empty subsets.  This code implements Knuth's answer to
@@ -109,74 +18,102 @@ static void visit(SetPart *self, int n, unsigned char a[n+1]) {
 /// Computer Programming, Volume 4A, part 1. On p 417, Knuth
 /// attributes the algorithm to Frank Ruskey [Lecture Notes in
 /// Comp. Sci. 762 (1993), 205-206].
-static void generateSetPartitions(SetPart *self) {
-    unsigned n = self->n;
-    unsigned m = self->m;
-    unsigned char a[n+1];
-    memset(a, 0, (n+1)*sizeof(a[0]));
-    for(int j=1; j <= m; ++j)
-        a[n-m+j] = j-1;
-    if(m==1) {
-        visit(self, n, a);
-        return;
+int traverseSetPartitions(unsigned nelements, unsigned nsubdivisions,
+                           int (*visit)(unsigned n, unsigned a[n],
+                                        void *data), void *data) {
+    unsigned a[nelements+1];
+    memset(a, 0, (nelements+1)*sizeof(a[0]));
+    for(int j=1; j <= nsubdivisions; ++j)
+        a[nelements-nsubdivisions+j] = j-1;
+    if(nsubdivisions==1) {
+        (*visit)(nelements, a+1, data);
+        return 0;
     }
-    f(m, n, 0, self, n, a);
+    return f(nsubdivisions, nelements, 0, nelements, a, visit, data);
 }
 
 // Forward recursion
-static void f(int mu, int nu, int sigma, SetPart *self, unsigned n, 
-              unsigned char a[n+1]) {
+static int f(int mu, int nu, int sigma, unsigned n, 
+              unsigned a[n+1], int (*visit)(unsigned n, unsigned a[n],
+                                            void *data), void *data) {
+    int status;
     if(mu == 2)
-        visit(self, n, a);
-    else
-        f(mu-1, nu-1, (mu+sigma) % 2, self, n, a);
+        (*visit)(n, a+1, data);
+    else {
+        status = f(mu-1, nu-1, (mu+sigma) % 2, n, a, visit, data);
+        if(status)
+            return status;
+    }
     if( nu == mu + 1) {
         a[mu] = mu - 1;
-        visit(self, n, a);
+        (*visit)(n, a+1, data);
         while(a[nu] > 0) {
             a[nu] -= 1;
-            visit(self, n, a);
+            (*visit)(n, a+1, data);
         }
     }else if(nu > mu+1){
         if( (mu + sigma) % 2 == 1 )
             a[nu-1] = mu-1;
         else
             a[mu] = mu - 1;
-        if( (a[nu] + sigma) % 2 == 1)
-            b(mu, nu-1, 0, self, n, a);
-        else
-            f(mu, nu-1, 0, self, n, a);
+        if( (a[nu] + sigma) % 2 == 1) {
+            status = b(mu, nu-1, 0, n, a, visit, data);
+            if(status)
+                return status;
+        }else{
+            status = f(mu, nu-1, 0, n, a, visit, data);
+            if(status)
+                return status;
+        }
         while( a[nu] > 0) {
             a[nu] -= 1;
-            if( (a[nu] + sigma) % 2 == 1)
-                b(mu, nu-1, 0, self, n, a);
-            else
-                f(mu, nu-1, 0, self, n, a);
+            if( (a[nu] + sigma) % 2 == 1) {
+                status = b(mu, nu-1, 0, n, a, visit, data);
+                if(status)
+                    return status;
+            }else{
+                status = f(mu, nu-1, 0, n, a, visit, data);
+                if(status)
+                    return status;
+            }
         }
     }
+    return 0;
 }
 
 // Backward recursion
-static void b(int mu, int nu, int sigma, SetPart *self, unsigned n,
-              unsigned char a[n+1]) {
+static int b(int mu, int nu, int sigma, unsigned n,
+              unsigned a[n+1], int (*visit)(unsigned n, unsigned a[n],
+                                            void *data), void *data) {
+    int status;
     if( nu == mu+1 ) {
         while( a[nu] < mu-1) {
-            visit(self, n, a);
+            (*visit)(n, a+1, data);
             a[nu] += 1;
         }
-        visit(self, n, a);
+        (*visit)(n, a+1, data);
         a[mu] = 0;
     }else if( nu > mu+1 ) {
-        if( (a[nu] + sigma) % 2 == 1)
-            f(mu, nu-1, 0, self, n, a);
-        else
-            b(mu, nu-1, 0, self, n, a);
+        if( (a[nu] + sigma) % 2 == 1) {
+            status = f(mu, nu-1, 0, n, a, visit, data);
+            if(status)
+                return status;
+        }else{
+            status = b(mu, nu-1, 0, n, a, visit, data);
+            if(status)
+                return status;
+        }
         while( a[nu] < mu-1 ) {
             a[nu] += 1;
-            if( (a[nu] + sigma) % 2 == 1)
-                f(mu, nu-1, 0, self, n, a);
-            else
-                b(mu, nu-1, 0, self, n, a);
+            if( (a[nu] + sigma) % 2 == 1) {
+                status = f(mu, nu-1, 0, n, a, visit, data);
+                if(status)
+                    return status;
+            }else{
+                status = b(mu, nu-1, 0, n, a, visit, data);
+                if(status)
+                    return status;
+            }
         }
         if( (mu + sigma) % 2 == 1)
             a[nu - 1] = 0;
@@ -184,8 +121,12 @@ static void b(int mu, int nu, int sigma, SetPart *self, unsigned n,
             a[mu] = 0;
     }
     if( mu == 2)
-        visit(self, n, a);
-    else
-        b(mu-1, nu-1, (mu+sigma) % 2, self, n, a);
+        (*visit)(n, a+1, data);
+    else {
+        status = b(mu-1, nu-1, (mu+sigma) % 2, n, a, visit, data);
+        if(status)
+            return status;
+    }
+    return 0;
 }
             
