@@ -1,16 +1,19 @@
 /// Partition a positive integer n into a sum of m positive integers.
 /// Algorithm H, p 392 of Knuth, Donald E. 2011. The art of computer
 /// programming, volume 4A.
+#include "intpart.h"
 #include <stdio.h>
 #include <stdlib.h>
 
-void intpart(int n, int m);
-void visit(int m, int a[m+1]);
+int traverseIntPartitions(int n, int m,
+                          int (*visit)(int m, int a[m], void *data),
+                          void *data);
+int visit(int m, int a[m], void *data);
 
-void visit(int m, int a[m+1]) {
+int visit(int m, int a[m], void *notused) {
     int s=0;
     static int count=0;
-    printf("%2d:", ++count);
+    printf("%2d: ", ++count);
     for(int i=0; i < m; ++i) {
         printf("%d", a[i]);
         s += a[i];
@@ -19,9 +22,12 @@ void visit(int m, int a[m+1]) {
     }
     printf(" = %d", s);
     putchar('\n');
+    return 0;
 }
 
-void intpart(int n, int m) {
+int traverseIntPartitions(int n, int m,
+                          int (*visit)(int m, int a[m], void *data),
+                          void *data) {
     if(m < 2) {
         fprintf(stderr,"%s:%d: m (%d) must be > 2\n",
                 __FILE__,__LINE__, m);
@@ -40,7 +46,9 @@ void intpart(int n, int m) {
     a[m] = -1;
 
     while(1) {
-        visit(m, a);
+        int status = visit(m, a, data);
+        if(status)
+            return status;
         if(a[1] < a[0] - 1) {
             a[0] -= 1;
             a[1] += 1;
@@ -65,10 +73,14 @@ void intpart(int n, int m) {
         }
         a[0] = s;
     }
+    return 0;
 }
 
 int main(void) {
-    int n = 8, m = 8;
-    intpart(n, m);
+    int n = 8, m = 3;
+    int status = traverseIntPartitions(n, m, visit, NULL);
+
+    if(status)
+        printf("traverseIntPartitions returned %d\n", status);
     return 0;
 }

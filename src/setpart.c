@@ -12,12 +12,19 @@ static int b(int mu, int nu, int sigma, unsigned n,
               unsigned a[n+1], int (*visit)(unsigned n, unsigned a[n],
                                             void *data), void *data);
 
-/// Generate all ways of partitioning a set of n objects into m
-/// non-empty subsets.  This code implements Knuth's answer to
-/// exercise 17 of section 7.2.1.5, on pp 764-765 of The Art of
-/// Computer Programming, Volume 4A, part 1. On p 417, Knuth
-/// attributes the algorithm to Frank Ruskey [Lecture Notes in
-/// Comp. Sci. 762 (1993), 205-206].
+/**
+   Generate all ways of partitioning a set of n objects into m
+   non-empty subsets.  This code implements Knuth's answer to
+   exercise 17 of section 7.2.1.5, on pp 764-765 of The Art of
+   Computer Programming, Volume 4A, part 1. On p 417, Knuth
+   attributes the algorithm to Frank Ruskey [Lecture Notes in
+   Comp. Sci. 762 (1993), 205-206].
+
+   The "visit" function is called for each partition. Its arguments
+   include the current partition and a pointer to a data structure.
+   The visit function and the data structure should be defined by the
+   user.
+*/
 int traverseSetPartitions(unsigned nelements, unsigned nsubdivisions,
                            int (*visit)(unsigned n, unsigned a[n],
                                         void *data), void *data) {
