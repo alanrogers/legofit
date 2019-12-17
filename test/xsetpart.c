@@ -8,6 +8,7 @@
  */
 
 #include "setpart.h"
+#include "stirling2.h"
 #include "misc.h"
 #include <stdio.h>
 #include <assert.h>
@@ -49,6 +50,7 @@ int visit(unsigned n, unsigned a[n], void *data) {
     }
     if(max != 1 + vdat->nsubdivisions)
         ++status;
+    vdat->count += 1;
     return status;
 }
 
@@ -89,6 +91,10 @@ int main(int argc, char **argv) {
                      .count=0};
 
     int status = traverseSetPartitions(nelem, nsub, visit, &vdat);
+
+    Stirling2 *s = Stirling2_new(nelem);
+    CHECKMEM(s);
+    assert(vdat.count == Stirling2_val(s, nelem, nsub));
 
     unitTstResult("SetPart", status==0 ? "OK" : "FAIL");
     return 0;
