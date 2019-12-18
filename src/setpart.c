@@ -6,10 +6,10 @@
 #include <assert.h>
 
 static int f(int mu, int nu, int sigma, unsigned n, 
-              unsigned a[n+1], int (*visit)(unsigned n, unsigned a[n],
+              unsigned a[n+1], int (*visit)(unsigned nn, unsigned a[nn],
                                             void *data), void *data);
 static int b(int mu, int nu, int sigma, unsigned n,
-              unsigned a[n+1], int (*visit)(unsigned n, unsigned a[n],
+              unsigned a[n+1], int (*visit)(unsigned nn, unsigned a[nn],
                                             void *data), void *data);
 
 /**
@@ -41,7 +41,7 @@ int traverseSetPartitions(unsigned nelements, unsigned nsubdivisions,
 
 // Forward recursion
 static int f(int mu, int nu, int sigma, unsigned n, 
-              unsigned a[n+1], int (*visit)(unsigned n, unsigned a[n],
+              unsigned a[n+1], int (*visit)(unsigned nn, unsigned a[nn],
                                             void *data), void *data) {
     int status;
     if(mu == 2)
@@ -90,7 +90,7 @@ static int f(int mu, int nu, int sigma, unsigned n,
 
 // Backward recursion
 static int b(int mu, int nu, int sigma, unsigned n,
-              unsigned a[n+1], int (*visit)(unsigned n, unsigned a[n],
+              unsigned a[n+1], int (*visit)(unsigned nn, unsigned a[nn],
                                             void *data), void *data) {
     int status;
     if( nu == mu+1 ) {
