@@ -82,6 +82,17 @@ int main(int argc, char **argv) {
     if(n <= 0 || m <= 0 || m > n)
         usage();
 
+    NumIntPart *nip = NumIntPart_new(n);
+    assert(1 == NumIntPart_val(nip, 0, 0));
+    for(i=1; i<=n; ++i) {
+        assert(0 == NumIntPart_val(nip, i, 0));
+        assert(1 == NumIntPart_val(nip, i, i));
+    }
+    if(n >= 4)
+        assert(2 == NumIntPart_val(nip, 4, 2));
+    if(verbose)
+        NumIntPart_print(nip, stdout);
+
     VisitDat vdat = {.verbose = verbose,
                      .trueSum = n,
                      .count=0};
@@ -93,6 +104,10 @@ int main(int argc, char **argv) {
     if(verbose)
         printf("Found %lu partitions.\n", vdat.count);
 
-    unitTstResult("SetPart", status==0 ? "OK" : "FAIL");
+    assert(vdat.count == NumIntPart_val(nip, n, m));
+    NumIntPart_free(nip);
+
+    unitTstResult("NumIntPart", "OK");
+    unitTstResult("IntPart", status==0 ? "OK" : "FAIL");
     return 0;
 }
