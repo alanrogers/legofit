@@ -39,6 +39,7 @@ xgetlinetok
 xgptree
 xhashtab
 xhessian
+xintpart
 xjobqueue
 xlblndx
 xlinereader
@@ -58,6 +59,7 @@ xrafreader
 xrational
 xsampndx
 xscrmreader
+xsetpart
 xsimreader
 xsimsched
 xstate

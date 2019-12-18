@@ -14,6 +14,10 @@
 #include <assert.h>
 #include <string.h>
 
+#ifdef NDEBUG
+#error "Unit tests must be compiled without -DNDEBUG flag"
+#endif
+
 void usage(void);
 int visit(unsigned n, unsigned a[n], void *data);
 

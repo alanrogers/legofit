@@ -2,26 +2,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int traverseIntPartitions(int n, int m,
-                          int (*visit)(int m, int a[m], void *data),
-                          void *data);
-int visit(int m, int a[m], void *data);
-
-int visit(int m, int a[m], void *notused) {
-    int s=0;
-    static int count=0;
-    printf("%2d: ", ++count);
-    for(int i=0; i < m; ++i) {
-        printf("%d", a[i]);
-        s += a[i];
-        if(i < m-1)
-            putchar('+');
-    }
-    printf(" = %d", s);
-    putchar('\n');
-    return 0;
-}
-
 /// Partition a positive integer n into a sum of m positive integers.
 /// Algorithm H, p 392 of Knuth, Donald E. 2011. The art of computer
 /// programming, volume 4A.
@@ -76,11 +56,3 @@ int traverseIntPartitions(int n, int m,
     return 0;
 }
 
-int main(void) {
-    int n = 8, m = 3;
-    int status = traverseIntPartitions(n, m, visit, NULL);
-
-    if(status)
-        printf("traverseIntPartitions returned %d\n", status);
-    return 0;
-}
