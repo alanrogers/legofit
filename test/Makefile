@@ -3,7 +3,7 @@ vpath %.c ../src
 opt :=  -O0 -fno-inline-functions -DDEBUG
 prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
-tests := xaddrparmap xbinary xbooma xboot xbranchtab xdafreader xdiffev \
+tests := xaddrparmap xbinary xbooma xboot xbranchtab xcomb xdafreader xdiffev \
   xdtnorm xerror xgene xgetlinetok xgptree xhessian xintpart xjobqueue \
   xlblndx xlinereader xmisc xmpfrmatcoal xsimreader xparam xparse \
   xparstore xpointbuff xpopnode xpopnodetab xrafreader xrational \
@@ -52,6 +52,7 @@ test : $(tests)
 	-./xbooma
 	-./xboot
 	-./xbranchtab
+	-./xcomb
 	-./xdafreader
 	-./xdiffev
 	-./xdtnorm
@@ -106,6 +107,10 @@ xrational : $(XRATIONAL)
 XBINARY := xbinary.o binary.o misc.o
 xbinary : $(XBINARY)
 	$(CC) $(CFLAGS) -o $@ $(XBINARY) $(lib)
+
+XCOMB := xcomb.o comb.o
+xcomb : $(XCOMB)
+	$(CC) $(CFLAGS) -o $@ $(XCOMB) $(lib)
 
 XINTPART := xintpart.o intpart.o misc.o
 xintpart : $(XINTPART)
