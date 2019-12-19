@@ -1,3 +1,11 @@
+/**
+   @file intpart.c
+   @brief Partitions of an integer into a given number of summands.
+
+   @copyright Copyright (c) 2019, Alan R. Rogers
+   <rogers@anthro.utah.edu>. This file is released under the Internet
+   Systems Consortium License, which can be found in file "LICENSE".
+*/
 #include "intpart.h"
 #include "misc.h"
 #include <stdio.h>
