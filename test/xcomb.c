@@ -48,8 +48,8 @@ int visit(int t, int c[t], void *data) {
 int main(void) {
     int n=8, t=4;
 
-    int status = traverseCombinations(n, t, visit, &n);
+    int status = traverseComb(n, t, visit, &n);
 
-    printf("traverseCombinations returned %d\n", status);
+    printf("traverseComb returned %d\n", status);
     return 0;
 }

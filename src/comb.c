@@ -1,7 +1,7 @@
 /**
    @file comb.c
    @brief Combinations
-
+   @author Alan R. Rogers
    @copyright Copyright (c) 2019, Alan R. Rogers
    <rogers@anthro.utah.edu>. This file is released under the Internet
    Systems Consortium License, which can be found in file "LICENSE".
@@ -13,7 +13,7 @@
 // Visit all subsets of size t that can be drawn from a larger
 // set of size n. Algorithm T, page 359 of Knuth, Donald E. 2011. The
 // Art of Computer Programming, Volume 4A.
-int traverseCombinations(int n, int t,
+int traverseComb(int n, int t,
                          int (*visit)(int tt, int c[tt], void *data),
                          void *data) {
 
@@ -55,5 +55,36 @@ int traverseCombinations(int n, int t,
         j -= 1;
     }
 
+    return status;
+}
+
+/**
+ * Visit each way of allocating N balls among k boxes, such that there
+ * are b[0] balls in the first box, b[1] in the second, and so on up to
+ * b[k-1], and where N is the sum of the b[i]. For each combination
+ * visited, the "visit" function is called.  
+ * @param[in] k The number of boxes.
+ * @param[in] b[k] The number of balls to be allocated to the k'th box.
+ * @param[in] visit A function to be called for each combination
+ * visited. The arguments of this function are kk, the number of
+ * boxes; bb, an array whose i'th entry is the number of balls in box
+ * i; c, an array of kk arrays. The i'th entry of c is an array of
+ * b[i] non-negative integers, whose j'th entry is the index of the
+ * j'th ball in box i. These indices range from 0 to N-1 inclusive,
+ * and each of these N index values is present exactly once in the
+ * two-dimensional array c. The last argument of the visit function is
+ * a NULL pointer, which will hold the address of the data argument
+ * passed to the traverseMultiComb function.
+ * @param[inout] data If non-NULL, data points to a structure to be
+ * manipulated by the visit function.
+ */
+int traverseMultiComb(int k, int b[k],
+                      int (*visit)(int kk, int bb[kk],
+                                   int *c[kk], void *data),
+                      void *data) {
+    int i, status=0;
+    int n=0;
+    for(i=0; i<k; ++i)
+        n += b[i];
     return status;
 }

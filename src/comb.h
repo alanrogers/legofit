@@ -1,8 +1,13 @@
 #ifndef ARR_COMB_H
 #define ARR_COMB_H
 
-int traverseCombinations(int n, int t,
-                         int (*visit)(int tt, int a[tt], void *data),
-                         void *data);
+int traverseComb(int n, int t,
+                 int (*visit)(int tt, int a[tt], void *data),
+                 void *data);
+
+int traverseMultiComb(int k, int n[k],
+                      int (*visit)(int kk, int nn[kk],
+                                   int *c[kk], void *data),
+                      void *data);
 
 #endif

@@ -181,7 +181,7 @@ int getRange(double x[2], char **next, const char *orig) {
 /// @param[out] parstore structure that maintains info about
 /// parameters
 /// @param[in] bnd the bounds of each type of parameter
-/// @parem[in] orig original input line
+/// @param[in] orig original input line
 void parseParam(char *next, unsigned ptype,
                 ParStore * parstore, Bounds * bnd, const char *orig) {
     // Read type of parameter
