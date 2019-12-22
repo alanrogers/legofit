@@ -13,6 +13,13 @@
 int visit(int t, int c[t], void *data);
 int nvisit(int k, int n[k], int *b[k], void *data);
 
+typedef struct Cdata Cdata;
+
+struct Cdata {
+    int verbose;
+    int count;
+};
+
 int visit(int t, int c[t], void *data) {
     int *n = (int *) data;
     int b[*n - t], next=0;
@@ -47,6 +54,9 @@ int visit(int t, int c[t], void *data) {
 }
 
 int nvisit(int k, int n[k], int *b[k], void *data) {
+    assert(data != NULL);
+    Cdata *cdata = (Cdata *) data;
+    cdata->count += 1;
     int i, j;
     for(i=0; i<k; ++i) {
         for(j=0; j<n[i]; ++j)
@@ -63,15 +73,19 @@ int main(void) {
 
     printf("traverseComb returned %d\n", status);
 
-    int n[] = {1,1,0};
+    Cdata cdata = {.verbose=1, .count=0};
+
+    int n[] = {1,1,2};
     int k = sizeof(n)/(sizeof(n[0]));
     ntot = 0;
     for(int i=0; i<k; ++i)
         ntot += n[i];
 
-    status = traverseMultiComb(k, n, nvisit, NULL);
+    fprintf(stderr,"%s:%d: &cdata=%p\n",__FILE__,__LINE__,&cdata);
+    status = traverseMultiComb(k, n, nvisit, &cdata);
     
-    printf("traverseMultiComb returned %d\n", status);
+    printf("traverseMultiComb returned %d. count=%d\n",
+           status, cdata.count);
 
     return 0;
 }

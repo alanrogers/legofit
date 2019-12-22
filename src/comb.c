@@ -70,6 +70,7 @@ MCdat *MCdat_new(int k, int n[k],
         self->c[i] = i;
 
     self->visit = visit;
+    self->data = data;
 
     return self;
 }
