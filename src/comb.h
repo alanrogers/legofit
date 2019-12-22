@@ -7,7 +7,7 @@ int traverseComb(int n, int t,
 
 int traverseMultiComb(int k, int n[k],
                       int (*visit)(int kk, int nn[kk],
-                                   int *c[kk], void *data),
+                                   int *b[kk], void *data),
                       void *data);
 
 #endif
