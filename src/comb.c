@@ -181,8 +181,15 @@ int traverseMultiComb(int k, int n[k],
                       void *data) {
     int i, status=0;
     int ntot=0;
-    for(i=0; i<k; ++i)
+    for(i=0; i<k; ++i) {
+        if(n[i] <= 0) {
+            fprintf(stderr,"%s:%s:%d: number of balls in each box"
+                    " must be\n positive, but n[%d]=%d.\n",
+                    __FILE__,__func__,__LINE__, i, n[i]);
+            exit(EXIT_FAILURE);
+        }
         ntot += n[i];
+    }
     MCdat *dat = MCdat_new(k, n, visit, data);
     CHECKMEM(dat);
 

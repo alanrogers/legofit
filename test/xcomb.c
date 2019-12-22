@@ -63,7 +63,7 @@ int main(void) {
 
     printf("traverseComb returned %d\n", status);
 
-    int n[] = {1,1,1};
+    int n[] = {1,1,0};
     int k = sizeof(n)/(sizeof(n[0]));
     ntot = 0;
     for(int i=0; i<k; ++i)
