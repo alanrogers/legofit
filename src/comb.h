@@ -9,5 +9,6 @@ int traverseMultiComb(int k, int n[k],
                       int (*visit)(int kk, int nn[kk],
                                    int *b[kk], void *data),
                       void *data);
+long multinom(int k, int x[k]);
 
 #endif

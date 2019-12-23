@@ -253,3 +253,24 @@ int traverseComb(int n, int t,
     return status;
 }
 
+/**
+ * Return N!/(prod x[i]!), the number of ways of allocating N =
+ * sum(x[i]) balls among k boxes, with x[i] balls in the ith box.
+ *
+ * @param[in] k The number of boxes.
+ *
+ * @param[in] x An array of k positive integers, with x[i]
+ * representing the number of balls in box i.
+ */
+long multinom(int k, int x[k]) {
+    int i, n=0;
+    for(i=0; i<k; ++i) {
+        assert(x[i] > 0);
+        n += x[i];
+    }
+    double ans = lgamma( (double) (n+1));
+    for(i=0; i<k; ++i)
+        ans -= lgamma( (double) (x[i]+1));
+
+    return (long) floor(exp(ans) + 0.5);
+}

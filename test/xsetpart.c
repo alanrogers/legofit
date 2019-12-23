@@ -8,7 +8,6 @@
  */
 
 #include "setpart.h"
-#include "stirling2.h"
 #include "misc.h"
 #include <stdio.h>
 #include <assert.h>
@@ -70,7 +69,7 @@ void usage(void) {
 }
 
 int main(int argc, char **argv) {
-    int i, verbose = 0;
+    int i, n, verbose = 0;
     unsigned nelem = 6, nsub = 3;
 
     for(i=1; i<argc; ++i) {
@@ -90,13 +89,51 @@ int main(int argc, char **argv) {
             usage();
     }
 
+    Stirling2 *s = Stirling2_new(nelem);
+    CHECKMEM(s);
+
+    if(verbose)
+        Stirling2_print(s, stdout);
+
+    assert(Stirling2_val(s, 0, 0) == 1);
+    for(n=1; n <= nelem; ++n) {
+        assert(Stirling2_val(s,n,0) == 0);
+        assert(Stirling2_val(s,n,1) == 1);
+        assert(Stirling2_val(s,n,n) == 1);
+    }
+
+    if(nelem >= 3)
+        assert(Stirling2_val(s, 3, 2) == 3);
+
+    if(nelem >= 4) {
+        assert(Stirling2_val(s, 4, 2) == 7);
+        assert(Stirling2_val(s, 4, 3) == 6);
+    }
+
+    if(nelem >= 5) {
+        assert(Stirling2_val(s, 5, 2) == 15);
+        assert(Stirling2_val(s, 5, 3) == 25);
+        assert(Stirling2_val(s, 5, 4) == 10);
+    }
+
+    if(nelem >= 6) {
+        assert(Stirling2_val(s, 6, 2) == 31);
+        assert(Stirling2_val(s, 6, 3) == 90);
+        assert(Stirling2_val(s, 6, 4) == 65);
+        assert(Stirling2_val(s, 6, 5) == 15);
+    }
+
+    Stirling2_free(s);
+
+    unitTstResult("Stirling2", "OK");
+
     VisitDat vdat = {.verbose = verbose, 
                      .nsubdivisions = nsub,
                      .count=0};
 
     int status = traverseSetPartitions(nelem, nsub, visit, &vdat);
 
-    Stirling2 *s = Stirling2_new(nelem);
+    s = Stirling2_new(nelem);
     CHECKMEM(s);
     assert(vdat.count == Stirling2_val(s, nelem, nsub));
 

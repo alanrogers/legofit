@@ -126,7 +126,7 @@ XSTIRLING2 := xstirling2.o stirling2.o misc.o
 xstirling2 : $(XSTIRLING2)
 	$(CC) $(CFLAGS) -o $@ $(XSTIRLING2) $(lib)
 
-XSETPART := xsetpart.o setpart.o stirling2.o misc.o
+XSETPART := xsetpart.o setpart.o misc.o
 xsetpart : $(XSETPART)
 	$(CC) $(CFLAGS) -o $@ $(XSETPART) $(lib)
 

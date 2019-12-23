@@ -182,9 +182,19 @@ int main(int argc, char **argv) {
 
     int status = traverseComb(ntot, x, visit, &cdata);
 
-    if(verbose)
+    int y[2];
+    y[0] = n[0];
+    y[1] = 0;
+    for(i=1; i<nboxes; ++i)
+        y[1] += n[i];
+
+    if(verbose) {
         printf("traverseComb returned %d. count=%d\n",
                status, cdata.count);
+        printf("Expecting count=%ld\n", multinom(nboxes, n));
+    }
+
+    assert(cdata.count == multinom(2, y));
 
     unitTstResult("traverseComb", status==0 ? "OK" : "FAIL");
 
@@ -192,10 +202,15 @@ int main(int argc, char **argv) {
 
     status = traverseMultiComb(nboxes, n, nvisit, &cdata);
 
-    if(verbose)
+    if(verbose) {
         printf("traverseMultiComb returned %d. count=%d\n",
                status, cdata.count);
+        printf("Expecting count=%ld\n", multinom(nboxes, n));
+    }
 
+    assert(cdata.count == multinom(nboxes, n));
+    unitTstResult("multinom", status==0 ? "OK" : "FAIL");
     unitTstResult("traverseMultiComb", status==0 ? "OK" : "FAIL");
+
     return 0;
 }
