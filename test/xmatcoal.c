@@ -44,7 +44,8 @@ void usage(void) {
 
 int main(int argc, char **argv) {
 
-    int i, nsamples = 12, verbose=0;
+    int nsamples = 15; // overflows at 36, not at 35
+    int i, verbose=0;
 
     for(i=1; i<argc; ++i) {
         if(strcmp(argv[i], "-v") == 0)

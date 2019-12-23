@@ -114,7 +114,18 @@ Rational Rational_inv(Rational x) {
 }
 
 /// Multiply
+/// Before multiplying, this function first removes the greatest
+/// common divisor of (x.num, y.den) and (x.den, y.num). This reduces
+/// the chance of an integer overflow. No comparable reduction is done
+/// to the numerator and divisor of x or of y, because I assume they
+/// are already in normal form.
 Rational Rational_mul(Rational x, Rational y) {
+    long divisor = gcd(x.num, y.den);
+    x.num /= divisor;
+    y.den /= divisor;
+    divisor = gcd(x.den, y.num);
+    x.den /= divisor;
+    y.num /=divisor;
     x.num = x.num * y.num;
     x.den = x.den * y.den;
     return Rational_normalize(x);

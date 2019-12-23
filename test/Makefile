@@ -31,10 +31,12 @@ warn := \
 # Abort on integer overflow or underflow
 ifeq ($(shell uname -s), Darwin)
     # clang syntax
-    ubsan := -fsanitize=undefined,integer -fno-sanitize-recover=undefined,integer
+    #ubsan := -fsanitize=undefined,integer -fno-sanitize-recover=undefined,integer
+    ubsan := -fsanitize=undefined,integer
 else
     # gcc syntax
-    ubsan := -fsanitize=undefined -fno-sanitize-recover=undefined
+    #ubsan := -fsanitize=undefined -fno-sanitize-recover=undefined
+    ubsan := -fsanitize=undefined
 endif
 
 CFLAGS := -g -std=gnu99 $(warn) $(ubsan) $(incl) $(opt) $(prof) $(osargs)

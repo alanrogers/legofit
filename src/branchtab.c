@@ -653,7 +653,7 @@ double        BranchTab_smplChiSqCost(const BranchTab *obs,
 double BranchTab_poissonCost(const BranchTab *obs, const BranchTab *expt,
                              double u, long nnuc, double n) {
     assert(expt->frozen);
-    int i;
+    int i, sign;
     double U = u*nnuc;
     double cost=0.0;
     double obval;  // observed mutations
@@ -679,7 +679,8 @@ double BranchTab_poissonCost(const BranchTab *obs, const BranchTab *expt,
                 e = e->next;
                 o = o->next;
             }
-            cost += -obval*log(exval) + exval + lgamma(obval+1.0);
+            cost += -obval*log(exval) + exval + lgamma_r(obval+1.0, &sign);
+            assert(sign == 1);
         }
         if(o) { // e link missing, so exval=0
             cost = HUGE_VAL;
@@ -688,7 +689,8 @@ double BranchTab_poissonCost(const BranchTab *obs, const BranchTab *expt,
         obval=0.0;
         while(e) { // o link missing, so obval=0
             exval = e->value * U;
-            cost += -obval*log(exval) + exval + lgamma(obval+1.0);
+            cost += -obval*log(exval) + exval + lgamma_r(obval+1.0,&sign);
+            assert(sign == 1);
             e = e->next;
         }
     }
