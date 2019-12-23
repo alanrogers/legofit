@@ -7,7 +7,7 @@ tests := xaddrparmap xbinary xbooma xboot xbranchtab xcomb xdafreader xdiffev \
   xdtnorm xerror xgene xgetlinetok xgptree xhessian xintpart xjobqueue \
   xlblndx xlinereader xmisc xmpfrmatcoal xsimreader xparam xparse \
   xparstore xpointbuff xpopnode xpopnodetab xrafreader xrational \
-  xscrmreader xsetpart xsimsched xstate xstirling2 xstrdblmap xstrdblqueue \
+  xscrmreader xsetpart xsimsched xstate xstrdblmap xstrdblqueue \
   xstrint xstrparmap xtinyexpr xtokenizer xuintqueue xwraparound xmatcoal
 
 CC := gcc
@@ -71,7 +71,6 @@ test : $(tests)
 	-./xmisc
 	-./xmpfrmatcoal
 	-./xsimreader
-	-./xstirling2
 	-./xparam
 	-./xparse
 	-./xparstore
@@ -121,10 +120,6 @@ xintpart : $(XINTPART)
 XMISC := xmisc.o misc.o
 xmisc : $(XMISC)
 	$(CC) $(CFLAGS) -o $@ $(XMISC) $(lib)
-
-XSTIRLING2 := xstirling2.o stirling2.o misc.o
-xstirling2 : $(XSTIRLING2)
-	$(CC) $(CFLAGS) -o $@ $(XSTIRLING2) $(lib)
 
 XSETPART := xsetpart.o setpart.o misc.o
 xsetpart : $(XSETPART)
