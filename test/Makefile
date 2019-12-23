@@ -108,7 +108,7 @@ XBINARY := xbinary.o binary.o misc.o
 xbinary : $(XBINARY)
 	$(CC) $(CFLAGS) -o $@ $(XBINARY) $(lib)
 
-XCOMB := xcomb.o comb.o
+XCOMB := xcomb.o comb.o misc.o
 xcomb : $(XCOMB)
 	$(CC) $(CFLAGS) -o $@ $(XCOMB) $(lib)
 
