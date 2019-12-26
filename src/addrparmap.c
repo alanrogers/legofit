@@ -43,11 +43,7 @@ void AddrParMap_free(AddrParMap *h) {
 
 AddrParMap *AddrParMap_new(Param *par) {
     AddrParMap *self = malloc(sizeof(AddrParMap));
-    if(self==NULL) {
-        fprintf(stderr,"%s:%d: can't allocate memory\n",
-                __FILE__, __LINE__);
-        exit(EXIT_FAILURE);
-    }
+    CHECKMEM(self);
     self->par = par;  // no copy because par is not locally owned
     self->color = RED;
     self->left = self->right = NULL;

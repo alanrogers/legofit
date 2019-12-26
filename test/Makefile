@@ -5,7 +5,7 @@ prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
 tests := xaddrparmap xbinary xbooma xboot xbranchtab xcomb xdafreader xdiffev \
   xdtnorm xerror xgene xgetlinetok xgptree xhessian xintpart xjobqueue \
-  xlblndx xlinereader xmisc xmpfrmatcoal xsimreader xparam xparse \
+  xlblndx xlinereader xllrbtree xmisc xmpfrmatcoal xsimreader xparam xparse \
   xparstore xpointbuff xpopnode xpopnodetab xrafreader xrational \
   xscrmreader xsetpart xsimsched xstate xstrdblmap xstrdblqueue \
   xstrint xstrparmap xtinyexpr xtokenizer xuintqueue xwraparound xmatcoal
@@ -67,6 +67,7 @@ test : $(tests)
 	-./xjobqueue
 	-./xlblndx
 	-./xlinereader
+	-./xllrbtree
 	-./xmatcoal
 	-./xmisc
 	-./xmpfrmatcoal
@@ -132,6 +133,10 @@ xgetlinetok : $(XGETLINETOK)
 XLINEREADER := xlinereader.o linereader.o misc.o
 xlinereader : $(XLINEREADER)
 	$(CC) $(CFLAGS) -o $@ $(XLINEREADER) $(lib)
+
+XLLRBTREE := xllrbtree.o llrbtree.o misc.o
+xllrbtree : $(XLLRBTREE)
+	$(CC) $(CFLAGS) -o $@ $(XLLRBTREE) $(lib)
 
 XWRAPAROUND := xwraparound.o wraparound.o
 xwraparound : $(XWRAPAROUND)

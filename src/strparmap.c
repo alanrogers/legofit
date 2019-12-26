@@ -44,11 +44,7 @@ void StrParMap_free(StrParMap *h) {
 
 StrParMap *StrParMap_new(Param *par) {
     StrParMap *self = malloc(sizeof(StrParMap));
-    if(self==NULL) {
-        fprintf(stderr,"%s:%d: can't allocate memory\n",
-                __FILE__, __LINE__);
-        exit(1);
-    }
+    CHECKMEM(self);
     self->par = par;  // no copy: not locally owned
     self->color = RED;
     self->left = self->right = NULL;
