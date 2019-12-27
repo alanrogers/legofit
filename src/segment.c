@@ -30,11 +30,9 @@ struct Segment {
     // p[1][i] is analogous prob for ancient end of interval.
     double *p[2];
 
-    // ci[i][j] is the expected length, within the segment, of the
-    // coalescent interval with j+1 lineages, given that there i+1
-    // lineages at the recent end of the segment. Dimension is max X
-    // max.
-    double **ci;
+    // ci[i] is the expected length, within the segment, of the
+    // coalescent interval with i+1 lineages. Dimension is max.
+    double *ci;
 
     // Arrays of pointers to linked lists of IdSet objects. Dimension
     // is max X 2.  ids[0] refers to the recent end of the segment and
@@ -197,10 +195,11 @@ int Segment_coalesce(Segment *self, int maxsamp,
     
     // If there is only one line of descent, no coalescent events are
     // possible, so p[1][0] is at least as large as p[0][0], and
-    // ci[1][0] is at least v*p[0][0].
+    // ci[0] is at least v*p[0][0].
     self->p[1][0] = self->p[0][0];
-    self-ci[1][0] = v*self->p[0][0];
+    self-ci[0] = v*self->p[0][0];
 
+    // Calculate probabilities and expected values, p[1] and ci.
     for(n=2; n <= self->max; ++n) {
 
         // Skip improbable states.
@@ -227,7 +226,7 @@ int Segment_coalesce(Segment *self, int maxsamp,
             self->p[1][i-1] += self->p[0][n-1] * x[i-2];
 
         // Calculate expected length, within the segment, of
-        // coalescent intervals with 2,3,...,n lineages.  cilen[i] is
+        // coalescent intervals with 2,3,...,n lineages.  x[i] is
         // expected length of interval with i-2 lineages.
         MatCoal_ciLen(n-1, x, v);
 
@@ -236,12 +235,13 @@ int Segment_coalesce(Segment *self, int maxsamp,
         sum = 0.0;
         for(i=n; i >= 2; --i)
             sum += x[i-2];
-        self->ci[1][0] += self->pr[0][n-1] * (v - sum);
+        self->ci[0] += self->pr[0][n-1] * (v - sum);
 
         // Add lengths of intervals with 2,3,...,n lineages.
         // x[i] refers to interval with i+2 lineages.
         // self->ci[1][i] refers to intervals with i+1 lineages.
         for(i=2; i <= n; ++i)
-            self->ci[1][i-1] += self->pr[0][n-1] * x[i-2];
+            self->ci[i-1] += self->pr[0][n-1] * x[i-2];
     }
+
 }
