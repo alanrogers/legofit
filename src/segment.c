@@ -1,6 +1,7 @@
 #include "segment.h"
 
 typedef struct IdSet IdSet;
+typedef struct IdSetList IdSetList;
 
 // A set of tipId_t values.
 struct IdSet {
@@ -30,10 +31,6 @@ struct Segment {
     // p[1][i] is analogous prob for ancient end of interval.
     double *p[2];
 
-    // ci[i] is the expected length, within the segment, of the
-    // coalescent interval with i+1 lineages. Dimension is max.
-    double *ci;
-
     // Arrays of pointers to linked lists of IdSet objects. Dimension
     // is max X 2.  ids[0] refers to the recent end of the segment and
     // ids[1] to the ancient end. ids[0][i] is the list for the case
@@ -47,7 +44,10 @@ IdSet *IdSet_new(IdSet *next, int nIds, tipId_t tid[nIds], double prob);
 IdSet *IdSet_add(IdSet *head, int nIds, tipId_t tid[nIds], double prob);
 void IdSet_free(IdSet *self);
 IdSet *IdSet_join(IdSet *a, IdSet *b);
-
+int IdSet_length(IdSet *self);
+void IdSet_mulBy(IdSet *self, double factor);
+void IdSet_divBy(IdSet *self, double divisor);
+double IdSet_sumProb(IdSet *self);
 
 /**
  * Compare two vectors, x and y, of tipId_t values. Return -1 if x<y,
@@ -185,8 +185,41 @@ IdSet *IdSet_join(IdSet *a, IdSet *b) {
     return self;
 }
 
+int IdSet_length(IdSet *self) {
+    int len=0;
+    while(self != NULL) {
+        len += 1;
+        self = self->next;
+    }
+    return len;
+}
+
+void IdSet_mulBy(IdSet *self, double factor) {
+    while(self != NULL) {
+        self->p *= factor;
+        self = self->next;
+    }
+}
+
+void IdSet_divBy(IdSet *self, double divisor) {
+    while(self != NULL) {
+        self->p /= divisor;
+        self = self->next;
+    }
+}
+
+double IdSet_sumProb(IdSet *self) {
+    double sum=0.0;
+    while(self != NULL) {
+        sum += self->p;
+        self = self->next;
+    }
+    return sum;
+}
+
 int Segment_coalesce(Segment *self, int maxsamp,
                      MatCoal *mc[maxsamp-1],
+                     Stirling2 *stirling2,
                      double v) {
     assert(self->max <= maxsamp);
 
@@ -194,12 +227,10 @@ int Segment_coalesce(Segment *self, int maxsamp,
     int n, i;
     
     // If there is only one line of descent, no coalescent events are
-    // possible, so p[1][0] is at least as large as p[0][0], and
-    // ci[0] is at least v*p[0][0].
+    // possible, so p[1][0] is at least as large as p[0][0].
     self->p[1][0] = self->p[0][0];
-    self-ci[0] = v*self->p[0][0];
 
-    // Calculate probabilities and expected values, p[1] and ci.
+    // Calculate probabilities and expected values, p[1] and cilen.
     for(n=2; n <= self->max; ++n) {
 
         // Skip improbable states.
@@ -235,7 +266,7 @@ int Segment_coalesce(Segment *self, int maxsamp,
         sum = 0.0;
         for(i=n; i >= 2; --i)
             sum += x[i-2];
-        self->ci[0] += self->pr[0][n-1] * (v - sum);
+        double cilen = self->pr[0][n-1] * (v - sum);
 
         // Add lengths of intervals with 2,3,...,n lineages.
         // x[i] refers to interval with i+2 lineages.
@@ -243,5 +274,7 @@ int Segment_coalesce(Segment *self, int maxsamp,
         for(i=2; i <= n; ++i)
             self->ci[i-1] += self->pr[0][n-1] * x[i-2];
     }
+
+    
 
 }
