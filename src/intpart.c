@@ -29,7 +29,8 @@ struct NumIntPart {
     // partitioning a positive integer, n, into k positive summands.
     // It is calculated via the recurrence, P(n,k) = P(n-k, k) +
     // P(n-1, k-1), with intial values P(0,0) = 1, and P(n,k) = 0, if
-    // n <= 0 or k <= 0, and either n or k is nonzero.
+    // n <= 0 or k <= 0, and either n or k is nonzero. See p 399 of
+    // Knuth, Donald. 1986. The Art of Computer Programming, Volume 4A.
     unsigned *s;
 };
 
