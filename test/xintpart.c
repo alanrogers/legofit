@@ -52,7 +52,7 @@ void usage(void) {
     fprintf(stderr,"usage: xintpart [options]\n");
     fprintf(stderr,"where options may include\n");
     fprintf(stderr," -n <x>      : integer to be partitioned\n");
-    fprintf(stderr," -m <y>      : number of summands per partition\n");
+    fprintf(stderr," -k <y>      : number of summands per partition\n");
     fprintf(stderr," -v          : verbose output\n\n");
     fprintf(stderr," <x> and <y> must be >0\n");
     fprintf(stderr," <y> must be <= <x>\n");
@@ -60,7 +60,7 @@ void usage(void) {
 }
 
 int main(int argc, char **argv) {
-    int i, n = 8, m = 3, verbose=0;
+    int i, n = 8, k = 3, verbose=0;
 
     for(i=1; i<argc; ++i) {
         if(strcmp(argv[i], "-v") == 0)
@@ -70,16 +70,16 @@ int main(int argc, char **argv) {
             if(i == argc)
                 usage();
             n = strtoul(argv[i], NULL, 10);
-        }else if(strcmp(argv[i], "-m") == 0) {
+        }else if(strcmp(argv[i], "-k") == 0) {
             i += 1;
             if(i == argc)
                 usage();
-            m = strtoul(argv[i], NULL, 10);
+            k = strtoul(argv[i], NULL, 10);
         }else
             usage();
     }
 
-    if(n <= 0 || m <= 0 || m > n)
+    if(n <= 0 || k <= 0 || k > n)
         usage();
 
     NumIntPart *nip = NumIntPart_new(n);
@@ -97,14 +97,14 @@ int main(int argc, char **argv) {
                      .trueSum = n,
                      .count=0};
 
-    int status = traverseIntPartitions(n, m, visit, &vdat);
+    int status = traverseIntPartitions(n, k, visit, &vdat);
 
     if(status)
         printf("traverseIntPartitions returned %d\n", status);
     if(verbose)
         printf("Found %lu partitions.\n", vdat.count);
 
-    assert(vdat.count == NumIntPart_val(nip, n, m));
+    assert(vdat.count == NumIntPart_val(nip, n, k));
     NumIntPart_free(nip);
 
     unitTstResult("NumIntPart", "OK");

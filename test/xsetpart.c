@@ -61,7 +61,7 @@ void usage(void) {
     fprintf(stderr,"usage: xsetpart [options]\n");
     fprintf(stderr,"where options may include\n");
     fprintf(stderr," -n <n_elements> : size of set\n");
-    fprintf(stderr," -m <n_subdiv>   : number of subdivisions\n");
+    fprintf(stderr," -k <n_subdiv>   : number of subdivisions\n");
     fprintf(stderr," -v              : verbose output\n\n");
     fprintf(stderr,"   n_elements must be > 0\n");
     fprintf(stderr,"   n_subdiv must be > 0, <= n_elements\n");
@@ -80,7 +80,7 @@ int main(int argc, char **argv) {
             if(i == argc)
                 usage();
             nelem = strtoul(argv[i], NULL, 10);
-        }else if(strcmp(argv[i], "-m") == 0) {
+        }else if(strcmp(argv[i], "-k") == 0) {
             i += 1;
             if(i == argc)
                 usage();
