@@ -27,6 +27,9 @@ struct NumIntPart {
     // an array. The (n,k)th element of s, where n <= nmax and k <= n,
     // is s[offset[n] + k] and equals P(n,k), the number of ways of
     // partitioning a positive integer, n, into k positive summands.
+    // It is calculated via the recurrence, P(n,k) = P(n-k, k) +
+    // P(n-1, k-1), with intial values P(0,0) = 1, and P(n,k) = 0, if
+    // n <= 0 or k <= 0, and either n or k is nonzero.
     unsigned *s;
 };
 
