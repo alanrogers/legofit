@@ -12,7 +12,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-// The number of ways to partition an integer, n, into k summands.
+// The number of ways to partition a non-negative integer, n, into k
+// positive summands.
 struct NumIntPart {
     unsigned nmax;
 
