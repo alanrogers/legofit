@@ -136,6 +136,9 @@ int main(int argc, char **argv) {
     s = Stirling2_new(nelem);
     CHECKMEM(s);
     assert(vdat.count == Stirling2_val(s, nelem, nsub));
+    if(verbose)
+        printf("Stirling3(%u,%u)=%lu\n", nelem, nsub,
+               Stirling2_val(s, nelem, nsub));
 
     unitTstResult("SetPart", status==0 ? "OK" : "FAIL");
     return 0;
