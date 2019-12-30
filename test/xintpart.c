@@ -102,7 +102,8 @@ int main(int argc, char **argv) {
     if(status)
         printf("traverseIntPartitions returned %d\n", status);
     if(verbose)
-        printf("Found %lu partitions.\n", vdat.count);
+        printf("Found %lu partitions; expected %u\n",
+               vdat.count, NumIntPart_val(nip, n, k));
 
     assert(vdat.count == NumIntPart_val(nip, n, k));
     NumIntPart_free(nip);
