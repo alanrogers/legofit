@@ -318,8 +318,8 @@ int visitIntPart(int k, int y[k], void *data) {
     n = multinom(k, y);
     dat->prcomb /= n;              // prob of each combination
 
-    traverseMultiComb(k, y[k], visitComb, data);
-    return 0;
+    // Visit all ways of allocating descendants to ancestors.
+    return traverseMultiComb(k, y[k], visitComb, data);
 }
 
 /**
@@ -348,10 +348,12 @@ int visitComb(int k, int y[k], int *ndx[k], void *data) {
             // tipId_t value representing the union of that ancestor's
             // descendants.
             tipId_t tid = 0;
-            for(int j=0; j < y[k]; ++j) {
+            for(int j=0; j < y[i]; ++j) {
                 assert(ndx[j] < s->nIds);
                 tid |= s->tid[ndx[i][j]];
             }
+
+            assert(tid);
 
             // Skip singletons unless data->dosing is nonzero
             if(!dat->dosing && isPow2(tid))
@@ -360,8 +362,9 @@ int visitComb(int k, int y[k], int *ndx[k], void *data) {
             // probability times expected length of interval
             double x = s->p * dat->prcomb * dat->intLen;
 
-            // add to BranchTab
+            // Increment BranchTab entry for current tid value.
             BranchTab_add(dat->bt, tid, x);
         }
     }
+    return 0;
 }
