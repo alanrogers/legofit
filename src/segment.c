@@ -1,7 +1,20 @@
 #include "segment.h"
+#include "intpart.h"
+#include "comb.h"
+#include "binary.h"
 
 typedef struct IdSet IdSet;
 typedef struct IdSetList IdSetList;
+typedef struct PartDat PartDat;
+
+struct PartDat {
+    double prob;   // reciprocal of (n-1) choose (k-1)
+    double prcomb; // prob of each allocation w/i current partition
+    double intLen; // expected length of this coalescent interval
+    IdSet *head;
+    BranchTab *bt;
+    int dosing;    // do singleton site patterns if nonzero
+};
 
 // A set of tipId_t values.
 struct IdSet {
@@ -48,6 +61,8 @@ int IdSet_length(IdSet *self);
 void IdSet_mulBy(IdSet *self, double factor);
 void IdSet_divBy(IdSet *self, double divisor);
 double IdSet_sumProb(IdSet *self);
+int visitIntPart(int k, int y[k], void *data);
+int visitComb(int k, int y[k], int *ndx[k], void *data);
 
 /**
  * Compare two vectors, x and y, of tipId_t values. Return -1 if x<y,
@@ -274,7 +289,79 @@ int Segment_coalesce(Segment *self, int maxsamp,
         for(i=2; i <= n; ++i)
             self->ci[i-1] += self->pr[0][n-1] * x[i-2];
     }
+}
 
+/// Visit an integer partition.
+int visitIntPart(int k, int y[k], void *data) {
+    PartDat *dat = (PartDat *) data;
+
+    int i, j;
+
+    // c[0] is number of y[i] with largest value, c[1] is number
+    // with next largest value, etc. Algorithm relies of fact
+    // that entries of y are sorted.
+    int c[k];
+    int m=0; // number of distinct values in partition y
+    c[0] = 1;
+    for(j=1; j<k; ++j) {
+        if(y[j] == y[j-1])
+            ++c[m];
+        else
+            c[++m] = 1;
+    }
+
+    // Number of x vectors contributing to this partition.
+    long n = multinom(m, c);
     
+    dat->prcomb = nx * dat->prob;  // prob of current partition
 
+    n = multinom(k, y);
+    dat->prcomb /= n;              // prob of each combination
+
+    traverseMultiComb(k, y[k], visitComb, data);
+    return 0;
+}
+
+/**
+ * Visit a particular allocation of descendants among ancestors, and
+ * increment the BranchTab object.
+ * @param[in] k The number of ancestors.
+ * @param[in] y y[i] is the number of descendants of ancestor i. The
+ * sum of y equals n, the total number of descendants.
+ * @param[in] ndx ndx[i][j] is the index of the j'th descendant of
+ * ancestor i. 
+ * Each index is between 0 and n-1 and appears only once in the
+ * two-dimensional array, ndx.
+ * @param[inout] data Pointer to an object of type PartDat.
+ */
+int visitComb(int k, int y[k], int *ndx[k], void *data) {
+    PartDat *dat = (PartDat *) data;
+
+    // Loop across sets of ancestors. These sets may have different
+    // probabilities, as indicated by s->p.
+    for(IdSet *s = dat->ids; s!=NULL; s = s->next) {
+
+        // Loop across ancestors
+        for(int i=0; i<k; ++i) {
+
+            // Loop across descendants of ancestor i to create a
+            // tipId_t value representing the union of that ancestor's
+            // descendants.
+            tipId_t tid = 0;
+            for(int j=0; j < y[k]; ++j) {
+                assert(ndx[j] < s->nIds);
+                tid |= s->tid[ndx[i][j]];
+            }
+
+            // Skip singletons unless data->dosing is nonzero
+            if(!dat->dosing && isPow2(tid))
+                continue;
+
+            // probability times expected length of interval
+            double x = s->p * dat->prcomb * dat->intLen;
+
+            // add to BranchTab
+            BranchTab_add(dat->bt, tid, x);
+        }
+    }
 }
