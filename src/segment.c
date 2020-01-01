@@ -301,7 +301,7 @@ int visitIntPart(int k, int y[k], void *data) {
     // with next largest value, etc. Algorithm relies of fact
     // that entries of y are sorted.
     int c[k];
-    int m=0; // number of distinct values in partition y
+    int m=0; // index of current entry of c
     c[0] = 1;
     for(j=1; j<k; ++j) {
         if(y[j] == y[j-1])
@@ -309,11 +309,12 @@ int visitIntPart(int k, int y[k], void *data) {
         else
             c[++m] = 1;
     }
+    ++m; // number of entries in c
 
     // Number of x vectors contributing to this partition.
     long n = multinom(m, c);
     
-    dat->prcomb = nx * dat->prob;  // prob of current partition
+    dat->prcomb = n * dat->prob;  // prob of current partition
 
     n = multinom(k, y);
     dat->prcomb /= n;              // prob of each combination
