@@ -62,7 +62,7 @@ void IdSet_mulBy(IdSet *self, double factor);
 void IdSet_divBy(IdSet *self, double divisor);
 double IdSet_sumProb(IdSet *self);
 int visitIntPart(int k, int y[k], void *data);
-int visitComb(int k, int y[k], int *ndx[k], void *data);
+int visitMComb(int k, int y[k], int *ndx[k], void *data);
 
 /**
  * Compare two vectors, x and y, of tipId_t values. Return -1 if x<y,
@@ -235,11 +235,12 @@ double IdSet_sumProb(IdSet *self) {
 int Segment_coalesce(Segment *self, int maxsamp,
                      MatCoal *mc[maxsamp-1],
                      Stirling2 *stirling2,
+                     BranchTab *branchtab,
                      double v) {
     assert(self->max <= maxsamp);
 
-    double x[maxsamp-1], sum;
-    int n, i;
+    double x[maxsamp], sum;
+    int n, i, status;
     
     // If there is only one line of descent, no coalescent events are
     // possible, so p[1][0] is at least as large as p[0][0].
@@ -253,41 +254,54 @@ int Segment_coalesce(Segment *self, int maxsamp,
             continue;
         
         // Calculate prob of 2,3,...,n lines of descent.
-        // On return, x[0] = prob[2], x[n-2] = prob[n]
-        MatCoal_project(n-1, x, v);
+        // On return, x[1] = prob[2], x[n-1] = prob[n],
+        // x[0] not set.
+        MatCoal_project(n-1, x+1, v);
 
         // Calculate probability of 1 line of descent. I'm doing the
         // sum in reverse order on the assumption that higher indices
         // will often have smaller probabilities.
-        // x[i] is prob of i+2 lineages
+        // x[i] is prob of i+1 lineages; x[0] not set
         sum=0.0;
         for(i=n; i >= 2; --i)
-            sum += x[i-2];
+            sum += x[i-1];
         self->p[1][0] += self->p[0][n-1] * (1.0-sum);
 
         // Add probs of 2..n lines of descent
         // x[i] is prob of i+2 lineages
         // self->p[1][i] is prob if i+1 lineages
         for(i=2; i <= n; ++i)
-            self->p[1][i-1] += self->p[0][n-1] * x[i-2];
+            self->p[1][i-1] += self->p[0][n-1] * x[i-1];
 
         // Calculate expected length, within the segment, of
         // coalescent intervals with 2,3,...,n lineages.  x[i] is
-        // expected length of interval with i-2 lineages.
-        MatCoal_ciLen(n-1, x, v);
+        // expected length of interval with i-1 lineages.
+        // x[0] not set.
+        MatCoal_ciLen(n-1, x+1, v);
 
-        // Calculate expected length of interval with one lineage.
-        // x[i] refers to interval with i+2 lineages.
+        // Calculate expected length, x[0], of interval with one
+        // lineage.  x[i] refers to interval with i+1 lineages.
         sum = 0.0;
         for(i=n; i >= 2; --i)
-            sum += x[i-2];
-        double cilen = self->pr[0][n-1] * (v - sum);
+            sum += x[i-1];
+        x[0] = v - sum;
 
-        // Add lengths of intervals with 2,3,...,n lineages.
-        // x[i] refers to interval with i+2 lineages.
-        // self->ci[1][i] refers to intervals with i+1 lineages.
-        for(i=2; i <= n; ++i)
-            self->ci[i-1] += self->pr[0][n-1] * x[i-2];
+        // Multiply x by probability that segment had n lineages on
+        // recent end of segment.
+        for(i=1; i <= n; ++i)
+            x[i-1] *= self->pr[0][n-1];
+
+        for(k=1; k <= n; ++k) {
+            PartDat pd = {.prob = 1.0/binom(n-1, k-1),
+                          .prcomb=0.0,
+                          .intLen=x[k-1],
+                          .head = self->ids[0][k-1],
+                          .branchtab = branchtab,
+                          .dosing = dosing};
+            status = traverseIntPartitions(n, k, visitIntPart, &pd);
+            if(status)
+                return status;
+        }
     }
 }
 
@@ -312,15 +326,15 @@ int visitIntPart(int k, int y[k], void *data) {
     ++m; // number of entries in c
 
     // Number of x vectors contributing to this partition.
-    long n = multinom(m, c);
+    long coef = multinom(m, c);
     
-    dat->prcomb = n * dat->prob;  // prob of current partition
+    dat->prcomb = coef * dat->prob;  // prob of current partition
 
-    n = multinom(k, y);
-    dat->prcomb /= n;              // prob of each combination
+    coef = multinom(k, y);
+    dat->prcomb /= coef;             // prob of each combination
 
     // Visit all ways of allocating descendants to ancestors.
-    return traverseMultiComb(k, y[k], visitComb, data);
+    return traverseMultiComb(k, y[k], visitMComb, data);
 }
 
 /**
@@ -335,7 +349,7 @@ int visitIntPart(int k, int y[k], void *data) {
  * two-dimensional array, ndx.
  * @param[inout] data Pointer to an object of type PartDat.
  */
-int visitComb(int k, int y[k], int *ndx[k], void *data) {
+int visitMComb(int k, int y[k], int *ndx[k], void *data) {
     PartDat *dat = (PartDat *) data;
 
     // Loop across sets of ancestors. These sets may have different
@@ -350,7 +364,8 @@ int visitComb(int k, int y[k], int *ndx[k], void *data) {
             // descendants.
             tipId_t tid = 0;
             for(int j=0; j < y[i]; ++j) {
-                assert(ndx[j] < s->nIds);
+                assert(ndx[i][j] < s->nIds);
+                assert((tid & s->tid[ndx[i][j]]) == 0);
                 tid |= s->tid[ndx[i][j]];
             }
 
@@ -364,7 +379,7 @@ int visitComb(int k, int y[k], int *ndx[k], void *data) {
             double x = s->p * dat->prcomb * dat->intLen;
 
             // Increment BranchTab entry for current tid value.
-            BranchTab_add(dat->bt, tid, x);
+            BranchTab_add(dat->branchtab, tid, x);
         }
     }
     return 0;

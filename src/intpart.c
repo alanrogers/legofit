@@ -113,31 +113,31 @@ void NumIntPart_print(NumIntPart *self, FILE *fp) {
     }
 }
 
-/// Partition a positive integer n into a sum of m positive integers.
+/// Partition a positive integer n into a sum of k positive integers.
 /// Algorithm H, p 392 of Knuth, Donald E. 2011. The art of computer
 /// programming, volume 4A.
-int traverseIntPartitions(int n, int m,
-                          int (*visit)(int mm, int a[mm], void *data),
+int traverseIntPartitions(int n, int k,
+                          int (*visit)(int kk, int a[kk], void *data),
                           void *data) {
-    if(m < 2) {
-        fprintf(stderr,"%s:%d: m (%d) must be > 2\n",
-                __FILE__,__LINE__, m);
+    if(k < 2) {
+        fprintf(stderr,"%s:%d: k (%d) must be > 2\n",
+                __FILE__,__LINE__, k);
         exit(EXIT_FAILURE);
     }
-    if(m > n) {
-        fprintf(stderr,"%s:%d: m (%d) must be <= n (%d)\n",
-                __FILE__,__LINE__, m, n);
+    if(k > n) {
+        fprintf(stderr,"%s:%d: k (%d) must be <= n (%d)\n",
+                __FILE__,__LINE__, k, n);
         exit(EXIT_FAILURE);
     }
     int j;
-    int a[m+1];
-    a[0] = n - m + 1;
-    for(j=1; j < m; ++j)
+    int a[k+1];
+    a[0] = n - k + 1;
+    for(j=1; j < k; ++j)
         a[j] = 1;
-    a[m] = -1;
+    a[k] = -1;
 
     while(1) {
-        int status = visit(m, a, data);
+        int status = visit(k, a, data);
         if(status)
             return status;
         if(a[1] < a[0] - 1) {
@@ -152,7 +152,7 @@ int traverseIntPartitions(int n, int m,
             s += a[j];
             j += 1;
         }
-        if(j+1>m)
+        if(j+1>k)
             break;
         int x = a[j] + 1;
         a[j] = x;
