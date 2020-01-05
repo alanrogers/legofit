@@ -4,18 +4,18 @@
 #include "binary.h"
 #include "matcoal.h"
 #include "misc.h"
+#include "branchtab.h"
 #include <stdlib.h>
 
 typedef struct IdSet IdSet;
-typedef struct IdSetList IdSetList;
 typedef struct PartDat PartDat;
 
 struct PartDat {
     double prob;   // reciprocal of (n-1) choose (k-1)
     double prcomb; // prob of each allocation w/i current partition
     double intLen; // expected length of this coalescent interval
-    IdSet *head;
-    BranchTab *bt;
+    IdSet *ids;
+    BranchTab *branchtab;
     int dosing;    // do singleton site patterns if nonzero
 };
 
@@ -235,12 +235,12 @@ double IdSet_sumProb(IdSet *self) {
     return sum;
 }
 
-int Segment_coalesce(Segment *self, int maxsamp, BranchTab *branchtab,
-                     double v) {
+int Segment_coalesce(Segment *self, int maxsamp, int dosing,
+                     BranchTab *branchtab, double v) {
     assert(self->max <= maxsamp);
 
     double x[maxsamp], sum;
-    int n, i, status;
+    int n, i, status=0;
     
     // If there is only one line of descent, no coalescent events are
     // possible, so p[1][0] is at least as large as p[0][0].
@@ -295,7 +295,7 @@ int Segment_coalesce(Segment *self, int maxsamp, BranchTab *branchtab,
             PartDat pd = {.prob = 1.0/binom(n-1, k-1),
                           .prcomb=0.0,
                           .intLen=x[k-1],
-                          .head = self->ids[0][k-1],
+                          .ids = self->ids[0][k-1],
                           .branchtab = branchtab,
                           .dosing = dosing};
             status = traverseIntPartitions(n, k, visitIntPart, &pd);
@@ -303,13 +303,14 @@ int Segment_coalesce(Segment *self, int maxsamp, BranchTab *branchtab,
                 return status;
         }
     }
+    return status;
 }
 
 /// Visit an integer partition.
 int visitIntPart(int k, int y[k], void *data) {
     PartDat *dat = (PartDat *) data;
 
-    int i, j;
+    int j;
 
     // c[0] is number of y[i] with largest value, c[1] is number
     // with next largest value, etc. Algorithm relies of fact
@@ -334,7 +335,7 @@ int visitIntPart(int k, int y[k], void *data) {
     dat->prcomb /= coef;             // prob of each combination
 
     // Visit all ways of allocating descendants to ancestors.
-    return traverseMultiComb(k, y[k], visitMComb, data);
+    return traverseMultiComb(k, y, visitMComb, data);
 }
 
 /**
