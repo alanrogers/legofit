@@ -10,5 +10,6 @@ int traverseMultiComb(int k, int n[k],
                                    int *b[kk], void *data),
                       void *data);
 long multinom(int k, int x[k]);
+long binom(long n, long x);
 
 #endif

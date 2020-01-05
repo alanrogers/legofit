@@ -274,3 +274,19 @@ long multinom(int k, int x[k]) {
 
     return (long) floor(exp(ans) + 0.5);
 }
+
+/**
+ * Binomial coefficient. Return n!/(x! * (n-x)!), the number of ways
+ * of choosing x items out of n.
+ *
+ * @param[in] n total number of items
+ *
+ * @param[in] x number to choose out of n.
+ */
+long binom(long n, long x) {
+    double ans = lgamma( (double) (n+1));
+    ans -= lgamma( (double) (x+1));
+    ans -= lgamma( (double) (n-x+1));
+
+    return (long) floor(exp(ans) + 0.5);
+}

@@ -2,6 +2,9 @@
 #include "intpart.h"
 #include "comb.h"
 #include "binary.h"
+#include "matcoal.h"
+#include "misc.h"
+#include <stdlib.h>
 
 typedef struct IdSet IdSet;
 typedef struct IdSetList IdSetList;
@@ -30,7 +33,7 @@ struct IdSet {
     // they overlap. In other words, if "a.allbits & b.allbits" is not
     // zero.  The i'th bit is set in allbits if it is set in any of
     // the constituent tipId_t values.
-    tipIt_t allbits;
+    tipId_t allbits;
 
     IdSet *next;
 };
@@ -125,7 +128,7 @@ IdSet *IdSet_add(IdSet *head, int nIds, tipId_t tid[nIds], double prob) {
         head->next = IdSet_add(head->next, nIds, tid, prob);
         return head;
     }
-    head->prob += prob;
+    head->p += prob;
     return head;
 }
 
@@ -232,10 +235,7 @@ double IdSet_sumProb(IdSet *self) {
     return sum;
 }
 
-int Segment_coalesce(Segment *self, int maxsamp,
-                     MatCoal *mc[maxsamp-1],
-                     Stirling2 *stirling2,
-                     BranchTab *branchtab,
+int Segment_coalesce(Segment *self, int maxsamp, BranchTab *branchtab,
                      double v) {
     assert(self->max <= maxsamp);
 
@@ -289,9 +289,9 @@ int Segment_coalesce(Segment *self, int maxsamp,
         // Multiply x by probability that segment had n lineages on
         // recent end of segment.
         for(i=1; i <= n; ++i)
-            x[i-1] *= self->pr[0][n-1];
+            x[i-1] *= self->p[0][n-1];
 
-        for(k=1; k <= n; ++k) {
+        for(int k=1; k <= n; ++k) {
             PartDat pd = {.prob = 1.0/binom(n-1, k-1),
                           .prcomb=0.0,
                           .intLen=x[k-1],
