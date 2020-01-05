@@ -211,6 +211,9 @@ int main(int argc, char **argv) {
     assert(cdata.count == multinom(nboxes, n));
     unitTstResult("multinom", status==0 ? "OK" : "FAIL");
 
+    assert(binom(0,1) == 0);
+    assert(binom(3,4) == 0);
+    assert(binom(3,5) == 0);
     assert(binom(5,0) == 1);
     assert(binom(5,1) == 5);
     assert(binom(5,2) == 10);
@@ -218,8 +221,6 @@ int main(int argc, char **argv) {
     assert(binom(5,4) == 5);
     assert(binom(5,5) == 1);
     assert(binom(0,0) == 1);
-    assert(binom(0,1) == 0);
-    assert(binom(3,4) == 0);
     unitTstResult("binom", "OK");
 
     unitTstResult("traverseMultiComb", status==0 ? "OK" : "FAIL");
