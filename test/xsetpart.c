@@ -194,7 +194,7 @@ int main(int argc, char **argv) {
     int status = traverseSetPartitions(nelem, nsub, visit, &vdat);
 
     if(verbose)
-        printf("sumprob=%lf; should by 1.0; err=%le\n",
+        printf("sumprob=%lf; should be 1.0; err=%le\n",
                vdat.sumprob, vdat.sumprob - 1.0);
     assert(fabs(vdat.sumprob - 1.0) < 1e-8);
 
