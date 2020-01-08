@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <math.h>
 
 static int f(int mu, int nu, int sigma, unsigned n, 
               unsigned a[n+1], int (*visit)(unsigned nn, unsigned a[nn],
@@ -234,4 +235,4 @@ static int b(int mu, int nu, int sigma, unsigned n,
     }
     return 0;
 }
-            
+

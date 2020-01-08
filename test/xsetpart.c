@@ -19,6 +19,8 @@
 
 void usage(void);
 int visit(unsigned n, unsigned a[n], void *data);
+double lnCoalConst(unsigned n, unsigned k);
+double prPartition(unsigned k, unsigned y[k], double lnconst);
 
 typedef struct VisitDat VisitDat;
 
@@ -27,7 +29,42 @@ struct VisitDat {
     int verbose;
     unsigned nsubdivisions;
     unsigned long count;
+    double lnconst; // log of constant in Durrett's theorem 1.5
+    double sumprob; // sum of probabilities should equal 1.
 };
+
+/** 
+ * Log of constant in coalescent probability from theorem 1.5, p. 11, Durrett,
+ * Richard. 2008. Probability Models for DNA Sequence Evolution.
+ */
+double lnCoalConst(unsigned n, unsigned k) {
+    assert(n >= k);
+    assert(k > 0);
+    double ans = lgamma(k+1)
+        - lgamma(n+1)
+        + lgamma(n-k+1)
+        + lgamma(k-1)
+        - lgamma(n-1);
+    return ans;
+}
+
+/**
+ * Partition probability under the coalescent process. There are n
+ * descendants in some recent epoch and k < n in some earlier
+ * epoch. In that earlier epoch, the i'th ancestor had y[i]
+ * descendants. The function returns the probability of a partition
+ * that satisfies this condition, given n and k. There may be several
+ * such partitions. lnconst should be calculated using function
+ * lnCoalConst. See theorem 1.5, p. 11, Durrett,
+ * Richard. 2008. Probability Models for DNA Sequence Evolution.
+ */
+double prPartition(unsigned k, unsigned y[k], double lnconst) {
+    assert(k > 0);
+    double ans = lnconst;
+    for(unsigned i=0; i<k; ++i)
+        ans += lgamma(y[i] + 1);
+    return exp(ans);
+}
 
 /// Function to process partition. This function prints
 /// the partition if verbose!=0, checks that it is valid,
@@ -54,6 +91,21 @@ int visit(unsigned n, unsigned a[n], void *data) {
     if(max != 1 + vdat->nsubdivisions)
         ++status;
     vdat->count += 1;
+
+    // Calculate the number, k, of partitions and the size, c[i], of each.
+    unsigned k = 0;
+    for(int i=0; i<n; ++i) {
+        if(a[i] > k)
+            k = a[i];
+    }
+    ++k;
+    unsigned c[k];
+    memset(c, 0, k*sizeof(c[0]));
+    for(int i=1; i<n; ++i) {
+        ++c[a[i]];
+    }
+    
+    vdat->sumprob += prPartition(k, c, vdat->lnconst);
     return status;
 }
 
@@ -129,16 +181,26 @@ int main(int argc, char **argv) {
 
     VisitDat vdat = {.verbose = verbose, 
                      .nsubdivisions = nsub,
-                     .count=0};
+                     .count=0,
+                     .sumprob=0.0,
+                     .lnconst=lnCoalConst(nelem, nsub) };
+
+    if(verbose)
+        printf("lnconst=%lf\n", vdat.lnconst);
 
     int status = traverseSetPartitions(nelem, nsub, visit, &vdat);
 
+    if(verbose)
+        printf("sumprob=%lf; should by 1.0; err=%le\n",
+               vdat.sumprob, vdat.sumprob - 1.0);
+    assert(fabs(vdat.sumprob - 1.0) < 1e-8);
+
     s = Stirling2_new(nelem);
     CHECKMEM(s);
-    assert(vdat.count == Stirling2_val(s, nelem, nsub));
     if(verbose)
         printf("Stirling3(%u,%u)=%lu\n", nelem, nsub,
                Stirling2_val(s, nelem, nsub));
+    assert(vdat.count == Stirling2_val(s, nelem, nsub));
 
     unitTstResult("SetPart", status==0 ? "OK" : "FAIL");
     return 0;
