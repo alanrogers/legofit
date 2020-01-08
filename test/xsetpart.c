@@ -43,8 +43,8 @@ double lnCoalConst(unsigned n, unsigned k) {
     double ans = lgamma(k+1)
         - lgamma(n+1)
         + lgamma(n-k+1)
-        + lgamma(k-1)
-        - lgamma(n-1);
+        + lgamma(k)
+        - lgamma(n);
     return ans;
 }
 
@@ -60,10 +60,11 @@ double lnCoalConst(unsigned n, unsigned k) {
  */
 double prPartition(unsigned k, unsigned y[k], double lnconst) {
     assert(k > 0);
-    double ans = lnconst;
-    for(unsigned i=0; i<k; ++i)
-        ans += lgamma(y[i] + 1);
-    return exp(ans);
+    double prodfact = 0.0;
+    for(unsigned i=0; i<k; ++i) {
+        prodfact += lgamma(y[i] + 1);
+    }
+    return exp(lnconst + prodfact);
 }
 
 /// Function to process partition. This function prints
@@ -101,9 +102,8 @@ int visit(unsigned n, unsigned a[n], void *data) {
     ++k;
     unsigned c[k];
     memset(c, 0, k*sizeof(c[0]));
-    for(int i=1; i<n; ++i) {
+    for(int i=0; i<n; ++i)
         ++c[a[i]];
-    }
     
     vdat->sumprob += prPartition(k, c, vdat->lnconst);
     return status;
