@@ -19,8 +19,8 @@
 
 void usage(void);
 int visit(unsigned n, unsigned a[n], void *data);
-double lnCoalConst(unsigned n, unsigned k);
-double prPartition(unsigned k, unsigned y[k], double lnconst);
+long double lnCoalConst(unsigned n, unsigned k);
+double probPartition(unsigned k, unsigned y[k], long double lnconst);
 
 typedef struct VisitDat VisitDat;
 
@@ -37,15 +37,14 @@ struct VisitDat {
  * Log of constant in coalescent probability from theorem 1.5, p. 11, Durrett,
  * Richard. 2008. Probability Models for DNA Sequence Evolution.
  */
-double lnCoalConst(unsigned n, unsigned k) {
+long double lnCoalConst(unsigned n, unsigned k) {
     assert(n >= k);
     assert(k > 0);
-    double ans = lgamma(k+1)
-        - lgamma(n+1)
-        + lgamma(n-k+1)
-        + lgamma(k)
-        - lgamma(n);
-    return ans;
+    return lgammal(k+1)
+        - lgammal(n+1)
+        + lgammal(n-k+1)
+        + lgammal(k)
+        - lgammal(n);
 }
 
 /**
@@ -58,13 +57,13 @@ double lnCoalConst(unsigned n, unsigned k) {
  * lnCoalConst. See theorem 1.5, p. 11, Durrett,
  * Richard. 2008. Probability Models for DNA Sequence Evolution.
  */
-double prPartition(unsigned k, unsigned y[k], double lnconst) {
+double probPartition(unsigned k, unsigned y[k], long double lnconst) {
     assert(k > 0);
-    double prodfact = 0.0;
+    long double x = 0.0L;
     for(unsigned i=0; i<k; ++i) {
-        prodfact += lgamma(y[i] + 1);
+        x += lgammal(y[i] + 1);
     }
-    return exp(lnconst + prodfact);
+    return (double) expl(lnconst + x);
 }
 
 /// Function to process partition. This function prints
@@ -72,14 +71,7 @@ double prPartition(unsigned k, unsigned y[k], double lnconst) {
 /// and counts the partitions. Returns non-zero if an error is found.
 int visit(unsigned n, unsigned a[n], void *data) {
     VisitDat *vdat = (VisitDat *) data;
-    if(vdat->verbose) {
-        for(int i=0; i<n; ++i) {
-            printf("%d", a[i]);
-            if(i < n-1)
-                putchar(' ');
-        }
-        putchar('\n');
-    }
+
     unsigned max = 0;
     int status=0;
     for(int i=0; i<n; ++i) {
@@ -104,8 +96,19 @@ int visit(unsigned n, unsigned a[n], void *data) {
     memset(c, 0, k*sizeof(c[0]));
     for(int i=0; i<n; ++i)
         ++c[a[i]];
-    
-    vdat->sumprob += prPartition(k, c, vdat->lnconst);
+
+    double prob = probPartition(k, c, vdat->lnconst);
+    vdat->sumprob += prob;
+
+    if(vdat->verbose) {
+        for(int i=0; i<n; ++i) {
+            printf("%d", a[i]);
+            if(i < n-1)
+                putchar(' ');
+        }
+        printf(" : %le\n", prob);
+    }
+
     return status;
 }
 

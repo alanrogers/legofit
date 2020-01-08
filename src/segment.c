@@ -11,8 +11,8 @@ typedef struct IdSet IdSet;
 typedef struct PartDat PartDat;
 
 struct PartDat {
-    double prob;   // reciprocal of (n-1) choose (k-1)
-    double prcomb; // prob of each allocation w/i current partition
+    int nsub; // number of subsets in partition
+    double lnconst; // log of constant in Durrett's theorem 1.5
     double intLen; // expected length of this coalescent interval
     IdSet *ids;
     BranchTab *branchtab;
@@ -54,6 +54,8 @@ struct Segment {
     IdSet **ids[2];
 };
 
+long double lnCoalConst(unsigned n, unsigned k);
+double probPartition(unsigned k, unsigned y[k], long double lnconst);
 int tipId_vec_cmp(int nx, const tipId_t x[nx], int ny,
                   const tipId_t y[ny]);
 IdSet *IdSet_new(IdSet *next, int nIds, tipId_t tid[nIds], double prob);
@@ -64,8 +66,40 @@ int IdSet_length(IdSet *self);
 void IdSet_mulBy(IdSet *self, double factor);
 void IdSet_divBy(IdSet *self, double divisor);
 double IdSet_sumProb(IdSet *self);
-int visitIntPart(int k, int y[k], void *data);
-int visitMComb(int k, int y[k], int *ndx[k], void *data);
+int visitPart(int k, int y[k], void *data);
+
+/** 
+ * Log of constant in coalescent probability from theorem 1.5, p. 11, Durrett,
+ * Richard. 2008. Probability Models for DNA Sequence Evolution.
+ */
+long double lnCoalConst(unsigned n, unsigned k) {
+    assert(n >= k);
+    assert(k > 0);
+    return lgammal(k+1)
+        - lgammal(n+1)
+        + lgammal(n-k+1)
+        + lgammal(k)
+        - lgammal(n);
+}
+
+/**
+ * Partition probability under the coalescent process. There are n
+ * descendants in some recent epoch and k < n in some earlier
+ * epoch. In that earlier epoch, the i'th ancestor had y[i]
+ * descendants. The function returns the probability of a partition
+ * that satisfies this condition, given n and k. There may be several
+ * such partitions. lnconst should be calculated using function
+ * lnCoalConst. See theorem 1.5, p. 11, Durrett,
+ * Richard. 2008. Probability Models for DNA Sequence Evolution.
+ */
+double probPartition(unsigned k, unsigned y[k], double lnconst) {
+    assert(k > 0);
+    long double x = 0.0L;
+    for(unsigned i=0; i<k; ++i) {
+        x += lgammal(y[i] + 1);
+    }
+    return (double) expl(lnconst + x);
+}
 
 /**
  * Compare two vectors, x and y, of tipId_t values. Return -1 if x<y,
@@ -292,13 +326,13 @@ int Segment_coalesce(Segment *self, int maxsamp, int dosing,
             x[i-1] *= self->p[0][n-1];
 
         for(int k=1; k <= n; ++k) {
-            PartDat pd = {.prob = 1.0/binom(n-1, k-1),
-                          .prcomb=0.0,
+            PartDat pd = {.lnconst = lnCoalConst(n, k),
+                          .nsub = k,
                           .intLen=x[k-1],
                           .ids = self->ids[0][k-1],
                           .branchtab = branchtab,
                           .dosing = dosing};
-            status = traverseIntPartitions(n, k, visitIntPart, &pd);
+            status = traverseSetPartitions(n, k, visitPart, &pd);
             if(status)
                 return status;
         }
@@ -306,82 +340,40 @@ int Segment_coalesce(Segment *self, int maxsamp, int dosing,
     return status;
 }
 
-/// Visit an integer partition.
-int visitIntPart(int k, int y[k], void *data) {
+/// Visit a set partition.
+int visitPart(int n, int y[n], void *data) {
     PartDat *dat = (PartDat *) data;
 
-    int j;
+    // c[i] is number of descendants in subset i
+    int c[dat->nsub];
+    memset(c, 0, dat->nsub * sizeof(c[0]));
+    for(int i=0; i < n; ++i)
+        ++c[y[i]];
 
-    // c[0] is number of y[i] with largest value, c[1] is number
-    // with next largest value, etc. Algorithm relies of fact
-    // that entries of y are sorted.
-    int c[k];
-    int m=0; // index of current entry of c
-    c[0] = 1;
-    for(j=1; j<k; ++j) {
-        if(y[j] == y[j-1])
-            ++c[m];
-        else
-            c[++m] = 1;
-    }
-    ++m; // number of entries in c
+    // probability inherited from upstream
+    double x = dat->prob;
 
-    // Number of x vectors contributing to this partition.
-    long coef = multinom(m, c);
-    
-    dat->prcomb = coef * dat->prob;  // prob of current partition
+    // times probability of this partition
+    x *= probPartition(dat->nsub, c, dat->lnconst);
 
-    coef = multinom(k, y);
-    dat->prcomb /= coef;             // prob of each combination
+    // times expected length of interval
+    x *= dat->intLen;
 
-    // Visit all ways of allocating descendants to ancestors.
-    return traverseMultiComb(k, y, visitMComb, data);
-}
+    // tid[i] is the union of the descendants of ancestor i.
+    tipId_t tid[dat->nsub];
+    memset(tid, 0, dat->nsub * sizeof(tid[0]));
+    for(int i=0; i < n; ++i)
+        tid[i] |= dat->tid[y[i]];
 
-/**
- * Visit a particular allocation of descendants among ancestors, and
- * increment the BranchTab object.
- * @param[in] k The number of ancestors.
- * @param[in] y y[i] is the number of descendants of ancestor i. The
- * sum of y equals n, the total number of descendants.
- * @param[in] ndx ndx[i][j] is the index of the j'th descendant of
- * ancestor i. 
- * Each index is between 0 and n-1 and appears only once in the
- * two-dimensional array, ndx.
- * @param[inout] data Pointer to an object of type PartDat.
- */
-int visitMComb(int k, int y[k], int *ndx[k], void *data) {
-    PartDat *dat = (PartDat *) data;
-
-    // Loop across sets of ancestors. These sets may have different
-    // probabilities, as indicated by s->p.
-    for(IdSet *s = dat->ids; s!=NULL; s = s->next) {
-
-        // Loop across ancestors
-        for(int i=0; i<k; ++i) {
-
-            // Loop across descendants of ancestor i to create a
-            // tipId_t value representing the union of that ancestor's
-            // descendants.
-            tipId_t tid = 0;
-            for(int j=0; j < y[i]; ++j) {
-                assert(ndx[i][j] < s->nIds);
-                assert((tid & s->tid[ndx[i][j]]) == 0);
-                tid |= s->tid[ndx[i][j]];
-            }
-
-            assert(tid);
-
-            // Skip singletons unless data->dosing is nonzero
-            if(!dat->dosing && isPow2(tid))
-                continue;
-
-            // probability times expected length of interval
-            double x = s->p * dat->prcomb * dat->intLen;
-
-            // Increment BranchTab entry for current tid value.
-            BranchTab_add(dat->branchtab, tid, x);
-        }
+    // For each ancestor, increment the corresponding
+    // branchtab entry.
+    for(int i=0; i < dat->nsub; ++i) {
+        // Skip singletons unless data->dosing is nonzero
+        if(!dat->dosing && isPow2(tid[i]))
+            continue;
+      
+        // Increment BranchTab entry for current tid value.
+        BranchTab_add(dat->branchtab, tid, x);
     }
     return 0;
 }
