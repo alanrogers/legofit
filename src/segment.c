@@ -347,8 +347,10 @@ int visitPart(int n, int y[n], void *data) {
     // c[i] is number of descendants in subset i
     int c[dat->nsub];
     memset(c, 0, dat->nsub * sizeof(c[0]));
-    for(int i=0; i < n; ++i)
+    for(int i=0; i < n; ++i) {
+        assert(y[i] < dat->nsub);
         ++c[y[i]];
+    }
 
     // probability inherited from upstream
     double x = dat->prob;
@@ -363,7 +365,7 @@ int visitPart(int n, int y[n], void *data) {
     tipId_t tid[dat->nsub];
     memset(tid, 0, dat->nsub * sizeof(tid[0]));
     for(int i=0; i < n; ++i)
-        tid[i] |= dat->tid[y[i]];
+        tid[y[i]] |= dat->tid[i];
 
     // For each ancestor, increment the corresponding
     // branchtab entry.
