@@ -201,7 +201,7 @@ int main(int argc, char **argv) {
     s = Stirling2_new(nelem);
     CHECKMEM(s);
     if(verbose)
-        printf("Stirling3(%u,%u)=%lu\n", nelem, nsub,
+        printf("Stirling2(%u,%u)=%lu\n", nelem, nsub,
                Stirling2_val(s, nelem, nsub));
     assert(vdat.count == Stirling2_val(s, nelem, nsub));
 
