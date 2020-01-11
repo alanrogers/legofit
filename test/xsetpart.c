@@ -19,8 +19,6 @@
 
 void usage(void);
 int visit(unsigned n, unsigned a[n], void *data);
-long double lnCoalConst(unsigned n, unsigned k);
-double probPartition(unsigned k, unsigned y[k], long double lnconst);
 
 typedef struct VisitDat VisitDat;
 
@@ -32,39 +30,6 @@ struct VisitDat {
     double lnconst; // log of constant in Durrett's theorem 1.5
     double sumprob; // sum of probabilities should equal 1.
 };
-
-/** 
- * Log of constant in coalescent probability from theorem 1.5, p. 11, Durrett,
- * Richard. 2008. Probability Models for DNA Sequence Evolution.
- */
-long double lnCoalConst(unsigned n, unsigned k) {
-    assert(n >= k);
-    assert(k > 0);
-    return lgammal(k+1)
-        - lgammal(n+1)
-        + lgammal(n-k+1)
-        + lgammal(k)
-        - lgammal(n);
-}
-
-/**
- * Partition probability under the coalescent process. There are n
- * descendants in some recent epoch and k < n in some earlier
- * epoch. In that earlier epoch, the i'th ancestor had y[i]
- * descendants. The function returns the probability of a partition
- * that satisfies this condition, given n and k. There may be several
- * such partitions. lnconst should be calculated using function
- * lnCoalConst. See theorem 1.5, p. 11, Durrett,
- * Richard. 2008. Probability Models for DNA Sequence Evolution.
- */
-double probPartition(unsigned k, unsigned y[k], long double lnconst) {
-    assert(k > 0);
-    long double x = 0.0L;
-    for(unsigned i=0; i<k; ++i) {
-        x += lgammal(y[i] + 1);
-    }
-    return (double) expl(lnconst + x);
-}
 
 /// Function to process partition. This function prints
 /// the partition if verbose!=0, checks that it is valid,
@@ -117,6 +82,7 @@ void usage(void) {
     fprintf(stderr,"where options may include\n");
     fprintf(stderr," -n <n_elements> : size of set\n");
     fprintf(stderr," -k <n_subdiv>   : number of subdivisions\n");
+    fprintf(stderr," -s              : test Stirling2 only\n");
     fprintf(stderr," -v              : verbose output\n\n");
     fprintf(stderr,"   n_elements must be > 0\n");
     fprintf(stderr,"   n_subdiv must be > 0, <= n_elements\n");
@@ -124,7 +90,7 @@ void usage(void) {
 }
 
 int main(int argc, char **argv) {
-    int i, n, verbose = 0;
+    int i, n, verbose = 0, s2only=0;
     unsigned nelem = 6, nsub = 3;
 
     for(i=1; i<argc; ++i) {
@@ -140,6 +106,8 @@ int main(int argc, char **argv) {
             if(i == argc)
                 usage();
             nsub = strtoul(argv[i], NULL, 10);
+        }else if(strcmp(argv[i], "-s") == 0) {
+            s2only = 1;
         }else
             usage();
     }
@@ -147,8 +115,15 @@ int main(int argc, char **argv) {
     Stirling2 *s = Stirling2_new(nelem);
     CHECKMEM(s);
 
-    if(verbose)
+    if(verbose) {
         Stirling2_print(s, stdout);
+        long unsigned z = Stirling2_val(s, nelem, nsub);
+        printf("Stirling2(%u, %u) = %lu = %le\n",
+               nelem, nsub, z, (double) z);
+    }
+
+    if(s2only)
+        return 0;
 
     assert(Stirling2_val(s, 0, 0) == 1);
     for(n=1; n <= nelem; ++n) {

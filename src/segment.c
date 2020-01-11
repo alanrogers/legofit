@@ -54,8 +54,6 @@ struct Segment {
     IdSet **ids[2];
 };
 
-long double lnCoalConst(unsigned n, unsigned k);
-double probPartition(unsigned k, unsigned y[k], long double lnconst);
 int tipId_vec_cmp(int nx, const tipId_t x[nx], int ny,
                   const tipId_t y[ny]);
 IdSet *IdSet_new(IdSet *next, int nIds, tipId_t tid[nIds], double prob);
@@ -67,39 +65,6 @@ void IdSet_mulBy(IdSet *self, double factor);
 void IdSet_divBy(IdSet *self, double divisor);
 double IdSet_sumProb(IdSet *self);
 int visitPart(int k, int y[k], void *data);
-
-/** 
- * Log of constant in coalescent probability from theorem 1.5, p. 11, Durrett,
- * Richard. 2008. Probability Models for DNA Sequence Evolution.
- */
-long double lnCoalConst(unsigned n, unsigned k) {
-    assert(n >= k);
-    assert(k > 0);
-    return lgammal(k+1)
-        - lgammal(n+1)
-        + lgammal(n-k+1)
-        + lgammal(k)
-        - lgammal(n);
-}
-
-/**
- * Partition probability under the coalescent process. There are n
- * descendants in some recent epoch and k < n in some earlier
- * epoch. In that earlier epoch, the i'th ancestor had y[i]
- * descendants. The function returns the probability of a partition
- * that satisfies this condition, given n and k. There may be several
- * such partitions. lnconst should be calculated using function
- * lnCoalConst. See theorem 1.5, p. 11, Durrett,
- * Richard. 2008. Probability Models for DNA Sequence Evolution.
- */
-double probPartition(unsigned k, unsigned y[k], double lnconst) {
-    assert(k > 0);
-    long double x = 0.0L;
-    for(unsigned i=0; i<k; ++i) {
-        x += lgammal(y[i] + 1);
-    }
-    return (double) expl(lnconst + x);
-}
 
 /**
  * Compare two vectors, x and y, of tipId_t values. Return -1 if x<y,
