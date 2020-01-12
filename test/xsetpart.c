@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
+#include <stdlib.h>
 
 #ifdef NDEBUG
 #error "Unit tests must be compiled without -DNDEBUG flag"
@@ -19,17 +20,36 @@
 
 void usage(void);
 int visit(unsigned n, unsigned a[n], void *data);
+int cmpUnsigned(const void *void_x, const void *void_y);
 
 typedef struct VisitDat VisitDat;
 
 // Data manipulated by visit function.
 struct VisitDat {
-    int verbose;
+    int verbose, intpart;
     unsigned nsubdivisions;
     unsigned long count;
     double lnconst; // log of constant in Durrett's theorem 1.5
     double sumprob; // sum of probabilities should equal 1.
 };
+
+/**
+ * Compare two unsigned ints.
+ *
+ * Function interprets its arguments as pointers to ints.
+ *
+ * @param void_x,void_y Pointers to the two unsigned integers, cast as
+ * pointers to voids.
+ * @returns -1, 0, or 1 depending on whether the first arg is <,
+ * ==, or > the second.
+ */
+int cmpUnsigned(const void *void_x, const void *void_y) {
+    const unsigned *x = (const unsigned *) void_x;
+    const unsigned *y = (const unsigned *) void_y;
+
+    return (*x < *y) ? 1 : (*x > *y) ? -1 : 0;
+}
+
 
 /// Function to process partition. This function prints
 /// the partition if verbose!=0, checks that it is valid,
@@ -64,8 +84,15 @@ int visit(unsigned n, unsigned a[n], void *data) {
 
     double prob = probPartition(k, c, vdat->lnconst);
     vdat->sumprob += prob;
-
-    if(vdat->verbose) {
+    if(vdat->intpart) {
+        qsort(c, k, sizeof(c[0]), cmpUnsigned);
+        for(int i=0; i<k; ++i){
+            printf("%u", c[i]);
+            if(i < k-1)
+                putchar(' ');
+        }
+        putchar('\n');
+    }else if(vdat->verbose) {
         for(int i=0; i<n; ++i) {
             printf("%d", a[i]);
             if(i < n-1)
@@ -82,6 +109,7 @@ void usage(void) {
     fprintf(stderr,"where options may include\n");
     fprintf(stderr," -n <n_elements> : size of set\n");
     fprintf(stderr," -k <n_subdiv>   : number of subdivisions\n");
+    fprintf(stderr," -i              : print integer partitions\n");
     fprintf(stderr," -s              : test Stirling2 only\n");
     fprintf(stderr," -v              : verbose output\n\n");
     fprintf(stderr,"   n_elements must be > 0\n");
@@ -90,7 +118,7 @@ void usage(void) {
 }
 
 int main(int argc, char **argv) {
-    int i, n, verbose = 0, s2only=0;
+    int i, n, verbose = 0, s2only=0, intpart=0;
     unsigned nelem = 6, nsub = 3;
 
     for(i=1; i<argc; ++i) {
@@ -108,6 +136,8 @@ int main(int argc, char **argv) {
             nsub = strtoul(argv[i], NULL, 10);
         }else if(strcmp(argv[i], "-s") == 0) {
             s2only = 1;
+        }else if(strcmp(argv[i], "-i") == 0) {
+            intpart = 1;
         }else
             usage();
     }
@@ -157,7 +187,8 @@ int main(int argc, char **argv) {
 
     unitTstResult("Stirling2", "OK");
 
-    VisitDat vdat = {.verbose = verbose, 
+    VisitDat vdat = {.verbose = verbose,
+                     .intpart = intpart,
                      .nsubdivisions = nsub,
                      .count=0,
                      .sumprob=0.0,
