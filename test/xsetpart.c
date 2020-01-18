@@ -8,6 +8,7 @@
  */
 
 #include "setpart.h"
+#include "partprob.h"
 #include "misc.h"
 #include <stdio.h>
 #include <assert.h>
@@ -204,6 +205,8 @@ int main(int argc, char **argv) {
                vdat.sumprob, vdat.sumprob - 1.0);
     assert(fabs(vdat.sumprob - 1.0) < 1e-8);
 
+    unitTstResult("probPartition", "OK");
+    
     s = Stirling2_new(nelem);
     CHECKMEM(s);
     if(verbose)

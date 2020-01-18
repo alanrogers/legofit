@@ -1,4 +1,5 @@
 #include "segment.h"
+#include "partprob.h"
 #include "intpart.h"
 #include "comb.h"
 #include "binary.h"
@@ -290,38 +291,58 @@ int Segment_coalesce(Segment *self, int maxsamp, int dosing,
         for(i=1; i <= n; ++i)
             x[i-1] *= self->p[0][n-1];
 
+        // loop over intervals: k is the number of ancestors
+        // w/i interval.
         for(int k=1; k <= n; ++k) {
-            PartDat pd = {.lnconst = lnCoalConst(n, k),
-                          .nsub = k,
-                          .intLen=x[k-1],
-                          .ids = self->ids[0][k-1],
-                          .branchtab = branchtab,
-                          .dosing = dosing};
-            status = traverseSetPartitions(n, k, visitPart, &pd);
-            if(status)
-                return status;
+            // portion of Px that doesn't depend on partition
+            long double lnconst = lnCoalConst(n, k);
+            // Within each interval, there can be ancestors
+            // with 1 descendant, 2, 3, ..., n-k+2.
+            for(int d=1; d <= n-k+1; ++d) {
+                PartDat pd = {.lnconst = lnconst + lgammal(d+1)
+                              + lgammal(n-d+1),
+                              .nsub = k,
+                              .intLen=x[k-1],
+                              .ids = self->ids[0][k-1],
+                              .branchtab = branchtab,
+                              .dosing = dosing,
+                };
+                status = traverseIntPartitions(n-d, k-1, visitPart, &pd);
+                if(status)
+                    return status;
+            }
         }
     }
     return status;
 }
 
 /// Visit a set partition.
-int visitPart(int n, int y[n], void *data) {
+int visitPart(int /**/ n, int y[n], void *data) {
     PartDat *dat = (PartDat *) data;
 
-    // c[i] is number of descendants in subset i
-    int c[dat->nsub];
-    memset(c, 0, dat->nsub * sizeof(c[0]));
-    for(int i=0; i < n; ++i) {
-        assert(y[i] < dat->nsub);
-        ++c[y[i]];
+    // m is the number of distinct values of y;
+    // c[i] is the multiplicity of the i'th largest value.
+    // Algorithm relies on fact that y[i] values are sorted.
+    int c[n], m=0;
+    c[0] = 1;
+    for(int i=1; i < n; ++i) {
+        if(y[i] == y[i-1])
+            ++c[m];
+        else
+            c[++m] = 1;
     }
+    ++m;
+
+    // log of product of c[i] factorial
+    long double lnp = dat->lnconst;
+    for(int i=0; i<m; ++i)
+        lnp -= lgammal(c[i] + 1);
 
     // probability inherited from upstream
     double x = dat->prob;
 
-    // times probability of this partition
-    x *= probPartition(dat->nsub, c, dat->lnconst);
+    // times variable portion of integer partition probability
+    x *= expl(lnp);
 
     // times expected length of interval
     x *= dat->intLen;

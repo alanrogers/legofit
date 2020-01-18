@@ -13,8 +13,5 @@ void          Stirling2_print(Stirling2 *self, FILE *fp);
 int traverseSetPartitions(unsigned nelements, unsigned nsubdivisions,
                           int (*visit)(unsigned n, unsigned a[n],
                                        void *data), void *data);
-long double lnCoalConst(unsigned n, unsigned k);
-double probPartition(unsigned k, unsigned y[k], long double lnconst);
-
 
 #endif
