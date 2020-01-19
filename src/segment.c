@@ -316,8 +316,9 @@ int Segment_coalesce(Segment *self, int maxsamp, int dosing,
     return status;
 }
 
-/// Visit a set partition.
+/// Visit an integer partition.
 int visitPart(int /**/ n, int y[n], void *data) {
+    assert(n>0);
     PartDat *dat = (PartDat *) data;
 
     // m is the number of distinct values of y;
