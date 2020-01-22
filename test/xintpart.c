@@ -28,6 +28,7 @@ struct VisitDat {
 
 void usage(void);
 int visit(int m, int a[m], void *data);
+int rCmpInts(const void *void_x, const void *void_y);
 
 int visit(int m, int a[m], void *data) {
     VisitDat *vdat = (VisitDat *) data;
@@ -44,7 +45,30 @@ int visit(int m, int a[m], void *data) {
         s += a[i];
     }
     if(vdat->verbose)
-        printf(" = %d\n", s);
+        printf(" = %d", s);
+
+    if(m>0 && vdat->verbose) {
+        int d=0, c[m];
+        c[0] = 1;
+        for(int i=1; i<m; ++i) {
+            if(a[i] == a[i-1])
+                ++c[d];
+            else
+                c[++d] = 1;
+        }
+        ++d;
+        qsort(c, d, sizeof(c[0]), rCmpInts);
+        int t=0;
+        printf(": ");
+        for(int i=0; i<d; ++i) {
+            printf("%d", c[i]);
+            if(i < d-1)
+                putchar('+');
+            t += c[i];
+        }
+        printf(" = %d", t);
+    }
+    putchar('\n');
     return (s == vdat->trueSum ? 0 : 1);
 }
 
@@ -57,6 +81,23 @@ void usage(void) {
     fprintf(stderr," <x> and <y> must be >0\n");
     fprintf(stderr," <y> must be <= <x>\n");
     exit(EXIT_FAILURE);
+}
+
+/**
+ * Compare two ints.
+ *
+ * Function interprets its arguments as pointers to ints.
+ *
+ * @param void_x,void_y Pointers to the two integers, cast as pointers
+ * to voids.
+ * @returns -1, 0, or 1 depending on whether the first arg is <,
+ * ==, or > the second.
+ */
+int rCmpInts(const void *void_x, const void *void_y) {
+    const int *x = (const int *) void_x;
+    const int *y = (const int *) void_y;
+
+    return (*x < *y) ? 1 : (*x > *y) ? -1 : 0;
 }
 
 int main(int argc, char **argv) {
