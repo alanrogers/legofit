@@ -269,10 +269,6 @@ int traverseComb(int n, int t,
  */
 long multinom(int k, int x[k]) {
     int i, n=0;
-    fprintf(stderr,"multinom(%d,x); x=(", k);
-    for(i=0; i<k; ++i)
-        printf("%d ", x[i]);
-    printf(")\n");
     for(i=0; i<k; ++i) {
         assert(x[i] > 0);
         n += x[i];
