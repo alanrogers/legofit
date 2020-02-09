@@ -36,20 +36,10 @@ void usage(void) {
 
 int visit(int t, int c[t], void *data) {
     Cdata *cdata = (Cdata *) data;
-    int n = cdata->ntot;
-    int b[n - t], next=0;
+    int n = cdata->ntot, next = 0;
+    int i, j;
 
     cdata->count += 1;
-
-    // set b equal to complement of combination in c
-    int i, j=0;
-    for(i=0; i<t; ++i) {
-        while(next < c[i])
-            b[j++] = next++;
-        next = c[i] + 1;
-    }
-    while(j < n - t)
-        b[j++] = next++;
 
     // print c
     if(cdata->verbose) {
@@ -59,12 +49,25 @@ int visit(int t, int c[t], void *data) {
                 putchar(' ');
         }
 
-        // print b
-        fputs(" : ", stdout);
-        for(i=0; i < n-t; ++i) {
-            printf("%d", b[i]);
-            if(i < n-1)
-                putchar(' ');
+        if(n > t) {
+            // set b equal to complement of combination in c
+            j = 0;
+            int b[n - t];
+            for(i=0; i<t; ++i) {
+                while(next < c[i])
+                    b[j++] = next++;
+                next = c[i] + 1;
+            }
+
+            while(j < n - t)
+                b[j++] = next++;
+            // print b
+            fputs(" : ", stdout);
+            for(i=0; i < n-t; ++i) {
+                printf("%d", b[i]);
+                if(i < n-1)
+                    putchar(' ');
+            }
         }
 
         putchar('\n');

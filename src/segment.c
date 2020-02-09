@@ -114,11 +114,18 @@ IdSet *IdSet_new(IdSet *next, int nIds, tipId_t tid[nIds], double prob) {
 
 /**
  * Add a new IdSet item to a sorted list. If a corresponding IdSet
- * object already exists, then add prob to that object.
+ * object already exists, then add prob to that object. The value
+ * of nIds must match the value in the existing list.
  */
 IdSet *IdSet_add(IdSet *head, int nIds, tipId_t tid[nIds], double prob) {
     if(head==NULL)
         return IdSet_new(NULL, nIds, tid, prob);
+    if(head->nIds != nIds) {
+        fprint(stderr,"%s:%d: can't add a set with %d ids to a list"
+               " of sets with %d ids\n",
+               __FILE__,__LINE__, nIds, head->nIds);
+        exit(EXIT_FAILURE);
+    }
     int cmp = tipId_vec_cmp(nIds, tid, head->nIds, head->tid);
     if(cmp < 0)
         return IdSet_new(head, nIds, tid, prob);
@@ -244,12 +251,6 @@ int Segment_coalesce(Segment *self, int maxsamp, int dosing,
     // possible, so p[1][0] is at least as large as p[0][0].
     self->p[1][0] = self->p[0][0];
 
-    CombDat cd = {.contribution = 0.0,
-                  .ids = NULL,
-                  .branchtab = branchtab,
-                  .dosing = dosing
-    };
-
     // Calculate probabilities and expected values, p[1] and cilen.
     for(n=2; n <= self->max; ++n) {
 
@@ -294,16 +295,25 @@ int Segment_coalesce(Segment *self, int maxsamp, int dosing,
         // recent end of segment.
         for(i=1; i <= n; ++i)
             x[i-1] *= self->p[0][n-1];
+    }
+
+    CombDat cd = {.contribution = 0.0,
+                  .ids = NULL,
+                  .branchtab = branchtab,
+                  .dosing = dosing
+    };
+
+    // loop over number of descendants in this segment
+    for(n=1; n <= self->max; ++n) {
+        cd.ids = ids[0][n-1];
 
         // loop over intervals: k is the number of ancestors
-        // w/i interval. Probability of a site pattern with
-        // d descendants is k*{n
+        // w/i interval.
         for(int k=1; k <= n; ++k) {
-            // Next line is WRONG. Need to loop over n, not k.
-            cd.ids = ids[0][k-1];
             
             // portion of log Qdk that doesn't involve d
             long double lnconst = logl(k) - lbinom(n-1, k-1);
+
             // Within each interval, there can be ancestors
             // with 1 descendant, 2, 3, ..., n-k+2.
             for(int d=1; d <= n-k+1; ++d) {
@@ -326,20 +336,24 @@ int Segment_coalesce(Segment *self, int maxsamp, int dosing,
 }
 
 /// Visit a combination
-int visitComb(int /**/ d, int ndx[d], void *data) {
+int visitComb(int d, int ndx[d], void *data) {
     assert(d>0);
     CombDat *dat = (CombDat *) data;
 
-    // tid is the union of the descendants.
-    tipId_t tid = 0;
-    for(int i=0; i < d; ++i)
-        tid |= dat->tid[i];
+    for(IdSet ids = dat->ids; ids != NULL; ids = ids->next) {
+        
+        // tid is the union of descendants in current set.
+        tipId_t tid = 0;
+        for(int i=0; i < d; ++i)
+            tid |= ids->tid[ndx[i]];
 
-    // Skip singletons unless data->dosing is nonzero
-    if(!dat->dosing && isPow2(tid[i]))
-        return 0;
+        // Skip singletons unless data->dosing is nonzero
+        if(!dat->dosing && isPow2(tid[i]))
+            continue;
       
-    // Increment BranchTab entry for current tid value.
-    BranchTab_add(dat->branchtab, tid, dat->contribution);
+        // Increment BranchTab entry for current tid value.
+        BranchTab_add(dat->branchtab, tid,
+                      ids->p * dat->contribution);
+    }
     return 0;
 }

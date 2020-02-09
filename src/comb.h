@@ -11,5 +11,6 @@ int traverseMultiComb(int k, int n[k],
                       void *data);
 long multinom(int k, int x[k]);
 long binom(long n, long x);
+long double lbinom(long n, long x);
 
 #endif
