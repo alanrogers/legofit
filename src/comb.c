@@ -91,6 +91,13 @@ int MCvisit(int t, int a[t], void *data) {
 
     assert(t == dat->n[dat->box]);
     int n = dat->cdim;  // Number of unallocated balls.
+
+    if(n <= t) {
+        fprintf(stderr,"%s:%s:%d: Can't choose %d out of %d\n",
+                __FILE__,__func__,__LINE__,
+                t, n);
+        exit(EXIT_FAILURE);
+    }
     int cmpl[n - t];    // FAILS IF n==t
     int status, next=0;
 
@@ -181,6 +188,11 @@ int traverseMultiComb(int k, int n[k],
                       int (*visit)(int kk, int nn[kk],
                                    int *b[kk], void *data),
                       void *data) {
+    if(k < 2) {
+        fprintf(stderr,"%s:%s:%d: dimension=%d; must be > 1\n",
+                __FILE__,__func__,__LINE__,k);
+        exit(EXIT_FAILURE);
+    }
     int i, status=0;
     int ntot=0;
     for(i=0; i<k; ++i) {
