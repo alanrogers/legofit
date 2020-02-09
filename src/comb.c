@@ -91,8 +91,8 @@ int MCvisit(int t, int a[t], void *data) {
 
     assert(t == dat->n[dat->box]);
     int n = dat->cdim;  // Number of unallocated balls.
-    int cmpl[n - t], next=0;
-    int status;
+    int cmpl[n - t];    // FAILS IF n==t
+    int status, next=0;
 
     // set cmpl equal to complement of combination in a
     int i, j=0;
