@@ -194,7 +194,7 @@ int main(int argc, char **argv) {
         printf("Expecting count=%ld\n", multinom(nboxes, n));
     }
 
-    assert(cdata.count == multinom(2, y));
+    assert(cdata.count == multinom(nboxes >= 2 ? 2 : 1, y));
 
     unitTstResult("traverseComb", status==0 ? "OK" : "FAIL");
 

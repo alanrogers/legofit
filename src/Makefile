@@ -27,8 +27,8 @@ warn := \
  -Wno-unused-parameter \
  -Wno-unused-function \
  -Wshadow \
- -Wundef \
- -Wwrite-strings
+ -Wwrite-strings \
+ -Wno-nullability-completeness
 
 # Abort on integer overflow or underflow
 ifeq ($(shell uname -s), Darwin)

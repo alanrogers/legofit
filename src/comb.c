@@ -94,7 +94,7 @@ int MCvisit(int t, int a[t], void *data) {
     int cmpl[n - t], next=0;
     int status;
 
-    // set c equal to complement of combination in a
+    // set cmpl equal to complement of combination in a
     int i, j=0;
     for(i=0; i<t; ++i) {
         while(next < a[i])
@@ -224,6 +224,10 @@ int traverseComb(int n, int t,
     c[t+2] = 0;
     j = t;
 
+    // Knuth's code fails when t == n. This corrects the problem.
+    if(t == n)
+        return (*visit)(t, c+1, data);
+    
     while(1) {
         if( (status = (*visit)(t, c+1, data)) != 0) // T2
             return status;
@@ -265,6 +269,10 @@ int traverseComb(int n, int t,
  */
 long multinom(int k, int x[k]) {
     int i, n=0;
+    fprintf(stderr,"multinom(%d,x); x=(", k);
+    for(i=0; i<k; ++i)
+        printf("%d ", x[i]);
+    printf(")\n");
     for(i=0; i<k; ++i) {
         assert(x[i] > 0);
         n += x[i];
