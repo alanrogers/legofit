@@ -11,10 +11,8 @@
 typedef struct IdSet IdSet;
 typedef struct PartDat PartDat;
 
-struct PartDat {
-    int nsub; // number of subsets in partition
-    double lnconst; // log of constant in Durrett's theorem 1.5
-    double intLen; // expected length of this coalescent interval
+struct CombDat {
+    double contribution; // Pr[site pattern]*E[len of interval]
     IdSet *ids;
     BranchTab *branchtab;
     int dosing;    // do singleton site patterns if nonzero
@@ -65,7 +63,7 @@ int IdSet_length(IdSet *self);
 void IdSet_mulBy(IdSet *self, double factor);
 void IdSet_divBy(IdSet *self, double divisor);
 double IdSet_sumProb(IdSet *self);
-int visitPart(int k, int y[k], void *data);
+int visitComb(int d, int ndx[d], void *data);
 
 /**
  * Compare two vectors, x and y, of tipId_t values. Return -1 if x<y,
@@ -246,6 +244,12 @@ int Segment_coalesce(Segment *self, int maxsamp, int dosing,
     // possible, so p[1][0] is at least as large as p[0][0].
     self->p[1][0] = self->p[0][0];
 
+    CombDat cd = {.contribution = 0.0,
+                  .ids = NULL,
+                  .branchtab = branchtab,
+                  .dosing = dosing
+    };
+
     // Calculate probabilities and expected values, p[1] and cilen.
     for(n=2; n <= self->max; ++n) {
 
@@ -292,22 +296,27 @@ int Segment_coalesce(Segment *self, int maxsamp, int dosing,
             x[i-1] *= self->p[0][n-1];
 
         // loop over intervals: k is the number of ancestors
-        // w/i interval.
+        // w/i interval. Probability of a site pattern with
+        // d descendants is k*{n
         for(int k=1; k <= n; ++k) {
-            // portion of Px that doesn't depend on partition
-            long double lnconst = lnCoalConst(n, k);
+            // Next line is WRONG. Need to loop over n, not k.
+            cd.ids = ids[0][k-1];
+            
+            // portion of log Qdk that doesn't involve d
+            long double lnconst = logl(k) - lbinom(n-1, k-1);
             // Within each interval, there can be ancestors
             // with 1 descendant, 2, 3, ..., n-k+2.
             for(int d=1; d <= n-k+1; ++d) {
-                PartDat pd = {.lnconst = lnconst + lgammal(d+1)
-                              + lgammal(n-d+1),
-                              .nsub = k,
-                              .intLen=x[k-1],
-                              .ids = self->ids[0][k-1],
-                              .branchtab = branchtab,
-                              .dosing = dosing,
-                };
-                status = traverseIntPartitions(n-d, k-1, visitPart, &pd);
+                long double lnprob = lnconst
+                    + lbinom(n-d-1, k-1) - lbinom(n,d);
+
+                // probability of site pattern
+                cd.contribution = (double) expl(lnprob);
+
+                // times expected length of interval
+                cd.contribution *= x[k-1];
+                
+                status = traverseComb(n, d, visitComb, &cd);
                 if(status)
                     return status;
             }
@@ -316,53 +325,21 @@ int Segment_coalesce(Segment *self, int maxsamp, int dosing,
     return status;
 }
 
-/// Visit an integer partition.
-int visitPart(int /**/ n, int y[n], void *data) {
-    assert(n>0);
-    PartDat *dat = (PartDat *) data;
+/// Visit a combination
+int visitComb(int /**/ d, int ndx[d], void *data) {
+    assert(d>0);
+    CombDat *dat = (CombDat *) data;
 
-    // m is the number of distinct values of y;
-    // c[i] is the multiplicity of the i'th largest value.
-    // Algorithm relies on fact that y[i] values are sorted.
-    int c[n], m=0;
-    c[0] = 1;
-    for(int i=1; i < n; ++i) {
-        if(y[i] == y[i-1])
-            ++c[m];
-        else
-            c[++m] = 1;
-    }
-    ++m;
+    // tid is the union of the descendants.
+    tipId_t tid = 0;
+    for(int i=0; i < d; ++i)
+        tid |= dat->tid[i];
 
-    // log of product of c[i] factorial
-    long double lnp = dat->lnconst;
-    for(int i=0; i<m; ++i)
-        lnp -= lgammal(c[i] + 1);
-
-    // probability inherited from upstream
-    double x = dat->prob;
-
-    // times variable portion of integer partition probability
-    x *= expl(lnp);
-
-    // times expected length of interval
-    x *= dat->intLen;
-
-    // tid[i] is the union of the descendants of ancestor i.
-    tipId_t tid[dat->nsub];
-    memset(tid, 0, dat->nsub * sizeof(tid[0]));
-    for(int i=0; i < n; ++i)
-        tid[y[i]] |= dat->tid[i];
-
-    // For each ancestor, increment the corresponding
-    // branchtab entry.
-    for(int i=0; i < dat->nsub; ++i) {
-        // Skip singletons unless data->dosing is nonzero
-        if(!dat->dosing && isPow2(tid[i]))
-            continue;
+    // Skip singletons unless data->dosing is nonzero
+    if(!dat->dosing && isPow2(tid[i]))
+        return 0;
       
-        // Increment BranchTab entry for current tid value.
-        BranchTab_add(dat->branchtab, tid, x);
-    }
+    // Increment BranchTab entry for current tid value.
+    BranchTab_add(dat->branchtab, tid, dat->contribution);
     return 0;
 }

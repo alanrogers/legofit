@@ -301,9 +301,25 @@ long multinom(int k, int x[k]) {
  * @param[in] x number to choose out of n.
  */
 long binom(long n, long x) {
-    double ans = lgamma( (double) (n+1));
-    ans -= lgamma( (double) (x+1));
-    ans -= lgamma( (double) (n-x+1));
+    long double ans = lgammal( (long double) (n+1));
+    ans -= lgammal( (long double) (x+1));
+    ans -= lgammal( (long double) (n-x+1));
 
-    return (long) floor(exp(ans) + 0.5);
+    return (long) floorl(expl(ans) + 0.5);
+}
+
+/**
+ * Natural log of binomial coefficient. Return log(n!/(x! * (n-x)!)),
+ * the number of ways of choosing x items out of n.
+ *
+ * @param[in] n total number of items
+ *
+ * @param[in] x number to choose out of n.
+ */
+long double lbinom(long n, long x) {
+    long double ans = lgammal( (long double) (n+1));
+    ans -= lgammal( (long double) (x+1));
+    ans -= lgammal( (long double) (n-x+1));
+
+    return ans;
 }
