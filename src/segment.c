@@ -9,7 +9,7 @@
 #include <stdlib.h>
 
 typedef struct IdSet IdSet;
-typedef struct PartDat PartDat;
+typedef struct CombDat CombDat;
 
 struct CombDat {
     double contribution; // Pr[site pattern]*E[len of interval]
@@ -49,7 +49,7 @@ struct Segment {
     // Arrays of pointers to linked lists of IdSet objects. Dimension
     // is max X 2.  ids[0] refers to the recent end of the segment and
     // ids[1] to the ancient end. ids[0][i] is the list for the case
-    // in which there are i+1 lineages.
+    // in which there are i+1 lineages at the recent end of the segment.
     IdSet **ids[2];
 };
 
