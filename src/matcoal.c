@@ -22,7 +22,7 @@ struct MatCoal {
     double *beta;
     
     /*
-      Layout of upper triangular matrix cmat is row major:
+      Layout of upper triangular matrix gmat is row major:
 
       00 01 02 03 04  row 0: offset = 0
       xx 11 12 13 14  row 1: offset = dim-1
@@ -36,9 +36,9 @@ struct MatCoal {
       Number of stored elements is dim*(dim+1)/2. dim=nLin-1.
     */
     // Matrix of scaled column eigenvectors
-    double *cmat;
+    double *gmat;
 
-    // Array of dim offsets, used to address elements of cmat.
+    // Array of dim offsets, used to address elements of gmat.
     int *offset;
 
     // Matrix for calculating expected lengths of coalescent
@@ -72,11 +72,11 @@ static MatCoal * MatCoal_new(int nLin) {
     for(i=0; i<dim; ++i)
         self->beta[i] = ((i+2)*(i+1))/2;
 
-    size_t size = sizeof(self->cmat[0]) * (dim*(dim+1))/2;
-    self->cmat = malloc(size);
-    CHECKMEM(self->cmat);
+    size_t size = sizeof(self->gmat[0]) * (dim*(dim+1))/2;
+    self->gmat = malloc(size);
+    CHECKMEM(self->gmat);
 
-    // Offsets into cmat (a triangular matrix)
+    // Offsets into gmat (a triangular matrix)
     self->offset = malloc( dim * sizeof(self->offset[0]));
     CHECKMEM(self->offset);
     for(i=0; i < dim; ++i)
@@ -106,11 +106,11 @@ static MatCoal * MatCoal_new(int nLin) {
     }
 
     // Calculate coefficients of exponentials in x(t)
-    // Convert to floating point and store in cmat.
+    // Convert to floating point and store in gmat.
     for(ii=0; ii<dim; ++ii) {
         for(jj=ii; jj<dim; ++jj) {
             cvec[ii][jj] = Rational_mul(cvec[ii][jj], rvec[jj][dim-1]);
-            self->cmat[self->offset[ii] + jj] = Rational_ldbl(cvec[ii][jj]);
+            self->gmat[self->offset[ii] + jj] = Rational_ldbl(cvec[ii][jj]);
         }
     }
     
@@ -161,7 +161,7 @@ void MatCoal_initExterns(long nsamp) {
 
 static void MatCoal_free(MatCoal *self) {
     free(self->beta);
-    free(self->cmat);
+    free(self->gmat);
     free(self->offset);
     free(self->bmat);
     free(self);
@@ -196,13 +196,13 @@ void MatCoal_project(int dim, double ans[dim], double v) {
     for(i=0; i<dim; ++i)
         expn[i] = exp(-v*mc->beta[i]);
 
-    // Multiply matrix cmat[dim-1] times vector expn
+    // Multiply matrix gmat[dim-1] times vector expn
     for(i=0; i<dim; ++i) {
         ans[i] = 0.0;
         // Right-to-left sum accumulates small numbers first
         // to reduce error.
         for(j=dim-1; j >= i; --j) {
-            ans[i] += mc->cmat[mc->offset[i] + j] * expn[j];
+            ans[i] += mc->gmat[mc->offset[i] + j] * expn[j];
         }
     }
 }
@@ -248,12 +248,12 @@ static void MatCoal_print(MatCoal *self, FILE *fp) {
         fprintf(fp, " %lf", self->beta[i]);
     putc('\n', fp);
 
-    fprintf(fp, "cmat:\n");
+    fprintf(fp, "gmat:\n");
     for(i=0; i<dim; ++i) {
         for(j=0; j<i; ++j)
             fprintf(fp," 0");
         for(j=i; j<dim; ++j)
-            fprintf(fp," %lf", self->cmat[self->offset[i] + j]);
+            fprintf(fp," %lf", self->gmat[self->offset[i] + j]);
         putc('\n', fp);
     }
     fprintf(fp, "bmat:\n");
