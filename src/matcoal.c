@@ -135,16 +135,14 @@ static MatCoal * MatCoal_new(int nLin) {
 
     // Cumulative sum, so that i'th row is sum of i..(dim-1) initial
     // rows.
-    for(i=dim-2; i>=0; --i) {
+    for(i=dim-2; i>=0; --i)
         for(j=0; j<dim; ++j)
             H[i][j] = Rational_add(H[i][j], H[i+1][j]);
-    }
 
     // Weight row i by negBetaInv[i]
-    for(i=0; i<dim; ++i) {
+    for(i=0; i<dim; ++i)
         for(j=0; j<dim; ++j)
             H[i][j] = Rational_mul(H[i][j], negBetaInv[i]);
-    }
 
     self->hmat = malloc(size);
     CHECKMEM(self->hmat);

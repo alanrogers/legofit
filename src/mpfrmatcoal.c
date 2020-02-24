@@ -35,7 +35,7 @@ struct MpfrMatCoal {
       xx xx xx xx 44  row 4: offset = 4*dim - 10
 
       offset[i] = i*dim - i*(i+1)/2 = ((2*dim - 1 - i)*i)/2
-      x[i][j] is array[offset[i] + j]
+      x[i][j] is gmat[offset[i] + j]
 
       Number of stored elements is dim*(dim+1)/2. dim=nLin-1.
     */
@@ -46,9 +46,13 @@ struct MpfrMatCoal {
     int *offset;
 
     // Matrix for calculating expected lengths of coalescent
-    // intervals.  bmat is rectangular with dimension dim X nLin,
-    // stored as a linear array. The ij-th element is bmat[i*nLin + j]
-    mpfr_t *bmat;
+    // intervals.  hmat is upper triangular and is stored just
+    // like gmat. The ij-th element is hmat[offset[i] + j]
+    mpfr_t *hmat;
+    
+    // Vector for calculating expected lengths of coalescent intervals
+    // Dimension is dim.
+    mpfr_t *z;
 
     mpfr_t *expn; // temporary storage
     mpfr_t v, x, y;
@@ -148,35 +152,44 @@ static MpfrMatCoal * MpfrMatCoal_new(int nLin) {
         negBetaInv[i] = Rational_set(-2, j*(j-1));
     }
 
-    Rational B[dim][dim+1];
-    for(i=0; i<dim; ++i)
-        B[i][0] = Rational_zero;
-    B[dim-1][0] = Rational_set(-1,1);
+    Rational H[dim][dim];
 
+    // Initial H is cvec
     for(i=0; i < dim; ++i)
         for(j=0; j<dim; ++j)
-            B[i][j+1] = cvec[i][j];
+            H[i][j] = cvec[i][j];
 
+    // Cumulative sum, so that i'th row is sum of i..(dim-1) initial
+    // rows.
     for(i=dim-2; i>=0; --i)
-        for(j=0; j<=dim; ++j)
-            B[i][j] = Rational_add(B[i][j], B[i+1][j]);
+        for(j=0; j<dim; ++j)
+            H[i][j] = Rational_add(H[i][j], H[i+1][j]);
 
+    // Weight row i by negBetaInv[i]
     for(i=0; i<dim; ++i)
-        for(j=0; j<=dim; ++j)
-            B[i][j] = Rational_mul(B[i][j], negBetaInv[i]);
+        for(j=0; j<dim; ++j)
+            H[i][j] = Rational_mul(H[i][j], negBetaInv[i]);
 
-    self->bmat = malloc(dim * (dim+1) * sizeof(self->bmat[0]));
-    CHECKMEM(self->bmat);
+    self->hmat = malloc(size);
+    CHECKMEM(self->hmat);
+    self->z = malloc(dim * sizeof(self->z[0]));
+    CHECKMEM(self->z);
 
-    for(i=0; i < dim*(dim+1); ++i)
-        mpfr_init2(self->bmat[i], precision);
+    for(i=0; i < npairs; ++i)
+        mpfr_init2(self->hmat[i], precision);
 
-    // Convert B to floating point.
+    for(i=0; i < dim; ++i)
+        mpfr_init2(self->z[i], precision);
+
+    // Convert to floating point and store in z and hmat.
     for(i=0; i<dim; ++i) {
-        for(j=0; j<=dim; ++j) {
-            mpfr_set_si(num, B[i][j].num, rnd); // numerator
-            mpfr_set_si(den, B[i][j].den, rnd); // denominator
-            mpfr_div(self->bmat[i*self->nLin + j], num, den, rnd); // ratio
+        mpfr_set_si(num, negBetaInv[i].num, rnd); // numerator
+        mpfr_set_si(den, negBetaInv[i].den, rnd); // denominator
+        mpfr_div(self->z[i], num, den, rnd); // ratio
+        for(j=i; j<dim; ++j) {
+            mpfr_set_si(num, H[i][j].num, rnd); // numerator
+            mpfr_set_si(den, H[i][j].den, rnd); // denominator
+            mpfr_div(self->hmat[self->offset[i] + j], num, den, rnd); // ratio
         }
     }
 
@@ -204,19 +217,24 @@ static void MpfrMatCoal_free(MpfrMatCoal *self) {
     mpfr_clear(self->x);
     mpfr_clear(self->y);
     
-    for(i=0; i<dim; ++i)
+    for(i=0; i<dim; ++i) {
         mpfr_clear(self->beta[i]);
+        mpfr_clear(self->z[i]);
+    }
 
-    for(i=0; i < (dim*(dim+1))/2; ++i)
+    int npairs = (dim*(dim+1))/2;
+
+    for(i=0; i < npairs; ++i)
         mpfr_clear(self->gmat[i]);
 
-    for(i=0; i < dim*(dim+1); ++i)
-        mpfr_clear(self->bmat[i]);
+    for(i=0; i < npairs; ++i)
+        mpfr_clear(self->hmat[i]);
 
     free(self->offset);
     free(self->beta);
     free(self->gmat);
-    free(self->bmat);
+    free(self->hmat);
+    free(self->z);
     free(self);
 }
 
@@ -285,14 +303,14 @@ void MpfrMatCoal_ciLen(int dim, double ans[dim], double v) {
         mpfr_exp(mc->expn[i], mc->x, rnd);        // expn[i] = exp(-beta[i]*v)
     }
 
-    // Multiply matrix bmat[dim-1] times vector expn
+    // ans = z + H*expn
     for(i=0; i<dim; ++i) {
         mpfr_set_d(mc->x, 0.0, rnd);                       // x = 0
-        for(j=dim; j > i; --j) {
-            mpfr_mul(mc->y, mc->bmat[i*(dim+1) + j], mc->expn[j-1], rnd);
+        for(j=dim-1; j >= i; --j) {
+            mpfr_mul(mc->y, mc->hmat[mc->offset[i] + j], mc->expn[j], rnd);
             mpfr_add(mc->x, mc->x, mc->y, rnd);
         }
-        mpfr_add(mc->x, mc->x, mc->bmat[i*(dim+1)], rnd);
+        mpfr_add(mc->x, mc->x, mc->z[i], rnd);
         ans[i] = mpfr_get_d(mc->x, rnd);
     }
 }
@@ -308,13 +326,13 @@ void MpfrMatCoal_printAll(FILE *fp) {
 static void MpfrMatCoal_print(MpfrMatCoal *self, FILE *fp) {
     int i, j, dim = self->nLin-1;
 
-    fprintf(fp, "\nnLin=%d\n", self->nLin);
-    fprintf(fp, "beta:");
+    fprintf(fp, "\nMPFR: nLin=%d\n", self->nLin);
+    fprintf(fp, "MPFR: beta:");
     for(i=0; i < dim; ++i)
         mpfr_fprintf(fp, " %Rf", self->beta[i], rnd);
     putc('\n', fp);
 
-    fprintf(fp, "G:\n");
+    fprintf(fp, "MPFR: G:\n");
     for(i=0; i<dim; ++i) {
         for(j=0; j<i; ++j)
             fprintf(fp," 0");
@@ -322,10 +340,18 @@ static void MpfrMatCoal_print(MpfrMatCoal *self, FILE *fp) {
             mpfr_fprintf(fp," %Rf", self->gmat[self->offset[i] + j], rnd);
         putc('\n', fp);
     }
-    fprintf(fp, "bmat:\n");
+
+    fprintf(fp, "MPFR: z:");
+    for(i=0; i<dim; ++i)
+        mpfr_fprintf(fp, " %Rf", self->z[i]);
+    putc('\n', fp);
+
+    fprintf(fp, "MPFR: H:\n");
     for(i=0; i<dim; ++i) {
-        for(j=0; j<=dim; ++j)
-            mpfr_fprintf(fp," %Rf", self->bmat[i*(dim+1) + j], rnd);
+        for(j=0; j<i; ++j)
+            fprintf(fp, " 0");
+        for(j=i; j<dim; ++j)
+            mpfr_fprintf(fp," %Rf", self->hmat[self->offset[i] + j], rnd);
         putc('\n', fp);
     }
 }
