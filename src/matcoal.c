@@ -31,7 +31,7 @@ struct MatCoal {
       xx xx xx xx 44  row 4: offset = 4*dim - 10
 
       offset[i] = i*dim - i*(i+1)/2 = ((2*dim - 1 - i)*i)/2
-      x[i][j] is array[offset[i] + j]
+      x[i][j] is gmat[offset[i] + j]
 
       Number of stored elements is dim*(dim+1)/2. dim=nLin-1.
     */
@@ -42,9 +42,13 @@ struct MatCoal {
     int *offset;
 
     // Matrix for calculating expected lengths of coalescent
-    // intervals.  bmat is rectangular with dimension dim X nLin,
-    // stored as a linear array. The ij-th element is bmat[i*nLin + j]
-    double *bmat;
+    // intervals.  hmat is upper triangular and is stored just
+    // like gmat. The ij-th element is hmat[offset[i] + j]
+    double *hmat;
+
+    // Vector for calculating expected lengths of coalescent intervals
+    // Dimension is dim.
+    double *z;
 };
 
 // Number of haploid samples in the data. 0 until initialized
@@ -115,37 +119,44 @@ static MatCoal * MatCoal_new(int nLin) {
     }
     
     // beta[i] is (i+2) choose 2
+    // negBetaInv[i] is -1/beta[i]
     Rational negBetaInv[dim];
     for(i=0; i<dim; ++i) {
         j = i+2;
         negBetaInv[i] = Rational_set(-2, j*(j-1));
     }
 
-    Rational B[dim][dim+1];
-    for(i=0; i<dim; ++i)
-        B[i][0] = Rational_zero;
-    B[dim-1][0] = Rational_set(-1,1);
+    Rational H[dim][dim];
 
+    // Initial H is cvec
     for(i=0; i < dim; ++i)
         for(j=0; j<dim; ++j)
-            B[i][j+1] = cvec[i][j];
+            H[i][j] = cvec[i][j];
 
-    for(i=dim-2; i>=0; --i)
-        for(j=0; j<=dim; ++j)
-            B[i][j] = Rational_add(B[i][j], B[i+1][j]);
+    // Cumulative sum, so that i'th row is sum of i..(dim-1) initial
+    // rows.
+    for(i=dim-2; i>=0; --i) {
+        for(j=0; j<dim; ++j)
+            H[i][j] = Rational_add(H[i][j], H[i+1][j]);
+    }
 
-    for(i=0; i<dim; ++i)
-        for(j=0; j<=dim; ++j)
-            B[i][j] = Rational_mul(B[i][j], negBetaInv[i]);
+    // Weight row i by negBetaInv[i]
+    for(i=0; i<dim; ++i) {
+        for(j=0; j<dim; ++j)
+            H[i][j] = Rational_mul(H[i][j], negBetaInv[i]);
+    }
 
-    self->bmat = malloc(dim * (dim+1) * sizeof(self->bmat[0]));
-    CHECKMEM(self->bmat);
+    self->hmat = malloc(size);
+    CHECKMEM(self->hmat);
+    self->z = malloc(dim * sizeof(self->z[0]));
+    CHECKMEM(self->z);
 
-    // Convert B to floating point.
-    for(i=0; i<dim; ++i)
-        for(j=0; j<=dim; ++j)
-            self->bmat[i*self->nLin + j] = (double) Rational_ldbl(B[i][j]);
-
+    // Convert to floating point and store in z and hmat.
+    for(ii=0; ii<dim; ++ii) {
+        self->z[ii] = Rational_ldbl(negBetaInv[ii]);
+        for(jj=ii; jj<dim; ++jj)
+            self->hmat[self->offset[ii] + jj] = Rational_ldbl(H[ii][jj]);
+    }
     return self;
 }
 
@@ -163,7 +174,8 @@ static void MatCoal_free(MatCoal *self) {
     free(self->beta);
     free(self->gmat);
     free(self->offset);
-    free(self->bmat);
+    free(self->z);
+    free(self->hmat);
     free(self);
 }
 
@@ -201,9 +213,8 @@ void MatCoal_project(int dim, double ans[dim], double v) {
         ans[i] = 0.0;
         // Right-to-left sum accumulates small numbers first
         // to reduce error.
-        for(j=dim-1; j >= i; --j) {
+        for(j=dim-1; j >= i; --j)
             ans[i] += mc->gmat[mc->offset[i] + j] * expn[j];
-        }
     }
 }
 
@@ -222,12 +233,12 @@ void MatCoal_ciLen(int dim, double ans[dim], double v) {
     for(i=0; i<dim; ++i)
         expn[i] = exp(-v*mc->beta[i]);
 
-    // Multiply matrix bmat[dim-1] times vector expn
+    // ans = z + H*expn
     for(i=0; i<dim; ++i) {
         ans[i] = 0.0;
-        for(j=dim; j > i; --j)
-            ans[i] += mc->bmat[i*(dim+1) + j] * expn[j-1];
-        ans[i] += mc->bmat[i*(dim+1)];
+        for(j=dim-1; j >= i; --j)
+            ans[i] += mc->hmat[mc->offset[i] + j] * expn[j];
+        ans[i] += mc->z[i];
     }
 }
 
@@ -248,7 +259,7 @@ static void MatCoal_print(MatCoal *self, FILE *fp) {
         fprintf(fp, " %lf", self->beta[i]);
     putc('\n', fp);
 
-    fprintf(fp, "gmat:\n");
+    fprintf(fp, "G:\n");
     for(i=0; i<dim; ++i) {
         for(j=0; j<i; ++j)
             fprintf(fp," 0");
@@ -256,10 +267,18 @@ static void MatCoal_print(MatCoal *self, FILE *fp) {
             fprintf(fp," %lf", self->gmat[self->offset[i] + j]);
         putc('\n', fp);
     }
-    fprintf(fp, "bmat:\n");
+
+    fprintf(fp, "z:");
+    for(i=0; i<dim; ++i)
+        fprintf(fp, " %lf", self->z[i]);
+    putc('\n', fp);
+
+    fprintf(fp, "H:\n");
     for(i=0; i<dim; ++i) {
-        for(j=0; j<=dim; ++j)
-            fprintf(fp," %lf", self->bmat[i*(dim+1) + j]);
+        for(j=0; j<i; ++j)
+            fprintf(fp, " 0");
+        for(j=i; j<dim; ++j)
+            fprintf(fp," %lf", self->hmat[self->offset[i] + j]);
         putc('\n', fp);
     }
 }

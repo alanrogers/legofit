@@ -26,7 +26,7 @@ struct MpfrMatCoal {
     mpfr_t *beta;
     
     /*
-      Layout of upper triangular matrix cmat is row major:
+      Layout of upper triangular matrix gmat is row major:
 
       00 01 02 03 04  row 0: offset = 0
       xx 11 12 13 14  row 1: offset = dim-1
@@ -40,9 +40,9 @@ struct MpfrMatCoal {
       Number of stored elements is dim*(dim+1)/2. dim=nLin-1.
     */
     // Matrix of scaled column eigenvectors
-    mpfr_t *cmat;
+    mpfr_t *gmat;
 
-    // Array of dim offsets, used to address elements of cmat.
+    // Array of dim offsets, used to address elements of gmat.
     int *offset;
 
     // Matrix for calculating expected lengths of coalescent
@@ -113,31 +113,31 @@ static MpfrMatCoal * MpfrMatCoal_new(int nLin) {
     }
 
     int npairs = (dim*(dim+1))/2;
-    size_t size = sizeof(self->cmat[0]) * npairs;
-    self->cmat = malloc(size);
-    CHECKMEM(self->cmat);
+    size_t size = sizeof(self->gmat[0]) * npairs;
+    self->gmat = malloc(size);
+    CHECKMEM(self->gmat);
 
     for(i=0; i<npairs; ++i)
-        mpfr_init2(self->cmat[i], precision);
+        mpfr_init2(self->gmat[i], precision);
 
     mpfr_t num, den;
     mpfr_init2(num, precision);
     mpfr_init2(den, precision);
 
-    // Offsets into cmat (a triangular matrix)
+    // Offsets into gmat (a triangular matrix)
     self->offset = malloc( dim * sizeof(self->offset[0]));
     CHECKMEM(self->offset);
     for(i=0; i < dim; ++i)
         self->offset[i] = ((2*dim - 1 - i)*i)/2;
 
     // Calculate coefficients of exponentials in x(t)
-    // Convert to floating point and store in cmat.
+    // Convert to floating point and store in gmat.
     for(ii=0; ii<dim; ++ii) {
         for(jj=ii; jj<dim; ++jj) {
             cvec[ii][jj] = Rational_mul(cvec[ii][jj], rvec[jj][dim-1]);
             mpfr_set_si(num, cvec[ii][jj].num, rnd); // numerator
             mpfr_set_si(den, cvec[ii][jj].den, rnd); // denominator
-            mpfr_div(self->cmat[self->offset[ii] + jj], num, den, rnd); // ratio
+            mpfr_div(self->gmat[self->offset[ii] + jj], num, den, rnd); // ratio
         }
     }
     
@@ -208,14 +208,14 @@ static void MpfrMatCoal_free(MpfrMatCoal *self) {
         mpfr_clear(self->beta[i]);
 
     for(i=0; i < (dim*(dim+1))/2; ++i)
-        mpfr_clear(self->cmat[i]);
+        mpfr_clear(self->gmat[i]);
 
     for(i=0; i < dim*(dim+1); ++i)
         mpfr_clear(self->bmat[i]);
 
     free(self->offset);
     free(self->beta);
-    free(self->cmat);
+    free(self->gmat);
     free(self->bmat);
     free(self);
 }
@@ -253,13 +253,13 @@ void MpfrMatCoal_project(int dim, double ans[dim], double v) {
         mpfr_exp(mc->expn[i], mc->x, rnd);        // expn[i] = exp(-beta[i]*v)
     }
 
-    // Multiply matrix cmat[dim-1] times vector expn
+    // Multiply matrix gmat[dim-1] times vector expn
     for(i=0; i<dim; ++i) {
         mpfr_set_d(mc->x, 0.0, rnd);                       // x = 0
         // Right-to-left sum accumulates small numbers first
         // to reduce error.
         for(j=dim-1; j >= i; --j) {
-            mpfr_mul(mc->y, mc->cmat[mc->offset[i] + j], mc->expn[j], rnd);
+            mpfr_mul(mc->y, mc->gmat[mc->offset[i] + j], mc->expn[j], rnd);
             mpfr_add(mc->x, mc->x, mc->y, rnd);
         }
         ans[i] = mpfr_get_d(mc->x, rnd);
@@ -314,12 +314,12 @@ static void MpfrMatCoal_print(MpfrMatCoal *self, FILE *fp) {
         mpfr_fprintf(fp, " %Rf", self->beta[i], rnd);
     putc('\n', fp);
 
-    fprintf(fp, "cmat:\n");
+    fprintf(fp, "G:\n");
     for(i=0; i<dim; ++i) {
         for(j=0; j<i; ++j)
             fprintf(fp," 0");
         for(j=i; j<dim; ++j)
-            mpfr_fprintf(fp," %Rf", self->cmat[self->offset[i] + j], rnd);
+            mpfr_fprintf(fp," %Rf", self->gmat[self->offset[i] + j], rnd);
         putc('\n', fp);
     }
     fprintf(fp, "bmat:\n");
