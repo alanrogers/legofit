@@ -268,7 +268,7 @@ int Segment_coalesce(Segment *self, int maxsamp, int dosing,
         // will often have smaller probabilities.
         // x[i] is prob of i+1 lineages; x[0] not set
         sum=0.0;
-        for(i=n; i >= 2; --i)
+        for(i=n; i > 1; --i)
             sum += x[i-1];
         self->p[1][0] += self->p[0][n-1] * (1.0-sum);
 
@@ -289,7 +289,7 @@ int Segment_coalesce(Segment *self, int maxsamp, int dosing,
         sum = 0.0;
         for(i=n; i >= 2; --i)
             sum += x[i-1];
-        x[0] = v - sum;
+        x[0] = v - sum; // x[0] is infinite if v is.
 
         // Multiply x by probability that segment had n lineages on
         // recent end of segment.
@@ -303,13 +303,16 @@ int Segment_coalesce(Segment *self, int maxsamp, int dosing,
                   .dosing = dosing
     };
 
+    // skip k=1 if segment is infinite
+    int kstart = (isfinite(v) ? 1 : 2);
+
     // loop over number of descendants in this segment
     for(n=1; n <= self->max; ++n) {
         cd.ids = ids[0][n-1];
 
         // loop over intervals: k is the number of ancestors
         // w/i interval.
-        for(int k=1; k <= n; ++k) {
+        for(int k=kstart; k <= n; ++k) {
             
             // portion of log Qdk that doesn't involve d
             long double lnconst = logl(k) - lbinom(n-1, k-1);
