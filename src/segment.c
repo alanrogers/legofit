@@ -308,6 +308,10 @@ int Segment_coalesce(Segment *self, int maxsamp, int dosing,
 
     // loop over number of descendants in this segment
     for(n=1; n <= self->max; ++n) {
+        // Skip improbable states.
+        if(self->p[0][n-1] == 0.0)
+            continue;
+
         cd.ids = ids[0][n-1];
 
         // loop over intervals: k is the number of ancestors
