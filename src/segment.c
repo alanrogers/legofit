@@ -244,14 +244,16 @@ int Segment_coalesce(Segment *self, int maxsamp, int dosing,
                      BranchTab *branchtab, double v) {
     assert(self->max <= maxsamp);
 
-    double x[maxsamp], sum;
+    double pr[maxsamp], elen[maxsamp], sum;
     int n, i, status=0;
-    
+    const int finite = isfinite(v); // is segment finite?
+    int kstart = (finite ? 1 : 2);  // skip k=1 if infinite
+
     // If there is only one line of descent, no coalescent events are
     // possible, so p[1][0] is at least as large as p[0][0].
     self->p[1][0] = self->p[0][0];
 
-    // Calculate probabilities and expected values, p[1] and cilen.
+    // Calculate probabilities and expected values, p[1] and elen.
     for(n=2; n <= self->max; ++n) {
 
         // Skip improbable states.
@@ -259,42 +261,42 @@ int Segment_coalesce(Segment *self, int maxsamp, int dosing,
             continue;
         
         // Calculate prob of 2,3,...,n lines of descent.
-        // On return, x[1] = prob[2], x[n-1] = prob[n],
-        // x[0] not set.
-        MatCoal_project(n-1, x+1, v);
+        // On return, pr[1] = prob[2], pr[n-1] = prob[n],
+        // pr[0] not set.
+        MatCoal_project(n-1, pr+1, v);
 
         // Calculate probability of 1 line of descent. I'm doing the
         // sum in reverse order on the assumption that higher indices
         // will often have smaller probabilities.
-        // x[i] is prob of i+1 lineages; x[0] not set
+        // pr[i] is prob of i+1 lineages; pr[0] not set
         sum=0.0;
         for(i=n; i > 1; --i)
-            sum += x[i-1];
+            sum += pr[i-1];
         self->p[1][0] += self->p[0][n-1] * (1.0-sum);
 
         // Add probs of 2..n lines of descent
-        // x[i] is prob of i+2 lineages
+        // pr[i] is prob of i+2 lineages
         // self->p[1][i] is prob if i+1 lineages
         for(i=2; i <= n; ++i)
-            self->p[1][i-1] += self->p[0][n-1] * x[i-1];
+            self->p[1][i-1] += self->p[0][n-1] * pr[i-1];
 
         // Calculate expected length, within the segment, of
-        // coalescent intervals with 2,3,...,n lineages.  x[i] is
+        // coalescent intervals with 2,3,...,n lineages.  elen[i] is
         // expected length of interval with i-1 lineages.
-        // x[0] not set.
-        MatCoal_ciLen(n-1, x+1, v);
+        // elen[0] not set.
+        MatCoal_ciLen(n-1, elen+1, v);
 
-        // Calculate expected length, x[0], of interval with one
-        // lineage.  x[i] refers to interval with i+1 lineages.
+        // Calculate expected length, elen[0], of interval with one
+        // lineage.  elen[i] refers to interval with i+1 lineages.
         sum = 0.0;
         for(i=n; i >= 2; --i)
-            sum += x[i-1];
-        x[0] = v - sum; // x[0] is infinite if v is.
+            sum += elen[i-1];
+        elen[0] = v - sum; // elen[0] is infinite if v is.
 
-        // Multiply x by probability that segment had n lineages on
+        // Multiply elen by probability that segment had n lineages on
         // recent end of segment.
         for(i=1; i <= n; ++i)
-            x[i-1] *= self->p[0][n-1];
+            elen[i-1] *= self->p[0][n-1];
     }
 
     CombDat cd = {.contribution = 0.0,
@@ -302,9 +304,6 @@ int Segment_coalesce(Segment *self, int maxsamp, int dosing,
                   .branchtab = branchtab,
                   .dosing = dosing
     };
-
-    // skip k=1 if segment is infinite
-    int kstart = (isfinite(v) ? 1 : 2);
 
     // loop over number of descendants in this segment
     for(n=1; n <= self->max; ++n) {
@@ -331,7 +330,7 @@ int Segment_coalesce(Segment *self, int maxsamp, int dosing,
                 cd.contribution = (double) expl(lnprob);
 
                 // times expected length of interval
-                cd.contribution *= x[k-1];
+                cd.contribution *= elen[k-1];
                 
                 status = traverseComb(n, d, visitComb, &cd);
                 if(status)
