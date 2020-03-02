@@ -193,7 +193,7 @@ IdSet *IdSet_join(IdSet *a, IdSet *b) {
             assert(a->tid[ia] > b->tid[ib]);
             // a->tid can't equal b->tid, because the first step in
             // this function ensures that no bit is set in both
-             // values. The assertion just above checks this.
+            // values. The assertion just above checks this.
             self->tid[j++] = b->tid[ib++];
         }
     }

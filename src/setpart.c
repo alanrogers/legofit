@@ -111,6 +111,48 @@ void Stirling2_print(Stirling2 *self, FILE *fp) {
     }
 }
 
+/** 
+ * Log of constant in coalescent probability from theorem 1.5, p. 11,
+ * Durrett, Richard. 2008. Probability Models for DNA Sequence
+ * Evolution.
+ */
+long double lnCoalConst(unsigned n, unsigned k) {
+    assert(n >= k);
+    assert(k > 0);
+    return lgammal(k+1)
+        - lgammal(n+1)
+        + lgammal(n-k+1)
+        + lgammal(k)
+        - lgammal(n);
+}
+
+/**
+ * Probability of a set partition under the coalescent process. There
+ * are n gene copies (descendants) at the recent end of a segment of
+ * population history. At some point, earlier in the segment, there
+ * are k ancestral gene copies. These ancestors define a partition of
+ * the set of descendants into k subsets, each representing the
+ * descendants of a single ancestor. This function calculates the
+ * probability of a given set partition.
+ *
+ * See theorem 1.5, p. 11, Durrett, Richard. 2008. Probability Models
+ * for DNA Sequence Evolution.
+ *
+ * @param[in] k number of ancestral gene copies
+ * @param[in] y[k] array whose i'th entry is the number of descendants
+ * of the i'th ancestor. The sum of y[i] is n, the number of
+ * descendants. 
+ * @param[in] lnconst portion of the probability that does not depend
+ * on y and can be calculated in advance, using function lnCoalConst.
+ */
+double probPartition(unsigned k, unsigned y[k], long double lnconst) {
+    assert(k > 0);
+    long double x = 0.0L;
+    for(unsigned i=0; i<k; ++i)
+        x += lgammal(y[i] + 1);
+    return (double) expl(lnconst + x);
+}
+
 /**
    Generate all ways of partitioning a set of n objects into m
    non-empty subsets.  This code implements Knuth's answer to
