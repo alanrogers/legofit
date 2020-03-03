@@ -5,6 +5,7 @@
 
 typedef struct Segment Segment;
 
+Segment *Segment_new(int max);
 int Segment_coalesce(Segment *self, int maxsamp, int dosing,
                      BranchTab *branchtab, double v);
 

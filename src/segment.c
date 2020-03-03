@@ -240,6 +240,23 @@ double IdSet_sumProb(IdSet *self) {
     return sum;
 }
 
+Segment *Segment_new(int max) {
+    Segment *self = malloc(sizeof(Segment));
+    CHECKMEM(self);
+
+    self->max = max;
+
+    self->p[0] = malloc(max * sizeof(self->p[0][0]));
+    CHECKMEM(self->p[0]);
+
+    self->p[1] = malloc(max * sizeof(self->p[1][0]));
+    CHECKMEM(self->p[1]);
+
+    self->ids[0] = self->ids[1] = NULL;
+
+    return self;
+}
+
 int Segment_coalesce(Segment *self, int maxsamp, int dosing,
                      BranchTab *branchtab, double v) {
     assert(self->max <= maxsamp);
