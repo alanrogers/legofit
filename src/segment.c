@@ -54,10 +54,10 @@ struct Segment {
     IdSet **ids[2];
 };
 
-int tipId_vec_cmp(int nx, const tipId_t x[nx], int ny,
-                  const tipId_t y[ny]);
+int IdSet_cmp(const IdSet *x, const IdSet *y);
 IdSet *IdSet_new(IdSet *next, int nIds, tipId_t tid[nIds], double prob);
-IdSet *IdSet_add(IdSet *head, int nIds, tipId_t tid[nIds], double prob);
+IdSet *IdSet_dup(IdSet *old);
+IdSet *IdSet_add(IdSet *head, const IdSet *to_add, double prob);
 void IdSet_free(IdSet *self);
 IdSet *IdSet_join(IdSet *a, IdSet *b);
 int IdSet_length(IdSet *self);
@@ -67,25 +67,18 @@ double IdSet_sumProb(IdSet *self);
 int visitComb(int d, int ndx[d], void *data);
 
 /**
- * Compare two vectors, x and y, of tipId_t values. Return -1 if x<y,
- * 1 if x>y, and 0 otherwise. 
- *
- * @param[in] nx length of x
- * @param[in] x  vector of tipId_t values
- * @param[in] ny length of y
- * @param[in] y vector of tipId_t values
+ * Compare IdSet objects. Return -1 if x<y, 1 if x>y, and 0 otherwise.
  */
-int tipId_vec_cmp(int nx, const tipId_t x[nx], int ny,
-                   const tipId_t y[ny]) {
-    for(int i=0; i < nx && i < ny; ++i) {
-        if(x[i] < y[i])
+int IdSet_cmp(const IdSet *x, const IdSet *y) {
+    for(int i=0; i < x->nIds && i < y->nIds; ++i) {
+        if(x->tid[i] < y->tid[i])
             return -1;
-        if(x[i] > y[i])
+        if(x->tid[i] > y->tid[i])
             return 1;
     }
-    if(nx < ny)
+    if(x->nIds < y->nIds)
         return -1;
-    if(nx > ny)
+    if(x->nIds > y->nIds)
         return 1;
     return 0;
 }
@@ -113,25 +106,36 @@ IdSet *IdSet_new(IdSet *next, int nIds, tipId_t tid[nIds], double prob) {
     return self;
 }
 
+IdSet *IdSet_dup(IdSet *old) {
+    return IdSet_new(NULL, old->nIds, old->tid, old->prob);
+}
+
 /**
  * Add a new IdSet item to a sorted list. If a corresponding IdSet
  * object already exists, then add prob to that object. The value
  * of nIds must match the value in the existing list.
  */
-IdSet *IdSet_add(IdSet *head, int nIds, tipId_t tid[nIds], double prob) {
-    if(head==NULL)
-        return IdSet_new(NULL, nIds, tid, prob);
-    if(head->nIds != nIds) {
+IdSet *IdSet_add(IdSet *head, const IdSet *to_add, double prob) {
+    IdSet *tmp;
+    if(head==NULL) {
+        tmp = IdSet_dup(to_add);
+        tmp->prob *= prob;
+        return tmp;
+    }
+    if(head->nIds != to_add->nIds) {
         fprint(stderr,"%s:%d: can't add a set with %d ids to a list"
                " of sets with %d ids\n",
-               __FILE__,__LINE__, nIds, head->nIds);
+               __FILE__,__LINE__, to_add->nIds, head->nIds);
         exit(EXIT_FAILURE);
     }
-    int cmp = tipId_vec_cmp(nIds, tid, head->nIds, head->tid);
-    if(cmp < 0)
-        return IdSet_new(head, nIds, tid, prob);
-    if(cmp > 0) {
-        head->next = IdSet_add(head->next, nIds, tid, prob);
+    int cmp = IdSet_cmp(to_add, head->nIds);
+    if(cmp < 0) {
+        tmp = IdSet_dup(to_add);
+        tmp->prob *= prob;
+        tmp->next = head;
+        return tmp;
+    }if(cmp > 0) {
+        head->next = IdSet_add(head->next, to_add, prob);
         return head;
     }
     head->p += prob;
@@ -270,19 +274,24 @@ void Segment_add(Segment *self, IdSet *idset) {
         else
             self->allocated = nids;
 
-        self->p[0] = realloc(self->p[0], self->allocated * sizeof(self->p[0][0]));
+        self->p[0] = realloc(self->p[0],
+                             self->allocated * sizeof(self->p[0][0]));
         CHECKMEM(self->p[0]);
-        self->p[1] = realloc(self->p[1], self->allocated * sizeof(self->p[1][0]));
+        self->p[1] = realloc(self->p[1],
+                             self->allocated * sizeof(self->p[1][0]));
         CHECKMEM(self->p[1]);
 
-        self->ids[0] = realloc(self->ids[0], self->allocated * sizeof(self->ids[0][0]));
+        self->ids[0] = realloc(self->ids[0],
+                               self->allocated * sizeof(self->ids[0][0]));
         CHECKMEM(self->ids[0]);
-        self->ids[1] = realloc(self->ids[1], self->allocated * sizeof(self->ids[1][0]));
+        self->ids[1] = realloc(self->ids[1],
+                               self->allocated * sizeof(self->ids[1][0]));
         CHECKMEM(self->ids[1]);
     }
 
     // add IdSet to segment
-    self->ids[0][nids-1] = IdSet_add(self->ids[0][nids-1], nids, idset->tid, 0.0);
+    self->ids[0][nids-1] = IdSet_add(self->ids[0][nids-1], nids,
+                                     idset->tid, 0.0);
 }
 
 int Segment_coalesce(Segment *self, int maxsamp, int dosing,
