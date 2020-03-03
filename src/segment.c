@@ -40,6 +40,7 @@ struct IdSet {
 // Probabilistic variables for one segment of a population tree, i.e.,
 // for ont PopNode.
 struct Segment {
+    int allocated; // allocated dimension of arrays
     int max;     // max number of lineages in segment
 
     // p[0][i] is prob there are i+1 lineages at recent end of segment
@@ -240,21 +241,48 @@ double IdSet_sumProb(IdSet *self) {
     return sum;
 }
 
-Segment *Segment_new(int max) {
+Segment *Segment_new(void) {
     Segment *self = malloc(sizeof(Segment));
     CHECKMEM(self);
 
-    self->max = max;
+    self->allocated = 8;
+    self->max = 0;
 
-    self->p[0] = malloc(max * sizeof(self->p[0][0]));
+    self->p[0] = malloc(self->allocated * sizeof(self->p[0][0]));
     CHECKMEM(self->p[0]);
 
-    self->p[1] = malloc(max * sizeof(self->p[1][0]));
+    self->p[1] = malloc(self->allocated * sizeof(self->p[1][0]));
     CHECKMEM(self->p[1]);
 
     self->ids[0] = self->ids[1] = NULL;
 
     return self;
+}
+
+// Add IdSet to Segment
+void Segment_add(Segment *self, IdSet *idset) {
+    int nids = idset->nids;
+
+    // reallocate arrays if necessary
+    if(nids > self->allocated) {
+        if(2*self->allocated >= nids)
+            self->allocated *= 2;
+        else
+            self->allocated = nids;
+
+        self->p[0] = realloc(self->p[0], self->allocated * sizeof(self->p[0][0]));
+        CHECKMEM(self->p[0]);
+        self->p[1] = realloc(self->p[1], self->allocated * sizeof(self->p[1][0]));
+        CHECKMEM(self->p[1]);
+
+        self->ids[0] = realloc(self->ids[0], self->allocated * sizeof(self->ids[0][0]));
+        CHECKMEM(self->ids[0]);
+        self->ids[1] = realloc(self->ids[1], self->allocated * sizeof(self->ids[1][0]));
+        CHECKMEM(self->ids[1]);
+    }
+
+    // add IdSet to segment
+    self->ids[0][nids-1] = IdSet_add(self->ids[0][nids-1], nids, idset->tid, 0.0);
 }
 
 int Segment_coalesce(Segment *self, int maxsamp, int dosing,
