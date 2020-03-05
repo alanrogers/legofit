@@ -56,6 +56,7 @@ struct Segment {
 
 int IdSet_cmp(const IdSet *x, const IdSet *y);
 IdSet *IdSet_new(IdSet *next, int nIds, tipId_t tid[nIds], double prob);
+IdSet *IdSet_newTip(tipId_t tid);
 IdSet *IdSet_dup(IdSet *old);
 IdSet *IdSet_add(IdSet *head, const IdSet *to_add, double prob);
 void IdSet_free(IdSet *self);
@@ -81,6 +82,22 @@ int IdSet_cmp(const IdSet *x, const IdSet *y) {
     if(x->nIds > y->nIds)
         return 1;
     return 0;
+}
+
+/// Allocate a new IdSet with a single tipId_t value and probability 1.
+IdSet *IdSet_newTip(tipId_t tid) {
+    IdSet *self = malloc(sizeof(IdSet));
+    CHECKMEM(self);
+
+    self->nIds = 1;
+    self->p = 1.0;
+    self->tid = malloc(sizeof(self->tid[0]));
+    CHECKMEM(self->tid);
+
+    self->allbits = self->tid[0] = tid;
+
+    self->next = NULL;
+    return self;
 }
 
 /**
