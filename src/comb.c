@@ -310,7 +310,7 @@ long binom(long n, long x) {
 
 /**
  * Natural log of binomial coefficient. Return log(n!/(x! * (n-x)!)),
- * the number of ways of choosing x items out of n.
+ * the log of the number of ways of choosing x items out of n.
  *
  * @param[in] n total number of items
  *
