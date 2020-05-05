@@ -565,7 +565,7 @@ void parseMix(char *next, PopNodeTab * poptbl, ParStore * parstore,
 }
 
 // Read a line into buff, skipping blank lines; strip comments and
-// trailing whitespace.  Return 0 on success; 1 on EOF.
+// trailing whitespace.  Return 0 on success; EOF on end of file.
 int get_one_line(size_t n, char buff[n], FILE * fp) {
     do{
         if(fgets(buff, n, fp) == NULL)
@@ -609,7 +609,7 @@ PopNode *mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, ParStore * parstore,
     PopNodeTab *poptbl = PopNodeTab_new();
 
     while(1) {
-        if(1 == get_one_line(sizeof(buff), buff, fp))
+        if(EOF == get_one_line(sizeof(buff), buff, fp))
             break;
 
         // If line ends with a binary operator ("+-*/"), then append
@@ -623,7 +623,7 @@ PopNode *mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, ParStore * parstore,
             if(end>buff && strchr("+-*/", *(end-1)) == NULL)
                 break;
             // line empty or ends with binary operator: append next line
-            if(1 == get_one_line(sizeof(buff2), buff2, fp)) {
+            if(EOF == get_one_line(sizeof(buff2), buff2, fp)) {
                 fprintf(stderr, "%s:%d: unexpected end of file\n",
                         __FILE__, __LINE__);
                 fprintf(stderr,"  prev line: \"%s\"\n", buff);

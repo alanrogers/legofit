@@ -69,7 +69,6 @@ Systems Consortium License, which can be found in file "LICENSE".
 void usage(void);
 void parseError(char *p, char *buff, const char *file, int line);
 char *lastNonwhite(char *s);
-static int get_one_line(size_t n, char buff[n], FILE * fp);
 
 const char *usageMsg =
      "Usage: pclgo [options] <file.lgo> <rep1.legofit> <rep2.legofit> ...\n"
