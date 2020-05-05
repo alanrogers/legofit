@@ -6,7 +6,7 @@ incl := -I/usr/local/include -I/opt/local/include -I../src
 tests := xaddrparmap xbinary xbooma xboot xbranchtab xdafreader xdiffev \
   xdtnorm xerror xgene xgetlinetok xgptree xhessian xjobqueue xlblndx \
   xlinereader xmisc xsimreader xparam xparse xparstore xpointbuff xpopnode \
-  xpopnodetab xrafreader xscrmreader xsimsched xstate xstrdblmap \
+  xpopnodetab xrafreader xsampndx xscrmreader xsimsched xstate xstrdblmap \
   xstrdblqueue xstrint xstrparmap xtinyexpr xtokenizer xuintqueue \
   xwraparound
 
@@ -63,6 +63,7 @@ test : $(tests)
 	-./xpopnode
 	-./xpopnodetab
 	-./xrafreader
+	-./xsampndx
 	-./xscrmreader
 	-./xsimsched
 	-./xstate
@@ -209,7 +210,7 @@ xpopnode.o : popnode.c
 
 XPOPNODE := xpopnode.o addrparmap.o dtnorm.o misc.o gene.o branchtab.o \
    binary.o lblndx.o strparmap.o tokenizer.o parstore.o tinyexpr.o \
-   param.o gptree.o parse.o dprintf.o popnodetab.o
+   param.o gptree.o parse.o dprintf.o popnodetab.o sampndx.o
 xpopnode : $(XPOPNODE)
 	$(CC) $(CFLAGS) -o $@ $(XPOPNODE) $(lib)
 
@@ -284,6 +285,14 @@ xaddrparmap : $(XADDRPARMAP)
 XSTRDBLQUEUE := xstrdblqueue.o strdblqueue.o misc.o
 xstrdblqueue : $(XSTRDBLQUEUE)
 	$(CC) $(CFLAGS) -o $@ $(XSTRDBLQUEUE) $(lib)
+
+xsampndx.o : sampndx.c
+	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/sampndx.c
+
+XSAMPNDX := xsampndx.o popnode.o misc.o gene.o branchtab.o tokenizer.o \
+    lblndx.o binary.o
+xsampndx : $(XSAMPNDX)
+	$(CC) $(CFLAGS) -o $@ $(XSAMPNDX) $(lib)
 
 # Make dependencies file
 depend : *.c

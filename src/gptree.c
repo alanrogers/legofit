@@ -13,6 +13,7 @@
 #include "lblndx.h"
 #include "parse.h"
 #include "parstore.h"
+#include "sampndx.h"
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>

@@ -67,6 +67,7 @@
 #include "parstore.h"
 #include "popnode.h"
 #include "error.h"
+#include "sampndx.h"
 #include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
