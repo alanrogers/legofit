@@ -30,14 +30,12 @@ struct PopNode {
     struct PopNode *parent[2];
     struct PopNode *child[2];
     Gene       *sample[MAXSAMP]; // not locally owned
-    bool        twoNfree, startFree, mixFree; // true => parameter varies
 };
 
-PopNode    *PopNode_new(double *twoN, bool twoNfree, double *start,
-                        bool startFree, NodeStore *ns);
+PopNode    *PopNode_new(double *twoN, double *start, NodeStore *ns);
 int         PopNode_addChild(PopNode * parent, PopNode * child);
-int         PopNode_mix(PopNode * child, double *mPtr, bool mixFree,
-                        PopNode * introgressor, PopNode * native);
+int         PopNode_mix(PopNode * child, double *mPtr, PopNode * introgressor,
+                        PopNode * native);
 void        PopNode_newGene(PopNode * self, unsigned ndx);
 void        PopNode_addSample(PopNode * self, Gene * gene);
 Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng);
