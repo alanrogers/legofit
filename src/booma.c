@@ -746,8 +746,13 @@ int main(int argc, char **argv) {
     ModSelCrit *msc = ModSelCrit_new(mscFile);
     ModSelCrit *msc2 = ModSelCrit_new(mscFile);
     assert(ModSelCrit_compare(msc, msc2, MSC_BEPE) == 0);
+
+    // Change file name in msc2 to verify that ModelSelCrit_compare
+    // will detect the difference.
     msc2->fname[0][0] += 1;
+    fprintf(stderr,"Next line should report inconsistent file names:\n");
     assert(ModSelCrit_compare(msc, msc2, MSC_BEPE) != 0);
+    
     assert(ModSelCrit_dim(msc) == 2);
     assert(ModSelCrit_badness(msc, 0) == 0.01);
     assert(ModSelCrit_badness(msc, 1) == 0.02);

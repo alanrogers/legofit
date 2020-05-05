@@ -197,8 +197,7 @@ int PopNode_nsamples(PopNode * self) {
 }
 
 /// PopNode constructor
-PopNode    *PopNode_new(double *twoN, bool twoNfree, double *start,
-                        bool startFree, NodeStore * ns) {
+PopNode    *PopNode_new(double *twoN, double *start, NodeStore * ns) {
     PopNode    *new = NodeStore_alloc(ns);
     CHECKMEM(new);
 
@@ -207,10 +206,6 @@ PopNode    *PopNode_new(double *twoN, bool twoNfree, double *start,
     new->mix = NULL;
     new->start = start;
     new->end = NULL;
-
-    new->twoNfree = twoNfree;
-    new->startFree = startFree;
-    new->mixFree = false;
 
     memset(new->sample, 0, sizeof(new->sample));
     memset(new->parent, 0, sizeof(new->parent));
@@ -288,11 +283,10 @@ void PopNode_addSample(PopNode * self, Gene * gene) {
 /// Connect a child PopNode to two parents.
 /// @param[inout] child pointer to the child PopNode
 /// @param[in] mPtr pointer to the gene flow variable
-/// @param[in] mixFree 1 if mPtr is a free parameter; 0 otherwise
 /// @param[inout] introgressor pointer to the introgressing parent
 /// @param[inout] native pointer to the native parent
-int PopNode_mix(PopNode * child, double *mPtr, bool mixFree,
-                 PopNode * introgressor, PopNode * native) {
+int PopNode_mix(PopNode * child, double *mPtr, PopNode * introgressor,
+                PopNode * native) {
 
     if(introgressor->nchildren > 1) {
         fprintf(stderr,"%s:%s:%d:"
@@ -339,7 +333,6 @@ int PopNode_mix(PopNode * child, double *mPtr, bool mixFree,
     child->parent[1] = introgressor;
     child->nparents = 2;
     child->mix = mPtr;
-    child->mixFree = mixFree;
     introgressor->child[introgressor->nchildren] = child;
     ++introgressor->nchildren;
     native->child[native->nchildren] = child;
@@ -735,10 +728,7 @@ int main(int argc, char **argv) {
     CHECKMEM(ns);
 
     double      twoN0 = 1.0, start0 = 0.0;
-    bool        twoNfree = true;
-    bool        startFree = true;
-    PopNode    *p0 = PopNode_new(&twoN0, twoNfree,
-                                 &start0, startFree, ns);
+    PopNode    *p0 = PopNode_new(&twoN0, &start0, ns);
     assert(p0->twoN == &twoN0);
     assert(p0->start == &start0);
     assert(p0->end == NULL);
@@ -751,7 +741,7 @@ int main(int argc, char **argv) {
     assert(p0->parent[1] == NULL);
 
     double      twoN1 = 100.0, start1 = 123.0;
-    PopNode    *p1 = PopNode_new(&twoN1, twoNfree, &start1, startFree, ns);
+    PopNode    *p1 = PopNode_new(&twoN1, &start1, ns);
     assert(p1->twoN == &twoN1);
     assert(p1->start == &start1);
     assert(p1->end == NULL);
@@ -814,7 +804,7 @@ int main(int argc, char **argv) {
 
     double      twoN = 100.0;
     double      start = 20.0;
-    PopNode    *pnode = PopNode_new(&twoN, twoNfree, &start, startFree, ns);
+    PopNode    *pnode = PopNode_new(&twoN, &start, ns);
     SampNdx_addSamples(&sndx, 1, pnode);
     SampNdx_addSamples(&sndx, 2, pnode);
     assert(SampNdx_ptrsLegal(&sndx, v, v + nseg));
@@ -841,7 +831,7 @@ int main(int argc, char **argv) {
     PopNode     v2[nseg];
     NodeStore  *ns2 = NodeStore_new(nseg, v2);
     CHECKMEM(ns);
-    pnode = PopNode_new(&twoN2, twoNfree, &start2, startFree, ns2);
+    pnode = PopNode_new(&twoN2, &start2, ns2);
     SampNdx_addSamples(&sndx2, 1, pnode);
     SampNdx_addSamples(&sndx2, 2, pnode);
     SampNdx_populateTree(&sndx2);
