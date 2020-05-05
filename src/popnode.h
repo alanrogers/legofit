@@ -67,6 +67,4 @@ NodeStore  *NodeStore_new(int len, PopNode *v);
 void        NodeStore_free(NodeStore *self);
 PopNode    *NodeStore_alloc(NodeStore *self);
 
-
-
 #endif

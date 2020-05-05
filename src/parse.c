@@ -370,8 +370,7 @@ void parseSegment(char *next, PopNodeTab * poptbl, SampNdx * sndx,
     }
 
     assert(strlen(popName) > 0);
-    PopNode *thisNode = PopNode_new(twoNptr, twoNtype & FREE,
-                                    tPtr, ttype & FREE, ns);
+    PopNode *thisNode = PopNode_new(twoNptr, tPtr, ns);
     if(0 != PopNodeTab_insert(poptbl, popName, thisNode)) {
         fprintf(stderr, "%s:%d: duplicate \"segment %s\"\n",
                 __FILE__, __LINE__, popName);
@@ -539,8 +538,7 @@ void parseMix(char *next, PopNodeTab * poptbl, ParStore * parstore,
         exit(EXIT_FAILURE);
     }
 
-    int status = PopNode_mix(childNode, mPtr, mtype & FREE, parNode1,
-                             parNode0);
+    int status = PopNode_mix(childNode, mPtr, parNode1, parNode0);
     switch(status){
     case 0:
         break;
