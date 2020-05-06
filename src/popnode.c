@@ -201,15 +201,17 @@ PopNode    *PopNode_new(double *twoN, double *start, NodeStore * ns) {
     PopNode    *new = NodeStore_alloc(ns);
     CHECKMEM(new);
 
-    new->nparents = new->nchildren = new->nsamples = 0;
+    new->nparents = new->nchildren = 0;
     new->twoN = twoN;
     new->mix = NULL;
     new->start = start;
     new->end = NULL;
 
-    memset(new->sample, 0, sizeof(new->sample));
     memset(new->parent, 0, sizeof(new->parent));
     memset(new->child, 0, sizeof(new->child));
+
+    new->nsamples = 0;
+    memset(new->sample, 0, sizeof(new->sample));
 
     PopNode_sanityCheck(new, __FILE__, __LINE__);
     return new;
