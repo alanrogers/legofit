@@ -15,6 +15,7 @@ typedef struct GetLineTok GetLineTok;
 typedef struct GPTree GPTree;
 typedef struct HashTab HashTab;
 typedef struct HashTabSeq HashTabSeq;
+typedef struct IdSet IdSet;
 typedef struct LblNdx LblNdx;
 typedef struct LineReader LineReader;
 typedef struct NameList NameList;

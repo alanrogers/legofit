@@ -33,10 +33,10 @@ struct GPTree {
     PopNode    *pnv;            // array of nseg PopNode objects
     PopNode    *rootPop;        // root of population tree
     Gene       *rootGene;       // root of gene tree
-    Bounds      bnd;            // legal range of twoN parameters and time parameters
+    Bounds      bnd;            // legal range of twoN parameters and time pars
     ParStore   *parstore;       // Fixed and free parameters
     LblNdx      lblndx;         // Index of sample labels
-    SampNdx     sndx;           // Index of sample pointers into PopNode objects.
+    SampNdx     sndx;           // Index of sample pointers into PopNode objs
 };
 
 /// Initialize vector x. If ndx==0, simply copy the parameter vector
