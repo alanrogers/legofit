@@ -62,4 +62,7 @@ typedef uint64_t tipId_t;
 #define MIXFRAC 32
 #define ARBITRARY 64
 
+#define POPNAMESIZE 30
+#define MAXSAMP ((int)(8*sizeof(tipId_t)))
+
 #endif
