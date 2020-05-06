@@ -9,6 +9,8 @@
  */
 
 #include "idset.h"
+#include "misc.h"
+#include <stdlib.h>
 
 // A set of tipId_t values.
 struct IdSet {
