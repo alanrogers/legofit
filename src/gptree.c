@@ -35,7 +35,7 @@ struct GPTree {
     PopNode    *rootPop;        // root of population tree
     Gene       *rootGene;       // root of gene tree
     Bounds      bnd;            // legal range of twoN parameters and time parameters
-    ParStore   *parstore;       // Fixed and free parameters
+    ParStore   *parstore;       // Parameters
     LblNdx      lblndx;         // Index of sample labels
     SampNdx     sndx;           // Index of sample pointers into PopNode objects.
 };
