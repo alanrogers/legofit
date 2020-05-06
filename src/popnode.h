@@ -6,12 +6,14 @@
 #  include <gsl/gsl_rng.h>
 
 struct PopNode {
-    int         nparents, nchildren, nsamples;
+    int         nparents, nchildren;
     double      *twoN;           // ptr to current pop size
     double      *start, *end;    // duration of this PopNode
     double      *mix;            // ptr to frac of pop derived from parent[1]
     struct PopNode *parent[2];
     struct PopNode *child[2];
+
+    int         nsamples;
     Gene       *sample[MAXSAMP]; // not locally owned
 };
 
