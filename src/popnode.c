@@ -605,85 +605,6 @@ PopNode    *NodeStore_alloc(NodeStore * self) {
     return &self->v[self->nused++];
 }
 
-/// Set everything to zero.
-void SampNdx_init(SampNdx * self) {
-    memset(self, 0, sizeof(*self));
-}
-
-/// Add samples for a single population. Should be called once for
-/// each sampled population. This justs sets a pointer and increments
-/// the count of pointers. It doesn't allocate anything.
-void SampNdx_addSamples(SampNdx * self, unsigned nsamples, PopNode * pnode) {
-    unsigned    i;
-    if(self->n + nsamples >= MAXSAMP)
-        eprintf("%s:%s:%d: too many samples\n", __FILE__, __func__, __LINE__);
-    for(i = 0; i < nsamples; ++i) {
-        self->node[self->n] = pnode;
-        self->n += 1;
-    }
-}
-
-/// Put samples into the gene tree. Should be done at the start of
-/// each simulation. This allocates memory for each Gene in the sample
-/// and puts pointers to them into the PopNodes that are controlled by
-/// the SampNdx. The Gene objects aren't owned by SampNdx or
-/// PopNode. They will eventually be freed by a call to Gene_free,
-/// which recursively frees the root and all descendants.
-void SampNdx_populateTree(SampNdx * self) {
-    unsigned    i;
-    for(i = 0; i < self->n; ++i)
-        PopNode_newGene(self->node[i], i);
-}
-
-unsigned SampNdx_size(SampNdx * self) {
-    return self->n;
-}
-
-/// This equality check doesn't do much, because the pointers in
-/// different SampNdx objects don't have to be (in fact shouldn't be)
-/// equal.
-int SampNdx_equals(const SampNdx * lhs, const SampNdx * rhs) {
-    if(lhs == NULL && rhs == NULL)
-        return 1;
-    if(lhs == NULL || rhs == NULL)
-        return 0;
-    if(lhs->n != rhs->n)
-        return 0;
-    return 1;
-}
-
-/// Check sanity of a SampNdx.
-void SampNdx_sanityCheck(SampNdx * self, const char *file, int line) {
-#ifndef NDEBUG
-    REQUIRE(self != NULL, file, line);
-    REQUIRE(self->n < MAXSAMP, file, line);
-    int         i;
-    for(i = 0; i < self->n; ++i)
-        REQUIRE(NULL != self->node[i], file, line);
-#endif
-}
-
-/// Return 1 if all pointers in SampNdx are in [start,end); return 0
-/// otherwise.
-int SampNdx_ptrsLegal(SampNdx * self, PopNode * start, PopNode * end) {
-    int         i;
-    assert(self);
-    for(i = 0; i < self->n; ++i) {
-        if(self->node[i] < start || self->node[i] >= end)
-            return 0;
-    }
-    return 1;
-}
-
-/// Shift all pointers within SampNdx by an offset of magnitude
-/// dpop. If sign > 0, the shift is positive; otherwise it is
-/// negative.
-void SampNdx_shiftPtrs(SampNdx * self, size_t dpop, int sign) {
-    int         i;
-    for(i = 0; i < self->n; ++i)
-        SHIFT_PTR(self->node[i], dpop, sign);
-}
-
 #ifdef TEST
 
 #  include <string.h>
@@ -795,62 +716,11 @@ int main(int argc, char **argv) {
 
     unitTstResult("PopNode", "untested");
 
-    SampNdx     sndx = {.n = 3 };
-    assert(sndx.n == 3);
-    assert(SampNdx_size(&sndx) == 3);
-
-    SampNdx_init(&sndx);
-    assert(SampNdx_size(&sndx) == 0);
-
-    double      twoN = 100.0;
-    double      start = 20.0;
-    PopNode    *pnode = PopNode_new(&twoN, &start, ns);
-    SampNdx_addSamples(&sndx, 1, pnode);
-    SampNdx_addSamples(&sndx, 2, pnode);
-    assert(SampNdx_ptrsLegal(&sndx, v, v + nseg));
-
-    assert(3 == SampNdx_size(&sndx));
-    SampNdx_populateTree(&sndx);
-    assert(3 == PopNode_nsamples(pnode));
-    SampNdx_sanityCheck(&sndx, __FILE__, __LINE__);
-
-    // Free Genes allocated within PopNode objects.
-    // This isn't part of the user interface. Ordinarily,
-    // Gene objects are freed recursively by a calling Gene_free on
-    // the root Gene. But we havn't linked these Genes into a tree,
-    // so I need to free them one at a time.
-    for(i=0; i < pnode->nsamples; ++i)
-        Gene_free(pnode->sample[i]);
-
     NodeStore_free(ns);
-
-    SampNdx     sndx2 = {.n = 3 };
-    SampNdx_init(&sndx2);
-    double      twoN2 = 100.0;
-    double      start2 = 20.0;
-    PopNode     v2[nseg];
-    NodeStore  *ns2 = NodeStore_new(nseg, v2);
-    CHECKMEM(ns);
-    pnode = PopNode_new(&twoN2, &start2, ns2);
-    SampNdx_addSamples(&sndx2, 1, pnode);
-    SampNdx_addSamples(&sndx2, 2, pnode);
-    SampNdx_populateTree(&sndx2);
-    SampNdx_sanityCheck(&sndx2, __FILE__, __LINE__);
-    assert(SampNdx_equals(&sndx, &sndx2));
-    assert(SampNdx_ptrsLegal(&sndx2, v2, v2 + nseg));
-
-    // Free Genes allocated within PopNode objects.
-    // See above for rationale.
-    for(i=0; i < pnode->nsamples; ++i)
-        Gene_free(pnode->sample[i]);
-
-    NodeStore_free(ns2);
 
     ParStore_free(ps);
     Gene_free(g1);
     Gene_free(g2);
-
-    unitTstResult("SampNdx", "OK");
 
     return 0;
 }
