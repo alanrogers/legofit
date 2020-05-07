@@ -4,8 +4,8 @@ opt :=  -O0 -fno-inline-functions -DDEBUG
 prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
 tests := xaddrparmap xbinary xbooma xboot xbranchtab xcomb xdafreader xdiffev \
-  xdtnorm xerror xgene xgetlinetok xgptree xhessian xintpart xjobqueue \
-  xlblndx xlinereader xmisc xmpfrmatcoal xsimreader xparam xparse \
+  xdtnorm xerror xgene xgetlinetok xgptree xhessian xidset xintpart \
+  xjobqueue xlblndx xlinereader xmisc xmpfrmatcoal xsimreader xparam xparse \
   xparstore xpointbuff xpopnode xpopnodetab xrafreader xrational \
   xscrmreader xsetpart xsimsched xstate xstrdblmap xstrdblqueue \
   xstrint xstrparmap xtinyexpr xtokenizer xuintqueue xwraparound xmatcoal
@@ -63,6 +63,7 @@ test : $(tests)
 	-./xgetlinetok
 	-./xgptree
 	-./xhessian
+	-./xidset
 	-./xintpart
 	-./xjobqueue
 	-./xlblndx
@@ -325,6 +326,10 @@ xaddrparmap : $(XADDRPARMAP)
 XSTRDBLQUEUE := xstrdblqueue.o strdblqueue.o misc.o
 xstrdblqueue : $(XSTRDBLQUEUE)
 	$(CC) $(CFLAGS) -o $@ $(XSTRDBLQUEUE) $(lib)
+
+XIDSET := xidset.o idset.o misc.o binary.o
+xidset : $(XIDSET)
+	$(CC) $(CFLAGS) -o $@ $(XIDSET) $(lib)
 
 # Make dependencies file
 depend : *.c

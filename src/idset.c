@@ -10,6 +10,8 @@
 
 #include "idset.h"
 #include "misc.h"
+#include "binary.h"
+#include <stdio.h>
 #include <stdlib.h>
 
 // A set of tipId_t values.
@@ -30,6 +32,19 @@ struct IdSet {
 
     IdSet *next;
 };
+
+void IdSet_print(IdSet *self, FILE *fp) {
+    if(self==NULL) {
+        fputs("-----------------------\n", fp);
+        return;
+    }
+    fprintf(fp, "probability = %lf allbits=0%o nIds=%d\n",
+            self->p, self->allbits, self->nIds);
+    for(int i=0; i < self->nIds; ++i)
+        fprintf(fp, " 0%o", self->tid[i]);
+    putc('\n', fp);
+    IdSet_print(self->next, fp);
+}
 
 /**
  * Compare IdSet objects. Return -1 if x<y, 1 if x>y, and 0 otherwise.
@@ -87,8 +102,8 @@ IdSet *IdSet_new(IdSet *next, int nIds, tipId_t tid[nIds], double prob) {
     return self;
 }
 
-IdSet *IdSet_dup(IdSet *old) {
-    return IdSet_new(NULL, old->nIds, old->tid, old->prob);
+IdSet *IdSet_dup(const IdSet *old) {
+    return IdSet_new(NULL, old->nIds, old->tid, old->p);
 }
 
 /**
@@ -100,19 +115,19 @@ IdSet *IdSet_add(IdSet *head, const IdSet *to_add, double prob) {
     IdSet *tmp;
     if(head==NULL) {
         tmp = IdSet_dup(to_add);
-        tmp->prob *= prob;
+        tmp->p *= prob;
         return tmp;
     }
     if(head->nIds != to_add->nIds) {
-        fprint(stderr,"%s:%d: can't add a set with %d ids to a list"
+        fprintf(stderr,"%s:%d: can't add a set with %d ids to a list"
                " of sets with %d ids\n",
                __FILE__,__LINE__, to_add->nIds, head->nIds);
         exit(EXIT_FAILURE);
     }
-    int cmp = IdSet_cmp(to_add, head->nIds);
+    int cmp = IdSet_cmp(to_add, head);
     if(cmp < 0) {
         tmp = IdSet_dup(to_add);
-        tmp->prob *= prob;
+        tmp->p *= prob;
         tmp->next = head;
         return tmp;
     }if(cmp > 0) {
@@ -186,7 +201,7 @@ IdSet *IdSet_join(IdSet *a, IdSet *b) {
     while(ia < a->nIds)
         self->tid[j++] = a->tid[ia++];
     while(ib < b->nIds)
-        self->tid[j++] = a->tid[ib++];
+        self->tid[j++] = b->tid[ib++];
     assert(ia == a->nIds);
     assert(ib == b->nIds);
     assert(j == self->nIds);
@@ -194,13 +209,18 @@ IdSet *IdSet_join(IdSet *a, IdSet *b) {
     return self;
 }
 
-int IdSet_length(IdSet *self) {
-    int len=0;
+/// The number of IdSet objects in the linked list.
+int IdSet_nSets(IdSet *self) {
+    int n=0;
     while(self != NULL) {
-        len += 1;
+        n += 1;
         self = self->next;
     }
-    return len;
+    return n;
+}
+
+int IdSet_nDescendants(IdSet *self) {
+    return num1bits(self->allbits);
 }
 
 void IdSet_mulBy(IdSet *self, double factor) {
