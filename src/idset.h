@@ -7,6 +7,7 @@
 IdSet *IdSet_newTip(tipId_t tid);
 IdSet *IdSet_new(IdSet *next, int nIds, tipId_t tid[nIds], double prob);
 int    IdSet_cmp(const IdSet *x, const IdSet *y);
+int    IdSet_deepCmp(const IdSet *x, IdSet *y);
 IdSet *IdSet_dup(const IdSet *old);
 IdSet *IdSet_add(IdSet *head, const IdSet *to_add, double prob);
 void   IdSet_free(IdSet *self);

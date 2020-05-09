@@ -183,6 +183,16 @@ int main(int argc, char **argv) {
         assert(Stirling2_val(s, 6, 5) == 15);
     }
 
+    long double c = lnCoalConst(4, 4);
+    unsigned k=4, y[4] = {1u, 1u, 1u, 1u};
+    double x = probPartition(k, y, c);
+    if(verbose) {
+        printf("lnCoalConst(4, 4) = %Lf\n", c);
+        printf("probPartition(4, (1,1,1,1) %Lf) = %lf\n", c, x);
+    }
+    assert(0.0L == c);
+    assert(1.0 == x);
+
     Stirling2_free(s);
 
     unitTstResult("Stirling2", "OK");

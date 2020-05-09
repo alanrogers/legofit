@@ -63,6 +63,22 @@ int IdSet_cmp(const IdSet *x, const IdSet *y) {
     return 0;
 }
 
+int IdSet_deepCmp(const IdSet *x, IdSet *y) {
+    int cmp=0;
+    while(x!=NULL && y!=NULL) {
+        cmp = IdSet_cmp(x, y);
+        if(cmp)
+            return cmp;
+        x = x->next;
+        y = y->next;
+    }
+    if(x!=NULL)
+        return 1;
+    if(y!=NULL)
+        return -1;
+    return 0;
+}
+
 /// Allocate a new IdSet with a single tipId_t value and probability 1.
 IdSet *IdSet_newTip(tipId_t tid) {
     IdSet *self = malloc(sizeof(IdSet));
@@ -102,8 +118,12 @@ IdSet *IdSet_new(IdSet *next, int nIds, tipId_t tid[nIds], double prob) {
     return self;
 }
 
+// Does a deep copy
 IdSet *IdSet_dup(const IdSet *old) {
-    return IdSet_new(NULL, old->nIds, old->tid, old->p);
+    if(old == NULL)
+        return NULL;
+    IdSet *next = IdSet_dup(old->next);
+    return IdSet_new(next, old->nIds, old->tid, old->p);
 }
 
 /**
