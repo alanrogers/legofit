@@ -281,7 +281,7 @@ void parseParam(char *next, unsigned ptype,
 /// @param[inout] popmap associates names of segments
 /// with pointers to them.
 /// @param[inout] sndx associates the index of each
-/// sample with the PopNode object to which it belongs.
+/// sample with the PopNode or Segment to which it belongs.
 /// @param[inout] lndx associated index of each sample with its name
 /// @param[out] parstore structure that maintains info about
 /// parameters
@@ -872,7 +872,7 @@ int main(int argc, char **argv) {
                ParStore_nConstrained(parstore));
     }
 
-    unitTstResult("mktree", "needs more testing");
+    unitTstResult("mktree", "OK");
 
     ParStore_free(parstore);
     fclose(fp);
