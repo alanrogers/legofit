@@ -436,7 +436,7 @@ char       *strlowercase(char *s) {
 }
 
 /// Hash a character string
-unsigned strhash(const char *ss) {
+unsigned long strhash(const char *ss) {
     unsigned long hashval;
     int c;
     const unsigned char *s = (const unsigned char *) ss;

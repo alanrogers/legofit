@@ -8,15 +8,16 @@
  * Systems Consortium License, which can be found in file "LICENSE".
  */
 
-#include "gptree.h"
 #include "gene.h"
+#include "gptree.h"
 #include "lblndx.h"
 #include "parse.h"
 #include "parstore.h"
-#include <string.h>
+#include "sampndx.h"
 #include <errno.h>
-#include <unistd.h>
 #include <gsl/gsl_rng.h>
+#include <string.h>
+#include <unistd.h>
 
 #include <pthread.h>
 extern pthread_mutex_t outputLock;
@@ -34,7 +35,7 @@ struct GPTree {
     PopNode    *rootPop;        // root of population tree
     Gene       *rootGene;       // root of gene tree
     Bounds      bnd;            // legal range of twoN parameters and time pars
-    ParStore   *parstore;       // Fixed and free parameters
+    ParStore   *parstore;       // All parameters
     LblNdx      lblndx;         // Index of sample labels
     SampNdx     sndx;           // Index of sample pointers into PopNode objs
 };
@@ -122,7 +123,17 @@ void GPTree_simulate(GPTree * self, BranchTab * branchtab, gsl_rng * rng,
     }
     for(rep = 0; rep < nreps; ++rep) {
         PopNode_clear(self->rootPop);   // remove old samples
-        SampNdx_populateTree(&(self->sndx));    // add new samples
+
+        // Put samples into the gene tree. This allocates memory for
+        // each Gene in the sample 
+        // and puts pointers to them into the PopNodes that are controlled by
+        // the SampNdx. The Gene objects aren't owned by SampNdx or
+        // PopNode. They will eventually be freed by a call to Gene_free,
+        // which recursively frees the root and all descendants.
+        for(unsigned i=0; i < SampNdx_size(&(self->sndx)); ++i) {
+            PopNode *node = (PopNode *) SampNdx_get(&(self->sndx), i);
+            PopNode_newGene(node, i);
+        }
 
         // coalescent simulation generates gene genealogy within
         // population tree.

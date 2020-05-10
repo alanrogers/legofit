@@ -195,14 +195,14 @@ Systems Consortium License, which can be found in file "LICENSE".
 #include "lblndx.h"
 #include "parstore.h"
 #include "patprob.h"
+#include "pointbuff.h"
 #include "simsched.h"
 #include "state.h"
-#include "pointbuff.h"
 #include <assert.h>
-#include <libgen.h>
 #include <float.h>
 #include <getopt.h>
 #include <gsl/gsl_sf_gamma.h>
+#include <libgen.h>
 #include <limits.h>
 #include <math.h>
 #include <pthread.h>

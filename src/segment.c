@@ -28,8 +28,7 @@ struct CombDat {
     int dosing;    // do singleton site patterns if nonzero
 };
 
-// Probabilistic variables for one segment of a population tree, i.e.,
-// for ont PopNode.
+// Probabilistic variables for one segment of a population tree.
 struct Segment {
     int allocated; // allocated dimension of arrays
     int max;     // max number of lineages in segment

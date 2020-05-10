@@ -60,19 +60,20 @@
  * Systems Consortium License, which can be found in file "LICENSE".
  */
 
-#include "popnodetab.h"
+#include "error.h"
 #include "lblndx.h"
 #include "misc.h"
 #include "parse.h"
 #include "parstore.h"
 #include "popnode.h"
-#include "error.h"
+#include "sampndx.h"
+#include "strptrmap.h"
 #include <assert.h>
 #include <ctype.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 
 /// Abort if token is missing
 # define CHECK_TOKEN(tok, orig) {                                  \
@@ -98,12 +99,12 @@ int getULong(unsigned long *x, char **next, const char *orig);
 int getRange(double x[2], char **next, const char *orig);
 void parseParam(char *next, unsigned type, ParStore * parstore,
                 Bounds * bnd, const char *orig);
-void parseSegment(char *next, PopNodeTab * poptbl, SampNdx * sndx,
+void parseSegment(char *next, StrPtrMap * popmap, SampNdx * sndx,
                   LblNdx * lndx, ParStore * parstore,
                   NodeStore * ns, const char *orig);
-void parseDerive(char *next, PopNodeTab * poptbl, ParStore * parstore,
+void parseDerive(char *next, StrPtrMap * popmap, ParStore * parstore,
                  const char *orig);
-void parseMix(char *next, PopNodeTab * poptbl, ParStore * parstore,
+void parseMix(char *next, StrPtrMap * popmap, ParStore * parstore,
               const char *orig);
 int get_one_line(size_t n, char buff[n], FILE * fp);
 
@@ -277,7 +278,7 @@ void parseParam(char *next, unsigned ptype,
 
 /// Parse a line describing a segment of the population tree
 /// @param[inout] next pointer to unparsed portion of input line
-/// @param[inout] poptbl associates names of segments
+/// @param[inout] popmap associates names of segments
 /// with pointers to them.
 /// @param[inout] sndx associates the index of each
 /// sample with the PopNode object to which it belongs.
@@ -285,7 +286,7 @@ void parseParam(char *next, unsigned ptype,
 /// @param[out] parstore structure that maintains info about
 /// parameters
 /// @param[inout] ns allocates PopNode objects
-void parseSegment(char *next, PopNodeTab * poptbl, SampNdx * sndx,
+void parseSegment(char *next, StrPtrMap * popmap, SampNdx * sndx,
                   LblNdx * lndx, ParStore * parstore, NodeStore * ns,
                   const char *orig) {
     char *popName, *tok;
@@ -371,7 +372,7 @@ void parseSegment(char *next, PopNodeTab * poptbl, SampNdx * sndx,
 
     assert(strlen(popName) > 0);
     PopNode *thisNode = PopNode_new(twoNptr, tPtr, ns);
-    if(0 != PopNodeTab_insert(poptbl, popName, thisNode)) {
+    if(0 != StrPtrMap_insert(popmap, popName, thisNode)) {
         fprintf(stderr, "%s:%d: duplicate \"segment %s\"\n",
                 __FILE__, __LINE__, popName);
         fprintf(stderr, "input: %s\n", orig);
@@ -384,9 +385,9 @@ void parseSegment(char *next, PopNodeTab * poptbl, SampNdx * sndx,
 /// Parse a line of input describing a parent-offspring relationship
 /// between two nodes.
 /// @param[in] next unparsed portion of input line
-/// @param[inout] poptbl associates names of segments
+/// @param[inout] popmap associates names of segments
 /// with pointers to them.
-void parseDerive(char *next, PopNodeTab * poptbl, ParStore * parstore,
+void parseDerive(char *next, StrPtrMap * popmap, ParStore * parstore,
                  const char *orig) {
     char *childName, *parName, *tok;
 
@@ -417,7 +418,7 @@ void parseDerive(char *next, PopNodeTab * poptbl, ParStore * parstore,
     }
 
     assert(strlen(childName) > 0);
-    PopNode *childNode = PopNodeTab_get(poptbl, childName);
+    PopNode *childNode = StrPtrMap_get(popmap, childName);
     if(childNode == NULL) {
         fprintf(stderr, "%s:%d: child segment \"%s\" undefined\n",
                 __FILE__, __LINE__, childName);
@@ -426,7 +427,7 @@ void parseDerive(char *next, PopNodeTab * poptbl, ParStore * parstore,
     }
 
     assert(strlen(parName) > 0);
-    PopNode *parNode = PopNodeTab_get(poptbl, parName);
+    PopNode *parNode = StrPtrMap_get(popmap, parName);
     if(parNode == NULL) {
         fprintf(stderr, "%s:%d: parent segment \"%s\" undefined\n",
                 __FILE__, __LINE__, parName);
@@ -461,11 +462,11 @@ void parseDerive(char *next, PopNodeTab * poptbl, ParStore * parstore,
 
 /// Parse a line of input describing gene flow.
 /// @param[inout] next unparsed portion of input line
-/// @param[inout] poptbl associates names of segments
+/// @param[inout] popmap associates names of segments
 /// with pointers to them.
 /// @param[out] parstore structure that maintains info about
 /// parameters
-void parseMix(char *next, PopNodeTab * poptbl, ParStore * parstore,
+void parseMix(char *next, StrPtrMap * popmap, ParStore * parstore,
               const char *orig) {
     char *childName, *parName[2], *tok;
     double *mPtr;
@@ -512,7 +513,7 @@ void parseMix(char *next, PopNodeTab * poptbl, ParStore * parstore,
     }
 
     assert(strlen(childName) > 0);
-    PopNode *childNode = PopNodeTab_get(poptbl, childName);
+    PopNode *childNode = StrPtrMap_get(popmap, childName);
     if(childNode == NULL) {
         fprintf(stderr, "%s:%d: child segment \"%s\" undefined\n",
                 __FILE__, __LINE__, childName);
@@ -521,7 +522,7 @@ void parseMix(char *next, PopNodeTab * poptbl, ParStore * parstore,
     }
 
     assert(strlen(parName[0]) > 0);
-    PopNode *parNode0 = PopNodeTab_get(poptbl, parName[0]);
+    PopNode *parNode0 = StrPtrMap_get(popmap, parName[0]);
     if(parNode0 == NULL) {
         fprintf(stderr, "%s:%d: parent segment \"%s\" undefined\n",
                 __FILE__, __LINE__, parName[0]);
@@ -530,7 +531,7 @@ void parseMix(char *next, PopNodeTab * poptbl, ParStore * parstore,
     }
 
     assert(strlen(parName[1]) > 0);
-    PopNode *parNode1 = PopNodeTab_get(poptbl, parName[1]);
+    PopNode *parNode1 = StrPtrMap_get(popmap, parName[1]);
     if(parNode1 == NULL) {
         fprintf(stderr, "%s:%d: parent segment \"%s\" undefined\n",
                 __FILE__, __LINE__, parName[1]);
@@ -606,7 +607,7 @@ PopNode *mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, ParStore * parstore,
     char orig[500], buff[500], buff2[500];
     char *token, *next;
 
-    PopNodeTab *poptbl = PopNodeTab_new();
+    StrPtrMap *popmap = StrPtrMap_new();
 
     while(1) {
         if(EOF == get_one_line(sizeof(buff), buff, fp))
@@ -656,25 +657,43 @@ PopNode *mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, ParStore * parstore,
         else if(0 == strcmp(token, "param"))
             parseParam(next, ARBITRARY, parstore, bnd, orig);
         else if(0 == strcmp(token, "segment"))
-            parseSegment(next, poptbl, sndx, lndx, parstore, ns, orig);
+            parseSegment(next, popmap, sndx, lndx, parstore, ns, orig);
         else if(0 == strcmp(token, "mix"))
-            parseMix(next, poptbl, parstore, orig);
+            parseMix(next, popmap, parstore, orig);
         else if(0 == strcmp(token, "derive"))
-            parseDerive(next, poptbl, parstore, orig);
+            parseDerive(next, popmap, parstore, orig);
         else
             ILLEGAL_INPUT(token, orig);
     }
 
-    // Make sure the tree of populations has a single root. This
-    // code iterates through all the nodes in the PopNodeTab, and
-    // searches from each node back to the root. If all is well,
-    // these searches all find the same root. Otherwise, it aborts
-    // with an error.
-    PopNode *root = PopNodeTab_check_and_root(poptbl, __FILE__, __LINE__);
-    PopNodeTab_free(poptbl);
+    // Make sure the tree of populations has a single root. This code
+    // iterates through all the nodes, and searches from each node
+    // back to the root. If all is well, these searches all find the
+    // same root. Otherwise, abort with an error.
+    PopNode *root = NULL;
+    {
+        /// Check the sanity of each node and make sure there is only one
+        /// root.
+        unsigned long n = StrPtrMap_size(popmap);
+        void *nodes[n];
+        PopNode *curr;
+        StrPtrMap_ptrArray(popmap, n, nodes);
+        for(unsigned long j=0; j < n; ++j) {
+            curr = PopNode_root((PopNode *) nodes[j]);
+            if(root == NULL)
+                root = curr;
+            else if (root != curr) {
+                fprintf(stderr,
+                        "%s:%d: Pop tree has multiple roots.\n",
+                        __FILE__, __LINE__);
+                exit(EXIT_FAILURE);
+            }
+        }
+    }
+    StrPtrMap_free(popmap);
 
-    // Make sure no constrained parameter depends on a constrained parameter
-    // that is defined later in the .lgo file.
+    // Make sure no constrained parameter depends on a constrained
+    // parameter that is defined later in the .lgo file.
     ParStore_chkDependencies(parstore);
     return root;
 }

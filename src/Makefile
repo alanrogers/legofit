@@ -53,27 +53,23 @@ test : $(tests)
 	-./xzeroin
 	@echo "ALL UNIT TESTS WERE COMPLETED."
 
-LINEAGES := lineages.o misc.o lblndx.o binary.o
-lineages : $(LINEAGES)
-	$(CC) $(CFLAGS) -o $@ $(LINEAGES) $(lib)
-
-LEGOSIM := legosim.o addrparmap.o patprob.o gptree.o binary.o jobqueue.o \
-  misc.o parse.o branchtab.o popnodetab.o lblndx.o tokenizer.o param.o \
-  parstore.o popnode.o gene.o dprintf.o rngseed.o dtnorm.o tinyexpr.o \
-  strparmap.o
+LEGOSIM := legosim.o addrparmap.o binary.o branchtab.o dprintf.o dtnorm.o \
+   gene.o gptree.o jobqueue.o lblndx.o misc.o param.o parse.o parstore.o \
+   patprob.o popnode.o rngseed.o sampndx.o strparmap.o strptrmap.o \
+   tinyexpr.o tokenizer.o
 legosim : $(LEGOSIM)
 	$(CC) $(CFLAGS) -o $@ $(LEGOSIM) $(lib)
 
-LEGOFIT := legofit.o addrparmap.o patprob.o gptree.o binary.o jobqueue.o \
-  misc.o parse.o branchtab.o popnodetab.o lblndx.o tokenizer.o parstore.o \
-  popnode.o gene.o cost.o diffev.o dprintf.o rngseed.o simsched.o dtnorm.o \
-  tinyexpr.o state.o strparmap.o param.o pointbuff.o
+LEGOFIT := legofit.o addrparmap.o binary.o branchtab.o cost.o diffev.o \
+   dprintf.o dtnorm.o gene.o gptree.o jobqueue.o lblndx.o misc.o param.o \
+   parse.o parstore.o patprob.o pointbuff.o popnode.o rngseed.o sampndx.o \
+   simsched.o state.o strparmap.o strptrmap.o tinyexpr.o tokenizer.o
 legofit : $(LEGOFIT)
 	$(CC) $(CFLAGS) -o $@ $(LEGOFIT) $(lib)
 
 PCLGO := pclgo.o misc.o strdblqueue.o gptree.o parstore.o param.o popnode.o \
   gene.o addrparmap.o branchtab.o lblndx.o strparmap.o dtnorm.o dprintf.o \
-  tinyexpr.o tokenizer.o parse.o binary.o popnodetab.o
+  tinyexpr.o tokenizer.o parse.o binary.o strptrmap.o sampndx.o
 pclgo : $(PCLGO)
 	$(CC) $(CFLAGS) -o $@ $(PCLGO) $(lib)
 

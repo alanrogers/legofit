@@ -156,7 +156,7 @@ void StrDblMap_free(StrDblMap * self) {
 /// Insert a key-value pair into the hash table. Set errno=EDOM if
 /// pair already exists.
 void StrDblMap_insert(StrDblMap *self, const char *key, double value) {
-    unsigned    h = strhash(key) & (STRDBL_DIM - 1u);
+    unsigned long h = strhash(key) & (STRDBL_DIM - 1ul);
     assert(h < STRDBL_DIM);
     assert(self);
     self->tab[h] = SDLink_insert(self->tab[h], key, value);
@@ -165,14 +165,14 @@ void StrDblMap_insert(StrDblMap *self, const char *key, double value) {
 /// Return value corresponding to key. If key is not in table, return
 /// -1 and set errno = EDOM.
 double StrDblMap_get(StrDblMap * self, const char *key) {
-    unsigned    h = strhash(key) & (STRDBL_DIM - 1u);
+    unsigned long h = strhash(key) & (STRDBL_DIM - 1ul);
     assert(h < STRDBL_DIM);
     assert(self);
     return SDLink_get(self->tab[h], key);
 }
 
 int StrDblMap_exists(StrDblMap * self, const char *key) {
-    unsigned    h = strhash(key) & (STRDBL_DIM - 1u);
+    unsigned long h = strhash(key) & (STRDBL_DIM - 1ul);
     assert(h < STRDBL_DIM);
     assert(self);
     return SDLink_exists(self->tab[h], key);

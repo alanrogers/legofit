@@ -1,13 +1,12 @@
 /**
- * @file popnodetab.c
+ * @file strptrmap.c
  * @author Alan R. Rogers
- * @brief Hash table associating names of PopNode objects with pointers to
- * PopNode objects.
- * @copyright Copyright (c) 2016, Alan R. Rogers
+ * @brief Map strings to pointers.
+ * @copyright Copyright (c) 2020, Alan R. Rogers
  * <rogers@anthro.utah.edu>. This file is released under the Internet
  * Systems Consortium License, which can be found in file "LICENSE".
  */
-#include "popnodetab.h"
+#include "strptrmap.h"
 #include "misc.h"
 #include <assert.h>
 #include <string.h>
@@ -31,61 +30,61 @@ typedef struct El El;
 /// stored in a sorted linked list.
 struct El {
     struct El  *next;          ///< ptr to next item in list
-    char        key[KEYSIZE];  ///< name of PopNode
-    PopNode    *node;          ///< ptr to PopNode; not locally owned
+    char        key[KEYSIZE];  
+    void       *ptr;
 };
 
 /// The hash table.
-struct PopNodeTab {
+struct StrPtrMap {
     El         *tab[PNT_DIM];
 };
 
-El         *El_new(const char *key, PopNode *node);
+El         *El_new(const char *key, void *ptr);
 void        El_free(El * e);
-El         *El_insert(El *self, const char *key, PopNode *node, int *status);
+El         *El_insert(El *self, const char *key, void *ptr, int *status);
 
-/// Construct a new element with given key and node pointer
-El         *El_new(const char *key, PopNode *node) {
+/// Construct a new element with given key and pointer
+El         *El_new(const char *key, void *ptr) {
     El         *new = malloc(sizeof(*new));
     CHECKMEM(new);
 
     new->next = NULL;
     snprintf(new->key, sizeof(new->key), "%s", key);
     assert(0 == strncmp(new->key, key, sizeof(new->key)));
-    new->node = node;
+    new->ptr = ptr;
     return new;
 }
 
-/// Insert a new key/node pair into the linked list. Usage:
+/// Insert a new key/ptr pair into the linked list. Usage:
 ///
 ///     El *list=NULL;
 ///     int status;
-///     list = El_insert(list, key, node, &status);
+///     list = El_insert(list, key, ptr, &status);
 ///     if(status != 0)
 ///         printf("Error: key is already in list\n");
 ///
 /// @param self current element of list
-/// @param[in] key a character string, the name of the current PopNode
-/// @param[in] node pointer to PopNode object
+/// @param[in] key, a character string
+/// @param[in] ptr pointer 
 /// @param[out] status pointer to int, which will be set to 0 on
-/// success or 1 if node is already in list.
+/// success or 1 if ptr is already in list.
 /// @return pointer to self or to a newly-allocated El.
-El *El_insert(El *self, const char *key, PopNode *node, int *status) {
+El *El_insert(El *self, const char *key, void *ptr, int *status) {
     El *new;
     if(self == NULL) {
-        new = El_new(key, node);
+        new = El_new(key, ptr);
         new->next = NULL;
         *status = 0; // success
         return new;
     }
     int cmp = strncmp(key, self->key, sizeof(new->key));
     if(cmp < 0) {
-        new = El_new(key, node);
+        new = El_new(key, ptr);
         new->next = self;
         *status = 0; // success
         return new;
     }else if(cmp > 0) {
-        self->next = El_insert(self->next, key, node, status);
+        self->next = El_insert(self->next, key, ptr, status);
         return self;
     }
     assert(cmp==0);
@@ -102,29 +101,29 @@ void El_free(El * e) {
     free(e);
 }
 
-/// PopNodeTab constructor
-PopNodeTab    *PopNodeTab_new(void) {
-    PopNodeTab    *new = malloc(sizeof(*new));
+/// StrPtrMap constructor
+StrPtrMap    *StrPtrMap_new(void) {
+    StrPtrMap    *new = malloc(sizeof(*new));
     CHECKMEM(new);
     memset(new->tab, 0, sizeof(new->tab));
     return new;
 }
 
-/// PopNodeTab destructor
-void PopNodeTab_free(PopNodeTab * self) {
+/// StrPtrMap destructor
+void StrPtrMap_free(StrPtrMap * self) {
     int i;
     for(i=0; i < PNT_DIM; ++i)
         El_free(self->tab[i]);
     free(self);
 }
 
-/// Get the PopNode object associated with key. If no
-/// such object exists, return NULL.
-PopNode *PopNodeTab_get(PopNodeTab * self, const char *key) {
+/// Get the pointer associated with key. If no such object exists,
+/// return NULL.
+void *StrPtrMap_get(StrPtrMap * self, const char *key) {
 
     // Same as hash % PNT_DIM but faster. Requires
     // that PNT_DIM be a power of 2.
-    unsigned h = strhash(key) & (PNT_DIM-1u);
+    unsigned long h = strhash(key) & (PNT_DIM-1ul);
     assert(h < PNT_DIM);
 
     assert(self);
@@ -133,32 +132,32 @@ PopNode *PopNodeTab_get(PopNodeTab * self, const char *key) {
     for(el = self->tab[h]; el; el = el->next) {
         int cmp = strncmp(key, el->key, sizeof(el->key));
         if(cmp == 0)
-            return el->node;
+            return el->ptr;
         else if(cmp < 0)
             return NULL;
     }
     return NULL;
 }
 
-/// Insert a PopNode into the table.
-/// @return 0 on success; 1 if PopNode is already in table.
-int PopNodeTab_insert(PopNodeTab * self, const char *key,
-                      PopNode *node) {
+/// Insert a pointer into the table.
+/// @return 0 on success; 1 if pointers is already in table.
+int StrPtrMap_insert(StrPtrMap * self, const char *key,
+                      void *ptr) {
 
     // Same as hash % PNT_DIM but faster. Requires
     // that PNT_DIM be a power of 2.
-    unsigned h = strhash(key) & (PNT_DIM-1u);
+    unsigned long h = strhash(key) & (PNT_DIM-1ul);
     assert(h < PNT_DIM);
     int status;
 
     assert(self);
 
-    self->tab[h] = El_insert(self->tab[h], key, node, &status);
+    self->tab[h] = El_insert(self->tab[h], key, ptr, &status);
     return status;
 }
 
-/// Return the number of elements in the PopNodeTab.
-unsigned long PopNodeTab_size(PopNodeTab * self) {
+/// Return the number of elements in the StrPtrMap.
+unsigned long StrPtrMap_size(StrPtrMap * self) {
     unsigned    i;
     unsigned long size = 0;
 
@@ -170,40 +169,39 @@ unsigned long PopNodeTab_size(PopNodeTab * self) {
     return size;
 }
 
-/// Print a PopNodeTab
-void PopNodeTab_print(PopNodeTab *self) {
+/// Print a StrPtrMap
+void StrPtrMap_print(StrPtrMap *self) {
     unsigned i;
     for(i=0; i < PNT_DIM; ++i) {
         printf("%2u:", i);
         El *el;
         for(el = self->tab[i]; el; el = el->next)
-            printf(" [%s, %p]", el->key, el->node);
+            printf(" [%s, %p]", el->key, el->ptr);
         putchar('\n');
     }
 }
 
-/// Check the sanity of each node and make sure there is only one
-/// root.
-/// @return root of population tree
-PopNode *PopNodeTab_check_and_root(PopNodeTab *self, const char *file,
-                                   int line) {
-    int i;
-    PopNode *node, *root = NULL;
-    for(i=0; i < PNT_DIM; ++i) {
+/// Fill array v with pointers. Abort if v is of wrong size.
+void StrPtrMap_ptrArray(StrPtrMap *self, long unsigned n, void *v[n]) {
+    unsigned j=0;
+    for(unsigned i=0; i < PNT_DIM; ++i) {
         El *el;
         for(el = self->tab[i]; el; el = el->next) {
-            PopNode_sanityFromLeaf(el->node, file, line);
-            node = PopNode_root(el->node);
-            if(root == NULL)
-                root = node;
-            else if(root != node) {
-                fprintf(stderr,
-                        "%s:%d: Pop tree has multiple roots.\n",
-                        file, line);
+            if(j == n) {
+                fprintf(stderr,"%s:%s:%d: output array is of size %lu;"
+                        " should %lu\n",
+                        __FILE__,__func__,__LINE__, n, StrPtrMap_size(self));
                 exit(EXIT_FAILURE);
             }
+            v[j++] = el->ptr;
         }
     }
-    return root;
+    if(j != n)  {
+        fprintf(stderr,"%s:%s:%d: output array is of size %lu;"
+                " should %lu\n", 
+                __FILE__,__func__,__LINE__, n, StrPtrMap_size(self));
+        exit(EXIT_FAILURE);
+    }
 }
+
 
