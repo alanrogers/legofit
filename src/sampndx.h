@@ -5,18 +5,11 @@
 #  include <stdlib.h>
 
 struct SampNdx {
-    // Array "node" contains an entry for each sample. That entry is a
+    // Array "ptr" contains an entry for each sample. That entry is a
     // pointer to "home", the node or segment that contains the
-    // sample.  This is a void pointer, so that SampNdx doesn't have
-    // to know whether it's storing a pointer to a PopNode or to a
-    // Segment.  For sample i, the label equals 2^i (i.e. 1<<i). There
-    // is another class, called LblNdx, which maintains an array of
-    // labels. In that array, the i'th label refers to the i'th sample
-    // in SampNdx.  I keep them separate, because LblNdx needs to be
-    // passed to functions that have no need to know about pointers to
-    // PopNode objects.
+    // sample.  For sample i, the label equals 2^i (i.e. 1<<i).
     unsigned  n;              // number of samples
-    void     *ptr[MAXSAMP];  // array of pointers
+    void     *ptr[MAXSAMP];   // array of pointers
 };
 
 void        SampNdx_init(SampNdx * self);

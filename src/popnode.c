@@ -27,6 +27,8 @@
 
 /// This structure allows you to allocate PopNode objects in an array
 /// and then dole them out one at a time via calls to NodeStore_alloc.
+/// This keeps all the PopNode objects together in memory and may
+/// reduce page faults.
 struct NodeStore {
     int         nused, len;
     PopNode    *v;              // not locally owned
@@ -121,7 +123,7 @@ void PopNode_clear(PopNode * self) {
         PopNode_clear(self->child[i]);
 
     self->nsamples = 0;
-    memset(self->sample, 0, sizeof(self->sample));
+    //memset(self->sample, 0, sizeof(self->sample));
     PopNode_sanityCheck(self, __FILE__, __LINE__);
 }
 
@@ -132,8 +134,7 @@ int PopNode_isClear(const PopNode * self) {
     if(self->nsamples > 0)
         return 0;
 
-    int         i;
-    for(i = 0; i < self->nchildren; ++i) {
+    for(int i = 0; i < self->nchildren; ++i) {
         if(!PopNode_isClear(self->child[i]))
             return 0;
     }
@@ -142,8 +143,7 @@ int PopNode_isClear(const PopNode * self) {
 
 /// Print a PopNode and (recursively) its descendants.
 void PopNode_print(FILE * fp, PopNode * self, int indent) {
-    int         i;
-    for(i = 0; i < indent; ++i)
+    for(int i = 0; i < indent; ++i)
         fputs("   ", fp);
     fprintf(fp, "%p twoN=%lf ntrval=(%lf,", self, *self->twoN, *self->start);
     if(self->end != NULL)
@@ -151,7 +151,7 @@ void PopNode_print(FILE * fp, PopNode * self, int indent) {
     else
         fprintf(fp, "Inf)\n");
 
-    for(i = 0; i < self->nchildren; ++i)
+    for(int i = 0; i < self->nchildren; ++i)
         PopNode_print(fp, self->child[i], indent + 1);
 }
 
