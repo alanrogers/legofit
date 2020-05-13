@@ -226,11 +226,12 @@ GPTree     *GPTree_dup(const GPTree * old) {
 
     GPTree     *new = memdup(old, sizeof(GPTree));
     new->parstore = ParStore_dup(old->parstore);
+    CHECKMEM(new->parstore);
+
     new->pnv = memdup(old->pnv, old->nseg * sizeof(PopNode));
+    CHECKMEM(new->pnv);
 
     assert(old->nseg == new->nseg);
-    CHECKMEM(new->parstore);
-    CHECKMEM(new->pnv);
 
     new->sndx = old->sndx;
 
