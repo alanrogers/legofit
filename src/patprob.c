@@ -46,7 +46,7 @@ static int tfunc(void *varg, void *tdata) {
     gsl_rng   *rng = (gsl_rng *) tdata;
 
     assert(GPTree_feasible(arg->gptree, 0));
-    GPTree_patprobs(arg->gptree, arg->branchtab, rng, arg->nreps,
+    GPTree_patprob(arg->gptree, arg->branchtab, rng, arg->nreps,
                     arg->doSing);
 
     return 0;

@@ -9,7 +9,7 @@ GPTree     *GPTree_new(const char *fname, Bounds bnd);
 void        GPTree_free(GPTree *self);
 void        GPTree_sanityCheck(GPTree *self, const char *file, int line);
 LblNdx      GPTree_getLblNdx(GPTree *self);
-void        GPTree_patprobs(GPTree *self, BranchTab *branchtab,
+void        GPTree_patprob(GPTree *self, BranchTab *branchtab,
                             gsl_rng *rng, unsigned long nreps,
                             int doSing);
 int         GPTree_nFree(const GPTree *self);

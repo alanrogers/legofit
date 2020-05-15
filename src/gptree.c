@@ -114,7 +114,7 @@ int GPTree_nFree(const GPTree * self) {
 /// @param[in] nreps number of replicate gene trees to simulate
 /// @param[in] doSing if doSing is non-zero, singleton site patterns
 /// will be tabulated.
-void GPTree_patprobs(GPTree * self, BranchTab * branchtab, gsl_rng * rng,
+void GPTree_patprob(GPTree * self, BranchTab * branchtab, gsl_rng * rng,
                      unsigned long nreps, int doSing) {
     unsigned long rep;
     if(ParStore_constrain(self->parstore)) {
