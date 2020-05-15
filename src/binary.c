@@ -181,7 +181,8 @@ int num1bits(tipId_t x) {
 /// article: 
 /// https://gist.github.com/badboy/6267743
 /// This generates integer overflows, presumably by design.
-uint32_t uint32Hash( uint32_t key ) {
+uint32_t uint32Hash( uint32_t key )
+    __attribute__((no_sanitize("integer"))){
    key = (key+0x7ed55d16) + (key<<12);
    key = (key^0xc761c23c) ^ (key>>19);
    key = (key+0x165667b1) + (key<<5);
@@ -192,7 +193,8 @@ uint32_t uint32Hash( uint32_t key ) {
 }
 
 /// Hash function for a 64-bit integer.
-uint32_t uint64Hash(uint64_t key) {
+uint32_t uint64Hash(uint64_t key)
+    __attribute__((no_sanitize("integer"))){
   key = (~key) + (key << 18);
   key = key ^ (key >> 31);
   key = key * 21;

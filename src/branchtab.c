@@ -33,9 +33,6 @@ typedef struct BTLink {
     struct BTLink  *next;
     tipId_t         key;
     double          value;
-#if COST==CHISQR_COST
-    double          sumsqr;   // squares
-#endif
 } BTLink;
 
 /// Hash table for branch lengths.
@@ -85,9 +82,6 @@ BTLink         *BTLink_new(tipId_t key, double value) {
     new->next = NULL;
     new->key = key;
     new->value = value;
-#if COST==CHISQR_COST
-    new->sumsqr = value*value;
-#endif
     return new;
 }
 
@@ -100,9 +94,6 @@ BTLink     *BTLink_dup(const BTLink *old) {
     CHECKMEM(new);
     new->key = old->key;
     new->value = old->value;
-#if COST==CHISQR_COST
-    new->sumsqr = old->sumsqr;
-#endif
     new->next = BTLink_dup(old->next);
     return new;
 }
@@ -116,10 +107,6 @@ int  BTLink_equals(const BTLink *lhs, const BTLink *rhs) {
     if(lhs->key!=rhs->key
        || lhs->value!=rhs->value)
         return 0;
-#if COST==CHISQR_COST
-    if(lhs->sumsqr != rhs->sumsqr)
-        return 0;
-#endif
     return BTLink_equals(lhs->next, rhs->next);
 }
 
@@ -132,8 +119,7 @@ void BTLink_free(BTLink * self) {
 }
 
 /// Add a value to a BTLink object. On return, self->value
-/// equals the old value plus the new one. If COST==CHISQR_COST,
-/// the function also adds the square of value to self->sumsqr.
+/// equals the old value plus the new one.
 BTLink *BTLink_add(BTLink * self, tipId_t key, double value) {
     if(self == NULL || key < self->key) {
         BTLink *new = BTLink_new(key, value);
@@ -145,9 +131,6 @@ BTLink *BTLink_add(BTLink * self, tipId_t key, double value) {
     }
     assert(key == self->key);
     self->value += value;
-#if COST==CHISQR_COST
-    self->sumsqr += value*value;
-#endif
     return self;
 }
 
@@ -173,12 +156,7 @@ int BTLink_hasSingletons(BTLink * self) {
 void BTLink_printShallow(const BTLink * self, FILE *fp) {
     if(self == NULL)
         return;
-#if COST==CHISQR_COST
-    fprintf(fp, " [%lo, %lf, %lf]",
-           (unsigned long) self->key, self->value, self->sumsqr);
-#else
     fprintf(fp, " [%lo, %lf]", (unsigned long) self->key, self->value);
-#endif
 }
 
 void BTLink_print(const BTLink * self, FILE *fp) {
@@ -289,12 +267,8 @@ int BranchTab_divideBy(BranchTab *self, double denom) {
     unsigned i;
     for(i = 0; i < BT_DIM; ++i) {
         BTLink *el;
-        for(el = self->tab[i]; el; el = el->next) {
+        for(el = self->tab[i]; el; el = el->next)
             el->value /= denom;
-#if COST==CHISQR_COST
-            el->sumsqr /= denom;
-#endif
-        }
     }
 
     return 0;
@@ -354,9 +328,6 @@ void BranchTab_toArrays(BranchTab *self, unsigned n, tipId_t key[n],
                         __FILE__,__func__,__LINE__);
             key[j] = link->key;
             value[j] = link->value;
-#if COST==CHISQR_COST
-            sumsqr[j] = link->sumsqr;
-#endif
             ++j;
         }
     }
@@ -509,195 +480,6 @@ static tipId_t remap_bits(size_t n, tipId_t map[n], tipId_t old) {
             new |= map[i];
     return new;
 }
-
-#if COST==CHISQR_COST
-/// Chi-squared difference between observed and expected.  The
-/// Chi-squared statistic is (obs - expected)^2/variance. To estimate
-/// the variance, note that the expected number of mutations is
-/// u*nnuc*Poisson(B), where B is a random variable, the branch length per
-/// nucleotide site contributing to a given site pattern. This is u*nnuc
-/// times a mixture of Poisson distributions. It's mean is u*nnuc*Mean(B),
-/// and its variance is u*nnuc*Mean(B) + nnuc*u*u*Var(B).
-double        BranchTab_chiSqCost(const BranchTab *obs, const BranchTab *expt,
-                             double u, long nnuc, double n) {
-    assert(expt->frozen);
-    int i;
-    double U = u*nnuc;
-    double cost=0.0, diff;
-    double v;     // nnuc*u*u*Var(B), the variance of branch length
-    double obval;  // observed mutations
-    double exval;  // mutations expected under model
-    for(i=0; i < BT_DIM; ++i) {
-        BTLink *o = obs->tab[i];
-        BTLink *e = expt->tab[i];
-        while(o && e) {
-            if(o->key < e->key) {
-                // e link missing, so exval=0.
-                obval = o->value;
-                exval = 0.0;
-                o = o->next;
-                v = 0.0;
-            }else if(o->key > e->key) {
-                // o link missing, so obval=0.
-                obval = 0.0;
-                exval = e->value * U;
-                v = e->sumsqr - e->value * e->value;
-                assert(v>=0.0);
-                v *= u*U*n/(n-1.0);
-                e = e->next;
-            }else {
-                assert(o->key == e->key);
-                obval = o->value;
-                exval = e->value * U;
-                v = e->sumsqr - e->value * e->value;
-                assert(v>=0.0);
-                v *= u*U*n/(n-1.0);
-                e = e->next;
-                o = o->next;
-            }
-            diff = obval-exval;
-#if 0
-            printf("o=%lg e=%lg v=%lg chisq=%lg\n",
-                   obval, exval, v, diff*diff/(exval+v));
-#endif
-            cost += diff*diff/(exval+v);
-        }
-        if(o) { // e link missing, so exval=0
-            cost = HUGE_VAL;
-            break;
-        }
-        obval=0.0;
-        while(e) { // o link missing, so obval=0
-            exval = e->value * U;
-            v = e->sumsqr - e->value * e->value;
-            assert(v>=0.0);
-            v *= u*U*n/(n-1.0);
-            diff = obval-exval;
-#if 0
-            printf("o=%lg e=%lg v=%lg chisq=%lg\n",
-                   obval, exval, v, diff*diff/(exval+v));
-#endif
-            assert(v>=0.0);
-            cost += diff*diff/(exval+v);
-            e = e->next;
-        }
-    }
-    assert(cost >= 0.0);
-    return cost;
-}
-#endif
-
-#if COST==SMPLCHISQR_COST
-/// Chi-squared difference between observed and expected.  The
-/// Chi-squared statistic is (obs - expected)^2/expected.
-double        BranchTab_smplChiSqCost(const BranchTab *obs,
-                                      const BranchTab *expt,
-                                      double u, long nnuc, double n) {
-    assert(expt->frozen);
-    int i;
-    double U = u*nnuc;
-    double cost=0.0, diff;
-    double obval;  // observed mutations
-    double exval;  // mutations expected under model
-    for(i=0; i < BT_DIM; ++i) {
-        BTLink *o = obs->tab[i];
-        BTLink *e = expt->tab[i];
-        while(o && e) {
-            if(o->key < e->key) {
-                // e link missing, so exval=0.
-                obval = o->value;
-                exval = 0.0;
-                o = o->next;
-            }else if(o->key > e->key) {
-                // o link missing, so obval=0.
-                obval = 0.0;
-                exval = e->value * U;
-                e = e->next;
-            }else {
-                assert(o->key == e->key);
-                obval = o->value;
-                exval = e->value * U;
-                e = e->next;
-                o = o->next;
-            }
-            diff = obval-exval;
-#if 0
-            printf("o=%lg e=%lg chisq=%lg\n",
-                   obval, exval, diff*diff/exval);
-#endif
-            cost += diff*diff/exval;
-        }
-        if(o) { // e link missing, so exval=0
-            cost = HUGE_VAL;
-            break;
-        }
-        obval=0.0;
-        while(e) { // o link missing, so obval=0
-            exval = e->value * U;
-            diff = obval-exval;
-#if 0
-            printf("o=%lg e=%lg chisq=%lg\n",
-                   obval, exval, diff*diff/exval);
-#endif
-            cost += diff*diff/exval;
-            e = e->next;
-        }
-    }
-    assert(cost >= 0.0);
-    return cost;
-}
-#endif
-
-#if COST==POISSON_COST
-/// Use Poisson model to calculate negative log likelihood.
-double BranchTab_poissonCost(const BranchTab *obs, const BranchTab *expt,
-                             double u, long nnuc, double n) {
-    assert(expt->frozen);
-    int i, sign;
-    double U = u*nnuc;
-    double cost=0.0;
-    double obval;  // observed mutations
-    double exval;  // mutations expected under model
-    for(i=0; i < BT_DIM; ++i) {
-        BTLink *o = obs->tab[i];
-        BTLink *e = expt->tab[i];
-        while(o && e) {
-            if(o->key < e->key) {
-                // e link missing, so exval=0.
-                obval = o->value;
-                exval = 0.0;
-                o = o->next;
-            }else if(o->key > e->key) {
-                // o link missing, so obval=0.
-                obval = 0.0;
-                exval = e->value * U;
-                e = e->next;
-            }else {
-                assert(o->key == e->key);
-                obval = o->value;
-                exval = e->value * U;
-                e = e->next;
-                o = o->next;
-            }
-            cost += -obval*log(exval) + exval + lgamma_r(obval+1.0, &sign);
-            assert(sign == 1);
-        }
-        if(o) { // e link missing, so exval=0
-            cost = HUGE_VAL;
-            break;
-        }
-        obval=0.0;
-        while(e) { // o link missing, so obval=0
-            exval = e->value * U;
-            cost += -obval*log(exval) + exval + lgamma_r(obval+1.0,&sign);
-            assert(sign == 1);
-            e = e->next;
-        }
-    }
-    assert(cost >= 0.0);
-    return cost;
-}
-#endif
 
 /// Return sum of values in BranchTab.
 double BranchTab_sum(const BranchTab *self) {

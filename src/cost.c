@@ -46,22 +46,10 @@ double costFun(int dim, double x[dim], void *jdata, void *tdata) {
 		return HUGE_VAL;
 
     BranchTab  *prob = patprob(cp->gptree, nreps, cp->doSing, rng);
-    BranchTab_divideBy(prob, nreps);
 #if COST==KL_COST
-    BranchTab_normalize(prob);
     double cost = BranchTab_KLdiverg(cp->obs, prob);
 #elif COST==LNL_COST
-    BranchTab_normalize(prob);
     double cost = BranchTab_negLnL(cp->obs, prob);
-#elif COST==CHISQR_COST
-    double cost = BranchTab_chiSqCost(cp->obs, prob, cp->u, cp->nnuc,
-                                      nreps);
-#elif COST==SMPLCHISQR_COST
-    double cost = BranchTab_smplChiSqCost(cp->obs, prob, cp->u, cp->nnuc,
-                                      nreps);
-#elif COST==POISSON_COST
-    double cost = BranchTab_poissonCost(cp->obs, prob, cp->u, cp->nnuc,
-                                        nreps);
 #else
 # error "Unknown cost method"
 #endif

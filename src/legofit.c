@@ -239,20 +239,9 @@ void ThreadState_free(void *rng) {
 }
 
 void usage(void) {
-#if COST==KL_COST || COST==LNL_COST
     fprintf(stderr, "usage: legofit [options] input.lgo sitepat.txt\n");
     fprintf(stderr, "   where file input.lgo describes population history,\n"
             "   and file sitepat.txt contains site pattern frequencies.\n");
-#else
-    fprintf(stderr, "usage: legofit [options] -u <mut_rate>"
-            " -n <genome_size> input.lgo sitepat.txt\n");
-    fprintf(stderr,
-            "   where <mut_rate> is the mutation rate per nucleotide\n"
-            "   site per generation, <genome_size> is the number of\n"
-            "   nucleotides per haploid genome, file input.lgo describes\n"
-            "   population history, and file sitepat.txt contains site\n"
-            "   pattern frequencies.\n");
-#endif
     fprintf(stderr, "Options may include:\n");
     tellopt("-T <x> or --tol <x>", "termination criterion");
     tellopt("-t <x> or --threads <x>", "number of threads (default is auto)");
@@ -289,10 +278,6 @@ int main(int argc, char **argv) {
         {"stage", required_argument, 0, 'S'},
         {"tol", required_argument, 0, 'T'},
         {"ptsPerDim", required_argument, 0, 'p'},
-#if COST!=KL_COST && COST!=LNL_COST
-        {"mutRate", required_argument, 0, 'u'},
-        {"genomeSize", required_argument, 0, 'n'},
-#endif
         {"singletons", no_argument, 0, '1'},
         {"stateIn", required_argument, 0, 'z'},
         {"stateOut", required_argument, 0, 'y'},
@@ -322,10 +307,6 @@ int main(int argc, char **argv) {
     // DiffEv parameters
     double F = 0.3;
     double CR = 0.8;
-#if COST!=KL_COST && COST!=LNL_COST
-    double u = 0.0;             // mutation rate per site per generation
-    long nnuc = 0;              // number of nucleotides per haploid genome
-#endif
     double ytol = 3e-5;         // stop when yspread <= ytol
     int strategy = 2;
     int ptsPerDim = 10;
@@ -347,12 +328,7 @@ int main(int argc, char **argv) {
 
     // command line arguments
     for(;;) {
-#if COST==KL_COST || COST==LNL_COST
         i = getopt_long(argc, argv, "T:t:F:p:s:S:a:vx:1h", myopts, &optndx);
-#else
-        i = getopt_long(argc, argv, "T:t:F:p:s:S:a:vx:u:n:1h",
-                        myopts, &optndx);
-#endif
         if(i == -1)
             break;
         switch (i) {
@@ -408,14 +384,6 @@ int main(int argc, char **argv) {
         case 'x':
             CR = strtod(optarg, 0);
             break;
-#if COST!=KL_COST && COST!=LNL_COST
-        case 'u':
-            u = strtod(optarg, 0);
-            break;
-        case 'n':
-            nnuc = strtol(optarg, NULL, 10);
-            break;
-#endif
         case 'y':
             status =
                 snprintf(stateOutName, sizeof(stateOutName), "%s", optarg);
@@ -456,18 +424,6 @@ int main(int argc, char **argv) {
         fprintf(stderr, "Command line must specify 2 input files.\n");
         usage();
     }
-#if COST!=KL_COST && COST!=LNL_COST
-    if(u == 0.0) {
-        fprintf(stderr, "Use -u to set mutation rate per generation.\n");
-        usage();
-    }
-
-    if(nnuc == 0) {
-        fprintf(stderr,
-                "Use -n to set # of nucleotides per haploid genome.\n");
-        usage();
-    }
-#endif
 
     snprintf(lgofname, sizeof(lgofname), "%s", argv[optind]);
     assert(lgofname[0] != '\0');
@@ -574,22 +530,12 @@ int main(int argc, char **argv) {
     }
     if(stateOut)
         printf("# output state file  : %s\n", stateOutName);
-#if COST!=KL_COST && COST!=LNL_COST
-    printf("# mut_rate/generation: %lg\n", u);
-    printf("# nucleotides/genome : %ld\n", nnuc);
-#endif
     printf("# %s singleton site patterns.\n",
            (doSing ? "Including" : "Excluding"));
 #if COST==KL_COST
     printf("# cost function      : %s\n", "KL");
 #elif COST==LNL_COST
     printf("# cost function      : %s\n", "negLnL");
-#elif COST==CHISQR_COST
-    printf("# cost function      : %s\n", "ChiSqr");
-#elif COST==SMPLCHISQR_COST
-    printf("# cost function      : %s\n", "SmplChiSqr");
-#elif COST==POISSON_COST
-    printf("# cost function      : %s\n", "Poisson");
 #else
 # error "Unknown cost function"
 #endif
@@ -646,9 +592,7 @@ int main(int argc, char **argv) {
         }
     }
     BranchTab *obs = BranchTab_dup(rawObs);
-#if COST==KL_COST
     BranchTab_normalize(obs);
-#endif
 
     // parameters for cost function
     CostPar costPar = {
@@ -656,10 +600,6 @@ int main(int argc, char **argv) {
         .gptree = gptree,
         .nThreads = nThreads,
         .doSing = doSing,
-#if COST!=KL_COST && COST!=LNL_COST
-        .u = u,
-        .nnuc = nnuc,
-#endif
         .simSched = simSched
     };
 
@@ -769,7 +709,6 @@ int main(int argc, char **argv) {
         fclose(stateOut);
     }
 
-#if COST==KL_COST || COST==LNL_COST
     double S = BranchTab_sum(rawObs); // sum of site pattern counts
     double entropy = BranchTab_entropy(obs); // -sum p ln(p)
     if(nQuadPts != PointBuff_size(dep.pb)) {
@@ -800,11 +739,11 @@ int main(int argc, char **argv) {
     double lnL;
 
     // print estimate first
-#  if COST==KL_COST
+#if COST==KL_COST
     lnL = -S*(cost + entropy);
-#  else
+#else
     lnL = -cost;
-#  endif
+#endif
     fprintf(qfp, "%0.18lg", lnL);
     for(i=0; i < dim; ++i)
         fprintf(qfp, " %0.18lg", estimate[i]);
@@ -827,11 +766,11 @@ int main(int argc, char **argv) {
         if(is_estimate)
             continue;
 
-#  if COST==KL_COST
+#if COST==KL_COST
         lnL = -S*(c + entropy); // Kullback-Leibler cost function
-#  else
+#else
         lnL = -c;               // negLnL cost function
-#  endif
+#endif
         fprintf(qfp, "%0.18lg", lnL);
         for(i=0; i < dim; ++i)
             fprintf(qfp, " %0.18lg", par[i]);
@@ -842,7 +781,6 @@ int main(int argc, char **argv) {
         fprintf(stderr,"%d points written to file %s\n",
                 nQuadPts, ptsfname);
     }
-#endif
 
     PointBuff_free(dep.pb);
     BranchTab_free(bt);

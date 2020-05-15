@@ -23,10 +23,10 @@
 #include <limits.h>
 #include <gsl/gsl_rng.h>
 
-typedef struct SimArg SimArg;
+typedef struct ThreadArg ThreadArg;
 
 /** Data structure used by each thread */
-struct SimArg {
+struct ThreadArg {
     unsigned long nreps;
     int         doSing; // nonzero => tabulate singletons
     GPTree     *gptree;
@@ -35,25 +35,27 @@ struct SimArg {
     BranchTab  *branchtab;
 };
 
-SimArg     *SimArg_new(const GPTree *gptree, unsigned nreps, int doSing);
-void        SimArg_free(SimArg * targ);
-int         simfun(void *, void *);
+static ThreadArg *ThreadArg_new(const GPTree *gptree, unsigned nreps,
+                                int doSing);
+static void ThreadArg_free(ThreadArg * targ);
+static int tfunc(void *, void *);
 
 /// function run by each thread
-int simfun(void *varg, void *tdata) {
-    SimArg    *arg = (SimArg *) varg;
+static int tfunc(void *varg, void *tdata) {
+    ThreadArg    *arg = (ThreadArg *) varg;
     gsl_rng   *rng = (gsl_rng *) tdata;
 
     assert(GPTree_feasible(arg->gptree, 0));
-    GPTree_simulate(arg->gptree, arg->branchtab, rng, arg->nreps,
+    GPTree_patprobs(arg->gptree, arg->branchtab, rng, arg->nreps,
                     arg->doSing);
 
     return 0;
 }
 
-/// Construct a new SimArg by copying a template.
-SimArg    *SimArg_new(const GPTree *gptree, unsigned nreps, int doSing) {
-    SimArg    *a = malloc(sizeof(SimArg));
+/// Construct a new ThreadArg by copying a template.
+static ThreadArg *ThreadArg_new(const GPTree *gptree, unsigned nreps,
+                            int doSing) {
+    ThreadArg    *a = malloc(sizeof(ThreadArg));
     CHECKMEM(a);
 
     a->nreps = nreps;
@@ -65,29 +67,29 @@ SimArg    *SimArg_new(const GPTree *gptree, unsigned nreps, int doSing) {
     return a;
 }
 
-/// SimArg destructor
-void SimArg_free(SimArg * self) {
+/// ThreadArg destructor
+static void ThreadArg_free(ThreadArg * self) {
     BranchTab_free(self->branchtab);
     GPTree_free(self->gptree);
     free(self);
 }
 
-/// Run simulations to estimate site pattern probabilities.  On
-/// return, pat[i] identifies the i'th pattern, and prob[i] estimates
-/// its probability.  Function returns a pointer to a newly-allocated
-/// object of type BranchTab, which contains all the observed site
-/// patterns and their summed branch lengths.
+/// Estimate site pattern probabilities.  On return, pat[i] identifies
+/// the i'th pattern, and prob[i] estimates its probability.  Function
+/// returns a pointer to a newly-allocated object of type BranchTab,
+/// which contains all the observed site patterns and their estimated
+/// probabilities. 
 BranchTab *patprob(const GPTree *gptree, long nreps,
                    int doSing, gsl_rng *rng) {
 
-    SimArg    *simarg;
+    ThreadArg *tharg;
 
-    simarg = SimArg_new(gptree, nreps, doSing);
-    simfun(simarg, rng);
+    tharg = ThreadArg_new(gptree, nreps, doSing);
+    tfunc(tharg, rng);
 
-    BranchTab *rval = BranchTab_dup(simarg->branchtab);
+    BranchTab *rval = BranchTab_dup(tharg->branchtab);
 
-    SimArg_free(simarg);
+    ThreadArg_free(tharg);
 
     return rval;
 }

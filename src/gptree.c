@@ -105,16 +105,16 @@ int GPTree_nFree(const GPTree * self) {
     return ParStore_nFree(self->parstore);
 }
 
-/// Build a gene tree by coalescent simulation and then tabulate
-/// branch lengths associated with each site pattern.
+/// Use coalescent simulation to estimate the probability of each site
+/// pattern.
 /// @param self GPTree object
 /// @param[out] branchtab BranchTab object, which will tabulate branch
-/// lengths from this (and other) simulations.
+/// lengths from this simulations.
 /// @param[inout] rng GSL random number generator
 /// @param[in] nreps number of replicate gene trees to simulate
 /// @param[in] doSing if doSing is non-zero, singleton site patterns
 /// will be tabulated.
-void GPTree_simulate(GPTree * self, BranchTab * branchtab, gsl_rng * rng,
+void GPTree_patprobs(GPTree * self, BranchTab * branchtab, gsl_rng * rng,
                      unsigned long nreps, int doSing) {
     unsigned long rep;
     if(ParStore_constrain(self->parstore)) {
@@ -148,6 +148,7 @@ void GPTree_simulate(GPTree * self, BranchTab * branchtab, gsl_rng * rng,
         Gene_free(self->rootGene);
         self->rootGene = NULL;
     }
+    BranchTab_normalize(branchtab);
 }
 
 /// GPTree constructor

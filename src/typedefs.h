@@ -48,10 +48,7 @@ typedef uint64_t tipId_t;
 #endif
 
 #define KL_COST 1
-#define CHISQR_COST 2
-#define SMPLCHISQR_COST 3
-#define POISSON_COST 4
-#define LNL_COST 5
+#define LNL_COST 2
 #define COST KL_COST
 
 #define FREE 1

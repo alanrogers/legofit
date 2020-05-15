@@ -570,7 +570,7 @@ void parseMix(char *next, StrPtrMap * popmap, ParStore * parstore,
 int get_one_line(size_t n, char buff[n], FILE * fp) {
     do{
         if(fgets(buff, n, fp) == NULL)
-            return 1;
+            return EOF;
 
         if(!strchr(buff, '\n') && !feof(fp)) {
             fprintf(stderr, "%s:%d: buffer overflow. buff size: %zu\n",

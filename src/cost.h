@@ -13,10 +13,6 @@ typedef struct CostPar {
     GPTree     *gptree;   // model of population history
     int         nThreads; // number of threads to use
     int         doSing;   // nonzero => use singleton site patterns
-#if COST==CHISQR_COST || COST==SMPLCHISQR_COST || COST==POISSON_COST
-    double      u;        // mutation rate per generation
-    long        nnuc;     // number of nucleotide sites in genome
-#endif
     SimSched   *simSched;
 } CostPar;
 
