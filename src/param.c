@@ -1,11 +1,28 @@
 #include "param.h"
 #include "misc.h"
 #include "dtnorm.h"
-#include "gptree.h"
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
 #include <gsl/gsl_randist.h>
+
+int Param_isFree(Param *self) {
+    return self->type & FREE;
+}
+
+double Param_getValue(Param *self) {
+    return self->value;
+}
+
+/// If value is within the range allowed for this parameter,
+/// then set the Param to the provided value and return 0.
+/// Otherwise leave the Param unchanged and return EDOM.
+int Param_setValue(Param *self, double value) {
+    if(value < self->low || value > self->high)
+        return EDOM;
+    self->value = value;
+    return 0;
+}
 
 void Param_init(Param *self, const char *name, double value,
                  double low, double high,
@@ -120,24 +137,22 @@ void Param_sanityCheck(const Param *self, const char *file, int line) {
 #endif
 }
 
-/// Randomize parameter if FREE
-void Param_randomize(Param *self, GPTree *gpt, gsl_rng *rng) {
+/// If parameter is FREE return a random value within the
+/// range of legal values. Otherwise, return self->value.
+double Param_getTrialValue(Param *self, gsl_rng *rng) {
     assert(self);
-    double r;
+    double trial;
     if( !(self->type & FREE) )
-        return;
-
-    double orig = self->value;
+        return self->value;
 
     // trial value
     if(self->type & TWON) {
-        self->value = dtnorm(self->value, 1000.0, self->low,
-                             self->high, rng);
+        trial = dtnorm(self->value, 1000.0, self->low, self->high, rng);
     }else if( self->type & TIME ) {
         if(isfinite(self->low) && isfinite(self->high))
-            self->value = gsl_ran_flat(rng, self->low, self->high);
+            trial = gsl_ran_flat(rng, self->low, self->high);
         else if(isfinite(self->low))
-            self->value = self->low + gsl_ran_exponential(rng, 100.0);
+            trial = self->low + gsl_ran_exponential(rng, 100.0);
         else {
             assert( !isfinite(self->low) );
             fprintf(stderr, "%s:%s:%d: non-finite lower bound of TIME"
@@ -145,32 +160,33 @@ void Param_randomize(Param *self, GPTree *gpt, gsl_rng *rng) {
             exit(EXIT_FAILURE);
         }
     }else if( self->type & MIXFRAC ) {
-        self->value = gsl_ran_beta(rng, 1.0, 5.0);
+        trial = gsl_ran_beta(rng, 1.0, 5.0);
     }else if( self->type & ARBITRARY ) {
         if(isinf(self->low) && isinf(self->high)) {
             // both bounds are infinite
-            self->value += gsl_ran_gaussian_ziggurat(rng, 100.0);
+            trial = self->value + gsl_ran_gaussian_ziggurat(rng, 100.0);
         }else if(isinf(self->low)) {
             // lower bound infinite
             do{
-                r = gsl_ran_gaussian_ziggurat(rng, 100.0);
-            }while(self->value + r > self->high);
-            self->value += r;
+                trial = gsl_ran_gaussian_ziggurat(rng, 100.0);
+            }while(self->value + trial > self->high);
+            trial += self->value;
         }else if(isinf(self->high)) {
             // upper bound infinite
             do{
-                r = gsl_ran_gaussian_ziggurat(rng, 100.0);
-            }while(self->value + r < self->low);
-            self->value += r;
+                trial = gsl_ran_gaussian_ziggurat(rng, 100.0);
+            }while(self->value + trial < self->low);
+            trial += self->value;
         }else {
             // finite bounds
-            self->value = dtnorm(self->value, 100.0, self->low,
+            trial = dtnorm(self->value, 100.0, self->low,
                                  self->high, rng);
         }
+    }else{
+        fprintf(stderr,"%s:%d: invalid Param type %o\n",
+                __FILE__,__LINE__,self->type);
+        exit(EXIT_FAILURE);
     }
 
-    // Bisect to find a value that satisfies inequality constraints.
-    while( !GPTree_feasible(gpt, 0) ) {
-        self->value = orig + 0.5*(self->value - orig);
-    }
+    return trial;
 }

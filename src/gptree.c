@@ -12,6 +12,7 @@
 #include "gptree.h"
 #include "lblndx.h"
 #include "parse.h"
+#include "param.h"
 #include "parstore.h"
 #include "sampndx.h"
 #include <errno.h>
@@ -78,7 +79,27 @@ const char *GPTree_getNameFree(GPTree * self, int i) {
 /// Randomly perturb all free parameters while maintaining inequality
 /// constraints.
 void GPTree_randomize(GPTree * self, gsl_rng * rng) {
-    ParStore_randomize(self->parstore, self, rng);
+    for(int i=0; i < ParStore_nPar(self->parstore); ++i) {
+        Param *par = ParStore_getParamPtr(self->parstore, i);
+        if(!Param_isFree(par))
+            continue;
+        double orig = Param_getValue(par);
+        double trial = Param_getTrialValue(par, rng);
+        if(Param_setValue(par, trial)) {
+            fprintf(stderr,"%s:%d: illegal trial value: %lg\n",
+                    __FILE__,__LINE__,trial);
+            exit(EXIT_FAILURE);
+        }
+        // Bisect to satisfy inequality constraints.
+        while( !GPTree_feasible(self, 0) ) {
+            trial = orig + 0.5*(trial - orig);
+            if(Param_setValue(par, trial)) {
+                fprintf(stderr,"%s:%d: illegal trial value: %lg\n",
+                        __FILE__,__LINE__,trial);
+                exit(EXIT_FAILURE);
+            }
+        }
+    }
 }
 
 /// Set free parameters from an array.

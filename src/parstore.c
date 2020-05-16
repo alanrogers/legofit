@@ -22,7 +22,6 @@
 #include "param.h"
 #include "tinyexpr.h"
 #include "misc.h"
-#include "gptree.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -62,6 +61,17 @@ struct ParStore {
     // This is where the parameter objects are allocated.
     Param vec[MAXPAR];
 };
+
+/// Return the number of parameters
+int ParStore_nPar(ParStore *self) {
+    return self->nPar;
+}
+
+Param *ParStore_getParamPtr(ParStore *self, int i) {
+    assert(i >= 0);
+    assert(i < self->nPar);
+    return self->vec + i;
+}
 
 /// Return the number of free parameters
 int ParStore_nFree(ParStore * self) {
@@ -426,13 +436,6 @@ int ParStore_constrain(ParStore * self) {
     for(par = self->constrainedPar; par; par = par->next)
         SET_CONSTR(par);
     return 0;
-}
-
-/// Randomize all FREE parameters except TIME parameters
-void ParStore_randomize(ParStore *self, GPTree *gpt, gsl_rng *rng) {
-    for(Param *par = self->freePar; par; par = par->next) {
-        Param_randomize(par, gpt, rng);
-    }
 }
 
 void ParStore_chkDependencies(ParStore * self) {

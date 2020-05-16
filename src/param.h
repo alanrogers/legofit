@@ -3,7 +3,6 @@
 
 #include "typedefs.h"
 #include "tinyexpr.h"
-#include "gptree.h"
 #include <stdio.h>
 #include <gsl/gsl_randist.h>
 
@@ -27,6 +26,9 @@ void   Param_freePtrs(Param *self);
 void   Param_print(Param *self, FILE *fp);
 int    Param_compare(const Param *lhs, const Param *rhs);
 void   Param_sanityCheck(const Param *self, const char *file, int line);
-void   Param_randomize(Param *self, GPTree *gpt, gsl_rng *rng);
+double Param_getTrialValue(Param *self, gsl_rng *rng);
+int    Param_isFree(Param *self);
+double Param_getValue(Param *self);
+int    Param_setValue(Param *self, double value);
 
 #endif
