@@ -25,6 +25,7 @@ typedef struct ParStore ParStore;
 typedef struct Point Point;
 typedef struct PointBuff PointBuff;
 typedef struct PopNode PopNode;
+typedef struct PtrPtrMap PtrPtrMap;
 typedef struct ScrmReader ScrmReader;
 typedef struct SimReader SimReader;
 typedef struct SimSched SimSched;

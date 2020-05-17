@@ -41,6 +41,9 @@ struct GPTree {
     SampNdx     sndx;           // Index of sample pointers into PopNode objs
 };
 
+void        GPTree_randomize(GPTree *self, gsl_rng *rng);
+int         GPTree_equals(const GPTree *lhs, const GPTree *rhs);
+
 /// Initialize vector x. If ndx==0, simply copy the parameter vector
 /// from the GPTree object. Otherwise, randomize the GPTree first.
 /// This ensures that differential evolution starts with a set of
@@ -246,7 +249,7 @@ GPTree     *GPTree_dup(const GPTree * old) {
         exit(EXIT_FAILURE);
     }
 
-    GPTree     *new = memdup(old, sizeof(GPTree));
+    GPTree *new = memdup(old, sizeof(GPTree));
     new->parstore = ParStore_dup(old->parstore);
     CHECKMEM(new->parstore);
 
@@ -350,11 +353,6 @@ int GPTree_equals(const GPTree * lhs, const GPTree * rhs) {
 /// Get the LblNdx object from a GPTree
 LblNdx GPTree_getLblNdx(GPTree * self) {
     return self->lblndx;
-}
-
-/// Return number of samples.
-unsigned GPTree_nsamples(GPTree * self) {
-    return SampNdx_size(&self->sndx);
 }
 
 /// Are parameters within the feasible region?

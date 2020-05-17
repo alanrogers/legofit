@@ -36,6 +36,30 @@ struct NodeStore {
 
 static void PopNode_sanityCheck(PopNode * self, const char *file, int lineno);
 
+PopNode *PopNode_dup(PopNode *old, PopNode *newParent, size_t parOffset) {
+    PopNode *new = NULL;
+    if(old == NULL)
+       return NULL;
+    switch(old->nparents) {
+    case 0:
+        new = memdup(old, sizeof(PopNode));
+        CHECKMEM(new);
+        break;
+    case 1:
+        new = memdup(old, sizeof(PopNode));
+        CHECKMEM(new);
+        new->parent[0] = newParent;
+        break;
+    case 2:
+        if(old->parent[0]->child[0] == old)
+    }
+    if(old->nchildren > 0)
+        new->child[0] = PopNode_dup(old->child[0], parOffset);
+    if(old->nchildren == 2)
+        new->child[1] = PopNode_dup(old->child[1], parOffset);
+    return new;
+}
+
 /// Check for errors in PopNode tree. Call this from each leaf node.
 void PopNode_sanityFromLeaf(PopNode * self, const char *file, int line) {
 #ifndef NDEBUG
