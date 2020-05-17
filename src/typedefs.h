@@ -15,9 +15,11 @@ typedef struct GetLineTok GetLineTok;
 typedef struct GPTree GPTree;
 typedef struct HashTab HashTab;
 typedef struct HashTabSeq HashTabSeq;
+typedef struct History History;
 typedef struct IdSet IdSet;
 typedef struct LblNdx LblNdx;
 typedef struct LineReader LineReader;
+typedef struct MCTree MCTree;
 typedef struct NameList NameList;
 typedef struct NodeStore NodeStore;
 typedef struct Param Param;
@@ -62,5 +64,8 @@ typedef uint64_t tipId_t;
 
 #define POPNAMESIZE 30
 #define MAXSAMP ((int)(8*sizeof(tipId_t)))
+
+#define SIM 1
+#define MATCOAL 2
 
 #endif

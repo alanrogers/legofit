@@ -41,7 +41,6 @@ struct GPTree {
     SampNdx     sndx;           // Index of sample pointers into PopNode objs
 };
 
-void        GPTree_randomize(GPTree *self, gsl_rng *rng);
 int         GPTree_equals(const GPTree *lhs, const GPTree *rhs);
 
 /// Initialize vector x. If ndx==0, simply copy the parameter vector
