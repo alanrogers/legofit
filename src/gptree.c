@@ -50,7 +50,8 @@ int         GPTree_equals(const GPTree *lhs, const GPTree *rhs);
 /// points, one of which is the same as the values in the input
 /// file. This allows you to improve on existing estimates without
 /// starting from scratch each time.
-void initStateVec(int ndx, GPTree *gpt, int n, double x[n], gsl_rng *rng){
+void GPTree_initStateVec(GPTree *gpt, int ndx, int n, double x[n],
+                         gsl_rng *rng){
     if(ndx == 0)
         GPTree_getParams(gpt, n, x);
     else {
@@ -109,10 +110,10 @@ void GPTree_randomize(GPTree * self, gsl_rng * rng) {
 /// @param[in] n number of parameters in array, which should equal the
 /// number of free parameters in the GPTree.
 /// @param[in] x array of parameter values.
+/// @return 0 on success, 1 if values of x violate boundary constraints.
 int GPTree_setParams(GPTree * self, int n, double x[n]) {
     assert(n == ParStore_nFree(self->parstore));
-    ParStore_setFreeParams(self->parstore, n, x);
-    return ParStore_constrain(self->parstore);
+    return ParStore_setFreeParams(self->parstore, n, x);
 }
 
 /// Copy free parameters from GPTree into an array
@@ -120,7 +121,6 @@ int GPTree_setParams(GPTree * self, int n, double x[n]) {
 /// number of free parameters in the GPTree.
 /// @param[out] x array into which parameters will be copied
 void GPTree_getParams(GPTree * self, int n, double x[n]) {
-    assert(n == ParStore_nFree(self->parstore));
     ParStore_getFreeParams(self->parstore, n, x);
 }
 
@@ -191,7 +191,8 @@ GPTree     *GPTree_new(const char *fname, Bounds bnd) {
     self->pnv = malloc(self->nseg * sizeof(self->pnv[0]));
     CHECKMEM(self->pnv);
 
-    NodeStore  *ns = NodeStore_new(self->nseg, self->pnv);
+    NodeStore  *ns = NodeStore_new(self->nseg, sizeof(self->pnv[0]),
+                                   self->pnv);
     CHECKMEM(ns);
 
     self->rootPop = mktree(fp, &self->sndx, &self->lblndx, self->parstore,

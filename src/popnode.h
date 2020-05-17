@@ -38,8 +38,8 @@ int         PopNode_nsamples(PopNode * self);
 void        PopNode_shiftParamPtrs(PopNode *self, size_t dp, int sign);
 void        PopNode_shiftPopNodePtrs(PopNode *self, size_t dp, int sign);
 
-NodeStore  *NodeStore_new(int len, PopNode *v);
+NodeStore  *NodeStore_new(unsigned len, size_t elsize, void * v);
 void        NodeStore_free(NodeStore *self);
-PopNode    *NodeStore_alloc(NodeStore *self);
+void       *NodeStore_alloc(NodeStore * self);
 
 #endif

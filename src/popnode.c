@@ -30,35 +30,11 @@
 /// This keeps all the PopNode objects together in memory and may
 /// reduce page faults.
 struct NodeStore {
-    int         nused, len;
-    PopNode    *v;              // not locally owned
+    size_t curr, end, elsize;
+    void *v;              // not locally owned
 };
 
 static void PopNode_sanityCheck(PopNode * self, const char *file, int lineno);
-
-PopNode *PopNode_dup(PopNode *old, PopNode *newParent, size_t parOffset) {
-    PopNode *new = NULL;
-    if(old == NULL)
-       return NULL;
-    switch(old->nparents) {
-    case 0:
-        new = memdup(old, sizeof(PopNode));
-        CHECKMEM(new);
-        break;
-    case 1:
-        new = memdup(old, sizeof(PopNode));
-        CHECKMEM(new);
-        new->parent[0] = newParent;
-        break;
-    case 2:
-        if(old->parent[0]->child[0] == old)
-    }
-    if(old->nchildren > 0)
-        new->child[0] = PopNode_dup(old->child[0], parOffset);
-    if(old->nchildren == 2)
-        new->child[1] = PopNode_dup(old->child[1], parOffset);
-    return new;
-}
 
 /// Check for errors in PopNode tree. Call this from each leaf node.
 void PopNode_sanityFromLeaf(PopNode * self, const char *file, int line) {
@@ -606,13 +582,15 @@ void PopNode_shiftPopNodePtrs(PopNode * self, size_t dp, int sign) {
 /// @param[in] len number of PopNode objects in array.
 /// @param[in] v array of PopNode objects
 /// @return newly-allocated NodeStore.
-NodeStore  *NodeStore_new(int len, PopNode * v) {
+NodeStore  *NodeStore_new(unsigned len, size_t elsize, void * v) {
     NodeStore  *self = malloc(sizeof(NodeStore));
     CHECKMEM(self);
 
-    self->nused = 0;
-    self->len = len;
     self->v = v;
+    self->curr = (size_t) self->v;
+    self->elsize = elsize;
+    self->end = self->curr + len * self->elsize;
+
     return self;
 }
 
@@ -622,13 +600,16 @@ void NodeStore_free(NodeStore * self) {
     free(self);
 }
 
-/// Return a pointer to an unused PopNode object
-/// within NodeStore. Abort if none are left.
-PopNode    *NodeStore_alloc(NodeStore * self) {
-    if(self->nused >= self->len)
-        eprintf("%s:%s:%d: Ran out of PopNode objects.\n",
-                __FILE__, __func__, __LINE__);
-    return &self->v[self->nused++];
+/// Return a pointer to an unused element within NodeStore. Return
+/// NULL if none are left.
+void *NodeStore_alloc(NodeStore * self) {
+    if(self->curr >= self->end) {
+        assert(self->curr == self->end);
+        return NULL;
+    }
+    void *new = (void *) self->curr;
+    self->curr += self->elsize;
+    return new;
 }
 
 #ifdef TEST
@@ -658,20 +639,21 @@ int main(int argc, char **argv) {
 
     int         nseg = 10;
     PopNode     v[nseg];
-    NodeStore  *ns = NodeStore_new(nseg, v);
+    NodeStore  *ns = NodeStore_new(nseg, sizeof(v[0]), v);
     CHECKMEM(ns);
 
-    PopNode    *node = NodeStore_alloc(ns);
-    assert(node == v);
+    PopNode    *node;
+    for(int i=0; i < nseg; ++i) {
+        node = NodeStore_alloc(ns);
+        assert(node = v+i);
+    }
     node = NodeStore_alloc(ns);
-    assert(node == &v[1]);
-    node = NodeStore_alloc(ns);
-    assert(node == &v[2]);
+    assert(node == NULL);
 
     NodeStore_free(ns);
     unitTstResult("NodeStore", "OK");
 
-    ns = NodeStore_new(nseg, v);
+    ns = NodeStore_new(nseg, sizeof(v[0]), v);
     CHECKMEM(ns);
 
     double      twoN0 = 1.0, start0 = 0.0;

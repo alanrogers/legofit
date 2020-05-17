@@ -100,8 +100,9 @@ int ParStore_nConstrained(ParStore * self) {
     return n;
 }
 
-/// Set vector of free parameters.
-void ParStore_setFreeParams(ParStore * self, int n, double x[n]) {
+/// Set vector of free parameters, then update constrained parameters.
+/// Return the value returned by ParStore_constrain.
+int ParStore_setFreeParams(ParStore * self, int n, double x[n]) {
     assert(self);
     int i = 0;
     for(Param * par = self->freePar; par != NULL; par = par->next) {
@@ -109,6 +110,7 @@ void ParStore_setFreeParams(ParStore * self, int n, double x[n]) {
         par->value = x[i++];
     }
     assert(i == n);
+    return ParStore_constrain(self);
 }
 
 /// Get vector of free parameters.
@@ -116,7 +118,11 @@ void ParStore_getFreeParams(ParStore * self, int n, double x[n]) {
     assert(self);
     int i = 0;
     for(Param * par = self->freePar; par != NULL; par = par->next) {
-        assert(i < n);
+        if(i == n) {
+            fprintf(stderr,"%s:%s:%d: array is too small\n",
+                    __FILE__,__func__,__LINE__);
+            exit(EXIT_FAILURE);
+        }
         x[i++] = par->value;
     }
     assert(i == n);

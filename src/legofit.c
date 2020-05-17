@@ -486,7 +486,12 @@ int main(int argc, char **argv) {
         // values specified in .lgo file.
         double x[dim];
         State_getVector(state, 0, dim, x);
-        GPTree_setParams(gptree, dim, x);
+        if(GPTree_setParams(gptree, dim, x)) {
+            fprintf(stderr, "%s:%d: free params violate constraints\n",
+                    __FILE__, __LINE__);
+            exit(EXIT_FAILURE);
+        }
+        
         if(!GPTree_feasible(gptree, 1)) {
             fflush(stdout);
             dostacktrace(__FILE__, __LINE__, stderr);
@@ -503,7 +508,7 @@ int main(int argc, char **argv) {
             State_setName(state, i, GPTree_getNameFree(gptree, i));
         for(i = 0; i < npts; ++i) {
             double x[dim];
-            initStateVec(i, gptree, dim, x, rng);
+            GPTree_initStateVec(gptree, i, dim, x, rng);
             State_setVector(state, i, dim, x);
         }
     }

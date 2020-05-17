@@ -34,7 +34,7 @@ void        ParStore_print(ParStore * self, FILE * fp);
 void        ParStore_printFree(ParStore * self, FILE * fp);
 void        ParStore_printConstrained(ParStore * self, FILE * fp);
 int         ParStore_equals(ParStore * lhs, ParStore * rhs);
-void        ParStore_setFreeParams(ParStore * self, int n, double x[n]);
+int         ParStore_setFreeParams(ParStore * self, int n, double x[n]);
 void        ParStore_getFreeParams(ParStore * self, int n, double x[n]);
 int         ParStore_isConstrained(const ParStore *self, const double *ptr);
 void        ParStore_chkDependencies(ParStore * self);
