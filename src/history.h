@@ -23,6 +23,10 @@ void        History_sanityCheck(History *self, const char *file, int line);
 int         History_setParams(History *self, int n, double x[n]);
 void        History_initStateVec(History *self, int ndx, int n, double x[n],
                                  gsl_rng *rng);
+void       *History_newNode(History *self, double *twoN, double *start,
+                            NodeStore *ns);
+int         History_addChild(History *self, void * parent, void * child);
+
 #endif
 
 
