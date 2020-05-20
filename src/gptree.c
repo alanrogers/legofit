@@ -49,7 +49,7 @@ int         GPTree_equals(const GPTree *lhs, const GPTree *rhs);
 /// points, one of which is the same as the values in the input
 /// file. This allows you to improve on existing estimates without
 /// starting from scratch each time.
-void GPTree_initStateVec(GPTree *gpt, int ndx, int n, double x[n],
+void GPTree_initStateVec(void *gpt, int ndx, int n, double x[n],
                          gsl_rng *rng){
     if(ndx == 0)
         GPTree_getParams(gpt, n, x);
@@ -62,26 +62,29 @@ void GPTree_initStateVec(GPTree *gpt, int ndx, int n, double x[n],
 }
 
 /// Print a description of parameters.
-void GPTree_printParStore(GPTree * self, FILE * fp) {
+void GPTree_printParStore(void * vself, FILE * fp) {
+    GPTree *self = vself;
     if(ParStore_constrain(self->parstore))
         fprintf(fp,"Warning: free parameters violate constraints\n");
     ParStore_print(self->parstore, fp);
 }
 
 /// Print a description of free parameters.
-void GPTree_printParStoreFree(GPTree * self, FILE * fp) {
+void GPTree_printParStoreFree(void * vself, FILE * fp) {
+    GPTree *self = vself;
     ParStore_printFree(self->parstore, fp);
     ParStore_printConstrained(self->parstore, fp);
 }
 
 /// Return pointer to name of i'th free parameter
-const char *GPTree_getNameFree(GPTree * self, int i) {
-    return ParStore_getNameFree(self->parstore, i);
+const char *GPTree_getNameFree(void * self, int i) {
+    return ParStore_getNameFree(((GPTree *) self)->parstore, i);
 }
 
 /// Randomly perturb all free parameters while maintaining inequality
 /// constraints.
-void GPTree_randomize(GPTree * self, gsl_rng * rng) {
+void GPTree_randomize(void * vself, gsl_rng * rng) {
+    GPTree *self = vself;
     for(int i=0; i < ParStore_nPar(self->parstore); ++i) {
         Param *par = ParStore_getParamPtr(self->parstore, i);
         if(!Param_isFree(par))
@@ -110,7 +113,8 @@ void GPTree_randomize(GPTree * self, gsl_rng * rng) {
 /// number of free parameters in the GPTree.
 /// @param[in] x array of parameter values.
 /// @return 0 on success, 1 if values of x violate boundary constraints.
-int GPTree_setParams(GPTree * self, int n, double x[n]) {
+int GPTree_setParams(void * vself, int n, double x[n]) {
+    GPTree *self = vself;
     assert(n == ParStore_nFree(self->parstore));
     return ParStore_setFreeParams(self->parstore, n, x);
 }
@@ -119,13 +123,13 @@ int GPTree_setParams(GPTree * self, int n, double x[n]) {
 /// @param[out] n number of parameters in array, which should equal the
 /// number of free parameters in the GPTree.
 /// @param[out] x array into which parameters will be copied
-void GPTree_getParams(GPTree * self, int n, double x[n]) {
-    ParStore_getFreeParams(self->parstore, n, x);
+void GPTree_getParams(void * self, int n, double x[n]) {
+    ParStore_getFreeParams(((GPTree*)self)->parstore, n, x);
 }
 
 /// Return number of free parameters
-int GPTree_nFree(const GPTree * self) {
-    return ParStore_nFree(self->parstore);
+int GPTree_nFree(const void * self) {
+    return ParStore_nFree(((const GPTree *) self)->parstore);
 }
 
 /// Use coalescent simulation to estimate the probability of each site
@@ -137,8 +141,9 @@ int GPTree_nFree(const GPTree * self) {
 /// @param[in] nreps number of replicate gene trees to simulate
 /// @param[in] doSing if doSing is non-zero, singleton site patterns
 /// will be tabulated.
-void GPTree_patprob(GPTree * self, BranchTab * branchtab, gsl_rng * rng,
+void GPTree_patprob(void * vself, BranchTab * branchtab, gsl_rng * rng,
                      unsigned long nreps, int doSing) {
+    GPTree *self = vself;
     unsigned long rep;
     if(ParStore_constrain(self->parstore)) {
         fprintf(stderr,"%s:%d: free parameters violate constraints\n",
@@ -175,7 +180,7 @@ void GPTree_patprob(GPTree * self, BranchTab * branchtab, gsl_rng * rng,
 }
 
 /// GPTree constructor
-GPTree     *GPTree_new(const char *fname, Bounds bnd) {
+void *GPTree_new(const char *fname, Bounds bnd) {
     GPTree     *self = malloc(sizeof(GPTree));
     CHECKMEM(self);
 
@@ -211,7 +216,8 @@ GPTree     *GPTree_new(const char *fname, Bounds bnd) {
 }
 
 /// GPTree destructor.
-void GPTree_free(GPTree * self) {
+void GPTree_free(void * vself) {
+    GPTree *self = vself;
     Gene_free(self->rootGene);
     self->rootGene = NULL;
     PopNode_clear(self->rootPop);
@@ -222,7 +228,8 @@ void GPTree_free(GPTree * self) {
 }
 
 /// Duplicate a GPTree object
-GPTree     *GPTree_dup(const GPTree * old) {
+void *GPTree_dup(const void * vold) {
+    const GPTree *old = vold;
     assert(old);
     if(ParStore_constrain(old->parstore)) {
         fprintf(stderr,"%s:%d: free parameters violate constraints\n",
@@ -310,11 +317,12 @@ GPTree     *GPTree_dup(const GPTree * old) {
         pthread_mutex_unlock(&outputLock);
         exit(EXIT_FAILURE);
     }
-    return new;
+    return (void *) new;
 }
 
-void GPTree_sanityCheck(GPTree * self, const char *file, int line) {
+void GPTree_sanityCheck(void * vself, const char *file, int line) {
 #ifndef NDEBUG
+    GPTree *self = vself;
     REQUIRE(self->nseg > 0, file, line);
     REQUIRE(self->pnv != NULL, file, line);
     REQUIRE(self->rootPop >= self->pnv, file, line);
@@ -351,12 +359,13 @@ int GPTree_equals(const GPTree * lhs, const GPTree * rhs) {
 }
 
 /// Get the LblNdx object from a GPTree
-LblNdx GPTree_getLblNdx(GPTree * self) {
-    return self->lblndx;
+LblNdx GPTree_getLblNdx(void * vself) {
+    return ((GPTree *) vself)->lblndx;
 }
 
 /// Are parameters within the feasible region?
-int GPTree_feasible(const GPTree * self, int verbose) {
+int GPTree_feasible(const void * vself, int verbose) {
+    const GPTree *self = vself;
     if(ParStore_constrain(self->parstore)) {
         if(verbose) {
             fprintf(stderr,"%s:%s:%d: warning:"

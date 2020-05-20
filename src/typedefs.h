@@ -21,6 +21,7 @@ typedef struct LblNdx LblNdx;
 typedef struct LineReader LineReader;
 typedef struct MCTree MCTree;
 typedef struct NameList NameList;
+typedef struct Network Network;
 typedef struct NodeStore NodeStore;
 typedef struct Param Param;
 typedef struct ParStore ParStore;
@@ -65,7 +66,6 @@ typedef uint64_t tipId_t;
 #define POPNAMESIZE 30
 #define MAXSAMP ((int)(8*sizeof(tipId_t)))
 
-#define SIM 1
-#define MATCOAL 2
+enum NetworkType { SIM, MATCOAL };
 
 #endif

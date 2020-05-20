@@ -63,9 +63,9 @@
 #include "error.h"
 #include "lblndx.h"
 #include "misc.h"
+#include "network.h"
 #include "parse.h"
 #include "parstore.h"
-#include "popnode.h"
 #include "sampndx.h"
 #include "strptrmap.h"
 #include <assert.h>
@@ -281,11 +281,11 @@ void parseParam(char *next, unsigned ptype,
 /// @param[inout] popmap associates names of segments
 /// with pointers to them.
 /// @param[inout] sndx associates the index of each
-/// sample with the PopNode or Segment to which it belongs.
+/// sample with the node to which it belongs.
 /// @param[inout] lndx associated index of each sample with its name
 /// @param[out] parstore structure that maintains info about
 /// parameters
-/// @param[inout] ns allocates PopNode objects
+/// @param[inout] ns allocates nodes
 void parseSegment(char *next, StrPtrMap * popmap, SampNdx * sndx,
                   LblNdx * lndx, ParStore * parstore, NodeStore * ns,
                   const char *orig) {
@@ -335,6 +335,7 @@ void parseSegment(char *next, StrPtrMap * popmap, SampNdx * sndx,
         fprintf(stderr, "input: %s\n", orig);
         exit(EXIT_FAILURE);
     }
+
     // Read (optional) number of samples
     if(next) {
         tok = strsep(&next, "=");
@@ -371,7 +372,7 @@ void parseSegment(char *next, StrPtrMap * popmap, SampNdx * sndx,
     }
 
     assert(strlen(popName) > 0);
-    PopNode *thisNode = PopNode_new(twoNptr, tPtr, ns);
+    void *thisNode = Node_new(twoNptr, tPtr, ns);
     if(0 != StrPtrMap_insert(popmap, popName, thisNode)) {
         fprintf(stderr, "%s:%d: duplicate \"segment %s\"\n",
                 __FILE__, __LINE__, popName);
@@ -418,7 +419,7 @@ void parseDerive(char *next, StrPtrMap * popmap, ParStore * parstore,
     }
 
     assert(strlen(childName) > 0);
-    PopNode *childNode = StrPtrMap_get(popmap, childName);
+    void *childNode = StrPtrMap_get(popmap, childName);
     if(childNode == NULL) {
         fprintf(stderr, "%s:%d: child segment \"%s\" undefined\n",
                 __FILE__, __LINE__, childName);
@@ -427,14 +428,14 @@ void parseDerive(char *next, StrPtrMap * popmap, ParStore * parstore,
     }
 
     assert(strlen(parName) > 0);
-    PopNode *parNode = StrPtrMap_get(popmap, parName);
+    void *parNode = StrPtrMap_get(popmap, parName);
     if(parNode == NULL) {
         fprintf(stderr, "%s:%d: parent segment \"%s\" undefined\n",
                 __FILE__, __LINE__, parName);
         fprintf(stderr, "input: %s\n", orig);
         exit(EXIT_FAILURE);
     }
-    int status = PopNode_addChild(parNode, childNode);
+    int status = Node_addChild(parNode, childNode);
     switch(status){
     case 0:
         break;
@@ -513,7 +514,7 @@ void parseMix(char *next, StrPtrMap * popmap, ParStore * parstore,
     }
 
     assert(strlen(childName) > 0);
-    PopNode *childNode = StrPtrMap_get(popmap, childName);
+    void *childNode = StrPtrMap_get(popmap, childName);
     if(childNode == NULL) {
         fprintf(stderr, "%s:%d: child segment \"%s\" undefined\n",
                 __FILE__, __LINE__, childName);
@@ -522,7 +523,7 @@ void parseMix(char *next, StrPtrMap * popmap, ParStore * parstore,
     }
 
     assert(strlen(parName[0]) > 0);
-    PopNode *parNode0 = StrPtrMap_get(popmap, parName[0]);
+    void *parNode0 = StrPtrMap_get(popmap, parName[0]);
     if(parNode0 == NULL) {
         fprintf(stderr, "%s:%d: parent segment \"%s\" undefined\n",
                 __FILE__, __LINE__, parName[0]);
@@ -531,7 +532,7 @@ void parseMix(char *next, StrPtrMap * popmap, ParStore * parstore,
     }
 
     assert(strlen(parName[1]) > 0);
-    PopNode *parNode1 = StrPtrMap_get(popmap, parName[1]);
+    void *parNode1 = StrPtrMap_get(popmap, parName[1]);
     if(parNode1 == NULL) {
         fprintf(stderr, "%s:%d: parent segment \"%s\" undefined\n",
                 __FILE__, __LINE__, parName[1]);
@@ -539,7 +540,7 @@ void parseMix(char *next, StrPtrMap * popmap, ParStore * parstore,
         exit(EXIT_FAILURE);
     }
 
-    int status = PopNode_mix(childNode, mPtr, parNode1, parNode0);
+    int status = Node_mix(childNode, mPtr, parNode1, parNode0);
     switch(status){
     case 0:
         break;
@@ -596,13 +597,13 @@ int get_one_line(size_t n, char buff[n], FILE * fp) {
 /// Parse an input file in .lgo format
 /// @param[inout] fp input file pointer
 /// @param[inout] sndx associates the index of each
-/// sample with the PopNode object to which it belongs.
+/// sample with the node to which it belongs.
 /// @param[inout] lndx associated index of each sample with its name
 /// @param[out] parstore structure that maintains info about
 /// parameters
 /// @param[in] bnd the bounds of each type of parameter
-/// @param[inout] ns allocates PopNode objects
-PopNode *mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, ParStore * parstore,
+/// @param[inout] ns allocates nodes
+void *mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, ParStore * parstore,
                 Bounds * bnd, NodeStore * ns) {
     char orig[500], buff[500], buff2[500];
     char *token, *next;
@@ -670,16 +671,16 @@ PopNode *mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, ParStore * parstore,
     // iterates through all the nodes, and searches from each node
     // back to the root. If all is well, these searches all find the
     // same root. Otherwise, abort with an error.
-    PopNode *root = NULL;
+    void *root = NULL;
     {
         /// Check the sanity of each node and make sure there is only one
         /// root.
         unsigned long n = StrPtrMap_size(popmap);
         void *nodes[n];
-        PopNode *curr;
+        void *curr;
         StrPtrMap_ptrArray(popmap, n, nodes);
         for(unsigned long j=0; j < n; ++j) {
-            curr = PopNode_root((PopNode *) nodes[j]);
+            curr = Node_root(nodes[j]);
             if(root == NULL)
                 root = curr;
             else if (root != curr) {
@@ -782,6 +783,7 @@ int main(int argc, char **argv) {
         verbose = 1;
     }
 
+    Network_init(SIM);
     const char *tstFname = "mktree-tmp.lgo";
     FILE *fp = fopen(tstFname, "w");
     fputs(tstInput, fp);
@@ -853,14 +855,14 @@ int main(int argc, char **argv) {
     PopNode *root = NULL;
 
     {
-        NodeStore *ns = NodeStore_new(nseg, nodeVec);
+        NodeStore *ns = NodeStore_new(nseg, sizeof(nodeVec[0]), nodeVec);
         root = mktree(fp, &sndx, &lndx, parstore, &bnd, ns);
         assert(root != NULL);
         NodeStore_free(ns);
     }
 
     if(verbose) {
-        PopNode_print(stdout, root, 0);
+        Node_print(stdout, root, 0);
         unsigned i;
         for(i = 0; i < LblNdx_size(&lndx); ++i)
             printf("%2u %s\n", i, LblNdx_lbl(&lndx, i));

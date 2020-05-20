@@ -231,7 +231,7 @@ xparse.o : parse.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/parse.c
 
 XPARSE := xparse.o misc.o tokenizer.o gptree.o lblndx.o \
-       branchtab.o parstore.o popnode.o binary.o gene.o \
+       branchtab.o network.o parstore.o popnode.o binary.o gene.o \
        dprintf.o dtnorm.o tinyexpr.o param.o strparmap.o addrparmap.o \
        sampndx.o strptrmap.o
 xparse : $(XPARSE)

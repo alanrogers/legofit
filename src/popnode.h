@@ -17,10 +17,10 @@ struct PopNode {
     Gene       *sample[MAXSAMP]; // not locally owned
 };
 
-PopNode    *PopNode_new(double *twoN, double *start, NodeStore *ns);
-int         PopNode_addChild(PopNode * parent, PopNode * child);
-int         PopNode_mix(PopNode * child, double *mPtr, PopNode * introgressor,
-                        PopNode * native);
+void       *PopNode_new(double *twoN, double *start, NodeStore *ns);
+int         PopNode_addChild(void * vparent, void * vchild);
+int         PopNode_mix(void * vchild, double *mPtr, void * vintrogressor,
+                        void * vnative);
 void        PopNode_newGene(PopNode * self, unsigned ndx);
 void        PopNode_addSample(PopNode * self, Gene * gene);
 Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng);
@@ -31,7 +31,7 @@ void        PopNode_clear(PopNode * self);
 int         PopNode_isClear(const PopNode *self);
 void        PopNode_print(FILE * fp, PopNode * self, int indent);
 void        PopNode_printShallow(PopNode * self, FILE * fp);
-PopNode    *PopNode_root(PopNode * self);
+void       *PopNode_root(void * vself);
 void        PopNode_sanityFromLeaf(PopNode * self, const char *file,
                                    int line);
 int         PopNode_nsamples(PopNode * self);

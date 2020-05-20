@@ -85,8 +85,8 @@ void PopNode_sanityFromLeaf(PopNode * self, const char *file, int line) {
 }
 
 /// Find root of population tree, starting from given node.
-PopNode    *PopNode_root(PopNode * self) {
-    PopNode    *r0, *r1;
+void *PopNode_root(void * vself) {
+    PopNode *self = vself, *r0, *r1;
     assert(self);
     switch (self->nparents) {
     case 0:
@@ -197,7 +197,7 @@ int PopNode_nsamples(PopNode * self) {
 }
 
 /// PopNode constructor
-PopNode    *PopNode_new(double *twoN, double *start, NodeStore * ns) {
+void *PopNode_new(double *twoN, double *start, NodeStore * ns) {
     PopNode    *new = NodeStore_alloc(ns);
     CHECKMEM(new);
 
@@ -218,7 +218,9 @@ PopNode    *PopNode_new(double *twoN, double *start, NodeStore * ns) {
 }
 
 /// Connect parent and child
-int PopNode_addChild(PopNode * parent, PopNode * child) {
+int PopNode_addChild(void * vparent, void * vchild) {
+    PopNode *parent = vparent;
+    PopNode *child = vchild;
     if(parent->nchildren > 1) {
         fprintf(stderr,
                 "%s:%s:%d: Can't add child because parent already has %d.\n",
@@ -287,8 +289,10 @@ void PopNode_addSample(PopNode * self, Gene * gene) {
 /// @param[in] mPtr pointer to the gene flow variable
 /// @param[inout] introgressor pointer to the introgressing parent
 /// @param[inout] native pointer to the native parent
-int PopNode_mix(PopNode * child, double *mPtr, PopNode * introgressor,
-                PopNode * native) {
+int PopNode_mix(void * vchild, double *mPtr, void * vintrogressor,
+                void * vnative) {
+    PopNode *child = vchild, *introgressor = vintrogressor,
+        *native = vnative;
 
     if(introgressor->nchildren > 1) {
         fprintf(stderr,"%s:%s:%d:"

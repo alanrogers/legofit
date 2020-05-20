@@ -5,23 +5,23 @@
 #  include <stdio.h>
 #  include <gsl/gsl_rng.h>
 
-GPTree     *GPTree_dup(const GPTree *old);
-int         GPTree_feasible(const GPTree *self, int verbose);
-void        GPTree_free(GPTree *self);
-LblNdx      GPTree_getLblNdx(GPTree *self);
-const char *GPTree_getNameFree(GPTree * self, int i);
-void        GPTree_getParams(GPTree *self, int n, double x[n]);
-GPTree     *GPTree_new(const char *fname, Bounds bnd);
-int         GPTree_nFree(const GPTree *self);
-void        GPTree_patprob(GPTree *self, BranchTab *branchtab,
+void       *GPTree_dup(const void *old);
+int         GPTree_feasible(const void * vself, int verbose);
+void        GPTree_free(void * vself);
+LblNdx      GPTree_getLblNdx(void *vself);
+const char *GPTree_getNameFree(void * vself, int i);
+void        GPTree_getParams(void *vself, int n, double x[n]);
+void       *GPTree_new(const char *fname, Bounds bnd);
+int         GPTree_nFree(const void *vself);
+void        GPTree_patprob(void *vself, BranchTab *branchtab,
                             gsl_rng *rng, unsigned long nreps,
                             int doSing);
-void        GPTree_printParStore(GPTree *self, FILE *fp);
-void        GPTree_printParStoreFree(GPTree *self, FILE *fp);
-void        GPTree_randomize(GPTree *self, gsl_rng *rng);
-void        GPTree_sanityCheck(GPTree *self, const char *file, int line);
-int         GPTree_setParams(GPTree *self, int n, double x[n]);
-void        GPTree_initStateVec(GPTree *gpt, int ndx, int n, double x[n],
+void        GPTree_printParStore(void *vself, FILE *fp);
+void        GPTree_printParStoreFree(void *vself, FILE *fp);
+void        GPTree_randomize(void *vself, gsl_rng *rng);
+void        GPTree_sanityCheck(void *vself, const char *file, int line);
+int         GPTree_setParams(void *vself, int n, double x[n]);
+void        GPTree_initStateVec(void *gpt, int ndx, int n, double x[n],
                                 gsl_rng *rng);
 #endif
 
