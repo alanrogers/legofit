@@ -11,6 +11,7 @@
 #include "gene.h"
 #include "gptree.h"
 #include "lblndx.h"
+#include "nodestore.h"
 #include "parse.h"
 #include "param.h"
 #include "parstore.h"
@@ -387,6 +388,7 @@ int GPTree_feasible(const void * vself, int verbose) {
 #    error "Unit tests must be compiled without -DNDEBUG flag"
 #  endif
 
+#  include "network.h"
 #  include <assert.h>
 #  include <unistd.h>
 
@@ -443,6 +445,8 @@ int main(int argc, char **argv) {
     FILE       *fp = fopen(fname, "w");
     fputs(tstInput, fp);
     fclose(fp);
+
+    Network_init(SIM);
 
     Bounds      bnd = {
         .lo_twoN = 0.0,

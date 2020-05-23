@@ -9,6 +9,7 @@
 
 #include "param.h"
 #include "misc.h"
+#include "network.h"
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
@@ -41,6 +42,8 @@ int main(int argc, char *argv[]) {
     gsl_rng    *rng = gsl_rng_alloc(gsl_rng_taus);
     CHECKMEM(rng);
     gsl_rng_set(rng, seed);
+
+    Network_init(SIM);
 
     Param par;
     Param_init(&par, "name", 123.4, 100.0, 200.0, FREE|TWON);

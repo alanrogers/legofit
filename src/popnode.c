@@ -17,6 +17,8 @@
 #include "popnode.h"
 #include "gene.h"
 #include "misc.h"
+#include "network.h"
+#include "nodestore.h"
 #include "parstore.h"
 #include "error.h"
 #include "dtnorm.h"
@@ -25,19 +27,15 @@
 #include <float.h>
 #include <gsl/gsl_randist.h>
 
-/// This structure allows you to allocate PopNode objects in an array
-/// and then dole them out one at a time via calls to NodeStore_alloc.
-/// This keeps all the PopNode objects together in memory and may
-/// reduce page faults.
-struct NodeStore {
-    size_t curr, end, elsize;
-    void *v;              // not locally owned
-};
-
-static void PopNode_sanityCheck(PopNode * self, const char *file, int lineno);
+static void  PopNode_addSample(PopNode * self, Gene * gene);
+static void  PopNode_free(PopNode * self);
+static void  PopNode_printShallow(PopNode * self, FILE * fp);
+static void  PopNode_sanityCheck(PopNode * self, const char *file, int lineno);
+static void  PopNode_sanityFromLeaf(PopNode * self, const char *file, int line);
+static int   PopNode_nsamples(PopNode * self);
 
 /// Check for errors in PopNode tree. Call this from each leaf node.
-void PopNode_sanityFromLeaf(PopNode * self, const char *file, int line) {
+static void PopNode_sanityFromLeaf(PopNode * self, const char *file, int line) {
 #ifndef NDEBUG
     REQUIRE(self != NULL, file, line);
     switch (self->nparents) {
@@ -156,7 +154,7 @@ void PopNode_print(FILE * fp, PopNode * self, int indent) {
 }
 
 /// Print a PopNode but not its descendants.
-void PopNode_printShallow(PopNode * self, FILE * fp) {
+static void PopNode_printShallow(PopNode * self, FILE * fp) {
     fprintf(fp, "%p twoN=%lf ntrval=(%lf,", self, *self->twoN, *self->start);
     if(self->end != NULL)
         fprintf(fp, "%lf)", *self->end);
@@ -192,7 +190,7 @@ void PopNode_printShallow(PopNode * self, FILE * fp) {
 }
 
 /// Return the number of samples in a PopNode
-int PopNode_nsamples(PopNode * self) {
+static int PopNode_nsamples(PopNode * self) {
     return self->nsamples;
 }
 
@@ -271,7 +269,7 @@ static void PopNode_sanityCheck(PopNode * self, const char *file, int lineno) {
 }
 
 /// Add a sample to a PopNode
-void PopNode_addSample(PopNode * self, Gene * gene) {
+static void PopNode_addSample(PopNode * self, Gene * gene) {
     assert(self != NULL);
     assert(gene != NULL);
     if(self->nsamples == MAXSAMP) {
@@ -480,7 +478,7 @@ Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng) {
 }
 
 /// Free node but not descendants
-void PopNode_free(PopNode * self) {
+static void PopNode_free(PopNode * self) {
     free(self);
 }
 
@@ -580,42 +578,6 @@ void PopNode_shiftPopNodePtrs(PopNode * self, size_t dp, int sign) {
         SHIFT_PTR(self->child[i], dp, sign);
 }
 
-/// Allocate a new NodeStore, which provides an interface
-/// for getting PopNode objects, one at a time, out
-/// of a previously-allocated array v.
-/// @param[in] len number of PopNode objects in array.
-/// @param[in] v array of PopNode objects
-/// @return newly-allocated NodeStore.
-NodeStore  *NodeStore_new(unsigned len, size_t elsize, void * v) {
-    NodeStore  *self = malloc(sizeof(NodeStore));
-    CHECKMEM(self);
-
-    self->v = v;
-    self->curr = (size_t) self->v;
-    self->elsize = elsize;
-    self->end = self->curr + len * self->elsize;
-
-    return self;
-}
-
-/// Destructor for NodeStore
-void NodeStore_free(NodeStore * self) {
-    // Does not free self->v
-    free(self);
-}
-
-/// Return a pointer to an unused element within NodeStore. Return
-/// NULL if none are left.
-void *NodeStore_alloc(NodeStore * self) {
-    if(self->curr >= self->end) {
-        assert(self->curr == self->end);
-        return NULL;
-    }
-    void *new = (void *) self->curr;
-    self->curr += self->elsize;
-    return new;
-}
-
 #ifdef TEST
 
 #  include <string.h>
@@ -638,26 +600,14 @@ int main(int argc, char **argv) {
         verbose = 1;
     }
 
+    Network_init(SIM);
+
     tipId_t     id1 = 1;
     tipId_t     id2 = 2;
 
     int         nseg = 10;
     PopNode     v[nseg];
     NodeStore  *ns = NodeStore_new(nseg, sizeof(v[0]), v);
-    CHECKMEM(ns);
-
-    PopNode    *node;
-    for(int i=0; i < nseg; ++i) {
-        node = NodeStore_alloc(ns);
-        assert(node = v+i);
-    }
-    node = NodeStore_alloc(ns);
-    assert(node == NULL);
-
-    NodeStore_free(ns);
-    unitTstResult("NodeStore", "OK");
-
-    ns = NodeStore_new(nseg, sizeof(v[0]), v);
     CHECKMEM(ns);
 
     double      twoN0 = 1.0, start0 = 0.0;

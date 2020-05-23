@@ -58,14 +58,15 @@ test : $(tests)
 LEGOSIM := legosim.o addrparmap.o binary.o branchtab.o dprintf.o dtnorm.o \
    gene.o gptree.o jobqueue.o lblndx.o network.o misc.o param.o parse.o \
    parstore.o patprob.o popnode.o rngseed.o sampndx.o strparmap.o \
-   strptrmap.o tinyexpr.o tokenizer.o
+   strptrmap.o tinyexpr.o tokenizer.o nodestore.o
 legosim : $(LEGOSIM)
 	$(CC) $(CFLAGS) -o $@ $(LEGOSIM) $(lib)
 
 LEGOFIT := legofit.o addrparmap.o binary.o branchtab.o cost.o diffev.o \
    dprintf.o dtnorm.o gene.o gptree.o jobqueue.o lblndx.o misc.o network.o \
-   param.o parse.o parstore.o patprob.o pointbuff.o popnode.o rngseed.o \
-   sampndx.o simsched.o state.o strparmap.o strptrmap.o tinyexpr.o tokenizer.o
+   nodestore.o param.o parse.o parstore.o patprob.o pointbuff.o popnode.o \
+   rngseed.o sampndx.o simsched.o state.o strparmap.o strptrmap.o \
+   tinyexpr.o tokenizer.o
 legofit : $(LEGOFIT)
 	$(CC) $(CFLAGS) -o $@ $(LEGOFIT) $(lib)
 

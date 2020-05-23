@@ -122,6 +122,7 @@ void AddrParMap_flipColors(AddrParMap *h) {
 #    error "Unit tests must be compiled without -DNDEBUG flag"
 #  endif
 
+#include "network.h"
 #include <string.h>
 
 void AddrParMap_print(AddrParMap *h, FILE *fp, int indent);
@@ -153,6 +154,8 @@ int main(int argc, char **argv) {
         }
         verbose = 1;
     }
+
+    Network_init(SIM);
 
     double a[] = {0.0, 1.0, 2.0, 0.5};
 

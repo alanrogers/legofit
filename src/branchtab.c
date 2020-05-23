@@ -634,6 +634,7 @@ double BranchTab_negLnL(const BranchTab *obs, const BranchTab *expt) {
 #ifdef TEST
 
 #include "binary.h"
+#include "network.h"
 #include <string.h>
 #include <assert.h>
 #include <unistd.h>
@@ -688,6 +689,8 @@ int main(int argc, char **argv) {
         }
         verbose = 1;
     }
+
+    Network_init(SIM);
 
     const char *tstFname = "mktree-tmp.lgo";
     FILE       *fp = fopen(tstFname, "w");
