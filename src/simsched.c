@@ -76,10 +76,8 @@ static Stage *Stage_popHead(Stage * self) {
 
 /// Return the number of simulation replicates of current Stage
 static inline long Stage_getSimReps(Stage * self) {
-    if(self == NULL) {
-        fprintf(stderr, "%s:%d: NULL Stage\n", __FILE__, __LINE__);
-        exit(EXIT_FAILURE);
-    }
+    if(self == NULL)
+        return 0;
     return self->nSimReps;
 }
 

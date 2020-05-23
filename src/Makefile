@@ -56,9 +56,9 @@ test : $(tests)
 	@echo "ALL UNIT TESTS WERE COMPLETED."
 
 LEGOSIM := legosim.o addrparmap.o binary.o branchtab.o dprintf.o dtnorm.o \
-   gene.o gptree.o jobqueue.o lblndx.o misc.o param.o parse.o parstore.o \
-   patprob.o popnode.o rngseed.o sampndx.o strparmap.o strptrmap.o \
-   tinyexpr.o tokenizer.o
+   gene.o gptree.o jobqueue.o lblndx.o network.o misc.o param.o parse.o \
+   parstore.o patprob.o popnode.o rngseed.o sampndx.o strparmap.o \
+   strptrmap.o tinyexpr.o tokenizer.o
 legosim : $(LEGOSIM)
 	$(CC) $(CFLAGS) -o $@ $(LEGOSIM) $(lib)
 
@@ -71,7 +71,7 @@ legofit : $(LEGOFIT)
 
 PCLGO := pclgo.o misc.o strdblqueue.o gptree.o parstore.o param.o popnode.o \
   gene.o addrparmap.o branchtab.o lblndx.o strparmap.o dtnorm.o dprintf.o \
-  tinyexpr.o tokenizer.o parse.o binary.o strptrmap.o sampndx.o
+  tinyexpr.o tokenizer.o parse.o binary.o strptrmap.o sampndx.o network.o
 pclgo : $(PCLGO)
 	$(CC) $(CFLAGS) -o $@ $(PCLGO) $(lib)
 

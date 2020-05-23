@@ -17,14 +17,14 @@
 extern pthread_mutex_t outputLock;
 #endif
 
-#include "cost.h"
-#include "simsched.h"
-#include "gptree.h"
 #include "branchtab.h"
-#include "patprob.h"
+#include "cost.h"
 #include "misc.h"
-#include <math.h>
+#include "network.h"
+#include "patprob.h"
+#include "simsched.h"
 #include <gsl/gsl_rng.h>
+#include <math.h>
 
 /// Calculate cost.
 /// @param[in] dim dimension of x
@@ -40,9 +40,9 @@ double costFun(int dim, double x[dim], void *jdata, void *tdata) {
     long nreps = SimSched_getSimReps(cp->simSched);
     DPRINTF(("%s:%d: nreps=%ld\n",__FILE__,__LINE__,nreps));
 
-    if(GPTree_setParams(cp->network, dim, x))
+    if(Network_setParams(cp->network, dim, x))
         return HUGE_VAL;
-    if(!GPTree_feasible(cp->network, 0))
+    if(!Network_feasible(cp->network, 0))
         return HUGE_VAL;
 
     BranchTab  *prob = patprob(cp->network, nreps, cp->doSing, rng);
@@ -69,7 +69,7 @@ void * CostPar_dup(const void * arg) {
     CHECKMEM(new);
     new->obs = BranchTab_dup(old->obs);
     CHECKMEM(new->obs);
-    new->network = GPTree_dup(old->network);
+    new->network = Network_dup(old->network);
     CHECKMEM(new->network);
     new->simSched = old->simSched;
     CHECKMEM(new->simSched);
@@ -80,7 +80,7 @@ void * CostPar_dup(const void * arg) {
 void CostPar_free(void *arg) {
     CostPar *self = (CostPar *) arg;
     BranchTab_free(self->obs);
-    GPTree_free(self->gptree);
+    Network_free(self->network);
     if(self)
         free(self);
 }

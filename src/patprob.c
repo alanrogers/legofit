@@ -10,11 +10,11 @@
 
 #include "patprob.h"
 #include "misc.h"
+#include "network.h"
 #include "branchtab.h"
 #include "parse.h"
 #include "parstore.h"
 #include "binary.h"
-#include "gptree.h"
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
@@ -29,13 +29,13 @@ typedef struct ThreadArg ThreadArg;
 struct ThreadArg {
     unsigned long nreps;
     int         doSing; // nonzero => tabulate singletons
-    GPTree     *gptree;
+    void       *network;
 
     // Returned value
     BranchTab  *branchtab;
 };
 
-static ThreadArg *ThreadArg_new(const GPTree *gptree, unsigned nreps,
+static ThreadArg *ThreadArg_new(const void *network, unsigned nreps,
                                 int doSing);
 static void ThreadArg_free(ThreadArg * targ);
 static int tfunc(void *, void *);
@@ -45,23 +45,23 @@ static int tfunc(void *varg, void *tdata) {
     ThreadArg    *arg = (ThreadArg *) varg;
     gsl_rng   *rng = (gsl_rng *) tdata;
 
-    assert(GPTree_feasible(arg->gptree, 0));
-    GPTree_patprob(arg->gptree, arg->branchtab, rng, arg->nreps,
+    assert(Network_feasible(arg->network, 0));
+    Network_patprob(arg->network, arg->branchtab, rng, arg->nreps,
                     arg->doSing);
 
     return 0;
 }
 
 /// Construct a new ThreadArg by copying a template.
-static ThreadArg *ThreadArg_new(const GPTree *gptree, unsigned nreps,
+static ThreadArg *ThreadArg_new(const void *network, unsigned nreps,
                             int doSing) {
     ThreadArg    *a = malloc(sizeof(ThreadArg));
     CHECKMEM(a);
 
     a->nreps = nreps;
     a->doSing = doSing;
-    a->gptree = GPTree_dup(gptree);
-    assert(GPTree_feasible(a->gptree, 0));
+    a->network = Network_dup(network);
+    assert(Network_feasible(a->network, 0));
     a->branchtab = BranchTab_new();
 
     return a;
@@ -70,7 +70,7 @@ static ThreadArg *ThreadArg_new(const GPTree *gptree, unsigned nreps,
 /// ThreadArg destructor
 static void ThreadArg_free(ThreadArg * self) {
     BranchTab_free(self->branchtab);
-    GPTree_free(self->gptree);
+    Network_free(self->network);
     free(self);
 }
 
@@ -79,12 +79,12 @@ static void ThreadArg_free(ThreadArg * self) {
 /// returns a pointer to a newly-allocated object of type BranchTab,
 /// which contains all the observed site patterns and their estimated
 /// probabilities. 
-BranchTab *patprob(const GPTree *gptree, long nreps,
+BranchTab *patprob(const void *network, long nreps,
                    int doSing, gsl_rng *rng) {
 
     ThreadArg *tharg;
 
-    tharg = ThreadArg_new(gptree, nreps, doSing);
+    tharg = ThreadArg_new(network, nreps, doSing);
     tfunc(tharg, rng);
 
     BranchTab *rval = BranchTab_dup(tharg->branchtab);

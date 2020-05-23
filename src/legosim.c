@@ -87,20 +87,21 @@ the program are probably too small.
 Systems Consortium License, which can be found in file "LICENSE".
 */
 
-#include "gptree.h"
-#include "patprob.h"
-#include "parstore.h"
-#include "lblndx.h"
 #include "branchtab.h"
+#include "gptree.h"
+#include "lblndx.h"
+#include "network.h"
+#include "parstore.h"
+#include "patprob.h"
 #include <assert.h>
 #include <getopt.h>
+#include <gsl/gsl_randist.h>
+#include <gsl/gsl_rng.h>
+#include <limits.h>
 #include <stdio.h>
 #include <sys/types.h>
-#include <unistd.h>
 #include <time.h>
-#include <limits.h>
-#include <gsl/gsl_rng.h>
-#include <gsl/gsl_randist.h>
+#include <unistd.h>
 
 extern pthread_mutex_t seedLock;
 extern unsigned long rngseed;
@@ -201,6 +202,8 @@ int main(int argc, char **argv) {
         usage();
     }
     assert(fname[0] != '\0');
+
+    Network_init(SIM);
 
     printf("# nreps                       : %lu\n", nreps);
     printf("# input file                  : %s\n", fname);
