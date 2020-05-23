@@ -40,12 +40,12 @@ double costFun(int dim, double x[dim], void *jdata, void *tdata) {
     long nreps = SimSched_getSimReps(cp->simSched);
     DPRINTF(("%s:%d: nreps=%ld\n",__FILE__,__LINE__,nreps));
 
-    if(GPTree_setParams(cp->gptree, dim, x))
+    if(GPTree_setParams(cp->network, dim, x))
         return HUGE_VAL;
-    if(!GPTree_feasible(cp->gptree, 0))
+    if(!GPTree_feasible(cp->network, 0))
         return HUGE_VAL;
 
-    BranchTab  *prob = patprob(cp->gptree, nreps, cp->doSing, rng);
+    BranchTab  *prob = patprob(cp->network, nreps, cp->doSing, rng);
 #if COST==KL_COST
     double cost = BranchTab_KLdiverg(cp->obs, prob);
 #elif COST==LNL_COST
@@ -69,8 +69,8 @@ void * CostPar_dup(const void * arg) {
     CHECKMEM(new);
     new->obs = BranchTab_dup(old->obs);
     CHECKMEM(new->obs);
-    new->gptree = GPTree_dup(old->gptree);
-    CHECKMEM(new->gptree);
+    new->network = GPTree_dup(old->network);
+    CHECKMEM(new->network);
     new->simSched = old->simSched;
     CHECKMEM(new->simSched);
     return new;

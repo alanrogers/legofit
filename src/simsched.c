@@ -92,7 +92,7 @@ static inline long Stage_getOptItr(Stage * self) {
     return self->nOptItr;
 }
 
-/// Allocate a new SimSched with one stage.
+/// Allocate a new SimSched with no stages.
 SimSched   *SimSched_new(void) {
     SimSched   *self = malloc(sizeof(SimSched));
     CHECKMEM(self);

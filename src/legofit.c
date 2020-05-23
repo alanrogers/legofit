@@ -14,6 +14,8 @@ of separations and of episodes of gene flow, and levels of gene flow.
           termination criterion
        -t <x> or --threads <x>
           number of threads (default is auto)
+       -d or --deterministic
+          deterministic algorithm
        -F <x> or --scaleFactor <x>
           set DE scale factor
        -x <x> or --crossover <x>
@@ -191,8 +193,8 @@ Systems Consortium License, which can be found in file "LICENSE".
 #include "branchtab.h"
 #include "cost.h"
 #include "diffev.h"
-#include "gptree.h"
 #include "lblndx.h"
+#include "network.h"
 #include "parstore.h"
 #include "patprob.h"
 #include "pointbuff.h"
@@ -245,6 +247,7 @@ void usage(void) {
     fprintf(stderr, "Options may include:\n");
     tellopt("-T <x> or --tol <x>", "termination criterion");
     tellopt("-t <x> or --threads <x>", "number of threads (default is auto)");
+    tellopt("-d or --deterministic", "deterministic algorithm");
     tellopt("-F <x> or --scaleFactor <x>", "set DE scale factor");
     tellopt("-x <x> or --crossover <x>", "set DE crossover probability");
     tellopt("-s <x> or --strategy <x>", "set DE strategy");
@@ -272,6 +275,7 @@ int main(int argc, char **argv) {
     static struct option myopts[] = {
         /* {char *name, int has_arg, int *flag, int val} */
         {"threads", required_argument, 0, 't'},
+        {"deterministic", no_argument, 0, 'd'},
         {"crossover", required_argument, 0, 'x'},
         {"scaleFactor", required_argument, 0, 'F'},
         {"strategy", required_argument, 0, 's'},
@@ -311,7 +315,10 @@ int main(int argc, char **argv) {
     int strategy = 2;
     int ptsPerDim = 10;
     int verbose = 0;
+    int deterministic = 0;
     SimSched *simSched = SimSched_new();
+
+    assert(SimSched_nStages(simSched) == 0);
 
 #if defined(__DATE__) && defined(__TIME__)
     printf("# Program was compiled: %s %s\n", __DATE__, __TIME__);
@@ -328,10 +335,13 @@ int main(int argc, char **argv) {
 
     // command line arguments
     for(;;) {
-        i = getopt_long(argc, argv, "T:t:F:p:s:S:a:vx:1h", myopts, &optndx);
+        i = getopt_long(argc, argv, "dT:t:F:p:s:S:a:vx:1h", myopts, &optndx);
         if(i == -1)
             break;
         switch (i) {
+        case 'd':
+            deterministic = 1;
+            break;
         case ':':
         case '?':
             usage();
@@ -433,13 +443,23 @@ int main(int argc, char **argv) {
     // Default simulation schedule.
     // Stage 1: 200 DE generations of 1000 simulation replicates
     // Stage 2: 100 generations of 10000 replicates
-    if(0 == SimSched_nStages(simSched)) {
+    if(deterministic) {
+        Network_init(MATCOAL);
+        if(0 != SimSched_nStages(simSched)) {
+            fprintf(stderr,"%s:%d: Can't use -S or --stage with"
+                    " -d or --deterministic\n",
+                    __FILE__,__LINE__);
+            exit(EXIT_FAILURE);
+        }
+    }else if(0 == SimSched_nStages(simSched)) {
+        Network_init(SIM);
         SimSched_append(simSched, 200, 1000);
         SimSched_append(simSched, 100, 10000);
         SimSched_append(simSched, 1000, simreps);
     }
 
-    SimSched_print(simSched, stdout);
+    if(!deterministic)
+        SimSched_print(simSched, stdout);
 
     Bounds bnd = {
         .lo_twoN = lo_twoN,
@@ -448,14 +468,14 @@ int main(int argc, char **argv) {
         .hi_t = hi_t
     };
 
-    GPTree *gptree = GPTree_new(lgofname, bnd);
-    LblNdx lblndx = GPTree_getLblNdx(gptree);
+    void *network = Network_new(lgofname, bnd);
+    LblNdx lblndx = Network_getLblNdx(network);
 
     gsl_rng *rng = gsl_rng_alloc(gsl_rng_taus);
     gsl_rng_set(rng, rngseed);
     rngseed = (rngseed == ULONG_MAX ? 0 : rngseed + 1);
 
-    int dim = GPTree_nFree(gptree); // number of free parameters
+    int dim = Network_nFree(network); // number of free parameters
     if(dim == 0) {
         fprintf(stderr, "Error@%s:%d: no free parameters\n",
                 __FILE__, __LINE__);
@@ -465,7 +485,7 @@ int main(int argc, char **argv) {
 
     char *parnames[dim];
     for(i=0; i<dim; ++i) {
-        parnames[i] = strdup(GPTree_getNameFree(gptree, i));
+        parnames[i] = strdup(Network_getNameFree(network, i));
         CHECKMEM(parnames[i]);
     }
 
@@ -486,18 +506,18 @@ int main(int argc, char **argv) {
         // values specified in .lgo file.
         double x[dim];
         State_getVector(state, 0, dim, x);
-        if(GPTree_setParams(gptree, dim, x)) {
+        if(Network_setParams(network, dim, x)) {
             fprintf(stderr, "%s:%d: free params violate constraints\n",
                     __FILE__, __LINE__);
             exit(EXIT_FAILURE);
         }
         
-        if(!GPTree_feasible(gptree, 1)) {
+        if(!Network_feasible(network, 1)) {
             fflush(stdout);
             dostacktrace(__FILE__, __LINE__, stderr);
             fprintf(stderr, "%s:%s:%d: stateIn points not feasible\n", __FILE__,
                     __func__,__LINE__);
-            GPTree_printParStore(gptree, stderr);
+            Network_printParStore(network, stderr);
             exit(EXIT_FAILURE);
         }
   } else {
@@ -505,10 +525,10 @@ int main(int argc, char **argv) {
         state = State_new(npts, dim);
         CHECKMEM(state);
         for(i = 0; i < dim; ++i)
-            State_setName(state, i, GPTree_getNameFree(gptree, i));
+            State_setName(state, i, Network_getNameFree(network, i));
         for(i = 0; i < npts; ++i) {
             double x[dim];
-            GPTree_initStateVec(gptree, i, dim, x, rng);
+            Network_initStateVec(network, i, dim, x, rng);
             State_setVector(state, i, dim, x);
         }
     }
@@ -519,6 +539,10 @@ int main(int argc, char **argv) {
     if(nThreads > npts)
         nThreads = npts;
 
+    if(deterministic)
+        printf("# Obj func evaluation: %s\n", "deterministic");
+    else
+        printf("# Obj func evaluation: %s\n", "simulation");
     printf("# DE strategy        : %d\n", strategy);
     printf("#    F               : %lg\n", F);
     printf("#    CR              : %lg\n", CR);
@@ -602,7 +626,7 @@ int main(int argc, char **argv) {
     // parameters for cost function
     CostPar costPar = {
         .obs = obs,
-        .gptree = gptree,
+        .network = network,
         .nThreads = nThreads,
         .doSing = doSing,
         .simSched = simSched
@@ -646,7 +670,7 @@ int main(int argc, char **argv) {
     double cost, yspread;
 
     printf("Initial parameter values\n");
-    GPTree_printParStore(gptree, stdout);
+    Network_printParStore(network, stdout);
 
     // Flush just before diffev so output file will be as complete as
     // possible while diffev is running.
@@ -655,12 +679,12 @@ int main(int argc, char **argv) {
     DEStatus destat = diffev(dim, estimate, &cost, &yspread, dep, rng);
 
     // Get mean site pattern branch lengths
-    if(GPTree_setParams(gptree, dim, estimate)) {
+    if(GPTree_setParams(network, dim, estimate)) {
         fprintf(stderr, "%s:%d: free params violate constraints\n",
                 __FILE__, __LINE__);
         exit(EXIT_FAILURE);
     }
-    BranchTab *bt = patprob(gptree, simreps, doSing, rng);
+    BranchTab *bt = patprob(network, simreps, doSing, rng);
     BranchTab_divideBy(bt, (double) simreps);
     //    BranchTab_print(bt, stdout);
 
@@ -687,7 +711,7 @@ int main(int argc, char **argv) {
     putchar('\n');
 
     printf("Fitted parameter values\n");
-    GPTree_printParStoreFree(gptree, stdout);
+    Network_printParStoreFree(network, stdout);
 
     // Put site patterns and branch lengths into arrays.
     unsigned npat = BranchTab_size(bt);
@@ -738,7 +762,7 @@ int main(int argc, char **argv) {
     // header
     fprintf(qfp, "%s", "lnL");
     for(i=0; i < dim; ++i)
-        fprintf(qfp, " %s", GPTree_getNameFree(gptree, i));
+        fprintf(qfp, " %s", Network_getNameFree(network, i));
     putc('\n', qfp);
 
     double lnL;
@@ -792,8 +816,8 @@ int main(int argc, char **argv) {
     BranchTab_free(rawObs);
     BranchTab_free(obs);
     gsl_rng_free(rng);
-    GPTree_sanityCheck(gptree, __FILE__, __LINE__);
-    GPTree_free(gptree);
+    Network_sanityCheck(network, __FILE__, __LINE__);
+    Network_free(network);
     SimSched_free(simSched);
     State_free(state);
     for(i=0; i<dim; ++i)
