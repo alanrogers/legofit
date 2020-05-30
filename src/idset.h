@@ -12,6 +12,7 @@ IdSet *IdSet_dup(const IdSet *old);
 IdSet *IdSet_add(IdSet *head, const IdSet *to_add, double prob);
 void   IdSet_free(IdSet *self);
 IdSet *IdSet_join(IdSet *a, IdSet *b);
+int    IdSet_nIds(IdSet *self);
 int    IdSet_nSets(IdSet *self);
 int    IdSet_nDescendants(IdSet *self);
 void   IdSet_mulBy(IdSet *self, double factor);

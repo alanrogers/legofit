@@ -140,7 +140,8 @@ int PopNode_isClear(const PopNode * self) {
 }
 
 /// Print a PopNode and (recursively) its descendants.
-void PopNode_print(FILE * fp, PopNode * self, int indent) {
+void PopNode_print(FILE * fp, void * vself, int indent) {
+    PopNode *self = vself;
     for(int i = 0; i < indent; ++i)
         fputs("   ", fp);
     fprintf(fp, "%p twoN=%lf ntrval=(%lf,", self, *self->twoN, *self->start);
@@ -196,23 +197,15 @@ static int PopNode_nsamples(PopNode * self) {
 
 /// PopNode constructor
 void *PopNode_new(double *twoN, double *start, NodeStore * ns) {
-    PopNode    *new = NodeStore_alloc(ns);
-    CHECKMEM(new);
+    PopNode    *self = NodeStore_alloc(ns);
+    CHECKMEM(self);
 
-    new->nparents = new->nchildren = 0;
-    new->twoN = twoN;
-    new->mix = NULL;
-    new->start = start;
-    new->end = NULL;
+    memset(self, 0, sizeof(*self));
+    self->twoN = twoN;
+    self->start = start;
 
-    memset(new->parent, 0, sizeof(new->parent));
-    memset(new->child, 0, sizeof(new->child));
-
-    new->nsamples = 0;
-    memset(new->sample, 0, sizeof(new->sample));
-
-    PopNode_sanityCheck(new, __FILE__, __LINE__);
-    return new;
+    PopNode_sanityCheck(self, __FILE__, __LINE__);
+    return self;
 }
 
 /// Connect parent and child
@@ -244,8 +237,8 @@ int PopNode_addChild(void * vparent, void * vchild) {
             fprintf(stderr, "%s:%s:%d: Date mismatch."
                     " child->end=%p != %p = parent->start\n",
                     __FILE__, __func__, __LINE__, child->end, parent->start);
-        return DATE_MISMATCH;
-    }
+            return DATE_MISMATCH;
+        }
     }
     parent->child[parent->nchildren] = child;
     child->parent[child->nparents] = parent;
@@ -602,9 +595,6 @@ int main(int argc, char **argv) {
 
     Network_init(SIM);
 
-    tipId_t     id1 = 1;
-    tipId_t     id2 = 2;
-
     int         nseg = 10;
     PopNode     v[nseg];
     NodeStore  *ns = NodeStore_new(nseg, sizeof(v[0]), v);
@@ -636,6 +626,8 @@ int main(int argc, char **argv) {
     assert(p1->parent[0] == NULL);
     assert(p1->parent[1] == NULL);
 
+    tipId_t     id1 = 1;
+    tipId_t     id2 = 2;
     Gene       *g1 = Gene_new(id1);
     Gene       *g2 = Gene_new(id2);
     PopNode_addSample(p1, g1);

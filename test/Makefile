@@ -7,9 +7,9 @@ tests := xaddrparmap xbinary xbooma xboot xbranchtab xcomb xdafreader xdiffev \
   xdtnorm xerror xgene xgetlinetok xgptree xhessian xidset xintpart \
   xjobqueue xlblndx xlinereader xmisc xmpfrmatcoal xnodestore xsimreader \
   xparam xparse xparstore xpointbuff xpopnode xstrptrmap xrafreader \
-  xrational xscrmreader xsampndx xsetpart xsimsched xstate xstrdblmap \
-  xstrdblqueue xstrint xstrparmap xtinyexpr xtokenizer xuintqueue \
-  xwraparound xmatcoal
+  xrational xscrmreader xsampndx xsegment xsetpart xsimsched xstate \
+  xstrdblmap xstrdblqueue xstrint xstrparmap xtinyexpr xtokenizer \
+  xuintqueue xwraparound xmatcoal
 
 CC := gcc
 
@@ -79,11 +79,11 @@ test : $(tests)
 	-./xparstore
 	-./xpointbuff
 	-./xpopnode
-	-./xstrptrmap
 	-./xrafreader
 	-./xrational
 	-./xsampndx
 	-./xscrmreader
+	-./xsegment
 	-./xsetpart
 	-./xsimsched
 	-./xstate
@@ -91,6 +91,7 @@ test : $(tests)
 	-./xstrdblqueue
 	-./xstrint
 	-./xstrparmap
+	-./xstrptrmap
 	-./xtinyexpr
 	-./xtokenizer
 	-./xuintqueue
@@ -116,6 +117,10 @@ xbinary : $(XBINARY)
 XCOMB := xcomb.o comb.o misc.o
 xcomb : $(XCOMB)
 	$(CC) $(CFLAGS) -o $@ $(XCOMB) $(lib)
+
+XSEGMENT := xsegment.o misc.o nodestore.o segment.o idset.o binary.o error.o
+xsegment : $(XSEGMENT)
+	$(CC) $(CFLAGS) -o $@ $(XSEGMENT) $(lib)
 
 XINTPART := xintpart.o intpart.o misc.o
 xintpart : $(XINTPART)

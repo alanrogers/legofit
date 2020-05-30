@@ -30,6 +30,7 @@ typedef struct PointBuff PointBuff;
 typedef struct PopNode PopNode;
 typedef struct PtrPtrMap PtrPtrMap;
 typedef struct ScrmReader ScrmReader;
+typedef struct Segment Segment;
 typedef struct SimReader SimReader;
 typedef struct SimSched SimSched;
 typedef struct SampNdx SampNdx;

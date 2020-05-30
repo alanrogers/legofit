@@ -229,6 +229,10 @@ IdSet *IdSet_join(IdSet *a, IdSet *b) {
     return self;
 }
 
+int IdSet_nIds(IdSet *self) {
+    return self->nIds;
+}
+
 /// The number of IdSet objects in the linked list.
 int IdSet_nSets(IdSet *self) {
     int n=0;

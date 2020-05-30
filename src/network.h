@@ -36,7 +36,7 @@ EXTERN int         (*Node_addChild)(void * parent, void * child);
 EXTERN int         (*Node_mix)(void * child, double *mPtr, void * introgressor,
                                void * native);
 EXTERN void       *(*Node_root)(void * self);
-EXTERN void        (*Node_print)(FILE * fp, PopNode * self, int indent);
+EXTERN void        (*Node_print)(FILE * fp, void * vself, int indent);
 
 void Network_init(enum NetworkType type);
 

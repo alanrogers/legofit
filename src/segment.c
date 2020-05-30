@@ -8,16 +8,19 @@
  * Systems Consortium License, which can be found in file "LICENSE".
  */
 
-#include "segment.h"
-#include "idset.h"
-#include "partprob.h"
-#include "intpart.h"
-#include "comb.h"
 #include "binary.h"
+#include "branchtab.h"
+#include "comb.h"
+#include "error.h"
+#include "idset.h"
+#include "intpart.h"
 #include "matcoal.h"
 #include "misc.h"
-#include "branchtab.h"
+#include "nodestore.h"
+#include "partprob.h"
+#include "segment.h"
 #include <stdlib.h>
+#include <string.h>
 
 typedef struct CombDat CombDat;
 
@@ -28,73 +31,183 @@ struct CombDat {
     int dosing;    // do singleton site patterns if nonzero
 };
 
-// Probabilistic variables for one segment of a population tree.
-struct Segment {
-    int allocated; // allocated dimension of arrays
-    int max;     // max number of lineages in segment
-
-    // p[0][i] is prob there are i+1 lineages at recent end of segment
-    // p[1][i] is analogous prob for ancient end of interval.
-    double *p[2];
-
-    // Arrays of pointers to linked lists of IdSet objects. Dimension
-    // is max X 2.  ids[0] refers to the recent end of the segment and
-    // ids[1] to the ancient end. ids[0][i] is the list for the case
-    // in which there are i+1 lineages at the recent end of the segment.
-    IdSet **ids[2];
-};
-
+void   Segment_addIdSet(Segment *self, IdSet *idset);
+static void Segment_sanityCheck(Segment * self, const char *file, int lineno);
 int    visitComb(int d, int ndx[d], void *data);
 
-Segment *Segment_new(void) {
-    Segment *self = malloc(sizeof(Segment));
+void *Segment_new(double *twoN, double *start, NodeStore * ns) {
+    Segment *self = NodeStore_alloc(ns);
     CHECKMEM(self);
 
-    self->allocated = 8;
-    self->max = 0;
+    memset(self, 0, sizeof(*self));
 
-    self->p[0] = malloc(self->allocated * sizeof(self->p[0][0]));
-    CHECKMEM(self->p[0]);
-
-    self->p[1] = malloc(self->allocated * sizeof(self->p[1][0]));
-    CHECKMEM(self->p[1]);
-
-    self->ids[0] = self->ids[1] = NULL;
+    self->twoN = twoN;
+    self->start = start;
 
     return self;
 }
 
-// Add IdSet to Segment
-void Segment_add(Segment *self, IdSet *idset) {
-    int nids = idset->nids;
-
-    // reallocate arrays if necessary
-    if(nids > self->allocated) {
-        if(2*self->allocated >= nids)
-            self->allocated *= 2;
-        else
-            self->allocated = nids;
-
-        self->p[0] = realloc(self->p[0],
-                             self->allocated * sizeof(self->p[0][0]));
-        CHECKMEM(self->p[0]);
-        self->p[1] = realloc(self->p[1],
-                             self->allocated * sizeof(self->p[1][0]));
-        CHECKMEM(self->p[1]);
-
-        self->ids[0] = realloc(self->ids[0],
-                               self->allocated * sizeof(self->ids[0][0]));
-        CHECKMEM(self->ids[0]);
-        self->ids[1] = realloc(self->ids[1],
-                               self->allocated * sizeof(self->ids[1][0]));
-        CHECKMEM(self->ids[1]);
+int      Segment_addChild(void * vparent, void * vchild) {
+    Segment *parent = vparent;
+    Segment *child = vchild;
+    if(parent->nchildren > 1) {
+        fprintf(stderr,
+                "%s:%s:%d: Can't add child because parent already has %d.\n",
+                __FILE__, __func__, __LINE__, parent->nchildren);
+        return TOO_MANY_CHILDREN;
     }
-
-    // add IdSet to segment
-    self->ids[0][nids-1] = IdSet_add(self->ids[0][nids-1], nids,
-                                     idset->tid, 0.0);
+    if(child->nparents > 1) {
+        fprintf(stderr,
+                "%s:%s:%d: Can't add parent because child already has %d.\n",
+                __FILE__, __func__, __LINE__, child->nparents);
+        return TOO_MANY_PARENTS;
+    }
+    if(*child->start > *parent->start) {
+        fprintf(stderr,
+                "%s:%s:%d: Child start (%lf) must be <= parent start (%lf)\n",
+                __FILE__, __func__, __LINE__, *child->start, *parent->start);
+        return DATE_MISMATCH;
+    }
+    if(child->end == NULL) {
+        child->end = parent->start;
+    } else {
+        if(child->end != parent->start) {
+            fprintf(stderr, "%s:%s:%d: Date mismatch."
+                    " child->end=%p != %p = parent->start\n",
+                    __FILE__, __func__, __LINE__, child->end, parent->start);
+            return DATE_MISMATCH;
+        }
+    }
+    parent->child[parent->nchildren] = child;
+    child->parent[child->nparents] = parent;
+    ++parent->nchildren;
+    ++child->nparents;
+    Segment_sanityCheck(parent, __FILE__, __LINE__);
+    Segment_sanityCheck(child, __FILE__, __LINE__);
+    return 0;
 }
 
+/// Check sanity of Segment
+static void Segment_sanityCheck(Segment * self, const char *file, int lineno) {
+#ifndef NDEBUG
+    REQUIRE(self != NULL, file, lineno);
+#endif
+}
+
+int      Segment_mix(void * vchild, double *mPtr, void * vintrogressor, 
+                     void * vnative) {
+    Segment *child = vchild, *introgressor = vintrogressor,
+        *native = vnative;
+
+    if(introgressor->nchildren > 1) {
+        fprintf(stderr,"%s:%s:%d:"
+                " Can't add child because introgressor already has %d.\n",
+                __FILE__, __func__, __LINE__, introgressor->nchildren);
+        return TOO_MANY_CHILDREN;
+    }
+    if(native->nchildren > 1) {
+        fprintf(stderr,"%s:%s:%d:"
+                " Can't add child because native parent already has %d.\n",
+                __FILE__, __func__, __LINE__, native->nchildren);
+        return TOO_MANY_CHILDREN;
+    }
+    if(child->nparents > 0) {
+        fprintf(stderr, "%s:%s:%d:"
+                " Can't add 2 parents because child already has %d.\n",
+                __FILE__, __func__, __LINE__, child->nparents);
+        return TOO_MANY_PARENTS;
+    }
+    if(child->end != NULL) {
+        if(child->end != introgressor->start) {
+            fprintf(stderr,"%s:%s:%d: Date mismatch."
+                    " child->end=%p != %p=introgressor->start\n",
+                    __FILE__, __func__, __LINE__,
+                    child->end, introgressor->start);
+            return DATE_MISMATCH;
+        }
+        if(child->end != native->start) {
+            fprintf(stderr, "%s:%s:%d: Date mismatch."
+                    " child->end=%p != %p=native->start\n",
+                    __FILE__, __func__, __LINE__, child->end, native->start);
+            return DATE_MISMATCH;
+        }
+    } else if(native->start != introgressor->start) {
+        fprintf(stderr, "%s:%s:%d: Date mismatch."
+                "native->start=%p != %p=introgressor->start\n",
+                __FILE__, __func__, __LINE__,
+                native->start, introgressor->start);
+        return DATE_MISMATCH;
+    } else
+        child->end = native->start;
+
+    child->parent[0] = native;
+    child->parent[1] = introgressor;
+    child->nparents = 2;
+    child->mix = mPtr;
+    introgressor->child[introgressor->nchildren] = child;
+    ++introgressor->nchildren;
+    native->child[native->nchildren] = child;
+    ++native->nchildren;
+    Segment_sanityCheck(child, __FILE__, __LINE__);
+    Segment_sanityCheck(introgressor, __FILE__, __LINE__);
+    Segment_sanityCheck(native, __FILE__, __LINE__);
+    return 0;
+}
+
+void    *Segment_root(void * vself) {
+    Segment *self = vself, *r0, *r1;
+    assert(self);
+    switch (self->nparents) {
+    case 0:
+        return self;
+        break;
+    case 1:
+        return Segment_root(self->parent[0]);
+        break;
+    case 2:
+        r0 = Segment_root(self->parent[0]);
+        r1 = Segment_root(self->parent[1]);
+        if(r0 != r1) {
+            fprintf(stderr, "%s:%s:%d: Population network has multiple roots\n",
+                    __FILE__, __func__, __LINE__);
+            exit(EXIT_FAILURE);
+        }
+        return r0;
+        break;
+    default:
+        fprintf(stderr, "%s:%s:%d: Node %d parents\n",
+                __FILE__, __func__, __LINE__, self->nparents);
+        exit(EXIT_FAILURE);
+    }
+    /* NOTREACHED */
+    return NULL;
+}
+
+void     Segment_print(FILE * fp, void * vself, int indent) {
+    Segment *self = vself;
+    for(int i = 0; i < indent; ++i)
+        fputs("   ", fp);
+    fprintf(fp, "%p twoN=%lf ntrval=(%lf,", self, *self->twoN, *self->start);
+    if(self->end != NULL)
+        fprintf(fp, "%lf)\n", *self->end);
+    else
+        fprintf(fp, "Inf)\n");
+
+    for(int i = 0; i < self->nchildren; ++i)
+        Segment_print(fp, self->child[i], indent + 1);
+}
+
+// Add IdSet to Segment
+void Segment_addIdSet(Segment *self, IdSet *idset) {
+    int nids = IdSet_nIds(idset);
+
+    assert(nids <= MAXSAMP);
+
+    // add IdSet to segment
+    self->ids[0][nids-1] = IdSet_add(self->ids[0][nids-1], idset, 0.0);
+}
+
+#if 0
 int Segment_coalesce(Segment *self, int maxsamp, int dosing,
                      BranchTab *branchtab, double v) {
     assert(self->max <= maxsamp);
@@ -218,3 +331,4 @@ int visitComb(int d, int ndx[d], void *data) {
     }
     return 0;
 }
+#endif
