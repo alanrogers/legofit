@@ -39,5 +39,6 @@ int      Segment_mix(void * vchild, double *mPtr, void * vintrogressor,
                       void * vnative);
 void    *Segment_root(void * vself);
 void     Segment_print(FILE * fp, void * self, int indent);
+void     Segment_sanityCheck(Segment * self, const char *file, int lineno);
 
 #endif

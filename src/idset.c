@@ -14,24 +14,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// A set of tipId_t values.
-struct IdSet {
-    int nIds; // number of Ids in this set
-    double p; // probability of this set
-
-    // Array of length nIds. tid[i] is the id of the i'th haploid
-    // individual in this set.
-    tipId_t *tid;
-
-    // A tipIt_t value representing the union of all individuals in
-    // this set. It is illegal to join two IdSet objects, a and b, if
-    // they overlap. In other words, if "a.allbits & b.allbits" is not
-    // zero.  The i'th bit is set in allbits if it is set in any of
-    // the constituent tipId_t values.
-    tipId_t allbits;
-
-    IdSet *next;
-};
+void IdSet_sanityCheck(IdSet *self, const char *file, int lineno) {
+#ifndef NDEBUG
+    if(self == NULL)
+       return;
+    REQUIRE(self->p >= 0.0, file, lineno);
+    REQUIRE(self->p <= 1.0, file, lineno);
+    tipId_t id = 0;
+    for(int i=0; i < self->nIds; ++i)
+        id |= self->tid[i];
+    REQUIRE(id == self->allbits, file, lineno);
+    IdSet_sanityCheck(self->next, file, lineno);
+#endif    
+}
 
 void IdSet_print(IdSet *self, FILE *fp) {
     if(self==NULL) {

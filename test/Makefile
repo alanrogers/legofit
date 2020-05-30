@@ -118,7 +118,8 @@ XCOMB := xcomb.o comb.o misc.o
 xcomb : $(XCOMB)
 	$(CC) $(CFLAGS) -o $@ $(XCOMB) $(lib)
 
-XSEGMENT := xsegment.o misc.o nodestore.o segment.o idset.o binary.o error.o
+XSEGMENT := xsegment.o misc.o nodestore.o segment.o idset.o binary.o error.o \
+    branchtab.o lblndx.o tokenizer.o matcoal.o comb.o rational.o partprob.o
 xsegment : $(XSEGMENT)
 	$(CC) $(CFLAGS) -o $@ $(XSEGMENT) $(lib)
 

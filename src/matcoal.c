@@ -193,49 +193,53 @@ void MatCoal_freeExterns(void) {
     nsamples = 0;
 }
 
-/// Calculate the probability that, after v units of coalescent time,
-/// there are 2,3,...(dim+1) lines of descent.
-void MatCoal_project(int dim, double ans[dim], double v) {
+/// Calculate eigenvalues for dimension dim and time v.
+void MatCoal_eigenvals(int dim, double eig[dim], double v) {
+    int ndx = dim-1;
+    MatCoal *mc = matcoal[ndx];
+    assert(dim == mc->nLin - 1);
+    for(int i=0; i<dim; ++i)
+        eig[i] = exp(-v*mc->beta[i]);
+}
+
+/// Calculate the probability that there are 2,3,...(dim+1) lines of
+/// descent. Call MatCoal_eigenvals first to calculate eig. The length
+/// of the interval affects the calculation only through its effect
+/// on the eigenvalues in eig, so it does not appear as an argument.
+void MatCoal_project(int dim, double ans[dim], double eig[dim]) {
     int i, j;
     int ndx = dim-1;
     MatCoal *mc = matcoal[ndx];
     assert(dim == mc->nLin - 1);
     
-    double expn[dim];
-
-    for(i=0; i<dim; ++i)
-        expn[i] = exp(-v*mc->beta[i]);
-
-    // Multiply matrix gmat[dim-1] times vector expn
+    // Multiply matrix gmat[dim-1] times vector eig
     for(i=0; i<dim; ++i) {
         ans[i] = 0.0;
         // Right-to-left sum accumulates small numbers first
         // to reduce error.
         for(j=dim-1; j >= i; --j)
-            ans[i] += mc->gmat[mc->offset[i] + j] * expn[j];
+            ans[i] += mc->gmat[mc->offset[i] + j] * eig[j];
     }
 }
 
 /// Vector of expected lengths of coalescent intervals during which
 /// there were 2,3,...(dim+1) lines of descent. To get the expected
-/// length of the interval with 1 line of descent, subtract the sum
-/// of ans from v.
-void MatCoal_ciLen(int dim, double ans[dim], double v) {
+/// length of the interval with 1 line of descent, subtract the sum of
+/// ans from v.  Call MatCoal_eigenvals first to calculate eig.  The
+/// length of the interval affects the calculation only via the
+/// eigenvalues in eig and therefore does not appear as an argument in
+/// MatCoal_ciLen.
+void MatCoal_ciLen(int dim, double ans[dim], double eig[dim]) {
     int i, j;
     int ndx = dim-1;
     MatCoal *mc = matcoal[ndx];
     assert(dim == mc->nLin - 1);
 
-    double expn[dim];
-
-    for(i=0; i<dim; ++i)
-        expn[i] = exp(-v*mc->beta[i]);
-
-    // ans = z + H*expn
+    // ans = z + H*eig
     for(i=0; i<dim; ++i) {
         ans[i] = 0.0;
         for(j=dim-1; j >= i; --j)
-            ans[i] += mc->hmat[mc->offset[i] + j] * expn[j];
+            ans[i] += mc->hmat[mc->offset[i] + j] * eig[j];
         ans[i] += mc->z[i];
     }
 }

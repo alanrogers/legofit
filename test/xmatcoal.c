@@ -84,26 +84,29 @@ int main(int argc, char **argv) {
     // difference between the low-precision and the high-precision
     // calculation. Maxerr is the largest error encountered.
     for(dim=2; dim < nsamples; ++dim) {
+        double eig[dim];
         for(v=0.0; v<10.0; v += 0.5) {
-            MatCoal_project(dim, ans, v);
+            MatCoal_eigenvals(dim, eig, v);
+            MatCoal_project(dim, ans, eig);
             MpfrMatCoal_project(dim, ans2, v);
             err = maxAbsErr(dim, ans, ans2);
             maxerr = fmax(maxerr, err);
 
-            MatCoal_ciLen(dim, ans, v);
+            MatCoal_ciLen(dim, ans, eig);
             MpfrMatCoal_ciLen(dim, ans2, v);
             err = maxAbsErr(dim, ans, ans2);
             maxerr = fmax(maxerr, err);
         }
 
         v = INFINITY;
+        MatCoal_eigenvals(dim, eig, v);
 
-        MatCoal_project(dim, ans, v);
+        MatCoal_project(dim, ans, eig);
         MpfrMatCoal_project(dim, ans2, v);
         err = maxAbsErr(dim, ans, ans2);
         maxerr = fmax(maxerr, err);
 
-        MatCoal_ciLen(dim, ans, v);
+        MatCoal_ciLen(dim, ans, eig);
         MpfrMatCoal_ciLen(dim, ans2, v);
         err = maxAbsErr(dim, ans, ans2);
         maxerr = fmax(maxerr, err);

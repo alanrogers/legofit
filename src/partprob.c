@@ -1,9 +1,10 @@
 #include "partprob.h"
 #include <math.h>
+#include <assert.h>
 /**
  * @file partprob.c
  * @author Alan R. Rogers
- * @brief Probabilities of partitions
+ * @brief Probability of a set partition
  *
  * @copyright Copyright (c) 2020, Alan R. Rogers
  * <rogers@anthro.utah.edu>. This file is released under the Internet
@@ -25,14 +26,14 @@ long double lnCoalConst(unsigned n, unsigned k) {
 }
 
 /**
- * Partition probability under the coalescent process. There are n
- * descendants in some recent epoch and k < n in some earlier
- * epoch. In that earlier epoch, the i'th ancestor had y[i]
- * descendants. The function returns the probability of a partition
- * that satisfies this condition, given n and k. There may be several
- * such partitions. lnconst should be calculated using function
- * lnCoalConst. See theorem 1.5, p. 11, Durrett,
- * Richard. 2008. Probability Models for DNA Sequence Evolution.
+ * Probability of a set partition. There are n descendants in some
+ * recent epoch and k < n in some earlier epoch. In that earlier
+ * epoch, the i'th ancestor had y[i] descendants. The function returns
+ * the probability of a partition that satisfies this condition, given
+ * n and k. There may be several such partitions. lnconst should be
+ * calculated using function lnCoalConst. See theorem 1.5, p. 11,
+ * Durrett, Richard. 2008. Probability Models for DNA Sequence
+ * Evolution.
  */
 double probPartition(unsigned k, unsigned y[k], long double lnconst) {
     assert(k > 0);

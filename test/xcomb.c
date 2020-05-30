@@ -178,7 +178,7 @@ int main(int argc, char **argv) {
         for(i=0; i<nboxes; ++i)
             printf(" %d", n[i]);
         putchar('\n');
-        printf("ntot=%d x=%d\n", ntot, x);
+        printf("ntot=%d x=%d\n", ntot, n[0]);
     }
 
     Cdata cdata = {.verbose=verbose, .ntot=ntot, .count=0};
@@ -194,10 +194,10 @@ int main(int argc, char **argv) {
     if(verbose) {
         printf("traverseComb returned %d. count=%d\n",
                status, cdata.count);
-        printf("Expecting count=%ld\n", multinom(nboxes, n));
+        printf("Expecting count=%ld\n", binom(ntot, n[0]));
     }
 
-    assert(cdata.count == multinom(nboxes >= 2 ? 2 : 1, y));
+    assert(cdata.count == binom(ntot, n[0]));
 
     unitTstResult("traverseComb", status==0 ? "OK" : "FAIL");
 
