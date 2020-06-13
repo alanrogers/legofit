@@ -104,10 +104,10 @@ void printBits(size_t size, void const * const ptr, FILE *fp) {
 
     i = size;
     while(i > 0) {
-        --i;
+        i -= 1;
         j=8;
         while(j > 0) {
-            --j;
+            j -= 1;
             byte = b[i] & (1<<j);
             byte >>= j;
             fprintf(fp, "%u", (unsigned) byte);
