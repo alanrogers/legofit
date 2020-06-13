@@ -13,11 +13,10 @@
 #include "comb.h"
 #include "error.h"
 #include "idset.h"
-#include "intpart.h"
+#include "setpart.h"
 #include "matcoal.h"
 #include "misc.h"
 #include "nodestore.h"
-#include "partprob.h"
 #include "segment.h"
 #include <stdlib.h>
 #include <string.h>
@@ -27,7 +26,7 @@ typedef struct SetPartDat SetPartDat;
 
 // Data manipulated by visitComb function
 struct CombDat {
-    double contribution; // Pr[site pattern]*E[len of interval]
+    double contrib; // Pr[site pattern]*E[len of interval]
     IdSet *ids;
     BranchTab *branchtab;
     int dosing;    // do singleton site patterns if nonzero
@@ -36,15 +35,16 @@ struct CombDat {
 // Data manipulated by visitSetPart function.
 struct SetPartDat {
     unsigned nparts; // Number of parts in partition
-    double lnconst;  // log of constant in Durrett's theorem 1.5
+    long double lnconst;  // log of constant in Durrett's theorem 1.5
+    double elen;     // E[len of interval]
     IdSet *ids[2];   // ids[0] refers to descendants, ids[1] to ancestors
     BranchTab *branchtab;
-    int dosing;    // do singleton site patterns if nonzero
+    int dosing;      // do singleton site patterns if nonzero
 };
 
 void   Segment_addIdSet(Segment *self, IdSet *idset);
 int    visitComb(int d, int ndx[d], void *data);
-int visitSetPart(unsigned n, unsigned a[n], void *data);
+int    visitSetPart(unsigned n, unsigned a[n], void *data);
 
 void *Segment_new(double *twoN, double *start, NodeStore * ns) {
     Segment *self = NodeStore_alloc(ns);
@@ -262,13 +262,31 @@ void Segment_addIdSet(Segment *self, IdSet *idset) {
 }
 
 int Segment_coalesce(Segment *self, int maxsamp, int dosing,
-                     BranchTab *branchtab, double v) {
+                     BranchTab *branchtab) {
     assert(self->max <= maxsamp);
 
-    double pr[maxsamp], elen[maxsamp], sum;
+    double v, pr[maxsamp], elen[maxsamp];
     int n, i, status=0;
+
+    if(self->end == NULL)
+        v = INFINITY;
+    else
+        v = *self->end = *self->start;
+
     const int finite = isfinite(v); // is segment finite?
-    int kstart = (finite ? 1 : 2);  // skip k=1 if infinite
+
+    CombDat cd = {.branchtab = branchtab,
+                  .dosing = dosing
+    };
+
+    SetPartDat sd = {.branchtab = branchtab,
+                     .dosing = dosing
+    };
+
+#ifndef NDEBUG
+    for(i=0; i<maxsamp; ++i)
+        assert(self->ids[1][i] == NULL);
+#endif    
 
     // We only need to calculate the probabilities, self->p[1][i],
     // of ancestors if the segment is finite.
@@ -284,10 +302,6 @@ int Segment_coalesce(Segment *self, int maxsamp, int dosing,
     // Calculate probabilities and expected values, p[1] and elen.
     for(n=2; n <= self->max; ++n) {
 
-        // Skip improbable states.
-        if(self->p[0][n-1] == 0.0)
-            continue;
-
         // eigenvalues of transient states
         double eig[n-1];
         if(finite)
@@ -295,6 +309,24 @@ int Segment_coalesce(Segment *self, int maxsamp, int dosing,
         else
             memset(eig, 0, (n-1)*sizeof(eig[0]));
         
+        // Calculate expected length, within the segment, of
+        // coalescent intervals with 2,3,...,n lineages.  elen[i] is
+        // expected length of interval with i-1 lineages.
+        // elen[0] not set.
+        MatCoal_ciLen(n-1, elen+1, eig);
+
+        // Calculate expected length, elen[0], of interval with one
+        // lineage.  elen[i] refers to interval with i+1 lineages.
+        double sum = 0.0;
+        for(i=n; i >= 2; --i)
+            sum += elen[i-1];
+        elen[0] = v - sum; // elen[0] is infinite if v is.
+
+        // Multiply elen by probability that segment had n lineages on
+        // recent end of segment.
+        for(i=0; i < n; ++i)
+            elen[i] *= self->p[0][n-1];
+
         if(finite) {
             // Calculate prob of 2,3,...,n ancestors at ancent end of
             // segment. On return, pr[1] = prob[2], pr[n-1] = prob[n],
@@ -315,65 +347,54 @@ int Segment_coalesce(Segment *self, int maxsamp, int dosing,
             // self->p[1][i] is prob if i+1 lineages
             for(i=2; i <= n; ++i)
                 self->p[1][i-1] += self->p[0][n-1] * pr[i-1];
-        }
 
-        // Calculate expected length, within the segment, of
-        // coalescent intervals with 2,3,...,n lineages.  elen[i] is
-        // expected length of interval with i-1 lineages.
-        // elen[0] not set.
-        MatCoal_ciLen(n-1, elen+1, eig);
+            sd.ids[0] = self->ids[0][n-1];
 
-        // Calculate expected length, elen[0], of interval with one
-        // lineage.  elen[i] refers to interval with i+1 lineages.
-        sum = 0.0;
-        for(i=n; i >= 2; --i)
-            sum += elen[i-1];
-        elen[0] = v - sum; // elen[0] is infinite if v is.
-
-        // Multiply elen by probability that segment had n lineages on
-        // recent end of segment.
-        for(i=1; i <= n; ++i)
-            elen[i-1] *= self->p[0][n-1];
-    }
-
-    CombDat cd = {.contribution = 0.0,
-                  .ids = NULL,
-                  .branchtab = branchtab,
-                  .dosing = dosing
-    };
-
-    // loop over number of descendants in this segment
-    for(n=1; n <= self->max; ++n) {
-        // Skip improbable states.
-        if(self->p[0][n-1] == 0.0)
-            continue;
-
-        cd.ids = self->ids[0][n-1];
-
-        // loop over intervals: k is the number of ancestors
-        // w/i interval.
-        for(int k=kstart; k <= n; ++k) {
-            
-            // portion of log Qdk that doesn't involve d
-            long double lnconst = logl(k) - lbinom(n-1, k-1);
-
-            // Within each interval, there can be ancestors
-            // with 1 descendant, 2, 3, ..., n-k+2.
-            for(int d=1; d <= n-k+1; ++d) {
-                long double lnprob = lnconst
-                    + lbinom(n-d-1, k-1) - lbinom(n,d);
-
-                // probability of site pattern
-                cd.contribution = (double) expl(lnprob);
-
-                // times expected length of interval
-                cd.contribution *= elen[k-1];
-                
-                status = traverseComb(n, d, visitComb, &cd);
+            // Loop over number, k, of ancestors.
+            // Include k=1, because this is a finite segment.
+            for(int k=1; k <= n; ++k) {
+                sd.ids[1] = self->ids[1][k-1];
+                sd.nparts = k;
+                sd.elen = elen[k-1];
+                sd.lnconst = lnCoalConst(n, k);
+                status = traverseSetPartitions(n, k, visitSetPart, &sd);
                 if(status)
                     return status;
+                self->ids[1][k-1] = IdSet_cat(self->ids[1][k-1], sd.ids[1]);
             }
+            sd.ids[0] = sd.ids[1] = NULL;
+        }else{  // Infinite segment: the root
+
+            cd.ids = self->ids[0][n-1];
+
+            // Loop over number, k, of ancestors.
+            // Exclude k=1, because this is an infinite segment.
+            for(int k=2; k <= n; ++k) {
+            
+                // portion of log Qdk that doesn't involve d
+                long double lnconst = logl(k) - lbinom(n-1, k-1);
+
+                // Within each interval, there can be ancestors
+                // with 1 descendant, 2, 3, ..., n-k+2.
+                for(int d=1; d <= n-k+1; ++d) {
+                    long double lnprob = lnconst
+                        + lbinom(n-d-1, k-1) - lbinom(n,d);
+
+                    // probability of site pattern
+                    cd.contrib = (double) expl(lnprob);
+
+                    // times expected length of interval
+                    cd.contrib *= elen[k-1];
+                
+                    status = traverseComb(n, d, visitComb, &cd);
+                    if(status)
+                        return status;
+                }
+            }
+            cd.ids = NULL;
         }
+        IdSet_free(self->ids[0][n-1]);
+        self->ids[0][n-1] = NULL;
     }
     return status;
 }
@@ -388,8 +409,10 @@ int visitComb(int d, int ndx[d], void *data) {
         // sitepat is the union of the current set of descendants, as
         // described in ndx.
         tipId_t sitepat = 0;
-        for(int i=0; i < d; ++i)
+        for(int i=0; i < d; ++i) {
+            assert(ndx[i] < ids->nIds);
             sitepat |= ids->tid[ndx[i]];
+        }
         
         // Skip singletons unless data->dosing is nonzero
         if(!dat->dosing && isPow2(sitepat))
@@ -397,7 +420,7 @@ int visitComb(int d, int ndx[d], void *data) {
       
         // Increment BranchTab entry for current sitepat value.
         BranchTab_add(dat->branchtab, sitepat,
-                      ids->p * dat->contribution);
+                      ids->p * dat->contrib);
     }
     return 0;
 }
@@ -417,15 +440,13 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
         ++c[a[i]];
     }
 
-    double prob = probPartition(k, c, vdat->lnconst);
+    double p = probPartition(k, c, vdat->lnconst);
 
     for(IdSet *ids = vdat->ids[0]; ids != NULL; ids = ids->next) {
         tipId_t sitepat[k];
         memset(sitepat, 0, k*sitepat[0]);
 
         assert(n == ids->nIds);
-
-        double currprob = ids->p * prob;
 
         // Loop over descendants, creating a sitepat for each
         // ancestor. a[i] is the index of the ancestor of the i'th
@@ -437,11 +458,12 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
         // Loop over ancestors, i.e. over site patterns, adding
         // to the corresponding entry in BranchTab.
         for(int i=0; i<k; ++i)
-            BranchTab_add(vdat->branchtab, sitepat[i], currprob);
+            BranchTab_add(vdat->branchtab, sitepat[i],
+                          p * vdat->elen * ids->p);
 
         // Add the current set partition to the list of ancestral
         // states.
-        vdat->ids[1] = IdSet_new(vdat->ids[1], k, sitepat, currprob);
+        vdat->ids[1] = IdSet_new(vdat->ids[1], k, sitepat, p * ids->p);
     }
 
     return status;

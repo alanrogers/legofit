@@ -25,6 +25,7 @@ struct IdSet {
 
 IdSet *IdSet_newTip(tipId_t tid);
 IdSet *IdSet_new(IdSet *next, int nIds, tipId_t tid[nIds], double prob);
+IdSet *IdSet_cat(IdSet *a, IdSet *b);
 int    IdSet_cmp(const IdSet *x, const IdSet *y);
 int    IdSet_deepCmp(const IdSet *x, IdSet *y);
 IdSet *IdSet_dup(const IdSet *old);

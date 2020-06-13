@@ -31,9 +31,7 @@ struct Segment {
 
 void    *Segment_new(double *twoN, double *start, NodeStore *ns);
 int      Segment_coalesce(Segment *self, int maxsamp, int dosing,
-                          BranchTab *branchtab, double v);
-
-
+                          BranchTab *branchtab);
 int      Segment_addChild(void * vparent, void * vchild);
 int      Segment_mix(void * vchild, double *mPtr, void * vintrogressor, 
                       void * vnative);

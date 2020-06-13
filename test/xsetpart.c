@@ -8,7 +8,6 @@
  */
 
 #include "setpart.h"
-#include "partprob.h"
 #include "misc.h"
 #include <stdio.h>
 #include <assert.h>
@@ -28,7 +27,7 @@ typedef struct VisitDat VisitDat;
 // Data manipulated by visit function.
 struct VisitDat {
     int verbose, intpart;
-    unsigned nsubdivisions;
+    unsigned nparts;
     unsigned long count;
     double lnconst; // log of constant in Durrett's theorem 1.5
     double sumprob; // sum of probabilities should equal 1.
@@ -66,7 +65,7 @@ int visit(unsigned n, unsigned a[n], void *data) {
             max = a[i];
         }
     }
-    if(max != 1 + vdat->nsubdivisions)
+    if(max != 1 + vdat->nparts)
         ++status;
     vdat->count += 1;
 
@@ -108,18 +107,18 @@ void usage(void) {
     fprintf(stderr,"usage: xsetpart [options]\n");
     fprintf(stderr,"where options may include\n");
     fprintf(stderr," -n <n_elements> : size of set\n");
-    fprintf(stderr," -k <n_subdiv>   : number of subdivisions\n");
+    fprintf(stderr," -k <n_parts>    : number of parts\n");
     fprintf(stderr," -i              : print integer partitions\n");
     fprintf(stderr," -s              : test Stirling2 only\n");
     fprintf(stderr," -v              : verbose output\n\n");
-    fprintf(stderr,"   n_elements must be > 0\n");
-    fprintf(stderr,"   n_subdiv must be > 0, <= n_elements\n");
+    fprintf(stderr,"  n_elements must be > 0\n");
+    fprintf(stderr,"  n_parts must be > 0, <= n_elements\n");
     exit(EXIT_FAILURE);
 }
 
 int main(int argc, char **argv) {
     int i, n, verbose = 0, s2only=0, intpart=0;
-    unsigned nelem = 6, nsub = 3;
+    unsigned nelem = 6, nparts = 3;
 
     for(i=1; i<argc; ++i) {
         if(strcmp(argv[i], "-v") == 0)
@@ -133,7 +132,7 @@ int main(int argc, char **argv) {
             i += 1;
             if(i == argc)
                 usage();
-            nsub = strtoul(argv[i], NULL, 10);
+            nparts = strtoul(argv[i], NULL, 10);
         }else if(strcmp(argv[i], "-s") == 0) {
             s2only = 1;
         }else if(strcmp(argv[i], "-i") == 0) {
@@ -147,9 +146,9 @@ int main(int argc, char **argv) {
 
     if(verbose) {
         Stirling2_print(s, stdout);
-        long unsigned z = Stirling2_val(s, nelem, nsub);
+        long unsigned z = Stirling2_val(s, nelem, nparts);
         printf("Stirling2(%u, %u) = %lu = %le\n",
-               nelem, nsub, z, (double) z);
+               nelem, nparts, z, (double) z);
     }
 
     if(s2only)
@@ -199,15 +198,15 @@ int main(int argc, char **argv) {
 
     VisitDat vdat = {.verbose = verbose,
                      .intpart = intpart,
-                     .nsubdivisions = nsub,
+                     .nparts = nparts,
                      .count=0,
                      .sumprob=0.0,
-                     .lnconst=lnCoalConst(nelem, nsub) };
+                     .lnconst=lnCoalConst(nelem, nparts) };
 
     if(verbose)
         printf("lnconst=%lf\n", vdat.lnconst);
 
-    int status = traverseSetPartitions(nelem, nsub, visit, &vdat);
+    int status = traverseSetPartitions(nelem, nparts, visit, &vdat);
 
     if(verbose)
         printf("sumprob=%lf; should be 1.0; err=%le\n",
@@ -219,9 +218,9 @@ int main(int argc, char **argv) {
     s = Stirling2_new(nelem);
     CHECKMEM(s);
     if(verbose)
-        printf("Stirling2(%u,%u)=%lu\n", nelem, nsub,
-               Stirling2_val(s, nelem, nsub));
-    assert(vdat.count == Stirling2_val(s, nelem, nsub));
+        printf("Stirling2(%u,%u)=%lu\n", nelem, nparts,
+               Stirling2_val(s, nelem, nparts));
+    assert(vdat.count == Stirling2_val(s, nelem, nparts));
 
     unitTstResult("SetPart", status==0 ? "OK" : "FAIL");
     return 0;

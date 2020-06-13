@@ -113,6 +113,21 @@ IdSet *IdSet_new(IdSet *next, int nIds, tipId_t tid[nIds], double prob) {
     return self;
 }
 
+/// Concatenate two linked lists. Tacks b onto the end of a without
+/// duplicating nodes. After concatenating the two lists, you must
+/// free them with a single call to IdSet_free. You cannot free the
+/// two lists separately.
+IdSet *IdSet_cat(IdSet *a, IdSet *b) {
+    if(a == NULL)
+        return b;
+    IdSet *tail = a;
+    while(tail->next)
+        tail = tail->next;
+    tail->next = b;
+    return a;
+}
+
+
 // Does a deep copy
 IdSet *IdSet_dup(const IdSet *old) {
     if(old == NULL)

@@ -166,18 +166,18 @@ double probPartition(unsigned k, unsigned y[k], long double lnconst) {
    The visit function and the data structure should be defined by the
    user.
 */
-int traverseSetPartitions(unsigned nelements, unsigned nsubdivisions,
+int traverseSetPartitions(unsigned nelements, unsigned nparts,
                            int (*visit)(unsigned n, unsigned a[n],
                                         void *data), void *data) {
     unsigned a[nelements+1];
     memset(a, 0, (nelements+1)*sizeof(a[0]));
-    for(int j=1; j <= nsubdivisions; ++j)
-        a[nelements-nsubdivisions+j] = j-1;
-    if(nsubdivisions==1) {
+    for(int j=1; j <= nparts; ++j)
+        a[nelements-nparts+j] = j-1;
+    if(nparts==1) {
         (*visit)(nelements, a+1, data);
         return 0;
     }
-    return f(nsubdivisions, nelements, 0, nelements, a, visit, data);
+    return f(nparts, nelements, 0, nelements, a, visit, data);
 }
 
 // Forward recursion

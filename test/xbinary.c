@@ -188,5 +188,8 @@ int main(int argc, char **argv) {
     unitTstResult("nlz", "OK");
 
     unitTstResult("binary", "OK");
+
+    long unsigned x;
+
     return 0;
 }
