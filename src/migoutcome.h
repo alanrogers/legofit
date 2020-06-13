@@ -38,6 +38,15 @@ This complement can be calculated as
 Here, the 1st line turns on all bits from 0 through noutcomes-1,
 and the 2nd line turns off the bits that are on in x.
 
+This results in MigOutcome objects in which multiple bits are on. In
+effect, the corresponding lineages have been duplicated and are
+associated with multiple outcomes of the migration event. They are not
+really duplicated, however, until a merger of two populations (in
+backwards time) brings them into contact with lineages with which they
+share bits in the "outcome" field. At this point, the lineages are
+duplicated. One copy acquires the bit pattern of the lineages with
+which they are combined, and the other copy has these bits turned off.
+
 A single set of lineages may have experienced multiple migration
 events, so each lineages has a sorted linked list of MigOutcome
 objects, which represent all the migration events it has experienced.
@@ -46,6 +55,7 @@ struct MigOutcome {
     unsigned event;        // which episode of migration?
     unsigned noutcomes;    // number of outcomes of this migration event
     long unsigned outcome; // bit i is on if this is the i'th outcome
+    double pr;             // probability of this outcome
     struct MigOutcome *next;
 };
 
