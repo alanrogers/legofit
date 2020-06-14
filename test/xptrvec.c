@@ -20,6 +20,8 @@ int main(void) {
 
     int a=1, b=2, c=3, d=4, status;
     PtrVec *v = PtrVec_new(0);
+    assert(v->buffsize == 0);
+    assert(v->used == 0);
 
     status = PtrVec_push(v, &a);
     assert(status == 0);
