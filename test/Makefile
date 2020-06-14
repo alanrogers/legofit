@@ -6,7 +6,7 @@ incl := -I/usr/local/include -I/opt/local/include -I../src
 tests := xaddrparmap xbinary xbooma xboot xbranchtab xcomb xdafreader xdiffev \
   xdtnorm xerror xgene xgetlinetok xgptree xhessian xidset xintpart \
   xjobqueue xlblndx xlinereader xmisc xmpfrmatcoal xnodestore xsimreader \
-  xparam xparse xparstore xpointbuff xpopnode xstrptrmap xrafreader \
+  xparam xparse xparstore xpointbuff xpopnode xptrvec xstrptrmap xrafreader \
   xrational xscrmreader xsampndx xsegment xsetpart xsimsched xstate \
   xstrdblmap xstrdblqueue xstrint xstrparmap xtinyexpr xtokenizer \
   xuintqueue xwraparound xmatcoal
@@ -79,6 +79,7 @@ test : $(tests)
 	-./xparstore
 	-./xpointbuff
 	-./xpopnode
+	-./xptrvec
 	-./xrafreader
 	-./xrational
 	-./xsampndx
@@ -130,6 +131,10 @@ xintpart : $(XINTPART)
 XMISC := xmisc.o misc.o
 xmisc : $(XMISC)
 	$(CC) $(CFLAGS) -o $@ $(XMISC) $(lib)
+
+XPTRVEC := xptrvec.o ptrvec.o misc.o
+xptrvec : $(XPTRVEC)
+	$(CC) $(CFLAGS) -o $@ $(XPTRVEC) $(lib)
 
 XSETPART := xsetpart.o setpart.o misc.o
 xsetpart : $(XSETPART)

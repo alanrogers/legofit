@@ -14,19 +14,17 @@ struct Segment {
     struct Segment *parent[2];
     struct Segment *child[2];
 
-    tipId_t         sampId[MAXSAMP];
-
     int max;       // max number of lineages in segment
+
+    // d[i] is a linked list of sets of i+1 descendants
+    IdSet         *d[max];
+
+    // a[i] is a linked list of sets of i+1 ancestors
+    IdSet         *a[max];
 
     // p[0][i] is prob there are i+1 lineages at recent end of segment
     // p[1][i] is analogous prob for ancient end of interval.
     double p[2][MAXSAMP];
-
-    // Arrays of pointers to linked lists of IdSet objects. Dimension
-    // is max X 2.  ids[0] refers to the recent end of the segment and
-    // ids[1] to the ancient end. ids[0][i] is the list for the case
-    // in which there are i+1 lineages at the recent end of the segment.
-    IdSet *ids[2][MAXSAMP];
 };
 
 void    *Segment_new(double *twoN, double *start, NodeStore *ns);
