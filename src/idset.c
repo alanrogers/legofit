@@ -20,11 +20,6 @@ void IdSet_sanityCheck(IdSet *self, const char *file, int lineno) {
        return;
     REQUIRE(self->p >= 0.0, file, lineno);
     REQUIRE(self->p <= 1.0, file, lineno);
-    tipId_t id = 0;
-    for(int i=0; i < self->nIds; ++i)
-        id |= self->tid[i];
-    REQUIRE(id == self->allbits, file, lineno);
-    IdSet_sanityCheck(self->next, file, lineno);
 #endif    
 }
 
@@ -33,12 +28,11 @@ void IdSet_print(IdSet *self, FILE *fp) {
         fputs("-----------------------\n", fp);
         return;
     }
-    fprintf(fp, "probability = %lf allbits=0%o nIds=%d\n",
-            self->p, self->allbits, self->nIds);
+    fprintf(fp, "probability = %lf nIds=%d\n",
+            self->p, self->nIds);
     for(int i=0; i < self->nIds; ++i)
         fprintf(fp, " 0%o", self->tid[i]);
     putc('\n', fp);
-    IdSet_print(self->next, fp);
 }
 
 /**
@@ -58,22 +52,6 @@ int IdSet_cmp(const IdSet *x, const IdSet *y) {
     return 0;
 }
 
-int IdSet_deepCmp(const IdSet *x, IdSet *y) {
-    int cmp=0;
-    while(x!=NULL && y!=NULL) {
-        cmp = IdSet_cmp(x, y);
-        if(cmp)
-            return cmp;
-        x = x->next;
-        y = y->next;
-    }
-    if(x!=NULL)
-        return 1;
-    if(y!=NULL)
-        return -1;
-    return 0;
-}
-
 /// Allocate a new IdSet with a single tipId_t value and probability 1.
 IdSet *IdSet_newTip(tipId_t tid) {
     IdSet *self = malloc(sizeof(IdSet));
@@ -81,201 +59,27 @@ IdSet *IdSet_newTip(tipId_t tid) {
 
     self->nIds = 1;
     self->p = 1.0;
-    self->tid = malloc(sizeof(self->tid[0]));
-    CHECKMEM(self->tid);
-
-    self->allbits = self->tid[0] = tid;
-
-    self->next = NULL;
+    self->tid[0] = tid;
     return self;
 }
 
 /**
  * Allocate a new IdSet object with given values of nIds, tid, and
- * prob, and with the next field pointing to the argument "next".
+ * prob. Uses the struct hack.
  */
-IdSet *IdSet_new(IdSet *next, int nIds, tipId_t tid[nIds], double prob) {
-    IdSet *self = malloc(sizeof(IdSet));
+IdSet *IdSet_new(int nIds, const tipId_t tid[nIds], double prob) {
+    assert(nIds > 0);
+    size_t size = sizeof(IdSet) + (nIds-1) * sizeof(tipId_t);
+    
+    IdSet *self = malloc(size);
     CHECKMEM(self);
 
     self->nIds = nIds;
     self->p = prob;
-    self->tid = malloc(nIds * sizeof(self->tid[0]));
-    CHECKMEM(self->tid);
 
-    self->allbits = 0;
-    for(int i=0; i < nIds; ++i) {
-        self->allbits |= tid[i];
+    for(int i=0; i < nIds; ++i)
         self->tid[i] = tid[i];
-    }
-
-    self->next = next;
-    return self;
-}
-
-/// Concatenate two linked lists. Tacks b onto the end of a without
-/// duplicating nodes. After concatenating the two lists, you must
-/// free them with a single call to IdSet_free. You cannot free the
-/// two lists separately.
-IdSet *IdSet_cat(IdSet *a, IdSet *b) {
-    if(a == NULL)
-        return b;
-    IdSet *tail = a;
-    while(tail->next)
-        tail = tail->next;
-    tail->next = b;
-    return a;
-}
-
-
-// Does a deep copy
-IdSet *IdSet_dup(const IdSet *old) {
-    if(old == NULL)
-        return NULL;
-    IdSet *next = IdSet_dup(old->next);
-    return IdSet_new(next, old->nIds, old->tid, old->p);
-}
-
-/**
- * Add a new IdSet item to a sorted list. If a corresponding IdSet
- * object already exists, then add prob to that object. The value
- * of nIds must match the value in the existing list.
- */
-IdSet *IdSet_add(IdSet *head, const IdSet *to_add, double prob) {
-    IdSet *tmp;
-    if(head==NULL) {
-        tmp = IdSet_dup(to_add);
-        tmp->p *= prob;
-        return tmp;
-    }
-    if(head->nIds != to_add->nIds) {
-        fprintf(stderr,"%s:%d: can't add a set with %d ids to a list"
-               " of sets with %d ids\n",
-               __FILE__,__LINE__, to_add->nIds, head->nIds);
-        exit(EXIT_FAILURE);
-    }
-    int cmp = IdSet_cmp(to_add, head);
-    if(cmp < 0) {
-        tmp = IdSet_dup(to_add);
-        tmp->p *= prob;
-        tmp->next = head;
-        return tmp;
-    }if(cmp > 0) {
-        head->next = IdSet_add(head->next, to_add, prob);
-        return head;
-    }
-    head->p += prob;
-    return head;
-}
-
-void IdSet_free(IdSet *self) {
-    if(self==NULL)
-        return;
-    IdSet_free(self->next);
-    free(self->tid);
-    free(self);
-}
-
-/**
- * Join two sets. The probability of the joined set is the product
- * of the two input probabilities. The joined set is the union of
- * sets a and b. If sets a and b overlap, the join is not possible,
- * and the function returns NULL. This happens when we are trying to
- * join sets that represent mutually exclusive outcomes. For example,
- * as we trace a nucleotide's history backwards through the network of
- * populations, we come to branch points. One branch represents
- * migration from another population, the other represents descent
- * from the same population. These are mutually exclusive outcomes,
- * which both occur with nonzero probability. Eventually, as we move
- * farther back in time, the algorithm will try to join the ancestors
- * of these two outcomes. At that point, IdSet_join will return NULL,
- * and we'll know that this pair of sets cannot be joined.
- */
-IdSet *IdSet_join(IdSet *a, IdSet *b) {
-    if( (a->allbits & b->allbits) != 0) {
-        // Sets overlap. Don't join them.
-        return NULL;
-    }
-
-    IdSet *self = malloc(sizeof(IdSet));
-    CHECKMEM(self);
-
-    // sum
-    self->nIds = a->nIds + b->nIds;
-
-    // product
-    self->p = a->p * b->p;
-
-    // The i'th bit is set in allbits if it is set in any of
-    // the constituent tipId_t values.
-    self->allbits = a->allbits | b->allbits;
-
-    // New array is large enough to hold both sets of tipId_t values.
-    self->tid = malloc(self->nIds * sizeof(self->tid[0]));
-    CHECKMEM(self->tid);
-
-    // Copy arrays into self, maintaining sort.
-    int ia=0, ib=0, j=0;
-    while(ia < a->nIds && ib < b->nIds) {
-        assert(j < self->nIds);
-        if(a->tid[ia] < b->tid[ib])
-            self->tid[j++] = a->tid[ia++];
-        else {
-            assert(a->tid[ia] > b->tid[ib]);
-            // a->tid can't equal b->tid, because the first step in
-            // this function ensures that no bit is set in both
-            // values. The assertion just above checks this.
-            self->tid[j++] = b->tid[ib++];
-        }
-    }
-    while(ia < a->nIds)
-        self->tid[j++] = a->tid[ia++];
-    while(ib < b->nIds)
-        self->tid[j++] = b->tid[ib++];
-    assert(ia == a->nIds);
-    assert(ib == b->nIds);
-    assert(j == self->nIds);
 
     return self;
 }
 
-int IdSet_nIds(IdSet *self) {
-    return self->nIds;
-}
-
-/// The number of IdSet objects in the linked list.
-int IdSet_nSets(IdSet *self) {
-    int n=0;
-    while(self != NULL) {
-        n += 1;
-        self = self->next;
-    }
-    return n;
-}
-
-int IdSet_nDescendants(IdSet *self) {
-    return num1bits(self->allbits);
-}
-
-void IdSet_mulBy(IdSet *self, double factor) {
-    while(self != NULL) {
-        self->p *= factor;
-        self = self->next;
-    }
-}
-
-void IdSet_divBy(IdSet *self, double divisor) {
-    while(self != NULL) {
-        self->p /= divisor;
-        self = self->next;
-    }
-}
-
-double IdSet_sumProb(IdSet *self) {
-    double sum=0.0;
-    while(self != NULL) {
-        sum += self->p;
-        self = self->next;
-    }
-    return sum;
-}

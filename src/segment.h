@@ -16,11 +16,9 @@ struct Segment {
 
     int max;       // max number of lineages in segment
 
-    // d[i] is a linked list of sets of i+1 descendants
-    IdSet         *d[max];
-
-    // a[i] is a linked list of sets of i+1 ancestors
-    IdSet         *a[max];
+    // d[i] is a vector sets of i+1 descendants
+    // a[i] is a vector of sets of i+1 ancestors
+    PtrVec         *d[max], *a[max];
 
     // p[0][i] is prob there are i+1 lineages at recent end of segment
     // p[1][i] is analogous prob for ancient end of interval.
