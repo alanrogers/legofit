@@ -33,6 +33,8 @@ void IdSet_print(IdSet *self, FILE *fp) {
     for(int i=0; i < self->nIds; ++i)
         fprintf(fp, " 0%o", self->tid[i]);
     putc('\n', fp);
+    fprintf(fp,"mig history:");
+    MigOutcome_print(self->mig, fp);
 }
 
 /**
@@ -59,6 +61,7 @@ IdSet *IdSet_newTip(tipId_t tid) {
 
     self->nIds = 1;
     self->p = 1.0;
+    self->mig = NULL;
     self->tid[0] = tid;
     return self;
 }
@@ -76,6 +79,7 @@ IdSet *IdSet_new(int nIds, const tipId_t tid[nIds], double prob) {
 
     self->nIds = nIds;
     self->p = prob;
+    self->mig = NULL;
 
     for(int i=0; i < nIds; ++i)
         self->tid[i] = tid[i];

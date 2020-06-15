@@ -2,6 +2,7 @@
 #  define ARR_IDSET_H
 
 #  include "typedefs.h"
+#  include "migoutcome.h"
 #  include <stdio.h>
 #  include <stdlib.h>
 
@@ -9,6 +10,8 @@
 struct IdSet {
     double p; // probability of this set
     int nIds; // number of Ids in this set
+
+    MigOutcome *mig;
 
     // Array of length nIds. tid[i] is the id of the i'th haploid
     // individual in this set. Allocated using the struct hack.

@@ -361,7 +361,7 @@ XSTRDBLQUEUE := xstrdblqueue.o strdblqueue.o misc.o
 xstrdblqueue : $(XSTRDBLQUEUE)
 	$(CC) $(CFLAGS) -o $@ $(XSTRDBLQUEUE) $(lib)
 
-XIDSET := xidset.o idset.o misc.o binary.o
+XIDSET := xidset.o idset.o misc.o binary.o migoutcome.o
 xidset : $(XIDSET)
 	$(CC) $(CFLAGS) -o $@ $(XIDSET) $(lib)
 
