@@ -1,6 +1,8 @@
 #ifndef ARR_MIGOUTCOME
 #define ARR_MIGOUTCOME
 
+#include <stdint.h>
+
 /**
 This structure handles bookkeeping associated with migration. A when
 migration occurs, a number of mutually exclusive outcomes are
@@ -53,10 +55,24 @@ objects, which represent all the migration events it has experienced.
  **/
 struct MigOutcome {
     unsigned event;        // which episode of migration?
-    unsigned noutcomes;    // number of outcomes of this migration event
-    long unsigned outcome; // bit i is on if this is the i'th outcome
+    unsigned noutcomes;    // number of outcomes of this migration
+                           // event
+
+    // Bit i is on if this is the i'th outcome.
+    uint64_t outcome;
+
     double pr;             // probability of this outcome
     struct MigOutcome *next;
 };
+
+void        nextMigrationEvent(void);
+unsigned    getMigrationEvent(void);
+MigOutCome *MigOutcome_insert(MigOutcome *head,
+                              unsigned event,
+                              unsigned noutcomes,  
+                              unsigned outcome,
+                              double pr);
+MigOutcome *MigOutcome_dup(MigOutcome *old);
+void        MigOutcome_free(MigOutcome *self);
 
 #endif

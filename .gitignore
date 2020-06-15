@@ -42,6 +42,7 @@ xgetlinetok
 xgptree
 xhashtab
 xhessian
+xidset
 xintpart
 xjobqueue
 xlblndx
@@ -50,6 +51,7 @@ xmatcoal
 xmpfrmatcoal
 xmisc
 xmspreader
+xnodestore
 xparam
 xparkeyval
 xparse
@@ -58,10 +60,12 @@ xpointbuff
 xpointbuff
 xpopnode
 xpopnodetab
+xptrvec
 xrafreader
 xrational
 xsampndx
 xscrmreader
+xsegment
 xsetpart
 xsimreader
 xsimsched
@@ -71,6 +75,7 @@ xstrdblqueue
 xstrdblstck
 xstrint
 xstrparmap
+xstrptrmap
 xstrtab
 xterm
 xtinyexpr
