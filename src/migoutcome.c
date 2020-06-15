@@ -1,11 +1,12 @@
 #include "migoutcome.h"
+#include "misc.h"
 #include <stdio.h>
 #include <stdlib.h>
 
 // not thread safe
 static unsigned migration_event = 0;
 
-static int MigOutcome_cmp(MigOutcome *a, unsigned event, unsigned outcome);
+static int MigOutcome_cmp(MigOutcome *a, unsigned event, uint64_t bits);
 static MigOutcome *MigOutcome_new(MigOutcome *next,
                                   unsigned event,
                                   unsigned noutcomes,  
@@ -13,32 +14,31 @@ static MigOutcome *MigOutcome_new(MigOutcome *next,
                                   double pr);
 
 /// Increment external migration_event variable.
-void nextMigrationEvent(void) {
+unsigned nextMigrationEvent(void) {
+    unsigned event = migration_event;
     migration_event += 1;
+    return event;
 }
 
-unsigned getMigrationEvent(void) {
-    return migration_event;
-}
-
-static int MigOutcome_cmp(MigOutcome *a, unsigned event, unsigned outcome) {
+static int MigOutcome_cmp(MigOutcome *a, unsigned event, uint64_t bits) {
     if(a == NULL || a->event > event)
         return 1;
     if(a->event < event)
         return -1;
-    if(a->outcome > outcome)
+    if(a->bits > bits)
         return 1;
-    if(a->outcome < outcome)
+    if(a->bits < bits)
         return -1;
     return 0;
 }
 
-MigOutCome *MigOutcome_insert(MigOutcome *head,
+MigOutcome *MigOutcome_insert(MigOutcome *head,
                               unsigned event,
                               unsigned noutcomes,  
                               unsigned outcome,
                               double pr) {
-    int cmp = MigOutcome_cmp(head, event, outcome);
+    int cmp = MigOutcome_cmp(head, event,
+                             ((uint64_t) 1) << outcome);
     if(cmp < 0) {
         head->next = MigOutcome_insert(head->next, event, noutcomes,
                                        outcome, pr);
@@ -79,7 +79,7 @@ static MigOutcome *MigOutcome_new(MigOutcome *next,
                 __FILE__,__LINE__);
         return NULL;
     }
-    self->outcome = ((uint64_t) 1) << outcome;
+    self->bits = ((uint64_t) 1) << outcome;
     self->pr = pr;
     self->next = next;
     return self;
@@ -98,4 +98,13 @@ void MigOutcome_free(MigOutcome *self) {
         return;
     MigOutcome_free(self->next);
     free(self);
+}
+
+void MigOutcome_print(MigOutcome *self, FILE *fp) {
+    if(self==NULL) {
+        putc('\n', fp);
+        return;
+    }
+    fprintf(fp,"%u.%llx:%g ",self->event, self->bits, self->pr);
+    MigOutcome_print(self->next, fp);
 }

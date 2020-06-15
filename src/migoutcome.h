@@ -1,6 +1,8 @@
 #ifndef ARR_MIGOUTCOME
 #define ARR_MIGOUTCOME
 
+#include "typedefs.h"
+#include <stdio.h>
 #include <stdint.h>
 
 /**
@@ -59,20 +61,20 @@ struct MigOutcome {
                            // event
 
     // Bit i is on if this is the i'th outcome.
-    uint64_t outcome;
+    uint64_t bits;
 
     double pr;             // probability of this outcome
     struct MigOutcome *next;
 };
 
-void        nextMigrationEvent(void);
-unsigned    getMigrationEvent(void);
-MigOutCome *MigOutcome_insert(MigOutcome *head,
+unsigned    nextMigrationEvent(void);
+MigOutcome *MigOutcome_insert(MigOutcome *head,
                               unsigned event,
                               unsigned noutcomes,  
                               unsigned outcome,
                               double pr);
 MigOutcome *MigOutcome_dup(MigOutcome *old);
 void        MigOutcome_free(MigOutcome *self);
+void        MigOutcome_print(MigOutcome *self, FILE *fp);
 
 #endif

@@ -136,6 +136,10 @@ XPTRVEC := xptrvec.o ptrvec.o misc.o
 xptrvec : $(XPTRVEC)
 	$(CC) $(CFLAGS) -o $@ $(XPTRVEC) $(lib)
 
+XMIGOUTCOME := xmigoutcome.o migoutcome.o misc.o
+xmigoutcome : $(XMIGOUTCOME)
+	$(CC) $(CFLAGS) -o $@ $(XMIGOUTCOME) $(lib)
+
 XSETPART := xsetpart.o setpart.o misc.o
 xsetpart : $(XSETPART)
 	$(CC) $(CFLAGS) -o $@ $(XSETPART) $(lib)
