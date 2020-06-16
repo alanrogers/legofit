@@ -23,23 +23,14 @@ IdSet *IdSet_new(int nIds, const tipId_t tid[nIds], double prob);
 int    IdSet_cmp(const IdSet *x, const IdSet *y);
 void   IdSet_print(IdSet *self, FILE *fp);
 void   IdSet_sanityCheck(IdSet *self, const char *file, int lineno);
-static inline IdSet *IdSet_dup(const IdSet *old);
+IdSet *IdSet_dup(const IdSet *old);
 static inline void IdSet_free(IdSet *self);
 static inline int IdSet_nIds(IdSet *self);
 
 static inline void IdSet_free(IdSet *self) {
+    MigOutcome_free(self->mig);
     free(self);
 }
-
-// Duplicate
-static inline IdSet *IdSet_dup(const IdSet *old) {
-    if(old == NULL)
-        return NULL;
-    return IdSet_new(old->nIds, old->tid, old->p);
-}
-
-static inline int IdSet_nIds(IdSet *self) {
-    return self->nIds;
-}
+static inline int IdSet_nIds(IdSet *self) { return self->nIds; }
 
 #endif

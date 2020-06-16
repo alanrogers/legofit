@@ -87,3 +87,11 @@ IdSet *IdSet_new(int nIds, const tipId_t tid[nIds], double prob) {
     return self;
 }
 
+// Duplicate
+IdSet *IdSet_dup(const IdSet *old) {
+    if(old == NULL)
+        return NULL;
+    IdSet *new = IdSet_new(old->nIds, old->tid, old->p);
+    new->mig = MigOutcome_dup(old->mig);
+    return new;
+}

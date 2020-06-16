@@ -24,6 +24,9 @@
 typedef struct CombDat CombDat;
 typedef struct SetPartDat SetPartDat;
 
+// For assigning initial tipId_t values within segments.
+static tipIt_t currTipId = 0;
+
 // Data manipulated by visitComb function
 struct CombDat {
     double contrib; // Pr[site pattern]*E[len of interval]
@@ -37,7 +40,13 @@ struct SetPartDat {
     unsigned nparts; // Number of parts in partition
     long double lnconst;  // log of constant in Durrett's theorem 1.5
     double elen;     // E[len of interval]
-    IdSet *ids[2];   // ids[0] refers to descendants, ids[1] to ancestors
+
+    // PtrVec_get(a, i) is the IdSet for the i't set of ancestors
+    PtrVec *a;
+
+    // PtrVec_get(d, i) is the IdSet for the i'th set of descendants
+    PtrVec *d;
+
     BranchTab *branchtab;
     int dosing;      // do singleton site patterns if nonzero
 };
@@ -46,7 +55,8 @@ void   Segment_addIdSet(Segment *self, IdSet *idset);
 int    visitComb(int d, int ndx[d], void *data);
 int    visitSetPart(unsigned n, unsigned a[n], void *data);
 
-void *Segment_new(double *twoN, double *start, NodeStore * ns) {
+void *Segment_new(double *twoN, double *start, int nsamples,
+                  NodeStore * ns) {
     Segment *self = NodeStore_alloc(ns);
     CHECKMEM(self);
 
@@ -54,6 +64,14 @@ void *Segment_new(double *twoN, double *start, NodeStore * ns) {
 
     self->twoN = twoN;
     self->start = start;
+
+    self->nsamples = nsamples;
+    for(int i=0; i < nsamples; ++i)
+        self->sample[i] = currTipId++;
+
+    // to be set later
+    self->max = 0;    
+    self->a = self->d = NULL;
 
     return self;
 }

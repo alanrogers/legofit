@@ -16,16 +16,22 @@ struct Segment {
 
     int max;       // max number of lineages in segment
 
+    tipId_t sample[MAXSAMP]; // array of length nsamples
+
     // d[i] is a vector sets of i+1 descendants
     // a[i] is a vector of sets of i+1 ancestors
-    PtrVec         *d[max], *a[max];
+    // Arrays d and a have dimension "max", which is not known
+    // until the segments are linked into a network. Consequently,
+    // the constructor sets their values to NULL, and they are
+    // allocated only after the network has been assembled.
+    PtrVec         **d, **a;
 
     // p[0][i] is prob there are i+1 lineages at recent end of segment
     // p[1][i] is analogous prob for ancient end of interval.
     double p[2][MAXSAMP];
 };
 
-void    *Segment_new(double *twoN, double *start, NodeStore *ns);
+void    *Segment_new(double *twoN, double *start, int nsamples, NodeStore *ns);
 int      Segment_coalesce(Segment *self, int maxsamp, int dosing,
                           BranchTab *branchtab);
 int      Segment_addChild(void * vparent, void * vchild);
