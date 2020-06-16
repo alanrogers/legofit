@@ -14,9 +14,10 @@ struct Segment {
     struct Segment *parent[2];
     struct Segment *child[2];
 
-    int max;       // max number of lineages in segment
 
     tipId_t sample[MAXSAMP]; // array of length nsamples
+
+    int max;       // max number of lineages in segment
 
     // d[i] is a vector sets of i+1 descendants
     // a[i] is a vector of sets of i+1 ancestors
@@ -40,5 +41,6 @@ int      Segment_mix(void * vchild, double *mPtr, void * vintrogressor,
 void    *Segment_root(void * vself);
 void     Segment_print(FILE * fp, void * self, int indent);
 void     Segment_sanityCheck(Segment * self, const char *file, int lineno);
+void     Segment_allocArrays(Segment *self, Stirling2 *stirling2);
 
 #endif

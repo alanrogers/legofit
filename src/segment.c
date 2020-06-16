@@ -269,14 +269,71 @@ void     Segment_print(FILE * fp, void * vself, int indent) {
         Segment_print(fp, self->child[i], indent + 1);
 }
 
-// Add IdSet to Segment
-void Segment_addIdSet(Segment *self, IdSet *idset) {
-    int nids = IdSet_nIds(idset);
+// Call from root Segment to set values of "max" within each
+// Segment in network, and to allocate arrays "a" and "d"
+void Segment_allocArrays(Segment *self, Stirling2 *stirling2) {
+    int status;
 
-    assert(nids <= MAXSAMP);
+    // If this segment has already been set, return immediately.
+    if(self->max > 0)
+        return;
 
-    // add IdSet to segment
-    self->ids[0][nids-1] = IdSet_add(self->ids[0][nids-1], idset, 0.0);
+    // Set children before self
+    if(self->nchildren > 0)
+        Segment_allocArrays(self->child[0]);
+    if(self->nchildren == 2)
+        Segment_allocArrays(self->child[1]);
+
+    // Use values in children to set max in self.
+    switch(self->nchildren) {
+    case 0:
+        self->max = self->nsamples;
+        break;
+    case 1:
+        self->max = self->nsamples + self->child[0]->max;
+        break;
+    case 2:
+        self->max = self->nsamples + self->child[0]->max
+            + self->child[1]->max;
+        break;
+    default:
+        fprintf(stderr,"%s:%d: bad value of nchildren: %d\n",
+                __FILE__,__LINE__,self->nchildren);
+    }
+
+    // This could happen if a user creates a tip segment with no
+    // samples.
+    if(self->max == 0)
+        return;
+
+    // max number of ancestors equals max of descendants, because
+    // the ancestors = descendants if no coalescent events happen.
+    self->a = malloc(self->max * sizeof(PtrVec *));
+    CHECKMEM(self->a);
+    self->d = malloc(self->max * sizeof(PtrVec *));
+    CHECKMEM(self->d);
+
+    // The number of sets of k (=i+1) ancestors is the number
+    // of ways of partitioning descendants into k subsets, and
+    // this is given by Stirling's number of the 2nd kind.
+    for(int i=0; i < self->max; ++i) {
+        // number of ways to partition max things into i+1 subsets
+        long unsigned n = Stirling2_val(stirling2, max, i+1);
+        self->d[i] = PtrVec_new(n);
+        self->a[i] = PtrVec_new(n);
+    }
+
+    // Create IdSet objects for tip Segments and store them
+    // in self->a.
+    if(self->nchildren==0 && self->nsamples > 0) {
+        IdSet *idset = IdSet_new(self->nsamples, self->samples, 1.0);
+        status = PtrVec_push(self->a[self->nsamples-1], idset);
+        if(status) {
+            fprintf(stderr,"%s:%d: %s\n", __FILE__,__LINE__,
+                    strerror(status));
+            exit(EXIT_FAILURE);
+        }
+    }
 }
 
 int Segment_coalesce(Segment *self, int maxsamp, int dosing,
