@@ -43,6 +43,7 @@ typedef struct StrParMap StrParMap;
 typedef struct StrPtrMap StrPtrMap;
 typedef struct Tokenizer Tokenizer;
 typedef struct UINTqueue UINTqueue;
+typedef struct U64U64Map U64U64Map;
 typedef struct DAFReader DAFReader;
 typedef struct RAFReader RAFReader;
 

@@ -2,13 +2,11 @@
 #define ARR_SETPART_H
 
 #include <stdio.h>
+#include <stdint.h>
 
 typedef struct Stirling2 Stirling2;
 
-Stirling2    *Stirling2_new(long unsigned nmax);
-void          Stirling2_free(Stirling2 *self);
-long unsigned Stirling2_val(Stirling2 *self, long unsigned n, long unsigned k);
-void          Stirling2_print(Stirling2 *self, FILE *fp);
+uint64_t      stirling2(uint32_t n, uint32_t k);
 long double   lnCoalConst(unsigned n, unsigned k);
 double        probPartition(unsigned k, unsigned y[k], long double lnconst);
 

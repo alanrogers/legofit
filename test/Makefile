@@ -140,7 +140,7 @@ XMIGOUTCOME := xmigoutcome.o migoutcome.o misc.o
 xmigoutcome : $(XMIGOUTCOME)
 	$(CC) $(CFLAGS) -o $@ $(XMIGOUTCOME) $(lib)
 
-XSETPART := xsetpart.o setpart.o misc.o
+XSETPART := xsetpart.o setpart.o misc.o u64u64map.o binary.o
 xsetpart : $(XSETPART)
 	$(CC) $(CFLAGS) -o $@ $(XSETPART) $(lib)
 
@@ -356,6 +356,10 @@ XADDRPARMAP := xaddrparmap.o misc.o param.o tinyexpr.o dtnorm.o gptree.o \
    nodestore.o network.o
 xaddrparmap : $(XADDRPARMAP)
 	$(CC) $(CFLAGS) -o $@ $(XADDRPARMAP) $(lib)
+
+XU64U64MAP := xu64u64map.o misc.o binary.o u64u64map.o
+xu64u64map : $(XU64U64MAP)
+	$(CC) $(CFLAGS) -o $@ $(XU64U64MAP) $(lib)
 
 XSTRDBLQUEUE := xstrdblqueue.o strdblqueue.o misc.o
 xstrdblqueue : $(XSTRDBLQUEUE)

@@ -8,6 +8,7 @@
  */
 
 #include "setpart.h"
+#include "u64u64map.h"
 #include "misc.h"
 #include <stdio.h>
 #include <assert.h>
@@ -109,7 +110,7 @@ void usage(void) {
     fprintf(stderr," -n <n_elements> : size of set\n");
     fprintf(stderr," -k <n_parts>    : number of parts\n");
     fprintf(stderr," -i              : print integer partitions\n");
-    fprintf(stderr," -s              : test Stirling2 only\n");
+    fprintf(stderr," -s              : test stirling2 only\n");
     fprintf(stderr," -v              : verbose output\n\n");
     fprintf(stderr,"  n_elements must be > 0\n");
     fprintf(stderr,"  n_parts must be > 0, <= n_elements\n");
@@ -141,46 +142,44 @@ int main(int argc, char **argv) {
             usage();
     }
 
-    Stirling2 *s = Stirling2_new(nelem);
-    CHECKMEM(s);
+    if(verbose)
+        printf("stirling2(%u,%u)=%llu\n", nelem, nparts,
+               stirling2(nelem, nparts));
 
-    if(verbose) {
-        Stirling2_print(s, stdout);
-        long unsigned z = Stirling2_val(s, nelem, nparts);
-        printf("Stirling2(%u, %u) = %lu = %le\n",
-               nelem, nparts, z, (double) z);
-    }
-
-    if(s2only)
-        return 0;
-
-    assert(Stirling2_val(s, 0, 0) == 1);
+    assert(stirling2(0, 0) == 1ULL);
     for(n=1; n <= nelem; ++n) {
-        assert(Stirling2_val(s,n,0) == 0);
-        assert(Stirling2_val(s,n,1) == 1);
-        assert(Stirling2_val(s,n,n) == 1);
+        assert(stirling2(n, 0) == 0);
+        assert(stirling2(0, n) == 0);
+        assert(stirling2(n, 1) == 1);
+        assert(stirling2(n, n) == 1);
     }
 
-    if(nelem >= 3)
-        assert(Stirling2_val(s, 3, 2) == 3);
+    if(nelem >= 3) {
+        assert(stirling2(3, 2) == 3);
+    }
 
     if(nelem >= 4) {
-        assert(Stirling2_val(s, 4, 2) == 7);
-        assert(Stirling2_val(s, 4, 3) == 6);
+        assert(stirling2(4, 2) == 7);
+        assert(stirling2(4, 3) == 6);
     }
 
     if(nelem >= 5) {
-        assert(Stirling2_val(s, 5, 2) == 15);
-        assert(Stirling2_val(s, 5, 3) == 25);
-        assert(Stirling2_val(s, 5, 4) == 10);
+        assert(stirling2(5, 2) == 15);
+        assert(stirling2(5, 3) == 25);
+        assert(stirling2(5, 4) == 10);
     }
 
     if(nelem >= 6) {
-        assert(Stirling2_val(s, 6, 2) == 31);
-        assert(Stirling2_val(s, 6, 3) == 90);
-        assert(Stirling2_val(s, 6, 4) == 65);
-        assert(Stirling2_val(s, 6, 5) == 15);
+        assert(stirling2(6, 2) == 31);
+        assert(stirling2(6, 3) == 90);
+        assert(stirling2(6, 4) == 65);
+        assert(stirling2(6, 5) == 15);
     }
+
+    unitTstResult("stirling2", "OK");
+
+    if(s2only)
+        return 0;
 
     long double c = lnCoalConst(4, 4);
     unsigned k=4, y[4] = {1u, 1u, 1u, 1u};
@@ -191,10 +190,6 @@ int main(int argc, char **argv) {
     }
     assert(0.0L == c);
     assert(1.0 == x);
-
-    Stirling2_free(s);
-
-    unitTstResult("Stirling2", "OK");
 
     VisitDat vdat = {.verbose = verbose,
                      .intpart = intpart,
@@ -215,12 +210,7 @@ int main(int argc, char **argv) {
 
     unitTstResult("probPartition", "OK");
     
-    s = Stirling2_new(nelem);
-    CHECKMEM(s);
-    if(verbose)
-        printf("Stirling2(%u,%u)=%lu\n", nelem, nparts,
-               Stirling2_val(s, nelem, nparts));
-    assert(vdat.count == Stirling2_val(s, nelem, nparts));
+    assert(vdat.count == stirling2(nelem, nparts));
 
     unitTstResult("SetPart", status==0 ? "OK" : "FAIL");
     return 0;
