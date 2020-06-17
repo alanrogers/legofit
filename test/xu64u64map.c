@@ -9,6 +9,7 @@
 
 #include "u64u64map.h"
 #include "misc.h"
+#include "error.h"
 #include <stdio.h>
 #include <assert.h>
 #include <stdint.h>
@@ -51,10 +52,23 @@ int main(int argc, char **argv) {
         assert(status == 0);
     }
 
-    assert(nvals == U64U64Map_size(map));
+    unsigned long size = U64U64Map_size(map);
+    assert(nvals == size);
 
-    if(verbose)
-        U64U64Map_print(map, stdout);
+    uint64_t kk[size];
+    status = U64U64Map_keys(map, size, kk);
+    assert(status == 0);
+
+    if(verbose) {
+        for(int i=0; i<size; ++i) {
+            status = U64U64Map_get(map, kk[i], &val);
+            assert(status==0);
+            printf("%llu => %llu\n", kk[i], val);
+        }                 
+    }
+
+    status = U64U64Map_keys(map, size/2, kk);
+    assert(status == BUFFER_OVERFLOW);
 
     for(int i=0; i < nvals; ++i) {
         status = U64U64Map_get(map, key[i], &val);

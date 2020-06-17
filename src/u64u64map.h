@@ -1,14 +1,15 @@
 #ifndef U64U64MAP_H
 #  define U64U64MAP_H
 #  include "typedefs.h"
-#  include <stdio.h>
 #  include <stdint.h>
 
-U64U64Map *U64U64Map_new(void);
-void       U64U64Map_free(U64U64Map * self);
-int        U64U64Map_get(U64U64Map * self, uint64_t key, uint64_t *value);
-int        U64U64Map_insert(U64U64Map * self, uint64_t key, uint64_t value);
-unsigned long U64U64Map_size(U64U64Map * self);
-void       U64U64Map_print(U64U64Map * self, FILE *fp);
+#define MAPTYPE U64U64Map
+#define KEYTYPE uint64_t
+#define VALTYPE uint64_t
+#define HASH uint64Hash
+#define HASH_DIM 1024ul
+#define CMP(a,b) ((a)<(b) ? -1 : (a)>(b) ? 1 : 0)
+
+#include "hashmap.h"
 
 #endif

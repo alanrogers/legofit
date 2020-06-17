@@ -357,6 +357,9 @@ XADDRPARMAP := xaddrparmap.o misc.o param.o tinyexpr.o dtnorm.o gptree.o \
 xaddrparmap : $(XADDRPARMAP)
 	$(CC) $(CFLAGS) -o $@ $(XADDRPARMAP) $(lib)
 
+u64u64map.o : ../src/u64u64map.c ../src/u64u64map.h ../src/hashmap.h \
+   ../src/hashmap.c
+
 XU64U64MAP := xu64u64map.o misc.o binary.o u64u64map.o
 xu64u64map : $(XU64U64MAP)
 	$(CC) $(CFLAGS) -o $@ $(XU64U64MAP) $(lib)
