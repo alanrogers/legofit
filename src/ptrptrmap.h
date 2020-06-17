@@ -1,12 +1,14 @@
-#ifndef PTRPTRMAP_H
-#  define PTRPTRMAP_H
+#ifndef PtrPtrMAP_H
+#  define PtrPtrMAP_H
 #  include "typedefs.h"
 
-PtrPtrMap *PtrPtrMap_new(void);
-void       PtrPtrMap_free(PtrPtrMap * self);
-void      *PtrPtrMap_get(PtrPtrMap * self, const void *key);
-int        PtrPtrMap_insert(PtrPtrMap * self, const void *key, void * value);
-unsigned long PtrPtrMap_size(PtrPtrMap * self);
-void       PtrPtrMap_print(PtrPtrMap * self);
+#define MAPTYPE PtrPtrMap
+#define KEYTYPE void *
+#define VALTYPE void *
+#define HASH ptrHash
+#define HASH_DIM 256ul
+#define CMP(a,b) ((a)<(b) ? -1 : (a)>(b) ? 1 : 0)
+
+#include "hashmap.h"
 
 #endif

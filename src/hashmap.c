@@ -81,12 +81,12 @@ static El *El_insert(El *self, KEYTYPE key, VALTYPE value, int *status) {
     }
 
     int cmp = CMP(self->key, key);
-    if(cmp > 0) {
+    if(cmp < 0) {
         new = El_new(key, value);
         new->next = self;
         *status = 0; // success
         return new;
-    }else if(cmp < 0) {
+    }else if(cmp > 0) {
         self->next = El_insert(self->next, key, value, status);
         return self;
     }
@@ -132,10 +132,11 @@ int FUNC(MAPTYPE, get)(MAPTYPE * self, KEYTYPE key, VALTYPE *value) {
 
     El *el;
     for(el = self->tab[h]; el; el = el->next) {
-        if(key == el->key) {
+        int cmp = CMP(el->key, key);
+        if(cmp == 0) {
             *value = el->value;
             return 0;
-        }else if(key < el->key)
+        }else if(cmp < 0)
             return 1;
     }
     return 1;

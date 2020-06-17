@@ -364,6 +364,13 @@ XU64U64MAP := xu64u64map.o misc.o binary.o u64u64map.o
 xu64u64map : $(XU64U64MAP)
 	$(CC) $(CFLAGS) -o $@ $(XU64U64MAP) $(lib)
 
+ptrptrmap.o : ../src/ptrptrmap.c ../src/ptrptrmap.h ../src/hashmap.h \
+   ../src/hashmap.c
+
+XPTRPTRMAP := xptrptrmap.o misc.o binary.o ptrptrmap.o
+xptrptrmap : $(XPTRPTRMAP)
+	$(CC) $(CFLAGS) -o $@ $(XPTRPTRMAP) $(lib)
+
 XSTRDBLQUEUE := xstrdblqueue.o strdblqueue.o misc.o
 xstrdblqueue : $(XSTRDBLQUEUE)
 	$(CC) $(CFLAGS) -o $@ $(XSTRDBLQUEUE) $(lib)

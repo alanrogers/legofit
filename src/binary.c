@@ -205,3 +205,17 @@ uint32_t uint64Hash(uint64_t key)
   key = key ^ (key >> 22);
   return (uint32_t) key;
 }
+
+unsigned long ptrHash( const void * key) {
+    if(sizeof(void *) == 4)
+        return uint32Hash((uint32_t) key);
+    else if(sizeof(void *)==8)
+        return uint64Hash((uint64_t) key);
+    else {
+        fprintf(stderr,"%s:%s:%d: can't hash pointer\n",
+                __FILE__,__func__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
+    return 0;
+}
+
