@@ -8,7 +8,7 @@ tests := xaddrparmap xbinary xbooma xboot xbranchtab xcomb xdafreader xdiffev \
   xjobqueue xlblndx xlinereader xmisc xmpfrmatcoal xnodestore xsimreader \
   xparam xparse xparstore xpointbuff xpopnode xptrvec xstrptrmap xrafreader \
   xrational xscrmreader xsampndx xsegment xsetpart xsimsched xstate \
-  xstrdblmap xstrdblqueue xstrint xstrparmap xtinyexpr xtokenizer \
+  xstrdblqueue xstrint xstrparmap xtinyexpr xtokenizer \
   xuintqueue xwraparound xmatcoal
 
 CC := gcc
@@ -88,7 +88,6 @@ test : $(tests)
 	-./xsetpart
 	-./xsimsched
 	-./xstate
-	-./xstrdblmap
 	-./xstrdblqueue
 	-./xstrint
 	-./xstrparmap
@@ -330,13 +329,6 @@ xstrint.o : strint.c
 XSTRINT := xstrint.o misc.o binary.o lblndx.o
 xstrint : $(XSTRINT)
 	$(CC) $(CFLAGS) -o $@ $(XSTRINT) $(lib)
-
-xstrdblmap.o : strdblmap.c
-	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/strdblmap.c
-
-XSTRDBLMAP := xstrdblmap.o misc.o
-xstrdblmap : $(XSTRDBLMAP)
-	$(CC) $(CFLAGS) -o $@ $(XSTRDBLMAP) $(lib)
 
 xstrparmap.o : strparmap.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/strparmap.c
