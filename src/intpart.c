@@ -16,6 +16,7 @@
 // So we don't have to calculate the same value more than once.
 static U64U64Map *map=NULL;
 
+/// Number of ways to partition a positive integer n into k parts.
 uint64_t numIntPart(int32_t n, int32_t k) {
     uint64_t key, value;
     int status;
@@ -26,6 +27,7 @@ uint64_t numIntPart(int32_t n, int32_t k) {
     if(n<=0 || k<=0)
         return 0ULL;
 
+    // form 64-bit key from two 32-bit arguments
     key = (uint32_t) n;
     key <<= 32;
     key |= (uint32_t) k;
