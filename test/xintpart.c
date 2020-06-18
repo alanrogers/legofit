@@ -67,8 +67,8 @@ int visit(int m, int a[m], void *data) {
             t += c[i];
         }
         printf(" = %d", t);
+        putchar('\n');
     }
-    putchar('\n');
     return (s == vdat->trueSum ? 0 : 1);
 }
 
@@ -101,7 +101,7 @@ int rCmpInts(const void *void_x, const void *void_y) {
 }
 
 int main(int argc, char **argv) {
-    int i, n = 8, k = 3, verbose=0;
+    unsigned i, j, n = 8, k = 3, verbose=0;
 
     for(i=1; i<argc; ++i) {
         if(strcmp(argv[i], "-v") == 0)
@@ -123,33 +123,55 @@ int main(int argc, char **argv) {
     if(n <= 0 || k <= 0 || k > n)
         usage();
 
-    NumIntPart *nip = NumIntPart_new(n);
-    assert(1 == NumIntPart_val(nip, 0, 0));
     for(i=1; i<=n; ++i) {
-        assert(0 == NumIntPart_val(nip, i, 0));
-        assert(1 == NumIntPart_val(nip, i, i));
+        assert(0 == numIntPart(i, 0));
+        assert(1 == numIntPart(i, i));
+        assert(1 == numIntPart(i, 1));
     }
-    if(n >= 4)
-        assert(2 == NumIntPart_val(nip, 4, 2));
-    if(verbose)
-        NumIntPart_print(nip, stdout);
+    if(n >= 4) {
+        assert(2 == numIntPart(4, 2));
+        assert(1 == numIntPart(4, 3));
+    }
+    if(n >= 5) {
+        assert(2 == numIntPart(5, 2));
+        assert(2 == numIntPart(5, 3));
+        assert(1 == numIntPart(5, 4));
+    }
+    if(verbose) {
+        printf("%3s:", "n\\k");
+        for(j=0; j <= n; ++j) {
+            printf("%5u", j);
+            if(j < n)
+                putchar(' ');
+        }
+        putchar('\n');
+        
+        for(i=0; i <= n; ++i) {
+            printf("%3u:", i);
+            for(j=0; j <= i; ++j) {
+                printf("%5llu", numIntPart(i, j));
+                if(j < n)
+                    putchar(' ');
+            }
+            putchar('\n');
+        }
+    }
+
+    unitTstResult("numIntPart", "OK");
 
     VisitDat vdat = {.verbose = verbose,
                      .trueSum = n,
                      .count=0};
 
     int status = traverseIntPartitions(n, k, visit, &vdat);
-
     if(status)
         printf("traverseIntPartitions returned %d\n", status);
     if(verbose)
-        printf("Found %lu partitions; expected %u\n",
-               vdat.count, NumIntPart_val(nip, n, k));
+        printf("Found %lu partitions; expected %llu\n",
+               vdat.count, numIntPart(n, k));
 
-    assert(vdat.count == NumIntPart_val(nip, n, k));
-    NumIntPart_free(nip);
+    assert(vdat.count == numIntPart(n, k));
 
-    unitTstResult("NumIntPart", "OK");
     unitTstResult("IntPart", status==0 ? "OK" : "FAIL");
     return 0;
 }

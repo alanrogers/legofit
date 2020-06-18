@@ -8,109 +8,45 @@
 */
 #include "intpart.h"
 #include "misc.h"
+#include "u64u64map.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-// The number of ways to partition a non-negative integer, n, into k
-// positive summands.
-struct NumIntPart {
-    unsigned nmax;
+// So we don't have to calculate the same value more than once.
+static U64U64Map *map=NULL;
 
-    // offset is an array of dimension nmax+1, whose i'th entry
-    // is offset[i] = (i*(i+1))/2.
-    unsigned *offset;
+uint64_t numIntPart(int32_t n, int32_t k) {
+    uint64_t key, value;
+    int status;
 
-    unsigned nElements; // number of elements in self->s
+    if(n==0 && k==0)
+        return 1ULL;
+    
+    if(n<=0 || k<=0)
+        return 0ULL;
 
-    // s is a lower triangular matrix (including diagonal), stored as
-    // an array. The (n,k)th element of s, where n <= nmax and k <= n,
-    // is s[offset[n] + k] and equals P(n,k), the number of ways of
-    // partitioning a positive integer, n, into k positive summands.
-    // It is calculated via the recurrence, P(n,k) = P(n-k, k) +
-    // P(n-1, k-1), with intial values P(0,0) = 1, and P(n,k) = 0, if
-    // n <= 0 or k <= 0, and either n or k is nonzero. See p 399 of
-    // Knuth, Donald. 1986. The Art of Computer Programming, Volume 4A.
-    unsigned *s;
-};
+    key = (uint32_t) n;
+    key <<= 32;
+    key |= (uint32_t) k;
 
-NumIntPart *NumIntPart_new(unsigned nmax) {
-    NumIntPart *self = malloc(sizeof(NumIntPart));
-    CHECKMEM(self);
-    memset(self, 0, sizeof(NumIntPart));
-
-    self->nmax = nmax;
-
-    self->offset = malloc( (nmax+1) * sizeof(self->offset[0]));
-    CHECKMEM(self->offset);
-
-    self->nElements = ((nmax+1)*(nmax+2))/2;
-
-    self->s = malloc( (self->nElements) * sizeof(self->s[0]));
-    CHECKMEM(self->s);
-
-    unsigned n, k, i, j, ndx;;
-
-    for(n=0; n<=nmax; ++n)
-        self->offset[n] = (n*(n+1))/2;
-
-    self->s[0] = 1;
-    for(n=1; n<=nmax; ++n)
-        self->s[self->offset[n] + 0] = 0;
-
-    for(n=1; n<=nmax; ++n) {
-        for(k=1; k<=n; ++k) {
-            i = (n-k < k ? 0 : self->s[self->offset[n-k] + k]);
-            j = self->s[self->offset[n-1] + k-1];
-            ndx = self->offset[n] + k;
-            assert(ndx < self->nElements);
-            self->s[ndx] = i + j;
-        }
+    if(map == NULL) {
+        // allocate hash table on first call
+        map = U64U64Map_new();
+        CHECKMEM(map);
+    }else{
+        status = U64U64Map_get(map, key, &value);
+        if(status == 0)
+            return value;
     }
-
-    return self;
-}
-
-void NumIntPart_free(NumIntPart *self) {
-    free(self->offset);
-    free(self->s);
-    free(self);
-}
-
-/// Return the number of ways of partitioning a positive integer n
-/// into k summands.
-unsigned NumIntPart_val(NumIntPart *self, unsigned n, unsigned k) {
-    assert(n <= self->nmax);
-    if(!(k <= n)) {
-        dostacktrace(__FILE__,__LINE__,stderr);
-        fprintf(stderr,"%s:%s:%d: n=%u k=%u\n",
-                __FILE__,__func__,__LINE__,n, k);
+    value = numIntPart(n-k, k) + numIntPart(n-1, k-1);
+    status = U64U64Map_insert(map, key, value);
+    if(status) {
+        fprintf(stderr,"%s:%d: inserted duplicated value\n",
+                __FILE__,__LINE__);
+        exit(EXIT_FAILURE);
     }
-    assert(k <= n);
-    unsigned ndx = self->offset[n] + k;
-    assert( ndx < self->nElements );
-    return self->s[ndx];
-}
-
-void NumIntPart_print(NumIntPart *self, FILE *fp) {
-    unsigned i, j;
-    fprintf(fp,"%3s:", "n\\k");
-    for(j=0; j <= self->nmax; ++j) {
-        fprintf(fp, "%5u", j);
-        if(j < self->nmax)
-            putc(' ', fp);
-    }
-    putc('\n', fp);
-        
-    for(i=0; i <= self->nmax; ++i) {
-        fprintf(fp, "%3u:", i);
-        for(j=0; j <= i; ++j) {
-            fprintf(fp, "%5u", NumIntPart_val(self, i, j));
-            if(j < self->nmax)
-                putc(' ', fp);
-        }
-        putc('\n', fp);
-    }
+    return value;
 }
 
 /// Partition a positive integer n into a sum of k positive integers.

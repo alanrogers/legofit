@@ -123,7 +123,7 @@ XSEGMENT := xsegment.o misc.o nodestore.o segment.o idset.o binary.o error.o \
 xsegment : $(XSEGMENT)
 	$(CC) $(CFLAGS) -o $@ $(XSEGMENT) $(lib)
 
-XINTPART := xintpart.o intpart.o misc.o
+XINTPART := xintpart.o intpart.o misc.o u64u64map.o binary.o
 xintpart : $(XINTPART)
 	$(CC) $(CFLAGS) -o $@ $(XINTPART) $(lib)
 
