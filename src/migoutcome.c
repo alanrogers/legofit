@@ -89,6 +89,7 @@ MigOutcome *MigOutcome_dup(MigOutcome *old) {
     if(old == NULL)
         return NULL;
     MigOutcome *new = memdup(old, sizeof(MigOutcome));
+    CHECKMEM(new);
     new->next = MigOutcome_dup(old->next);
     return new;
 }
@@ -108,3 +109,5 @@ void MigOutcome_print(MigOutcome *self, FILE *fp) {
     fprintf(fp,"%u.%llx:%g ",self->event, self->bits, self->pr);
     MigOutcome_print(self->next, fp);
 }
+
+int    IdSet_copyMigOutcome(IdSet *self, const IdSet *old);

@@ -31,16 +31,6 @@ void PtrVec_free(PtrVec *self) {
     free(self);
 }
 
-/**
- * PtrVec doesn't own the things it stores pointers to. But if you
- * want free all the stored pointers anyway, this will do it.
- */
-void PtrVec_freeHoldings(PtrVec *self) {
-    for(unsigned i=0; i < self->used; ++i)
-        free(self->buff[i]);
-    self->used = 0;
-}
-
 int PtrVec_push(PtrVec *self, void *val) {
     if(self->used == self->buffsize) {
         // buffer overflow: reallocate

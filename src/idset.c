@@ -95,3 +95,9 @@ IdSet *IdSet_dup(const IdSet *old) {
     new->mig = MigOutcome_dup(old->mig);
     return new;
 }
+
+// Add MigOutcome list from old into self.
+void IdSet_copyMigOutcome(IdSet *self, const IdSet *old) {
+    assert(self->mig == NULL);
+    self->mig = MigOutcome_dup(old->mig);
+}

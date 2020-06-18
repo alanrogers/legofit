@@ -22,40 +22,47 @@ int main(void) {
     PtrVec *v = PtrVec_new(0);
     assert(v->buffsize == 0);
     assert(v->used == 0);
+    assert(0 == PtrVec_length(v));
 
     status = PtrVec_push(v, &a);
     assert(status == 0);
     assert(v->buffsize == 2);
     assert(v->used == 1);
+    assert(1 == PtrVec_length(v));
     assert(PtrVec_get(v, 0) == &a);
 
     status = PtrVec_push(v, &b);
     assert(status == 0);
     assert(v->buffsize == 2);
     assert(v->used == 2);
+    assert(2 == PtrVec_length(v));
     assert(PtrVec_get(v, 1) == &b);
     
     status = PtrVec_push(v, &c);
     assert(status == 0);
     assert(v->buffsize == 4);
     assert(v->used == 3);
+    assert(3 == PtrVec_length(v));
     assert(PtrVec_get(v, 2) == &c);
     
     status = PtrVec_push(v, &d);
     assert(status == 0);
     assert(v->buffsize == 4);
     assert(v->used == 4);
+    assert(4 == PtrVec_length(v));
     assert(PtrVec_get(v, 3) == &d);
 
     int *p = PtrVec_pop(v);
     assert(p == &d);
     assert(v->buffsize == 4);
     assert(v->used == 3);
+    assert(3 == PtrVec_length(v));
 
     p = PtrVec_pop(v);
     assert(p == &c);
     assert(v->buffsize == 4);
     assert(v->used == 2);
+    assert(2 == PtrVec_length(v));
 
     p = PtrVec_pop(v);
     assert(p == &b);
@@ -66,6 +73,7 @@ int main(void) {
     assert(p == &a);
     assert(v->buffsize == 4);
     assert(v->used == 0);
+    assert(0 == PtrVec_length(v));
     
     p = PtrVec_pop(v);
     assert(p == NULL);

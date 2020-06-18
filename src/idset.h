@@ -24,6 +24,7 @@ int    IdSet_cmp(const IdSet *x, const IdSet *y);
 void   IdSet_print(IdSet *self, FILE *fp);
 void   IdSet_sanityCheck(IdSet *self, const char *file, int lineno);
 IdSet *IdSet_dup(const IdSet *old);
+void   IdSet_copyMigOutcome(IdSet *self, const IdSet *old);
 static inline void IdSet_free(IdSet *self);
 static inline int IdSet_nIds(IdSet *self);
 

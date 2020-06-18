@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+typedef struct MigDat MigDat;
 typedef struct CombDat CombDat;
 typedef struct SetPartDat SetPartDat;
 
@@ -30,9 +31,16 @@ static tipIt_t currTipId = 0;
 // Data manipulated by visitComb function
 struct CombDat {
     double contrib; // Pr[site pattern]*E[len of interval]
-    IdSet *ids;
+    PtrVec *d;
     BranchTab *branchtab;
     int dosing;    // do singleton site patterns if nonzero
+};
+
+// Data manipulated by migrate function
+struct MigDat {
+    double pr; // probability
+    PtrVec *a;
+
 };
 
 // Data manipulated by visitSetPart function.
@@ -55,8 +63,13 @@ void   Segment_addIdSet(Segment *self, IdSet *idset);
 int    visitComb(int d, int ndx[d], void *data);
 int    visitSetPart(unsigned n, unsigned a[n], void *data);
 
+// The total number of samples.
+static int total_samples = 0;
+
 void *Segment_new(double *twoN, double *start, int nsamples,
                   NodeStore * ns) {
+    total_samples += nsamples;
+    
     Segment *self = NodeStore_alloc(ns);
     CHECKMEM(self);
 
@@ -271,7 +284,7 @@ void     Segment_print(FILE * fp, void * vself, int indent) {
 
 // Call from root Segment to set values of "max" within each
 // Segment in network, and to allocate arrays "a" and "d"
-void Segment_allocArrays(Segment *self, Stirling2 *stirling2) {
+void Segment_allocArrays(Segment *self) {
     int status;
 
     // If this segment has already been set, return immediately.
@@ -284,22 +297,23 @@ void Segment_allocArrays(Segment *self, Stirling2 *stirling2) {
     if(self->nchildren == 2)
         Segment_allocArrays(self->child[1]);
 
-    // Use values in children to set max in self.
-    switch(self->nchildren) {
-    case 0:
-        self->max = self->nsamples;
-        break;
-    case 1:
-        self->max = self->nsamples + self->child[0]->max;
-        break;
-    case 2:
-        self->max = self->nsamples + self->child[0]->max
-            + self->child[1]->max;
-        break;
-    default:
-        fprintf(stderr,"%s:%d: bad value of nchildren: %d\n",
-                __FILE__,__LINE__,self->nchildren);
-    }
+    /* Absent migration, the maximum number of samples in the current
+     * segment would be the sum of nsamples plus the maxima of the
+     * children. But with migration, some of the potential lineages in
+     * child 0 may be the same as some of those in child 1,
+     * representing different and mutually exclusive outcomes of the
+     * migration process. Therefore the sum of the children's maxima
+     * will sometimes overestimate the max of the current node. To
+     * guard against this, we make sure that self->max does not exceed
+     * the total number of samples in the entire data set. */
+    self->max = self->nsamples;
+    if(self->nchildren > 0)
+        self->max += self->child[0]->max;
+    if(self->nchildren == 2)
+        self->max += self->child[1]->max;
+
+    if(self->max > total_samples)
+        self->max = total_samples;
 
     // This could happen if a user creates a tip segment with no
     // samples.
@@ -318,7 +332,7 @@ void Segment_allocArrays(Segment *self, Stirling2 *stirling2) {
     // this is given by Stirling's number of the 2nd kind.
     for(int i=0; i < self->max; ++i) {
         // number of ways to partition max things into i+1 subsets
-        long unsigned n = Stirling2_val(stirling2, max, i+1);
+        long unsigned n = stirling2(max, i+1);
         self->d[i] = PtrVec_new(n);
         self->a[i] = PtrVec_new(n);
     }
@@ -336,12 +350,10 @@ void Segment_allocArrays(Segment *self, Stirling2 *stirling2) {
     }
 }
 
-int Segment_coalesce(Segment *self, int maxsamp, int dosing,
-                     BranchTab *branchtab) {
-    assert(self->max <= maxsamp);
-
-    double v, pr[maxsamp], elen[maxsamp];
+int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
+    double v, pr[self->max], elen[self->max];
     int n, i, status=0;
+    IdSet *ids;
 
     if(self->end == NULL)
         v = INFINITY;
@@ -359,7 +371,7 @@ int Segment_coalesce(Segment *self, int maxsamp, int dosing,
     };
 
 #ifndef NDEBUG
-    for(i=0; i<maxsamp; ++i)
+    for(i=0; i < self->max; ++i)
         assert(self->ids[1][i] == NULL);
 #endif    
 
@@ -423,24 +435,23 @@ int Segment_coalesce(Segment *self, int maxsamp, int dosing,
             for(i=2; i <= n; ++i)
                 self->p[1][i-1] += self->p[0][n-1] * pr[i-1];
 
-            sd.ids[0] = self->ids[0][n-1];
+            sd.a = self->a[n-1];
 
             // Loop over number, k, of ancestors.
             // Include k=1, because this is a finite segment.
             for(int k=1; k <= n; ++k) {
-                sd.ids[1] = self->ids[1][k-1];
+                sd.d = self->d[k-1];
                 sd.nparts = k;
                 sd.elen = elen[k-1];
                 sd.lnconst = lnCoalConst(n, k);
                 status = traverseSetPartitions(n, k, visitSetPart, &sd);
                 if(status)
                     return status;
-                self->ids[1][k-1] = IdSet_cat(self->ids[1][k-1], sd.ids[1]);
             }
-            sd.ids[0] = sd.ids[1] = NULL;
+            sd.a = sd.d = NULL;
         }else{  // Infinite segment: the root
 
-            cd.ids = self->ids[0][n-1];
+            cd.d = self->d[n-1];
 
             // Loop over number, k, of ancestors.
             // Exclude k=1, because this is an infinite segment.
@@ -466,11 +477,29 @@ int Segment_coalesce(Segment *self, int maxsamp, int dosing,
                         return status;
                 }
             }
-            cd.ids = NULL;
+            cd.d = NULL;
         }
-        IdSet_free(self->ids[0][n-1]);
-        self->ids[0][n-1] = NULL;
+
+        // Free IdSet objects of descendants
+        ids = PtrVec_pop(self->d[n-1]);
+        while( ids ) {
+            IdSet_free(ids);
+            ids = PtrVec_pop(self->d[n-1]);
+        }
     }
+
+    // Transfer ancestors to parent node or nodes
+    if(self->nparents == 1) {
+        for(i=0; i < self->max; ++i) {
+            ids = PtrVec_pop(self->d[i]);
+            while( ids ) {
+                PtrVec_push(self->parent[0]->d[i], ids);
+                ids = PtrVec_pop(self->d[i]);
+            }
+        }
+    }else if(self->nparents == 2) {
+    }
+    
     return status;
 }
 
@@ -479,7 +508,9 @@ int visitComb(int d, int ndx[d], void *data) {
     assert(d>0);
     CombDat *dat = (CombDat *) data;
 
-    for(IdSet *ids = dat->ids; ids != NULL; ids = ids->next) {
+    unsigned nIdSets = PtrVec_length(self->d);
+    for(unsigned i=0; i < nIdSets; ++i) {
+        IdSet *ids = PtrVec_get(self->d, i);
         
         // sitepat is the union of the current set of descendants, as
         // described in ndx.
@@ -503,7 +534,6 @@ int visitComb(int d, int ndx[d], void *data) {
 /// Visit a set partition.
 int visitSetPart(unsigned n, unsigned a[n], void *data) {
     SetPartDat *vdat = (SetPartDat *) data;
-
     int status=0;
 
     // Calculate the size, c[i], of each part. In other words,
@@ -517,28 +547,37 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
 
     double p = probPartition(k, c, vdat->lnconst);
 
-    for(IdSet *ids = vdat->ids[0]; ids != NULL; ids = ids->next) {
+    unsigned nIds = PtrVec_length(vdat->d);
+    for(unsigned i=0; i < nIds; ++i) {
+        IdSet *descendants = PtrVec_get(vdat->d, i);
         tipId_t sitepat[k];
         memset(sitepat, 0, k*sitepat[0]);
 
-        assert(n == ids->nIds);
+        assert(n == descendants->nIds);
 
         // Loop over descendants, creating a sitepat for each
         // ancestor. a[i] is the index of the ancestor of the i'th
         // descendant. sitepat[j] is the site pattern of the j'th
         // ancestor.
         for(int i=0; i<n; ++i)
-            sitepat[a[i]] |= ids->tid[i];
+            sitepat[a[i]] |= descendants->tid[i];
 
         // Loop over ancestors, i.e. over site patterns, adding
         // to the corresponding entry in BranchTab.
         for(int i=0; i<k; ++i)
             BranchTab_add(vdat->branchtab, sitepat[i],
-                          p * vdat->elen * ids->p);
+                          p * vdat->elen * descendants->p);
 
         // Add the current set partition to the list of ancestral
         // states.
-        vdat->ids[1] = IdSet_new(vdat->ids[1], k, sitepat, p * ids->p);
+        IdSet *ancestors = IdSet_new(k, sitepat, p * descendants->p);
+        IdSet_copyMigoutcome(ancestors, descendants);
+        status = PtrVec_push(vdat->a, ancestors);
+        if(status) {
+            fprintf(stderr,"%s:%d can't push ancestors; status=%d\n",
+                    __FILE__,__LINE__, status);
+            exit(EXIT_FAILURE);
+        }
     }
 
     return status;
