@@ -37,7 +37,6 @@ typedef struct SimReader SimReader;
 typedef struct SimSched SimSched;
 typedef struct SampNdx SampNdx;
 typedef struct State State;
-typedef struct StrDblMap StrDblMap;
 typedef struct StrInt StrInt;
 typedef struct StrParMap StrParMap;
 typedef struct StrPtrMap StrPtrMap;

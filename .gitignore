@@ -61,6 +61,7 @@ xpointbuff
 xpointbuff
 xpopnode
 xpopnodetab
+xptrptrmap
 xptrvec
 xrafreader
 xrational
@@ -71,7 +72,6 @@ xsetpart
 xsimreader
 xsimsched
 xstate
-xstrdblmap
 xstrdblqueue
 xstrdblstck
 xstrint
