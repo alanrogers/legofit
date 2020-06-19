@@ -82,9 +82,7 @@ void *Segment_new(double *twoN, double *start, int nsamples,
     for(int i=0; i < nsamples; ++i)
         self->sample[i] = currTipId++;
 
-    // to be set later
-    self->max = 0;    
-    self->a = self->d = NULL;
+    // to be set later: max, a, d, nw, wdim, w.
 
     return self;
 }

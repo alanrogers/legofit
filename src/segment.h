@@ -30,9 +30,10 @@ struct Segment {
     // waiting rooms.  The descendants at the beginning of the segment
     // then consist of all pairs formed by two IdSets, one from each
     // waiting room. nw is the number of waiting room. The first child
-    // fills w0 and increments nw. The second fills w1.
-    int nw;
-    PtrVec **w0, **w1;
+    // fills w[0] and increments nw. The second fills w[1]. wdim[i] is
+    // the dimension of w[i].  
+    int nw, wdim[2];
+    PtrVec **w[2];
 
     // p[0][i] is prob there are i+1 lineages at recent end of segment
     // p[1][i] is analogous prob for ancient end of interval.
