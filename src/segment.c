@@ -353,6 +353,17 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
     int n, i, status=0;
     IdSet *ids;
 
+    if(self->nchildren > 0) {
+        status = Segment_coalesce(self->child[0], dosing, branchtab);
+        if(status)
+            return status;
+    }
+    if(self->nchildren ==2 ) {
+        status = Segment_coalesce(self->child[1], dosing, branchtab);
+        if(status)
+            return status;
+    }
+
     if(self->end == NULL)
         v = INFINITY;
     else

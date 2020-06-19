@@ -4,11 +4,11 @@ opt :=  -O0 -fno-inline-functions -DDEBUG
 prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
 tests := xaddrparmap xbinary xbooma xboot xbranchtab xcomb xdafreader xdiffev \
-  xdtnorm xerror xgene xgetlinetok xgptree xhessian xidset xintpart \
+  xdtnorm xerror xgene xgptree xhessian xidset xintpart \
   xjobqueue xlblndx xlinereader xmisc xmpfrmatcoal xnodestore xsimreader \
-  xparam xparse xparstore xpointbuff xpopnode xptrvec xstrptrmap xrafreader \
-  xrational xscrmreader xsampndx xsegment xsetpart xsimsched xstate \
-  xstrdblqueue xstrint xstrparmap xtinyexpr xtokenizer \
+  xparam xparse xparstore xpointbuff xpopnode xptrlst xptrvec xstrptrmap \
+  xrafreader xrational xscrmreader xsampndx xsegment xsetpart xsimsched \
+  xstate xstrdblqueue xstrint xstrparmap xtinyexpr xtokenizer \
   xuintqueue xwraparound xmatcoal
 
 CC := gcc
@@ -61,7 +61,6 @@ test : $(tests)
 	-./xdtnorm
 	-./xerror
 	-./xgene
-	-./xgetlinetok
 	-./xgptree
 	-./xhessian
 	-./xidset
@@ -79,6 +78,7 @@ test : $(tests)
 	-./xparstore
 	-./xpointbuff
 	-./xpopnode
+	-./xptrlst
 	-./xptrvec
 	-./xrafreader
 	-./xrational
@@ -131,6 +131,10 @@ XMISC := xmisc.o misc.o
 xmisc : $(XMISC)
 	$(CC) $(CFLAGS) -o $@ $(XMISC) $(lib)
 
+XPTRLST := xptrlst.o ptrlst.o misc.o
+xptrlst : $(XPTRLST)
+	$(CC) $(CFLAGS) -o $@ $(XPTRLST) $(lib)
+
 XPTRVEC := xptrvec.o ptrvec.o misc.o
 xptrvec : $(XPTRVEC)
 	$(CC) $(CFLAGS) -o $@ $(XPTRVEC) $(lib)
@@ -142,10 +146,6 @@ xmigoutcome : $(XMIGOUTCOME)
 XSETPART := xsetpart.o setpart.o misc.o u64u64map.o binary.o
 xsetpart : $(XSETPART)
 	$(CC) $(CFLAGS) -o $@ $(XSETPART) $(lib)
-
-XGETLINETOK := xgetlinetok.o getlinetok.o misc.o tokenizer.o
-xgetlinetok : $(XGETLINETOK)
-	$(CC) $(CFLAGS) -o $@ $(XGETLINETOK) $(lib)
 
 XLINEREADER := xlinereader.o linereader.o misc.o
 xlinereader : $(XLINEREADER)
