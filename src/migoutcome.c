@@ -65,13 +65,13 @@ static MigOutcome *MigOutcome_new(MigOutcome *next,
     self->noutcomes = noutcomes;
 
     // set bit a position determined by outcome.
-    static const unsigned nbits = 8*sizeof(uint64_t);
+    static const unsigned nbits = 8*sizeof(self->bits);
     if(outcome >= nbits) {
         // The number of outcomes is 2^k, where k is the number of
         // lineages, and 2^6 = 64. So with type uint64_t, we can only
         // handle migration in segments with 6 or fewer lineages.
         // To handle 7, use type __uint128_t.
-        fprintf(stderr,"%s:%d: can't set bit %d in a %d-b integer.\n",
+        fprintf(stderr,"%s:%d: can't set bit %d in a %d-bit integer.\n",
                 __FILE__,__LINE__, outcome+1, nbits);
         fprintf(stderr,"%s:%d:"
                 " This happens when the number of lineages is too large"
@@ -79,7 +79,8 @@ static MigOutcome *MigOutcome_new(MigOutcome *next,
                 __FILE__,__LINE__);
         return NULL;
     }
-    self->bits = ((uint64_t) 1) << outcome;
+    self->bits = 1;
+    self->bits <<= outcome;
     self->pr = pr;
     self->next = next;
     return self;

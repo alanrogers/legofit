@@ -55,3 +55,28 @@ void *PtrVec_pop(PtrVec *self) {
     return self->buff[self->used];
 }
 
+/// Enlarge size of allocated buffer if necessary.
+/// Does a fresh malloc if used==0. Otherwise, calls realloc.
+/// Returns 0 on success, ENOMEM if allocation fails.
+int PtrVec_resize(PtrVec *self, unsigned size) {
+    if(size <= self->buffsize)
+        return 0;
+    self->buffsize = size;
+    if(self->used == 0) {
+        if(self->buff)
+            free(self->buff);
+        self->buff = malloc(size * sizeof(void *));
+        if(self->buff == NULL)
+            return ENOMEM;
+    }else{
+        void *old = self->buff;
+        self->buff = realloc(self->buff, size);
+        if(self->buff = NULL) {
+            if(old)
+                free(old);
+            return ENOMEM;
+        }
+    }
+    return 0;
+}
+

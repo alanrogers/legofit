@@ -39,8 +39,9 @@ struct CombDat {
 // Data manipulated by migrate function
 struct MigDat {
     double pr; // probability
+    PtrLst *migrants, *natives;
     PtrVec *a;
-
+    unsigned migrationEvent;
 };
 
 // Data manipulated by visitSetPart function.
@@ -49,8 +50,8 @@ struct SetPartDat {
     long double lnconst;  // log of constant in Durrett's theorem 1.5
     double elen;     // E[len of interval]
 
-    // PtrVec_get(a, i) is the IdSet for the i't set of ancestors
-    PtrVec *a;
+    // a is a list of IdSet objects for sets of ancestors
+    PtrLst *a;
 
     // PtrVec_get(d, i) is the IdSet for the i'th set of descendants
     PtrVec *d;
@@ -59,9 +60,14 @@ struct SetPartDat {
     int dosing;      // do singleton site patterns if nonzero
 };
 
-void   Segment_addIdSet(Segment *self, IdSet *idset);
 int    visitComb(int d, int ndx[d], void *data);
 int    visitSetPart(unsigned n, unsigned a[n], void *data);
+int    visitMig(unsigned n, unsigned a[n], void *data);
+static int Segment_coalesceFinite(Segment *self, double v, int dosing,
+                                  BranchTab *branchtab);
+static int Segment_coalesceInfinite(Segment *self, double v, int dosing,
+                                    BranchTab *branchtab);
+PtrVec *PtrLst_to_PtrVec(PtrLst *old);
 
 // The total number of samples.
 static int total_samples = 0;
@@ -348,8 +354,228 @@ void Segment_allocArrays(Segment *self) {
     }
 }
 
+static int Segment_coalesceFinite(Segment *self, double v, int dosing,
+                                  BranchTab *branchtab) {
+    double pr[self->max], elen[self->max];
+    int n, i, status=0;
+    IdSet *ids;
+
+    // Array of lists of ancestors. a[k-1] is the list for sets of k
+    // ancestors.  
+    PtrLst *a[self->max];
+    for(i=0; i < self->max; ++i)
+        a[i] = PtrLst();
+    
+    SetPartDat sd = {.branchtab = branchtab,
+                     .dosing = dosing,
+    };
+
+#ifndef NDEBUG
+    for(i=0; i < self->max; ++i)
+        assert(self->ids[1][i] == NULL);
+#endif    
+
+    memset(self->p[1], 0, MAXSAMP*sizeof(double));
+
+    // If there is only one line of descent, no coalescent events
+    // are possible, so p[1][0] is at least as large as p[0][0].
+    self->p[1][0] = self->p[0][0];
+
+    // Outer loop over numbers of descendants.
+    // Calculate probabilities and expected values, p[1] and elen.
+    for(n=2; n <= self->max; ++n) {
+
+        // eigenvalues of transient states
+        double eig[n-1];
+        MatCoal_eigenvals(n-1, eig, v);
+        
+        // Calculate expected length, within the segment, of
+        // coalescent intervals with 2,3,...,n lineages.  elen[i] is
+        // expected length of interval with i-1 lineages.
+        // elen[0] not set.
+        MatCoal_ciLen(n-1, elen+1, eig);
+
+        // Calculate expected length, elen[0], of interval with one
+        // lineage.  elen[i] refers to interval with i+1 lineages.
+        double sum = 0.0;
+        for(i=n; i >= 2; --i)
+            sum += elen[i-1];
+        elen[0] = v - sum; // elen[0] is infinite if v is.
+
+        // Multiply elen by probability that segment had n lineages on
+        // recent end of segment.
+        for(i=0; i < n; ++i)
+            elen[i] *= self->p[0][n-1];
+
+        // Calculate prob of 2,3,...,n ancestors at ancent end of
+        // segment. On return, pr[1] = prob[2], pr[n-1] = prob[n],
+        // pr[0] not set.
+        MatCoal_project(n-1, pr+1, eig);
+
+        // Calculate probability of 1 line of descent. I'm doing
+        // the sum in reverse order on the assumption that higher
+        // indices will often have smaller probabilities.  pr[i]
+        // is prob of i+1 lineages; pr[0] not set
+        sum=0.0;
+        for(i=n; i > 1; --i)
+            sum += pr[i-1];
+        self->p[1][0] += self->p[0][n-1] * (1.0-sum);
+
+        // Add probs of 2..n lines of descent
+        // pr[i] is prob of i+2 lineages
+        // self->p[1][i] is prob if i+1 lineages
+        for(i=2; i <= n; ++i)
+            self->p[1][i-1] += self->p[0][n-1] * pr[i-1];
+
+        sd.d = self->d[n-1];
+
+        // Loop over number, k, of ancestors.
+        // Include k=1, because this is a finite segment.
+        for(int k=1; k <= n; ++k) {
+            assert(0 == PtrLst_length(sd.a));
+            sd.a = a[k-1];
+            sd.nparts = k;
+            sd.elen = elen[k-1];
+            sd.lnconst = lnCoalConst(n, k);
+            status = traverseSetPartitions(n, k, visitSetPart, &sd);
+            if(status)
+                return status;
+        }
+    }
+
+    // max is maximum number of ancestors.
+    int max;
+    for(max = self->max; 0 == PtrLst_length(a[max-1]); --max) {
+        fprintf(stderr,"%s:%d: deleting a[%d]\n",
+                __FILE__,__LINE__, max-1);
+        PtrLst_free(a[max-1]);
+    }
+
+    if(self->nparents == 1) {
+        // Move all IdSet objects to parental waiting room.
+        nw = self->parent[0]->nw;
+        self->parent[0]->w[nw] = malloc(max * sizeof(PtrVec *));
+        CHECKMEM(self->parent[0]->w[nw]);
+        for(i=0; i<max; ++i) {
+            self->parent[0]->w[nw] = PtrLst_to_PtrVec(a[i], NULL);
+            PtrLst_free(a[i]);
+        }
+        self->parent[0]->nw += 1;
+    }else {
+        assert(self->nparents == 2);
+        assert(*self->mig > 0.0);
+        /*
+          P[x] = (k choose x) * m^x * (1-m)^(k-x)
+         */
+        MigDat msd = {
+                      .migrants = PtrLst_new(),
+                      .natives = PtrLst_new(),
+                      .a = NULL,
+                      .migrationEvent = nextMigrationEvent();
+        };
+        for(k=1; k <= max; ++k) {
+            msd.a = PtrLst_to_PtrVec(a[k-1], msd.a);
+            PtrLst_free(a[k-1]);
+            for(long x=0; x <= k; ++x) {
+                // prob that x of k lineages are migrants
+                long double lnpr = lbinomial(k, x);
+                lnpr += x*logl(self->mix);
+                lnpr += (k-x)*logl(1.0-self->mix);
+                msd.pr = expl(lnpr);
+                msd.nMigrants = x;
+                msd.nNatives = k - x;
+                status = traverseSetPartitions(n, k, visitMig, &msd);
+                if(status)
+                    return status;
+            }
+        }
+    }
+
+    // Free IdSet objects of descendants
+    ids = PtrVec_pop(self->d[n-1]);
+    while( ids ) {
+        IdSet_free(ids);
+        ids = PtrVec_pop(self->d[n-1]);
+    }
+    return status;
+}
+
+static int Segment_coalesceInfinite(Segment *self, double v, int dosing,
+                                    BranchTab *branchtab) {
+    double pr[self->max], elen[self->max];
+    int n, i, status=0;
+    IdSet *ids;
+
+    CombDat cd = {.branchtab = branchtab,
+                  .dosing = dosing
+    };
+
+    // Outer loop over numbers of descendants.
+    // Calculate expected branch lengths, elen.
+    for(n=2; n <= self->max; ++n) {
+
+        // eigenvalues of transient states
+        double eig[n-1];
+        memset(eig, 0, (n-1)*sizeof(eig[0]));
+        
+        // Calculate expected length, within the segment, of
+        // coalescent intervals with 2,3,...,n lineages.  elen[i] is
+        // expected length of interval with i-1 lineages.
+        // elen[0] not set.
+        MatCoal_ciLen(n-1, elen+1, eig);
+
+        // Calculate expected length, elen[0], of interval with one
+        // lineage.  elen[i] refers to interval with i+1 lineages.
+        double sum = 0.0;
+        for(i=n; i >= 2; --i)
+            sum += elen[i-1];
+        elen[0] = v - sum; // elen[0] is infinite if v is.
+
+        // Multiply elen by probability that segment had n lineages on
+        // recent end of segment.
+        for(i=0; i < n; ++i)
+            elen[i] *= self->p[0][n-1];
+
+        cd.d = self->d[n-1];
+
+        // Loop over number, k, of ancestors.
+        // Exclude k=1, because this is an infinite segment.
+        for(int k=2; k <= n; ++k) {
+            
+            // portion of log Qdk that doesn't involve d
+            long double lnconst = logl(k) - lbinom(n-1, k-1);
+
+            // Within each interval, there can be ancestors
+            // with 1 descendant, 2, 3, ..., n-k+2.
+            for(int d=1; d <= n-k+1; ++d) {
+                long double lnprob = lnconst
+                    + lbinom(n-d-1, k-1) - lbinom(n,d);
+
+                // probability of site pattern
+                cd.contrib = (double) expl(lnprob);
+
+                // times expected length of interval
+                cd.contrib *= elen[k-1];
+                
+                status = traverseComb(n, d, visitComb, &cd);
+                if(status)
+                    return status;
+            }
+        }
+        cd.d = NULL;
+
+        // Free IdSet objects of descendants
+        ids = PtrVec_pop(self->d[n-1]);
+        while( ids ) {
+            IdSet_free(ids);
+            ids = PtrVec_pop(self->d[n-1]);
+        }
+    }
+    return status;
+}
+
 int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
-    double v, pr[self->max], elen[self->max];
+    double v;
     int n, i, status=0;
     IdSet *ids;
 
@@ -371,131 +597,10 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
 
     const int finite = isfinite(v); // is segment finite?
 
-    CombDat cd = {.branchtab = branchtab,
-                  .dosing = dosing
-    };
-
-    SetPartDat sd = {.branchtab = branchtab,
-                     .dosing = dosing
-    };
-
-#ifndef NDEBUG
-    for(i=0; i < self->max; ++i)
-        assert(self->ids[1][i] == NULL);
-#endif    
-
-    // We only need to calculate the probabilities, self->p[1][i],
-    // of ancestors if the segment is finite.
-    if(finite) {
-        memset(self->p[1], 0, MAXSAMP*sizeof(double));
-
-        // If there is only one line of descent, no coalescent events
-        // are possible, so p[1][0] is at least as large as p[0][0].
-        self->p[1][0] = self->p[0][0];
-    }
-
-    // Outer loop over numbers of descendants.
-    // Calculate probabilities and expected values, p[1] and elen.
-    for(n=2; n <= self->max; ++n) {
-
-        // eigenvalues of transient states
-        double eig[n-1];
-        if(finite)
-            MatCoal_eigenvals(n-1, eig, v);
-        else
-            memset(eig, 0, (n-1)*sizeof(eig[0]));
-        
-        // Calculate expected length, within the segment, of
-        // coalescent intervals with 2,3,...,n lineages.  elen[i] is
-        // expected length of interval with i-1 lineages.
-        // elen[0] not set.
-        MatCoal_ciLen(n-1, elen+1, eig);
-
-        // Calculate expected length, elen[0], of interval with one
-        // lineage.  elen[i] refers to interval with i+1 lineages.
-        double sum = 0.0;
-        for(i=n; i >= 2; --i)
-            sum += elen[i-1];
-        elen[0] = v - sum; // elen[0] is infinite if v is.
-
-        // Multiply elen by probability that segment had n lineages on
-        // recent end of segment.
-        for(i=0; i < n; ++i)
-            elen[i] *= self->p[0][n-1];
-
-        if(finite) {
-            // Calculate prob of 2,3,...,n ancestors at ancent end of
-            // segment. On return, pr[1] = prob[2], pr[n-1] = prob[n],
-            // pr[0] not set.
-            MatCoal_project(n-1, pr+1, eig);
-
-            // Calculate probability of 1 line of descent. I'm doing
-            // the sum in reverse order on the assumption that higher
-            // indices will often have smaller probabilities.  pr[i]
-            // is prob of i+1 lineages; pr[0] not set
-            sum=0.0;
-            for(i=n; i > 1; --i)
-                sum += pr[i-1];
-            self->p[1][0] += self->p[0][n-1] * (1.0-sum);
-
-            // Add probs of 2..n lines of descent
-            // pr[i] is prob of i+2 lineages
-            // self->p[1][i] is prob if i+1 lineages
-            for(i=2; i <= n; ++i)
-                self->p[1][i-1] += self->p[0][n-1] * pr[i-1];
-
-            sd.a = self->a[n-1];
-
-            // Loop over number, k, of ancestors.
-            // Include k=1, because this is a finite segment.
-            for(int k=1; k <= n; ++k) {
-                sd.d = self->d[k-1];
-                sd.nparts = k;
-                sd.elen = elen[k-1];
-                sd.lnconst = lnCoalConst(n, k);
-                status = traverseSetPartitions(n, k, visitSetPart, &sd);
-                if(status)
-                    return status;
-            }
-            sd.a = sd.d = NULL;
-        }else{  // Infinite segment: the root
-
-            cd.d = self->d[n-1];
-
-            // Loop over number, k, of ancestors.
-            // Exclude k=1, because this is an infinite segment.
-            for(int k=2; k <= n; ++k) {
-            
-                // portion of log Qdk that doesn't involve d
-                long double lnconst = logl(k) - lbinom(n-1, k-1);
-
-                // Within each interval, there can be ancestors
-                // with 1 descendant, 2, 3, ..., n-k+2.
-                for(int d=1; d <= n-k+1; ++d) {
-                    long double lnprob = lnconst
-                        + lbinom(n-d-1, k-1) - lbinom(n,d);
-
-                    // probability of site pattern
-                    cd.contrib = (double) expl(lnprob);
-
-                    // times expected length of interval
-                    cd.contrib *= elen[k-1];
-                
-                    status = traverseComb(n, d, visitComb, &cd);
-                    if(status)
-                        return status;
-                }
-            }
-            cd.d = NULL;
-        }
-
-        // Free IdSet objects of descendants
-        ids = PtrVec_pop(self->d[n-1]);
-        while( ids ) {
-            IdSet_free(ids);
-            ids = PtrVec_pop(self->d[n-1]);
-        }
-    }
+    if(finite)
+        status = Segment_coalesceFinite(self, v, dosing, branchTab);
+    else
+        status = Segment_coalesceInfinite(self, v, dosing, branchTab);
 
     // Transfer ancestors to parent node or nodes
     if(self->nparents == 1) {
@@ -581,7 +686,7 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
         // states.
         IdSet *ancestors = IdSet_new(k, sitepat, p * descendants->p);
         IdSet_copyMigoutcome(ancestors, descendants);
-        status = PtrVec_push(vdat->a, ancestors);
+        status = PtrLst_push(vdat->a, ancestors);
         if(status) {
             fprintf(stderr,"%s:%d can't push ancestors; status=%d\n",
                     __FILE__,__LINE__, status);
@@ -590,4 +695,73 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
     }
 
     return status;
+}
+
+/// Visit a set partition defining migrants
+int visitMig(unsigned n, unsigned a[n], void *data) {
+    MigDat *vdat = (MigDat *) data;
+    int status=0;
+
+    tipId_t migrants[vdat->nMigrants], natives[vdat->nNatives];
+
+    // number of sets of ancestors
+    int nSets = PtrVec_length(vdat->a);
+    
+    for(int i_set=0; i_set < nSets; ++i) {
+        IdSet *set = PtrVec_get(vdat->a, i_set);
+
+        int i_mig=0, i_nat=0;
+
+        // tipId_t values of migrants and natives
+        for(int i=0; i<n; ++i) {
+            if(a[i]) // migrant
+                migrants[i_mig++] = vdat->tid[i];
+            else     // native
+                natives[i_nat++] = vdat->tid[i];
+        }
+
+        // Perhaps this test should always be done
+        assert(i_mig == vdat->nMigrants);
+        assert(i_nat == vdat->nNatives);
+
+        // Create IdSet objects for migrants and natives
+        IdSet *mig = IdSet_new(i_mig, migrants, vdat->pr * set->p);
+        IdSet *nat = IdSet_new(i_nat, natives, vdat->pr * set->p);
+        PtrLst_push(vdat->migrants, mig)
+        PtrLst_push(vdat->natives, nat)
+    }
+
+    return status;
+}
+
+/// If to==NULL, then return a new PtrVec, containing all the
+/// pointers in "from". On return, "from" is empty, but the
+/// PtrLst object itself is not freed.
+///
+/// If to!=NULL, then resize "to" so that it is large enough to hold
+/// all the pointers in "from", and move all pointers from "from" into
+/// "to". Return "to".
+PtrVec *PtrLst_to_PtrVec(PtrLst *from, PtrVec *to) {
+    unsigned nIdSets = PtrLst_length(from);
+
+    if(to) {
+        // resize "to"
+        assert(PtrVec_length(to) == 0);
+        if(PtrVec_resize(to, nIdSets)) {
+            fprintf(stderr,"%s:%d: allocation error\n",
+                    __FILE__,__LINE__);
+            exit(EXIT_FAILURE);
+        }
+    }else {
+        // fresh allocation
+        to = PtrVec_new(nIdSets);
+    }
+    
+    IdSet *idset = PtrLst_pop(from);
+    while( idset ) {
+        PtrVec_push(to, idset);
+        idset = PtrLst_pop(from);
+    }
+
+    return to;
 }

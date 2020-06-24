@@ -18,13 +18,12 @@ struct Segment {
 
     int max;       // max number of lineages in segment
 
-    // d[i] is a vector sets of i+1 descendants
-    // a[i] is a vector of sets of i+1 ancestors
-    // Arrays d and a have dimension "max", which is not known
-    // until the segments are linked into a network. Consequently,
-    // the constructor sets their values to NULL, and they are
-    // allocated only after the network has been assembled.
-    PtrVec         **d, **a;
+    // d[i] is a vector sets of i+1 descendants a[i] is a vector of
+    // sets of i+1 ancestors Array d has dimension "max", which is not
+    // known until the segments are linked into a
+    // network. Consequently, the constructor sets its values to NULL,
+    // and it is allocated only after the network has been assembled.
+    PtrVec         **d;
 
     // Waiting rooms.  Each child loads IdSet objects into one of two
     // waiting rooms.  The descendants at the beginning of the segment

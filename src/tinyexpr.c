@@ -34,7 +34,7 @@ For a^b^c = a^(b^c) and -a^b = -(a^b) uncomment the next line.*/
 For log = base 10 log do nothing
 For log = natural log uncomment the next line. */
 
-/* #define TE_NAT_LOG */
+#define TE_NAT_LOG
 
 #include "tinyexpr.h"
 #include <stdlib.h>
@@ -128,7 +128,6 @@ void te_variable_free(te_variable *self) {
      */
     free(self);
 }
-
 
 static te_expr *new_expr(const int type, const te_expr * parameters[]) {
     const int   arity = ARITY(type);
