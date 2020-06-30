@@ -6,9 +6,9 @@ incl := -I/usr/local/include -I/opt/local/include -I../src
 tests := xaddrparmap xbinary xbooma xboot xbranchtab xcomb xdafreader xdiffev \
   xdtnorm xerror xgene xgptree xhessian xidset xintpart \
   xjobqueue xlblndx xlinereader xmisc xmpfrmatcoal xnodestore xsimreader \
-  xparam xparse xparstore xpointbuff xpopnode xptrlst xptrvec xstrptrmap \
-  xrafreader xrational xscrmreader xsampndx xsegment xsetpart xsimsched \
-  xstate xstrdblqueue xstrint xstrparmap xtinyexpr xtokenizer \
+  xparam xparse xparstore xpointbuff xpopnode xptrlst xptrqueue xptrvec \
+  xstrptrmap xrafreader xrational xscrmreader xsampndx xsegment xsetpart \
+  xsimsched xstate xstrdblqueue xstrint xstrparmap xtinyexpr xtokenizer \
   xuintqueue xwraparound xmatcoal
 
 CC := gcc
@@ -79,6 +79,7 @@ test : $(tests)
 	-./xpointbuff
 	-./xpopnode
 	-./xptrlst
+	-./xptrqueue
 	-./xptrvec
 	-./xrafreader
 	-./xrational
@@ -134,6 +135,10 @@ xmisc : $(XMISC)
 XPTRLST := xptrlst.o ptrlst.o misc.o
 xptrlst : $(XPTRLST)
 	$(CC) $(CFLAGS) -o $@ $(XPTRLST) $(lib)
+
+XPTRQUEUE := xptrqueue.o ptrqueue.o misc.o
+xptrqueue : $(XPTRQUEUE)
+	$(CC) $(CFLAGS) -o $@ $(XPTRQUEUE) $(lib)
 
 XPTRVEC := xptrvec.o ptrvec.o misc.o
 xptrvec : $(XPTRVEC)
