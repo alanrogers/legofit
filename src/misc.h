@@ -78,13 +78,14 @@ static inline double survival(double t, double twoN);
         }                                                   \
     } while(0)
 
-#  define REQUIRE(x,file,lineno) do { \
-  if (!(x)) { \
-    dostacktrace(__FILE__,__LINE__,stderr); \
-    eprintf("ERR@%s:%d->%s:%d: Sanity check FAIL\n",\
-            (file),(lineno),__FILE__,__LINE__); \
-   }\
-} while(0)
+#  define REQUIRE(x, file, line) do {                                   \
+        if (!(x)) {                                                     \
+            dostacktrace(__FILE__,__LINE__,stderr);                     \
+            fprintf(stderr,"ERR@%s:%d->%s:%d: Sanity check FAIL\n",     \
+                    (file), (line), __FILE__,__LINE__);                 \
+            exit(EXIT_FAILURE);                                         \
+        }                                                               \
+    } while(0)
 
 // If PTR!=NULL, add offset OSET to pointer PTR (if SIGN>0) or
 // subtract it (otherwise). Units are sizeof(char) rather than the

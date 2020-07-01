@@ -200,8 +200,10 @@ void *GPTree_new(const char *fname, Bounds bnd) {
                                    self->pnv);
     CHECKMEM(ns);
 
-    self->rootPop = mktree(fp, &self->sndx, &self->lblndx, self->parstore,
-                           &self->bnd, ns);
+    PtrPair pp = mktree(fp, &self->sndx, &self->lblndx, &self->bnd, ns);
+
+    self->rootPop = pp.a;
+    self->parstore = pp.b;
 
     fclose(fp);
     NodeStore_free(ns);

@@ -24,67 +24,33 @@ int Param_setValue(Param *self, double value) {
     return 0;
 }
 
-void Param_init(Param *self, const char *name, double value,
-                 double low, double high,
-                 unsigned type) {
-    assert(self);
+param *Param_new(const char *name, double value,
+               double low, double high,
+               unsigned type, char *formula) {
     if(low > value || high < value) {
         fprintf(stderr,"%s:%d: can't initialize parameter \"%s\".\n"
                 " Value (%g) is not in [%lg, %lg]\n",
                 __FILE__,__LINE__, name, value, low, high);
         exit(EXIT_FAILURE);
     }
+    Param *self = malloc(sizeof(Param));
+    CHECKMEM(self);
+    
     self->name = strdup(name);
     CHECKMEM(self->name);
     self->value = value;
     self->low = low;
     self->high = high;
     self->type = type;
-    self->formula = NULL;
+    self->formula = strdup(formula);
     self->constr = NULL;
-    self->next = NULL;
-}
-
-/// Copy old into new, allocating all the internal pointers but not 
-/// new itself. Does not allocate "constr" field of
-/// constrained parameters. This is set to NULL.
-void Param_copy(Param *new, const Param *old) {
-    memcpy(new, old, sizeof(Param));
-    CHECKMEM(new);
-    new->name = strdup(old->name);
-    CHECKMEM(new->name);
-    if(new->type & CONSTRAINED) {
-        assert(old->formula != NULL);
-        new->formula = strdup(old->formula);
-        CHECKMEM(new->formula);
-    }else {
-        assert(old->formula == NULL);
-        new->formula = NULL;
-    }
-    new->constr = NULL;
-    new->next = NULL;
-}
-
-// Push a new Param onto the end of a linked list.
-Param *Param_push(Param *self, Param *new) {
-    if(self == NULL)
-        return new;
-    self->next = Param_push(self->next, new);
     return self;
 }
 
-// frees only memory allocated within Param, not Param itself
-void Param_freePtrs(Param *self) {
+void Param_free(Param *self) {
     free(self->name);
-    if(self->formula)
-        free(self->formula);
-    if(self->constr)
-        te_free(self->constr);
-}
-
-/// Print name and value of a Param.
-void Param_print(Param *self, FILE *fp) {
-    fprintf(fp, "   %8s = %lg\n", self->name, self->value);
+    free(self->formula);
+    free(self);
 }
 
 int Param_compare(const Param *lhs, const Param *rhs) {
@@ -127,10 +93,8 @@ void Param_sanityCheck(const Param *self, const char *file, int line) {
     REQUIRE(self->value <= self->high, file, line);
     if(self->type & CONSTRAINED) {
         REQUIRE(self->formula, file, line);
-        REQUIRE(self->constr, file, line);
     }else{
         REQUIRE(NULL == self->formula, file, line);
-        REQUIRE(NULL == self->constr, file, line);
     }
     if(self->next)
         REQUIRE(self->next > self, file, line);
@@ -189,4 +153,46 @@ double Param_getTrialValue(Param *self, gsl_rng *rng) {
     }
 
     return trial;
+}
+
+/// Move the contents of "from" to "to" and then free "from".
+void Param_move(Param *to, Param *from) {
+    assert(to);
+    assert(from);
+    memcpy(to, from, sizeof(Param));
+    free(from);
+}
+
+/// Copy from into to, but don't copy from->constr, which
+/// must be set by a separate call to Param_compileConstraint.
+void Param_copy(Param *to, Param *from) {
+    assert(to);
+    assert(from);
+    memcpy(to, from, sizeof(Param));
+    to->name = strdup(from->name);
+    CHECKMEM(to->name);
+    if(from->formula) {
+        to->formula = strdup(from->formula);
+        CHECKMEM(to->formula);
+    }
+    to->constr = NULL;
+}
+
+void Param_compileConstraint(Param *self, te_variable *te_pars) {
+
+    int status;
+
+    // Ignore parameters that aren't constrained
+    if(self->type & CONSTRAINED == 0)
+        return;
+    assert(self->formula);
+    
+    // compile constraint
+    self->constr = te_compile(self->formula, te_pars, &status);
+    if(self->constr == NULL) {
+        fprintf(stderr, "%s:%d: parse error\n", __FILE__, __LINE__);
+        fprintf(stderr, "  %s\n", self->formula);
+        fprintf(stderr, "  %*s^\nError near here\n", status - 1, "");
+        exit(EXIT_FAILURE);
+    }
 }

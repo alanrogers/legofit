@@ -28,6 +28,7 @@ typedef struct ParStore ParStore;
 typedef struct Point Point;
 typedef struct PointBuff PointBuff;
 typedef struct PopNode PopNode;
+typedef struct PtrPair PtrPair;
 typedef struct PtrPtrMap PtrPtrMap;
 typedef struct PtrLst PtrLst;
 typedef struct PtrQueue PtrQueue;
@@ -46,6 +47,11 @@ typedef struct UINTqueue UINTqueue;
 typedef struct U64U64Map U64U64Map;
 typedef struct DAFReader DAFReader;
 typedef struct RAFReader RAFReader;
+
+// For returning a pair of pointers
+struct PtrPair {
+    void *a, *b;
+};
 
 #if 1
 #  define TIPID_SIZE 32

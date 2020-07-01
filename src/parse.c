@@ -66,6 +66,7 @@
 #include "network.h"
 #include "parse.h"
 #include "parstore.h"
+#include "ptrqueue.h"
 #include "sampndx.h"
 #include "strptrmap.h"
 #include <assert.h>
@@ -94,10 +95,30 @@
         exit(EXIT_FAILURE);                                     \
     }while(0)
 
+/// Abort with an error message about duplicate parameter definition
+#define DUPLICATE_PAR(x,orig) do{                                  \
+        fprintf(stderr,"%s:%d: Duplicate parameter def: \"%s\"\n", \
+                __FILE__,__LINE__, (x));                           \
+        fprintf(stderr,"  input: %s\n", (orig));                   \
+        exit(EXIT_FAILURE);                                        \
+    }while(0)
+
+/// Input statements out of order
+#define ORDER_ERROR(word) do{                                           \
+        fprintf(stderr,"%s:%d: Order error at \"%s\" in .lgo file.\n",  \
+                __FILE__,__LINE__, (word));                             \
+        fprintf(stderr,"Parameter definitions should come first\n"      \
+                "   (twoN, time, mixFrac, and param),\n"                \
+                "   then \"segment\" statements, and finally \"mix\"\n" \
+                "   and \"derive\" statements.\n");                     \
+        exit(EXIT_FAILURE);                                             \
+    }while(0)
+
 int getDbl(double *x, char **next, const char *orig);
 int getULong(unsigned long *x, char **next, const char *orig);
 int getRange(double x[2], char **next, const char *orig);
-void parseParam(char *next, unsigned type, ParStore * parstore,
+void parseParam(char *next, unsigned type, StrPtrMap *parmap,
+                PtrQueue *fixedQ, PtrQueue *freeQ, PtrQueue *constrQ,
                 Bounds * bnd, const char *orig);
 void parseSegment(char *next, StrPtrMap * popmap, SampNdx * sndx,
                   LblNdx * lndx, ParStore * parstore,
@@ -183,8 +204,9 @@ int getRange(double x[2], char **next, const char *orig) {
 /// parameters
 /// @param[in] bnd the bounds of each type of parameter
 /// @param[in] orig original input line
-void parseParam(char *next, unsigned ptype,
-                ParStore * parstore, Bounds * bnd, const char *orig) {
+void parseParam(char *next, unsigned ptype, StrPtrMap *parmap,
+                PtrQueue *fixedQ, PtrQueue *freeQ, PtrQueue *constrQ,
+                Bounds * bnd, const char *orig) {
     // Read type of parameter
     {
         char *tok = nextWhitesepToken(&next);
@@ -245,11 +267,20 @@ void parseParam(char *next, unsigned ptype,
         }
     }
 
-    // Allocate and initialize parameter in ParStore
+    // Allocate and initialize parameter in queue
+    Param *par;
     if(ptype & FIXED) {
-        ParStore_addFixedPar(parstore, value, name, ptype);
+        par = Param_new(name, value, value, value, ptype, NULL);
+        PtrQueue_push(fixedQ, par);
+        status = StrPtrMap_insert(parmap, name, par);
+        if(status)
+            DUPLICATE_PAR(name)
     }else if(ptype & CONSTRAINED) {
-        ParStore_addConstrainedPar(parstore, formula, name, ptype);
+        par = Param_new(name, value, DBL_MIN, DBL_MAX, ptype, formula);
+        PtrQueue_push(constrQ, par);
+        status = StrPtrMap_insert(parmap, name, par);
+        if(status)
+            DUPLICATE_PAR(name)
     }else if(ptype & FREE) {
         double lo, hi;
         if(gotRange) {
@@ -271,7 +302,11 @@ void parseParam(char *next, unsigned ptype,
             }else
                 DIE("This shouldn't happen");
         }
-        ParStore_addFreePar(parstore, value, lo, hi, name, ptype);
+        par = Param_new(name, value, lo, hi, ptype, NULL);
+        PtrQueue_push(freeQ, par);
+        status = StrPtrMap_insert(parmap, name, par);
+        if(status)
+            DUPLICATE_PAR(name)
     }else
         DIE("This shouldn't happen");
 }
@@ -586,12 +621,19 @@ int get_one_line(size_t n, char buff[n], FILE * fp) {
 /// parameters
 /// @param[in] bnd the bounds of each type of parameter
 /// @param[inout] ns allocates nodes
-void *mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, ParStore * parstore,
-                Bounds * bnd, NodeStore * ns) {
+PtrPair mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, Bounds * bnd,
+               NodeStore * ns) {  
     char orig[500], buff[500], buff2[500];
     char *token, *next;
 
     StrPtrMap *popmap = StrPtrMap_new();
+    StrPtrMap *parmap = StrPtrMap_new();
+
+    // Queues for fixed parameters, free ones, and constrained ones.
+    // Used during parsing. NULL after that.
+    PtrQueue *fixedQ = PtrQueue_new();
+    PtrQueue *freeQ = PtrQueue_new();
+    PtrQueue *constrQ = PtrQueue_new();
 
     while(1) {
         if(EOF == get_one_line(sizeof(buff), buff, fp))
@@ -632,20 +674,48 @@ void *mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, ParStore * parstore,
         if(token == NULL)
             continue;
 
-        if(0 == strcmp(token, "twoN"))
-            parseParam(next, TWON, parstore, bnd, orig);
-        else if(0 == strcmp(token, "time"))
-            parseParam(next, TIME, parstore, bnd, orig);
-        else if(0 == strcmp(token, "mixFrac"))
-            parseParam(next, MIXFRAC, parstore, bnd, orig);
-        else if(0 == strcmp(token, "param"))
-            parseParam(next, ARBITRARY, parstore, bnd, orig);
-        else if(0 == strcmp(token, "segment"))
+        ParStore *parstore = NULL;
+
+        if(0 == strcmp(token, "twoN")) {
+            if(parstore != NULL)
+               ORDER_ERROR("twoN");
+            parseParam(next, TWON, parmap, fixedQ, freeQ, constrQ, bnd, orig);
+        }else if(0 == strcmp(token, "time")) {
+            if(parstore != NULL)
+               ORDER_ERROR("time");
+            parseParam(next, TIME, parmap, fixedQ, freeQ, constrQ, bnd, orig);
+        }else if(0 == strcmp(token, "mixFrac")) {
+            if(parstore != NULL)
+               ORDER_ERROR("mixFrac");
+            parseParam(next, MIXFRAC, parmap, fixedQ, freeQ, constrQ, bnd,
+                       orig); 
+        }else if(0 == strcmp(token, "param")) {
+            if(parstore != NULL)
+               ORDER_ERROR("param");
+            parseParam(next, ARBITRARY, parmap, fixedQ, freeQ, constrQ, bnd,
+                       orig);
+        }else if(0 == strcmp(token, "segment")) {
+            if(parstore==NULL) {
+                // 1st segment: allocate parstore and free
+                // fixedQ, freeQ, and constrQ.
+                assert(fixedQ != NULL);
+                parstore = ParStore_new(fixedQ, freeQ, constrQ);
+                CHECKMEM(parstore}
+                PtrQueue_free(fixedQ);
+                PtrQueue_free(freeQ);
+                PtrQueue_free(constrQ);
+                fixedQ = freeQ = constrQ = NULL;
+            }
             parseSegment(next, popmap, sndx, lndx, parstore, ns, orig);
-        else if(0 == strcmp(token, "mix"))
+        } else if(0 == strcmp(token, "mix")) {
+            if(parstore == NULL)
+               ORDER_ERROR("mix");
             parseMix(next, popmap, parstore, orig);
-        else if(0 == strcmp(token, "derive"))
+        }else if(0 == strcmp(token, "derive")) {
+            if(parstore == NULL)
+               ORDER_ERROR("derive");
             parseDerive(next, popmap, parstore, orig);
+        }
         else
             ILLEGAL_INPUT(token, orig);
     }
@@ -675,11 +745,14 @@ void *mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, ParStore * parstore,
         }
     }
     StrPtrMap_free(popmap);
+    StrPtrMap_free(parmap);
 
     // Make sure no constrained parameter depends on a constrained
     // parameter that is defined later in the .lgo file.
     ParStore_chkDependencies(parstore);
-    return root;
+
+    PtrPair ptrpair = {root, parstore};
+    return ptrpair;
 }
 
 /// Count the number of "segment" statements in input file.

@@ -13,11 +13,13 @@
 
 typedef struct El El;
 
+// One link in the chain
 struct El {
-    void *ptr;
+    void *ptr; // not locally owned
     struct El *next;
 };
 
+// Head and tail of the linked list.
 struct PtrQueue {
     El *head, *tail;
 };
