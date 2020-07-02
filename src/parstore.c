@@ -18,6 +18,7 @@
 
 #include "parstore.h"
 #include "ptrqueue.h"
+#include "ptrptrmap.h"
 #include "strint.h"
 #include "param.h"
 #include "tinyexpr.h"
@@ -30,19 +31,6 @@
 #include <assert.h>
 #include <float.h>
 #include <gsl/gsl_rng.h>
-
-// Set value of constrained variable. Abort with an error message if
-// result is NaN.
-#define SET_CONSTR(par) do {                                            \
-        (par)->value = te_eval((par)->constr);                          \
-        if(isnan((par)->value)) {                                       \
-            fprintf(stderr,"%s:%d: constraint returned NaN\n",          \
-                    __FILE__,__LINE__);                                 \
-            fprintf(stderr,"formula: %s = %s\n",                        \
-                    (par)->name, (par)->formula);                       \
-            exit(EXIT_FAILURE);                                         \
-        }                                                               \
-    }while(0)
 
 /// Abort with an error message about duplicate parameter definition
 #define DUPLICATE_PAR(x) do{                                       \
@@ -70,6 +58,10 @@ struct ParStore {
     // Map parameter names to index numbers
     StrInt *byname;          // look up by name
 
+    // Map the address of a parameter value to the address of the
+    // enclosing Param object.
+    PtrPtrMap *byaddr;      // look up by address
+
     te_variable *te_pars;    // for tinyexpr.c
 };
 
@@ -90,10 +82,11 @@ ParStore ParStore_new(PtrQueue *fixedQ, PtrQueue *freeQ, PtrQueue *constrQ) {
     self->fixed = self->free + self->nFree;
     self->constr = self->fixed + self->nFixed;
 
-    // Param_move copies par into self->par and then frees par;
+    // Param_move copies par into self->par.
     for(unsigned i=0; i < self->nFree; ++i) {
         Param *par = ptrQueue_pop(freeQ);
         Param_move(self->free+i, par);
+        free(par);
     }
 
     for(unsigned i=0; i < self->nFixed; ++i) {
@@ -107,23 +100,27 @@ ParStore ParStore_new(PtrQueue *fixedQ, PtrQueue *freeQ, PtrQueue *constrQ) {
     }
 
     self->byname = StrInt_new();
+    self->byaddr = PtrPtrMap_new();
     self->te_pars = NULL;
 
     // Map parameter name to parameter index.
     // Push names and value pointers onto te_pars.
-    for(int i=0; i < self->nPar; ++i) {
+    for(unsigned i=0; i < self->nPar; ++i) {
         Param *par = self->par+i;
 
         status = StrInt_insert(self->byname, par->name, i);
         if(status)
             DUPLICATE_PAR(par->name);
 
+        status = PtrPtrMap_insert(self->byaddr, &par->value, par);
+        assert(status==0);
+
         self->te_pars =
             te_variable_push(new->te_pars, par->name, &par->value);
     }
 
     // compile constraints
-    for(int i=0; i < self->nConstr; ++i)
+    for(unsigned i=0; i < self->nConstr; ++i)
         Param_compileConstraint(self->par+i, self->te_pars);
 
     ParStore_sanityCheck(self, __FILE__, __LINE__);
@@ -253,6 +250,8 @@ void ParStore_free(ParStore * self) {
     assert(self);
     StrInt_free(self->byname);
     te_variable_free(self->te_pars);
+    for(int i=0; i < self->nPar; ++i)
+        Param_freePtrs(self->par + i);
     free(self->par);
     free(self);
 }
@@ -328,23 +327,6 @@ int ParStore_equals(ParStore * lhs, ParStore * rhs) {
     return 1;
 }
 
-XXXXXXXXXXXXXXXXXXXXXXXX
-
-/// If ptr points to a constrained parameter, then set its value.
-void ParStore_constrain_ptr(ParStore * self, double *ptr) {
-    assert(self);
-    if(self->byaddr == NULL)
-        return;
-    Param *par = AddrParMap_search(self->byaddr, ptr);
-    assert(par);
-
-    // If ptr isn't a constrained parameter, then return immediately
-    if( !(par->type & CONSTRAINED) )
-        return;
-
-    // set value of constrained parameter
-    SET_CONSTR(par);
-}
 
 /// First check to see that free parameters obey boundary constraints.
 /// If not, then return 1. Otherwise, set values of all constrained
@@ -358,18 +340,17 @@ int ParStore_constrain(ParStore * self) {
         if(par->value > par->high)
             return 1;
     }
-    for(int i=0; i < self->nConstr; ++i) {
-        par = self->constr + i;
-        SET_CONSTR(par);
-    }
+    for(int i=0; i < self->nConstr; ++i)
+        Param_constrain(self->constr + i);
+
     return 0;
 }
 
 void ParStore_chkDependencies(ParStore * self) {
     assert(self);
 
-    for(Param *par = self->constrainedPar; par; par=par->next) {
-
+    for(int i=0; i < self->nConstr; ++i ) {
+        Param *par = self->constr + i;
         assert(par->type & CONSTRAINED);
 
         // Get list of pointers to parameters on which par depends.
@@ -383,8 +364,9 @@ void ParStore_chkDependencies(ParStore * self) {
         for(int j = 0; j < len; ++j) {
             assert(self->byaddr);
             // dpar is Param structure associated with value pointer dep[j]
-            Param *dpar = AddrParMap_search(self->byaddr, dep[j]);
-            if(dpar == NULL) {
+            Param *dpar;
+            int status = PtrPtrMap_get(self->byaddr, dep[j], &dpar);
+            if(status) {
                 fprintf(stderr, "%s:%s:%d:"
                         " can't find dependent parameter with address %p\n",
                         __FILE__, __func__, __LINE__, dep[j]);

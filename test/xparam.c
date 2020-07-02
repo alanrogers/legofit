@@ -9,7 +9,6 @@
 
 #include "param.h"
 #include "misc.h"
-#include "network.h"
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
@@ -23,7 +22,7 @@
 
 int main(int argc, char *argv[]) {
 
-    int verbose = 0;
+    int verbose = 0, status;
 
     switch (argc) {
     case 1:
@@ -43,24 +42,79 @@ int main(int argc, char *argv[]) {
     CHECKMEM(rng);
     gsl_rng_set(rng, seed);
 
-    Network_init(SIM);
+    // par lives in [100, 200]
+    Param *par = Param_new("name", 123.4, 100.0, 200.0, FREE|TWON, NULL);
+    assert(strcmp(par->name, "name") == 0);
+    assert(par->value == 123.4);
+    assert(par->low == 100.0);
+    assert(par->high == 200.0);
+    assert(Param_isFree(par));
 
-    Param par;
-    Param_init(&par, "name", 123.4, 100.0, 200.0, FREE|TWON);
-    assert(strcmp(par.name, "name") == 0);
-    assert(par.value == 123.4);
-    assert(par.low == 100.0);
-    assert(par.high == 200.0);
+    double v;
+    for(int i=0; i< 100; ++i) {
+        v = Param_getTrialValue(par, rng);
+        assert(v >= 100.0);
+        assert(v < 200.0);
+        assert(v != 100.0);
+    }
 
-    if(verbose)
-        Param_print(&par, stdout);
+    // par2 lives in [0, 1]
+    Param *par2 = Param_new("foo", 0.5, 0.0, 1.0, FIXED|MIXFRAC, NULL);
+    Param_sanityCheck(par2, __FILE__, __LINE__);
+    assert(!Param_isFree(par2));
 
-    Param_sanityCheck(&par, __FILE__, __LINE__);
+    assert(0 != Param_compare(par, par2));
 
-    if(verbose)
-        Param_print(&par, stdout);
+    // try assigning a value out of range
+    assert(EDOM == Param_setValue(par2, 99.99));
 
-    Param_freePtrs(&par);
+    // try assigning a value in range
+    status = Param_setValue(par2, 0.25);
+    assert(status != EDOM);
+    assert(0 == status);
+    assert(0.25 == Param_getValue(par2));
+
+    // make par2 equal to par
+    Param_copy(par2, par);
+    assert(0 == Param_compare(par, par2));
+    assert(Param_isFree(par2));
+
+    Param_freePtrs(par);
+    free(par);
+
+    te_variable *pars = NULL;
+
+    char formula[100];
+    double w=1.0, x=2.0, y=3.0, z=4.0;
+    pars = te_variable_push(pars, "w", &w);
+    pars = te_variable_push(pars, "x", &x);
+    pars = te_variable_push(pars, "y", &y);
+    pars = te_variable_push(pars, "z", &z);
+    sprintf(formula, "%s", "w + x*y - z");
+
+    // A constrained Param
+    par = Param_new("constrained", 4.0, DBL_MIN, DBL_MAX,
+                    CONSTRAINED|TWON, formula);
+    assert(!Param_isFree(par));
+    assert(4.0 == Param_getValue(par));
+    Param_compileConstraint(par, pars);
+    Param_constrain(par);
+    assert(3.0 == Param_getValue(par));
+
+    // Change one of the underlying variables
+    w += 1;
+    Param_constrain(par);
+    assert(4.0 == Param_getValue(par));
+
+    Param_move(par2, par);
+    free(par);
+    assert(par2->type == (CONSTRAINED|TWON));
+    assert(4.0 == Param_getValue(par2));
+
+    // Change one of the underlying variables
+    w += 1;
+    Param_constrain(par2);
+    assert(5.0 == Param_getValue(par2));
 
     unitTstResult("Param", "OK");
 

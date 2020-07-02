@@ -176,9 +176,7 @@ XERROR := xerror.o error.o misc.o
 xerror : $(XERROR)
 	$(CC) $(CFLAGS) -o $@ $(XERROR) $(lib)
 
-XPARAM := xparam.o misc.o param.o tinyexpr.o dtnorm.o gptree.o parstore.o \
-    strparmap.o addrparmap.o gene.o lblndx.o popnode.o branchtab.o parse.o \
-    binary.o strptrmap.o tokenizer.o dprintf.o sampndx.o nodestore.o network.o
+XPARAM := xparam.o misc.o param.o tinyexpr.o dtnorm.o 
 xparam : $(XPARAM)
 	$(CC) $(CFLAGS) -o $@ $(XPARAM) $(lib)
 
@@ -360,6 +358,13 @@ u64u64map.o : ../src/u64u64map.c ../src/u64u64map.h ../src/hashmap.h \
 XU64U64MAP := xu64u64map.o misc.o binary.o u64u64map.o
 xu64u64map : $(XU64U64MAP)
 	$(CC) $(CFLAGS) -o $@ $(XU64U64MAP) $(lib)
+
+ptru32map.o : ../src/ptru32map.c ../src/ptru32map.h ../src/hashmap.h \
+   ../src/hashmap.c
+
+XPTRU32MAP := xptru32map.o misc.o binary.o ptru32map.o
+xptru32map : $(XPTRU32MAP)
+	$(CC) $(CFLAGS) -o $@ $(XPTRU32MAP) $(lib)
 
 ptrptrmap.o : ../src/ptrptrmap.c ../src/ptrptrmap.h ../src/hashmap.h \
    ../src/hashmap.c

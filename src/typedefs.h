@@ -30,6 +30,7 @@ typedef struct PointBuff PointBuff;
 typedef struct PopNode PopNode;
 typedef struct PtrPair PtrPair;
 typedef struct PtrPtrMap PtrPtrMap;
+typedef struct PtrU32Map PtrU32Map;
 typedef struct PtrLst PtrLst;
 typedef struct PtrQueue PtrQueue;
 typedef struct PtrVec PtrVec;

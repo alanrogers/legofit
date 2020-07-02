@@ -20,11 +20,12 @@ double Param_getValue(Param *self) {
 int Param_setValue(Param *self, double value) {
     if(value < self->low || value > self->high)
         return EDOM;
+
     self->value = value;
     return 0;
 }
 
-param *Param_new(const char *name, double value,
+Param *Param_new(const char *name, double value,
                double low, double high,
                unsigned type, char *formula) {
     if(low > value || high < value) {
@@ -35,22 +36,20 @@ param *Param_new(const char *name, double value,
     }
     Param *self = malloc(sizeof(Param));
     CHECKMEM(self);
-    
+
+    assert(name);
     self->name = strdup(name);
     CHECKMEM(self->name);
     self->value = value;
     self->low = low;
     self->high = high;
     self->type = type;
-    self->formula = strdup(formula);
+    if(formula)
+        self->formula = strdup(formula);
+    else
+        self->formula = NULL;
     self->constr = NULL;
     return self;
-}
-
-void Param_free(Param *self) {
-    free(self->name);
-    free(self->formula);
-    free(self);
 }
 
 int Param_compare(const Param *lhs, const Param *rhs) {
@@ -96,8 +95,6 @@ void Param_sanityCheck(const Param *self, const char *file, int line) {
     }else{
         REQUIRE(NULL == self->formula, file, line);
     }
-    if(self->next)
-        REQUIRE(self->next > self, file, line);
 #endif
 }
 
@@ -155,12 +152,14 @@ double Param_getTrialValue(Param *self, gsl_rng *rng) {
     return trial;
 }
 
-/// Move the contents of "from" to "to" and then free "from".
+/// Move the contents of "from" to "to".
 void Param_move(Param *to, Param *from) {
     assert(to);
     assert(from);
+    Param_freePtrs(to);
     memcpy(to, from, sizeof(Param));
-    free(from);
+    from->name = from->formula = NULL;
+    from->constr = NULL;
 }
 
 /// Copy from into to, but don't copy from->constr, which
@@ -168,6 +167,7 @@ void Param_move(Param *to, Param *from) {
 void Param_copy(Param *to, Param *from) {
     assert(to);
     assert(from);
+    Param_freePtrs(to);
     memcpy(to, from, sizeof(Param));
     to->name = strdup(from->name);
     CHECKMEM(to->name);
@@ -183,7 +183,7 @@ void Param_compileConstraint(Param *self, te_variable *te_pars) {
     int status;
 
     // Ignore parameters that aren't constrained
-    if(self->type & CONSTRAINED == 0)
+    if( (self->type & CONSTRAINED) == 0)
         return;
     assert(self->formula);
     
@@ -197,24 +197,27 @@ void Param_compileConstraint(Param *self, te_variable *te_pars) {
     }
 }
 
-int Param_equals(const Param *x, const Param *y) {
-    int cmp = strcmp(x->name, y->name);
-    if(cmp)
-        return 0;
-    if(x->value != y->value)
-        return 0;
-    if(x->low != y->low)
-        return 0;
-    if(x->high != y->high)
-        return 0;
-    if(x->type != y->type)
-        return 0;
-    if(x->formula==NULL && y->formula!=NULL)
-        return 0;
-    if(x->formula!=NULL && y->formula==NULL)
-        return 0;
-    if(x->formula)
-        if(0 != strcmp(x->formula, y->formula))
-            return 0;
-    return 1;
+/// Set value of constrained parameter.  Abort with an error message
+/// if result is NaN.
+void Param_constrain(Param *par) {
+    par->value = te_eval(par->constr);
+    if(isnan(par->value)) {
+        fprintf(stderr,"%s:%d: constraint returned NaN\n",
+                __FILE__,__LINE__);
+        fprintf(stderr,"formula: %s = %s\n",
+                par->name, par->formula);
+        exit(EXIT_FAILURE);
+    }
+}
+
+// frees only memory allocated within Param, not Param itself
+void Param_freePtrs(Param *self) {
+    if(self->name)
+        free(self->name);
+    if(self->formula)
+        free(self->formula);
+    if(self->constr)
+        te_free(self->constr);
+    self->name = self->formula = NULL;
+    self->constr = NULL;
 }

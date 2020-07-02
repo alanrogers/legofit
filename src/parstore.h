@@ -16,7 +16,6 @@ void        ParStore_free(ParStore * self);
 int         ParStore_nPar(ParStore *self);
 double      ParStore_getVal(ParStore *self, int i);
 int         ParStore_constrain(ParStore *self);
-void        ParStore_constrain_ndx(ParStore *self, int i);
 int         ParStore_nFixed(ParStore * self);
 int         ParStore_nFree(ParStore * self);
 int         ParStore_nConstrained(ParStore * self);
