@@ -30,5 +30,6 @@ double Param_getTrialValue(Param *self, gsl_rng *rng);
 int    Param_isFree(Param *self);
 double Param_getValue(Param *self);
 int    Param_setValue(Param *self, double value);
+int    Param_equals(const Param *x, const Param *y);
 
 #endif

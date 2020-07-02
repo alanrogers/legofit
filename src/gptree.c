@@ -339,7 +339,7 @@ void GPTree_sanityCheck(void * vself, const char *file, int line) {
 /// Return 1 if two GPTree objects are equal, 0 if they differ.  Abort
 /// with an error if the GPTree pointers are different but one or more
 /// of the internal pointers is the same.  Does not access rootPop or
-/// rootGene.
+/// rootGene. Used for testing GPTree_dup.
 int GPTree_equals(const GPTree * lhs, const GPTree * rhs) {
     if(lhs == rhs)
         return 0;

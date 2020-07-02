@@ -288,8 +288,9 @@ void ParStore_sanityCheck(ParStore * self, const char *file, int line) {
         par = self->par + i;
         Param_sanityCheck(par, file, line);
         errno = 0;
-        j = StrInt_search(self->byname, par->name);
+        j = StrInt_get(self->byname, par->name);
         REQUIRE(errno==0, file, line);
+        REQUIRE(j >= 0, file, line);
         REQUIRE(j == i, file, line);
         if(par->type & CONSTRAINED) {
             REQUIRE(par->formula, file, line);
@@ -298,38 +299,36 @@ void ParStore_sanityCheck(ParStore * self, const char *file, int line) {
             REQUIRE(NULL == par->constr, file, line);
         }
     }
+
+    for(i=0; i < self->nFixed; ++i)
+        assert(FIXED & self->fixed[i].type);
+
+    for(i=0; i < self->nFree; ++i)
+        assert(FREE & self->free[i].type);
+
+    for(i=0; i < self->nConstr; ++i)
+        assert(CONSTRAINED & self->constr[i].type);
 #  endif
 }
 
 /// Return 1 if two ParStore objects are equal; 0 otherwise.
 int ParStore_equals(ParStore * lhs, ParStore * rhs) {
-    int i;
     if(lhs == rhs)
         return 1;
-    if(lhs->nPar != rhs->nPar) {
+    if(lhs->nPar != rhs->nPar)
         return 0;
-    }
-    if(ParStore_nFree(lhs) != ParStore_nFree(rhs)) {
+    if(ParStore_nFree(lhs) != ParStore_nFree(rhs))
         return 0;
-    }
-    if(ParStore_nConstrained(lhs) != ParStore_nConstrained(rhs)) {
+    if(ParStore_nConstrained(lhs) != ParStore_nConstrained(rhs))
         return 0;
-    }
-    for(i=0; i < lhs->nPar; ++i) {
-        int c = Param_compare(lhs->vec+i, rhs->vec+i);
-        if(c!=0)
+    for(int i=0; i < lhs->nPar; ++i) {
+        if(0 != Param_compare(lhs->vec+i, rhs->vec+i) )
             return 0;
-    }
-    if(ParStore_constrain(lhs)) {
-        fprintf(stderr, "%s:%d: free parameters violate constraints\n",
-                __FILE__, __LINE__);
-    }
-    if(ParStore_constrain(rhs)) {
-        fprintf(stderr, "%s:%d: free parameters violate constraints\n",
-                __FILE__, __LINE__);
     }
     return 1;
 }
+
+XXXXXXXXXXXXXXXXXXXXXXXX
 
 /// If ptr points to a constrained parameter, then set its value.
 void ParStore_constrain_ptr(ParStore * self, double *ptr) {
@@ -352,14 +351,17 @@ void ParStore_constrain_ptr(ParStore * self, double *ptr) {
 /// parameters and return 0.
 int ParStore_constrain(ParStore * self) {
     Param *par;
-    for(par = self->freePar; par; par = par->next) {
+    for(int i=0; i < self->nFree; ++i) {
+        par = self->free+i;
         if(par->value < par->low)
             return 1;
         if(par->value > par->high)
             return 1;
     }
-    for(par = self->constrainedPar; par; par = par->next)
+    for(int i=0; i < self->nConstr; ++i) {
+        par = self->constr + i;
         SET_CONSTR(par);
+    }
     return 0;
 }
 

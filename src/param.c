@@ -196,3 +196,25 @@ void Param_compileConstraint(Param *self, te_variable *te_pars) {
         exit(EXIT_FAILURE);
     }
 }
+
+int Param_equals(const Param *x, const Param *y) {
+    int cmp = strcmp(x->name, y->name);
+    if(cmp)
+        return 0;
+    if(x->value != y->value)
+        return 0;
+    if(x->low != y->low)
+        return 0;
+    if(x->high != y->high)
+        return 0;
+    if(x->type != y->type)
+        return 0;
+    if(x->formula==NULL && y->formula!=NULL)
+        return 0;
+    if(x->formula!=NULL && y->formula==NULL)
+        return 0;
+    if(x->formula)
+        if(0 != strcmp(x->formula, y->formula))
+            return 0;
+    return 1;
+}
