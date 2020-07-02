@@ -41,10 +41,10 @@
 
 struct ParStore {
 
-    int nPar, nFix, nFree, nConstr; // nPar == nFix+nFree+nConstr
+    int nPar, nFixed, nFree, nConstr; // nPar == nFixed+nFree+nConstr
 
     // An array of nPar Param objects. The 1st nFree entries describe
-    // free parameters, the next nFix describee fixed parameter
+    // free parameters, the next nFixed describe fixed parameter
     // values, and the last nConstr entries describe constrained 
     // parameter values. I have them all in one array so that PopNode
     // objects can refer to them using a single index.
@@ -53,7 +53,7 @@ struct ParStore {
     // These are pointers into the relevant portions of par.
     Param *free;    // equals par
     Param *fixed;   // equals par + nFree
-    Param *constr;  // equals par + nFree + nFix
+    Param *constr;  // equals par + nFree + nFixed
 
     // Map parameter names to index numbers
     StrInt *byname;          // look up by name
@@ -65,15 +65,18 @@ struct ParStore {
     te_variable *te_pars;    // for tinyexpr.c
 };
 
-ParStore ParStore_new(PtrQueue *fixedQ, PtrQueue *freeQ, PtrQueue *constrQ) {
+static int  ParStore_constrain(ParStore *self);
+static void ParStore_chkDependencies(ParStore * self);
+
+ParStore *ParStore_new(PtrQueue *fixedQ, PtrQueue *freeQ, PtrQueue *constrQ) {
     ParStore *self = malloc(sizeof(ParStore));
     CHECKMEM(self);
     memset(self, 0, sizeof(ParStore));
 
-    self->nFix = PtrQueue_size(fixedQ);
+    self->nFixed = PtrQueue_size(fixedQ);
     self->nFree = PtrQueue_size(freeQ);
     self->nConstr = PtrQueue_size(constrQ);
-    self->nPar = self->nFix + self->nFree + self->nConstr;
+    self->nPar = self->nFixed + self->nFree + self->nConstr;
 
     self->par = malloc(self->nPar * sizeof(Param));
     CHECKMEM(self->par);
@@ -84,18 +87,18 @@ ParStore ParStore_new(PtrQueue *fixedQ, PtrQueue *freeQ, PtrQueue *constrQ) {
 
     // Param_move copies par into self->par.
     for(unsigned i=0; i < self->nFree; ++i) {
-        Param *par = ptrQueue_pop(freeQ);
+        Param *par = PtrQueue_pop(freeQ);
         Param_move(self->free+i, par);
         free(par);
     }
 
     for(unsigned i=0; i < self->nFixed; ++i) {
-        Param *par = ptrQueue_pop(fixedQ);
+        Param *par = PtrQueue_pop(fixedQ);
         Param_move(self->fixed+i, par);
     }
     
     for(unsigned i=0; i < self->nConstr; ++i) {
-        Param *par = ptrQueue_pop(constrQ);
+        Param *par = PtrQueue_pop(constrQ);
         Param_move(self->constr+i, par);
     }
 
@@ -104,25 +107,38 @@ ParStore ParStore_new(PtrQueue *fixedQ, PtrQueue *freeQ, PtrQueue *constrQ) {
     self->te_pars = NULL;
 
     // Map parameter name to parameter index.
+    // Map value address to Param address.
     // Push names and value pointers onto te_pars.
     for(unsigned i=0; i < self->nPar; ++i) {
         Param *par = self->par+i;
 
-        status = StrInt_insert(self->byname, par->name, i);
-        if(status)
+        errno = 0;
+        StrInt_insert(self->byname, par->name, i);
+        if(errno)
             DUPLICATE_PAR(par->name);
 
-        status = PtrPtrMap_insert(self->byaddr, &par->value, par);
-        assert(status==0);
+        int status = PtrPtrMap_insert(self->byaddr, &par->value, par);
+        if(status) {
+            fprintf(stderr,"%s:%d: duplicate parameter address\n",
+                    __FILE__,__LINE__);
+            exit(EXIT_FAILURE);
+        }
 
         self->te_pars =
-            te_variable_push(new->te_pars, par->name, &par->value);
+            te_variable_push(self->te_pars, par->name, &par->value);
     }
 
     // compile constraints
     for(unsigned i=0; i < self->nConstr; ++i)
         Param_compileConstraint(self->par+i, self->te_pars);
 
+    // Make sure no constrained parameter depends on a constrained
+    // parameter that is defined later in the .lgo file.
+    ParStore_chkDependencies(self);
+
+    // set values of constrained variables
+    ParStore_constrain(self);
+    
     ParStore_sanityCheck(self, __FILE__, __LINE__);
     return self;
 }
@@ -130,12 +146,11 @@ ParStore ParStore_new(PtrQueue *fixedQ, PtrQueue *freeQ, PtrQueue *constrQ) {
 /// Duplicate a ParStore
 ParStore *ParStore_dup(const ParStore * old) {
     assert(old);
-    int status;
-    ParStore *new = malloc(old, sizeof(ParStore));
+    ParStore *new = malloc(sizeof(ParStore));
     CHECKMEM(new);
     memset(new, 0, sizeof(ParStore));
 
-    new->nFix = old->nFix;
+    new->nFixed = old->nFixed;
     new->nFree = old->nFree;
     new->nConstr = old->nConstr;
     new->nPar = old->nPar;
@@ -156,8 +171,9 @@ ParStore *ParStore_dup(const ParStore * old) {
         const Param *opar = old->par + i;
         Param_copy(par, opar);  // doesn't copy constr field
 
-        status = StrInt_insert(new->byname, par->name, i);
-        if(status)
+        errno=0;
+        StrInt_insert(new->byname, par->name, i);
+        if(errno)
             DUPLICATE_PAR(par->name);
 
         new->te_pars =
@@ -282,7 +298,7 @@ void ParStore_sanityCheck(ParStore * self, const char *file, int line) {
     // For each name: (1) make sure it's a legal name;
     // (2) get the pointer associated with that name.
     int i, j;
-    Param *par, *par2;
+    Param *par;
     for(i = 0; i < self->nPar; ++i) {
         par = self->par + i;
         Param_sanityCheck(par, file, line);
@@ -321,7 +337,7 @@ int ParStore_equals(ParStore * lhs, ParStore * rhs) {
     if(ParStore_nConstrained(lhs) != ParStore_nConstrained(rhs))
         return 0;
     for(int i=0; i < lhs->nPar; ++i) {
-        if(0 != Param_compare(lhs->vec+i, rhs->vec+i) )
+        if(0 != Param_compare(lhs->par+i, rhs->par+i) )
             return 0;
     }
     return 1;
@@ -331,7 +347,7 @@ int ParStore_equals(ParStore * lhs, ParStore * rhs) {
 /// First check to see that free parameters obey boundary constraints.
 /// If not, then return 1. Otherwise, set values of all constrained
 /// parameters and return 0.
-int ParStore_constrain(ParStore * self) {
+static int ParStore_constrain(ParStore * self) {
     Param *par;
     for(int i=0; i < self->nFree; ++i) {
         par = self->free+i;
@@ -346,7 +362,7 @@ int ParStore_constrain(ParStore * self) {
     return 0;
 }
 
-void ParStore_chkDependencies(ParStore * self) {
+static void ParStore_chkDependencies(ParStore * self) {
     assert(self);
 
     for(int i=0; i < self->nConstr; ++i ) {

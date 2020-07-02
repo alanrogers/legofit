@@ -302,10 +302,9 @@ XGPTREE := xgptree.o addrparmap.o misc.o branchtab.o parstore.o lblndx.o \
 xgptree : $(XGPTREE)
 	$(CC) $(CFLAGS) -o $@ $(XGPTREE) $(lib)
 
-XPARSTORE := xparstore.o misc.o parstore.o binary.o lblndx.o \
-        tinyexpr.o strparmap.o addrparmap.o param.o gptree.o \
-	dtnorm.o gene.o popnode.o parse.o dprintf.o branchtab.o \
-        strptrmap.o tokenizer.o sampndx.o
+XPARSTORE := xparstore.o misc.o parstore.o binary.o ptrptrmap.o ptrqueue.o \
+        tinyexpr.o param.o strint.o \
+	dtnorm.o 
 xparstore : $(XPARSTORE)
 	$(CC) $(CFLAGS) -o $@ $(XPARSTORE) $(lib)
 

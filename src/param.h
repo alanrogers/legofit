@@ -25,12 +25,12 @@ int    Param_isFree(Param *self);
 int    Param_setValue(Param *self, double value);
 void   Param_compileConstraint(Param *self, te_variable *te_pars);
 void   Param_constrain(Param *par);
-void   Param_copy(Param *to, Param *from);
+void   Param_copy(Param *to, const Param *from);
 void   Param_freePtrs(Param *self);
 void   Param_move(Param *to, Param *from);
 Param *Param_new(const char *name, double value,
                  double low, double high,
-                 unsigned type, char *formula);
+                 unsigned type, const char *formula);
 void   Param_sanityCheck(const Param *self, const char *file, int line);
 
 #endif

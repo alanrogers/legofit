@@ -93,7 +93,7 @@ int main(int argc, char *argv[]) {
     sprintf(formula, "%s", "w + x*y - z");
 
     // A constrained Param
-    par = Param_new("constrained", 4.0, DBL_MIN, DBL_MAX,
+    par = Param_new("constrained", 4.0, -DBL_MAX, DBL_MAX,
                     CONSTRAINED|TWON, formula);
     assert(!Param_isFree(par));
     assert(4.0 == Param_getValue(par));

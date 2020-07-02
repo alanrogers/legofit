@@ -42,12 +42,12 @@ struct MAPTYPE {
     El         *tab[HASH_DIM];
 };
 
-static El  *El_new(const KEYTYPE key, VALTYPE value);
+static El  *El_new(KEYTYPE key, VALTYPE value);
 static void El_free(El * e);
 static El  *El_insert(El *self, KEYTYPE key, VALTYPE value, int *status);
 
 /// Construct a new element with given key and value
-static El *El_new(const KEYTYPE key, VALTYPE value) {
+static El *El_new(KEYTYPE key, VALTYPE value) {
     El         *new = malloc(sizeof(*new));
     CHECKMEM(new);
 

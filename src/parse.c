@@ -276,7 +276,7 @@ void parseParam(char *next, unsigned ptype, StrPtrMap *parmap,
         if(status)
             DUPLICATE_PAR(name)
     }else if(ptype & CONSTRAINED) {
-        par = Param_new(name, value, DBL_MIN, DBL_MAX, ptype, formula);
+        par = Param_new(name, value, -DBL_MAX, DBL_MAX, ptype, formula);
         PtrQueue_push(constrQ, par);
         status = StrPtrMap_insert(parmap, name, par);
         if(status)
@@ -746,10 +746,6 @@ PtrPair mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, Bounds * bnd,
     }
     StrPtrMap_free(popmap);
     StrPtrMap_free(parmap);
-
-    // Make sure no constrained parameter depends on a constrained
-    // parameter that is defined later in the .lgo file.
-    ParStore_chkDependencies(parstore);
 
     PtrPair ptrpair = {root, parstore};
     return ptrpair;

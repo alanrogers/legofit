@@ -10,6 +10,7 @@ and VALTYPE.
 MAPTYPE * FUNC(MAPTYPE, new)(void);
 void      FUNC(MAPTYPE, free)(MAPTYPE * self);
 int       FUNC(MAPTYPE, get)(MAPTYPE * self, KEYTYPE key, VALTYPE *value);
-int       FUNC(MAPTYPE, insert)(MAPTYPE * self, KEYTYPE key, VALTYPE value);
+int       FUNC(MAPTYPE, insert)(MAPTYPE * self, KEYTYPE key,
+                                VALTYPE value);
 unsigned long FUNC(MAPTYPE, size)(MAPTYPE * self);
 int       FUNC(MAPTYPE, keys)(MAPTYPE *self, unsigned size, KEYTYPE keys[size]);

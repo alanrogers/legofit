@@ -27,7 +27,7 @@ int Param_setValue(Param *self, double value) {
 
 Param *Param_new(const char *name, double value,
                double low, double high,
-               unsigned type, char *formula) {
+               unsigned type, const char *formula) {
     if(low > value || high < value) {
         fprintf(stderr,"%s:%d: can't initialize parameter \"%s\".\n"
                 " Value (%g) is not in [%lg, %lg]\n",
@@ -164,7 +164,7 @@ void Param_move(Param *to, Param *from) {
 
 /// Copy from into to, but don't copy from->constr, which
 /// must be set by a separate call to Param_compileConstraint.
-void Param_copy(Param *to, Param *from) {
+void Param_copy(Param *to, const Param *from) {
     assert(to);
     assert(from);
     Param_freePtrs(to);
