@@ -549,7 +549,7 @@ int PopNode_feasible(const PopNode * self, Bounds bnd, int verbose) {
         if(*self->mix < 0.0 || *self->mix > 1.0) {
             if(verbose)
                 fprintf(stderr, "%s FAIL: mix=%lg not in [0, 1]\n",
-                        __func__, *self->twoN);
+                        __func__, *self->mix);
             return 0;
         }
     }
