@@ -130,7 +130,7 @@ ParStore *ParStore_new(PtrQueue *fixedQ, PtrQueue *freeQ, PtrQueue *constrQ) {
 
     // compile constraints
     for(unsigned i=0; i < self->nConstr; ++i)
-        Param_compileConstraint(self->par+i, self->te_pars);
+        Param_compileConstraint(self->constr+i, self->te_pars);
 
     // Make sure no constrained parameter depends on a constrained
     // parameter that is defined later in the .lgo file.
@@ -372,6 +372,7 @@ static void ParStore_chkDependencies(ParStore * self) {
         // Get list of pointers to parameters on which par depends.
         int len = 100;
         const double *dep[len];
+        assert(par->constr != NULL);
         len = te_dependencies(par->constr, len, dep);
 
         // Check that each dependent constrained parameter comes before
@@ -379,9 +380,10 @@ static void ParStore_chkDependencies(ParStore * self) {
         // dependencies will be set before par is set.
         for(int j = 0; j < len; ++j) {
             assert(self->byaddr);
-            // dpar is Param structure associated with value pointer dep[j]
-            Param *dpar;
-            int status = PtrPtrMap_get(self->byaddr, dep[j], &dpar);
+            // dpar is Param structure associated with value pointer
+            // dep[j]
+            int status;
+            Param *dpar = PtrPtrMap_get(self->byaddr, dep[j], &status);
             if(status) {
                 fprintf(stderr, "%s:%s:%d:"
                         " can't find dependent parameter with address %p\n",

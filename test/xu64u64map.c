@@ -61,7 +61,7 @@ int main(int argc, char **argv) {
 
     if(verbose) {
         for(int i=0; i<size; ++i) {
-            status = U64U64Map_get(map, kk[i], &val);
+            val = U64U64Map_get(map, kk[i], &status);
             assert(status==0);
             printf("%llu => %llu\n", kk[i], val);
         }                 
@@ -71,7 +71,7 @@ int main(int argc, char **argv) {
     assert(status == BUFFER_OVERFLOW);
 
     for(int i=0; i < nvals; ++i) {
-        status = U64U64Map_get(map, key[i], &val);
+        val = U64U64Map_get(map, key[i], &status);
         assert(status==0);
         assert(val == value[i]);
     }
@@ -89,7 +89,7 @@ int main(int argc, char **argv) {
         }
     }while(k_in_map);
 
-    status = U64U64Map_get(map, k, &val);
+    val = U64U64Map_get(map, k, &status);
     assert(status == 1);
 
     U64U64Map_free(map);

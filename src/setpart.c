@@ -38,7 +38,7 @@ uint64_t stirling2(uint32_t n, uint32_t k) {
         map = U64U64Map_new();
         CHECKMEM(map);
     }else{
-        status = U64U64Map_get(map, key, &value);
+        value = U64U64Map_get(map, key, &status);
         if(status == 0)
             return value;
     }

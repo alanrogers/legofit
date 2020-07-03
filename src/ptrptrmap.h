@@ -3,7 +3,7 @@
 #  include "typedefs.h"
 
 #define MAPTYPE PtrPtrMap
-#define KEYTYPE const void *
+#define KEYTYPE void *
 #define VALTYPE void *
 #define HASH ptrHash
 #define HASH_DIM 256ul

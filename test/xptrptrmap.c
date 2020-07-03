@@ -62,7 +62,7 @@ int main(int argc, char **argv) {
 
     if(verbose) {
         for(int i=0; i<size; ++i) {
-            status = PtrPtrMap_get(map, kk[i], &val);
+            val = PtrPtrMap_get(map, kk[i], &status);
             assert(status==0);
             printf("%p => %p\n", kk[i], val);
         }                 
@@ -72,7 +72,7 @@ int main(int argc, char **argv) {
     assert(status == BUFFER_OVERFLOW);
 
     for(int i=0; i < nvals; ++i) {
-        status = PtrPtrMap_get(map, key+i, &val);
+        val = PtrPtrMap_get(map, key+i, &status);
         assert(status==0);
         assert(*((unsigned *)val) == value[i]);
     }
@@ -80,7 +80,7 @@ int main(int argc, char **argv) {
     // k is not a key in the map
     unsigned *k = key + nvals;
 
-    status = PtrPtrMap_get(map, k, &val);
+    val = PtrPtrMap_get(map, k, &status);
     assert(status == 1);
 
     PtrPtrMap_free(map);

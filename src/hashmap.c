@@ -119,9 +119,11 @@ void FUNC(MAPTYPE, free)(MAPTYPE * self) {
     free(self);
 }
 
-/// Get the value associated with key. Return 0 on success, 1 if
-/// there is no such key
-int FUNC(MAPTYPE, get)(MAPTYPE * self, KEYTYPE key, VALTYPE *value) {
+/// Get the value associated with key. On success, *status is set equal to 0
+/// and the function returns the value associated with the key. If the key
+/// is not found, *status is set equal to 1, and the function returns 0,
+/// which C will then try to convert into VALTYPE. 
+VALTYPE FUNC(MAPTYPE, get)(MAPTYPE * self, const KEYTYPE key, int *status) {
 
     // Same as hash % HASH_DIM but faster. Requires
     // that HASH_DIM be a power of 2.
@@ -134,12 +136,15 @@ int FUNC(MAPTYPE, get)(MAPTYPE * self, KEYTYPE key, VALTYPE *value) {
     for(el = self->tab[h]; el; el = el->next) {
         int cmp = CMP(el->key, key);
         if(cmp == 0) {
-            *value = el->value;
+            *status = 0;
+            return el->value;
+        }else if(cmp < 0) {
+            *status = 1;
             return 0;
-        }else if(cmp < 0)
-            return 1;
+        }
     }
-    return 1;
+    *status = 1;
+    return 0;
 }
 
 /// Insert a value into the table.

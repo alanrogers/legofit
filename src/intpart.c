@@ -37,7 +37,7 @@ uint64_t numIntPart(int32_t n, int32_t k) {
         map = U64U64Map_new();
         CHECKMEM(map);
     }else{
-        status = U64U64Map_get(map, key, &value);
+        value = U64U64Map_get(map, key, &status);
         if(status == 0)
             return value;
     }
