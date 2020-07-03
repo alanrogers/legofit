@@ -1,10 +1,10 @@
 #include <stdio.h>
-#include "binary.h"
+#include <math.h>
 int main(void) {
-    const uint32_t unity = 1u;
-    uint32_t pat;
-
-    pat = ~0u;
-    printBits(sizeof pat, &pat, stdout);
+    double x = -INFINITY;
+    if(isinf(x))
+        printf("x is infinite\n");
+    else
+        printf("x is finite\n");
     return 0;
 }

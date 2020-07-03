@@ -25,6 +25,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <float.h>
+#include <math.h>
 #include <gsl/gsl_randist.h>
 
 static void  PopNode_addSample(PopNode * self, Gene * gene);
@@ -42,21 +43,24 @@ static void PopNode_sanityFromLeaf(PopNode * self, const char *file, int line) {
     case 0:
         REQUIRE(self->parent[0] == NULL, file, line);
         REQUIRE(self->parent[1] == NULL, file, line);
-        REQUIRE(self->mix == NULL, file, line);
-        REQUIRE(self->end == NULL, file, line);
+        REQUIRE(self->mix == 0.0, file, line);
+        REQUIRE(isinf(self->end) && self->end > 0, file, line);
         break;
     case 1:
         REQUIRE(self->parent[0] != NULL, file, line);
         REQUIRE(self->parent[1] == NULL, file, line);
-        REQUIRE(self->mix == NULL, file, line);
+        REQUIRE(self->mix == 0.0, file, line);
+        REQUIRE(isfinite(self->end) && self->end >= 0, file line);
+        REQUIRE(self->end == self->parent[0]->start, file, line);
         break;
     default:
         REQUIRE(self->nparents == 2, file, line);
         REQUIRE(self->parent[0] != NULL, file, line);
         REQUIRE(self->parent[1] != NULL, file, line);
-        REQUIRE(self->end != NULL, file, line);
-        REQUIRE(self->mix != NULL, file, line);
-        REQUIRE(*self->mix >= 0.0, file, line);
+        REQUIRE(isfinite(self->end), file, line);
+        REQUIRE(self->mix >= 0.0, file, line);
+        REQUIRE(self->end == self->parent[0]->start, file, line);
+        REQUIRE(self->end == self->parent[1]->start, file, line);
         break;
     }
     switch (self->nchildren) {
@@ -74,7 +78,7 @@ static void PopNode_sanityFromLeaf(PopNode * self, const char *file, int line) {
         REQUIRE(self->child[1] != NULL, file, line);
         break;
     }
-    REQUIRE(self->end == NULL || *self->start <= *self->end, file, line);
+    REQUIRE(self->start <= self->end, file, line);
     if(self->nparents > 0)
         PopNode_sanityFromLeaf(self->parent[0], file, line);
     if(self->nparents > 1)
@@ -144,11 +148,8 @@ void PopNode_print(FILE * fp, void * vself, int indent) {
     PopNode *self = vself;
     for(int i = 0; i < indent; ++i)
         fputs("   ", fp);
-    fprintf(fp, "%p twoN=%lf ntrval=(%lf,", self, *self->twoN, *self->start);
-    if(self->end != NULL)
-        fprintf(fp, "%lf)\n", *self->end);
-    else
-        fprintf(fp, "Inf)\n");
+    fprintf(fp, "%p twoN=%lf ntrval=(%lf,", self, self->twoN, self->start);
+    fprintf(fp, "%lf)\n", self->end);
 
     for(int i = 0; i < self->nchildren; ++i)
         PopNode_print(fp, self->child[i], indent + 1);
@@ -156,13 +157,10 @@ void PopNode_print(FILE * fp, void * vself, int indent) {
 
 /// Print a PopNode but not its descendants.
 static void PopNode_printShallow(PopNode * self, FILE * fp) {
-    fprintf(fp, "%p twoN=%lf ntrval=(%lf,", self, *self->twoN, *self->start);
-    if(self->end != NULL)
-        fprintf(fp, "%lf)", *self->end);
-    else
-        fprintf(fp, "Inf)");
-    if(self->mix != NULL)
-        fprintf(fp, " mix=%lf", *self->mix);
+    fprintf(fp, "%p twoN=%lf ntrval=(%lf,", self, self->twoN, self->start);
+    fprintf(fp, "%lf)", self->end);
+    if(self->mix > 0.0)
+        fprintf(fp, " mix=%lf", self->mix);
 
     switch (self->nparents) {
     case 0:
@@ -196,16 +194,37 @@ static int PopNode_nsamples(PopNode * self) {
 }
 
 /// PopNode constructor
-void *PopNode_new(double *twoN, double *start, NodeStore * ns) {
+void *PopNode_new(int twoN_i, int start_i, ParStore *ps, NodeStore * ns) {
     PopNode    *self = NodeStore_alloc(ns);
     CHECKMEM(self);
 
     memset(self, 0, sizeof(*self));
-    self->twoN = twoN;
-    self->start = start;
+    self->twoN_i = twoN_i;
+    self->start_i = start_i;
+    self->end_i = -1;
+    self->mix_i = -1;
+
+    self->twoN = ParStore_getVal(ps, twoN_i);
+    self->start = ParStore_getVal(ps, start_i);
+    self->end = INFINITY;
+    self->mix = 0.0;
 
     PopNode_sanityCheck(self, __FILE__, __LINE__);
     return self;
+}
+
+void PopNode_update(PopNode *self, ParStore *ps) {
+    assert(self);
+    self->twoN = ParStore_getVal(ps, self->twoN_i);
+    self->start = ParStore_getVal(ps, self->start_i);
+    if(self->end_i >= 0)
+        self->end = ParStore_getVal(ps, self->end_i);
+    if(self->mix_i >= 0)
+        self->mix = ParStore_getVal(ps, self->mix_i);
+    if(self->nchildren > 0)
+        PopNode_updateValues(self->child[0], ps);
+    if(self->nchildren > 1)
+        PopNode_updateValues(self->child[1], ps);
 }
 
 /// Connect parent and child
@@ -224,22 +243,22 @@ int PopNode_addChild(void * vparent, void * vchild) {
                 __FILE__, __func__, __LINE__, child->nparents);
         return TOO_MANY_PARENTS;
     }
-    if(*child->start > *parent->start) {
+    if(child->start > parent->start) {
         fprintf(stderr,
                 "%s:%s:%d: Child start (%lf) must be <= parent start (%lf)\n",
-                __FILE__, __func__, __LINE__, *child->start, *parent->start);
+                __FILE__, __func__, __LINE__, child->start, parent->start);
         return DATE_MISMATCH;
     }
-    if(child->end == NULL) {
+    if(child->end_i == -1) {
+        child->end_i = parent->start_i;
         child->end = parent->start;
-    } else {
-        if(child->end != parent->start) {
+    } else if(child->end_i != parent->start_i) {
             fprintf(stderr, "%s:%s:%d: Date mismatch."
                     " child->end=%p != %p = parent->start\n",
                     __FILE__, __func__, __LINE__, child->end, parent->start);
             return DATE_MISMATCH;
-        }
     }
+
     parent->child[parent->nchildren] = child;
     child->parent[child->nparents] = parent;
     ++parent->nchildren;
@@ -280,8 +299,8 @@ static void PopNode_addSample(PopNode * self, Gene * gene) {
 /// @param[in] mPtr pointer to the gene flow variable
 /// @param[inout] introgressor pointer to the introgressing parent
 /// @param[inout] native pointer to the native parent
-int PopNode_mix(void * vchild, double *mPtr, void * vintrogressor,
-                void * vnative) {
+int PopNode_mix(void * vchild, int mix_i, void * vintrogressor,
+                void * vnative, ParStore *ps) {
     PopNode *child = vchild, *introgressor = vintrogressor,
         *native = vnative;
 
@@ -303,33 +322,37 @@ int PopNode_mix(void * vchild, double *mPtr, void * vintrogressor,
                 __FILE__, __func__, __LINE__, child->nparents);
         return TOO_MANY_PARENTS;
     }
-    if(child->end != NULL) {
-        if(child->end != introgressor->start) {
+    if(child->end_i >= 0) {
+        if(child->end_i != introgressor->start_i) {
             fprintf(stderr,"%s:%s:%d: Date mismatch."
-                    " child->end=%p != %p=introgressor->start\n",
+                    " child->end_i=%d != %d=introgressor->start_i\n",
                     __FILE__, __func__, __LINE__,
-                    child->end, introgressor->start);
+                    child->end_i, introgressor->start_i);
             return DATE_MISMATCH;
         }
-        if(child->end != native->start) {
+        if(child->end_i != native->start_i) {
             fprintf(stderr, "%s:%s:%d: Date mismatch."
-                    " child->end=%p != %p=native->start\n",
-                    __FILE__, __func__, __LINE__, child->end, native->start);
+                    " child->end_i=%d != %d=native->start_i\n",
+                    __FILE__, __func__, __LINE__, child->end_i,
+                    native->start_i);
             return DATE_MISMATCH;
         }
-    } else if(native->start != introgressor->start) {
+    } else if(native->start_i != introgressor->start_i) {
         fprintf(stderr, "%s:%s:%d: Date mismatch."
-                "native->start=%p != %p=introgressor->start\n",
+                "native->start_i=%d != %d=introgressor->start_i\n",
                 __FILE__, __func__, __LINE__,
-                native->start, introgressor->start);
+                native->start_i, introgressor->start_i);
         return DATE_MISMATCH;
-    } else
+    } else {
+        child->end_i = native->start_i;
         child->end = native->start;
+    }
 
     child->parent[0] = native;
     child->parent[1] = introgressor;
     child->nparents = 2;
-    child->mix = mPtr;
+    child->mix_i = mix_i;
+    child->mix = ParStore_getVal(ps, mix_i);
     introgressor->child[introgressor->nchildren] = child;
     ++introgressor->nchildren;
     native->child[native->nchildren] = child;
@@ -358,24 +381,26 @@ void PopNode_newGene(PopNode * self, unsigned ndx) {
 
 /// Coalesce gene tree within population tree.
 Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng) {
-    unsigned long i, j, k;
-    double      x;
-    double      end = (NULL == self->end ? HUGE_VAL : *self->end);
 
-    // Make sure interval is sane.
-    if(isnan(end)) {
-        fprintf(stderr,"%s:%d: end of interval is NaN.\n",
-                __FILE__,__LINE__);
-        PopNode_printShallow(self, stderr);
-        exit(1);
-    }
+    // Because this is a network rather than a tree, we may visit the
+    // same node twice. On the 2nd visit, nsamples==0, so we return
+    // immediately.
+    if(self->nsamples == 0)
+        return NULL;
 
+    // Coalesce children first, so that the coalescent process in
+    // the current node begins with samples "inherited" from
+    // children. 
     if(self->child[0])
         (void) PopNode_coalesce(self->child[0], rng);
     if(self->child[1])
         (void) PopNode_coalesce(self->child[1], rng);
 
-    double      t = *self->start;
+    unsigned long i, j, k;
+    double      x;
+    double      end = self->end;
+    double      t = self->start;
+
 #ifndef NDEBUG
     if(t > end) {
         fflush(stdout);
@@ -391,7 +416,7 @@ Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng) {
     while(self->nsamples > 1 && t < end) {
         {
             int         n = self->nsamples;
-            double      mean = 2.0 * *self->twoN / (n * (n - 1));
+            double      mean = 2.0 * self->twoN / (n * (n - 1));
             x = gsl_ran_exponential(rng, mean);
         }
 
@@ -441,7 +466,7 @@ Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng) {
     // If we have both samples and parents, then move samples to parents
     if(self->nsamples > 0 && self->nparents > 0) {
         assert(t == end);
-        assert(NULL != self->mix || self->nparents <= 1);
+        assert(-1 != self->mix_i || self->nparents <= 1);
         switch (self->nparents) {
         case 1:
             // add all samples to parent 0
@@ -454,7 +479,7 @@ Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng) {
             // distribute samples among parents
             assert(self->nparents == 2);
             for(i = 0; i < self->nsamples; ++i) {
-                if(gsl_rng_uniform(rng) < *self->mix) {
+                if(gsl_rng_uniform(rng) < self->mix) {
                     assert(self->sample[i]);
                     PopNode_addSample(self->parent[1], self->sample[i]);
                 } else {
@@ -477,34 +502,34 @@ static void PopNode_free(PopNode * self) {
 
 /// Return 1 if parameters satisfy inequality constraints, or 0 otherwise.
 int PopNode_feasible(const PopNode * self, Bounds bnd, int verbose) {
-    if(*self->twoN < bnd.lo_twoN || *self->twoN > bnd.hi_twoN) {
+    if(self->twoN < bnd.lo_twoN || self->twoN > bnd.hi_twoN) {
         if(verbose)
             fprintf(stderr, "%s FAIL: twoN=%lg not in [%lg, %lg]\n",
-                    __func__, *self->twoN, bnd.lo_twoN, bnd.hi_twoN);
+                    __func__, self->twoN, bnd.lo_twoN, bnd.hi_twoN);
         return 0;
     }
 
-    if(*self->start > bnd.hi_t || *self->start < bnd.lo_t) {
+    if(self->start > bnd.hi_t || self->start < bnd.lo_t) {
         if(verbose)
             fprintf(stderr, "%s FAIL: start=%lg not in [%lg, %lg]\n",
-                    __func__, *self->start, bnd.lo_t, bnd.hi_t);
+                    __func__, self->start, bnd.lo_t, bnd.hi_t);
         return 0;
     }
 
     switch (self->nparents) {
     case 2:
-        if(*self->start > *self->parent[1]->start) {
+        if(self->start > self->parent[1]->start) {
             if(verbose)
                 fprintf(stderr, "%s FAIL: child=%lg older than parent=%lg\n",
-                        __func__, *self->start, *self->parent[1]->start);
+                        __func__, self->start, self->parent[1]->start);
             return 0;
         }
         // fall through
     case 1:
-        if(*self->start > *self->parent[0]->start) {
+        if(self->start > self->parent[0]->start) {
             if(verbose)
                 fprintf(stderr, "%s FAIL: child=%lg older than parent=%lg\n",
-                        __func__, *self->start, *self->parent[0]->start);
+                        __func__, self->start, self->parent[0]->start);
             return 0;
         }
         break;
@@ -514,20 +539,20 @@ int PopNode_feasible(const PopNode * self, Bounds bnd, int verbose) {
 
     switch (self->nchildren) {
     case 2:
-        if(*self->start < *self->child[1]->start) {
+        if(self->start < self->child[1]->start) {
             if(verbose)
                 fprintf(stderr,
                         "%s FAIL: parent=%lg younger than child=%lg\n",
-                        __func__, *self->start, *self->child[1]->start);
+                        __func__, self->start, self->child[1]->start);
             return 0;
         }
         // fall through
     case 1:
-        if(*self->start < *self->child[0]->start) {
+        if(self->start < self->child[0]->start) {
             if(verbose)
                 fprintf(stderr,
                         "%s FAIL: parent=%lg younger than child=%lg\n",
-                        __func__, *self->start, *self->child[0]->start);
+                        __func__, self->start, self->child[0]->start);
             return 0;
         }
         break;
@@ -535,11 +560,11 @@ int PopNode_feasible(const PopNode * self, Bounds bnd, int verbose) {
         break;
     }
 
-    if(self->mix != NULL) {
-        if(*self->mix < 0.0 || *self->mix > 1.0) {
+    if(self->mix_i != -1) {
+        if(self->mix < 0.0 || self->mix > 1.0) {
             if(verbose)
                 fprintf(stderr, "%s FAIL: mix=%lg not in [0, 1]\n",
-                        __func__, *self->twoN);
+                        __func__, self->mix);
             return 0;
         }
     }
