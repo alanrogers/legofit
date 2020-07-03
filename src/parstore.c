@@ -256,7 +256,7 @@ void ParStore_printFree(ParStore * self, FILE * fp) {
 /// Print constrained parameter values
 void ParStore_printConstrained(ParStore * self, FILE * fp) {
     fprintf(fp, "Constrained:\n");
-    for(int i=0; i < self->nFree; ++i)
+    for(int i=0; i < self->nConstr; ++i)
         fprintf(fp, "   %8s = %lg\n", self->constr[i].name,
                 self->constr[i].value);
 }
