@@ -18,10 +18,10 @@ struct Param {
     te_expr *constr;    // expression tree for constrained variable
 };
 
-double Param_getTrialValue(Param *self, gsl_rng *rng);
-double Param_getValue(Param *self);
+double Param_getTrialValue(const Param *self, gsl_rng *rng);
+double Param_getValue(const Param *self);
 int    Param_compare(const Param *lhs, const Param *rhs);
-int    Param_isFree(Param *self);
+int    Param_isFree(const Param *self);
 int    Param_setValue(Param *self, double value);
 void   Param_compileConstraint(Param *self, te_variable *te_pars);
 void   Param_constrain(Param *par);

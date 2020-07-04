@@ -325,7 +325,7 @@ void parseSegment(char *next, StrPtrMap * popmap, SampNdx * sndx,
                   LblNdx * lndx, ParStore * parstore, NodeStore * ns,
                   const char *orig) {
     char *popName, *tok;
-    double *tPtr, *twoNptr;
+    int start_i, twoN_i;
     unsigned ttype, twoNtype;
     unsigned long nsamples = 0;
 
@@ -344,8 +344,8 @@ void parseSegment(char *next, StrPtrMap * popmap, SampNdx * sndx,
     }
     tok = nextWhitesepToken(&next);
     CHECK_TOKEN(tok, orig);
-    tPtr = ParStore_findPtr(parstore, &ttype, tok);
-    if(NULL == tPtr) {
+    start_i = ParStore_getIndex(parstore, tok);
+    if(start_i < 0) {
         fprintf(stderr, "%s:%s:%d: Parameter \"%s\" is undefined\n",
                 __FILE__, __func__, __LINE__, tok);
         fprintf(stderr, "input: %s\n", orig);
@@ -363,8 +363,8 @@ void parseSegment(char *next, StrPtrMap * popmap, SampNdx * sndx,
     tok = nextWhitesepToken(&next);
     CHECK_TOKEN(tok, orig);
     tok = stripWhiteSpace(tok);
-    twoNptr = ParStore_findPtr(parstore, &twoNtype, tok);
-    if(NULL == twoNptr) {
+    twoN_i = ParStore_getIndex(parstore, tok);
+    if(twoN_i < 0) {
         fprintf(stderr, "%s:%s:%dParameter \"%s\" is undefined\n",
                 __FILE__, __func__, __LINE__, tok);
         fprintf(stderr, "input: %s\n", orig);
@@ -407,7 +407,7 @@ void parseSegment(char *next, StrPtrMap * popmap, SampNdx * sndx,
     }
 
     assert(strlen(popName) > 0);
-    void *thisNode = Node_new(twoNptr, tPtr, ns);
+    void *thisNode = Node_new(twoN_i, start_i, parstore, ns);
     if(0 != StrPtrMap_insert(popmap, popName, thisNode)) {
         fprintf(stderr, "%s:%d: duplicate \"segment %s\"\n",
                 __FILE__, __LINE__, popName);
@@ -488,7 +488,7 @@ void parseDerive(char *next, StrPtrMap * popmap, ParStore * parstore,
 void parseMix(char *next, StrPtrMap * popmap, ParStore * parstore,
               const char *orig) {
     char *childName, *parName[2], *tok;
-    double *mPtr;
+    int mix_i;
     unsigned mtype;
 
     // Read name of child
@@ -509,12 +509,12 @@ void parseMix(char *next, StrPtrMap * popmap, ParStore * parstore,
     CHECK_TOKEN(parName[0], orig);
     parName[0] = stripWhiteSpace(parName[0]);
 
-    // Read mixture fraction, mPtr
+    // Read mixture fraction
     tok = strsep(&next, "*");
     CHECK_TOKEN(tok, orig);
     tok = stripWhiteSpace(tok);
-    mPtr = ParStore_findPtr(parstore, &mtype, tok);
-    if(NULL == mPtr) {
+    mix_i = ParStore_getIndex(parstore, tok);
+    if(mix_i < 0) {
         fprintf(stderr, "%s:%s:%d: Parameter \"%s\" is undefined\n",
                 __FILE__, __func__, __LINE__, tok);
         fprintf(stderr, "input: %s\n", orig);
@@ -558,7 +558,8 @@ void parseMix(char *next, StrPtrMap * popmap, ParStore * parstore,
         exit(EXIT_FAILURE);
     }
 
-    int status = Node_mix(childNode, mPtr, parNode1, parNode0);
+    int status = Node_mix(childNode, mix_i, parNode1, parNode0,
+                          parstore);
     switch(status){
     case 0:
         break;

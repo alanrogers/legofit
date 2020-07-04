@@ -137,7 +137,12 @@ ParStore *ParStore_new(PtrQueue *fixedQ, PtrQueue *freeQ, PtrQueue *constrQ) {
     ParStore_chkDependencies(self);
 
     // set values of constrained variables
-    ParStore_constrain(self);
+    if(ParStore_constrain(self)) {
+        fprintf(stderr,"%s:%d:"
+                " free parameters violate inequality constraints\n",
+                __FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
     
     ParStore_sanityCheck(self, __FILE__, __LINE__);
     return self;
@@ -198,6 +203,13 @@ double ParStore_getVal(ParStore *self, int i) {
     assert(i < self->nPar);
     return self->par[i].value;
 }
+
+Param *ParStore_getParam(ParStore *self, int i) {
+    assert(i >= 0);
+    assert(i < self->nPar);
+    return self->par+i;
+}
+
 
 /// Return the number of free parameters
 int ParStore_nFree(ParStore * self) {

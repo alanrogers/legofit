@@ -17,11 +17,9 @@
 #include "popnode.h"
 #include "gene.h"
 #include "misc.h"
-#include "network.h"
 #include "nodestore.h"
 #include "parstore.h"
 #include "error.h"
-#include "dtnorm.h"
 #include <stdbool.h>
 #include <string.h>
 #include <float.h>
@@ -50,7 +48,7 @@ static void PopNode_sanityFromLeaf(PopNode * self, const char *file, int line) {
         REQUIRE(self->parent[0] != NULL, file, line);
         REQUIRE(self->parent[1] == NULL, file, line);
         REQUIRE(self->mix == 0.0, file, line);
-        REQUIRE(isfinite(self->end) && self->end >= 0, file line);
+        REQUIRE(isfinite(self->end) && self->end >= 0, file, line);
         REQUIRE(self->end == self->parent[0]->start, file, line);
         break;
     default:
@@ -222,9 +220,9 @@ void PopNode_update(PopNode *self, ParStore *ps) {
     if(self->mix_i >= 0)
         self->mix = ParStore_getVal(ps, self->mix_i);
     if(self->nchildren > 0)
-        PopNode_updateValues(self->child[0], ps);
+        PopNode_update(self->child[0], ps);
     if(self->nchildren > 1)
-        PopNode_updateValues(self->child[1], ps);
+        PopNode_update(self->child[1], ps);
 }
 
 /// Connect parent and child
@@ -254,7 +252,7 @@ int PopNode_addChild(void * vparent, void * vchild) {
         child->end = parent->start;
     } else if(child->end_i != parent->start_i) {
             fprintf(stderr, "%s:%s:%d: Date mismatch."
-                    " child->end=%p != %p = parent->start\n",
+                    " child->end=%lg != %lg = parent->start\n",
                     __FILE__, __func__, __LINE__, child->end, parent->start);
             return DATE_MISMATCH;
     }
@@ -576,28 +574,10 @@ int PopNode_feasible(const PopNode * self, Bounds bnd, int verbose) {
     return 1;
 }
 
-/// Add dp to each parameter pointer, using ordinary (not pointer)
-/// arithmetic.
-void PopNode_shiftParamPtrs(PopNode * self, size_t dp, int sign) {
-    SHIFT_PTR(self->twoN, dp, sign);
-    SHIFT_PTR(self->start, dp, sign);
-    SHIFT_PTR(self->end, dp, sign);
-    SHIFT_PTR(self->mix, dp, sign);
-}
-
-/// Add dp to each PopNode pointer, using ordinary (not pointer)
-/// arithmetic.
-void PopNode_shiftPopNodePtrs(PopNode * self, size_t dp, int sign) {
-    int         i;
-    for(i = 0; i < self->nparents; ++i)
-        SHIFT_PTR(self->parent[i], dp, sign);
-
-    for(i = 0; i < self->nchildren; ++i)
-        SHIFT_PTR(self->child[i], dp, sign);
-}
-
 #ifdef TEST
 
+#  include "ptrqueue.h"
+#  include "param.h"
 #  include <string.h>
 #  include <assert.h>
 #  include <time.h>
@@ -608,7 +588,7 @@ void PopNode_shiftPopNodePtrs(PopNode * self, size_t dp, int sign) {
 
 int main(int argc, char **argv) {
 
-    int         verbose = 0;
+    int status, verbose = 0;
 
     if(argc > 1) {
         if(argc != 2 || 0 != strcmp(argv[1], "-v")) {
@@ -618,89 +598,101 @@ int main(int argc, char **argv) {
         verbose = 1;
     }
 
-    Network_init(SIM);
+    PtrQueue *fixedQ = PtrQueue_new();
+    PtrQueue *freeQ = PtrQueue_new();
+    PtrQueue *constrQ = PtrQueue_new();
 
-    int         nseg = 10;
+    Param *par;
+
+    par = Param_new("zero", 0.0, 0.0, 0.0, TIME|FIXED, NULL);
+
+    par = Param_new("one", 1.0, 1.0, 1.0, TWON|FIXED, NULL);
+
+    par = Param_new("Nab", 3.0, 0.0, 100.0, TWON|FREE, NULL);
+    PtrQueue_push(freeQ, par);
+
+    par = Param_new("Tab", 2.0, 0.0, 100.0, TIME|FREE, NULL);
+    PtrQueue_push(freeQ, par);
+
+    par = Param_new("Nabc", 3.0, 0.0, 100.0, TWON|FREE, NULL);
+    PtrQueue_push(freeQ, par);
+
+    par = Param_new("Tabc", 4.0, -DBL_MAX, DBL_MAX, TIME|CONSTRAINED,
+                    "Tab + Nab*Nabc");
+    PtrQueue_push(fixedQ, par);
+
+    ParStore *ps = ParStore_new(fixedQ, freeQ, constrQ);
+
+    int         nseg = 5;
     PopNode     v[nseg];
     NodeStore  *ns = NodeStore_new(nseg, sizeof(v[0]), v);
     CHECKMEM(ns);
 
-    double      twoN0 = 1.0, start0 = 0.0;
-    PopNode    *p0 = PopNode_new(&twoN0, &start0, ns);
-    assert(p0->twoN == &twoN0);
-    assert(p0->start == &start0);
-    assert(p0->end == NULL);
-    assert(p0->mix == NULL);
-    assert(p0->nsamples == 0);
-    assert(p0->nchildren == 0);
-    assert(p0->child[0] == NULL);
-    assert(p0->child[1] == NULL);
-    assert(p0->parent[0] == NULL);
-    assert(p0->parent[1] == NULL);
+    PopNode *a, *b, *c, *ab, *abc;
+    int ni, ti;
+    tipId_t     ida = 0;
+    tipId_t     idb = 1;
+    tipId_t     idc = 2;
+    Gene       *ga = Gene_new(ida);
+    Gene       *gb = Gene_new(idb);
+    Gene       *gc = Gene_new(idc);
 
-    double      twoN1 = 100.0, start1 = 123.0;
-    PopNode    *p1 = PopNode_new(&twoN1, &start1, ns);
-    assert(p1->twoN == &twoN1);
-    assert(p1->start == &start1);
-    assert(p1->end == NULL);
-    assert(p1->mix == NULL);
-    assert(p1->nsamples == 0);
-    assert(p1->nchildren == 0);
-    assert(p1->child[0] == NULL);
-    assert(p1->child[1] == NULL);
-    assert(p1->parent[0] == NULL);
-    assert(p1->parent[1] == NULL);
+    ni = ParStore_getIndex(ps, "one");
+    assert(ni >= 0);
+    ti = ParStore_getIndex(ps, "zero");
+    assert(ti >= 0);
 
-    tipId_t     id1 = 1;
-    tipId_t     id2 = 2;
-    Gene       *g1 = Gene_new(id1);
-    Gene       *g2 = Gene_new(id2);
-    PopNode_addSample(p1, g1);
-    PopNode_addSample(p1, g2);
-    assert(p1->nsamples == 2);
+    a = PopNode_new(ni, ti, ps, ns);
+    assert(a);
+    PopNode_addSample(a, ga);
 
-    int status=PopNode_addChild(p1, p0);
-    assert(status==0);
-    assert(p1->nchildren == 1);
-    assert(p0->nparents == 1);
-    assert(p1->child[0] == p0);
-    assert(p0->parent[0] == p1);
+    b = PopNode_new(ni, ti, ps, ns);
+    assert(b);
+    PopNode_addSample(b, gb);
+
+    c = PopNode_new(ni, ti, ps, ns);
+    assert(c);
+    PopNode_addSample(c, gc);
+    
+    ni = ParStore_getIndex(ps, "Nab");
+    ti = ParStore_getIndex(ps, "Tab");
+    ab = PopNode_new(ni, ti, ps, ns);
+    assert(ab);
+
+    ni = ParStore_getIndex(ps, "Nabc");
+    ti = ParStore_getIndex(ps, "Tabc");
+    abc = PopNode_new(ni, ti, ps, ns);
+    assert(abc);
+    
+    status = PopNode_addChild(ab, a);
+    assert(status == 0);
+
+    status = PopNode_addChild(ab, b);
+    assert(status == 0);
+    
+    status = PopNode_addChild(abc, ab);
+    assert(status == 0);
+
+    status = PopNode_addChild(abc, c);
+    assert(status == 0);
 
     if(verbose) {
-        PopNode_printShallow(p1, stdout);
-        PopNode_printShallow(p0, stdout);
+        PopNode_printShallow(abc, stdout);
+        PopNode_printShallow(ab, stdout);
+        PopNode_printShallow(a, stdout);
+        PopNode_printShallow(b, stdout);
+        PopNode_printShallow(c, stdout);
     }
-
-    ParStore   *ps = ParStore_new();
-
-    size_t      twoNloc = (size_t) p1->twoN;
-    size_t      startloc = (size_t) p1->start;
-    size_t      endloc = (size_t) p1->end;
-    PopNode_shiftParamPtrs(p1, (size_t) 1u, 1);
-    assert(endloc == 0u || twoNloc + 1u == (size_t) p1->twoN);
-    assert(endloc == 0u || startloc + 1u == (size_t) p1->start);
-    assert(endloc == 0u || endloc + 1u == (size_t) p1->end);
-
-    int         i;
-    size_t      parent[2], child[2];
-    for(i = 0; i < p1->nparents; ++i)
-        parent[i] = (size_t) p1->parent[i];
-    for(i = 0; i < p1->nchildren; ++i)
-        child[i] = (size_t) p1->child[i];
-    PopNode_shiftPopNodePtrs(p1, (size_t) 1u, 1);
-    for(i = 0; i < p1->nparents; ++i)
-        assert(parent[i] + 1u == (size_t) p1->parent[i]);
-    for(i = 0; i < p1->nchildren; ++i)
-        assert(child[i] + 1u == (size_t) p1->child[i]);
 
     unitTstResult("PopNode", "untested");
 
     NodeStore_free(ns);
-
     ParStore_free(ps);
-    Gene_free(g1);
-    Gene_free(g2);
+    Gene_free(ga);
+    Gene_free(gb);
+    Gene_free(gc);
 
     return 0;
+
 }
 #endif

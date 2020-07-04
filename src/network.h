@@ -31,10 +31,11 @@ EXTERN int         (*Network_setParams)(void *self, int n, double x[n]);
 EXTERN void        (*Network_initStateVec)(void *gpt, int ndx, int n,
                                            double x[n], gsl_rng *rng);
 
-EXTERN void       *(*Node_new)(double *twoN, double *start, NodeStore *ns);
+EXTERN void       *(*Node_new)(int twoN_i, int start_i, ParStore *ps,
+                               NodeStore *ns);
 EXTERN int         (*Node_addChild)(void * parent, void * child);
-EXTERN int         (*Node_mix)(void * child, double *mPtr, void * introgressor,
-                               void * native);
+EXTERN int         (*Node_mix)(void * child, int mix_i, void * introgressor,
+                               void * native, ParStore *ps);
 EXTERN void       *(*Node_root)(void * self);
 EXTERN void        (*Node_print)(FILE * fp, void * vself, int indent);
 

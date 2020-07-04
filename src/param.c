@@ -6,11 +6,11 @@
 #include <math.h>
 #include <gsl/gsl_randist.h>
 
-int Param_isFree(Param *self) {
+int Param_isFree(const Param *self) {
     return self->type & FREE;
 }
 
-double Param_getValue(Param *self) {
+double Param_getValue(const Param *self) {
     return self->value;
 }
 
@@ -100,7 +100,7 @@ void Param_sanityCheck(const Param *self, const char *file, int line) {
 
 /// If parameter is FREE return a random value within the
 /// range of legal values. Otherwise, return self->value.
-double Param_getTrialValue(Param *self, gsl_rng *rng) {
+double Param_getTrialValue(const Param *self, gsl_rng *rng) {
     assert(self);
     double trial;
     if( !(self->type & FREE) )

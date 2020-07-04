@@ -25,11 +25,9 @@ void        PopNode_clear(PopNode * self);
 Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng);
 int         PopNode_feasible(const PopNode *self, Bounds bnd, int verbose);
 int         PopNode_isClear(const PopNode *self);
-int         PopNode_mix(void * vchild, double *mPtr, void * vintrogressor,
-                        void * vnative);
-void       *PopNode_new(int twoN_i, int start_i, ParStore *ps,
-                        ParStore *ps, NodeStore * ns);
-void       *PopNode_new(int twoN_i, int start_i, NodeStore *ns);
+int         PopNode_mix(void * vchild, int mix_i, void * vintrogressor,
+                        void * vnative, ParStore *ps);
+void       *PopNode_new(int twoN_i, int start_i, ParStore *ps, NodeStore * ns);
 void        PopNode_newGene(PopNode * self, unsigned ndx);
 void        PopNode_print(FILE * fp, void * vself, int indent);
 void       *PopNode_root(void * vself);

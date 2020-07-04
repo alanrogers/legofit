@@ -274,17 +274,15 @@ xboot : $(XBOOT)
 xgene.o : gene.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/gene.c
 
-XGENE := xgene.o branchtab.o misc.o binary.o tokenizer.o lblndx.o
+XGENE := xgene.o misc.o binary.o branchtab.o tokenizer.o lblndx.o
 xgene : $(XGENE)
 	$(CC) $(CFLAGS) -o $@ $(XGENE) $(lib)
 
 xpopnode.o : popnode.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/popnode.c
 
-XPOPNODE := xpopnode.o addrparmap.o dtnorm.o misc.o gene.o branchtab.o \
-   binary.o lblndx.o strparmap.o tokenizer.o parstore.o tinyexpr.o \
-   param.o gptree.o parse.o dprintf.o strptrmap.o sampndx.o nodestore.o \
-   network.o
+XPOPNODE := xpopnode.o dtnorm.o misc.o gene.o parstore.o tinyexpr.o \
+   param.o 
 xpopnode : $(XPOPNODE)
 	$(CC) $(CFLAGS) -o $@ $(XPOPNODE) $(lib)
 

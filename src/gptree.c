@@ -65,8 +65,6 @@ void GPTree_initStateVec(void *gpt, int ndx, int n, double x[n],
 /// Print a description of parameters.
 void GPTree_printParStore(void * vself, FILE * fp) {
     GPTree *self = vself;
-    if(ParStore_constrain(self->parstore))
-        fprintf(fp,"Warning: free parameters violate constraints\n");
     ParStore_print(self->parstore, fp);
 }
 
@@ -87,7 +85,7 @@ const char *GPTree_getNameFree(void * self, int i) {
 void GPTree_randomize(void * vself, gsl_rng * rng) {
     GPTree *self = vself;
     for(int i=0; i < ParStore_nPar(self->parstore); ++i) {
-        Param *par = ParStore_getParamPtr(self->parstore, i);
+        Param *par = ParStore_getParam(self->parstore, i);
         if(!Param_isFree(par))
             continue;
         double orig = Param_getValue(par);
@@ -146,10 +144,6 @@ void GPTree_patprob(void * vself, BranchTab * branchtab, gsl_rng * rng,
                      unsigned long nreps, int doSing) {
     GPTree *self = vself;
     unsigned long rep;
-    if(ParStore_constrain(self->parstore)) {
-        fprintf(stderr,"%s:%d: free parameters violate constraints\n",
-                __FILE__,__LINE__);
-    }
     for(rep = 0; rep < nreps; ++rep) {
         PopNode_clear(self->rootPop);   // remove old samples
 
@@ -187,7 +181,7 @@ void *GPTree_new(const char *fname, Bounds bnd) {
 
     memset(self, 0, sizeof(GPTree));
     self->bnd = bnd;
-    self->parstore = ParStore_new();
+    self->parstore = NULL;
     LblNdx_init(&self->lblndx);
     SampNdx_init(&self->sndx);
     FILE       *fp = efopen(fname, "r");
@@ -234,10 +228,6 @@ void GPTree_free(void * vself) {
 void *GPTree_dup(const void * vold) {
     const GPTree *old = vold;
     assert(old);
-    if(ParStore_constrain(old->parstore)) {
-        fprintf(stderr,"%s:%d: free parameters violate constraints\n",
-                __FILE__,__LINE__);
-    }
     if(!GPTree_feasible(old, 1)) {
         pthread_mutex_lock(&outputLock);
         fflush(stdout);
@@ -309,7 +299,6 @@ void *GPTree_dup(const void * vold) {
 
     GPTree_sanityCheck(new, __FILE__, __LINE__);
     assert(GPTree_equals(old, new));
-    // GPTree_feasible calls ParStore_constrain, so don't call it again.
     if(!GPTree_feasible(new, 1)) {
         pthread_mutex_lock(&outputLock);
         fflush(stdout);
@@ -369,14 +358,6 @@ LblNdx GPTree_getLblNdx(void * vself) {
 /// Are parameters within the feasible region?
 int GPTree_feasible(const void * vself, int verbose) {
     const GPTree *self = vself;
-    if(ParStore_constrain(self->parstore)) {
-        if(verbose) {
-            fprintf(stderr,"%s:%s:%d: warning:"
-                    " free parameters violate constraints\n",
-                    __FILE__,__func__,__LINE__);
-        }
-        return 0;
-    }
     return PopNode_feasible(self->rootPop, self->bnd, verbose);
 }
 

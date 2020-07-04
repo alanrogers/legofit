@@ -17,6 +17,7 @@ void        Bounds_sanityCheck(Bounds * self, const char *file, int line);
 ParStore   *ParStore_dup(const ParStore * old);
 ParStore   *ParStore_new(PtrQueue *fixedQ, PtrQueue *freeQ,
                          PtrQueue *constrQ);
+Param      *ParStore_getParam(ParStore *self, int i);
 const char *ParStore_getNameFree(ParStore * self, int i);
 double      ParStore_getVal(ParStore *self, int i);
 int         ParStore_equals(ParStore * lhs, ParStore * rhs);
