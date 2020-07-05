@@ -116,13 +116,14 @@ void *PopNode_root(void * vself) {
 
 /// Remove all references to samples from tree of populations.
 /// Doesn't free the Gene objects, because they aren't owned by
-/// PopNode.
+/// PopNode. Sets "visited" to 0 in every node.
 void PopNode_clear(PopNode * self) {
     int         i;
     for(i = 0; i < self->nchildren; ++i)
         PopNode_clear(self->child[i]);
 
     self->nsamples = 0;
+    self->visited = 0;
     //memset(self->sample, 0, sizeof(self->sample));
     PopNode_sanityCheck(self, __FILE__, __LINE__);
 }
@@ -260,9 +261,12 @@ int PopNode_addChild(void * vparent, void * vchild) {
         child->end_i = parent->start_i;
         child->end = parent->start;
     } else if(child->end_i != parent->start_i) {
-            fprintf(stderr, "%s:%s:%d: Date mismatch."
-                    " child->end=%lg != %lg = parent->start\n",
-                    __FILE__, __func__, __LINE__, child->end, parent->start);
+            fprintf(stderr, "%s:%s:%d: Date mismatch.\n"
+                    "  child->end_i=%d != %d = parent->start_i\n",
+                    __FILE__, __func__, __LINE__,
+                    child->end_i, parent->start_i);
+            fprintf(stderr, "  child->end=%lg != %lg = parent->start\n",
+                    child->end, parent->start);
             return DATE_MISMATCH;
     }
 
@@ -331,24 +335,30 @@ int PopNode_mix(void * vchild, int mix_i, void * vintrogressor,
     }
     if(child->end_i >= 0) {
         if(child->end_i != introgressor->start_i) {
-            fprintf(stderr,"%s:%s:%d: Date mismatch."
-                    " child->end_i=%d != %d=introgressor->start_i\n",
+            fprintf(stderr,"%s:%s:%d: Date mismatch\n"
+                    "  child->end_i=%d != %d=introgressor->start_i\n",
                     __FILE__, __func__, __LINE__,
                     child->end_i, introgressor->start_i);
+            fprintf(stderr,"  child->end=%lg != %lg=introgressor->start\n",
+                    child->end, introgressor->start);
             return DATE_MISMATCH;
         }
         if(child->end_i != native->start_i) {
-            fprintf(stderr, "%s:%s:%d: Date mismatch."
-                    " child->end_i=%d != %d=native->start_i\n",
+            fprintf(stderr, "%s:%s:%d: Date mismatch\n"
+                    "  child->end_i=%d != %d=native->start_i\n",
                     __FILE__, __func__, __LINE__, child->end_i,
                     native->start_i);
+            fprintf(stderr, "  child->end=%lg != %lg=native->start\n",
+                    child->end, native->start);
             return DATE_MISMATCH;
         }
     } else if(native->start_i != introgressor->start_i) {
-        fprintf(stderr, "%s:%s:%d: Date mismatch."
-                "native->start_i=%d != %d=introgressor->start_i\n",
+        fprintf(stderr, "%s:%s:%d: Date mismatch\n"
+                "  native->start_i=%d != %d=introgressor->start_i\n",
                 __FILE__, __func__, __LINE__,
                 native->start_i, introgressor->start_i);
+        fprintf(stderr, "  native->start=%lg != %lg=introgressor->start\n",
+                native->start, introgressor->start);
         return DATE_MISMATCH;
     } else {
         child->end_i = native->start_i;
@@ -627,6 +637,12 @@ int main(int argc, char **argv) {
     par = Param_new("Tab", 2.0, 0.0, 100.0, TIME|FREE, NULL);
     PtrQueue_push(freeQ, par);
 
+    par = Param_new("Tmig", 1.0, 1.0, 1.0, TIME|FIXED, NULL);
+    PtrQueue_push(fixedQ, par);
+
+    par = Param_new("mix", 0.02, 0.02, 0.02, MIXFRAC|FIXED, NULL);
+    PtrQueue_push(fixedQ, par);
+
     par = Param_new("Nabc", 3.0, 0.0, 100.0, TWON|FREE, NULL);
     PtrQueue_push(freeQ, par);
 
@@ -636,13 +652,16 @@ int main(int argc, char **argv) {
 
     ParStore *ps = ParStore_new(fixedQ, freeQ, constrQ);
 
-    int         nseg = 5;
+    if(verbose)
+        ParStore_print(ps, stderr);
+
+    int         nseg = 7;
     PopNode     v[nseg];
     NodeStore  *ns = NodeStore_new(nseg, sizeof(v[0]), v);
     CHECKMEM(ns);
 
-    PopNode *a, *b, *c, *ab, *abc;
-    int ni, ti;
+    PopNode *a, *b, *b2, *c, *c2, *ab, *abc;
+    int ni, ti, mi;
     tipId_t     ida = 0;
     tipId_t     idb = 1;
     tipId_t     idc = 2;
@@ -657,36 +676,51 @@ int main(int argc, char **argv) {
 
     a = PopNode_new(ni, ti, ps, ns);
     assert(a);
-    PopNode_addSample(a, ga);
 
     b = PopNode_new(ni, ti, ps, ns);
     assert(b);
-    PopNode_addSample(b, gb);
 
     c = PopNode_new(ni, ti, ps, ns);
     assert(c);
-    PopNode_addSample(c, gc);
     
+    ti = ParStore_getIndex(ps, "Tmig");
+    assert(ti >= 0);
+    b2 = PopNode_new(ni, ti, ps, ns);
+    c2 = PopNode_new(ni, ti, ps, ns);
+    assert(b2);
+    assert(c2);
+
     ni = ParStore_getIndex(ps, "Nab");
+    assert(ni >= 0);
     ti = ParStore_getIndex(ps, "Tab");
+    assert(ti >= 0);
     ab = PopNode_new(ni, ti, ps, ns);
     assert(ab);
 
     ni = ParStore_getIndex(ps, "Nabc");
+    assert(ni >= 0);
     ti = ParStore_getIndex(ps, "Tabc");
+    assert(ti >= 0);
     abc = PopNode_new(ni, ti, ps, ns);
     assert(abc);
     
     status = PopNode_addChild(ab, a);
     assert(status == 0);
 
-    status = PopNode_addChild(ab, b);
+    mi = ParStore_getIndex(ps, "mix");
+    assert(mi >= 0);
+    status = PopNode_mix(b, mi, c2, b2, ps);
+
+    status = PopNode_addChild(c2, c);
+    assert(status == 0);
+
+    status = PopNode_addChild(ab, b2);
     assert(status == 0);
     
     status = PopNode_addChild(abc, ab);
     assert(status == 0);
 
-    status = PopNode_addChild(abc, c);
+    status = PopNode_addChild(abc, c2);
     assert(status == 0);
 
     if(verbose) {
@@ -697,12 +731,33 @@ int main(int argc, char **argv) {
         PopNode_printShallow(c, stdout);
     }
 
+    assert(PopNode_isClear(abc));
+
+    PopNode_addSample(a, ga);
+    PopNode_addSample(b, gb);
+    PopNode_addSample(c, gc);
+
+    assert(!PopNode_isClear(abc));
+
     PopNode_unvisit(abc);
     Gene *root = PopNode_coalesce(abc, rng);
     assert(root != NULL);
+
+    assert(!PopNode_isClear(abc));
+    PopNode_clear(abc);
+    assert(PopNode_isClear(abc));
+
+    assert(abc == PopNode_root(a));
+    assert(abc == PopNode_root(b));
+    assert(abc == PopNode_root(b2));
+    assert(abc == PopNode_root(c));
+    assert(abc == PopNode_root(c2));
+    assert(abc == PopNode_root(ab));
+    assert(abc == PopNode_root(abc));
+
     Gene_free(root);
 
-    unitTstResult("PopNode", "untested");
+    unitTstResult("PopNode", "OK");
 
     NodeStore_free(ns);
     ParStore_free(ps);

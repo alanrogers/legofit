@@ -21,9 +21,14 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#define XSTR(x) STR(x)
+#define STR(x) #x
+
 // Make sure HASH_DIM is a power of 2
 #if (HASH_DIM==0u || (HASH_DIM & (HASH_DIM-1u)))
-# error HASH_DIM must be a power of 2
+#pragma message "Map type:" XSTR(MAPTYPE)
+#pragma message "HASH_DIM:" XSTR(HASH_DIM)
+# error $MAPTYPE : HASH_DIM must be a power of 2
 #endif
 
 typedef struct El El;

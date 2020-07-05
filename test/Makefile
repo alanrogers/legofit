@@ -288,7 +288,7 @@ XGENE := xgene.o misc.o binary.o branchtab.o tokenizer.o lblndx.o
 xgene : $(XGENE)
 	$(CC) $(CFLAGS) -o $@ $(XGENE) $(lib)
 
-xpopnode.o : popnode.c
+xpopnode.o : ../src/popnode.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/popnode.c
 
 XPOPNODE := xpopnode.o dtnorm.o misc.o gene.o parstore.o tinyexpr.o \

@@ -274,13 +274,13 @@ void parseParam(char *next, unsigned ptype, StrPtrMap *parmap,
         PtrQueue_push(fixedQ, par);
         status = StrPtrMap_insert(parmap, name, par);
         if(status)
-            DUPLICATE_PAR(name)
+            DUPLICATE_PAR(name, orig)
     }else if(ptype & CONSTRAINED) {
         par = Param_new(name, value, -DBL_MAX, DBL_MAX, ptype, formula);
         PtrQueue_push(constrQ, par);
         status = StrPtrMap_insert(parmap, name, par);
         if(status)
-            DUPLICATE_PAR(name)
+            DUPLICATE_PAR(name, orig)
     }else if(ptype & FREE) {
         double lo, hi;
         if(gotRange) {
@@ -306,7 +306,7 @@ void parseParam(char *next, unsigned ptype, StrPtrMap *parmap,
         PtrQueue_push(freeQ, par);
         status = StrPtrMap_insert(parmap, name, par);
         if(status)
-            DUPLICATE_PAR(name)
+            DUPLICATE_PAR(name, orig)
     }else
         DIE("This shouldn't happen");
 }
@@ -701,7 +701,7 @@ PtrPair mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, Bounds * bnd,
                 // fixedQ, freeQ, and constrQ.
                 assert(fixedQ != NULL);
                 parstore = ParStore_new(fixedQ, freeQ, constrQ);
-                CHECKMEM(parstore}
+                CHECKMEM(parstore);
                 PtrQueue_free(fixedQ);
                 PtrQueue_free(freeQ);
                 PtrQueue_free(constrQ);
