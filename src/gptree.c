@@ -148,11 +148,11 @@ void GPTree_patprob(void * vself, BranchTab * branchtab, gsl_rng * rng,
         PopNode_clear(self->rootPop);   // remove old samples
 
         // Put samples into the gene tree. This allocates memory for
-        // each Gene in the sample 
-        // and puts pointers to them into the PopNodes that are controlled by
-        // the SampNdx. The Gene objects aren't owned by SampNdx or
-        // PopNode. They will eventually be freed by a call to Gene_free,
-        // which recursively frees the root and all descendants.
+        // each Gene in the sample and puts pointers to them into the
+        // PopNodes that are controlled by the SampNdx. The Gene
+        // objects aren't owned by SampNdx or PopNode. They will
+        // eventually be freed by a call to Gene_free, which
+        // recursively frees the root and all descendants.
         for(unsigned i=0; i < SampNdx_size(&(self->sndx)); ++i) {
             PopNode *node = (PopNode *) SampNdx_get(&(self->sndx), i);
             PopNode_newGene(node, i);
@@ -270,17 +270,9 @@ void *GPTree_dup(const void * vold) {
      * sense. Ordinarily, ptr+3 means ptr + 3*sizeof(*ptr). We want it
      * to mean ptr+3*sizeof(char).
      */
-    int         i, spar, spop;
-    size_t      dpar, dpop;
+    int         dpop, spop;
 
     // Calculate offsets and signs
-    if(new->parstore > old->parstore) {
-        dpar = ((size_t) new->parstore) - ((size_t) old->parstore);
-        spar = 1;
-    } else {
-        dpar = ((size_t) old->parstore) - ((size_t) new->parstore);
-        spar = -1;
-    }
     if(new->pnv > old->pnv) {
         dpop = ((size_t) new->pnv) - ((size_t) old->pnv);
         spop = 1;
@@ -290,12 +282,9 @@ void *GPTree_dup(const void * vold) {
     }
 
     SHIFT_PTR(new->rootPop, dpop, spop);
-    for(i = 0; i < old->nseg; ++i) {
-        PopNode_shiftParamPtrs(&new->pnv[i], dpar, spar);
-        PopNode_shiftPopNodePtrs(&new->pnv[i], dpop, spop);
-    }
     SampNdx_shiftPtrs(&new->sndx, dpop, spop);
     assert(SampNdx_ptrsLegal(&new->sndx, new->pnv, new->pnv + new->nseg));
+    assert(PopNode_isClear(new->rootPop));
 
     GPTree_sanityCheck(new, __FILE__, __LINE__);
     assert(GPTree_equals(old, new));
@@ -381,7 +370,7 @@ int GPTree_feasible(const void * vself, int verbose) {
 
 //      a-------|
 //              |ab--|
-//      b--|bb--|    |
+//      b--|b2--|    |
 //         |         |abc--
 //         |c--------|
 //
@@ -396,19 +385,19 @@ const char *tstInput =
     "twoN free   twoNa=100\n"
     "twoN fixed  twoNb=123\n"
     "twoN free   twoNc=213.4\n"
-    "twoN fixed  twoNbb=32.1\n"
+    "twoN fixed  twoNb2=32.1\n"
     "twoN free   twoNab=222\n"
     "twoN fixed  twoNabc=1.2e2\n"
     "mixFrac free Mc=0.02\n"
     "segment a   t=T0     twoN=twoNa    samples=1\n"
     "segment b   t=T0     twoN=twoNb    samples=1\n"
     "segment c   t=Tc     twoN=twoNc    samples=1\n"
-    "segment bb  t=Tc     twoN=twoNbb\n"
+    "segment b2  t=Tc     twoN=twoNb2\n"
     "segment ab  t=Tab    twoN=twoNab\n"
     "segment abc t=Tabc   twoN=twoNabc\n"
-    "mix    b  from bb + Mc * c\n"
+    "mix    b  from b2 + Mc * c\n"
     "derive a  from ab\n"
-    "derive bb from ab\n" "derive ab from abc\n" "derive c  from abc\n";
+    "derive b2 from ab\n" "derive ab from abc\n" "derive c  from abc\n";
 int main(int argc, char **argv) {
 
     int         verbose = 0;
@@ -461,7 +450,7 @@ int main(int argc, char **argv) {
     GPTree_free(g2);
 
     unlink(fname);
-    unitTstResult("GPTree", "untested");
+    unitTstResult("GPTree", "OK");
     return 0;
 }
 #endif

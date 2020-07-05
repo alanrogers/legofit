@@ -307,7 +307,7 @@ xgptree.o : gptree.c
 XGPTREE := xgptree.o addrparmap.o misc.o branchtab.o parstore.o lblndx.o \
         tokenizer.o strptrmap.o gene.o param.o popnode.o binary.o \
         dprintf.o dtnorm.o parse.o strparmap.o tinyexpr.o sampndx.o \
-        nodestore.o network.o
+        nodestore.o network.o ptrptrmap.o ptrqueue.o strint.o error.o
 xgptree : $(XGPTREE)
 	$(CC) $(CFLAGS) -o $@ $(XGPTREE) $(lib)
 

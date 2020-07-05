@@ -119,8 +119,12 @@ void *PopNode_root(void * vself) {
 /// PopNode. Sets "visited" to 0 in every node.
 void PopNode_clear(PopNode * self) {
     int         i;
-    for(i = 0; i < self->nchildren; ++i)
+    for(i = 0; i < self->nchildren; ++i) {
+        if(NULL == self->child[i]) {
+            PopNode_printShallow(self, stderr);
+        }
         PopNode_clear(self->child[i]);
+    }
 
     self->nsamples = 0;
     self->visited = 0;

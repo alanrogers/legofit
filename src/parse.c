@@ -64,6 +64,7 @@
 #include "lblndx.h"
 #include "misc.h"
 #include "network.h"
+#include "param.h"
 #include "parse.h"
 #include "parstore.h"
 #include "ptrqueue.h"
@@ -274,13 +275,13 @@ void parseParam(char *next, unsigned ptype, StrPtrMap *parmap,
         PtrQueue_push(fixedQ, par);
         status = StrPtrMap_insert(parmap, name, par);
         if(status)
-            DUPLICATE_PAR(name, orig)
+            DUPLICATE_PAR(name, orig);
     }else if(ptype & CONSTRAINED) {
         par = Param_new(name, value, -DBL_MAX, DBL_MAX, ptype, formula);
         PtrQueue_push(constrQ, par);
         status = StrPtrMap_insert(parmap, name, par);
         if(status)
-            DUPLICATE_PAR(name, orig)
+            DUPLICATE_PAR(name, orig);
     }else if(ptype & FREE) {
         double lo, hi;
         if(gotRange) {
@@ -306,7 +307,7 @@ void parseParam(char *next, unsigned ptype, StrPtrMap *parmap,
         PtrQueue_push(freeQ, par);
         status = StrPtrMap_insert(parmap, name, par);
         if(status)
-            DUPLICATE_PAR(name, orig)
+            DUPLICATE_PAR(name, orig);
     }else
         DIE("This shouldn't happen");
 }
@@ -326,7 +327,6 @@ void parseSegment(char *next, StrPtrMap * popmap, SampNdx * sndx,
                   const char *orig) {
     char *popName, *tok;
     int start_i, twoN_i;
-    unsigned ttype, twoNtype;
     unsigned long nsamples = 0;
 
     // Read name of segment
@@ -489,7 +489,6 @@ void parseMix(char *next, StrPtrMap * popmap, ParStore * parstore,
               const char *orig) {
     char *childName, *parName[2], *tok;
     int mix_i;
-    unsigned mtype;
 
     // Read name of child
     childName = nextWhitesepToken(&next);
@@ -626,6 +625,7 @@ PtrPair mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, Bounds * bnd,
                NodeStore * ns) {  
     char orig[500], buff[500], buff2[500];
     char *token, *next;
+    ParStore *parstore = NULL;
 
     StrPtrMap *popmap = StrPtrMap_new();
     StrPtrMap *parmap = StrPtrMap_new();
@@ -674,8 +674,6 @@ PtrPair mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, Bounds * bnd,
         token = nextWhitesepToken(&next);
         if(token == NULL)
             continue;
-
-        ParStore *parstore = NULL;
 
         if(0 == strcmp(token, "twoN")) {
             if(parstore != NULL)
