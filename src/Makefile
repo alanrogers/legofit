@@ -64,9 +64,9 @@ legosim : $(LEGOSIM)
 
 LEGOFIT := legofit.o addrparmap.o binary.o branchtab.o cost.o diffev.o \
    dprintf.o dtnorm.o error.o gene.o gptree.o jobqueue.o lblndx.o misc.o \
-   network.o nodestore.o param.o parse.o parstore.o patprob.o pointbuff.o \
-   popnode.o rngseed.o sampndx.o simsched.o state.o strparmap.o \
-   strptrmap.o tinyexpr.o tokenizer.o
+   network.o nodestore.o param.o parse.o parseopf.o parstore.o patprob.o \
+   pointbuff.o popnode.o rngseed.o sampndx.o simsched.o state.o \
+   strparmap.o strptrmap.o tinyexpr.o tokenizer.o
 legofit : $(LEGOFIT)
 	$(CC) $(CFLAGS) -o $@ $(LEGOFIT) $(lib)
 

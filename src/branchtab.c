@@ -11,9 +11,6 @@
  */
 #include "branchtab.h"
 #include "misc.h"
-#include "tokenizer.h"
-#include "lblndx.h"
-#include "parstore.h"
 #include <assert.h>
 #include <string.h>
 #include <math.h>
@@ -137,7 +134,7 @@ BTLink *BTLink_add(BTLink * self, tipId_t key, double value) {
 /// Return value corresponding to key, or nan if no value is found.
 double BTLink_get(BTLink * self, tipId_t key) {
     if(self == NULL || key < self->key)
-        return nan("");
+        return nan(NULL);
     else if(key > self->key)
         return BTLink_get(self->next, key);
     assert(key == self->key);
@@ -333,62 +330,6 @@ void BranchTab_toArrays(BranchTab *self, unsigned n, tipId_t key[n],
     }
 }
 
-/// Construct a BranchTab by parsing an input file.
-/// Recognizes comments, which extend from '#' to end-of-line.
-BranchTab *BranchTab_parse(const char *fname, const LblNdx *lblndx) {
-    FILE *fp = efopen(fname, "r");
-
-    BranchTab *self = BranchTab_new();
-    CHECKMEM(self);
-
-    int         ntokens;
-    char        buff[500];
-    Tokenizer  *tkz = Tokenizer_new(50);
-
-    while(1) {
-        if(fgets(buff, sizeof(buff), fp) == NULL)
-            break;
-
-        if(!strchr(buff, '\n') && !feof(fp))
-            eprintf("s:%s:%d: buffer overflow. buff size: %zu\n",
-                    __FILE__, __func__, __LINE__, sizeof(buff));
-
-        // strip trailing comments
-        char *comment = strchr(buff, '#');
-        if(comment)
-            *comment = '\0';
-
-        Tokenizer_split(tkz, buff, " \t"); // tokenize
-        ntokens = Tokenizer_strip(tkz, " \t\n");
-        if(ntokens == 0)
-            continue;
-
-        char *tok = Tokenizer_token(tkz, 0);
-        tipId_t key=LblNdx_getTipId(lblndx, tok);
-        if(key==0) {
-            fprintf(stderr,"%s:%s:%d: can't find id for label %s\n",
-                    __FILE__,__func__,__LINE__, tok);
-            exit(EXIT_FAILURE);
-        }
-
-        tok = Tokenizer_token(tkz, 1);
-        errno = 0;
-        double prob = strtod(tok, NULL);
-        if(errno) {
-            fprintf(stderr,"%s:%s:%d: Can't parse 2nd field as float.\n",
-                    __FILE__,__func__,__LINE__);
-            fprintf(stderr," input:");
-            Tokenizer_print(tkz, stderr);
-            exit(EXIT_FAILURE);
-        }
-
-        BranchTab_add(self, key, prob);
-    }
-    fclose(fp);
-    Tokenizer_free(tkz);
-    return self;
-}
-
 /// Map two or more populations into a single population.
 BranchTab *BranchTab_collapse(BranchTab *old, tipId_t collapse) {
     int n = 8 * sizeof(tipId_t); // number of bits
@@ -429,55 +370,6 @@ BranchTab *BranchTab_rmPops(BranchTab *old, tipId_t remove) {
                 BranchTab_add(new, id, el->value);
         }
     }
-    return new;
-}
-
-// Make map, an array whose i'th entry is an unsigned integer with one
-// bit on and the rest off. The on bit indicates the position in the
-// new id of the i'th bit in the old id.
-//
-// All bits equal to 1 in collapse are mapped to the minimum bit in
-// collapse. All bits with positions below that of this mininum bit
-// are mapped to their original position. Aits that are above the
-// minumum bit and are off in collapse are shifted right by "shift"
-// places, where shift is one less than the number of on bits in
-// collapse that are to the right of the bit in question.
-static void make_map(size_t n, tipId_t map[n], tipId_t collapse) {
-    int i, shift=0;
-    tipId_t min = n, bit = 1u;
-    for(i=0; i < n; ++i, bit <<= 1) {
-        if( collapse & bit ) {
-            if(min == n) {
-                min = bit;
-            }else
-                ++shift;
-            map[i] = min;
-        }else
-            map[i] = bit >> shift;
-    }
-}
-
-static void make_rm_map(size_t n, tipId_t map[n], tipId_t remove) {
-    int i, shift=0;
-    tipId_t bit = 1u;
-    for(i=0; i < n; ++i, bit <<= 1) {
-        if( remove & bit ) {
-            ++shift;
-            map[i] = 0;
-        }else
-            map[i] = bit >> shift;
-    }
-}
-
-// Remap the bits in a tipId_t variable. Array "map" specifies how
-// the bits should be rearranged. Function returns the remapped
-// value of "old".
-static tipId_t remap_bits(size_t n, tipId_t map[n], tipId_t old) {
-    assert(n == 8*sizeof(tipId_t));
-    tipId_t new = 0u, bit=1u;
-    for(int i=0; i<n; ++i, bit <<= 1)
-        if( old & bit )
-            new |= map[i];
     return new;
 }
 
@@ -546,6 +438,8 @@ double BranchTab_KLdiverg(const BranchTab *obs, const BranchTab *expt) {
         o = obs->tab[i];
         e = expt->tab[i];
         while(o && e) {
+
+            // Set p and q; advance o and/or e.
             if(o->key < e->key) {
                 p = o->value;
                 q = 0.0;
@@ -561,6 +455,8 @@ double BranchTab_KLdiverg(const BranchTab *obs, const BranchTab *expt) {
                 e = e->next;
                 o = o->next;
             }
+
+            // Use p and q to add a term to kl.
             if(p == 0.0) {
                 // Do nothing: p*log(p/q) -> 0 as p->0, regardless of
                 // q. This is because p*log(p/q) is the log of
@@ -630,11 +526,58 @@ double BranchTab_negLnL(const BranchTab *obs, const BranchTab *expt) {
     return -lnL;
 }
 
+// Make map, an array whose i'th entry is an unsigned integer with one
+// bit on and the rest off. The on bit indicates the position in the
+// new id of the i'th bit in the old id.
+//
+// All bits equal to 1 in collapse are mapped to the minimum bit in
+// collapse. All bits with positions below that of this mininum bit
+// are mapped to their original position. Bits that are above the
+// minumum bit and are off in collapse are shifted right by "shift"
+// places, where shift is one less than the number of on bits in
+// collapse that are to the right of the bit in question.
+static void make_map(size_t n, tipId_t map[n], tipId_t collapse) {
+    int i, shift=0;
+    tipId_t min = n, bit = 1u;
+    for(i=0; i < n; ++i, bit <<= 1) {
+        if( collapse & bit ) {
+            if(min == n) {
+                min = bit;
+            }else
+                ++shift;
+            map[i] = min;
+        }else
+            map[i] = bit >> shift;
+    }
+}
+
+static void make_rm_map(size_t n, tipId_t map[n], tipId_t remove) {
+    int i, shift=0;
+    tipId_t bit = 1u;
+    for(i=0; i < n; ++i, bit <<= 1) {
+        if( remove & bit ) {
+            ++shift;
+            map[i] = 0;
+        }else
+            map[i] = bit >> shift;
+    }
+}
+
+// Remap the bits in a tipId_t variable. Array "map" specifies how
+// the bits should be rearranged. Function returns the remapped
+// value of "old".
+static tipId_t remap_bits(size_t n, tipId_t map[n], tipId_t old) {
+    assert(n == 8*sizeof(tipId_t));
+    tipId_t new = 0u, bit=1u;
+    for(int i=0; i<n; ++i, bit <<= 1)
+        if( old & bit )
+            new |= map[i];
+    return new;
+}
 
 #ifdef TEST
 
 #include "binary.h"
-#include "network.h"
 #include <string.h>
 #include <assert.h>
 #include <unistd.h>
@@ -642,43 +585,6 @@ double BranchTab_negLnL(const BranchTab *obs, const BranchTab *expt) {
 #ifdef NDEBUG
 #error "Unit tests must be compiled without -DNDEBUG flag"
 #endif
-
-//      a-------|
-//              |ab--|
-//      b--|bb--|    |
-//         |         |abc--
-//         |c--------|
-//
-//  t = 0  1    3    5.5     inf
-const char *tstInput =
-    " # this is a comment\n"
-    "time fixed  T0=0\n"
-    "time free   Tc=1\n"
-    "time free   Tab=3\n"
-    "time free   Tabc=5.5\n"
-    "twoN free   twoNa=100\n"
-    "twoN fixed  twoNb=123\n"
-    "twoN free   twoNc=213.4\n"
-    "twoN fixed  twoNbb=32.1\n"
-    "twoN free   twoNab=222\n"
-    "twoN fixed  twoNabc=1.2e2\n"
-    "mixFrac free Mc=0.02\n"
-    "segment a   t=T0     twoN=twoNa    samples=1\n"
-    "segment b   t=T0     twoN=twoNb    samples=1\n"
-    "segment c   t=Tc     twoN=twoNc    samples=1\n"
-    "segment bb  t=Tc     twoN=twoNbb\n"
-    "segment ab  t=Tab    twoN=twoNab\n"
-    "segment abc t=Tabc   twoN=twoNabc\n"
-    "mix    b  from bb + Mc * c\n"
-    "derive a  from ab\n"
-    "derive bb from ab\n"
-    "derive ab from abc\n"
-    "derive c  from abc\n";
-const char *tstPatProbInput =
-    "#SitePat   obs\n"
-    "a:b        2.0\n"
-    "a:c        1.0\n"
-    "b:c        1.0\n";
 
 int main(int argc, char **argv) {
     int verbose=0;
@@ -689,18 +595,6 @@ int main(int argc, char **argv) {
         }
         verbose = 1;
     }
-
-    Network_init(SIM);
-
-    const char *tstFname = "mktree-tmp.lgo";
-    FILE       *fp = fopen(tstFname, "w");
-    fputs(tstInput, fp);
-    fclose(fp);
-
-    const char *tstPatProbFname = "patprob-tmp.txt";
-    fp = fopen(tstPatProbFname, "w");
-    fputs(tstPatProbInput, fp);
-    fclose(fp);
 
     BranchTab *bt = BranchTab_new();
     CHECKMEM(bt);
@@ -722,6 +616,8 @@ int main(int argc, char **argv) {
         BranchTab_add(bt, key[i], val[i]);
     }
 
+    assert(BranchTab_hasSingletons(bt));
+
     for(i=0; i < 25; ++i) {
         assert(2*val[i] == BranchTab_get(bt, key[i]));
     }
@@ -738,7 +634,6 @@ int main(int argc, char **argv) {
     if(verbose)
         BranchTab_print(bt, stdout);
 
-
     BranchTab *bt2 = BranchTab_dup(bt);
     assert(BranchTab_equals(bt, bt2));
 
@@ -750,19 +645,17 @@ int main(int argc, char **argv) {
     for(i=0; i<25; ++i)
         assert(0.0 == BranchTab_get(bt, key[i]));
 
-    BranchTab_free(bt);
-
-    Bounds   bnd = {
-                    .lo_twoN = 0.0,
-                    .hi_twoN = 1e7,
-                    .lo_t = 0.0,
-                    .hi_t = HUGE_VAL
-    };
-    GPTree *g = GPTree_new(tstFname, bnd);
-    LblNdx lblndx = GPTree_getLblNdx(g);
-
-    bt = BranchTab_parse(tstPatProbFname, &lblndx);
-
+    BranchTab_free(bt2);
+    bt2 = BranchTab_collapse(bt, 03);
+    if(verbose) {
+        printf("size before collapse: %u; after: %u\n",
+               BranchTab_size(bt), BranchTab_size(bt2));
+        BranchTab_print(bt2, stdout);
+    }
+    assert(BranchTab_size(bt) > BranchTab_size(bt2));
+    assert(Dbl_near(BranchTab_sum(bt), BranchTab_sum(bt2)));
+    unitTstResult("BranchTab_collapse", "OK");
+    
     // test make_map and remap_bits
     size_t n = 8*sizeof(tipId_t);
     tipId_t map[n];
@@ -791,17 +684,6 @@ int main(int argc, char **argv) {
     unitTstResult("make_map", "OK");
     unitTstResult("remap_bits", "OK");
 
-    BranchTab_free(bt2);
-    bt2 = BranchTab_collapse(bt, 03);
-    if(verbose) {
-        printf("size before collapse: %u; after: %u\n",
-               BranchTab_size(bt), BranchTab_size(bt2));
-        BranchTab_print(bt2, stdout);
-    }
-    assert(BranchTab_size(bt) > BranchTab_size(bt2));
-    assert(Dbl_near(BranchTab_sum(bt), BranchTab_sum(bt2)));
-    unitTstResult("BranchTab_collapse", "OK");
-    
     // test make_rm_map
     memset(map, 0, sizeof(map));
     id1 = 044;
@@ -829,15 +711,16 @@ int main(int argc, char **argv) {
                BranchTab_size(bt), BranchTab_size(bt2));
         BranchTab_print(bt2, stdout);
     }
+
     assert(BranchTab_size(bt) > BranchTab_size(bt2));
     assert(BranchTab_sum(bt) >= BranchTab_sum(bt2));
     unitTstResult("BranchTab_rmPops", "OK");
 
     BranchTab_free(bt);
     BranchTab_free(bt2);
-    GPTree_free(g);
-    unitTstResult("BranchTab", "untested");
-    unlink(tstFname);
-    unlink(tstPatProbFname);
+    unitTstResult("BranchTab", "OK");
+
+    return 0;
 }
+
 #endif

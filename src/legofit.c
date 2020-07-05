@@ -195,6 +195,7 @@ Systems Consortium License, which can be found in file "LICENSE".
 #include "diffev.h"
 #include "lblndx.h"
 #include "network.h"
+#include "parseopf.h"
 #include "parstore.h"
 #include "patprob.h"
 #include "pointbuff.h"
@@ -602,7 +603,7 @@ int main(int argc, char **argv) {
     printf("# pts output file    : %s\n", ptsfname);
 
     // Observed site pattern frequencies
-    BranchTab *rawObs = BranchTab_parse(patfname, &lblndx);
+    BranchTab *rawObs = parseOpf(patfname, &lblndx);
     if(doSing) {
         if(!BranchTab_hasSingletons(rawObs)) {
             fprintf(stderr, "%s:%d: Command line includes singletons "

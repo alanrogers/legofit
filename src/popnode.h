@@ -6,6 +6,7 @@
 #  include <gsl/gsl_rng.h>
 
 struct PopNode {
+    int         visited; // has the coalescent visited this node yet?
     int         nparents, nchildren, nsamples;
     double      twoN;            // haploid pop size
     double      start, end;      // duration of this PopNode
@@ -32,5 +33,6 @@ void        PopNode_newGene(PopNode * self, unsigned ndx);
 void        PopNode_print(FILE * fp, void * vself, int indent);
 void       *PopNode_root(void * vself);
 void        PopNode_update(PopNode *self, ParStore *ps);
+void        PopNode_unvisit(PopNode *self);
 
 #endif

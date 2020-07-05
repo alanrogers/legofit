@@ -88,17 +88,20 @@ ParStore *ParStore_new(PtrQueue *fixedQ, PtrQueue *freeQ, PtrQueue *constrQ) {
     // Param_move copies par into self->par.
     for(unsigned i=0; i < self->nFree; ++i) {
         Param *par = PtrQueue_pop(freeQ);
+        assert(FREE & par->type);
         Param_move(self->free+i, par);
         free(par);
     }
 
     for(unsigned i=0; i < self->nFixed; ++i) {
         Param *par = PtrQueue_pop(fixedQ);
+        assert(FIXED & par->type);
         Param_move(self->fixed+i, par);
     }
     
     for(unsigned i=0; i < self->nConstr; ++i) {
         Param *par = PtrQueue_pop(constrQ);
+        assert(CONSTRAINED & par->type);
         Param_move(self->constr+i, par);
     }
 

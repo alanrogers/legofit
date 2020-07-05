@@ -191,6 +191,15 @@ static int PopNode_nsamples(PopNode * self) {
     return self->nsamples;
 }
 
+/// Set all "visited" flags to false.
+void PopNode_unvisit(PopNode *self) {
+    if(self->nchildren > 0)
+        PopNode_unvisit(self->child[0]);
+    if(self->nchildren > 1)
+        PopNode_unvisit(self->child[1]);
+    self->visited = 0;
+}
+
 /// PopNode constructor
 void *PopNode_new(int twoN_i, int start_i, ParStore *ps, NodeStore * ns) {
     PopNode    *self = NodeStore_alloc(ns);
@@ -380,10 +389,8 @@ void PopNode_newGene(PopNode * self, unsigned ndx) {
 /// Coalesce gene tree within population tree.
 Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng) {
 
-    // Because this is a network rather than a tree, we may visit the
-    // same node twice. On the 2nd visit, nsamples==0, so we return
-    // immediately.
-    if(self->nsamples == 0)
+    // Early return if this node has been visited already.
+    if(self->visited)
         return NULL;
 
     // Coalesce children first, so that the coalescent process in
@@ -490,6 +497,7 @@ Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng) {
     }
 
     PopNode_sanityCheck(self, __FILE__, __LINE__);
+    self->visited = 1;
     return (self->nsamples == 1 ? self->sample[0] : NULL);
 }
 
@@ -598,6 +606,9 @@ int main(int argc, char **argv) {
         verbose = 1;
     }
 
+    gsl_rng *rng = gsl_rng_alloc(gsl_rng_taus);
+    gsl_rng_set(rng, 1u);
+
     PtrQueue *fixedQ = PtrQueue_new();
     PtrQueue *freeQ = PtrQueue_new();
     PtrQueue *constrQ = PtrQueue_new();
@@ -605,8 +616,10 @@ int main(int argc, char **argv) {
     Param *par;
 
     par = Param_new("zero", 0.0, 0.0, 0.0, TIME|FIXED, NULL);
+    PtrQueue_push(fixedQ, par);
 
     par = Param_new("one", 1.0, 1.0, 1.0, TWON|FIXED, NULL);
+    PtrQueue_push(fixedQ, par);
 
     par = Param_new("Nab", 3.0, 0.0, 100.0, TWON|FREE, NULL);
     PtrQueue_push(freeQ, par);
@@ -619,7 +632,7 @@ int main(int argc, char **argv) {
 
     par = Param_new("Tabc", 4.0, -DBL_MAX, DBL_MAX, TIME|CONSTRAINED,
                     "Tab + Nab*Nabc");
-    PtrQueue_push(fixedQ, par);
+    PtrQueue_push(constrQ, par);
 
     ParStore *ps = ParStore_new(fixedQ, freeQ, constrQ);
 
@@ -684,13 +697,16 @@ int main(int argc, char **argv) {
         PopNode_printShallow(c, stdout);
     }
 
+    PopNode_unvisit(abc);
+    Gene *root = PopNode_coalesce(abc, rng);
+    assert(root != NULL);
+    Gene_free(root);
+
     unitTstResult("PopNode", "untested");
 
     NodeStore_free(ns);
     ParStore_free(ps);
-    Gene_free(ga);
-    Gene_free(gb);
-    Gene_free(gc);
+    gsl_rng_free(rng);
 
     return 0;
 

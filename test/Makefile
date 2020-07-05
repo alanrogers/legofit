@@ -3,13 +3,17 @@ vpath %.c ../src
 opt :=  -O0 -fno-inline-functions -DDEBUG
 prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
-tests := xaddrparmap xbinary xbooma xboot xbranchtab xcomb xdafreader xdiffev \
+tests := xaddrparmap xbinary xbooma xboot xbranchtab xclic xcomb xdafreader \
+  xdiffev \
   xdtnorm xerror xgene xgptree xhessian xidset xintpart \
-  xjobqueue xlblndx xlinereader xmisc xmpfrmatcoal xnodestore xsimreader \
-  xparam xparse xparstore xpointbuff xpopnode xptrlst xptrqueue xptrvec \
+  xjobqueue xlblndx xlinereader xmigoutcome xmisc xmpfrmatcoal xnodestore \
+  xsimreader \
+  xparam xparse xparseopf xparstore xpointbuff xpopnode xptrlst xptrptrmap \
+  xptrqueue xptru32map \
+  xptrvec \
   xstrptrmap xrafreader xrational xscrmreader xsampndx xsegment xsetpart \
   xsimsched xstate xstrdblqueue xstrint xstrparmap xtinyexpr xtokenizer \
-  xuintqueue xwraparound xmatcoal
+  xu64u64map xuintqueue xwraparound xmatcoal
 
 CC := gcc
 
@@ -55,6 +59,7 @@ test : $(tests)
 	-./xbooma
 	-./xboot
 	-./xbranchtab
+	-./xclic
 	-./xcomb
 	-./xdafreader
 	-./xdiffev
@@ -69,17 +74,21 @@ test : $(tests)
 	-./xlblndx
 	-./xlinereader
 	-./xmatcoal
+	-./xmigoutcome
 	-./xmisc
 	-./xmpfrmatcoal
 	-./xnodestore
 	-./xsimreader
 	-./xparam
 	-./xparse
+	-./xparseopf
 	-./xparstore
 	-./xpointbuff
 	-./xpopnode
 	-./xptrlst
+	-./xptrptrmap
 	-./xptrqueue
+	-./xptru32map
 	-./xptrvec
 	-./xrafreader
 	-./xrational
@@ -95,6 +104,7 @@ test : $(tests)
 	-./xstrptrmap
 	-./xtinyexpr
 	-./xtokenizer
+	-./xu64u64map
 	-./xuintqueue
 	-./xwraparound
 	@echo "ALL UNIT TESTS WERE COMPLETED."
@@ -282,7 +292,8 @@ xpopnode.o : popnode.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/popnode.c
 
 XPOPNODE := xpopnode.o dtnorm.o misc.o gene.o parstore.o tinyexpr.o \
-   param.o 
+   param.o branchtab.o nodestore.o ptrptrmap.o ptrqueue.o strint.o \
+   binary.o
 xpopnode : $(XPOPNODE)
 	$(CC) $(CFLAGS) -o $@ $(XPOPNODE) $(lib)
 
@@ -306,6 +317,15 @@ XPARSTORE := xparstore.o misc.o parstore.o binary.o ptrptrmap.o ptrqueue.o \
 xparstore : $(XPARSTORE)
 	$(CC) $(CFLAGS) -o $@ $(XPARSTORE) $(lib)
 
+# On the Mac, "make" fails to compile this if I name the object
+# file "xbranchtab". I have no clue why.
+xbrtab.o : branchtab.c
+	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/branchtab.c
+
+XBRANCHTAB := xbrtab.o misc.o binary.o 
+xbranchtab : $(XBRANCHTAB)
+	$(CC) $(CFLAGS) -o $@ $(XBRANCHTAB) $(lib)
+
 xlblndx.o : lblndx.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/lblndx.c
 
@@ -313,15 +333,10 @@ XLBLNDX := xlblndx.o misc.o binary.o
 xlblndx : $(XLBLNDX)
 	$(CC) $(CFLAGS) -o $@ $(XLBLNDX) $(lib)
 
-xbranchtab.o : branchtab.c
-	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/branchtab.c
-
-XBRANCHTAB := xbranchtab.o addrparmap.o gptree.o misc.o binary.o \
-   parstore.o popnode.o gene.o lblndx.o param.o parse.o \
-   tokenizer.o strptrmap.o dprintf.o dtnorm.o strparmap.o tinyexpr.o \
-   sampndx.o nodestore.o network.o
-xbranchtab : $(XBRANCHTAB)
-	$(CC) $(CFLAGS) -o $@ $(XBRANCHTAB) $(lib)
+XPARSEOPF := xparseopf.o parseopf.o branchtab.o misc.o lblndx.o tokenizer.o \
+   binary.o
+xparseopf : $(XPARSEOPF)
+	$(CC) $(CFLAGS) -o $@ $(XPARSEOPF) $(lib)
 
 xstrint.o : strint.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/strint.c

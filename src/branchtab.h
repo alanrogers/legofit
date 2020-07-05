@@ -11,12 +11,12 @@ int           BranchTab_hasSingletons(BranchTab * self);
 void          BranchTab_add(BranchTab * self, tipId_t key, double value);
 unsigned      BranchTab_size(BranchTab * self);
 void          BranchTab_print(const BranchTab *self, FILE *fp);
+
 void          BranchTab_plusEquals(BranchTab *lhs, BranchTab *rhs);
 void          BranchTab_minusEquals(BranchTab *lhs, BranchTab *rhs);
 void          BranchTab_toArrays(BranchTab *self, unsigned n, tipId_t key[n],
                                  double value[n], double sqr[n]);
 int           BranchTab_divideBy(BranchTab *self, double denom);
-BranchTab    *BranchTab_parse(const char *fname, const LblNdx *lblndx);
 BranchTab    *BranchTab_dup(const BranchTab *old);
 int           BranchTab_equals(const BranchTab *lhs, const BranchTab *rhs);
 double        BranchTab_sum(const BranchTab *self);
