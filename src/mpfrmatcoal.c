@@ -186,6 +186,7 @@ static MpfrMatCoal * MpfrMatCoal_new(int nLin) {
         mpfr_set_si(num, negBetaInv[i].num, rnd); // numerator
         mpfr_set_si(den, negBetaInv[i].den, rnd); // denominator
         mpfr_div(self->z[i], num, den, rnd); // ratio
+        mpfr_neg(self->z[i], self->z[i], rnd); // negate
         for(j=i; j<dim; ++j) {
             mpfr_set_si(num, H[i][j].num, rnd); // numerator
             mpfr_set_si(den, H[i][j].den, rnd); // denominator

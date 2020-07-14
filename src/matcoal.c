@@ -151,7 +151,7 @@ static MatCoal * MatCoal_new(int nLin) {
 
     // Convert to floating point and store in z and hmat.
     for(ii=0; ii<dim; ++ii) {
-        self->z[ii] = Rational_ldbl(negBetaInv[ii]);
+        self->z[ii] = -Rational_ldbl(negBetaInv[ii]);
         for(jj=ii; jj<dim; ++jj)
             self->hmat[self->offset[ii] + jj] = Rational_ldbl(H[ii][jj]);
     }

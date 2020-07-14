@@ -92,10 +92,25 @@ int main(int argc, char **argv) {
             err = maxAbsErr(dim, ans, ans2);
             maxerr = fmax(maxerr, err);
 
+            if(dim==3 && verbose>1 && fabs(v-0.5) < 0.0001) {
+                printf("project(%d, %lf):", dim, v);
+                for(i=0; i<dim; ++i)
+                    printf(" %lf", ans[i]);
+                putchar('\n');
+            }
+
             MatCoal_ciLen(dim, ans, eig);
             MpfrMatCoal_ciLen(dim, ans2, v);
             err = maxAbsErr(dim, ans, ans2);
             maxerr = fmax(maxerr, err);
+
+            if(dim==3 && verbose>1 && fabs(v-0.5) < 0.0001) {
+                printf("ciLen(%d, %lf):", dim, v);
+                for(i=0; i<dim; ++i)
+                    printf(" %lf", ans[i]);
+                putchar('\n');
+            }
+
         }
 
         v = INFINITY;
