@@ -123,7 +123,17 @@ void GPTree_simulate(GPTree * self, BranchTab * branchtab, gsl_rng * rng,
     }
     for(rep = 0; rep < nreps; ++rep) {
         PopNode_clear(self->rootPop);   // remove old samples
-        SampNdx_populateTree(&(self->sndx));    // add new samples
+
+        // Put samples into the gene tree. This allocates memory for
+        // each Gene in the sample 
+        // and puts pointers to them into the PopNodes that are controlled by
+        // the SampNdx. The Gene objects aren't owned by SampNdx or
+        // PopNode. They will eventually be freed by a call to Gene_free,
+        // which recursively frees the root and all descendants.
+        for(unsigned i=0; i < SampNdx_size(&(self->sndx)); ++i) {
+            PopNode *node = (PopNode *) SampNdx_get(&(self->sndx), i);
+            PopNode_newGene(node, i);
+        }
 
         // coalescent simulation generates gene genealogy within
         // population tree.
