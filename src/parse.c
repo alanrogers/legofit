@@ -570,7 +570,7 @@ void parseMix(char *next, PopNodeTab * poptbl, ParStore * parstore,
 int get_one_line(size_t n, char buff[n], FILE * fp) {
     do{
         if(fgets(buff, n, fp) == NULL)
-            return 1;
+            return EOF;
 
         if(!strchr(buff, '\n') && !feof(fp)) {
             fprintf(stderr, "%s:%d: buffer overflow. buff size: %zu\n",
@@ -639,6 +639,7 @@ PopNode *mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, ParStore * parstore,
             strcat(buff, " "); // add space after operator
             strcat(buff, buff2);
         }
+        fprintf(stderr,"buff: %s\n", buff);
 
         snprintf(orig, sizeof orig, "%s", buff);
 
@@ -751,7 +752,9 @@ const char *tstInput =
     "segment abc t=Tabc   twoN=twoNabc\n"
     "mix    b  from bb + Mc * c\n"
     "derive a  from ab\n"
-    "derive bb from ab\n" "derive ab from abc\n" "derive c  from abc\n";
+    "derive bb from ab\n"
+    "derive ab from abc\n"
+    "derive c  from abc\n";
 int main(int argc, char **argv) {
 
     int verbose = 0;
