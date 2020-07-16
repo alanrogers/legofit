@@ -92,6 +92,13 @@ int main(int argc, char **argv) {
             err = maxAbsErr(dim, ans, ans2);
             maxerr = fmax(maxerr, err);
 
+            if(dim==2 && fabs(v - 1.0) < 0.0001) {
+                assert( Dbl_near( eig[0], exp(-1.0)));
+                assert( Dbl_near( eig[1], exp(-3.0)));
+                assert( Dbl_near( ans[0], 1.5*(exp(-1) - exp(-3))));
+                assert( Dbl_near( ans[1], exp(-3)));
+            }
+
             if(dim==3 && verbose>1 && fabs(v-0.5) < 0.0001) {
                 printf("project(%d, %lf):", dim, v);
                 for(i=0; i<dim; ++i)
@@ -103,6 +110,13 @@ int main(int argc, char **argv) {
             MpfrMatCoal_ciLen(dim, ans2, v);
             err = maxAbsErr(dim, ans, ans2);
             maxerr = fmax(maxerr, err);
+
+            if(dim==2 && fabs(v - 1.0) < 0.0001) {
+                assert( Dbl_near( ans[0],
+                                  1.0 - 1.5*exp(-1) + 0.5*exp(-3)));
+                assert( Dbl_near( ans[1],
+                                  1.0/3.0 - exp(-3)/3.0));
+            }
 
             if(dim==3 && verbose>1 && fabs(v-0.5) < 0.0001) {
                 printf("ciLen(%d, %lf):", dim, v);
