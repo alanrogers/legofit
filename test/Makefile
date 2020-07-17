@@ -364,7 +364,7 @@ xaddrparmap.o : addrparmap.c
 XADDRPARMAP := xaddrparmap.o misc.o param.o tinyexpr.o dtnorm.o gptree.o \
    parstore.o gene.o lblndx.o popnode.o branchtab.o strparmap.o \
    tokenizer.o parse.o binary.o strptrmap.o dprintf.o sampndx.o \
-   nodestore.o network.o
+   nodestore.o network.o ptrptrmap.o ptrqueue.o strint.o error.o
 xaddrparmap : $(XADDRPARMAP)
 	$(CC) $(CFLAGS) -o $@ $(XADDRPARMAP) $(lib)
 

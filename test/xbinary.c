@@ -189,7 +189,5 @@ int main(int argc, char **argv) {
 
     unitTstResult("binary", "OK");
 
-    long unsigned x;
-
     return 0;
 }
