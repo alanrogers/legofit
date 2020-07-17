@@ -12,8 +12,13 @@ int         num1bits(tipId_t x);
 tipId_t     reverseBits(tipId_t x);
 uint32_t    rev32(uint32_t x);
 uint64_t    rev64(uint64_t x);
+#ifdef __GNUC__
+uint32_t    uint32Hash(uint32_t key );
+uint32_t    uint64Hash(uint64_t key);
+#else
 uint32_t    uint32Hash(uint32_t key ) __attribute__((no_sanitize("integer")));
 uint32_t    uint64Hash(uint64_t key) __attribute__((no_sanitize("integer")));
+#endif
 unsigned long ptrHash( const void * key);
 int         nlz(tipId_t x);
 int         nlz64(uint64_t x);

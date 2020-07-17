@@ -183,8 +183,11 @@ int num1bits(tipId_t x) {
 /// article: 
 /// https://gist.github.com/badboy/6267743
 /// This generates integer overflows, presumably by design.
-uint32_t uint32Hash( uint32_t key )
-    __attribute__((no_sanitize("integer"))){
+#ifdef __GNUC__
+uint32_t uint32Hash( uint32_t key ) {
+#else
+uint32_t uint32Hash( uint32_t key ) __attribute__((no_sanitize("integer"))){
+#endif
    key = (key+0x7ed55d16) + (key<<12);
    key = (key^0xc761c23c) ^ (key>>19);
    key = (key+0x165667b1) + (key<<5);
@@ -195,8 +198,12 @@ uint32_t uint32Hash( uint32_t key )
 }
 
 /// Hash function for a 64-bit integer.
+#ifdef __GNUC__
+uint32_t uint64Hash(uint64_t key) {
+#else
 uint32_t uint64Hash(uint64_t key)
     __attribute__((no_sanitize("integer"))){
+#endif
   key = (~key) + (key << 18);
   key = key ^ (key >> 31);
   key = key * 21;
@@ -207,15 +214,10 @@ uint32_t uint64Hash(uint64_t key)
 }
 
 unsigned long ptrHash( const void * key) {
-    if(sizeof(void *) == 4)
-        return uint32Hash((uint32_t) key);
-    else if(sizeof(void *)==8)
-        return uint64Hash((uint64_t) key);
-    else {
-        fprintf(stderr,"%s:%s:%d: can't hash pointer\n",
-                __FILE__,__func__,__LINE__);
-        exit(EXIT_FAILURE);
-    }
-    return 0;
+#if TIPID_SIZE == 32    
+    return uint32Hash((uint32_t) key);
+#else
+    return uint64Hash((uint64_t) key);
+#endif    
 }
 

@@ -134,7 +134,7 @@ BTLink *BTLink_add(BTLink * self, tipId_t key, double value) {
 /// Return value corresponding to key, or nan if no value is found.
 double BTLink_get(BTLink * self, tipId_t key) {
     if(self == NULL || key < self->key)
-        return nan(NULL);
+        return nan("");
     else if(key > self->key)
         return BTLink_get(self->next, key);
     assert(key == self->key);
