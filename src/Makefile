@@ -27,8 +27,12 @@ warn := \
  -Wno-unused-parameter \
  -Wno-unused-function \
  -Wshadow \
- -Wwrite-strings \
- -Wno-nullability-completeness
+ -Wwrite-strings
+
+# MacOS only
+ifeq ($(shell uname -s), Darwin)
+  warn +=  -Wno-nullability-completeness
+endif
 
 # Abort on integer overflow or underflow
 ubsan =

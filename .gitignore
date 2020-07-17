@@ -4,6 +4,7 @@ bepe
 booma
 clic
 core
+comb
 daf
 depend
 doc
@@ -27,6 +28,7 @@ tabpat
 tabpat.log
 try
 xaddrparmap
+xbepe
 xbinary
 xbooma
 xboot
@@ -84,3 +86,4 @@ xtokenizer
 xuintqueue
 xu64u64map
 xwraparound
+

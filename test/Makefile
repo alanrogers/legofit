@@ -30,8 +30,12 @@ warn := \
  -Wno-unused-parameter \
  -Wno-unused-function \
  -Wshadow \
- -Wwrite-strings  \
- -Wno-nullability-completeness
+ -Wwrite-strings
+
+# MacOS only
+ifeq ($(shell uname -s), Darwin)
+  warn +=  -Wno-nullability-completeness
+endif
 
 # Abort on integer overflow or underflow
 ifeq ($(shell uname -s), Darwin)
@@ -41,7 +45,7 @@ ifeq ($(shell uname -s), Darwin)
 else
     # gcc syntax
     #ubsan := -fsanitize=undefined -fno-sanitize-recover=undefined
-    ubsan := -fsanitize=undefined
+    ubsan := -fsanitize=undefined -fsanitize=signed-integer-overflow
 endif
 
 CFLAGS := -g -std=gnu99 $(warn) $(ubsan) $(incl) $(opt) $(prof) $(osargs)
