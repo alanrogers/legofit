@@ -32,6 +32,7 @@ static void  PopNode_printShallow(PopNode * self, FILE * fp);
 static void  PopNode_sanityCheck(PopNode * self, const char *file, int lineno);
 static void  PopNode_sanityFromLeaf(PopNode * self, const char *file, int line);
 static int   PopNode_nsamples(PopNode * self);
+static void  PopNode_duplicate_nodes(PopNode *old, PtrPtrMap *ppm);
 
 /// Check for errors in PopNode tree. Call this from each leaf node.
 static void PopNode_sanityFromLeaf(PopNode * self, const char *file, int line) {
@@ -120,9 +121,6 @@ void *PopNode_root(void * vself) {
 void PopNode_clear(PopNode * self) {
     assert(self);
     for(int i = 0; i < self->nchildren; ++i) {
-        if(NULL == self->child[i]) {
-            PopNode_printShallow(self, stderr);
-        }
         assert(self->child[i]);
         PopNode_clear(self->child[i]);
     }
@@ -606,6 +604,98 @@ void PopNode_shiftPopNodePtrs(PopNode * self, size_t dp, int sign) {
 
     for(i = 0; i < self->nchildren; ++i)
         SHIFT_PTR(self->child[i], dp, sign);
+}
+
+/// Duplicate a network of nodes, returning a pointer to the
+/// root of the duplicate network.
+PopNode *PopNode_dup2(PopNode *old_root) {
+    assert(old_root);
+    PtrPtrMap *ppm = PtrPtrMap_new();
+    PopNode_untouch(old_root);
+
+    // Traverse the old network, duplicating each node and
+    // storing the duplicates in ppm, which maps old nodes to
+    // new ones.
+    PopNode_duplicate_nodes(old_root, ppm);
+
+    // Put the old nodes into an array.
+    unsigned nnodes = PtrPtrMap_size(ppm);
+    PopNode *old_nodes[nnodes];
+    int status = PtrPtrMap_keys(ppm, nnodes, old_nodes);
+    if(status) {
+        fprintf(stderr,"%s:%d: buffer overflow\n",__FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
+
+    PopNode *node, *new_root=NULL;
+
+    // Connect each node to its parents and children,
+    // and identify the root of the duplicated network.
+    for(unsigned i=0; i < nnodes; ++i) {
+        PopNode *old = old_nodes[i];
+        PopNode *new = PtrPtrMap_get(ppm, old, &status);
+        assert(status == 0);
+
+        // root is the node with no parents
+        if(old->nparents == 0) {
+            assert(new_root = NULL);
+            new_root = new;
+        }
+
+        // connect new node to its parents
+        if(old->nparents > 0) {
+            node = PtrPtrMap_get(ppm, old->parent[0], &status);
+            assert(status == 0);
+            new->parent[0] = node;
+        }
+        if(old->nparents > 1) {
+            node = PtrPtrMap_get(ppm, old->parent[1], &status);
+            assert(status == 0);
+            new->parent[1] = node;
+        }
+
+        // connect new node to its children
+        if(old->nchildren > 0) {
+            node = PtrPtrMap_get(ppm, old->child[0], &status);
+            assert(status == 0);
+            new->child[0] = node;
+        }
+        if(old->nchildren > 1) {
+            node = PtrPtrMap_get(ppm, old->child[1], &status);
+            assert(status == 0);
+            new->child[1] = node;
+        }
+    }
+
+    PtrPtrMap_free(ppm);
+    PopNode_untouch(old_root);
+
+    return new_root;
+}
+
+/// Traverse tree, making a duplicate of each node, and putting
+/// the duplicates into a hash map (called ppm) in which the old
+/// node is the key and the new duplicate is the value associated
+/// with that key.
+static void PopNode_duplicate_nodes(PopNode *old, PtrPtrMap *ppm) {
+    assert(old);
+    if(old->touched)
+        return;
+
+    if(old->nsamples > 0) {
+        fprintf(stderr,"%s:%d: Must call PopNode_clear before %s\n",
+                __FILE__,__LINE__,__func__);
+        exit(EXIT_FAILURE);
+    }
+    PopNode *new = memdup(old);
+    CHECKMEM(new);
+    old->touched = 1;
+    int status = PtrPtrMap_insert(ppm, old, new);
+    assert(status==0);
+    if(old->nchildren > 0)
+        PopNode_duplicate_nodes(old->child[0], ppm);
+    if(old->nchildren > 1)
+        PopNode_duplicate_nodes(old->child[1], ppm);
 }
 
 #ifdef TEST
