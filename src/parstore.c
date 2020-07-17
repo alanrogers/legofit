@@ -78,8 +78,10 @@ ParStore *ParStore_new(PtrQueue *fixedQ, PtrQueue *freeQ, PtrQueue *constrQ) {
     self->nConstr = PtrQueue_size(constrQ);
     self->nPar = self->nFixed + self->nFree + self->nConstr;
 
-    self->par = malloc(self->nPar * sizeof(Param));
+    size_t size = self->nPar * sizeof(Param);
+    self->par = malloc( size );
     CHECKMEM(self->par);
+    memset(self->par, 0, size );
 
     self->free = self->par;
     self->fixed = self->free + self->nFree;
@@ -88,6 +90,7 @@ ParStore *ParStore_new(PtrQueue *fixedQ, PtrQueue *freeQ, PtrQueue *constrQ) {
     // Param_move copies par into self->par.
     for(unsigned i=0; i < self->nFree; ++i) {
         Param *par = PtrQueue_pop(freeQ);
+        assert(par);
         assert(FREE & par->type);
         Param_move(self->free+i, par);
         free(par);
@@ -106,6 +109,7 @@ ParStore *ParStore_new(PtrQueue *fixedQ, PtrQueue *freeQ, PtrQueue *constrQ) {
     
     for(unsigned i=0; i < self->nConstr; ++i) {
         Param *par = PtrQueue_pop(constrQ);
+        assert(par);
         assert(CONSTRAINED & par->type);
         Param_move(self->constr+i, par);
     }
@@ -168,8 +172,10 @@ ParStore *ParStore_dup(const ParStore * old) {
     new->nConstr = old->nConstr;
     new->nPar = old->nPar;
 
-    new->par = malloc(new->nPar * sizeof(Param));
+    size_t size = new->nPar * sizeof(Param);
+    new->par = malloc( size );
     CHECKMEM(new->par);
+    memset(new->par, 0, size);
 
     new->free = new->par;
     new->fixed = new->free + new->nFree;

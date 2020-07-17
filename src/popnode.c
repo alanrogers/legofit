@@ -118,11 +118,12 @@ void *PopNode_root(void * vself) {
 /// Doesn't free the Gene objects, because they aren't owned by
 /// PopNode. Sets "visited" to 0 in every node.
 void PopNode_clear(PopNode * self) {
-    int         i;
-    for(i = 0; i < self->nchildren; ++i) {
+    assert(self);
+    for(int i = 0; i < self->nchildren; ++i) {
         if(NULL == self->child[i]) {
             PopNode_printShallow(self, stderr);
         }
+        assert(self->child[i]);
         PopNode_clear(self->child[i]);
     }
 
@@ -748,7 +749,9 @@ int main(int argc, char **argv) {
     assert(root != NULL);
 
     assert(!PopNode_isClear(abc));
+    fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
     PopNode_clear(abc);
+    fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
     assert(PopNode_isClear(abc));
 
     assert(abc == PopNode_root(a));

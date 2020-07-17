@@ -145,7 +145,9 @@ void GPTree_patprob(void * vself, BranchTab * branchtab, gsl_rng * rng,
     GPTree *self = vself;
     unsigned long rep;
     for(rep = 0; rep < nreps; ++rep) {
+        fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
         PopNode_clear(self->rootPop);   // remove old samples
+        fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
 
         // Put samples into the gene tree. This allocates memory for
         // each Gene in the sample and puts pointers to them into the
@@ -217,7 +219,9 @@ void GPTree_free(void * vself) {
     GPTree *self = vself;
     Gene_free(self->rootGene);
     self->rootGene = NULL;
+    fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
     PopNode_clear(self->rootPop);
+    fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
     self->rootPop = NULL;
     free(self->pnv);
     ParStore_free(self->parstore);
@@ -262,11 +266,10 @@ void *GPTree_dup(const void * vold) {
 
     /*
      * Adjust the pointers so they refer to the memory allocated in
-     * "new" rather than that in "old".  dpar is the absolute offset
-     * between new and old for parameter pointers.  dpop is the
-     * analogous offset for PopNode pointers. spar and spop are the
-     * signs of these offsets. Everything has to be cast to size_t,
-     * because we are not doing pointer arithmetic in the usual
+     * "new" rather than that in "old".  dpop is the absolute offset
+     * between new and old for PopNode pointers.  spop is the sign of
+     * this offset. Everything has to be cast to size_t, because we
+     * are not doing pointer arithmetic in the usual
      * sense. Ordinarily, ptr+3 means ptr + 3*sizeof(*ptr). We want it
      * to mean ptr+3*sizeof(char).
      */

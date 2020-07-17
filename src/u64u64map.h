@@ -5,6 +5,7 @@
 
 #define MAPTYPE U64U64Map
 #define KEYTYPE uint64_t
+#define KEYCAST uint64_t
 #define VALTYPE uint64_t
 #define HASH uint64Hash
 #define HASH_DIM 1024ul

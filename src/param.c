@@ -158,8 +158,7 @@ void Param_move(Param *to, Param *from) {
     assert(from);
     Param_freePtrs(to);
     memcpy(to, from, sizeof(Param));
-    from->name = from->formula = NULL;
-    from->constr = NULL;
+    memset(from, 0, sizeof(Param));
 }
 
 /// Copy from into to, but don't copy from->constr, which
@@ -212,6 +211,7 @@ void Param_constrain(Param *par) {
 
 // frees only memory allocated within Param, not Param itself
 void Param_freePtrs(Param *self) {
+    assert(self);
     if(self->name)
         free(self->name);
     if(self->formula)

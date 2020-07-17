@@ -19,7 +19,6 @@ uint32_t    uint64Hash(uint64_t key);
 uint32_t    uint32Hash(uint32_t key ) __attribute__((no_sanitize("integer")));
 uint32_t    uint64Hash(uint64_t key) __attribute__((no_sanitize("integer")));
 #endif
-unsigned long ptrHash( const void * key);
 int         nlz(tipId_t x);
 int         nlz64(uint64_t x);
 static inline int isPow2(tipId_t x);

@@ -213,11 +213,4 @@ uint32_t uint64Hash(uint64_t key)
   return (uint32_t) key;
 }
 
-unsigned long ptrHash( const void * key) {
-#if TIPID_SIZE == 32    
-    return uint32Hash((uint32_t) key);
-#else
-    return uint64Hash((uint64_t) key);
-#endif    
-}
 

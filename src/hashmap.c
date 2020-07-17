@@ -132,7 +132,7 @@ VALTYPE FUNC(MAPTYPE, get)(MAPTYPE * self, const KEYTYPE key, int *status) {
 
     // Same as hash % HASH_DIM but faster. Requires
     // that HASH_DIM be a power of 2.
-    unsigned long h = HASH(key) & (HASH_DIM-1ul);
+    unsigned long h = HASH( (KEYCAST) key) & (HASH_DIM-1ul);
     assert(h < HASH_DIM);
 
     assert(self);
@@ -158,7 +158,7 @@ int FUNC(MAPTYPE, insert)(MAPTYPE * self, KEYTYPE key, VALTYPE value) {
 
     // Same as hash % HASH_DIM but faster. Requires
     // that HASH_DIM be a power of 2.
-    unsigned long h = HASH(key) & (HASH_DIM-1ul);
+    unsigned long h = HASH( (KEYCAST) key) & (HASH_DIM-1ul);
     assert(h < HASH_DIM);
     int status;
 
