@@ -24,11 +24,12 @@ struct PopNode {
 int         PopNode_addChild(void * vparent, void * vchild);
 void        PopNode_clear(PopNode * self);
 Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng);
+PopNode    *PopNode_dup(PopNode *old_root);
 int         PopNode_feasible(const PopNode *self, Bounds bnd, int verbose);
 int         PopNode_isClear(const PopNode *self);
 int         PopNode_mix(void * vchild, int mix_i, void * vintrogressor,
                         void * vnative, ParStore *ps);
-void       *PopNode_new(int twoN_i, int start_i, ParStore *ps, NodeStore * ns);
+void       *PopNode_new(int twoN_i, int start_i, ParStore *ps);
 void        PopNode_newGene(PopNode * self, unsigned ndx);
 void        PopNode_print(FILE * fp, void * vself, int indent);
 void       *PopNode_root(void * vself);

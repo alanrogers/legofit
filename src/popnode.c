@@ -17,7 +17,6 @@
 #include "popnode.h"
 #include "gene.h"
 #include "misc.h"
-#include "nodestore.h"
 #include "parstore.h"
 #include "error.h"
 #include <stdbool.h>
@@ -205,8 +204,8 @@ void PopNode_unvisit(PopNode *self) {
 }
 
 /// PopNode constructor
-void *PopNode_new(int twoN_i, int start_i, ParStore *ps, NodeStore * ns) {
-    PopNode    *self = NodeStore_alloc(ns);
+void *PopNode_new(int twoN_i, int start_i, ParStore *ps) {
+    PopNode    *self = malloc(sizeof(PopNode));
     CHECKMEM(self);
 
     memset(self, 0, sizeof(*self));
@@ -595,23 +594,12 @@ int PopNode_feasible(const PopNode * self, Bounds bnd, int verbose) {
     return 1;
 }
 
-/// Add dp to each PopNode pointer, using ordinary (not pointer)
-/// arithmetic.
-void PopNode_shiftPopNodePtrs(PopNode * self, size_t dp, int sign) {
-    int         i;
-    for(i = 0; i < self->nparents; ++i)
-        SHIFT_PTR(self->parent[i], dp, sign);
-
-    for(i = 0; i < self->nchildren; ++i)
-        SHIFT_PTR(self->child[i], dp, sign);
-}
-
 /// Duplicate a network of nodes, returning a pointer to the
 /// root of the duplicate network.
-PopNode *PopNode_dup2(PopNode *old_root) {
+PopNode *PopNode_dup(PopNode *old_root) {
     assert(old_root);
     PtrPtrMap *ppm = PtrPtrMap_new();
-    PopNode_untouch(old_root);
+    PopNode_clear(old_root);
 
     // Traverse the old network, duplicating each node and
     // storing the duplicates in ppm, which maps old nodes to
@@ -668,7 +656,6 @@ PopNode *PopNode_dup2(PopNode *old_root) {
     }
 
     PtrPtrMap_free(ppm);
-    PopNode_untouch(old_root);
 
     return new_root;
 }
@@ -762,9 +749,6 @@ int main(int argc, char **argv) {
         ParStore_print(ps, stderr);
 
     int         nseg = 7;
-    PopNode     v[nseg];
-    NodeStore  *ns = NodeStore_new(nseg, sizeof(v[0]), v);
-    CHECKMEM(ns);
 
     PopNode *a, *b, *b2, *c, *c2, *ab, *abc;
     int ni, ti, mi;
@@ -780,19 +764,19 @@ int main(int argc, char **argv) {
     ti = ParStore_getIndex(ps, "zero");
     assert(ti >= 0);
 
-    a = PopNode_new(ni, ti, ps, ns);
+    a = PopNode_new(ni, ti, ps);
     assert(a);
 
-    b = PopNode_new(ni, ti, ps, ns);
+    b = PopNode_new(ni, ti, ps);
     assert(b);
 
-    c = PopNode_new(ni, ti, ps, ns);
+    c = PopNode_new(ni, ti, ps);
     assert(c);
     
     ti = ParStore_getIndex(ps, "Tmig");
     assert(ti >= 0);
-    b2 = PopNode_new(ni, ti, ps, ns);
-    c2 = PopNode_new(ni, ti, ps, ns);
+    b2 = PopNode_new(ni, ti, ps);
+    c2 = PopNode_new(ni, ti, ps);
     assert(b2);
     assert(c2);
 
@@ -800,14 +784,14 @@ int main(int argc, char **argv) {
     assert(ni >= 0);
     ti = ParStore_getIndex(ps, "Tab");
     assert(ti >= 0);
-    ab = PopNode_new(ni, ti, ps, ns);
+    ab = PopNode_new(ni, ti, ps);
     assert(ab);
 
     ni = ParStore_getIndex(ps, "Nabc");
     assert(ni >= 0);
     ti = ParStore_getIndex(ps, "Tabc");
     assert(ti >= 0);
-    abc = PopNode_new(ni, ti, ps, ns);
+    abc = PopNode_new(ni, ti, ps);
     assert(abc);
     
     status = PopNode_addChild(ab, a);
@@ -867,7 +851,6 @@ int main(int argc, char **argv) {
 
     unitTstResult("PopNode", "OK");
 
-    NodeStore_free(ns);
     ParStore_free(ps);
     gsl_rng_free(rng);
 
