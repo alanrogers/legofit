@@ -183,10 +183,10 @@ int num1bits(tipId_t x) {
 /// article: 
 /// https://gist.github.com/badboy/6267743
 /// This generates integer overflows, presumably by design.
-#ifdef __GNUC__
-uint32_t uint32Hash( uint32_t key ) {
-#else
+#ifdef __clang__
 uint32_t uint32Hash( uint32_t key ) __attribute__((no_sanitize("integer"))){
+#else
+uint32_t uint32Hash( uint32_t key ) {
 #endif
    key = (key+0x7ed55d16) + (key<<12);
    key = (key^0xc761c23c) ^ (key>>19);
