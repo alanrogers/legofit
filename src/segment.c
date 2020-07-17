@@ -26,7 +26,7 @@ typedef struct CombDat CombDat;
 typedef struct SetPartDat SetPartDat;
 
 // For assigning initial tipId_t values within segments.
-static tipIt_t currTipId = 0;
+static tipId_t currTipId = 0;
 
 // Data manipulated by visitComb function
 struct CombDat {

@@ -1,10 +1,9 @@
 #ifndef ARR_SETPART_H
 #define ARR_SETPART_H
 
+#include "typedefs.h"
 #include <stdio.h>
 #include <stdint.h>
-
-typedef struct Stirling2 Stirling2;
 
 uint64_t      stirling2(uint32_t n, uint32_t k);
 long double   lnCoalConst(unsigned n, unsigned k);

@@ -71,7 +71,7 @@ int PtrVec_resize(PtrVec *self, unsigned size) {
     }else{
         void *old = self->buff;
         self->buff = realloc(self->buff, size);
-        if(self->buff = NULL) {
+        if(self->buff == NULL) {
             if(old)
                 free(old);
             return ENOMEM;

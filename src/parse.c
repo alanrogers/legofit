@@ -64,6 +64,7 @@
 #include "lblndx.h"
 #include "misc.h"
 #include "network.h"
+#include "nodestore.h"
 #include "param.h"
 #include "parse.h"
 #include "parstore.h"
@@ -887,7 +888,6 @@ int main(int argc, char **argv) {
     SampNdx_init(&sndx);
     LblNdx lndx;
     LblNdx_init(&lndx);
-    ParStore *parstore = ParStore_new();    // parameters
     Bounds bnd = {
         .lo_twoN = 0.0,
         .hi_twoN = 1e7,
@@ -903,12 +903,16 @@ int main(int argc, char **argv) {
     rewind(fp);
 
     PopNode nodeVec[nseg];
-    PopNode *root = NULL;
+    PopNode *root;
+    ParStore *parstore;
 
     {
         NodeStore *ns = NodeStore_new(nseg, sizeof(nodeVec[0]), nodeVec);
-        root = mktree(fp, &sndx, &lndx, parstore, &bnd, ns);
+        PtrPair pp = mktree(fp, &sndx, &lndx, &bnd, ns);
+        root = pp.a;
+        parstore = pp.b;
         assert(root != NULL);
+        assert(parstore != NULL);
         NodeStore_free(ns);
     }
 

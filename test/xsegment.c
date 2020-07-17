@@ -47,13 +47,13 @@ int main(int argc, char *argv[]) {
     CHECKMEM(ns);
 
 
-    s[0] = Segment_new(&twoN, &t0, ns);
-    s[1] = Segment_new(&twoN, &t0, ns);
-    s[2] = Segment_new(&twoN, &t0, ns);
-    s[3] = Segment_new(&twoN, &t1, ns);
-    s[4] = Segment_new(&twoN, &t1, ns);
-    s[5] = Segment_new(&twoN, &t2, ns);
-    s[6] = Segment_new(&twoN, &t3, ns);
+    s[0] = Segment_new(&twoN, &t0, 0, ns);
+    s[1] = Segment_new(&twoN, &t0, 0, ns);
+    s[2] = Segment_new(&twoN, &t0, 0, ns);
+    s[3] = Segment_new(&twoN, &t1, 0, ns);
+    s[4] = Segment_new(&twoN, &t1, 0, ns);
+    s[5] = Segment_new(&twoN, &t2, 0, ns);
+    s[6] = Segment_new(&twoN, &t3, 0, ns);
 
     for(i=0; i<nseg; ++i) {
         assert(s[i]->twoN == &twoN);
