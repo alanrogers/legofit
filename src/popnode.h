@@ -34,5 +34,6 @@ void        PopNode_print(FILE * fp, void * vself, int indent);
 void       *PopNode_root(void * vself);
 void        PopNode_update(PopNode *self, ParStore *ps);
 void        PopNode_unvisit(PopNode *self);
+void        PopNode_shiftPopNodePtrs(PopNode *self, size_t dp, int sign);
 
 #endif

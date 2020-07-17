@@ -72,6 +72,7 @@ void PtrQueue_push(PtrQueue *self, void *ptr) {
         self->head = self->tail;
 }
 
+// Return next pointer or NULL if there are no more.
 void *PtrQueue_pop(PtrQueue *self) {
     void *ptr;
     self->head = El_pop(self->head, &ptr);

@@ -597,6 +597,17 @@ int PopNode_feasible(const PopNode * self, Bounds bnd, int verbose) {
     return 1;
 }
 
+/// Add dp to each PopNode pointer, using ordinary (not pointer)
+/// arithmetic.
+void PopNode_shiftPopNodePtrs(PopNode * self, size_t dp, int sign) {
+    int         i;
+    for(i = 0; i < self->nparents; ++i)
+        SHIFT_PTR(self->parent[i], dp, sign);
+
+    for(i = 0; i < self->nchildren; ++i)
+        SHIFT_PTR(self->child[i], dp, sign);
+}
+
 #ifdef TEST
 
 #  include "ptrqueue.h"

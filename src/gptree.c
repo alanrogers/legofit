@@ -219,9 +219,7 @@ void GPTree_free(void * vself) {
     GPTree *self = vself;
     Gene_free(self->rootGene);
     self->rootGene = NULL;
-    fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
     PopNode_clear(self->rootPop);
-    fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
     self->rootPop = NULL;
     free(self->pnv);
     ParStore_free(self->parstore);
@@ -285,6 +283,9 @@ void *GPTree_dup(const void * vold) {
     }
 
     SHIFT_PTR(new->rootPop, dpop, spop);
+    for(int i=0; i < new->nseg; ++i)
+        PopNode_shiftPopNodePtrs(new->pnv + i, dpop, spop);
+    
     SampNdx_shiftPtrs(&new->sndx, dpop, spop);
     assert(SampNdx_ptrsLegal(&new->sndx, new->pnv, new->pnv + new->nseg));
     assert(PopNode_isClear(new->rootPop));

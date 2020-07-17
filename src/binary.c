@@ -198,11 +198,10 @@ uint32_t uint32Hash( uint32_t key ) __attribute__((no_sanitize("integer"))){
 }
 
 /// Hash function for a 64-bit integer.
-#ifdef __GNUC__
-uint32_t uint64Hash(uint64_t key) {
+#ifdef __clang__
+uint32_t uint64Hash(uint64_t key) __attribute__((no_sanitize("integer"))){
 #else
-uint32_t uint64Hash(uint64_t key)
-    __attribute__((no_sanitize("integer"))){
+uint32_t uint64Hash(uint64_t key) {
 #endif
   key = (~key) + (key << 18);
   key = key ^ (key >> 31);
