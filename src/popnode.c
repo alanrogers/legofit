@@ -921,7 +921,7 @@ int main(int argc, char **argv) {
     assert(PopNode_feasible(abc, bnd, verbose));
     PopNode *duproot = PopNode_dup(abc);
     CHECKMEM(duproot);
-    assert(PopNode_feasible(duproot);
+    assert(PopNode_feasible(duproot));
     Gene_free(root);
 
     unitTstResult("PopNode", "OK");
