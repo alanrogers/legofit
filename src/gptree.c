@@ -33,7 +33,6 @@ extern pthread_mutex_t outputLock;
 /// coalescent simulation.
 struct GPTree {
     int         nseg;           // number of segments in population tree.
-    PopNode    *pnv;            // array of nseg PopNode objects
     PopNode    *rootPop;        // root of population tree
     Gene       *rootGene;       // root of gene tree
     Bounds      bnd;            // legal range of twoN parameters and time pars
@@ -196,7 +195,7 @@ void *GPTree_new(const char *fname, Bounds bnd) {
                                    self->pnv);
     CHECKMEM(ns);
 
-    PtrPair pp = mktree(fp, &self->sndx, &self->lblndx, &self->bnd, ns);
+    PtrPair pp = mktree(fp, &self->sndx, &self->lblndx, &self->bnd);
 
     self->rootPop = pp.a;
     self->parstore = pp.b;
@@ -220,8 +219,7 @@ void GPTree_free(void * vself) {
     Gene_free(self->rootGene);
     self->rootGene = NULL;
     PopNode_clear(self->rootPop);
-    self->rootPop = NULL;
-    free(self->pnv);
+    PopNode_free(self->rootPop);
     ParStore_free(self->parstore);
     free(self);
 }

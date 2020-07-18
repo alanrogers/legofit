@@ -18,6 +18,7 @@
 #include "gene.h"
 #include "misc.h"
 #include "parstore.h"
+#include "ptrptrmap.h"
 #include "error.h"
 #include <stdbool.h>
 #include <string.h>
@@ -26,12 +27,28 @@
 #include <gsl/gsl_randist.h>
 
 static void  PopNode_addSample(PopNode * self, Gene * gene);
-static void  PopNode_free(PopNode * self);
 static void  PopNode_printShallow(PopNode * self, FILE * fp);
 static void  PopNode_sanityCheck(PopNode * self, const char *file, int lineno);
 static void  PopNode_sanityFromLeaf(PopNode * self, const char *file, int line);
 static int   PopNode_nsamples(PopNode * self);
 static void  PopNode_duplicate_nodes(PopNode *old, PtrPtrMap *ppm);
+static void  unlink_child(PopNode *child, PopNode *parent);
+
+struct PopNode {
+    int         visited; // has the coalescent visited this node yet?
+    int         nparents, nchildren, nsamples;
+    double      twoN;            // haploid pop size
+    double      start, end;      // duration of this PopNode
+    double      mix;             // frac of pop derived from parent[1]
+
+    // indices into ParStore array
+    int twoN_i, start_i, end_i, mix_i;
+
+    struct PopNode *parent[2];
+    struct PopNode *child[2];
+
+    Gene       *sample[MAXSAMP]; // not locally owned
+};
 
 /// Check for errors in PopNode tree. Call this from each leaf node.
 static void PopNode_sanityFromLeaf(PopNode * self, const char *file, int line) {
@@ -480,6 +497,7 @@ Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng) {
             Gene_addToBranch(self->sample[i], x);
         t = end;                // may be infinite
     }
+
     // If we have both samples and parents, then move samples to parents
     if(self->nsamples > 0 && self->nparents > 0) {
         assert(t == end);
@@ -513,8 +531,60 @@ Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng) {
     return (self->nsamples == 1 ? self->sample[0] : NULL);
 }
 
-/// Free node but not descendants
-static void PopNode_free(PopNode * self) {
+/// Remove child from parent
+static void unlink_child(PopNode *child, PopNode *parent) {
+    switch(parent->nchildren) {
+    case 1:
+        assert(child == parent->child[0]);
+        parent->child[0] = NULL;
+        parent->nchildren = 0;
+        break;
+    case 2:
+        if(parent->child[1] == child)
+            parent->child[1] = NULL;
+        else {
+            assert(parent->child[0] == child);
+            parent->child[0] = parent->child[1];
+            parent->child[1] = NULL;
+        }
+        parent->nchildren = 1;
+        break;
+    default:
+        fprintf(stderr,"%s:%d: illegal number of children: %d\n",
+                __FILE__,__LINE__, parent->nchildren);
+        exit(EXIT_FAILURE);
+    }
+}
+
+/// Free node and descendants.
+void PopNode_free(PopNode * self) {
+    if(self == NULL)
+        return;
+
+    // Recursive descent into children can't be inside a switch
+    // on nchildren, because the free operation on children changes
+    // self->nchildren.
+    if(self->nchildren > 1)
+        PopNode_free(self->child[1]);
+    if(self->nchildren > 0)
+        PopNode_free(self->child[0]);
+    assert(self->nchildren == 0);
+
+    // unlink current node from its parents
+    switch(self->nparents) {
+    case 1:
+        unlink_child(self, self->parent[0]);
+        break;
+    case 2:
+        unlink_child(self, self->parent[0]);
+        unlink_child(self, self->parent[1]);
+        break;
+    default:
+        fprintf(stderr,"%s:%d: illegal number of parents: %d\n",
+                __FILE__,__LINE__, self->nparents);
+        exit(EXIT_FAILURE);
+    }
+    
     free(self);
 }
 
@@ -608,7 +678,7 @@ PopNode *PopNode_dup(PopNode *old_root) {
 
     // Put the old nodes into an array.
     unsigned nnodes = PtrPtrMap_size(ppm);
-    PopNode *old_nodes[nnodes];
+    void *old_nodes[nnodes];
     int status = PtrPtrMap_keys(ppm, nnodes, old_nodes);
     if(status) {
         fprintf(stderr,"%s:%d: buffer overflow\n",__FILE__,__LINE__);
@@ -666,7 +736,7 @@ PopNode *PopNode_dup(PopNode *old_root) {
 /// with that key.
 static void PopNode_duplicate_nodes(PopNode *old, PtrPtrMap *ppm) {
     assert(old);
-    if(old->touched)
+    if(old->visited)
         return;
 
     if(old->nsamples > 0) {
@@ -674,9 +744,9 @@ static void PopNode_duplicate_nodes(PopNode *old, PtrPtrMap *ppm) {
                 __FILE__,__LINE__,__func__);
         exit(EXIT_FAILURE);
     }
-    PopNode *new = memdup(old);
+    PopNode *new = memdup(old, sizeof(*old));
     CHECKMEM(new);
-    old->touched = 1;
+    old->visited = 1;
     int status = PtrPtrMap_insert(ppm, old, new);
     assert(status==0);
     if(old->nchildren > 0)
@@ -847,6 +917,11 @@ int main(int argc, char **argv) {
     assert(abc == PopNode_root(ab));
     assert(abc == PopNode_root(abc));
 
+    PopNode_clear(abc);
+    assert(PopNode_feasible(abc, bnd, verbose));
+    PopNode *duproot = PopNode_dup(abc);
+    CHECKMEM(duproot);
+    assert(PopNode_feasible(duproot);
     Gene_free(root);
 
     unitTstResult("PopNode", "OK");

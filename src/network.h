@@ -31,8 +31,7 @@ EXTERN int         (*Network_setParams)(void *self, int n, double x[n]);
 EXTERN void        (*Network_initStateVec)(void *gpt, int ndx, int n,
                                            double x[n], gsl_rng *rng);
 
-EXTERN void       *(*Node_new)(int twoN_i, int start_i, ParStore *ps,
-                               NodeStore *ns);
+EXTERN void       *(*Node_new)(int twoN_i, int start_i, ParStore *ps);
 EXTERN int         (*Node_addChild)(void * parent, void * child);
 EXTERN int         (*Node_mix)(void * child, int mix_i, void * introgressor,
                                void * native, ParStore *ps);

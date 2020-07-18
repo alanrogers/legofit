@@ -64,7 +64,6 @@
 #include "lblndx.h"
 #include "misc.h"
 #include "network.h"
-#include "nodestore.h"
 #include "param.h"
 #include "parse.h"
 #include "parstore.h"
@@ -124,7 +123,7 @@ void parseParam(char *next, unsigned type, StrPtrMap *parmap,
                 Bounds * bnd, const char *orig);
 void parseSegment(char *next, StrPtrMap * popmap, SampNdx * sndx,
                   LblNdx * lndx, ParStore * parstore,
-                  NodeStore * ns, const char *orig);
+                  const char *orig);
 void parseDerive(char *next, StrPtrMap * popmap, ParStore * parstore,
                  const char *orig);
 void parseMix(char *next, StrPtrMap * popmap, ParStore * parstore,
@@ -322,10 +321,8 @@ void parseParam(char *next, unsigned ptype, StrPtrMap *parmap,
 /// @param[inout] lndx associated index of each sample with its name
 /// @param[out] parstore structure that maintains info about
 /// parameters
-/// @param[inout] ns allocates nodes
 void parseSegment(char *next, StrPtrMap * popmap, SampNdx * sndx,
-                  LblNdx * lndx, ParStore * parstore, NodeStore * ns,
-                  const char *orig) {
+                  LblNdx * lndx, ParStore * parstore, const char *orig) {
     char *popName, *tok;
     int start_i, twoN_i;
     unsigned long nsamples = 0;
@@ -408,7 +405,7 @@ void parseSegment(char *next, StrPtrMap * popmap, SampNdx * sndx,
     }
 
     assert(strlen(popName) > 0);
-    void *thisNode = Node_new(twoN_i, start_i, parstore, ns);
+    void *thisNode = Node_new(twoN_i, start_i, parstore);
     if(0 != StrPtrMap_insert(popmap, popName, thisNode)) {
         fprintf(stderr, "%s:%d: duplicate \"segment %s\"\n",
                 __FILE__, __LINE__, popName);
@@ -621,9 +618,7 @@ int get_one_line(size_t n, char buff[n], FILE * fp) {
 /// @param[out] parstore structure that maintains info about
 /// parameters
 /// @param[in] bnd the bounds of each type of parameter
-/// @param[inout] ns allocates nodes
-PtrPair mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, Bounds * bnd,
-               NodeStore * ns) {  
+PtrPair mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, Bounds * bnd) {  
     char orig[500], buff[500], buff2[500];
     char *token, *next;
     ParStore *parstore = NULL;
@@ -706,7 +701,7 @@ PtrPair mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, Bounds * bnd,
                 PtrQueue_free(constrQ);
                 fixedQ = freeQ = constrQ = NULL;
             }
-            parseSegment(next, popmap, sndx, lndx, parstore, ns, orig);
+            parseSegment(next, popmap, sndx, lndx, parstore, orig);
         } else if(0 == strcmp(token, "mix")) {
             if(parstore == NULL)
                ORDER_ERROR("mix");
@@ -907,13 +902,11 @@ int main(int argc, char **argv) {
     ParStore *parstore;
 
     {
-        NodeStore *ns = NodeStore_new(nseg, sizeof(nodeVec[0]), nodeVec);
-        PtrPair pp = mktree(fp, &sndx, &lndx, &bnd, ns);
+        PtrPair pp = mktree(fp, &sndx, &lndx, &bnd);
         root = pp.a;
         parstore = pp.b;
         assert(root != NULL);
         assert(parstore != NULL);
-        NodeStore_free(ns);
     }
 
     if(verbose) {

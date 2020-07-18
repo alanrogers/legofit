@@ -5,27 +5,12 @@
 #  include <stdbool.h>
 #  include <gsl/gsl_rng.h>
 
-struct PopNode {
-    int         visited; // has the coalescent visited this node yet?
-    int         nparents, nchildren, nsamples;
-    double      twoN;            // haploid pop size
-    double      start, end;      // duration of this PopNode
-    double      mix;             // frac of pop derived from parent[1]
-
-    // indices into ParStore array
-    int twoN_i, start_i, end_i, mix_i;
-
-    struct PopNode *parent[2];
-    struct PopNode *child[2];
-
-    Gene       *sample[MAXSAMP]; // not locally owned
-};
-
 int         PopNode_addChild(void * vparent, void * vchild);
 void        PopNode_clear(PopNode * self);
 Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng);
 PopNode    *PopNode_dup(PopNode *old_root);
 int         PopNode_feasible(const PopNode *self, Bounds bnd, int verbose);
+void        PopNode_free(PopNode *self);
 int         PopNode_isClear(const PopNode *self);
 int         PopNode_mix(void * vchild, int mix_i, void * vintrogressor,
                         void * vnative, ParStore *ps);
