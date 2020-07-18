@@ -128,7 +128,7 @@ void parseDerive(char *next, StrPtrMap * popmap, ParStore * parstore,
                  const char *orig);
 void parseMix(char *next, StrPtrMap * popmap, ParStore * parstore,
               const char *orig);
-int get_one_line(size_t n, char buff[n], FILE * fp);
+static int get_one_line(size_t n, char buff[n], FILE * fp);
 
 /// Interpret token i as a double.
 /// @param[out] x points to variable into which double value will be
@@ -584,7 +584,7 @@ void parseMix(char *next, StrPtrMap * popmap, ParStore * parstore,
 
 // Read a line into buff, skipping blank lines; strip comments and
 // trailing whitespace.  Return 0 on success; EOF on end of file.
-int get_one_line(size_t n, char buff[n], FILE * fp) {
+static int get_one_line(size_t n, char buff[n], FILE * fp) {
     do{
         if(fgets(buff, n, fp) == NULL)
             return EOF;
@@ -662,6 +662,8 @@ PtrPair mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, Bounds * bnd) {
             strcat(buff, " "); // add space after operator
             strcat(buff, buff2);
         }
+
+        collapse_whitespace(buff);
 
         snprintf(orig, sizeof orig, "%s", buff);
 

@@ -9,7 +9,6 @@
 
 #include "segment.h"
 #include "misc.h"
-#include "nodestore.h"
 #include "error.h"
 #include <stdio.h>
 #include <string.h>

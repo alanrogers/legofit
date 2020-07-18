@@ -758,3 +758,29 @@ int strchrcnt(const char *s, int c) {
     }
     return n;
 }
+
+// Replace multiple whitespace characters with a single space
+// in buff.
+void collapse_whitespace(char * buff) {
+    char *w, *r;
+    int nsp = 0;
+    w = r = buff;
+    while(*r != '\0') {
+        if(isspace(*r)) {
+            if(nsp == 0) {
+                if(r>w)
+                    *w = ' ';
+                ++w;
+            }
+            ++r;
+            ++nsp;
+        }else{
+            nsp = 0;
+            if(r>w)
+                *w = *r;
+            ++r;
+            ++w;
+        }
+    }
+    *w = '\0';
+}

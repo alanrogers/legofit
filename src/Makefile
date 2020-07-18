@@ -61,8 +61,8 @@ test : $(tests)
 
 LEGOSIM := legosim.o addrparmap.o binary.o branchtab.o dprintf.o dtnorm.o \
    error.o gene.o gptree.o jobqueue.o lblndx.o network.o misc.o param.o \
-   parse.o parstore.o patprob.o popnode.o rngseed.o sampndx.o strparmap.o \
-   strptrmap.o tinyexpr.o tokenizer.o
+   parse.o parstore.o patprob.o popnode.o rngseed.o sampndx.o \
+   strptrmap.o tinyexpr.o tokenizer.o ptrptrmap.o ptrqueue.o strint.o
 legosim : $(LEGOSIM)
 	$(CC) $(CFLAGS) -o $@ $(LEGOSIM) $(lib)
 
@@ -70,14 +70,14 @@ LEGOFIT := legofit.o addrparmap.o binary.o branchtab.o cost.o diffev.o \
    dprintf.o dtnorm.o error.o gene.o gptree.o jobqueue.o lblndx.o misc.o \
    network.o param.o parse.o parseopf.o parstore.o patprob.o \
    pointbuff.o popnode.o rngseed.o sampndx.o simsched.o state.o \
-   strparmap.o strptrmap.o tinyexpr.o tokenizer.o
+   strptrmap.o tinyexpr.o tokenizer.o ptrptrmap.o ptrqueue.o strint.o
 legofit : $(LEGOFIT)
 	$(CC) $(CFLAGS) -o $@ $(LEGOFIT) $(lib)
 
 PCLGO := pclgo.o misc.o strdblqueue.o gptree.o parstore.o param.o popnode.o \
-  gene.o addrparmap.o branchtab.o lblndx.o strparmap.o dtnorm.o dprintf.o \
+  gene.o addrparmap.o branchtab.o lblndx.o dtnorm.o dprintf.o \
   tinyexpr.o tokenizer.o parse.o binary.o strptrmap.o sampndx.o network.o \
-  error.o
+  error.o ptrptrmap.o ptrqueue.o strint.o
 pclgo : $(PCLGO)
 	$(CC) $(CFLAGS) -o $@ $(PCLGO) $(lib)
 
@@ -153,11 +153,11 @@ TRY := try.o binary.o
 try : $(TRY)
 	$(CC) $(CFLAGS) -o $@ $(TRY) $(lib)
 
-ptrptrmap.o : ptrptrmap.c ptrptrmap.h hashmap.h hashmap.c
+ptrptrmap.o : ptrptrmap.c ptrptrmap.h hashmap.h hashmap.src
 
-ptru32map.o : ptru32map.c ptru32map.h hashmap.h hashmap.c
+ptru32map.o : ptru32map.c ptru32map.h hashmap.h hashmap.src
 
-u64u64map.o : u64u64map.c u64u64map.h hashmap.h hashmap.c
+u64u64map.o : u64u64map.c u64u64map.h hashmap.h hashmap.src
 
 # Make dependencies file
 depend : *.c *.h

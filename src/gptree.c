@@ -144,9 +144,7 @@ void GPTree_patprob(void * vself, BranchTab * branchtab, gsl_rng * rng,
     GPTree *self = vself;
     unsigned long rep;
     for(rep = 0; rep < nreps; ++rep) {
-        fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
         PopNode_clear(self->rootPop);   // remove old samples
-        fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
 
         // Put samples into the gene tree. This allocates memory for
         // each Gene in the sample and puts pointers to them into the
