@@ -188,12 +188,6 @@ void *GPTree_new(const char *fname, Bounds bnd) {
     FILE       *fp = efopen(fname, "r");
     self->nseg = countSegments(fp);
     rewind(fp);
-    self->pnv = malloc(self->nseg * sizeof(self->pnv[0]));
-    CHECKMEM(self->pnv);
-
-    NodeStore  *ns = NodeStore_new(self->nseg, sizeof(self->pnv[0]),
-                                   self->pnv);
-    CHECKMEM(ns);
 
     PtrPair pp = mktree(fp, &self->sndx, &self->lblndx, &self->bnd);
 
@@ -201,7 +195,6 @@ void *GPTree_new(const char *fname, Bounds bnd) {
     self->parstore = pp.b;
 
     fclose(fp);
-    NodeStore_free(ns);
     GPTree_sanityCheck(self, __FILE__, __LINE__);
     if(!GPTree_feasible(self, 1)) {
         fprintf(stderr,
@@ -253,39 +246,13 @@ void *GPTree_dup(const void * vold) {
     new->parstore = ParStore_dup(old->parstore);
     CHECKMEM(new->parstore);
 
-    new->pnv = memdup(old->pnv, old->nseg * sizeof(PopNode));
-    CHECKMEM(new->pnv);
-
     assert(old->nseg == new->nseg);
 
     new->sndx = old->sndx;
 
-    /*
-     * Adjust the pointers so they refer to the memory allocated in
-     * "new" rather than that in "old".  dpop is the absolute offset
-     * between new and old for PopNode pointers.  spop is the sign of
-     * this offset. Everything has to be cast to size_t, because we
-     * are not doing pointer arithmetic in the usual
-     * sense. Ordinarily, ptr+3 means ptr + 3*sizeof(*ptr). We want it
-     * to mean ptr+3*sizeof(char).
-     */
-    int         dpop, spop;
-
-    // Calculate offsets and signs
-    if(new->pnv > old->pnv) {
-        dpop = ((size_t) new->pnv) - ((size_t) old->pnv);
-        spop = 1;
-    } else {
-        dpop = ((size_t) old->pnv) - ((size_t) new->pnv);
-        spop = -1;
-    }
-
-    SHIFT_PTR(new->rootPop, dpop, spop);
-    for(int i=0; i < new->nseg; ++i)
-        PopNode_shiftPopNodePtrs(new->pnv + i, dpop, spop);
+    new->rootPop = PopNode_dup(old->rootPop);
+    CHECKMEM(new->rootPop);
     
-    SampNdx_shiftPtrs(&new->sndx, dpop, spop);
-    assert(SampNdx_ptrsLegal(&new->sndx, new->pnv, new->pnv + new->nseg));
     assert(PopNode_isClear(new->rootPop));
 
     GPTree_sanityCheck(new, __FILE__, __LINE__);
@@ -307,9 +274,6 @@ void GPTree_sanityCheck(void * vself, const char *file, int line) {
 #ifndef NDEBUG
     GPTree *self = vself;
     REQUIRE(self->nseg > 0, file, line);
-    REQUIRE(self->pnv != NULL, file, line);
-    REQUIRE(self->rootPop >= self->pnv, file, line);
-    REQUIRE(self->rootPop < self->pnv + self->nseg, file, line);
     Bounds_sanityCheck(&self->bnd, file, line);
     ParStore_sanityCheck(self->parstore, file, line);
     LblNdx_sanityCheck(&self->lblndx, file, line);
@@ -323,9 +287,8 @@ void GPTree_sanityCheck(void * vself, const char *file, int line) {
 int GPTree_equals(const GPTree * lhs, const GPTree * rhs) {
     if(lhs == rhs)
         return 0;
-    if(lhs->pnv == rhs->pnv)
-        eprintf("%s:%s:%d: two GPTree objects share a PopNode pointer\n",
-                __FILE__, __func__, __LINE__);
+    if(!PopNode_equals(lhs->rootPop, rhs->rootPop))
+        return 0
     if(lhs->parstore == rhs->parstore)
         eprintf("%s:%s:%d: two GPTree objects share a ParStore pointer\n",
                 __FILE__, __func__, __LINE__);

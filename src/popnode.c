@@ -696,7 +696,7 @@ PopNode *PopNode_dup(PopNode *old_root) {
 
         // root is the node with no parents
         if(old->nparents == 0) {
-            assert(new_root = NULL);
+            assert(new_root == NULL);
             new_root = new;
         }
 
@@ -818,7 +818,12 @@ int main(int argc, char **argv) {
     if(verbose)
         ParStore_print(ps, stderr);
 
-    int         nseg = 7;
+    Bounds bnd = {
+        .lo_twoN = 0.0,
+        .hi_twoN = 1e12,
+        .lo_t = 0,
+        .hi_t = 1e10
+    };
 
     PopNode *a, *b, *b2, *c, *c2, *ab, *abc;
     int ni, ti, mi;
@@ -904,9 +909,7 @@ int main(int argc, char **argv) {
     assert(root != NULL);
 
     assert(!PopNode_isClear(abc));
-    fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
     PopNode_clear(abc);
-    fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
     assert(PopNode_isClear(abc));
 
     assert(abc == PopNode_root(a));
@@ -921,7 +924,7 @@ int main(int argc, char **argv) {
     assert(PopNode_feasible(abc, bnd, verbose));
     PopNode *duproot = PopNode_dup(abc);
     CHECKMEM(duproot);
-    assert(PopNode_feasible(duproot));
+    assert(PopNode_feasible(duproot, bnd, verbose));
     Gene_free(root);
 
     unitTstResult("PopNode", "OK");

@@ -4,7 +4,6 @@
 #include "typedefs.h"
 
 int         countSegments(FILE * fp);
-PtrPair     mktree(FILE * fp, SampNdx *sndx, LblNdx *lndx, Bounds *bnd,
-                   NodeStore *ns);
+PtrPair     mktree(FILE * fp, SampNdx *sndx, LblNdx *lndx, Bounds *bnd);
 
 #endif
