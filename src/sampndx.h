@@ -19,6 +19,6 @@ unsigned    SampNdx_size(SampNdx * self);
 int         SampNdx_equals(const SampNdx *lhs, const SampNdx *rhs);
 void        SampNdx_sanityCheck(SampNdx *self, const char *file, int line);
 int         SampNdx_ptrsLegal(SampNdx * self, void * start, void * end);
-void        SampNdx_shiftPtrs(SampNdx *self, size_t dpop, int sign);
+void        SampNdx_remapPtrs(SampNdx *self, PtrPtrMap *ppm);
 
 #endif

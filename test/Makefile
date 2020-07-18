@@ -6,7 +6,7 @@ incl := -I/usr/local/include -I/opt/local/include -I../src
 tests := xaddrparmap xbinary xbooma xboot xbranchtab xcomb xdafreader \
   xdiffev \
   xdtnorm xerror xgene xgptree xhessian xidset xintpart \
-  xjobqueue xlblndx xlinereader xmigoutcome xmisc xmpfrmatcoal xnodestore \
+  xjobqueue xlblndx xlinereader xmigoutcome xmisc xmpfrmatcoal \
   xsimreader \
   xparam xparse xparseopf xparstore xpointbuff xpopnode xptrlst xptrptrmap \
   xptrqueue xptru32map \
@@ -80,7 +80,6 @@ test : $(tests)
 	-./xmigoutcome
 	-./xmisc
 	-./xmpfrmatcoal
-	-./xnodestore
 	-./xsimreader
 	-./xparam
 	-./xparse
@@ -130,7 +129,7 @@ XCOMB := xcomb.o comb.o misc.o
 xcomb : $(XCOMB)
 	$(CC) $(CFLAGS) -o $@ $(XCOMB) $(lib)
 
-XSEGMENT := xsegment.o misc.o nodestore.o segment.o idset.o binary.o error.o \
+XSEGMENT := xsegment.o misc.o segment.o idset.o binary.o error.o \
     branchtab.o lblndx.o tokenizer.o matcoal.o comb.o rational.o setpart.o
 xsegment : $(XSEGMENT)
 	$(CC) $(CFLAGS) -o $@ $(XSEGMENT) $(lib)
@@ -228,16 +227,10 @@ xrafreader : $(XRAFREADER)
 
 xsampndx.o : sampndx.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/sampndx.c
-XSAMPNDX := xsampndx.o misc.o
+
+XSAMPNDX := xsampndx.o misc.o ptrptrmap.o binary.o
 xsampndx : $(XSAMPNDX)
 	$(CC) $(CFLAGS) -o $@ $(XSAMPNDX) $(lib)
-
-xnodestore.o : nodestore.c
-	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/nodestore.c
-
-XNODESTORE := xnodestore.o misc.o
-xnodestore : $(XNODESTORE)
-	$(CC) $(CFLAGS) -o $@ $(XNODESTORE) $(lib)
 
 xbooma.o : booma.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/booma.c
@@ -270,7 +263,7 @@ xparse.o : parse.c
 XPARSE := xparse.o misc.o tokenizer.o gptree.o lblndx.o \
        branchtab.o network.o parstore.o popnode.o binary.o gene.o \
        dprintf.o dtnorm.o tinyexpr.o param.o addrparmap.o \
-       sampndx.o strptrmap.o nodestore.o ptrptrmap.o ptrqueue.o strint.o \
+       sampndx.o strptrmap.o ptrptrmap.o ptrqueue.o strint.o \
        error.o
 xparse : $(XPARSE)
 	$(CC) $(CFLAGS) -o $@ $(XPARSE) $(lib)
@@ -294,7 +287,7 @@ xpopnode.o : ../src/popnode.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/popnode.c
 
 XPOPNODE := xpopnode.o dtnorm.o misc.o gene.o parstore.o tinyexpr.o \
-   param.o branchtab.o nodestore.o ptrptrmap.o ptrqueue.o strint.o \
+   param.o branchtab.o ptrptrmap.o ptrqueue.o strint.o \
    binary.o
 xpopnode : $(XPOPNODE)
 	$(CC) $(CFLAGS) -o $@ $(XPOPNODE) $(lib)
@@ -309,7 +302,7 @@ xgptree.o : gptree.c
 XGPTREE := xgptree.o addrparmap.o misc.o branchtab.o parstore.o lblndx.o \
         tokenizer.o strptrmap.o gene.o param.o popnode.o binary.o \
         dprintf.o dtnorm.o parse.o tinyexpr.o sampndx.o \
-        nodestore.o network.o ptrptrmap.o ptrqueue.o strint.o error.o
+        network.o ptrptrmap.o ptrqueue.o strint.o error.o
 xgptree : $(XGPTREE)
 	$(CC) $(CFLAGS) -o $@ $(XGPTREE) $(lib)
 
@@ -353,7 +346,7 @@ xaddrparmap.o : addrparmap.c
 XADDRPARMAP := xaddrparmap.o misc.o param.o tinyexpr.o dtnorm.o gptree.o \
    parstore.o gene.o lblndx.o popnode.o branchtab.o \
    tokenizer.o parse.o binary.o strptrmap.o dprintf.o sampndx.o \
-   nodestore.o network.o ptrptrmap.o ptrqueue.o strint.o error.o
+   network.o ptrptrmap.o ptrqueue.o strint.o error.o
 xaddrparmap : $(XADDRPARMAP)
 	$(CC) $(CFLAGS) -o $@ $(XADDRPARMAP) $(lib)
 

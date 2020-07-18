@@ -16,7 +16,6 @@
 #include "setpart.h"
 #include "matcoal.h"
 #include "misc.h"
-#include "nodestore.h"
 #include "segment.h"
 #include <stdlib.h>
 #include <string.h>
@@ -72,11 +71,10 @@ PtrVec *PtrLst_to_PtrVec(PtrLst *old);
 // The total number of samples.
 static int total_samples = 0;
 
-void *Segment_new(double *twoN, double *start, int nsamples,
-                  NodeStore * ns) {
+void *Segment_new(double *twoN, double *start, int nsamples) {
     total_samples += nsamples;
     
-    Segment *self = NodeStore_alloc(ns);
+    Segment *self = malloc(sizeof(*self));
     CHECKMEM(self);
 
     memset(self, 0, sizeof(*self));

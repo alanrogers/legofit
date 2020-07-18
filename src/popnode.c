@@ -33,6 +33,7 @@ static void  PopNode_sanityFromLeaf(PopNode * self, const char *file, int line);
 static int   PopNode_nsamples(PopNode * self);
 static void  PopNode_duplicate_nodes(PopNode *old, PtrPtrMap *ppm);
 static void  unlink_child(PopNode *child, PopNode *parent);
+static int   PopNode_equals_r(PopNode *a, PopNode *b);
 
 struct PopNode {
     int         visited; // has the coalescent visited this node yet?
@@ -49,6 +50,53 @@ struct PopNode {
 
     Gene       *sample[MAXSAMP]; // not locally owned
 };
+
+int PopNode_equals(PopNode *a, PopNode *b) {
+    PopNode_unvisit(a);
+    PopNode_unvisit(b);
+    return PopNode_equals_r(a, b);
+}
+
+static int PopNode_equals_r(PopNode *a, PopNode *b) {
+    if(a->visited != b->visited)
+        return 0;
+    if(a->visited) {
+        // We've been here before. Had the two nodes been unequal last
+        // time, the algorithm would not have visited this spot a 2nd
+        // time. So because we're here, the two nodes must be equal.
+        return 1;
+    }
+    a->visited = b->visited = 1;
+    
+    if(a->nparents != b->nparents)
+        return 0;
+    if(a->nchildren != b->nchildren)
+        return 0;
+    if(a->twoN != b->twoN)
+        return 0;
+    if(a->start != b->start)
+        return 0;
+    if(a->end != b->end)
+        return 0;
+    if(a->mix != b->mix)
+        return 0;
+    if(a->twoN_i != b->twoN_i)
+        return 0;
+    if(a->start_i != b->start_i)
+        return 0;
+    if(a->end_i != b->end_i)
+        return 0;
+    if(a->mix_i != b->mix_i)
+        return 0;
+    if(a->end != b->end)
+        return 0;
+    for(int i=0; i < a->nchildren; ++i) {
+        if(!PopNode_equals(a->child[i], b->child[i]))
+            return 0;
+    }
+    return 1;
+}
+
 
 /// Check for errors in PopNode tree. Call this from each leaf node.
 static void PopNode_sanityFromLeaf(PopNode * self, const char *file, int line) {
@@ -561,28 +609,18 @@ void PopNode_free(PopNode * self) {
     if(self == NULL)
         return;
 
-    // Recursive descent into children can't be inside a switch
-    // on nchildren, because the free operation on children changes
+    // Free children first. Calls to PopNode_free will decrement
     // self->nchildren.
-    if(self->nchildren > 1)
-        PopNode_free(self->child[1]);
-    if(self->nchildren > 0)
-        PopNode_free(self->child[0]);
-    assert(self->nchildren == 0);
+    while(self->nchildren > 0) {
+        int i = self->nchildren - 1;
+        PopNode_free(self->child[i]);
+    }
 
     // unlink current node from its parents
-    switch(self->nparents) {
-    case 1:
-        unlink_child(self, self->parent[0]);
-        break;
-    case 2:
-        unlink_child(self, self->parent[0]);
-        unlink_child(self, self->parent[1]);
-        break;
-    default:
-        fprintf(stderr,"%s:%d: illegal number of parents: %d\n",
-                __FILE__,__LINE__, self->nparents);
-        exit(EXIT_FAILURE);
+    while(self->nparents > 0) {
+        int i = self->nparents - 1;
+        unlink_child(self, self->parent[i]);
+        self->nparents -= 1;
     }
     
     free(self);
@@ -665,10 +703,11 @@ int PopNode_feasible(const PopNode * self, Bounds bnd, int verbose) {
 }
 
 /// Duplicate a network of nodes, returning a pointer to the
-/// root of the duplicate network.
-PopNode *PopNode_dup(PopNode *old_root) {
+/// root of the duplicate network. On entry, ppm should be an empty
+/// hashmap.
+PopNode *PopNode_dup(PopNode *old_root, PtrPtrMap *ppm) {
     assert(old_root);
-    PtrPtrMap *ppm = PtrPtrMap_new();
+    assert(0 == PtrPtrMap_size(ppm));
     PopNode_clear(old_root);
 
     // Traverse the old network, duplicating each node and
@@ -724,8 +763,6 @@ PopNode *PopNode_dup(PopNode *old_root) {
             new->child[1] = node;
         }
     }
-
-    PtrPtrMap_free(ppm);
 
     return new_root;
 }
@@ -922,10 +959,15 @@ int main(int argc, char **argv) {
 
     PopNode_clear(abc);
     assert(PopNode_feasible(abc, bnd, verbose));
-    PopNode *duproot = PopNode_dup(abc);
+
+    PtrPtrMap *ppm = PtrPtrMap_new();
+    PopNode *duproot = PopNode_dup(abc, ppm);
     CHECKMEM(duproot);
     assert(PopNode_feasible(duproot, bnd, verbose));
     Gene_free(root);
+    PtrPtrMap_free(ppm);
+
+    assert(PopNode_equals(abc, duproot));
 
     unitTstResult("PopNode", "OK");
 

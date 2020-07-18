@@ -9,6 +9,7 @@
  */
 
 #include "sampndx.h"
+#include "ptrptrmap.h"
 #include "misc.h"
 #include <string.h>
 #include <stdio.h>
@@ -74,12 +75,19 @@ int SampNdx_ptrsLegal(SampNdx * self, void * start, void * end) {
     return 1;
 }
 
-/// Shift all pointers within SampNdx by an offset of magnitude
-/// dpop. If sign > 0, the shift is positive; otherwise it is
-/// negative.
-void SampNdx_shiftPtrs(SampNdx * self, size_t dpop, int sign) {
-    for(int i = 0; i < self->n; ++i)
-        SHIFT_PTR(self->ptr[i], dpop, sign);
+/// Remap pointers
+void SampNdx_remapPtrs(SampNdx * self, PtrPtrMap *ppm) {
+    int status;
+    for(int i = 0; i < self->n; ++i) {
+        void *old = self->ptr[i];
+        void *new = PtrPtrMap_get(ppm, old, &status);
+        if(status) {
+            fprintf(stderr,"%s:%s:%d: unknown pointer value %p\n",
+                    __FILE__,__func__,__LINE__, old);
+            exit(EXIT_FAILURE);
+        }
+        self->ptr[i] = new;
+    }
 }
 
 #ifdef TEST
@@ -112,7 +120,7 @@ int main(int argc, char **argv) {
     assert(SampNdx_size(&sndx) == 0);
 
     int         nseg = 3;
-    int         v[nseg];
+    int         v[nseg], w[nseg];
 
     // Each sample has a different pointer, although this isn't
     // necessary.
@@ -127,7 +135,7 @@ int main(int argc, char **argv) {
 
     assert(SampNdx_equals(&sndx, &sndx));
 
-    for(int i=0; i<3; ++i)
+    for(int i=0; i<nseg; ++i)
         assert(&v[i] == SampNdx_get(&sndx, i));
 
     SampNdx_sanityCheck(&sndx, __FILE__, __LINE__);
@@ -138,6 +146,18 @@ int main(int argc, char **argv) {
     assert(4 == SampNdx_size(&sndx2));
     assert(!SampNdx_equals(&sndx, &sndx2));
 
+    int status;
+    PtrPtrMap *ppm = PtrPtrMap_new();
+
+    for(int i=0; i < nseg; ++i) {
+        status = PtrPtrMap_insert(ppm, v+i, w+i);
+        assert(status==0);
+    }
+    assert( nseg == PtrPtrMap_size(ppm) );
+    SampNdx_remapPtrs(&sndx, ppm);
+
+    for(int i=0; i<nseg; ++i)
+        assert(&w[i] == SampNdx_get(&sndx, i));
 
     unitTstResult("SampNdx", "OK");
 

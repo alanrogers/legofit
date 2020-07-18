@@ -897,7 +897,6 @@ int main(int argc, char **argv) {
 
     rewind(fp);
 
-    PopNode nodeVec[nseg];
     PopNode *root;
     ParStore *parstore;
 

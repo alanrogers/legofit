@@ -11,10 +11,10 @@
 #include "gene.h"
 #include "gptree.h"
 #include "lblndx.h"
-#include "nodestore.h"
 #include "parse.h"
 #include "param.h"
 #include "parstore.h"
+#include "ptrptrmap.h"
 #include "sampndx.h"
 #include <errno.h>
 #include <gsl/gsl_rng.h>
@@ -250,8 +250,17 @@ void *GPTree_dup(const void * vold) {
 
     new->sndx = old->sndx;
 
-    new->rootPop = PopNode_dup(old->rootPop);
+    // A hashmap that maps old PopNode pointers to new ones. It is
+    // populated by PopNode_dup and used by SampNdx_remapPtrs.
+    PtrPtrMap *ppm = PtrPtrMap_new();
+    CHECKMEM(ppm);
+
+    new->rootPop = PopNode_dup(old->rootPop, ppm);
     CHECKMEM(new->rootPop);
+
+    SampNdx_remapPtrs(&new->sndx, ppm);
+
+    PtrPtrMap_free(ppm);
     
     assert(PopNode_isClear(new->rootPop));
 
@@ -287,11 +296,22 @@ void GPTree_sanityCheck(void * vself, const char *file, int line) {
 int GPTree_equals(const GPTree * lhs, const GPTree * rhs) {
     if(lhs == rhs)
         return 0;
-    if(!PopNode_equals(lhs->rootPop, rhs->rootPop))
-        return 0
-    if(lhs->parstore == rhs->parstore)
-        eprintf("%s:%s:%d: two GPTree objects share a ParStore pointer\n",
+#ifndef NDEBUG    
+    if(lhs->rootPop == rhs->rootPop) {
+        fprintf(stderr,
+                "%s:%s:%d: two GPTree objects share a rootPop pointer\n",
                 __FILE__, __func__, __LINE__);
+        exit(EXIT_FAILURE);
+    }
+    if(lhs->parstore == rhs->parstore) {
+        fprintf(stderr,
+                "%s:%s:%d: two GPTree objects share a ParStore pointer\n",
+                __FILE__, __func__, __LINE__);
+        exit(EXIT_FAILURE);
+    }
+#endif    
+    if(!PopNode_equals(lhs->rootPop, rhs->rootPop))
+        return 0;
     if(!Bounds_equals(&lhs->bnd, &rhs->bnd))
         return 0;
     if(!ParStore_equals(lhs->parstore, rhs->parstore)) {
