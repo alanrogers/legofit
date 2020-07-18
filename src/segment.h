@@ -7,10 +7,14 @@
 // One segment of a population network. This version works
 // with MCTree.
 struct Segment {
-    int             nparents, nchildren, nsamples;
-    double         *twoN;        // ptr to current pop size
-    double         *start, *end; // duration of this PopNode
-    double         *mix;         // ptr to frac of pop derived from parent[1]
+    int            nparents, nchildren, nsamples;
+    double         twoN;        // ptr to current pop size
+    double         start, end;  // duration of this PopNode
+    double         mix;         // ptr to frac of pop derived from parent[1]
+
+    // indices into ParStore array
+    int twoN_i, start_i, end_i, mix_i;
+
     struct Segment *parent[2];
     struct Segment *child[2];
 
@@ -39,7 +43,7 @@ struct Segment {
     double p[2][MAXSAMP];
 };
 
-void    *Segment_new(double *twoN, double *start, int nsamples, NodeStore *ns);
+void    *Segment_new(double *twoN, double *start, ParStore *ps);
 int      Segment_coalesce(Segment *self, int maxsamp, int dosing,
                           BranchTab *branchtab);
 int      Segment_addChild(void * vparent, void * vchild);

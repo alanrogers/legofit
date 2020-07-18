@@ -71,7 +71,7 @@ PtrVec *PtrLst_to_PtrVec(PtrLst *old);
 // The total number of samples.
 static int total_samples = 0;
 
-void *Segment_new(double *twoN, double *start, int nsamples) {
+void *Segment_new(int twoN_i, int start_i, ParStore *ps) {
     total_samples += nsamples;
     
     Segment *self = malloc(sizeof(*self));
@@ -79,12 +79,15 @@ void *Segment_new(double *twoN, double *start, int nsamples) {
 
     memset(self, 0, sizeof(*self));
 
-    self->twoN = twoN;
-    self->start = start;
+    self->twoN_i = twoN_i;
+    self->start_i = start_i;
+    self->end_i = -1;
+    self->mix_i = -1;
 
-    self->nsamples = nsamples;
-    for(int i=0; i < nsamples; ++i)
-        self->sample[i] = currTipId++;
+    self->twoN = ParStore_getVal(ps, twoN_i);
+    self->start = ParStore_getVal(ps, start_i);
+    self->end = INFINITY;
+    self->mix = 0.0;
 
     // to be set later: max, a, d, nw, wdim, w.
 

@@ -36,23 +36,19 @@ int main(int argc, char *argv[]) {
 
     int         i, status, ok=1;
     const int   nseg = 7;
-    Segment     v[nseg];
     Segment    *s[nseg];
-    NodeStore  *ns = NodeStore_new(nseg, sizeof(v[0]), v);
     double      twoN=100.0;
     double      t0=0.0, t1=1.0, t2=2.0, t3=3.0;
     double      mix = 0.5;
 
-    CHECKMEM(ns);
 
-
-    s[0] = Segment_new(&twoN, &t0, 0, ns);
-    s[1] = Segment_new(&twoN, &t0, 0, ns);
-    s[2] = Segment_new(&twoN, &t0, 0, ns);
-    s[3] = Segment_new(&twoN, &t1, 0, ns);
-    s[4] = Segment_new(&twoN, &t1, 0, ns);
-    s[5] = Segment_new(&twoN, &t2, 0, ns);
-    s[6] = Segment_new(&twoN, &t3, 0, ns);
+    s[0] = Segment_new(&twoN, &t0, 0);
+    s[1] = Segment_new(&twoN, &t0, 0);
+    s[2] = Segment_new(&twoN, &t0, 0);
+    s[3] = Segment_new(&twoN, &t1, 0);
+    s[4] = Segment_new(&twoN, &t1, 0);
+    s[5] = Segment_new(&twoN, &t2, 0);
+    s[6] = Segment_new(&twoN, &t3, 0);
 
     for(i=0; i<nseg; ++i) {
         assert(s[i]->twoN == &twoN);
@@ -65,8 +61,6 @@ int main(int argc, char *argv[]) {
         assert(s[i]->parent[0] == NULL);
         assert(s[i]->parent[1] == NULL);
     }
-
-    NodeStore_free(ns);
 
     char buff[100];
 

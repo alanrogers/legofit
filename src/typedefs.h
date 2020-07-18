@@ -22,7 +22,6 @@ typedef struct MCTree MCTree;
 typedef struct MigOutcome MigOutcome;
 typedef struct NameList NameList;
 typedef struct Network Network;
-typedef struct NodeStore NodeStore;
 typedef struct Param Param;
 typedef struct ParStore ParStore;
 typedef struct Point Point;
