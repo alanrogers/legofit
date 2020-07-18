@@ -351,21 +351,21 @@ xaddrparmap : $(XADDRPARMAP)
 	$(CC) $(CFLAGS) -o $@ $(XADDRPARMAP) $(lib)
 
 u64u64map.o : ../src/u64u64map.c ../src/u64u64map.h ../src/hashmap.h \
-   ../src/hashmap.c
+   ../src/hashmap.src
 
 XU64U64MAP := xu64u64map.o misc.o binary.o u64u64map.o
 xu64u64map : $(XU64U64MAP)
 	$(CC) $(CFLAGS) -o $@ $(XU64U64MAP) $(lib)
 
 ptru32map.o : ../src/ptru32map.c ../src/ptru32map.h ../src/hashmap.h \
-   ../src/hashmap.c
+   ../src/hashmap.src
 
 XPTRU32MAP := xptru32map.o misc.o binary.o ptru32map.o
 xptru32map : $(XPTRU32MAP)
 	$(CC) $(CFLAGS) -o $@ $(XPTRU32MAP) $(lib)
 
 ptrptrmap.o : ../src/ptrptrmap.c ../src/ptrptrmap.h ../src/hashmap.h \
-   ../src/hashmap.c
+   ../src/hashmap.src
 
 XPTRPTRMAP := xptrptrmap.o misc.o binary.o ptrptrmap.o
 xptrptrmap : $(XPTRPTRMAP)
