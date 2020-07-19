@@ -152,8 +152,8 @@ void GPTree_patprob(void * vself, BranchTab * branchtab, gsl_rng * rng,
         // objects aren't owned by SampNdx or PopNode. They will
         // eventually be freed by a call to Gene_free, which
         // recursively frees the root and all descendants.
-        for(unsigned i=0; i < SampNdx_size(&(self->sndx)); ++i) {
-            PopNode *node = (PopNode *) SampNdx_get(&(self->sndx), i);
+        for(unsigned i=0; i < SampNdx_size(&self->sndx); ++i) {
+            PopNode *node = (PopNode *) SampNdx_get(&self->sndx, i);
             PopNode_newGene(node, i);
         }
 
