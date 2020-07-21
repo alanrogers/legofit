@@ -20,6 +20,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+// The total number of samples.
+static int total_samples = 0;
+
 typedef struct MigDat MigDat;
 typedef struct CombDat CombDat;
 typedef struct SetPartDat SetPartDat;
@@ -59,6 +62,44 @@ struct SetPartDat {
     int dosing;      // do singleton site patterns if nonzero
 };
 
+// One segment of a population network. This version works
+// with MCTree.
+struct Segment {
+    int            nparents, nchildren, nsamples;
+    double         twoN;        // ptr to current pop size
+    double         start, end;  // duration of this PopNode
+    double         mix;         // ptr to frac of pop derived from parent[1]
+
+    // indices into ParStore array
+    int twoN_i, start_i, end_i, mix_i;
+
+    struct Segment *parent[2];
+    struct Segment *child[2];
+
+    tipId_t sample[MAXSAMP]; // array of length nsamples
+
+    int max;       // max number of lineages in segment
+
+    // d[i] is a vector sets of i+1 descendants a[i] is a vector of
+    // sets of i+1 ancestors Array d has dimension "max", which is not
+    // known until the segments are linked into a
+    // network. Consequently, the constructor sets its values to NULL,
+    // and it is allocated only after the network has been assembled.
+    PtrVec         **d;
+
+    // Waiting rooms.  Each child loads IdSet objects into one of two
+    // waiting rooms.  The descendants at the beginning of the segment
+    // then consist of all pairs formed by two IdSets, one from each
+    // waiting room. nw is the number of waiting room. The first child
+    // fills w[0] and increments nw.
+    int nw;
+    PtrVec **w[2];
+
+    // p[0][i] is prob there are i+1 lineages at recent end of segment
+    // p[1][i] is analogous prob for ancient end of interval.
+    double p[2][MAXSAMP];
+};
+
 int    visitComb(int d, int ndx[d], void *data);
 int    visitSetPart(unsigned n, unsigned a[n], void *data);
 int    visitMig(unsigned n, unsigned a[n], void *data);
@@ -68,11 +109,7 @@ static int Segment_coalesceInfinite(Segment *self, double v, int dosing,
                                     BranchTab *branchtab);
 PtrVec *PtrLst_to_PtrVec(PtrLst *old);
 
-// The total number of samples.
-static int total_samples = 0;
-
 void *Segment_new(int twoN_i, int start_i, ParStore *ps) {
-    total_samples += nsamples;
     
     Segment *self = malloc(sizeof(*self));
     CHECKMEM(self);
@@ -89,12 +126,39 @@ void *Segment_new(int twoN_i, int start_i, ParStore *ps) {
     self->end = INFINITY;
     self->mix = 0.0;
 
-    // to be set later: max, a, d, nw, wdim, w.
+    // other fields are not initialized by Segment_new.
 
     return self;
 }
 
-int      Segment_addChild(void * vparent, void * vchild) {
+double Segment_twoN(Segment *self) {
+    return self->twoN;
+}
+
+double Segment_start(Segment *self) {
+    return self->start;
+}
+
+double Segment_end(Segment *self) {
+    return self->end;
+}
+
+double Segment_mix(Segment *self) {
+    return self->mix;
+}
+
+/// Add a new sample to a Segment. This is called once for each
+/// of the samples specified in the .lgo file.
+void Segment_newSample(Segment * self, unsigned ndx) {
+    assert(1 + self->nsamples < MAXSAMP);
+    assert(ndx < 8 * sizeof(tipId_t));
+
+    static const tipId_t one = 1;
+    self->sample[self->nsamples] = one << ndx;
+    self->nsamples += 1;
+}
+
+int Segment_addChild(void * vparent, void * vchild) {
     Segment *parent = vparent;
     Segment *child = vchild;
     if(parent->nchildren > 1) {
@@ -109,22 +173,25 @@ int      Segment_addChild(void * vparent, void * vchild) {
                 __FILE__, __func__, __LINE__, child->nparents);
         return TOO_MANY_PARENTS;
     }
-    if(*child->start > *parent->start) {
+    if(child->start > parent->start) {
         fprintf(stderr,
                 "%s:%s:%d: Child start (%lf) must be <= parent start (%lf)\n",
-                __FILE__, __func__, __LINE__, *child->start, *parent->start);
+                __FILE__, __func__, __LINE__, child->start, parent->start);
         return DATE_MISMATCH;
     }
-    if(child->end == NULL) {
+    if(child->end_i == -1) {
+        child->end_i = parent->start_i;
         child->end = parent->start;
-    } else {
-        if(child->end != parent->start) {
-            fprintf(stderr, "%s:%s:%d: Date mismatch."
-                    " child->end=%p != %p = parent->start\n",
-                    __FILE__, __func__, __LINE__, child->end, parent->start);
+    } else if(child->end_i != parent->start_i) {
+            fprintf(stderr, "%s:%s:%d: Date mismatch.\n"
+                    "  child->end_i=%d != %d = parent->start_i\n",
+                    __FILE__, __func__, __LINE__,
+                    child->end_i, parent->start_i);
+            fprintf(stderr, "  child->end=%lg != %lg = parent->start\n",
+                    child->end, parent->start);
             return DATE_MISMATCH;
-        }
     }
+
     parent->child[parent->nchildren] = child;
     child->parent[child->nparents] = parent;
     ++parent->nchildren;
@@ -138,26 +205,23 @@ int      Segment_addChild(void * vparent, void * vchild) {
 void Segment_sanityCheck(Segment * self, const char *file, int lineno) {
 #ifndef NDEBUG
     REQUIRE(self != NULL, file, lineno);
-    REQUIRE(self->twoN != NULL, file, lineno);
-    REQUIRE(*self->twoN > 0.0, file, lineno);
-    REQUIRE(self->start != NULL, file, lineno);
-    REQUIRE(*self->start >= 0.0, file, lineno);
-    if(self->end) {
+    REQUIRE(self->twoN > 0.0, file, lineno);
+    REQUIRE(self->start >= 0.0, file, lineno);
+    if(self->end_i >= 0)
         REQUIRE(self->nparents > 0, file, lineno);
-        REQUIRE(*self->start <= *self->end, file, lineno);
-    }
+    REQUIRE(self->start <= self->end, file, lineno);
     switch(self->nparents) {
     case 0:
-        REQUIRE(self->end == NULL, file, lineno);
-        REQUIRE(self->mix == NULL, file, lineno);
+        REQUIRE(self->end_i == -1, file, lineno);
+        REQUIRE(self->mix_i == -1, file, lineno);
         break;
     case 1:
-        REQUIRE(self->end != NULL, file, lineno);
-        REQUIRE(self->mix == NULL, file, lineno);
+        REQUIRE(self->end_i >= 0, file, lineno);
+        REQUIRE(self->mix_i == -1, file, lineno);
         break;
     case 2:
-        REQUIRE(self->end != NULL, file, lineno);
-        REQUIRE(self->mix != NULL, file, lineno);
+        REQUIRE(self->end_i >= 0, file, lineno);
+        REQUIRE(self->mix_i >= 0, file, lineno);
         break;
     default:
         fprintf(stderr,"%s:%d: bad number of parents: %d\n",
@@ -179,13 +243,13 @@ void Segment_sanityCheck(Segment * self, const char *file, int lineno) {
     }
     if(self->nchildren > 0)
         Segment_sanityCheck(self->child[0], file, lineno);
-    if(self->nchildren == 2)
+    if(self->nchildren > 1)
         Segment_sanityCheck(self->child[1], file, lineno);
 #endif
 }
 
-int      Segment_mix(void * vchild, double *mPtr, void * vintrogressor, 
-                     void * vnative) {
+int Segment_mix(void * vchild, int mix_i, void * vintrogressor,
+                void * vnative, ParStore *ps) {
     Segment *child = vchild, *introgressor = vintrogressor,
         *native = vnative;
 
@@ -207,33 +271,44 @@ int      Segment_mix(void * vchild, double *mPtr, void * vintrogressor,
                 __FILE__, __func__, __LINE__, child->nparents);
         return TOO_MANY_PARENTS;
     }
-    if(child->end != NULL) {
-        if(child->end != introgressor->start) {
-            fprintf(stderr,"%s:%s:%d: Date mismatch."
-                    " child->end=%p != %p=introgressor->start\n",
+
+    if(child->end_i >= 0) {
+        if(child->end_i != introgressor->start_i) {
+            fprintf(stderr,"%s:%s:%d: Date mismatch\n"
+                    "  child->end_i=%d != %d=introgressor->start_i\n",
                     __FILE__, __func__, __LINE__,
+                    child->end_i, introgressor->start_i);
+            fprintf(stderr,"  child->end=%lg != %lg=introgressor->start\n",
                     child->end, introgressor->start);
             return DATE_MISMATCH;
         }
-        if(child->end != native->start) {
-            fprintf(stderr, "%s:%s:%d: Date mismatch."
-                    " child->end=%p != %p=native->start\n",
-                    __FILE__, __func__, __LINE__, child->end, native->start);
+        if(child->end_i != native->start_i) {
+            fprintf(stderr, "%s:%s:%d: Date mismatch\n"
+                    "  child->end_i=%d != %d=native->start_i\n",
+                    __FILE__, __func__, __LINE__, child->end_i,
+                    native->start_i);
+            fprintf(stderr, "  child->end=%lg != %lg=native->start\n",
+                    child->end, native->start);
             return DATE_MISMATCH;
         }
-    } else if(native->start != introgressor->start) {
-        fprintf(stderr, "%s:%s:%d: Date mismatch."
-                "native->start=%p != %p=introgressor->start\n",
+    } else if(native->start_i != introgressor->start_i) {
+        fprintf(stderr, "%s:%s:%d: Date mismatch\n"
+                "  native->start_i=%d != %d=introgressor->start_i\n",
                 __FILE__, __func__, __LINE__,
+                native->start_i, introgressor->start_i);
+        fprintf(stderr, "  native->start=%lg != %lg=introgressor->start\n",
                 native->start, introgressor->start);
         return DATE_MISMATCH;
-    } else
+    } else {
+        child->end_i = native->start_i;
         child->end = native->start;
+    }
 
     child->parent[0] = native;
     child->parent[1] = introgressor;
     child->nparents = 2;
-    child->mix = mPtr;
+    child->mix_i = mix_i;
+    child->mix = ParStore_getVal(ps, mix_i);
     introgressor->child[introgressor->nchildren] = child;
     ++introgressor->nchildren;
     native->child[native->nchildren] = child;
@@ -244,6 +319,7 @@ int      Segment_mix(void * vchild, double *mPtr, void * vintrogressor,
     return 0;
 }
 
+/// Find root of population network, starting from given node.
 void    *Segment_root(void * vself) {
     Segment *self = vself, *r0, *r1;
     assert(self);
@@ -277,11 +353,8 @@ void     Segment_print(FILE * fp, void * vself, int indent) {
     Segment *self = vself;
     for(int i = 0; i < indent; ++i)
         fputs("   ", fp);
-    fprintf(fp, "%p twoN=%lf ntrval=(%lf,", self, *self->twoN, *self->start);
-    if(self->end != NULL)
-        fprintf(fp, "%lf)\n", *self->end);
-    else
-        fprintf(fp, "Inf)\n");
+    fprintf(fp, "%p twoN=%lf ntrval=(%lf,", self, self->twoN, self->start);
+    fprintf(fp, "%lf)\n", self->end);
 
     for(int i = 0; i < self->nchildren; ++i)
         Segment_print(fp, self->child[i], indent + 1);

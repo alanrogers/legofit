@@ -70,7 +70,7 @@ static MigOutcome *MigOutcome_new(MigOutcome *next,
         // The number of outcomes is 2^k, where k is the number of
         // lineages, and 2^6 = 64. So with type uint64_t, we can only
         // handle migration in segments with 6 or fewer lineages.
-        // To handle 7, use type __uint128_t.
+        // To handle more, I'll need a bit array.
         fprintf(stderr,"%s:%d: can't set bit %d in a %d-bit integer.\n",
                 __FILE__,__LINE__, outcome+1, nbits);
         fprintf(stderr,"%s:%d:"
@@ -107,8 +107,7 @@ void MigOutcome_print(MigOutcome *self, FILE *fp) {
         putc('\n', fp);
         return;
     }
-    fprintf(fp,"%u.%llx:%g ",self->event, self->bits, self->pr);
+    fprintf(fp,"%u:%llx:%g ",self->event, self->bits, self->pr);
     MigOutcome_print(self->next, fp);
 }
 
-int    IdSet_copyMigOutcome(IdSet *self, const IdSet *old);

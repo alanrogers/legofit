@@ -26,7 +26,7 @@
 #include <math.h>
 #include <gsl/gsl_randist.h>
 
-static void  PopNode_addSample(PopNode * self, Gene * gene);
+static void  PopNode_transferSample(PopNode * self, Gene * gene);
 static void  PopNode_printShallow(PopNode * self, FILE * fp);
 static void  PopNode_sanityCheck(PopNode * self, const char *file, int lineno);
 static void  PopNode_sanityFromLeaf(PopNode * self, const char *file, int line);
@@ -149,7 +149,7 @@ static void PopNode_sanityFromLeaf(PopNode * self, const char *file, int line) {
 #endif
 }
 
-/// Find root of population tree, starting from given node.
+/// Find root of population network, starting from given node.
 void *PopNode_root(void * vself) {
     PopNode *self = vself, *r0, *r1;
     assert(self);
@@ -358,8 +358,24 @@ static void PopNode_sanityCheck(PopNode * self, const char *file, int lineno) {
 #endif
 }
 
-/// Add a sample to a PopNode
-static void PopNode_addSample(PopNode * self, Gene * gene) {
+/// Allocates a new Gene and puts it into the array within
+/// PopNode. The gene isn't owned by PopNode, however. It will
+/// eventually be freed by a recursive call to Gene_free, which will
+/// free the root Gene and all descendants.
+void PopNode_newSample(PopNode * self, unsigned ndx) {
+    assert(1 + self->nsamples < MAXSAMP);
+    assert(ndx < 8 * sizeof(tipId_t));
+
+    static const tipId_t one = 1;
+    Gene       *gene = Gene_new(one << ndx);
+    CHECKMEM(gene);
+    self->sample[self->nsamples] = gene;
+    ++self->nsamples;
+    PopNode_sanityCheck(self, __FILE__, __LINE__);
+}
+
+/// Transfer an existing sample to a PopNode
+static void PopNode_transferSample(PopNode * self, Gene * gene) {
     assert(self != NULL);
     assert(gene != NULL);
     if(self->nsamples == MAXSAMP) {
@@ -445,22 +461,6 @@ int PopNode_mix(void * vchild, int mix_i, void * vintrogressor,
     PopNode_sanityCheck(introgressor, __FILE__, __LINE__);
     PopNode_sanityCheck(native, __FILE__, __LINE__);
     return 0;
-}
-
-/// Allocates a new Gene and puts it into the array within
-/// PopNode. The gene isn't owned by PopNode, however. It will
-/// eventually be freed by a recursive call to Gene_free, which will
-/// free the root Gene and all descendants.
-void PopNode_newGene(PopNode * self, unsigned ndx) {
-    assert(1 + self->nsamples < MAXSAMP);
-    assert(ndx < 8 * sizeof(tipId_t));
-
-    static const tipId_t one = 1;
-    Gene       *gene = Gene_new(one << ndx);
-    CHECKMEM(gene);
-    self->sample[self->nsamples] = gene;
-    ++self->nsamples;
-    PopNode_sanityCheck(self, __FILE__, __LINE__);
 }
 
 /// Coalesce gene tree within population tree.
@@ -555,7 +555,7 @@ Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng) {
             // add all samples to parent 0
             for(i = 0; i < self->nsamples; ++i) {
                 assert(self->sample[i]);
-                PopNode_addSample(self->parent[0], self->sample[i]);
+                PopNode_transferSample(self->parent[0], self->sample[i]);
             }
             break;
         default:
@@ -564,10 +564,10 @@ Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng) {
             for(i = 0; i < self->nsamples; ++i) {
                 if(gsl_rng_uniform(rng) < self->mix) {
                     assert(self->sample[i]);
-                    PopNode_addSample(self->parent[1], self->sample[i]);
+                    PopNode_transferSample(self->parent[1], self->sample[i]);
                 } else {
                     assert(self->sample[i]);
-                    PopNode_addSample(self->parent[0], self->sample[i]);
+                    PopNode_transferSample(self->parent[0], self->sample[i]);
                 }
             }
         }
@@ -935,9 +935,9 @@ int main(int argc, char **argv) {
 
     assert(PopNode_isClear(abc));
 
-    PopNode_addSample(a, ga);
-    PopNode_addSample(b, gb);
-    PopNode_addSample(c, gc);
+    PopNode_transferSample(a, ga);
+    PopNode_transferSample(b, gb);
+    PopNode_transferSample(c, gc);
 
     assert(!PopNode_isClear(abc));
 

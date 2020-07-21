@@ -27,12 +27,11 @@ different outcomes of the same event.
 
 When two populations coalesce, lineages in one may have a history of
 migration events that didn't occur in the other. In that case, the
-lineages of the lineages lacking this history are duplicated. One of
-the two duplicate copies is associated with the lineages whose history
-includes migration. The others acquire a new MigOutcome object whose
-"event" and "noutcomes" field match those of the others. The "outcome"
-field contains the complement of the "outcome" field of the other
-lineages.
+lineages lacking this history are duplicated. One of the two duplicate
+copies is associated with the lineages whose history includes
+migration. The others acquire a new MigOutcome object whose "event"
+and "noutcomes" field match those of the others. The "outcome" field
+contains the complement of the "outcome" field of the other lineages.
 
 This complement can be calculated as
 
@@ -52,7 +51,7 @@ duplicated. One copy acquires the bit pattern of the lineages with
 which they are combined, and the other copy has these bits turned off.
 
 A single set of lineages may have experienced multiple migration
-events, so each lineages has a sorted linked list of MigOutcome
+events, so each lineage has a sorted linked list of MigOutcome
 objects, which represent all the migration events it has experienced.
  **/
 struct MigOutcome {
@@ -61,6 +60,7 @@ struct MigOutcome {
                            // event
 
     // Bit i is on if this is the i'th outcome.
+    // 64 bits may not be enough. If not, I'll implement a bit array.
     uint64_t bits;
 
     double pr;             // probability of this outcome

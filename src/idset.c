@@ -37,9 +37,7 @@ void IdSet_print(IdSet *self, FILE *fp) {
     MigOutcome_print(self->mig, fp);
 }
 
-/**
- * Compare IdSet objects. Return -1 if x<y, 1 if x>y, and 0 otherwise.
- */
+/// Compare IdSet objects. Return -1 if x<y, 1 if x>y, and 0 otherwise.
 int IdSet_cmp(const IdSet *x, const IdSet *y) {
     for(int i=0; i < x->nIds && i < y->nIds; ++i) {
         if(x->tid[i] < y->tid[i])

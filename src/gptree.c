@@ -154,7 +154,7 @@ void GPTree_patprob(void * vself, BranchTab * branchtab, gsl_rng * rng,
         // recursively frees the root and all descendants.
         for(unsigned i=0; i < SampNdx_size(&self->sndx); ++i) {
             PopNode *node = (PopNode *) SampNdx_get(&self->sndx, i);
-            PopNode_newGene(node, i);
+            PopNode_newSample(node, i);
         }
 
         // coalescent simulation generates gene genealogy within
