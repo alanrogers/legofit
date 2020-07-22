@@ -91,7 +91,7 @@ static int PopNode_equals_r(PopNode *a, PopNode *b) {
     if(a->end != b->end)
         return 0;
     for(int i=0; i < a->nchildren; ++i) {
-        if(!PopNode_equals(a->child[i], b->child[i]))
+        if(!PopNode_equals_r(a->child[i], b->child[i]))
             return 0;
     }
     return 1;

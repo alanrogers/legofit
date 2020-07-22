@@ -13,22 +13,26 @@
 #include "comb.h"
 #include "error.h"
 #include "idset.h"
-#include "setpart.h"
 #include "matcoal.h"
 #include "misc.h"
+#include "parstore.h"
+#include "ptrlst.h"
+#include "ptrptrmap.h"
+#include "ptrvec.h"
 #include "segment.h"
+#include "setpart.h"
 #include <stdlib.h>
 #include <string.h>
 
 // The total number of samples.
-static int total_samples = 0;
+//static int total_samples = 0;
 
 typedef struct MigDat MigDat;
 typedef struct CombDat CombDat;
 typedef struct SetPartDat SetPartDat;
 
 // For assigning initial tipId_t values within segments.
-static tipId_t currTipId = 0;
+//static tipId_t currTipId = 0;
 
 // Data manipulated by visitComb function
 struct CombDat {
@@ -66,8 +70,9 @@ struct SetPartDat {
 // with MCTree.
 struct Segment {
     int            nparents, nchildren, nsamples;
+    int            visited;     // for traversal algorithm
     double         twoN;        // ptr to current pop size
-    double         start, end;  // duration of this PopNode
+    double         start, end;  // duration of this Segment
     double         mix;         // ptr to frac of pop derived from parent[1]
 
     // indices into ParStore array
@@ -107,7 +112,9 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
                                   BranchTab *branchtab);
 static int Segment_coalesceInfinite(Segment *self, double v, int dosing,
                                     BranchTab *branchtab);
-PtrVec *PtrLst_to_PtrVec(PtrLst *old);
+static void Segment_duplicate_nodes(Segment *old, PtrPtrMap *ppm);
+static int Segment_equals_r(Segment *a, Segment *b);
+PtrVec *PtrLst_to_PtrVec(PtrLst *from, PtrVec *to);
 
 void *Segment_new(int twoN_i, int start_i, ParStore *ps) {
     
@@ -131,20 +138,13 @@ void *Segment_new(int twoN_i, int start_i, ParStore *ps) {
     return self;
 }
 
-double Segment_twoN(Segment *self) {
-    return self->twoN;
-}
-
-double Segment_start(Segment *self) {
-    return self->start;
-}
-
-double Segment_end(Segment *self) {
-    return self->end;
-}
-
-double Segment_mix(Segment *self) {
-    return self->mix;
+/// Set all "visited" flags to false.
+void Segment_unvisit(Segment *self) {
+    if(self->nchildren > 0)
+        Segment_unvisit(self->child[0]);
+    if(self->nchildren > 1)
+        Segment_unvisit(self->child[1]);
+    self->visited = 0;
 }
 
 /// Add a new sample to a Segment. This is called once for each
@@ -238,8 +238,6 @@ void Segment_sanityCheck(Segment * self, const char *file, int lineno) {
         REQUIRE(self->p[1][i] >= 0.0, file, lineno);
         REQUIRE(self->p[0][i] <= 1.0, file, lineno);
         REQUIRE(self->p[1][i] <= 1.0, file, lineno);
-        IdSet_sanityCheck(self->ids[0][i], file, lineno);
-        IdSet_sanityCheck(self->ids[1][i], file, lineno);
     }
     if(self->nchildren > 0)
         Segment_sanityCheck(self->child[0], file, lineno);
@@ -349,6 +347,147 @@ void    *Segment_root(void * vself) {
     return NULL;
 }
 
+/// Return 1 if parameters satisfy inequality constraints, or 0 otherwise.
+int Segment_feasible(const Segment * self, Bounds bnd, int verbose) {
+    if(self->twoN < bnd.lo_twoN || self->twoN > bnd.hi_twoN) {
+        if(verbose)
+            fprintf(stderr, "%s FAIL: twoN=%lg not in [%lg, %lg]\n",
+                    __func__, self->twoN, bnd.lo_twoN, bnd.hi_twoN);
+        return 0;
+    }
+
+    if(self->start > bnd.hi_t || self->start < bnd.lo_t) {
+        if(verbose)
+            fprintf(stderr, "%s FAIL: start=%lg not in [%lg, %lg]\n",
+                    __func__, self->start, bnd.lo_t, bnd.hi_t);
+        return 0;
+    }
+
+    switch (self->nparents) {
+    case 2:
+        if(self->start > self->parent[1]->start) {
+            if(verbose)
+                fprintf(stderr, "%s FAIL: child=%lg older than parent=%lg\n",
+                        __func__, self->start, self->parent[1]->start);
+            return 0;
+        }
+        // fall through
+    case 1:
+        if(self->start > self->parent[0]->start) {
+            if(verbose)
+                fprintf(stderr, "%s FAIL: child=%lg older than parent=%lg\n",
+                        __func__, self->start, self->parent[0]->start);
+            return 0;
+        }
+        break;
+    default:
+        break;
+    }
+
+    switch (self->nchildren) {
+    case 2:
+        if(self->start < self->child[1]->start) {
+            if(verbose)
+                fprintf(stderr,
+                        "%s FAIL: parent=%lg younger than child=%lg\n",
+                        __func__, self->start, self->child[1]->start);
+            return 0;
+        }
+        // fall through
+    case 1:
+        if(self->start < self->child[0]->start) {
+            if(verbose)
+                fprintf(stderr,
+                        "%s FAIL: parent=%lg younger than child=%lg\n",
+                        __func__, self->start, self->child[0]->start);
+            return 0;
+        }
+        break;
+    default:
+        break;
+    }
+
+    if(self->mix_i != -1) {
+        if(self->mix < 0.0 || self->mix > 1.0) {
+            if(verbose)
+                fprintf(stderr, "%s FAIL: mix=%lg not in [0, 1]\n",
+                        __func__, self->mix);
+            return 0;
+        }
+    }
+
+    for(int i = 0; i < self->nchildren; ++i) {
+        if(0 == Segment_feasible(self->child[i], bnd, verbose))
+            return 0;
+    }
+    return 1;
+}
+
+/// Duplicate a network of nodes, returning a pointer to the
+/// root of the duplicate network. On entry, ppm should be an empty
+/// hashmap.
+Segment *Segment_dup(Segment *old_root, PtrPtrMap *ppm) {
+    assert(old_root);
+    assert(0 == PtrPtrMap_size(ppm));
+
+    // Traverse the old network, duplicating each node and
+    // storing the duplicates in ppm, which maps old nodes to
+    // new ones.
+    Segment_unvisit(old_root);
+    Segment_duplicate_nodes(old_root, ppm);
+
+    // Put the old nodes into an array.
+    unsigned nnodes = PtrPtrMap_size(ppm);
+    void *old_nodes[nnodes];
+    int status = PtrPtrMap_keys(ppm, nnodes, old_nodes);
+    if(status) {
+        fprintf(stderr,"%s:%d: buffer overflow\n",__FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
+
+    Segment *node, *new_root=NULL;
+
+    // Connect each node to its parents and children,
+    // and identify the root of the duplicated network.
+    for(unsigned i=0; i < nnodes; ++i) {
+        Segment *old = old_nodes[i];
+        Segment *new = PtrPtrMap_get(ppm, old, &status);
+        assert(status == 0);
+
+        // root is the node with no parents
+        if(old->nparents == 0) {
+            assert(new_root == NULL);
+            new_root = new;
+        }
+
+        // connect new node to its parents
+        if(old->nparents > 0) {
+            node = PtrPtrMap_get(ppm, old->parent[0], &status);
+            assert(status == 0);
+            new->parent[0] = node;
+        }
+        if(old->nparents > 1) {
+            node = PtrPtrMap_get(ppm, old->parent[1], &status);
+            assert(status == 0);
+            new->parent[1] = node;
+        }
+
+        // connect new node to its children
+        if(old->nchildren > 0) {
+            node = PtrPtrMap_get(ppm, old->child[0], &status);
+            assert(status == 0);
+            new->child[0] = node;
+        }
+        if(old->nchildren > 1) {
+            node = PtrPtrMap_get(ppm, old->child[1], &status);
+            assert(status == 0);
+            new->child[1] = node;
+        }
+    }
+
+    return new_root;
+}
+
 void     Segment_print(FILE * fp, void * vself, int indent) {
     Segment *self = vself;
     for(int i = 0; i < indent; ++i)
@@ -360,6 +499,227 @@ void     Segment_print(FILE * fp, void * vself, int indent) {
         Segment_print(fp, self->child[i], indent + 1);
 }
 
+/// Visit a combination
+int visitComb(int d, int ndx[d], void *data) {
+    assert(d>0);
+    CombDat *dat = (CombDat *) data;
+
+    unsigned nIdSets = PtrVec_length(dat->d);
+    for(unsigned i=0; i < nIdSets; ++i) {
+        IdSet *ids = PtrVec_get(dat->d, i);
+        
+        // sitepat is the union of the current set of descendants, as
+        // described in ndx.
+        tipId_t sitepat = 0;
+        for(int j=0; j < d; ++j) {
+            assert(ndx[j] < ids->nIds);
+            sitepat |= ids->tid[ndx[j]];
+        }
+        
+        // Skip singletons unless data->dosing is nonzero
+        if(!dat->dosing && isPow2(sitepat))
+            continue;
+      
+        // Increment BranchTab entry for current sitepat value.
+        BranchTab_add(dat->branchtab, sitepat,
+                      ids->p * dat->contrib);
+    }
+    return 0;
+}
+
+/// Visit a set partition.
+int visitSetPart(unsigned n, unsigned a[n], void *data) {
+    SetPartDat *vdat = (SetPartDat *) data;
+    int status=0;
+
+    // Calculate the size, c[i], of each part. In other words,
+    // the number of descendants of each ancestor.
+    unsigned k=vdat->nparts, c[k];
+    memset(c, 0, k*sizeof(c[0]));
+    for(int i=0; i<n; ++i) {
+        assert(a[i] < k);
+        ++c[a[i]];
+    }
+
+    double p = probPartition(k, c, vdat->lnconst);
+
+    // nIds is the number of IdSet objects, each representing
+    // a set of n ancestors.
+    unsigned nIds = PtrVec_length(vdat->d);
+    for(unsigned i=0; i < nIds; ++i) {
+        IdSet *descendants = PtrVec_get(vdat->d, i);
+        tipId_t sitepat[k];
+        memset(sitepat, 0, k*sitepat[0]);
+
+        assert(n == descendants->nIds);
+
+        // Loop over descendants, creating a sitepat for each
+        // ancestor. a[i] is the index of the ancestor of the i'th
+        // descendant. sitepat[j] is the site pattern of the j'th
+        // ancestor.
+        /***************/
+        for(int j=0; j<n; ++j)
+            sitepat[a[j]] |= descendants->tid[j];
+
+        // Loop over ancestors, i.e. over site patterns, adding
+        // to the corresponding entry in BranchTab.
+        for(int j=0; j<k; ++j)
+            BranchTab_add(vdat->branchtab, sitepat[j],
+                          p * vdat->elen * descendants->p);
+
+        // Add the current set partition to the list of ancestral
+        // states.
+        IdSet *ancestors = IdSet_new(k, sitepat, p * descendants->p);
+        IdSet_copyMigOutcome(ancestors, descendants);
+        status = PtrLst_push(vdat->a, ancestors);
+        if(status) {
+            fprintf(stderr,"%s:%d can't push ancestors; status=%d\n",
+                    __FILE__,__LINE__, status);
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    return status;
+}
+
+/// Visit a set partition defining migrants
+int visitMig(unsigned n, unsigned a[n], void *data) {
+    MigDat *vdat = (MigDat *) data;
+    int status=0;
+
+    unsigned nMigrants = PtrLst_length(vdat->migrants);
+    unsigned nNatives = PtrLst_length(vdat->natives);
+    tipId_t migrants[nMigrants], natives[nNatives];
+
+    // number of sets of ancestors
+    int nSets = PtrVec_length(vdat->a);
+    
+    for(int i_set=0; i_set < nSets; ++i_set) {
+        IdSet *set = PtrVec_get(vdat->a, i_set);
+
+        int i_mig=0, i_nat=0;
+
+        // tipId_t values of migrants and natives
+        for(int i=0; i<n; ++i) {
+            if(a[i]) // migrant
+                migrants[i_mig++] = set->tid[i];
+            else     // native
+                natives[i_nat++] = set->tid[i];
+        }
+
+        // Perhaps this test should always be done
+        assert(i_mig == nMigrants);
+        assert(i_nat == nNatives);
+
+        // Create IdSet objects for migrants and natives
+        IdSet *mig = IdSet_new(i_mig, migrants, vdat->pr * set->p);
+        IdSet *nat = IdSet_new(i_nat, natives, vdat->pr * set->p);
+        PtrLst_push(vdat->migrants, mig);
+        PtrLst_push(vdat->natives, nat);
+    }
+
+    return status;
+}
+
+/// If to==NULL, then return a new PtrVec, containing all the
+/// pointers in "from". On return, "from" is empty, but the
+/// PtrLst object itself is not freed.
+///
+/// If to!=NULL, then resize "to" so that it is large enough to hold
+/// all the pointers in "from", and move all pointers from "from" into
+/// "to". Return "to".
+PtrVec *PtrLst_to_PtrVec(PtrLst *from, PtrVec *to) {
+    unsigned nIdSets = PtrLst_length(from);
+
+    if(to) {
+        // resize "to"
+        assert(PtrVec_length(to) == 0);
+        if(PtrVec_resize(to, nIdSets)) {
+            fprintf(stderr,"%s:%d: allocation error\n",
+                    __FILE__,__LINE__);
+            exit(EXIT_FAILURE);
+        }
+    }else {
+        // fresh allocation
+        to = PtrVec_new(nIdSets);
+    }
+    
+    IdSet *idset = PtrLst_pop(from);
+    while( idset ) {
+        PtrVec_push(to, idset);
+        idset = PtrLst_pop(from);
+    }
+
+    return to;
+}
+
+/// Traverse tree, making a duplicate of each node, and putting
+/// the duplicates into a hash map (called ppm) in which the old
+/// node is the key and the new duplicate is the value associated
+/// with that key.
+static void Segment_duplicate_nodes(Segment *old, PtrPtrMap *ppm) {
+    assert(old);
+    if(old->visited)
+        return;
+
+    Segment *new = memdup(old, sizeof(*old));
+    CHECKMEM(new);
+    old->visited = 1;
+    int status = PtrPtrMap_insert(ppm, old, new);
+    assert(status==0);
+    if(old->nchildren > 0)
+        Segment_duplicate_nodes(old->child[0], ppm);
+    if(old->nchildren > 1)
+        Segment_duplicate_nodes(old->child[1], ppm);
+}
+
+int Segment_equals(Segment *a, Segment *b) {
+    Segment_unvisit(a);
+    Segment_unvisit(b);
+    return Segment_equals_r(a, b);
+}
+
+static int Segment_equals_r(Segment *a, Segment *b) {
+    if(a->visited != b->visited)
+        return 0;
+    if(a->visited) {
+        // We've been here before. Had the two nodes been unequal last
+        // time, the algorithm would not have visited this spot a 2nd
+        // time. So because we're here, the two nodes must be equal.
+        return 1;
+    }
+    a->visited = b->visited = 1;
+    
+    if(a->nparents != b->nparents)
+        return 0;
+    if(a->nchildren != b->nchildren)
+        return 0;
+    if(a->twoN != b->twoN)
+        return 0;
+    if(a->start != b->start)
+        return 0;
+    if(a->end != b->end)
+        return 0;
+    if(a->mix != b->mix)
+        return 0;
+    if(a->twoN_i != b->twoN_i)
+        return 0;
+    if(a->start_i != b->start_i)
+        return 0;
+    if(a->end_i != b->end_i)
+        return 0;
+    if(a->mix_i != b->mix_i)
+        return 0;
+    if(a->end != b->end)
+        return 0;
+    for(int i=0; i < a->nchildren; ++i) {
+        if(!Segment_equals(a->child[i], b->child[i]))
+            return 0;
+    }
+    return 1;
+}
+
+#if 0
 // Call from root Segment to set values of "max" within each
 // Segment in network, and to allocate arrays "a" and "d"
 void Segment_allocArrays(Segment *self) {
@@ -690,152 +1050,4 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
     
     return status;
 }
-
-/// Visit a combination
-int visitComb(int d, int ndx[d], void *data) {
-    assert(d>0);
-    CombDat *dat = (CombDat *) data;
-
-    unsigned nIdSets = PtrVec_length(self->d);
-    for(unsigned i=0; i < nIdSets; ++i) {
-        IdSet *ids = PtrVec_get(self->d, i);
-        
-        // sitepat is the union of the current set of descendants, as
-        // described in ndx.
-        tipId_t sitepat = 0;
-        for(int i=0; i < d; ++i) {
-            assert(ndx[i] < ids->nIds);
-            sitepat |= ids->tid[ndx[i]];
-        }
-        
-        // Skip singletons unless data->dosing is nonzero
-        if(!dat->dosing && isPow2(sitepat))
-            continue;
-      
-        // Increment BranchTab entry for current sitepat value.
-        BranchTab_add(dat->branchtab, sitepat,
-                      ids->p * dat->contrib);
-    }
-    return 0;
-}
-
-/// Visit a set partition.
-int visitSetPart(unsigned n, unsigned a[n], void *data) {
-    SetPartDat *vdat = (SetPartDat *) data;
-    int status=0;
-
-    // Calculate the size, c[i], of each part. In other words,
-    // the number of descendants of each ancestor.
-    unsigned k=vdat->nparts, c[k];
-    memset(c, 0, k*sizeof(c[0]));
-    for(int i=0; i<n; ++i) {
-        assert(a[i] < k);
-        ++c[a[i]];
-    }
-
-    double p = probPartition(k, c, vdat->lnconst);
-
-    unsigned nIds = PtrVec_length(vdat->d);
-    for(unsigned i=0; i < nIds; ++i) {
-        IdSet *descendants = PtrVec_get(vdat->d, i);
-        tipId_t sitepat[k];
-        memset(sitepat, 0, k*sitepat[0]);
-
-        assert(n == descendants->nIds);
-
-        // Loop over descendants, creating a sitepat for each
-        // ancestor. a[i] is the index of the ancestor of the i'th
-        // descendant. sitepat[j] is the site pattern of the j'th
-        // ancestor.
-        for(int i=0; i<n; ++i)
-            sitepat[a[i]] |= descendants->tid[i];
-
-        // Loop over ancestors, i.e. over site patterns, adding
-        // to the corresponding entry in BranchTab.
-        for(int i=0; i<k; ++i)
-            BranchTab_add(vdat->branchtab, sitepat[i],
-                          p * vdat->elen * descendants->p);
-
-        // Add the current set partition to the list of ancestral
-        // states.
-        IdSet *ancestors = IdSet_new(k, sitepat, p * descendants->p);
-        IdSet_copyMigoutcome(ancestors, descendants);
-        status = PtrLst_push(vdat->a, ancestors);
-        if(status) {
-            fprintf(stderr,"%s:%d can't push ancestors; status=%d\n",
-                    __FILE__,__LINE__, status);
-            exit(EXIT_FAILURE);
-        }
-    }
-
-    return status;
-}
-
-/// Visit a set partition defining migrants
-int visitMig(unsigned n, unsigned a[n], void *data) {
-    MigDat *vdat = (MigDat *) data;
-    int status=0;
-
-    tipId_t migrants[vdat->nMigrants], natives[vdat->nNatives];
-
-    // number of sets of ancestors
-    int nSets = PtrVec_length(vdat->a);
-    
-    for(int i_set=0; i_set < nSets; ++i) {
-        IdSet *set = PtrVec_get(vdat->a, i_set);
-
-        int i_mig=0, i_nat=0;
-
-        // tipId_t values of migrants and natives
-        for(int i=0; i<n; ++i) {
-            if(a[i]) // migrant
-                migrants[i_mig++] = vdat->tid[i];
-            else     // native
-                natives[i_nat++] = vdat->tid[i];
-        }
-
-        // Perhaps this test should always be done
-        assert(i_mig == vdat->nMigrants);
-        assert(i_nat == vdat->nNatives);
-
-        // Create IdSet objects for migrants and natives
-        IdSet *mig = IdSet_new(i_mig, migrants, vdat->pr * set->p);
-        IdSet *nat = IdSet_new(i_nat, natives, vdat->pr * set->p);
-        PtrLst_push(vdat->migrants, mig)
-        PtrLst_push(vdat->natives, nat)
-    }
-
-    return status;
-}
-
-/// If to==NULL, then return a new PtrVec, containing all the
-/// pointers in "from". On return, "from" is empty, but the
-/// PtrLst object itself is not freed.
-///
-/// If to!=NULL, then resize "to" so that it is large enough to hold
-/// all the pointers in "from", and move all pointers from "from" into
-/// "to". Return "to".
-PtrVec *PtrLst_to_PtrVec(PtrLst *from, PtrVec *to) {
-    unsigned nIdSets = PtrLst_length(from);
-
-    if(to) {
-        // resize "to"
-        assert(PtrVec_length(to) == 0);
-        if(PtrVec_resize(to, nIdSets)) {
-            fprintf(stderr,"%s:%d: allocation error\n",
-                    __FILE__,__LINE__);
-            exit(EXIT_FAILURE);
-        }
-    }else {
-        // fresh allocation
-        to = PtrVec_new(nIdSets);
-    }
-    
-    IdSet *idset = PtrLst_pop(from);
-    while( idset ) {
-        PtrVec_push(to, idset);
-        idset = PtrLst_pop(from);
-    }
-
-    return to;
-}
+#endif

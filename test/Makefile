@@ -129,8 +129,9 @@ XCOMB := xcomb.o comb.o misc.o
 xcomb : $(XCOMB)
 	$(CC) $(CFLAGS) -o $@ $(XCOMB) $(lib)
 
-XSEGMENT := xsegment.o misc.o segment.o idset.o binary.o error.o \
-    branchtab.o lblndx.o tokenizer.o matcoal.o comb.o rational.o setpart.o
+XSEGMENT := xsegment.o misc.o segment.o idset.o branchtab.o migoutcome.o \
+    parstore.o param.o ptrlst.o ptrptrmap.o ptrqueue.o ptrvec.o strint.o \
+    tinyexpr.o dtnorm.o binary.o setpart.o u64u64map.o
 xsegment : $(XSEGMENT)
 	$(CC) $(CFLAGS) -o $@ $(XSEGMENT) $(lib)
 

@@ -4,20 +4,20 @@
 #include "typedefs.h"
 #include <stdio.h>
 
-void    *Segment_new(int twoN_i, int start_i, ParStore *ps);
-double   Segment_twoN(Segment *self);
-double   Segment_start(Segment *self);
-double   Segment_end(Segment *self);
-double   Segment_mix(Segment *self);
+int      Segment_addChild(void * vparent, void * vchild);
+void     Segment_allocArrays(Segment *self, Stirling2 *stirling2);
 int      Segment_coalesce(Segment *self, int maxsamp, int dosing,
                           BranchTab *branchtab);
-int      Segment_addChild(void * vparent, void * vchild);
-int      Segment_mix(void * vchild, double *mPtr, void * vintrogressor, 
-                      void * vnative);
+Segment *Segment_dup(Segment *old_root, PtrPtrMap *ppm);
+int      Segment_equals(Segment *a, Segment *b);
+int      Segment_feasible(const Segment * self, Bounds bnd, int verbose);
+void    *Segment_new(int twoN_i, int start_i, ParStore *ps);
 void     Segment_newSample(Segment * self, unsigned ndx);
-void    *Segment_root(void * vself);
+int      Segment_mix(void * vchild, int mix_i, void * vintrogressor,
+                     void * vnative, ParStore *ps);
 void     Segment_print(FILE * fp, void * self, int indent);
+void    *Segment_root(void * vself);
 void     Segment_sanityCheck(Segment * self, const char *file, int lineno);
-void     Segment_allocArrays(Segment *self, Stirling2 *stirling2);
+void     Segment_unvisit(Segment *self);
 
 #endif

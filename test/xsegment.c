@@ -9,6 +9,10 @@
 
 #include "segment.h"
 #include "misc.h"
+#include "ptrqueue.h"
+#include "ptrptrmap.h"
+#include "param.h"
+#include "parstore.h"
 #include "error.h"
 #include <stdio.h>
 #include <string.h>
@@ -80,12 +84,11 @@ int main(int argc, char *argv[]) {
 
     Segment *a, *b, *b2, *c, *c2, *ab, *abc;
     int ni, ti, mi;
+#if 0    
     tipId_t     ida = 0;
     tipId_t     idb = 1;
     tipId_t     idc = 2;
-    Gene       *ga = Gene_new(ida);
-    Gene       *gb = Gene_new(idb);
-    Gene       *gc = Gene_new(idc);
+#endif    
 
     ni = ParStore_getIndex(ps, "one");
     assert(ni >= 0);
@@ -141,30 +144,6 @@ int main(int argc, char *argv[]) {
     status = Segment_addChild(abc, c2);
     assert(status == 0);
 
-    if(verbose) {
-        Segment_printShallow(abc, stdout);
-        Segment_printShallow(ab, stdout);
-        Segment_printShallow(a, stdout);
-        Segment_printShallow(b, stdout);
-        Segment_printShallow(c, stdout);
-    }
-
-    assert(Segment_isClear(abc));
-
-    Segment_transferSample(a, ga);
-    Segment_transferSample(b, gb);
-    Segment_transferSample(c, gc);
-
-    assert(!Segment_isClear(abc));
-
-    Segment_unvisit(abc);
-    Gene *root = Segment_coalesce(abc, rng);
-    assert(root != NULL);
-
-    assert(!Segment_isClear(abc));
-    Segment_clear(abc);
-    assert(Segment_isClear(abc));
-
     assert(abc == Segment_root(a));
     assert(abc == Segment_root(b));
     assert(abc == Segment_root(b2));
@@ -173,22 +152,20 @@ int main(int argc, char *argv[]) {
     assert(abc == Segment_root(ab));
     assert(abc == Segment_root(abc));
 
-    Segment_clear(abc);
     assert(Segment_feasible(abc, bnd, verbose));
 
     PtrPtrMap *ppm = PtrPtrMap_new();
     Segment *duproot = Segment_dup(abc, ppm);
     CHECKMEM(duproot);
     assert(Segment_feasible(duproot, bnd, verbose));
-    Gene_free(root);
     PtrPtrMap_free(ppm);
 
     assert(Segment_equals(abc, duproot));
 
     if(verbose)
-        Segment_print(stdout, root, 0);
+        Segment_print(stdout, abc, 0);
     
-    unitTstResult("Segment", ok ? "OK": "FAIL");
+    unitTstResult("Segment", "OK");
 
     return 0;
 
