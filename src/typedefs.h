@@ -38,6 +38,7 @@ typedef struct Segment Segment;
 typedef struct SimReader SimReader;
 typedef struct SimSched SimSched;
 typedef struct SampNdx SampNdx;
+typedef struct SplitLst SplitLst;
 typedef struct State State;
 typedef struct Stirling2 Stirling2;
 typedef struct StrInt StrInt;

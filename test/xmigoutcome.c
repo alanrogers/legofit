@@ -41,8 +41,7 @@ int main(int argc, char **argv) {
         unsigned event = nextMigrationEvent();
         assert(i == event);
         unsigned noutcomes = (i+1) << i;
-        for(unsigned outcome=0; outcome < noutcomes; ++outcome)
-            mo = MigOutcome_insert(mo, event, noutcomes, outcome, 0.5);
+        mo = MigOutcome_insert(mo, event, noutcomes, 1u << noutcomes/2u, 0.5);
     }
 
     MigOutcome *mo2 = MigOutcome_dup(mo);

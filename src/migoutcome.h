@@ -17,9 +17,9 @@ probability. There are 2^k mutually-exclusive ways to choose
 immigrants and natives, and each of these outcomes divides the
 ancestors into two sets, one of which may be empty.
 
-In this structure, "event" is an index that indicates which episode of
-migration is being described. It is 0 for the first migration event, 1
-for the next, and so on.
+In the MigOutcome structure, "event" is an index that indicates which
+episode of migration is being described. It is 0 for the first
+migration event, 1 for the next, and so on.
 
 "Outcome" is an integer whose i'th bit is on if this is the i'th
 outcome.  It is forbidden to coalesce lineages that belong to
@@ -28,10 +28,11 @@ different outcomes of the same event.
 When two populations coalesce, lineages in one may have a history of
 migration events that didn't occur in the other. In that case, the
 lineages lacking this history are duplicated. One of the two duplicate
-copies is associated with the lineages whose history includes
-migration. The others acquire a new MigOutcome object whose "event"
-and "noutcomes" field match those of the others. The "outcome" field
-contains the complement of the "outcome" field of the other lineages.
+copies is associated with the lineages whose history includes this
+particular migration outcome. The others acquire a new MigOutcome
+object that excludes this particular migration outcome. The "outcome"
+field contains the complement of the "outcome" field of the other
+lineages.
 
 This complement can be calculated as
 
@@ -59,8 +60,8 @@ struct MigOutcome {
     unsigned noutcomes;    // number of outcomes of this migration
                            // event
 
-    // Bit i is on if this is the i'th outcome.
-    // 64 bits may not be enough. If not, I'll implement a bit array.
+    // Bit i is on if this is the i'th outcome.  If more than 1 bit is
+    // on, then this is the union of several outcomes.
     uint64_t bits;
 
     double pr;             // probability of this outcome
@@ -71,10 +72,14 @@ unsigned    nextMigrationEvent(void);
 MigOutcome *MigOutcome_insert(MigOutcome *head,
                               unsigned event,
                               unsigned noutcomes,  
-                              unsigned outcome,
+                              uint64_t bits,
                               double pr);
 MigOutcome *MigOutcome_dup(MigOutcome *old);
 void        MigOutcome_free(MigOutcome *self);
 void        MigOutcome_print(MigOutcome *self, FILE *fp);
+SplitLst   *SplitLst_new(void);
+void        SplitLst_append(SplitLst *self, unsigned event,
+                            unsigned noutcomes, uint64_t bits_a,
+                            uint64_t bits_b);
 
 #endif

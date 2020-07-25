@@ -44,6 +44,7 @@ struct CombDat {
 
 // Data manipulated by migrate function
 struct MigDat {
+    int nMigrants, nNatives;
     double pr; // probability
     PtrLst *migrants, *natives;
     PtrVec *a;
@@ -83,22 +84,20 @@ struct Segment {
 
     tipId_t sample[MAXSAMP]; // array of length nsamples
 
-    int max;       // max number of lineages in segment
-
-    // d[i] is a vector sets of i+1 descendants a[i] is a vector of
-    // sets of i+1 ancestors Array d has dimension "max", which is not
-    // known until the segments are linked into a
-    // network. Consequently, the constructor sets its values to NULL,
-    // and it is allocated only after the network has been assembled.
-    PtrVec         **d;
-
     // Waiting rooms.  Each child loads IdSet objects into one of two
-    // waiting rooms.  The descendants at the beginning of the segment
-    // then consist of all pairs formed by two IdSets, one from each
-    // waiting room. nw is the number of waiting room. The first child
-    // fills w[0] and increments nw.
+    // waiting rooms. If there are no waiting rooms, then the
+    // descendants at the beginning of the segment consist only of
+    // those in array "sample". If there is one waiting room, then the
+    // ids in "sample" are added to each of the sets in w[0], and the
+    // resulting list of IdSet objects represents the state at the
+    // beginning of the segment. If there are two waiting rooms, then
+    // we begin with all pairs of IdSet objects in w[0] and w[1]. To
+    // each pair, we add the ids in "samples" to obtain the list of
+    // IdSet objects at the beginning of the segment. nw is the number
+    // of waiting room. The first child fills w[0] and increments
+    // nw. The second fills w[1] and also increments nw.
     int nw;
-    PtrVec **w[2];
+    PtrLst *w[2];
 
     // p[0][i] is prob there are i+1 lineages at recent end of segment
     // p[1][i] is analogous prob for ancient end of interval.
@@ -527,7 +526,8 @@ int visitComb(int d, int ndx[d], void *data) {
     return 0;
 }
 
-/// Visit a set partition.
+/// Visit a set partition. n is the number of descendants, a[i] is the
+/// index of the ancestor of the i'th descendant.
 int visitSetPart(unsigned n, unsigned a[n], void *data) {
     SetPartDat *vdat = (SetPartDat *) data;
     int status=0;
@@ -544,7 +544,7 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
     double p = probPartition(k, c, vdat->lnconst);
 
     // nIds is the number of IdSet objects, each representing
-    // a set of n ancestors.
+    // a set of n descendants.
     unsigned nIds = PtrVec_length(vdat->d);
     for(unsigned i=0; i < nIds; ++i) {
         IdSet *descendants = PtrVec_get(vdat->d, i);
@@ -557,7 +557,6 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
         // ancestor. a[i] is the index of the ancestor of the i'th
         // descendant. sitepat[j] is the site pattern of the j'th
         // ancestor.
-        /***************/
         for(int j=0; j<n; ++j)
             sitepat[a[j]] |= descendants->tid[j];
 
@@ -587,9 +586,9 @@ int visitMig(unsigned n, unsigned a[n], void *data) {
     MigDat *vdat = (MigDat *) data;
     int status=0;
 
-    unsigned nMigrants = PtrLst_length(vdat->migrants);
-    unsigned nNatives = PtrLst_length(vdat->natives);
-    tipId_t migrants[nMigrants], natives[nNatives];
+    assert(vdat->nMigrants == PtrLst_length(vdat->migrants));
+    assert(vdat->nNatives == PtrLst_length(vdat->natives));
+    tipId_t migrants[vdat->nMigrants], natives[vdat->nNatives];
 
     // number of sets of ancestors
     int nSets = PtrVec_length(vdat->a);
@@ -608,8 +607,8 @@ int visitMig(unsigned n, unsigned a[n], void *data) {
         }
 
         // Perhaps this test should always be done
-        assert(i_mig == nMigrants);
-        assert(i_nat == nNatives);
+        assert(i_mig == vdat->nMigrants);
+        assert(i_nat == vdat->nNatives);
 
         // Create IdSet objects for migrants and natives
         IdSet *mig = IdSet_new(i_mig, migrants, vdat->pr * set->p);
@@ -897,10 +896,11 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
         self->parent[0]->nw += 1;
     }else {
         assert(self->nparents == 2);
-        assert(*self->mig > 0.0);
-        /*
-          P[x] = (k choose x) * m^x * (1-m)^(k-x)
-         */
+        assert(self->mig_i >= 0);
+        assert(self->mig >= 0.0);
+        assert(self->mig <= 1.0);
+
+        //  P[x] = (k choose x) * m^x * (1-m)^(k-x)
         MigDat msd = {
                       .migrants = PtrLst_new(),
                       .natives = PtrLst_new(),
@@ -913,8 +913,16 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
             for(long x=0; x <= k; ++x) {
                 // prob that x of k lineages are migrants
                 long double lnpr = lbinomial(k, x);
-                lnpr += x*logl(self->mix);
-                lnpr += (k-x)*logl(1.0-self->mix);
+
+                // "if" is needed because of the possibility that
+                // self->mix might = 0.0
+                if(x!=0)
+                    lnpr += x*logl(self->mix);
+
+                // "if" is needed here for a similar reason
+                if(k-x != 0)
+                    lnpr += (k-x)*logl(1.0-self->mix);
+                
                 msd.pr = expl(lnpr);
                 msd.nMigrants = x;
                 msd.nNatives = k - x;
