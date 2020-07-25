@@ -80,7 +80,10 @@ int MigOutcome_getSplits(PtrQueue *ll, PtrQueue *rl,
                          MigOutcome *left, MigOutcome *right) {
     if(left==NULL && right==NULL)
         return 0;
-    uint64_t isec, lrem, rrem; // intersection, left and right remainders
+
+    // Set the intersection, isec, and the left and right remainders,
+    // lrem and rrem.
+    uint64_t isec, lrem, rrem;
     if(left==NULL || left->event > right->event) {
         // Set noutcomes low-order bits in lrem.
         lrem = rrem = 0;
@@ -98,10 +101,10 @@ int MigOutcome_getSplits(PtrQueue *ll, PtrQueue *rl,
         rrem = right->bits ^ isec;
     }
 
+    // If isec==0, then the two MigOutcome objects are mutually
+    // exclusive. In this case, free all Split objects and return 1.
     Split *s;
     if(isec == 0) {
-        // left and right are mutually exclusive: free all
-        // Split objects and return 1.
         for(s=PtrQueue_pop(ll); s; s=PtrQueue_pop(ll))
             Split_free(s);
         for(s=PtrQueue_pop(rl); s; s=PtrQueue_pop(rl))
@@ -109,6 +112,8 @@ int MigOutcome_getSplits(PtrQueue *ll, PtrQueue *rl,
         return 1;
     }
 
+    // Define Split objects for the current event and push them onto
+    // the queues.
     if(lrem) { // split left
         assert(right);
         s = Split_new(right->event, right->noutcomes, right->pr, isec, lrem);
@@ -120,7 +125,7 @@ int MigOutcome_getSplits(PtrQueue *ll, PtrQueue *rl,
         PtrQueue_push(rl, s);
     }
 
-    // Procede through left and right lists
+    // Proceed down the left and right lists.
     if(left==NULL)
         return MigOutcome_getSplits(ll, rl, NULL, right->next);
 
