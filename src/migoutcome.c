@@ -10,8 +10,7 @@ static unsigned migration_event = 0;
 static int MigOutcome_cmp(MigOutcome *a, unsigned event);
 static MigOutcome *MigOutcome_new(MigOutcome *next,
                                   unsigned event,
-                                  unsigned noutcomes,  
-                                  uint64_t bits,
+                                  unsigned outcomes,  
                                   double pr);
 
 /// Increment external migration_event variable.
@@ -31,16 +30,15 @@ static int MigOutcome_cmp(MigOutcome *a, unsigned event) {
 
 MigOutcome *MigOutcome_insert(MigOutcome *head,
                               unsigned event,
-                              unsigned noutcomes,  
-                              uint64_t bits,
+                              unsigned outcome,
                               double pr) {
     int cmp = MigOutcome_cmp(head, event);
     if(cmp < 0) {
-        head->next = MigOutcome_insert(head->next, event, noutcomes,
-                                       bits, pr);
+        head->next = MigOutcome_insert(head->next, event, outcome,
+                                       pr);
         return head;
     }else if(cmp > 0) {
-        return MigOutcome_new(head, event, noutcomes, bits, pr);
+        return MigOutcome_new(head, event, outcome, pr);
     }else{
         fprintf(stderr,"%s:%s:%d: can't insert a new outcome for"
                 " existing migration event %u\n",
@@ -53,15 +51,13 @@ MigOutcome *MigOutcome_insert(MigOutcome *head,
 
 static MigOutcome *MigOutcome_new(MigOutcome *next,
                                   unsigned event,
-                                  unsigned noutcomes,  
-                                  uint64_t bits,
+                                  unsigned outcome,  
                                   double pr) {
     MigOutcome *self = malloc(sizeof(MigOutcome));
     CHECKMEM(self);
 
     self->event = event;
-    self->noutcomes = noutcomes;
-    self->bits = bits;
+    self->outcome = outcome;
     self->pr = pr;
     self->next = next;
     return self;
@@ -84,12 +80,12 @@ void MigOutcome_free(MigOutcome *self) {
 }
 
 void MigOutcome_print(MigOutcome *self, FILE *fp) {
-    if(self==NULL) {
-        putc('\n', fp);
-        return;
+    for(MigOutcome *m=self; m; m = m->next) {
+        if(m != self)
+            putc(' ', fp);
+        fprintf(fp,"%u:%u:%g",m->event, m->outcome, m->pr);
     }
-    fprintf(fp,"%u:%llx:%g ",self->event, self->bits, self->pr);
-    MigOutcome_print(self->next, fp);
+    fputc('\n', fp);
 }
 
 /**
@@ -101,31 +97,42 @@ MigOutcome *MigOutcome_join(MigOutcome *left, MigOutcome *right) {
 
     MigOutcome *head = NULL;
 
-    while(left || right) {
-        if(right==NULL || (left->event < right->event)) {
+    while(left && right) {
+        if(left->event < right->event) {
             head = MigOutcome_insert(head, left->event,
-                                     left->noutcomes, left->bits,
-                                     left->pr);
+                                     left->outcome, left->pr);
             left = left->next;
-        }else if(left==NULL || (left->event > right->event)) {
+        }else if(left->event > right->event) {
             head = MigOutcome_insert(head, right->event,
-                                     right->noutcomes, right->bits,
-                                     right->pr);
+                                     right->outcome, right->pr);
             right = right->next;
         }else{
             assert(left->event == right->event);
             if(left->outcome != right->outcome) {
                 // left and right represent mutually exclusive events
-                MigOutcomee_free(head);
+                MigOutcome_free(head);
                 return NULL;
             }
             assert(left->pr == right->pr);
+
+            // This is the same event, not two independent events,
+            // so the probabilities of left and right do not
+            // multiply.
             head = MigOutcome_insert(head, right->event,
-                                     right->noutcomes, right->bits,
-                                     right->pr);
+                                     right->outcome, right->pr);
             left = left->next;
             right = right->next;
         }
+    }
+    while(left) {
+       head = MigOutcome_insert(head, left->event, left->outcome,
+                                left->pr);
+       left = left->next;
+    }
+    while(right) {
+        head = MigOutcome_insert(head, right->event, right->outcome,
+                                 right->pr);
+        right = right->next;
     }
     return head;
 }

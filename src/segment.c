@@ -643,11 +643,8 @@ PtrVec *PtrLst_to_PtrVec(PtrLst *from, PtrVec *to) {
         to = PtrVec_new(nIdSets);
     }
     
-    IdSet *idset = PtrLst_pop(from);
-    while( idset ) {
+    for(IdSet *idset = PtrLst_pop(from); idset; idset = PtrLst_pop(from))
         PtrVec_push(to, idset);
-        idset = PtrLst_pop(from);
-    }
 
     return to;
 }
@@ -719,73 +716,6 @@ static int Segment_equals_r(Segment *a, Segment *b) {
 }
 
 #if 0
-// Call from root Segment to set values of "max" within each
-// Segment in network, and to allocate arrays "a" and "d"
-void Segment_allocArrays(Segment *self) {
-    int status;
-
-    // If this segment has already been set, return immediately.
-    if(self->max > 0)
-        return;
-
-    // Set children before self
-    if(self->nchildren > 0)
-        Segment_allocArrays(self->child[0]);
-    if(self->nchildren == 2)
-        Segment_allocArrays(self->child[1]);
-
-    /* Absent migration, the maximum number of samples in the current
-     * segment would be the sum of nsamples plus the maxima of the
-     * children. But with migration, some of the potential lineages in
-     * child 0 may be the same as some of those in child 1,
-     * representing different and mutually exclusive outcomes of the
-     * migration process. Therefore the sum of the children's maxima
-     * will sometimes overestimate the max of the current node. To
-     * guard against this, we make sure that self->max does not exceed
-     * the total number of samples in the entire data set. */
-    self->max = self->nsamples;
-    if(self->nchildren > 0)
-        self->max += self->child[0]->max;
-    if(self->nchildren == 2)
-        self->max += self->child[1]->max;
-
-    if(self->max > total_samples)
-        self->max = total_samples;
-
-    // This could happen if a user creates a tip segment with no
-    // samples.
-    if(self->max == 0)
-        return;
-
-    // max number of ancestors equals max of descendants, because
-    // the ancestors = descendants if no coalescent events happen.
-    self->a = malloc(self->max * sizeof(PtrVec *));
-    CHECKMEM(self->a);
-    self->d = malloc(self->max * sizeof(PtrVec *));
-    CHECKMEM(self->d);
-
-    // The number of sets of k (=i+1) ancestors is the number
-    // of ways of partitioning descendants into k subsets, and
-    // this is given by Stirling's number of the 2nd kind.
-    for(int i=0; i < self->max; ++i) {
-        // number of ways to partition max things into i+1 subsets
-        long unsigned n = stirling2(max, i+1);
-        self->d[i] = PtrVec_new(n);
-        self->a[i] = PtrVec_new(n);
-    }
-
-    // Create IdSet objects for tip Segments and store them
-    // in self->a.
-    if(self->nchildren==0 && self->nsamples > 0) {
-        IdSet *idset = IdSet_new(self->nsamples, self->samples, 1.0);
-        status = PtrVec_push(self->a[self->nsamples-1], idset);
-        if(status) {
-            fprintf(stderr,"%s:%d: %s\n", __FILE__,__LINE__,
-                    strerror(status));
-            exit(EXIT_FAILURE);
-        }
-    }
-}
 
 static int Segment_coalesceFinite(Segment *self, double v, int dosing,
                                   BranchTab *branchtab) {

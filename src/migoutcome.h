@@ -21,9 +21,9 @@ In the MigOutcome structure, "event" is an index that indicates which
 episode of migration is being described. It is 0 for the first
 migration event, 1 for the next, and so on.
 
-"Outcome" is an integer whose i'th bit is on if this is the i'th
-outcome.  It is forbidden to coalesce lineages that belong to
-different outcomes of the same event.
+"Outcome" is 0 for the first outcome, 1 for the second, and so on.
+It is forbidden to coalesce lineages that belong to different outcomes
+of the same event. 
 
 A single set of lineages may have experienced multiple migration
 events, so each lineage has a sorted linked list of MigOutcome
@@ -31,12 +31,7 @@ objects, which represent all the migration events it has experienced.
  **/
 struct MigOutcome {
     unsigned event;        // which episode of migration?
-    unsigned noutcomes;    // number of outcomes of this migration
-                           // event
-
-    // Bit i is on if this is the i'th outcome.
-    uint64_t bits;
-
+    unsigned outcome;     // outcome of this event
     double pr;             // probability of this outcome
     struct MigOutcome *next;
 };
@@ -44,8 +39,7 @@ struct MigOutcome {
 unsigned    nextMigrationEvent(void);
 MigOutcome *MigOutcome_insert(MigOutcome *head,
                               unsigned event,
-                              unsigned noutcomes,  
-                              uint64_t bits,
+                              unsigned outcome,  
                               double pr);
 MigOutcome *MigOutcome_dup(MigOutcome *old);
 void        MigOutcome_free(MigOutcome *self);

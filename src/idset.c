@@ -37,21 +37,6 @@ void IdSet_print(IdSet *self, FILE *fp) {
     MigOutcome_print(self->mig, fp);
 }
 
-/// Compare IdSet objects. Return -1 if x<y, 1 if x>y, and 0 otherwise.
-int IdSet_cmp(const IdSet *x, const IdSet *y) {
-    for(int i=0; i < x->nIds && i < y->nIds; ++i) {
-        if(x->tid[i] < y->tid[i])
-            return -1;
-        if(x->tid[i] > y->tid[i])
-            return 1;
-    }
-    if(x->nIds < y->nIds)
-        return -1;
-    if(x->nIds > y->nIds)
-        return 1;
-    return 0;
-}
-
 /// Allocate a new IdSet with a single tipId_t value and probability 1.
 IdSet *IdSet_newTip(tipId_t tid) {
     IdSet *self = malloc(sizeof(IdSet));
@@ -108,7 +93,7 @@ void IdSet_copyMigOutcome(IdSet *self, const IdSet *old) {
  * returns NULL.
  */
 IdSet *IdSet_join(IdSet *left, IdSet *right, int nsamples,
-                  tipId_t samples[nsamples]) {
+                  tipId_t *samples) {
 
     MigOutcome *mig = MigOutcome_join(left->mig, right->mig);
     if(mig == NULL)
@@ -120,14 +105,14 @@ IdSet *IdSet_join(IdSet *left, IdSet *right, int nsamples,
     tipId_t tid[nIds];
     for(int i=nIds=0; i < left->nIds; ++i) {
         if(left->tid[i])
-            tid[nIds++] = left->tid;
+            tid[nIds++] = left->tid[i];
     }
     for(int i=0; i < right->nIds; ++i) {
         if(right->tid[i])
-            tid[nIds++] = left->tid;
+            tid[nIds++] = left->tid[i];
     }
     for(int i=0; i<nsamples; ++i)
-        tid[nIds++] = sample[i];
+        tid[nIds++] = samples[i];
 
     // In case left, right, and samples are all empty.
     if(nIds == 0) {
@@ -135,9 +120,14 @@ IdSet *IdSet_join(IdSet *left, IdSet *right, int nsamples,
         tid[0] = 0; // the empty set
     }
 
-    IdSet *new = IdSet_new(nIds, tid, left->pr * right->pr);
+    IdSet *new = IdSet_new(nIds, tid, left->p * right->p);
     new->mig = mig;
 
     return new;
+}
+
+void IdSet_addMigEvent(IdSet *self, unsigned event, unsigned outcome,
+                       double pr) {
+    self->mig = MigOutcome_insert(self->mig, event, outcome, pr);
 }
 

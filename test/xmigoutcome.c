@@ -35,34 +35,56 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    MigOutcome *mo = NULL;
+    MigOutcome *mo[2] = {NULL, NULL};
 
     for(unsigned i=0; i < 3; ++i) {
         unsigned event = nextMigrationEvent();
-        assert(i == event);
-        unsigned noutcomes = (i+1) << i;
-        mo = MigOutcome_insert(mo, event, noutcomes, 1u << noutcomes/2u, 0.5);
+        for(unsigned outcome = 0; outcome < 2; ++outcome) {
+            mo[outcome] = MigOutcome_insert(mo[outcome], event,
+                                            outcome, 0.5);
+        }
     }
 
-    MigOutcome *mo2 = MigOutcome_dup(mo);
+    MigOutcome *mo3 = MigOutcome_dup(mo[0]);
     if(verbose) {
-        MigOutcome_print(mo, stdout);
-        MigOutcome_print(mo2, stdout);
+        MigOutcome_print(mo[0], stdout);
+        MigOutcome_print(mo[1], stdout);
+        MigOutcome_print(mo3, stdout);
     }
 
-    MigOutcome *a=mo, *b=mo2;
+    MigOutcome *mo4 = MigOutcome_join(mo[0], mo[1]);
+    assert(mo4 == NULL);
+
+    MigOutcome_free(mo3);
+    mo3 = NULL;
+    for(unsigned i=0; i < 2; ++i) {
+        unsigned event = nextMigrationEvent();
+        mo3 = MigOutcome_insert(mo3, event, 1, 0.5);
+    }
+    mo4 = MigOutcome_join(mo[0], mo3);
+    assert(mo4);
+    if(verbose)
+        MigOutcome_print(mo4, stdout);
+
+    MigOutcome_free(mo4);
+    mo4 = NULL;
+    mo4 = MigOutcome_join(mo[0], mo[0]);
+    assert(mo4);
+
+    MigOutcome *a=mo[0], *b=mo[1];
     while(a && b) {
         assert(a->event == b->event);
-        assert(a->noutcomes == b->noutcomes);
-        assert(a->bits == b->bits);
+        assert(a->outcome != b->outcome);
         assert(a->pr == b->pr);
         a = a->next;
         b = b->next;
     }
     assert(a==NULL);
     assert(b==NULL);
-    MigOutcome_free(mo);
-    MigOutcome_free(mo2);
+    MigOutcome_free(mo[0]);
+    MigOutcome_free(mo[1]);
+    MigOutcome_free(mo3);
+    MigOutcome_free(mo4);
 
     unitTstResult("MigOutcome", "OK");
     

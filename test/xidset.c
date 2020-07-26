@@ -8,6 +8,7 @@
  */
 #include "idset.h"
 #include "misc.h"
+#include "migoutcome.h"
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
@@ -41,8 +42,6 @@ int main(int argc, char **argv) {
 
     for(i=0; i<ntips; ++i) {
         tip[i] = IdSet_newTip(1u << i);
-        if(i>0)
-            assert(0 != IdSet_cmp(tip[i-1], tip[i]));
         if(verbose)
             IdSet_print(tip[i], stdout);
         IdSet_sanityCheck(tip[i], __FILE__, __LINE__);
@@ -63,12 +62,49 @@ int main(int argc, char **argv) {
     IdSet *b = IdSet_dup(a);
     IdSet_sanityCheck(b, __FILE__, __LINE__);
 
-    assert(0 == IdSet_cmp(a, b));
+    if(verbose) {
+        printf("Two duplicate IdSet objects\n");
+        printf("***a:\n");
+        IdSet_print(a, stdout);
+        printf("***b:\n");
+        IdSet_print(b, stdout);
+    }
 
+    nIds = 3;
+    tipId_t tid2[3] = {6,7,8};
+    pr = 0.5;
+    IdSet *c = IdSet_new(nIds, tid2, pr);
+    IdSet_sanityCheck(c, __FILE__, __LINE__);
+
+    IdSet_addMigEvent(a, 1,1, 0.1);
+    IdSet_addMigEvent(a, 2,2, 0.2);
+    IdSet_addMigEvent(c, 3,3, 0.3);
+
+    IdSet *d = IdSet_join(a, c, 0, NULL);
+    assert(d);
+    IdSet_sanityCheck(d, __FILE__, __LINE__);
+    if(verbose) {
+        printf("a join c = d\n");
+        printf("***a:\n");
+        IdSet_print(a, stdout);
+        printf("***c:\n");
+        IdSet_print(c, stdout);
+        printf("***d:\n");
+        IdSet_print(d, stdout);
+    }
+
+    // construct e, which is mutually exclusive with a
+    IdSet *e = IdSet_new(nIds, tid2, pr);
+    IdSet_sanityCheck(e, __FILE__, __LINE__);
+    IdSet_addMigEvent(e, 1, 2, 0.1);
+
+    assert(NULL == IdSet_join(a, e, 0, NULL));
+    
     for(i=0; i<ntips; ++i)
         IdSet_free(tip[i]);
     IdSet_free(a);
     IdSet_free(b);
+    IdSet_free(c);
 
     unitTstResult("IdSet", "OK");
     

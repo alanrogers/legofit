@@ -18,13 +18,18 @@ struct IdSet {
     tipId_t tid[1];
 };
 
-IdSet *IdSet_newTip(tipId_t tid);
+void   IdSet_addMigEvent(IdSet *self, unsigned event, unsigned outcome,
+                         double pr);
+IdSet *IdSet_join(IdSet *left, IdSet *right, int nsamples,
+                  tipId_t *samples);
+void   IdSet_copyMigOutcome(IdSet *self, const IdSet *old);
+IdSet *IdSet_dup(const IdSet *old);
+IdSet *IdSet_join(IdSet *left, IdSet *right, int nsamples,
+                  tipId_t samples[nsamples]);
 IdSet *IdSet_new(int nIds, const tipId_t tid[nIds], double prob);
-int    IdSet_cmp(const IdSet *x, const IdSet *y);
+IdSet *IdSet_newTip(tipId_t tid);
 void   IdSet_print(IdSet *self, FILE *fp);
 void   IdSet_sanityCheck(IdSet *self, const char *file, int lineno);
-IdSet *IdSet_dup(const IdSet *old);
-void   IdSet_copyMigOutcome(IdSet *self, const IdSet *old);
 static inline void IdSet_free(IdSet *self);
 static inline int IdSet_nIds(IdSet *self);
 
