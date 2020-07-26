@@ -10,7 +10,6 @@
 
 #include "idset.h"
 #include "misc.h"
-#include "binary.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -18,6 +17,7 @@ void IdSet_sanityCheck(IdSet *self, const char *file, int lineno) {
 #ifndef NDEBUG
     if(self == NULL)
        return;
+    REQUIRE(self->nIds > 0, file, lineno);
     REQUIRE(self->p >= 0.0, file, lineno);
     REQUIRE(self->p <= 1.0, file, lineno);
 #endif    
@@ -99,3 +99,45 @@ void IdSet_copyMigOutcome(IdSet *self, const IdSet *old) {
     assert(self->mig == NULL);
     self->mig = MigOutcome_dup(old->mig);
 }
+
+/**
+ * Join two IdSet objects, left and right, along with all the tipId_t
+ * values in the "samples" array. On success, function returns a
+ * pointer to the new IdSet object. If "left" and "right" represent
+ * mutually exclusive events, they cannot be joined, and the function
+ * returns NULL.
+ */
+IdSet *IdSet_join(IdSet *left, IdSet *right, int nsamples,
+                  tipId_t samples[nsamples]) {
+
+    MigOutcome *mig = MigOutcome_join(left->mig, right->mig);
+    if(mig == NULL)
+        return NULL; // left and right are mutually exclusive
+
+    // Copy all tipId_t values into tid, excluding zeroes, which
+    // represent the empty set.
+    int nIds = left->nIds + right->nIds + nsamples;
+    tipId_t tid[nIds];
+    for(int i=nIds=0; i < left->nIds; ++i) {
+        if(left->tid[i])
+            tid[nIds++] = left->tid;
+    }
+    for(int i=0; i < right->nIds; ++i) {
+        if(right->tid[i])
+            tid[nIds++] = left->tid;
+    }
+    for(int i=0; i<nsamples; ++i)
+        tid[nIds++] = sample[i];
+
+    // In case left, right, and samples are all empty.
+    if(nIds == 0) {
+        nIds += 1;
+        tid[0] = 0; // the empty set
+    }
+
+    IdSet *new = IdSet_new(nIds, tid, left->pr * right->pr);
+    new->mig = mig;
+
+    return new;
+}
+
