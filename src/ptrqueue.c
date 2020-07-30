@@ -72,7 +72,8 @@ void PtrQueue_push(PtrQueue *self, void *ptr) {
         self->head = self->tail;
 }
 
-// Return next pointer or NULL if there are no more.
+// Return NULL if the queue is empty. Otherwise, return the next item
+// and remove it from the queue.
 void *PtrQueue_pop(PtrQueue *self) {
     void *ptr;
     self->head = El_pop(self->head, &ptr);

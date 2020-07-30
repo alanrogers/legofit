@@ -93,11 +93,13 @@ int main(int argc, char **argv) {
         IdSet_print(d, stdout);
     }
 
-    // construct e, which is mutually exclusive with a
+    // construct "e", which is mutually exclusive with "a".
     IdSet *e = IdSet_new(nIds, tid2, pr);
     IdSet_sanityCheck(e, __FILE__, __LINE__);
     IdSet_addMigEvent(e, 1, 2, 0.1);
 
+    // can't join IdSet objects with mutually exclusive
+    // migration histories.
     assert(NULL == IdSet_join(a, e, 0, NULL));
     
     for(i=0; i<ntips; ++i)

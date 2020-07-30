@@ -15,7 +15,7 @@ Systems Consortium License, which can be found in file "LICENSE".
 
 struct PtrLst {
     long unsigned count;
-    PtrLstEl *head;
+    PtrLstEl *head, *curr;
 };
 
 /// A linked list of pointers
@@ -65,6 +65,7 @@ PtrLst *PtrLst_new(void) {
     CHECKMEM(self);
     self->head = NULL;
     self->count = 0;
+    self->curr = self->head;
     return self;
 }
 
@@ -91,5 +92,15 @@ long unsigned PtrLst_length(PtrLst *self) {
     return self->count;
 }
 
-void    PtrLst_rewind(PtrLst *self);
-void   *PtrLst_next(PtrLst *self);
+void    PtrLst_rewind(PtrLst *self) {
+    self->curr = self->head;
+}
+
+void   *PtrLst_next(PtrLst *self) {
+    if(self->curr == NULL)
+        return NULL;
+    
+    void *rtn = self->curr->ptr;
+    self->curr = self->curr->next;
+    return rtn;
+}

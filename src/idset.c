@@ -131,3 +131,20 @@ void IdSet_addMigEvent(IdSet *self, unsigned event, unsigned outcome,
     self->mig = MigOutcome_insert(self->mig, event, outcome, pr);
 }
 
+IdSet *IdSet_addSamples(IdSet *old, int nsamples, tipId_t *samples) {
+    if(nsamples == 0)
+        return old;
+    
+    int nIds = old->nIds + nsamples;
+    tipId_t tid[nIds];
+
+    memcpy(tid, old->tid, old->nIds * sizeof(tipId_t));
+    memcpy(tid + old->nIds, samples, nsamples * sizeof(tipId_t));
+
+    IdSet *new = IdSet_new(nIds, tid, old->p);
+    new->mig = old->mig;
+    old->mig = NULL;
+
+    IdSet_free(old);
+    return new;
+}

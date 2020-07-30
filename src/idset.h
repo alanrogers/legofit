@@ -18,6 +18,7 @@ struct IdSet {
     tipId_t tid[1];
 };
 
+IdSet *IdSet_addSamples(IdSet *old, int nsamples, tipId_t *samples);
 void   IdSet_addMigEvent(IdSet *self, unsigned event, unsigned outcome,
                          double pr);
 IdSet *IdSet_join(IdSet *left, IdSet *right, int nsamples,

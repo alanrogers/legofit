@@ -15,9 +15,7 @@ static MigOutcome *MigOutcome_new(MigOutcome *next,
 
 /// Increment external migration_event variable.
 unsigned nextMigrationEvent(void) {
-    unsigned event = migration_event;
-    migration_event += 1;
-    return event;
+    return migration_event++;
 }
 
 static int MigOutcome_cmp(MigOutcome *a, unsigned event) {
