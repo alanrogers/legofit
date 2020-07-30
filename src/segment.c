@@ -736,23 +736,18 @@ static int Segment_equals_r(Segment *a, Segment *b) {
 static int Segment_coalesceFinite(Segment *self, double v, int dosing,
                                   BranchTab *branchtab) {
     double pr[self->max], elen[self->max];
-    int n, i, status=0;
+    int n, i, k, status=0;
     IdSet *ids;
 
     // Array of lists of ancestors. a[k-1] is the list for sets of k
     // ancestors.  
     PtrLst *a[self->max];
     for(i=0; i < self->max; ++i)
-        a[i] = PtrLst();
+        a[i] = PtrLst_new();
     
     SetPartDat sd = {.branchtab = branchtab,
                      .dosing = dosing,
     };
-
-#ifndef NDEBUG
-    for(i=0; i < self->max; ++i)
-        assert(self->ids[1][i] == NULL);
-#endif    
 
     memset(self->p[1], 0, MAXSAMP*sizeof(double));
 
@@ -810,7 +805,7 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
 
         // Loop over number, k, of ancestors.
         // Include k=1, because this is a finite segment.
-        for(int k=1; k <= n; ++k) {
+        for(k=1; k <= n; ++k) {
             assert(0 == PtrLst_length(sd.a));
             sd.a = a[k-1];
             sd.nparts = k;
@@ -838,9 +833,9 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
         assert(self->parent[0]->nw < 3);
     }else{
         assert(self->nparents == 2);
-        assert(self->mig_i >= 0);
-        assert(self->mig >= 0.0);
-        assert(self->mig <= 1.0);
+        assert(self->mix_i >= 0);
+        assert(self->mix >= 0.0);
+        assert(self->mix <= 1.0);
 
         // natives go to parent[0], migrants to parent[1]
 
@@ -855,14 +850,14 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
                       .migrants = PtrLst_new(),
                       .natives = PtrLst_new(),
                       .a = NULL,
-                      .migrationEvent = nextMigrationEvent();
+                      .migrationEvent = nextMigrationEvent()
         };
         for(k=1; k <= max; ++k) {
             msd.a = PtrLst_to_PtrVec(a[k-1], msd.a);
             PtrLst_free(a[k-1]);
             for(long x=0; x <= k; ++x) {
                 // prob that x of k lineages are migrants
-                long double lnpr = lbinomial(k, x);
+                long double lnpr = lbinom(k, x);
 
                 // "if" is needed because of the possibility that
                 // self->mix might = 0.0
@@ -886,7 +881,7 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
                 self->parent[0]->wmax[nw] = max;
                 IdSet *idset = PtrLst_pop(msd.natives);
                 while(idset) {
-                    status = IdSet_push(self->parent[0]->w[nw][k-x-1], idset);
+                    status = PtrLst_push(self->parent[0]->w[nw][k-x-1], idset);
                     idset = PtrLst_pop(msd.natives);
                 }
 
@@ -895,7 +890,7 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
                 assert(nw < 2);
                 idset = PtrLst_pop(msd.migrants);
                 while(idset) {
-                    status = IdSet_push(self->parent[1]->w[nw][x-1], idset);
+                    status = PtrLst_push(self->parent[1]->w[nw][x-1], idset);
                     idset = PtrLst_pop(msd.migrants);
                 }
             }
@@ -990,8 +985,7 @@ static int Segment_coalesceInfinite(Segment *self, double v, int dosing,
 }
 
 int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
-    double v;
-    int n, i, status=0;
+    int n, i, j, status=0;
     IdSet *ids;
 
     if(self->nchildren > 0) {
@@ -1013,7 +1007,7 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
             break;
         self->d = malloc(n * sizeof(*PtrVec));
         CHECKMEM(self->d);
-        for(int i=0; i<n; ++i)
+        for(i=0; i<n; ++i)
             self->d[i] = PtrVec_new(1);
         PtrVec_push(self->d[n-1], IdSet_new(n, self->samples));
         break;
@@ -1030,11 +1024,11 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
             break;
         self->d = malloc(n * sizeof(PtrVec *));
         CHECKMEM(self->d);
-        for(int i=0; i<n; ++i) {
+        for(i=0; i<n; ++i) {
             int m = PtrLst_length(self->w[0][i]);
             self->d[i] = PtrVec_new(m);
         }
-        for(int i=0; i < self->wmax[0]; ++i) {
+        for(i=0; i < self->wmax[0]; ++i) {
             IdSet *ids = PtrLst_pop(self->w[0][i]);
             while(ids) {
                 ids = IdSet_addSamples(ids, self->nsamples,
@@ -1064,26 +1058,31 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
         if(n==0)
             break;
         PtrLst *d[n];
-        for(int i=0; i<n; ++i)
+        for(i=0; i<n; ++i)
             d[i] = PtrLst_new();
 
-        for(int i=0; i < self->wmax[0]; ++i) {
-            IdSet *id0 = PtrLst_pop(self->w[0][i]);
-            for(int j=0; j < self->wmax[1]; ++j) {
+        IdSet *id0, *id1, *new;
+
+        for(i=0; i < self->wmax[0]; ++i) {
+            id0 = PtrLst_pop(self->w[0][i]);
+            for(j=0; j < self->wmax[1]; ++j) {
                 PtrLst_rewind(self->w[1][j]);
-                IdSet *id1 = PtrLst_next(self->w[1][j]);
-                while(id1) {
-                    IdSet *new = IdSet_join(id0, id1, self->nsamples,
+                for(id1=PtrLst_next(self->w[1][j]);
+                    id;
+                    id1=PtrLst_next(self->w[1][j])) {
+
+                    new = IdSet_join(id0, id1, self->nsamples,
                                             self->samples);
-                    if(new) {
-                        // non-NULL means id0 and id1 are compatible
-                        // and can be added to the list of
-                        // descendants.
-                        int k = i+j+nsamples + 2;
-                        assert(k == new->nIds);
-                        PtrLst_push(d[k-1], new);
-                    }
-                    id1 = PtrLst_next(self->w[1][j]);
+                    if(new == NULL)
+                        continue;
+                    
+                    // non-NULL means id0 and id1 are compatible
+                    // and can be added to the list of
+                    // descendants.
+                    int k = i+j+ self->nsamples + 2;
+                    assert(k == new->nIds);
+                    PtrLst_push(d[k-1], new);
+
                 }
             }
         }
@@ -1097,22 +1096,35 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
 
         // Convert lists of descendants into vectors and
         // install in self->d. Also free the entries of d[i].
-        for(int i=0; i<n; ++i) {
+        for(i=0; i<n; ++i) {
             self->d[i] = PtrLst_to_PtrVec(d[i], NULL);
             PtrLst_free(d[i]);
+        }
+
+        // Free waiting lists
+        for(i=0; i < self->wmax[0]; ++i) {
+            id0 = PtrLst_pop(self->w[0]);
+            while(id0) {
+                IdSet_free(id0);
+                id0 = PtrLst_pop(self->w[0]);
+            }
+        }
+        for(i=0; i < self->wmax[1]; ++i) {
+            id1 = PtrLst_pop(self->w[1]);
+            while(id1) {
+                IdSet_free(id1);
+                id0 = PtrLst_pop(self->w[1]);
+            }
         }
         break;
     }
 
-    if(self->end == NULL)
-        v = INFINITY;
-    else
-        v = *self->end = *self->start;
-
-    if(isfinite(v))
+    if(self->end == NULL) {
+        status = Segment_coalesceInfinite(self, INFINITY, dosing, branchTab);
+    }else{
+        double v = *self->end = *self->start;
         status = Segment_coalesceFinite(self, v, dosing, branchTab);
-    else
-        status = Segment_coalesceInfinite(self, v, dosing, branchTab);
+    }
 
     return status;
 }
