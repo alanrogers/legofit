@@ -817,15 +817,14 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
         }
     }
 
-    int max;  // max number of ancestors.
     int nw;   // index of current waiting room in parent
 
     // Transfer IdSet objects to parental waiting rooms.
     if(self->nparents == 1) {
         // Move all IdSet objects to parental waiting room.
         nw = self->parent[0]->nw;
-        self->parent[0]->wmax[nw] = max;
-        for(i=0; i<max; ++i) {
+        self->parent[0]->wmax[nw] = self->max;
+        for(i=0; i < self->max; ++i) {
             self->parent[0]->w[nw][i] = a[i];
             a[i] = NULL;
         }
@@ -841,9 +840,9 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
 
         // Set dimension of w arrays in the two parents
         nw = self->parent[0]->nw;
-        self->parent[0]->wmax[nw] = max;
+        self->parent[0]->wmax[nw] = self->max;
         nw = self->parent[1]->nw;
-        self->parent[1]->wmax[nw] = max;
+        self->parent[1]->wmax[nw] = self->max;
 
         //  P[x] = (k choose x) * m^x * (1-m)^(k-x)
         MigDat msd = {
@@ -852,7 +851,7 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
                       .a = NULL,
                       .migrationEvent = nextMigrationEvent()
         };
-        for(k=1; k <= max; ++k) {
+        for(k=1; k <= self->max; ++k) {
             msd.a = PtrLst_to_PtrVec(a[k-1], msd.a);
             PtrLst_free(a[k-1]);
             for(long x=0; x <= k; ++x) {
@@ -878,7 +877,7 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
                 // transfer natives
                 nw = self->parent[0]->nw;
                 assert(nw < 2);
-                self->parent[0]->wmax[nw] = max;
+                self->parent[0]->wmax[nw] = self->max;
                 IdSet *idset = PtrLst_pop(msd.natives);
                 while(idset) {
                     status = PtrLst_push(self->parent[0]->w[nw][k-x-1], idset);
@@ -912,7 +911,7 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
 
 static int Segment_coalesceInfinite(Segment *self, double v, int dosing,
                                     BranchTab *branchtab) {
-    double pr[self->max], elen[self->max];
+    double elen[self->max];
     int n, i, status=0;
     IdSet *ids;
 
@@ -1005,18 +1004,18 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
         n = self->max = self->nsamples;
         if(n==0)
             break;
-        self->d = malloc(n * sizeof(*PtrVec));
+        self->d = malloc(n * sizeof(PtrVec *));
         CHECKMEM(self->d);
         for(i=0; i<n; ++i)
             self->d[i] = PtrVec_new(1);
-        PtrVec_push(self->d[n-1], IdSet_new(n, self->samples));
+        PtrVec_push(self->d[n-1], IdSet_new(n, self->sample, 1.0));
         break;
     case 1:
         /*
          * Segment has one waiting room. The i'th entry in self->d is
          * a vector that contains all the IdSet objects from one entry
          * of self->w[0]. Before installing these objects in self->d,
-         * however, we need to add the entries of self->samples to
+         * however, we need to add the entries of self->sample to
          * each one.
          */
         self->max = n = self->wmax[0] + self->nsamples;
@@ -1029,10 +1028,10 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
             self->d[i] = PtrVec_new(m);
         }
         for(i=0; i < self->wmax[0]; ++i) {
-            IdSet *ids = PtrLst_pop(self->w[0][i]);
+            ids = PtrLst_pop(self->w[0][i]);
             while(ids) {
                 ids = IdSet_addSamples(ids, self->nsamples,
-                                       self->samples);
+                                       self->sample);
                 PtrVec_push(self->d[i+self->nsamples], ids);
                 ids = PtrLst_pop(self->w[0][i]);
             }
@@ -1044,7 +1043,7 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
          * lists. The i'th list contains sets of i+1 descendants. Each
          * such set is the union of (a) an entry from waiting room 0,
          * (b) an entry from waiting room 1, and (c) the samples (if
-         * any) in self->samples. Some entries in waiting room 0 may
+         * any) in self->sample. Some entries in waiting room 0 may
          * be incompatible with some entries in waiting room 1,
          * because they represent mutually exclusive outcomes of the
          * same migration event. These mutually exclusive pairs are
@@ -1067,12 +1066,11 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
             id0 = PtrLst_pop(self->w[0][i]);
             for(j=0; j < self->wmax[1]; ++j) {
                 PtrLst_rewind(self->w[1][j]);
-                for(id1=PtrLst_next(self->w[1][j]);
-                    id;
+                for(id1=PtrLst_next(self->w[1][j]); id1;
                     id1=PtrLst_next(self->w[1][j])) {
 
                     new = IdSet_join(id0, id1, self->nsamples,
-                                            self->samples);
+                                            self->sample);
                     if(new == NULL)
                         continue;
                     
@@ -1103,27 +1101,27 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
 
         // Free waiting lists
         for(i=0; i < self->wmax[0]; ++i) {
-            id0 = PtrLst_pop(self->w[0]);
-            while(id0) {
+            for(id0=PtrLst_pop(self->w[0][i]); id0;
+                id0=PtrLst_pop(self->w[0][i])) {
+
                 IdSet_free(id0);
-                id0 = PtrLst_pop(self->w[0]);
             }
         }
         for(i=0; i < self->wmax[1]; ++i) {
-            id1 = PtrLst_pop(self->w[1]);
-            while(id1) {
+            for(id1=PtrLst_pop(self->w[1][i]); id1;
+                id1=PtrLst_pop(self->w[1][i])) {
+
                 IdSet_free(id1);
-                id0 = PtrLst_pop(self->w[1]);
             }
         }
         break;
     }
 
-    if(self->end == NULL) {
-        status = Segment_coalesceInfinite(self, INFINITY, dosing, branchTab);
+    if(self->end_i == -1) {
+        status = Segment_coalesceInfinite(self, INFINITY, dosing, branchtab);
     }else{
-        double v = *self->end = *self->start;
-        status = Segment_coalesceFinite(self, v, dosing, branchTab);
+        double v = self->end - self->start;
+        status = Segment_coalesceFinite(self, v, dosing, branchtab);
     }
 
     return status;
