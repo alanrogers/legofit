@@ -121,6 +121,7 @@ struct Segment {
 int    visitComb(int d, int ndx[d], void *data);
 int    visitSetPart(unsigned n, unsigned a[n], void *data);
 int    visitMig(unsigned n, unsigned a[n], void *data);
+static void  unlink_child(Segment *child, Segment *parent);
 static int Segment_coalesceFinite(Segment *self, double v, int dosing,
                                   BranchTab *branchtab);
 static int Segment_coalesceInfinite(Segment *self, double v, int dosing,
@@ -128,6 +129,32 @@ static int Segment_coalesceInfinite(Segment *self, double v, int dosing,
 static void Segment_duplicate_nodes(Segment *old, PtrPtrMap *ppm);
 static int Segment_equals_r(Segment *a, Segment *b);
 PtrVec *PtrLst_to_PtrVec(PtrLst *from, PtrVec *to);
+
+
+/// Remove child from parent
+static void unlink_child(Segment *child, Segment *parent) {
+    switch(parent->nchildren) {
+    case 1:
+        assert(child == parent->child[0]);
+        parent->child[0] = NULL;
+        parent->nchildren = 0;
+        break;
+    case 2:
+        if(parent->child[1] == child)
+            parent->child[1] = NULL;
+        else {
+            assert(parent->child[0] == child);
+            parent->child[0] = parent->child[1];
+            parent->child[1] = NULL;
+        }
+        parent->nchildren = 1;
+        break;
+    default:
+        fprintf(stderr,"%s:%d: illegal number of children: %d\n",
+                __FILE__,__LINE__, parent->nchildren);
+        exit(EXIT_FAILURE);
+    }
+}
 
 void *Segment_new(int twoN_i, int start_i, ParStore *ps) {
     
@@ -146,9 +173,38 @@ void *Segment_new(int twoN_i, int start_i, ParStore *ps) {
     self->end = INFINITY;
     self->mix = 0.0;
 
+    for(int i=0; i < MAXSAMP; ++i) {
+        self->w[0][i] = PtrLst_new();
+        self->w[1][i] = PtrLst_new();
+    }
+
     // other fields are not initialized by Segment_new.
 
     return self;
+}
+
+void Segment_free(Segment *self) {
+    if(self == NULL)
+        return;
+
+    // Free children first. Calls to Segment_free will decrement
+    // self->nchildren.
+    while(self->nchildren) {
+        int i = self->nchildren - 1;
+        Segment_free(self->child[i]);
+    }
+
+    // unlink current node from its parents
+    while(self->nparents > 0) {
+        int i = self->nparents - 1;
+        unlink_child(self, self->parent[i]);
+        self->nparents -= 1;
+    }
+
+    for(int i=0; i < MAXSAMP; ++i) {
+        PtrLst_free(self->w[0][i]);
+        PtrLst_free(self->w[1][i]);
+    }
 }
 
 /// Set all "visited" flags to false.
@@ -604,9 +660,9 @@ int visitMig(unsigned n, unsigned a[n], void *data) {
         assert(a[i] == 0 || a[i] == 1);
 #endif    
 
-    assert(vdat->nMigrants == PtrLst_length(vdat->migrants));
-    assert(vdat->nNatives == PtrLst_length(vdat->natives));
-    tipId_t migrants[vdat->nMigrants], natives[vdat->nNatives];
+    // Arrays have an extra entry to avoid problems with
+    // zero length.
+    tipId_t migrants[1+vdat->nMigrants], natives[1+vdat->nNatives];
 
     // number of sets of ancestors
     int nSets = PtrVec_length(vdat->a);
@@ -825,7 +881,8 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
         nw = self->parent[0]->nw;
         self->parent[0]->wmax[nw] = self->max;
         for(i=0; i < self->max; ++i) {
-            self->parent[0]->w[nw][i] = a[i];
+            PtrLst_move(self->parent[0]->w[nw][i], a[i]);
+            PtrLst_free(a[i]);
             a[i] = NULL;
         }
         self->parent[0]->nw += 1;
@@ -878,20 +935,14 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
                 nw = self->parent[0]->nw;
                 assert(nw < 2);
                 self->parent[0]->wmax[nw] = self->max;
-                IdSet *idset = PtrLst_pop(msd.natives);
-                while(idset) {
-                    status = PtrLst_push(self->parent[0]->w[nw][k-x-1], idset);
-                    idset = PtrLst_pop(msd.natives);
-                }
+                assert(k-x-1 < MAXSAMP);
+                PtrLst_move(self->parent[0]->w[nw][k-x-1], msd.natives);
 
                 // transfer migrants
                 nw = self->parent[1]->nw;
                 assert(nw < 2);
-                idset = PtrLst_pop(msd.migrants);
-                while(idset) {
-                    status = PtrLst_push(self->parent[1]->w[nw][x-1], idset);
-                    idset = PtrLst_pop(msd.migrants);
-                }
+                assert(x-1 < MAXSAMP);
+                PtrLst_move(self->parent[1]->w[nw][x-1], msd.migrants);
             }
         }
         self->parent[0]->nw += 1;
@@ -901,10 +952,12 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
     }
 
     // Free IdSet objects of descendants
-    ids = PtrVec_pop(self->d[n-1]);
-    while( ids ) {
-        IdSet_free(ids);
+    for(n=2; n <= self->max; ++n) {
         ids = PtrVec_pop(self->d[n-1]);
+        while( ids ) {
+            IdSet_free(ids);
+            ids = PtrVec_pop(self->d[n-1]);
+        }
     }
     return status;
 }
@@ -987,6 +1040,9 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
     int n, i, j, status=0;
     IdSet *ids;
 
+    if(self->visited)
+        return 0;
+
     if(self->nchildren > 0) {
         status = Segment_coalesce(self->child[0], dosing, branchtab);
         if(status)
@@ -1024,6 +1080,8 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
         self->d = malloc(n * sizeof(PtrVec *));
         CHECKMEM(self->d);
         for(i=0; i<n; ++i) {
+            fprintf(stderr,"%d/%d\n", i, n);
+            assert(self->w[0][i]);
             int m = PtrLst_length(self->w[0][i]);
             self->d[i] = PtrVec_new(m);
         }

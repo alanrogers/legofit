@@ -7,16 +7,17 @@
  * Systems Consortium License, which can be found in file "LICENSE".
  */
 
-#include "segment.h"
+#include "branchtab.h"
+#include "error.h"
 #include "misc.h"
-#include "ptrqueue.h"
-#include "ptrptrmap.h"
 #include "param.h"
 #include "parstore.h"
-#include "error.h"
+#include "ptrptrmap.h"
+#include "ptrqueue.h"
+#include "segment.h"
+#include <assert.h>
 #include <stdio.h>
 #include <string.h>
-#include <assert.h>
 
 #ifdef NDEBUG
 #error "Unit tests must be compiled without -DNDEBUG flag"
@@ -104,6 +105,10 @@ int main(int argc, char *argv[]) {
     c = Segment_new(ni, ti, ps);
     assert(c);
     
+    Segment_newSample(a, 0);
+    Segment_newSample(b, 1);
+    Segment_newSample(c, 2);
+
     ti = ParStore_getIndex(ps, "Tmig");
     assert(ti >= 0);
     b2 = Segment_new(ni, ti, ps);
@@ -164,8 +169,24 @@ int main(int argc, char *argv[]) {
 
     if(verbose)
         Segment_print(stdout, abc, 0);
+
+    BranchTab *bt = BranchTab_new();
+
+    Segment_unvisit(abc);
+    status = Segment_coalesce(abc, 1, bt);
+    if(status) {
+        fprintf(stderr, "%s:%d: Segment_coalesce returned %d\n",
+                __FILE__,__LINE__,status);
+        exit(EXIT_FAILURE);
+    }
+    BranchTab_print(bt, stdout);
+
+    Segment_free(abc);
+    Segment_free(duproot);
     
     unitTstResult("Segment", "OK");
+
+    BranchTab_free(bt);
 
     return 0;
 

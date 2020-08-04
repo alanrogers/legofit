@@ -5,11 +5,11 @@
 #include <stdio.h>
 
 int      Segment_addChild(void * vparent, void * vchild);
-void     Segment_allocArrays(Segment *self, Stirling2 *stirling2);
 int      Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab);
 Segment *Segment_dup(Segment *old_root, PtrPtrMap *ppm);
 int      Segment_equals(Segment *a, Segment *b);
 int      Segment_feasible(const Segment * self, Bounds bnd, int verbose);
+void     Segment_free(Segment *self);
 void    *Segment_new(int twoN_i, int start_i, ParStore *ps);
 void     Segment_newSample(Segment * self, unsigned ndx);
 int      Segment_mix(void * vchild, int mix_i, void * vintrogressor,

@@ -49,6 +49,7 @@ int PtrVec_push(PtrVec *self, void *val) {
 }
 
 void *PtrVec_pop(PtrVec *self) {
+    assert(self);
     if(self->used == 0)
         return NULL;
     self->used -= 1;

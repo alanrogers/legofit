@@ -104,3 +104,17 @@ void   *PtrLst_next(PtrLst *self) {
     self->curr = self->curr->next;
     return rtn;
 }
+
+// Move all entries from "from" to "to".
+void PtrLst_move(PtrLst *to, PtrLst *from) {
+    if(to->count) {
+        fprintf(stderr,"%s:%s:%d: destination must be empty\n",
+                __FILE__,__func__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
+    to->count = from->count;
+    to->head = from->head;
+    to->curr = from->curr;
+    from->count = 0;
+    from->head = from->curr = NULL;
+}
