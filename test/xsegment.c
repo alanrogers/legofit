@@ -39,7 +39,6 @@ int main(int argc, char *argv[]) {
         goto usage;
     }
 
-
     PtrQueue *fixedQ = PtrQueue_new();
     PtrQueue *freeQ = PtrQueue_new();
     PtrQueue *constrQ = PtrQueue_new();
@@ -85,11 +84,6 @@ int main(int argc, char *argv[]) {
 
     Segment *a, *b, *b2, *c, *c2, *ab, *abc;
     int ni, ti, mi;
-#if 0    
-    tipId_t     ida = 0;
-    tipId_t     idb = 1;
-    tipId_t     idc = 2;
-#endif    
 
     ni = ParStore_getIndex(ps, "one");
     assert(ni >= 0);
@@ -172,6 +166,7 @@ int main(int argc, char *argv[]) {
 
     BranchTab *bt = BranchTab_new();
 
+    Segment_prune(abc);
     Segment_unvisit(abc);
     status = Segment_coalesce(abc, 1, bt);
     if(status) {
@@ -179,7 +174,7 @@ int main(int argc, char *argv[]) {
                 __FILE__,__LINE__,status);
         exit(EXIT_FAILURE);
     }
-    BranchTab_print(bt, stdout);
+    //BranchTab_print(bt, stdout);
 
     Segment_free(abc);
     Segment_free(duproot);

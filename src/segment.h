@@ -15,6 +15,7 @@ void     Segment_newSample(Segment * self, unsigned ndx);
 int      Segment_mix(void * vchild, int mix_i, void * vintrogressor,
                      void * vnative, ParStore *ps);
 void     Segment_print(FILE * fp, void * self, int indent);
+void     Segment_prune(Segment *self);
 void    *Segment_root(void * vself);
 void     Segment_sanityCheck(Segment * self, const char *file, int lineno);
 void     Segment_unvisit(Segment *self);
