@@ -45,7 +45,7 @@ struct CombDat {
 // Data manipulated by migrate function
 struct MigDat {
     int nMigrants, nNatives;
-    double pr; // probability
+    double pr; // probability of 
     PtrLst *migrants, *natives;
     PtrVec *a;
     unsigned migrationEvent;
@@ -54,6 +54,8 @@ struct MigDat {
 // Data manipulated by visitSetPart function.
 struct SetPartDat {
     unsigned nparts; // Number of parts in partition
+
+    double prior; // prob of k ancestors given n descendants
     long double lnconst;  // log of constant in Durrett's theorem 1.5
     double elen;     // E[len of interval]
 
@@ -112,10 +114,6 @@ struct Segment {
     // recent end of the Segment. The number of PtrVec
     // pointers--i.e. the dimension of array d--is self->max.
     PtrVec **d;
-
-    // p[0][i] is prob there are i+1 lineages at recent end of segment
-    // p[1][i] is analogous prob for ancient end of interval.
-    double p[2][MAXSAMP];
 };
 
 static PtrVec **get_descendants1(int dim, PtrLst **w, int nsamples,
@@ -124,9 +122,8 @@ static PtrVec **get_descendants2(int dim0, PtrLst **w0,
                                  int dim1, PtrLst **w1,
                                  int nsamples, tipId_t *sample, int *newdim);
 static void coalescent_interval_length(int n, double elen[n],
-                                       double eig[n], double v,
-                                       double prior);
-static void project(int n, double pr[n], double eig[n], double prior);
+                                       double eig[n], double v);
+static void project(int n, double pr[n], double eig[n]);
 int    visitComb(int d, int ndx[d], void *data);
 int    visitSetPart(unsigned n, unsigned a[n], void *data);
 int    visitMig(unsigned n, unsigned a[n], void *data);
@@ -335,12 +332,6 @@ void Segment_sanityCheck(Segment * self, const char *file, int lineno) {
     REQUIRE(self->nsamples < MAXSAMP, file, lineno);
     REQUIRE(self->nchildren >= 0, file, lineno);
     REQUIRE(self->nchildren <= 2, file, lineno);
-    for(int i=0; i < self->max; ++i) {
-        REQUIRE(self->p[0][i] >= 0.0, file, lineno);
-        REQUIRE(self->p[1][i] >= 0.0, file, lineno);
-        REQUIRE(self->p[0][i] <= 1.0, file, lineno);
-        REQUIRE(self->p[1][i] <= 1.0, file, lineno);
-    }
     if(self->nchildren > 0)
         Segment_sanityCheck(self->child[0], file, lineno);
     if(self->nchildren > 1)
@@ -650,6 +641,7 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
     }
 
     double p = probPartition(k, c, vdat->lnconst);
+    p *= vdat->prior;
 
     // nIds is the number of IdSet objects, each representing
     // a set of n descendants.
@@ -845,19 +837,11 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
                      .dosing = dosing,
     };
 
-    memset(self->p[1], 0, MAXSAMP*sizeof(double));
-
     fprintf(stderr, "%s:%d: self->max=%d\n",
             __FILE__,__LINE__,self->max);
 
     // Handle case of a segment with a single lineage
-    fprintf(stderr,"%s:%s:%d: p00=%lg\n",
-            __FILE__,__func__,__LINE__,self->p[0][0]);
-    if(self->p[0][0] > 0.0) {
-        // If there is 1 lineage at the recent end of the segment
-        // then it will still be there at the ancient end, because
-        // no coalescent events are possible.
-        self->p[1][0] = self->p[0][0];
+    if(PtrVec_length(self->d[0]) > 1) {
 
         int nIds = PtrVec_length(self->d[0]);
         fprintf(stderr,"%s:%s:%d: nIds=%d\n", __FILE__,__func__,__LINE__,nIds);
@@ -865,7 +849,7 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
             fprintf(stderr,"%s:%s:%d: i=%d\n", __FILE__,__func__,__LINE__,i);
             IdSet *d = PtrVec_get(self->d[0], i);
             assert(d->nIds == 1);
-            BranchTab_add(branchtab, d->tid[0], self->p[0][0] * d->p);
+            BranchTab_add(branchtab, d->tid[0], d->p);
 
             IdSet *new = IdSet_dup(d);
             PtrLst_push(a[0], new);
@@ -883,16 +867,11 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
 
         // Calculate the expected length, elen[i], of the subinterval
         // containing i+1 lineages.
-        coalescent_interval_length(n, elen, eig, v, self->p[0][n-1]);
+        coalescent_interval_length(n, elen, eig, v);
         
         // Calculate pr[i], the probability of i+1 lineages at the
         // ancient end of the segment.
-        project(n, pr, eig, self->p[0][n-1]);
-
-        // Add probs of 2..n lines of descent pr[i] is prob of i+1
-        // lineages self->p[1][i] is prob if i+1 lineages
-        for(i=0; i < n; ++i)
-            self->p[1][i] += pr[i];
+        project(n, pr, eig);
 
         sd.d = self->d[n-1];
 
@@ -902,6 +881,7 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
             assert(0 == PtrLst_length(sd.a));
             sd.a = a[k-1];
             sd.nparts = k;
+            sd.prior = pr[k-1];
             sd.elen = elen[k-1];
             sd.lnconst = lnCoalConst(n, k);
             status = traverseSetPartitions(n, k, visitSetPart, &sd);
@@ -1012,17 +992,13 @@ static int Segment_coalesceInfinite(Segment *self, double v, int dosing,
     };
 
     // Handle case of a segment with a single lineage
-    if(self->p[0][0] > 0.0) {
-        // If there is 1 lineage at the recent end of the segment
-        // then it will still be there at the ancient end, because
-        // no coalescent events are possible.
-        self->p[1][0] = self->p[0][0];
+    if(PtrVec_length(self->d[0]) > 1) {
 
         int nIds = PtrVec_length(self->d[0]);
         for(i=0; i < nIds; ++i) {
             IdSet *d = PtrVec_get(self->d[0], i);
             assert(d->nIds == 1);
-            BranchTab_add(branchtab, d->tid[0], self->p[0][0] * d->p);
+            BranchTab_add(branchtab, d->tid[0], d->p);
         }
     }
 
@@ -1037,7 +1013,7 @@ static int Segment_coalesceInfinite(Segment *self, double v, int dosing,
         
         // Calculate the expected length, elen[i], of the subinterval
         // containing i+1 lineages.
-        coalescent_interval_length(n, elen, eig, v, self->p[0][n-1]);
+        coalescent_interval_length(n, elen, eig, v);
 
         cd.d = self->d[n-1];
 
@@ -1101,16 +1077,12 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
         self->d = get_descendants1(0, NULL,
                                    self->nsamples, self->sample,
                                    &self->max);
-        self->p[0][self->nsamples-1] = 1.0;
-        memcpy(self->p[0], self->child[0]->p[1]+1,
-               (MAXSAMP-1)*sizeof(double));
         assert(self->max > 0);
         break;
     case 1:
         self->d = get_descendants1(self->wmax[0], self->w[0],
                                    self->nsamples, self->sample,
                                    &self->max);
-        memcpy(self->p[0], self->child[0]->p[1], MAXSAMP*sizeof(double));
         assert(self->max > 0);
         break;
     case 2:
@@ -1307,8 +1279,7 @@ PtrVec **get_descendants2(int dim0, PtrLst **w0,
 }
 
 static void coalescent_interval_length(int n, double elen[n],
-                                       double eig[n], double v,
-                                       double prior) {
+                                       double eig[n], double v) {
     // Calculate expected length, within the segment, of
     // coalescent intervals with 2,3,...,n lineages.  elen[i] is
     // expected length of interval with i-1 lineages.
@@ -1322,13 +1293,9 @@ static void coalescent_interval_length(int n, double elen[n],
         sum += elen[i-1];
     elen[0] = v - sum;
 
-    // Multiply elen by probability that segment had n lineages on
-    // recent end of segment.
-    for(int i=0; i < n; ++i)
-        elen[i] *= prior;
 }
 
-static void project(int n, double pr[n], double eig[n], double prior) {
+static void project(int n, double pr[n], double eig[n]) {
     // Calculate prob of 2,3,...,n ancestors at ancent end of
     // segment. On return, pr[1] = prob[2], pr[n-1] = prob[n],
     // pr[0] not set.
@@ -1343,8 +1310,4 @@ static void project(int n, double pr[n], double eig[n], double prior) {
         sum += pr[i-1];
     pr[0] = 1.0-sum;
 
-    // Weight by probability that segment had n lineages on recent end
-    // of segment.
-    for(int i=0; i < n; ++i)
-        pr[i] *= prior;
 }
