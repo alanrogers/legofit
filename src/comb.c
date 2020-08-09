@@ -19,7 +19,7 @@ MCdat *MCdat_new(int k, int n[k],
                  int (*visit)(int kk, int nn[kk], int *b[kk], void *data),
                  void *data);
 void   MCdat_free(MCdat *self);
-int    MCvisit(int t, int a[t], void *data);
+int    MCvisit(int t, int *a, void *data);
 
 struct MCdat {
     int k;    // number of boxes
@@ -222,7 +222,7 @@ int traverseMultiComb(int k, int n[k],
 // set of size n. Algorithm T, page 359 of Knuth, Donald E. 2011. The
 // Art of Computer Programming, Volume 4A.
 int traverseComb(int n, int t,
-                         int (*visit)(int tt, int c[tt], void *data),
+                         int (*visit)(int tt, int *c, void *data),
                          void *data) {
 
     int status = 0;
@@ -236,9 +236,11 @@ int traverseComb(int n, int t,
     c[t+2] = 0;
     j = t;
 
-    // Knuth's code fails when t == n. This corrects the problem.
+    // Knuth's code fails when t == n or t == 0. This corrects the problem.
     if(t == n)
         return (*visit)(t, c+1, data);
+    if(t == 0)
+        return (*visit)(0, NULL, data);
     
     while(1) {
         if( (status = (*visit)(t, c+1, data)) != 0) // T2

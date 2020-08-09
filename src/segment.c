@@ -697,6 +697,11 @@ int visitMig(unsigned n, unsigned a[n], void *data) {
 
     // number of sets of ancestors
     int nSets = PtrVec_length(vdat->a);
+
+    fprintf(stderr,"%s:%s:%d: a=",__FILE__,__func__,__LINE__);
+    for(int i=0; i<n; ++i)
+        fprintf(stderr,"%u", a[i]);
+    putc('\n', stderr);
     
     for(int i_set=0; i_set < nSets; ++i_set) {
         IdSet *set = PtrVec_get(vdat->a, i_set);
@@ -712,6 +717,9 @@ int visitMig(unsigned n, unsigned a[n], void *data) {
         }
 
         // Perhaps this test should always be done
+        fprintf(stderr,"%s:%s:%d: i_mig=%d nMigrants=%d\n",
+                __FILE__,__func__,__LINE__,
+                i_mig, vdat->nMigrants);
         assert(i_mig == vdat->nMigrants);
         assert(i_nat == vdat->nNatives);
 
@@ -822,6 +830,7 @@ static int Segment_equals_r(Segment *a, Segment *b) {
 
 static int Segment_coalesceFinite(Segment *self, double v, int dosing,
                                   BranchTab *branchtab) {
+    fprintf(stderr,"%s:%s:%d\n",__FILE__,__func__,__LINE__);
     assert(self->max > 0);
     double pr[self->max], elen[self->max];
     int n, i, k, iself, status=0;
@@ -837,11 +846,15 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
                      .dosing = dosing,
     };
 
-    fprintf(stderr, "%s:%d: self->max=%d\n",
-            __FILE__,__LINE__,self->max);
+    fprintf(stderr, "%s:%s:%d: self->max=%d\n",
+            __FILE__,__func__,__LINE__,self->max);
 
     // Handle case of a segment with a single lineage
-    if(PtrVec_length(self->d[0]) > 1) {
+    fprintf(stderr,"%s:%s:%d len(d[0])=%d\n",
+            __FILE__,__func__,__LINE__,
+            PtrVec_length(self->d[0]));
+    if(PtrVec_length(self->d[0]) > 0) {
+        fprintf(stderr,"%s:%s:%d\n",__FILE__,__func__,__LINE__);
 
         int nIds = PtrVec_length(self->d[0]);
         fprintf(stderr,"%s:%s:%d: nIds=%d\n", __FILE__,__func__,__LINE__,nIds);
@@ -992,7 +1005,7 @@ static int Segment_coalesceInfinite(Segment *self, double v, int dosing,
     };
 
     // Handle case of a segment with a single lineage
-    if(PtrVec_length(self->d[0]) > 1) {
+    if(PtrVec_length(self->d[0]) > 0) {
 
         int nIds = PtrVec_length(self->d[0]);
         for(i=0; i < nIds; ++i) {
@@ -1077,6 +1090,16 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
         self->d = get_descendants1(0, NULL,
                                    self->nsamples, self->sample,
                                    &self->max);
+        if(self->nsamples > 0) {
+            fprintf(stderr,"%s:%s:%d: len(self->d[%d])=%d\n",
+                    __FILE__,__func__,__LINE__,
+                    self->nsamples - 1,
+                    PtrVec_length(self->d[self->nsamples-1]));
+        }else
+            fprintf(stderr,"%s:%s:%d: self->nsamples=%d\n",
+                    __FILE__,__func__,__LINE__,
+                    self->nsamples);
+            
         assert(self->max > 0);
         break;
     case 1:
@@ -1100,9 +1123,11 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
     assert(self->max > 0);
 
     if(self->end_i == -1) {
+        fprintf(stderr,"%s:%s:%d\n",__FILE__,__func__,__LINE__);
         status = Segment_coalesceInfinite(self, INFINITY, dosing, branchtab);
     }else{
         double v = self->end - self->start;
+        fprintf(stderr,"%s:%s:%d\n",__FILE__,__func__,__LINE__);
         status = Segment_coalesceFinite(self, v, dosing, branchtab);
     }
 
@@ -1142,11 +1167,14 @@ static PtrVec **get_descendants1(int dim, PtrLst **w, int nsamples,
     CHECKMEM(d);
 
     if(dim == 0) {
+        fprintf(stderr,"%s:%s:%d: dim=%d n=%d\n",
+                __FILE__,__func__,__LINE__, dim, n);
         // w is empty
         for(i=0; i < n-1; ++i)
             d[i] = PtrVec_new(0);
         d[n-1] = PtrVec_new(1);
         PtrVec_push(d[n-1], IdSet_new(n, sample, 1.0));
+        assert(1 == PtrVec_length(d[n-1]));
         return d;
     }
 

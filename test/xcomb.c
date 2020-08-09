@@ -14,7 +14,7 @@
 #include <assert.h>
 
 void usage(void);
-int visit(int t, int c[t], void *data);
+int visit(int t, int *c, void *data);
 int nvisit(int k, int n[k], int *b[k], void *data);
 
 typedef struct Cdata Cdata;
@@ -34,7 +34,7 @@ void usage(void) {
     exit(EXIT_FAILURE);
 }
 
-int visit(int t, int c[t], void *data) {
+int visit(int t, int *c, void *data) {
     Cdata *cdata = (Cdata *) data;
     int n = cdata->ntot, next = 0;
     int i, j;
@@ -152,7 +152,7 @@ int main(int argc, char **argv) {
                 if(*token == '\0') // missing value
                     usage();
                 n[j] = strtol(token, NULL, 10);
-                if(n[j] <= 0)
+                if(n[j] < 0)
                     usage();
                 ntot += n[j];
             }
