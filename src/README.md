@@ -277,9 +277,9 @@ column 2. There should be no duplicate (chromosome, position) pairs.
 
 ## raf format
 
-The suffix "raf" stands for "reference allele frequency". See the @ref
-raf "raf" command for instructions on translating from "vcf" or "bcf"
-format into "raf". See @ref axt2raf "axt2raf" for translating from
+The suffix "raf" stands for "reference allele frequency". See the
+@ref raf "raf" command for instructions on translating from "vcf" or
+"bcf" format into "raf". See @ref axt2raf "axt2raf" for translating from
 "axt" format into "raf".
 
 The "raf" file is simple and looks like this:
