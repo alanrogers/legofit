@@ -37,9 +37,8 @@ PROJECT_NAME           = legofit
 # for a project that appears at the top of each page and should give viewer
 # a quick idea about the purpose of the project. Keep the description short.
 
-PROJECT_BRIEF = "Legofit is a system of programs written in C and
-Python, which uses counts of nucleotide site patterns to infer the
-history of population size, subdivision, and gene flow."
+PROJECT_BRIEF = "Legofit infers population history from nucleotide site 
+patterns." 
 
 # With the PROJECT_LOGO tag one can specify an logo or icon that is
 # included in the documentation. The maximum height of the logo should not
