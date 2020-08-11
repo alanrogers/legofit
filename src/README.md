@@ -756,11 +756,6 @@ wide, then the DE algorithm will tend to take large steps and will
 encounter the boundary constraint sooner. This generates a large
 bias. If the sampling distribution is narrow, the bias is small.
 
-This bias is exacerbated if the parent's age is modeled as a Gaussian
-variable, because then the constraint is an interval rather than a
-point, and the optimizer encounters it sooner. For this reason, I have
-not used Gaussian variables in recent work.
-
 ## Bias arising from selection of variant sites
 
 Genetic data are often restricted to sites that are polymorphic within
