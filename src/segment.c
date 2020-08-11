@@ -840,6 +840,15 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
     int n, i, k, iself, status=0;
     IdSet *ids;
 
+#ifndef NDEBUG
+    if(self->nparents == 2) {
+        iself = self_ndx(self, self->parent[1]);
+        fprintf(stderr,"%s:%s:%d: iself=%d len=%lu\n",
+                __FILE__,__func__,__LINE__, iself,
+                PtrLst_length(self->parent[1]->w[iself][0]));
+    }
+#endif
+    
     // Array of lists of ancestors. a[k-1] is the list for sets of k
     // ancestors.  
     PtrLst *a[self->max];
@@ -979,8 +988,9 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
                     iself = self_ndx(self, self->parent[1]);
                     assert(x > 0);
                     assert(x-1 < self->parent[1]->wmax[iself]);
-                    fprintf(stderr,"%s:%s:%d: len=%lu\n",
+                    fprintf(stderr,"%s:%s:%d: x=%ld len=%lu\n",
                             __FILE__,__func__,__LINE__,
+                            x,
                             PtrLst_length(self->parent[1]->w[iself][x-1]));
                     PtrLst_move(self->parent[1]->w[iself][x-1], msd.migrants);
                 }
