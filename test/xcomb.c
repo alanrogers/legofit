@@ -117,6 +117,7 @@ int main(int argc, char **argv) {
     int *n = NULL;
     int nboxes = 0;
     char buff[100];
+    int  empty_box = 0;
 
     for(i=1; i<argc; ++i) {
         if(strcmp(argv[i], "-v") == 0)
@@ -154,6 +155,8 @@ int main(int argc, char **argv) {
                 n[j] = strtol(token, NULL, 10);
                 if(n[j] < 0)
                     usage();
+                if(n[j] == 0)
+                    empty_box = 1;
                 ntot += n[j];
             }
         }else
@@ -202,6 +205,16 @@ int main(int argc, char **argv) {
     unitTstResult("traverseComb", status==0 ? "OK" : "FAIL");
 
     cdata.count = 0;
+
+    if(empty_box) {
+        printf("Can't test traverseMultiComb because cmd line specified"
+               " empty boxes.\n");
+        printf("Box sizes:");
+        for(i=0; i<nboxes; ++i)
+            printf(" %d", n[i]);
+        putchar('\n');
+        exit(EXIT_FAILURE);
+    }
 
     status = traverseMultiComb(nboxes, n, nvisit, &cdata);
 

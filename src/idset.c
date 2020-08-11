@@ -12,6 +12,7 @@
 #include "misc.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 void IdSet_sanityCheck(IdSet *self, const char *file, int lineno) {
 #ifndef NDEBUG
@@ -95,30 +96,28 @@ void IdSet_copyMigOutcome(IdSet *self, const IdSet *old) {
 IdSet *IdSet_join(IdSet *left, IdSet *right, int nsamples,
                   tipId_t *samples) {
 
-    MigOutcome *mig = MigOutcome_join(left->mig, right->mig);
-    if(mig == NULL)
+    int mutually_exclusive;
+    MigOutcome *mig = MigOutcome_join(left->mig, right->mig,
+                                      &mutually_exclusive);
+    if(mutually_exclusive)
         return NULL; // left and right are mutually exclusive
 
-    // Copy all tipId_t values into tid, excluding zeroes, which
-    // represent the empty set.
     int nIds = left->nIds + right->nIds + nsamples;
+    if(nIds == 0) {
+        MigOutcome_free(mig);
+        return NULL;
+    }
+    
+    // Copy all tipId_t values into tid
     tipId_t tid[nIds];
-    for(int i=nIds=0; i < left->nIds; ++i) {
-        if(left->tid[i])
-            tid[nIds++] = left->tid[i];
-    }
-    for(int i=0; i < right->nIds; ++i) {
-        if(right->tid[i])
-            tid[nIds++] = left->tid[i];
-    }
+    for(int i=nIds=0; i < left->nIds; ++i)
+        tid[nIds++] = left->tid[i];
+
+    for(int i=0; i < right->nIds; ++i)
+        tid[nIds++] = left->tid[i];
+
     for(int i=0; i<nsamples; ++i)
         tid[nIds++] = samples[i];
-
-    // In case left, right, and samples are all empty.
-    if(nIds == 0) {
-        nIds += 1;
-        tid[0] = 0; // the empty set
-    }
 
     IdSet *new = IdSet_new(nIds, tid, left->p * right->p);
     new->mig = mig;

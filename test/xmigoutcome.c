@@ -52,8 +52,10 @@ int main(int argc, char **argv) {
         MigOutcome_print(mo3, stdout);
     }
 
-    MigOutcome *mo4 = MigOutcome_join(mo[0], mo[1]);
+    int mutually_exclusive;
+    MigOutcome *mo4 = MigOutcome_join(mo[0], mo[1], &mutually_exclusive);
     assert(mo4 == NULL);
+    assert(mutually_exclusive == 1);
 
     MigOutcome_free(mo3);
     mo3 = NULL;
@@ -61,15 +63,17 @@ int main(int argc, char **argv) {
         unsigned event = nextMigrationEvent();
         mo3 = MigOutcome_insert(mo3, event, 1, 0.5);
     }
-    mo4 = MigOutcome_join(mo[0], mo3);
+    mo4 = MigOutcome_join(mo[0], mo3, &mutually_exclusive);
     assert(mo4);
+    assert(mutually_exclusive == 0);
     if(verbose)
         MigOutcome_print(mo4, stdout);
 
     MigOutcome_free(mo4);
     mo4 = NULL;
-    mo4 = MigOutcome_join(mo[0], mo[0]);
+    mo4 = MigOutcome_join(mo[0], mo[0], &mutually_exclusive);
     assert(mo4);
+    assert(mutually_exclusive == 0);
 
     MigOutcome *a=mo[0], *b=mo[1];
     while(a && b) {

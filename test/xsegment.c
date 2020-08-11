@@ -9,6 +9,7 @@
 
 #include "branchtab.h"
 #include "error.h"
+#include "matcoal.h"
 #include "misc.h"
 #include "param.h"
 #include "parstore.h"
@@ -99,6 +100,8 @@ int main(int argc, char *argv[]) {
     c = Segment_new(ni, ti, ps);
     assert(c);
     
+    MatCoal_initExterns(5);
+
     Segment_newSample(a, 0);
     Segment_newSample(b, 1);
     Segment_newSample(c, 2);

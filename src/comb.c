@@ -58,9 +58,13 @@ MCdat *MCdat_new(int k, int n[k],
 
     for(i=0; i<k; ++i) {
         self->n[i] = n[i];
-        self->b[i] = malloc(n[i] * sizeof(self->b[i][0]));
-        CHECKMEM(self->b[i]);
-        memset(self->b[i], 0, n[i] * sizeof(self->b[i][0]));
+        if(n[i] == 0) {
+            self->b[i] = NULL;
+        }else {
+            self->b[i] = malloc(n[i] * sizeof(self->b[i][0]));
+            CHECKMEM(self->b[i]);
+            memset(self->b[i], 0, n[i] * sizeof(self->b[i][0]));
+        }
     }
 
     // Initially all indices [0,ntot-1) are in c, meaning they are not
@@ -77,15 +81,17 @@ MCdat *MCdat_new(int k, int n[k],
 }
 
 void MCdat_free(MCdat *self) {
-    for(int i=0; i < self->k; ++i)
-        free(self->b[i]);
+    for(int i=0; i < self->k; ++i) {
+        if(self->b[i])
+            free(self->b[i]);
+    }
     free(self->n);
     free(self->b);
     free(self->c);
     free(self);
 }
 
-int MCvisit(int t, int a[t], void *data) {
+int MCvisit(int t, int *a, void *data) {
     MCdat *dat = (MCdat *) data;
     CHECKMEM(dat);
 
@@ -179,7 +185,7 @@ int MCvisit(int t, int a[t], void *data) {
  * j'th ball in box i. These indices range from 0 to N-1 inclusive,
  * and each of these N index values is present exactly once in the
  * two-dimensional array b. The last argument of the visit function is
- * a NULL pointer, which will hold the address of the data argument
+ * a void pointer, which will hold the address of the data argument
  * passed to the traverseMultiComb function.
  * @param[inout] data If non-NULL, data points to a structure to be
  * manipulated by the visit function.

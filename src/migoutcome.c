@@ -91,7 +91,8 @@ void MigOutcome_print(MigOutcome *self, FILE *fp) {
  * migration events in "left" and "right". If "left" and "right" are
  * mutually exclusive, return NULL.
  */
-MigOutcome *MigOutcome_join(MigOutcome *left, MigOutcome *right) {
+MigOutcome *MigOutcome_join(MigOutcome *left, MigOutcome *right,
+                            int *mutually_exclusive) {
 
     MigOutcome *head = NULL;
 
@@ -109,6 +110,7 @@ MigOutcome *MigOutcome_join(MigOutcome *left, MigOutcome *right) {
             if(left->outcome != right->outcome) {
                 // left and right represent mutually exclusive events
                 MigOutcome_free(head);
+                *mutually_exclusive = 1;
                 return NULL;
             }
             assert(left->pr == right->pr);
@@ -132,5 +134,6 @@ MigOutcome *MigOutcome_join(MigOutcome *left, MigOutcome *right) {
                                  right->pr);
         right = right->next;
     }
+    *mutually_exclusive = 0;
     return head;
 }
