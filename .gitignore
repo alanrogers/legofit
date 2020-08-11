@@ -6,7 +6,6 @@ clic
 core
 daf
 depend
-doc
 joinraf
 legofit
 legosim
@@ -30,6 +29,7 @@ xbooma
 xboot
 xbranchtab
 xclic
+xcomb
 xdafreader
 xdiffev
 xdtnorm
@@ -39,9 +39,11 @@ xgetlinetok
 xgptree
 xhashtab
 xhessian
+xidset
 xjobqueue
 xlblndx
 xlinereader
+xmigoutcome
 xmisc
 xmspreader
 xparam
@@ -55,6 +57,7 @@ xpopnodetab
 xrafreader
 xsampndx
 xscrmreader
+xsegment
 xsimreader
 xsimsched
 xstate
