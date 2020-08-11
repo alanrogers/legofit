@@ -37,7 +37,7 @@ PROJECT_NAME           = Legofit
 # for a project that appears at the top of each page and should give viewer
 # a quick idea about the purpose of the project. Keep the description short.
 
-PROJECT_BRIEF = "Legofit infers population history from nucleotide site 
+PROJECT_BRIEF = "infers population history from nucleotide site 
 patterns." 
 
 # With the PROJECT_LOGO tag one can specify an logo or icon that is
