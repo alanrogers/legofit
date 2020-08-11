@@ -298,14 +298,13 @@ legofit -1 --tol 2e-5 -S 1000@2000000 a.lgo boot2.opf \
 <h2>Biases arising from constraints</h2>
 <p>Biases arise in <code>legofit</code> because of the constraint that a child population cannot be older than its parent. If the parent's age is fixed, then it represents an inequality constraint on the age of the child. If the child is only slightly younger than the parent, the optimizer has problems. It will propose new values for the child's age. Those that increase the child's age will be rejected if they violate the inequality constraint. Those that decrease the child's age do not encounter this constraint. Consequently, the optimizer is more likely to move away from the constraint rather than toward it. This biases estimates away from the constraint, whenever the true value is close to the constraint.</p>
 <p>The magnitude of this bias depends on the spread of the sampling distribution of the child's age. If that sampling distribution is wide, then the DE algorithm will tend to take large steps and will encounter the boundary constraint sooner. This generates a large bias. If the sampling distribution is narrow, the bias is small.</p>
-
 <h2>Bias arising from selection of variant sites</h2>
 <p>Genetic data are often restricted to sites that are polymorphic within some group of samples. For example, the 1000-Genomes Project distributes files containing genotypes that are polymorphic within modern humans. These data do not include sites at which the derived allele is present only in Neanderthals and/or Denisovans. An analysis using such data would be biased, because it would undercount the corresponding site patterns.</p>
 <p>To avoid this bias, it is best to work with complete genomes rather than just the variant sites. Alternatively, one could call variant sites jointly using all genomes to be included in the analysis. </p>
 </div></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Aug 11 2020 14:08:04 for legofit by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Tue Aug 11 2020 15:40:03 for legofit by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.13
 </small></address>
