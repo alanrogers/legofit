@@ -62,7 +62,9 @@ test : $(tests)
 LEGOSIM := legosim.o addrparmap.o binary.o branchtab.o dprintf.o dtnorm.o \
    error.o gene.o gptree.o jobqueue.o lblndx.o network.o misc.o param.o \
    parse.o parstore.o patprob.o popnode.o rngseed.o sampndx.o \
-   strptrmap.o tinyexpr.o tokenizer.o ptrptrmap.o ptrqueue.o strint.o
+   strptrmap.o tinyexpr.o tokenizer.o ptrptrmap.o ptrqueue.o strint.o \
+   segment.o idset.o matcoal.o ptrlst.o ptrvec.o comb.o migoutcome.o \
+   setpart.o rational.o u64u64map.o
 legosim : $(LEGOSIM)
 	$(CC) $(CFLAGS) -o $@ $(LEGOSIM) $(lib)
 

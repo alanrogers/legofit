@@ -17,6 +17,7 @@
 #include "typedefs.h"
 #include "gptree.h"
 #include "popnode.h"
+#include "segment.h"
 #include "mctree.h"
 #include <gsl/gsl_rng.h>
 
@@ -56,6 +57,10 @@ void Network_init(enum NetworkType type) {
         Node_print = PopNode_print;
         break;
     case MATCOAL:
+        Node_addChild = Segment_addChild;
+        Node_mix = Segment_mix;
+        Node_root = Segment_root;
+        Node_print = Segment_print;
         fprintf(stderr,"%s:%d: type MATCOAL not yet implemented\n",
                 __FILE__,__LINE__);
         exit(EXIT_FAILURE);
