@@ -40,11 +40,18 @@ int main(int argc, char *argv[]) {
         goto usage;
     }
 
+    // Define a different population size for every segment, so
+    // that I can tell where I am within the network when using
+    // the debugger.
+    const double Na=1, Nb=2, Nb2=3, Nc=4, Nc2=5, Nab=6, Nabc=7;
+
     PtrQueue *fixedQ = PtrQueue_new();
     PtrQueue *freeQ = PtrQueue_new();
     PtrQueue *constrQ = PtrQueue_new();
 
     Param *par;
+
+    MatCoal_initExterns(5);
 
     par = Param_new("zero", 0.0, 0.0, 0.0, TIME|FIXED, NULL);
     PtrQueue_push(fixedQ, par);
@@ -52,7 +59,25 @@ int main(int argc, char *argv[]) {
     par = Param_new("one", 1.0, 1.0, 1.0, TWON|FIXED, NULL);
     PtrQueue_push(fixedQ, par);
 
-    par = Param_new("Nab", 3.0, 0.0, 100.0, TWON|FREE, NULL);
+    par = Param_new("Na", Na, 0.0, 100.0, TWON|FIXED, NULL);
+    PtrQueue_push(fixedQ, par);
+
+    par = Param_new("Nb", Nb, 0.0, 100.0, TWON|FIXED, NULL);
+    PtrQueue_push(fixedQ, par);
+
+    par = Param_new("Nb2", Nb2, 0.0, 100.0, TWON|FIXED, NULL);
+    PtrQueue_push(fixedQ, par);
+
+    par = Param_new("Nc", Nc, 0.0, 100.0, TWON|FIXED, NULL);
+    PtrQueue_push(fixedQ, par);
+
+    par = Param_new("Nc2", Nc2, 0.0, 100.0, TWON|FIXED, NULL);
+    PtrQueue_push(fixedQ, par);
+
+    par = Param_new("Nab", Nab, 0.0, 100.0, TWON|FREE, NULL);
+    PtrQueue_push(freeQ, par);
+    
+    par = Param_new("Nabc", Nabc, 0.0, 100.0, TWON|FREE, NULL);
     PtrQueue_push(freeQ, par);
 
     par = Param_new("Tab", 2.0, 0.0, 100.0, TIME|FREE, NULL);
@@ -63,9 +88,6 @@ int main(int argc, char *argv[]) {
 
     par = Param_new("mix", 0.02, 0.02, 0.02, MIXFRAC|FIXED, NULL);
     PtrQueue_push(fixedQ, par);
-
-    par = Param_new("Nabc", 3.0, 0.0, 100.0, TWON|FREE, NULL);
-    PtrQueue_push(freeQ, par);
 
     par = Param_new("Tabc", 4.0, -DBL_MAX, DBL_MAX, TIME|CONSTRAINED,
                     "Tab + Nab*Nabc");
@@ -83,10 +105,11 @@ int main(int argc, char *argv[]) {
         .hi_t = 1e10
     };
 
+
     Segment *a, *b, *b2, *c, *c2, *ab, *abc;
     int ni, ti, mi;
 
-    ni = ParStore_getIndex(ps, "one");
+    ni = ParStore_getIndex(ps, "Na");
     assert(ni >= 0);
     ti = ParStore_getIndex(ps, "zero");
     assert(ti >= 0);
@@ -94,21 +117,27 @@ int main(int argc, char *argv[]) {
     a = Segment_new(ni, ti, ps);
     assert(a);
 
+    ni = ParStore_getIndex(ps, "Nb");
+    assert(ni >= 0);
+
     b = Segment_new(ni, ti, ps);
     assert(b);
+
+    ni = ParStore_getIndex(ps, "Nc");
+    assert(ni >= 0);
 
     c = Segment_new(ni, ti, ps);
     assert(c);
     
-    MatCoal_initExterns(5);
-
     Segment_newSample(a, 0);
     Segment_newSample(b, 1);
     Segment_newSample(c, 2);
 
     ti = ParStore_getIndex(ps, "Tmig");
     assert(ti >= 0);
+    ni = ParStore_getIndex(ps, "Nb2");
     b2 = Segment_new(ni, ti, ps);
+    ni = ParStore_getIndex(ps, "Nc2");
     c2 = Segment_new(ni, ti, ps);
     assert(b2);
     assert(c2);
@@ -177,6 +206,16 @@ int main(int argc, char *argv[]) {
                 __FILE__,__LINE__,status);
         exit(EXIT_FAILURE);
     }
+
+    // Call it a second time
+    Segment_unvisit(abc);
+    status = Segment_coalesce(abc, 1, bt);
+    if(status) {
+        fprintf(stderr, "%s:%d: Segment_coalesce returned %d\n",
+                __FILE__,__LINE__,status);
+        exit(EXIT_FAILURE);
+    }
+    
     //BranchTab_print(bt, stdout);
 
     Segment_free(abc);

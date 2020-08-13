@@ -22,6 +22,11 @@ int main(void) {
     PtrLst *v = PtrLst_new();
     assert(0 == PtrLst_length(v));
 
+    // Is it safe to free an empty list
+    PtrLst_free(v);
+
+    v = PtrLst_new();
+
     status = PtrLst_push(v, &a);
     assert(status == 0);
     assert(1 == PtrLst_length(v));
