@@ -10,7 +10,6 @@ incl := -I/usr/local/include -I/opt/local/include
 targets := legosim legofit tabpat sitepat scrmpat daf raf numcores \
      joinraf raf2daf bepe booma maub pclgo resid simpat ms2sim clic rafdaf
 pytargets := diverg.py bootci.py flatfile.py axt2raf.py flatpat.py legotree.py
-tests := xzeroin xbinary
 
 CC := gcc
 
@@ -38,11 +37,6 @@ lib := -L/usr/local/lib -lgsl -lgslcblas -lpthread -lm
 	$(CC) $(CFLAGS) $(incl) -c -o ${@F}  $<
 
 all : $(targets)
-
-test : $(tests)
-	-./xbinary
-	-./xzeroin
-	@echo "ALL UNIT TESTS WERE COMPLETED."
 
 LINEAGES := lineages.o misc.o lblndx.o binary.o
 lineages : $(lineages)
@@ -146,7 +140,7 @@ depend : *.c *.h
 	$(CC) -MM $(incl) *.c >> depend
 
 clean :
-	rm -f *.a *.o *~ gmon.out *.tmp $(targets) $(tests) core.* vgcore.*
+	rm -f *.a *.o *~ gmon.out *.tmp $(targets) core.* vgcore.*
 
 install : $(targets) $(pytargets)
 	cp -p $(pytargets) $(destination)
