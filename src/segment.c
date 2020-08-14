@@ -604,7 +604,11 @@ int visitComb(int d, int ndx[d], void *data) {
     assert(d>0);
     CombDat *dat = (CombDat *) data;
 
+
     unsigned nIdSets = PtrVec_length(dat->d);
+
+    assert(nIdSets > 0);
+    
     for(unsigned i=0; i < nIdSets; ++i) {
         IdSet *ids = PtrVec_get(dat->d, i);
         
@@ -616,9 +620,12 @@ int visitComb(int d, int ndx[d], void *data) {
             sitepat |= ids->tid[ndx[j]];
         }
         
+        assert(sitepat > 0);
+
         // Skip singletons unless data->dosing is nonzero
         if(!dat->dosing && isPow2(sitepat))
             continue;
+
       
         // Increment BranchTab entry for current sitepat value.
         BranchTab_add(dat->branchtab, sitepat,
