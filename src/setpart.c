@@ -23,12 +23,14 @@ uint64_t stirling2(uint32_t n, uint32_t k) {
     uint64_t key, value;
     int status;
 
+    // Initial conditions
     if(n==0 && k==0)
         return 1ULL;
     
     if(n==0 || k==0)
         return 0ULL;
 
+    // Construct a 64-bit key from two 32-bit arguments.
     key = n;
     key <<= 32;
     key |= k;
@@ -42,7 +44,10 @@ uint64_t stirling2(uint32_t n, uint32_t k) {
         if(status == 0)
             return value;
     }
+
+    // Fundamental recurrence relation
     value = k*stirling2(n-1, k) + stirling2(n-1, k-1);
+    
     status = U64U64Map_insert(map, key, value);
     if(status) {
         fprintf(stderr,"%s:%d: inserted duplicated value\n",
@@ -50,6 +55,14 @@ uint64_t stirling2(uint32_t n, uint32_t k) {
         exit(EXIT_FAILURE);
     }
     return value;
+}
+
+/// Free the hash map used to store stirling2 values.
+void stirling2_free(void) {
+    if(map) {
+        U64U64Map_free(map);
+        map = NULL;
+    }
 }
 
 /** 

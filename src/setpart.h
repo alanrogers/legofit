@@ -6,6 +6,7 @@
 #include <stdint.h>
 
 uint64_t      stirling2(uint32_t n, uint32_t k);
+void          stirling2_free(void);
 long double   lnCoalConst(unsigned n, unsigned k);
 double        probPartition(unsigned k, unsigned y[k], long double lnconst);
 

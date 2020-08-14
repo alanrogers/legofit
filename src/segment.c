@@ -651,7 +651,7 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
     for(unsigned i=0; i < nIds; ++i) {
         IdSet *descendants = PtrVec_get(vdat->d, i);
         tipId_t sitepat[k];
-        memset(sitepat, 0, k*sitepat[0]);
+        memset(sitepat, 0, k*sizeof(tipId_t));
 
         assert(n == descendants->nIds);
 

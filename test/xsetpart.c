@@ -212,6 +212,10 @@ int main(int argc, char **argv) {
     
     assert(vdat.count == stirling2(nelem, nparts));
 
+    // Free hash table stored by stirling2. This isn't really
+    // necessary.  I do it to keep valgrind quiet.
+    stirling2_free();
+
     unitTstResult("SetPart", status==0 ? "OK" : "FAIL");
     return 0;
 }

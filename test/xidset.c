@@ -107,6 +107,8 @@ int main(int argc, char **argv) {
     IdSet_free(a);
     IdSet_free(b);
     IdSet_free(c);
+    IdSet_free(d);
+    IdSet_free(e);
 
     unitTstResult("IdSet", "OK");
     
