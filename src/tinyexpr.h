@@ -52,9 +52,7 @@ enum {
 };
 
 typedef struct te_variable {
-    // name is not freed by te_variable_free
-    const char *name;
-    
+    char *name;
     void *address;
     int type;
     void *context;

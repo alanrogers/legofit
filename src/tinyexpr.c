@@ -37,6 +37,7 @@ For log = natural log uncomment the next line. */
 #define TE_NAT_LOG
 
 #include "tinyexpr.h"
+#include "strptrmap.h"
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
@@ -89,6 +90,9 @@ void next_token(state * s);
 static double pi(void);
 static double e(void);
 te_variable *te_variable_new(const char *name, void *address);
+static te_variable *new_func(const char *name, void *address, int type,
+                                 void *context);
+static void init_func_map(void);
 
 te_variable *te_variable_new(const char *name, void *address) {
     te_variable *self = malloc(sizeof(te_variable));
@@ -96,16 +100,14 @@ te_variable *te_variable_new(const char *name, void *address) {
         return NULL;
     memset(self, 0, sizeof(te_variable));
 
-    // This pointer is not freed by te_variable_free. The resulting memory
-    // leak is not important, unless te_variable_new is called many times.
     self->name = strdup(name);
-    
     self->address = address;
     return self;
 }
 
 // Push new variable onto end of list.
-te_variable *te_variable_push(te_variable *self, const char *name, void *address) {
+te_variable *te_variable_push(te_variable *self, const char *name,
+                              void *address) {
     if(self == NULL)
         return te_variable_new(name, address);
     self->next = te_variable_push(self->next, name, address);
@@ -117,15 +119,7 @@ void te_variable_free(te_variable *self) {
     if(self==NULL)
         return;
     te_variable_free(self->next);
-    /* Not freeing self->name.
-     * This variable sometimes points to character constants, which
-     * cannot be freed. In other cases, it points to strings generated
-     * by strdup, which ought to be freed. I'm not doing so, and this
-     * constitutes a memory leak. But the number of these leaked strings
-     * is never large, at least in legofit.
-     *
-     * free((char *) self->name);
-     */
+    free(self->name);
     free(self);
 }
 
@@ -221,39 +215,118 @@ static double npr(double n, double r) {
     return ncr(n, r) * fac(r);
 }
 
-static const te_variable functions[] = {
-    /* must be in alphabetical order */
-    {"abs", fabs, TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"acos", acos, TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"asin", asin, TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"atan", atan, TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"atan2", atan2, TE_FUNCTION2 | TE_FLAG_PURE, 0},
-    {"ceil", ceil, TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"cos", cos, TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"cosh", cosh, TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"e", e, TE_FUNCTION0 | TE_FLAG_PURE, 0},
-    {"exp", exp, TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"fac", fac, TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"floor", floor, TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"ln", log, TE_FUNCTION1 | TE_FLAG_PURE, 0},
-#ifdef TE_NAT_LOG
-    {"log", log, TE_FUNCTION1 | TE_FLAG_PURE, 0},
-#else
-    {"log", log10, TE_FUNCTION1 | TE_FLAG_PURE, 0},
-#endif
-    {"log10", log10, TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"ncr", ncr, TE_FUNCTION2 | TE_FLAG_PURE, 0},
-    {"npr", npr, TE_FUNCTION2 | TE_FLAG_PURE, 0},
-    {"pi", pi, TE_FUNCTION0 | TE_FLAG_PURE, 0},
-    {"pow", pow, TE_FUNCTION2 | TE_FLAG_PURE, 0},
-    {"sin", sin, TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"sinh", sinh, TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"sqrt", sqrt, TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"tan", tan, TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"tanh", tanh, TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {0, 0, 0, 0}
-};
+static StrPtrMap *func_map=NULL;
 
+/// Initialize func_map; abort on failure.
+static void init_func_map(void) {
+    func_map =  StrPtrMap_new();
+    if(func_map == NULL) {
+        fprintf(stderr,"%s:%d: can't allocate func_map\n",
+                __FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
+
+    int status = 0;
+
+    status |= StrPtrMap_insert(func_map, "abs",
+                               new_func("abs", fabs,
+                                        TE_FUNCTION1 | TE_FLAG_PURE, 0));
+    status |= StrPtrMap_insert(func_map, "acos",
+                               new_func("acos", acos,
+                                        TE_FUNCTION1 | TE_FLAG_PURE, 0));
+    status |= StrPtrMap_insert(func_map, "asin",
+                               new_func("asin", asin,
+                                        TE_FUNCTION1 | TE_FLAG_PURE, 0));
+    status |= StrPtrMap_insert(func_map, "atan",
+                               new_func("atan", atan,
+                                        TE_FUNCTION1 | TE_FLAG_PURE, 0));
+    status |= StrPtrMap_insert(func_map, "atan2",
+                               new_func("atan2", atan2,
+                                        TE_FUNCTION2 | TE_FLAG_PURE, 0));
+    status |= StrPtrMap_insert(func_map, "ceil",
+                               new_func("ceil", ceil,
+                                        TE_FUNCTION1 | TE_FLAG_PURE, 0));
+    status |= StrPtrMap_insert(func_map, "cos",
+                               new_func("cos", cos,
+                                        TE_FUNCTION1 | TE_FLAG_PURE, 0));
+    status |= StrPtrMap_insert(func_map, "cosh",
+                               new_func("cosh", cosh,
+                                        TE_FUNCTION1 | TE_FLAG_PURE, 0));
+    status |= StrPtrMap_insert(func_map, "e",
+                               new_func("e", e,
+                                        TE_FUNCTION0 | TE_FLAG_PURE, 0));
+    status |= StrPtrMap_insert(func_map, "exp",
+                               new_func("exp", exp,
+                                        TE_FUNCTION1 | TE_FLAG_PURE, 0));
+    status |= StrPtrMap_insert(func_map, "fac",
+                               new_func("fac", fac,
+                                        TE_FUNCTION1 | TE_FLAG_PURE, 0));
+    status |= StrPtrMap_insert(func_map, "floor",
+                               new_func("floor", floor,
+                                        TE_FUNCTION1 | TE_FLAG_PURE, 0));
+    status |= StrPtrMap_insert(func_map, "ln",
+                               new_func("ln", log,
+                                        TE_FUNCTION1 | TE_FLAG_PURE, 0));
+#ifdef TE_NAT_LOG
+    status |= StrPtrMap_insert(func_map, "log",
+                               new_func("log", log,
+                                        TE_FUNCTION1 | TE_FLAG_PURE, 0));
+#else
+    status |= StrPtrMap_insert(func_map, "log",
+                               new_func("log", log10,
+                                        TE_FUNCTION1 | TE_FLAG_PURE, 0));
+#endif
+    status |= StrPtrMap_insert(func_map, "log10",
+                               new_func("log10", log10,
+                                        TE_FUNCTION1 | TE_FLAG_PURE, 0));
+    status |= StrPtrMap_insert(func_map, "ncr",
+                               new_func("ncr", ncr,
+                                        TE_FUNCTION2 | TE_FLAG_PURE, 0));
+    status |= StrPtrMap_insert(func_map, "npr",
+                               new_func("npr", npr,
+                                        TE_FUNCTION2 | TE_FLAG_PURE, 0));
+    status |= StrPtrMap_insert(func_map, "pi",
+                               new_func("pi", pi,
+                                        TE_FUNCTION0 | TE_FLAG_PURE, 0));
+    status |= StrPtrMap_insert(func_map, "pow",
+                               new_func("pow", pow,
+                                        TE_FUNCTION2 | TE_FLAG_PURE, 0));
+    status |= StrPtrMap_insert(func_map, "sin",
+                               new_func("sin", sin,
+                                        TE_FUNCTION1 | TE_FLAG_PURE, 0));
+    status |= StrPtrMap_insert(func_map, "sinh",
+                               new_func("sinh", sinh,
+                                        TE_FUNCTION1 | TE_FLAG_PURE, 0));
+    status |= StrPtrMap_insert(func_map, "sqrt",
+                               new_func("sqrt", sqrt,
+                                        TE_FUNCTION1 | TE_FLAG_PURE, 0));
+    status |= StrPtrMap_insert(func_map, "tan",
+                               new_func("tan", tan,
+                                        TE_FUNCTION1 | TE_FLAG_PURE, 0));
+    status |= StrPtrMap_insert(func_map, "tanh",
+                               new_func("tanh", tanh,
+                                        TE_FUNCTION1 | TE_FLAG_PURE, 0));
+    if(status) {
+        fprintf(stderr,"%s:%s:%d: can't initialize func_map\n",
+                __FILE__,__func__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
+}
+
+static te_variable *new_func(const char *name, void *address, int type,
+                                 void *context) {
+    te_variable *new = malloc(sizeof(te_variable));
+    if(new == NULL)
+        return NULL;
+    new->name = strdup(name);
+    new->address = address;
+    new->type = type;
+    new->context = context;
+    new->next = NULL;
+    return new;
+}
+
+#if 0
 static const te_variable *find_builtin(const char *name, int len) {
     int         imin = 0;
     int         imax = sizeof(functions) / sizeof(te_variable) - 2;
@@ -275,6 +348,14 @@ static const te_variable *find_builtin(const char *name, int len) {
 
     return 0;
 }
+#else
+static const te_variable *find_builtin(const char *name, int len) {
+    if(func_map == NULL)
+        init_func_map();
+
+    return StrPtrMap_get(func_map, name);
+}
+#endif
 
 static const te_variable *find_lookup(const state * s, const char *name,
                                       int len) {

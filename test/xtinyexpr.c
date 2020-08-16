@@ -40,7 +40,6 @@ int main(int argc, char **argv) {
     sprintf(formula, "%s", "w + x*y - z");
 
     te_expr *expr = te_compile(formula, pars, &status);
-    printf("status=%d\n", status);
     if(expr == NULL) {
         fprintf(stderr,"%s:%d: parse error\n", __FILE__,__LINE__);
         fprintf(stderr,"  %s\n", formula);
@@ -75,6 +74,7 @@ int main(int argc, char **argv) {
         te_print(expr, stdout);
     
     te_free(expr);
+    te_variable_free(pars);
 
     unitTstResult("tinyexpr", "OK");
     return 0;

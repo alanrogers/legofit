@@ -21,6 +21,8 @@ void IdSet_sanityCheck(IdSet *self, const char *file, int lineno) {
     REQUIRE(self->nIds > 0, file, lineno);
     REQUIRE(self->p >= 0.0, file, lineno);
     REQUIRE(self->p <= 1.0, file, lineno);
+    for(int i=0; i < self->nIds; ++i)
+        REQUIRE(self->tid[i] > 0, file, lineno);
 #endif    
 }
 
@@ -38,18 +40,6 @@ void IdSet_print(IdSet *self, FILE *fp) {
     MigOutcome_print(self->mig, fp);
 }
 
-/// Allocate a new IdSet with a single tipId_t value and probability 1.
-IdSet *IdSet_newTip(tipId_t tid) {
-    IdSet *self = malloc(sizeof(IdSet));
-    CHECKMEM(self);
-
-    self->nIds = 1;
-    self->p = 1.0;
-    self->mig = NULL;
-    self->tid[0] = tid;
-    return self;
-}
-
 /**
  * Allocate a new IdSet object with given values of nIds, tid, and
  * prob. Uses the struct hack.
@@ -65,8 +55,9 @@ IdSet *IdSet_new(int nIds, const tipId_t tid[nIds], double prob) {
     self->p = prob;
     self->mig = NULL;
 
-    for(int i=0; i < nIds; ++i)
+    for(int i=0; i < nIds; ++i) {
         self->tid[i] = tid[i];
+    }
 
     return self;
 }
@@ -114,7 +105,7 @@ IdSet *IdSet_join(IdSet *left, IdSet *right, int nsamples,
         tid[nIds++] = left->tid[i];
 
     for(int i=0; i < right->nIds; ++i)
-        tid[nIds++] = left->tid[i];
+        tid[nIds++] = right->tid[i];
 
     for(int i=0; i<nsamples; ++i)
         tid[nIds++] = samples[i];
@@ -146,4 +137,16 @@ IdSet *IdSet_addSamples(IdSet *old, int nsamples, tipId_t *samples) {
 
     IdSet_free(old);
     return new;
+}
+
+/// Allocate a new IdSet with a single tipId_t value and probability 1.
+IdSet *IdSet_newTip(tipId_t tid) {
+    IdSet *self = malloc(sizeof(IdSet));
+    CHECKMEM(self);
+
+    self->nIds = 1;
+    self->p = 1.0;
+    self->mig = NULL;
+    self->tid[0] = tid;
+    return self;
 }

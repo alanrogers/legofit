@@ -617,6 +617,14 @@ int visitComb(int d, int ndx[d], void *data) {
         tipId_t sitepat = 0;
         for(int j=0; j < d; ++j) {
             assert(ndx[j] < ids->nIds);
+            assert(ndx[j] >= 0);
+#ifndef NDEBUG
+            if(ids->tid[ndx[j]] == 0) {
+                fprintf(stderr,"%s:%d: j=%d d=%d nIds=%d ids->tid[%u] = 0\n",
+                        __FILE__,__LINE__, j, d, ids->nIds, ndx[j]);
+            }
+#endif            
+            assert(ids->tid[ndx[j]]);
             sitepat |= ids->tid[ndx[j]];
         }
         
@@ -677,7 +685,9 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
 
         // Add the current set partition to the list of ancestral
         // states.
+
         IdSet *ancestors = IdSet_new(k, sitepat, p * descendants->p);
+        IdSet_sanityCheck(ancestors, __FILE__, __LINE__);
         IdSet_copyMigOutcome(ancestors, descendants);
         status = PtrLst_push(vdat->a, ancestors);
         if(status) {
@@ -734,10 +744,12 @@ int visitMig(int nmig, int *migndx, void *data) {
         // Create IdSet objects for migrants and natives
         if(nmig > 0) {
             IdSet *mig = IdSet_new(nmig, migid, mdat->pr * set->p);
+            IdSet_sanityCheck(mig, __FILE__, __LINE__);
             PtrLst_push(mdat->migrants, mig);
         }
         if(nnat > 0) {
             IdSet *nat = IdSet_new(nnat, natid, mdat->pr * set->p);
+            IdSet_sanityCheck(nat, __FILE__, __LINE__);
             PtrLst_push(mdat->natives, nat);
         }
     }    
@@ -983,7 +995,6 @@ static int Segment_coalesceInfinite(Segment *self, double v, int dosing,
                                     BranchTab *branchtab) {
     double elen[self->max];
     int n, status=0;
-    IdSet *ids;
 
     CombDat cd = {.branchtab = branchtab,
                   .dosing = dosing
@@ -1029,13 +1040,6 @@ static int Segment_coalesceInfinite(Segment *self, double v, int dosing,
             }
         }
         cd.d = NULL;
-
-        // Free IdSet objects of descendants
-        ids = PtrVec_pop(self->d[n-1]);
-        while( ids ) {
-            IdSet_free(ids);
-            ids = PtrVec_pop(self->d[n-1]);
-        }
     }
     return status;
 }
@@ -1099,11 +1103,14 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
 
     // Free IdSet objects of descendants
     for(int i=0; i < self->max; ++i) {
-        IdSet *ids = PtrVec_pop(self->d[i]);
-        while( ids ) {
+        for(IdSet *ids=PtrVec_pop(self->d[i]);
+            ids;
+            ids = PtrVec_pop(self->d[i])) {
+            
             IdSet_free(ids);
-            ids = PtrVec_pop(self->d[i]);
+
         }
+        PtrVec_free(self->d[i]);
     }
     free(self->d);
     self->d = NULL;
@@ -1144,7 +1151,11 @@ static PtrVec **get_descendants1(int dim, PtrLst **w, int nsamples,
         for(i=0; i < n-1; ++i)
             d[i] = PtrVec_new(0);
         d[n-1] = PtrVec_new(1);
-        PtrVec_push(d[n-1], IdSet_new(n, sample, 1.0));
+        {
+            IdSet *id = IdSet_new(n, sample, 1.0);
+            IdSet_sanityCheck(id, __FILE__, __LINE__);
+            PtrVec_push(d[n-1], id);
+        }
         assert(1 == PtrVec_length(d[n-1]));
         return d;
     }
@@ -1216,9 +1227,7 @@ PtrVec **get_descendants2(int dim0, PtrLst **w0,
      */
     n = dim0 + dim1 + nsamples;
     *newdim = n;
-    if(n==0) {
-        return NULL;
-    }
+    assert(n > 0);
 
     PtrLst *d[n];
     for(i=0; i<n; ++i)
@@ -1227,27 +1236,35 @@ PtrVec **get_descendants2(int dim0, PtrLst **w0,
     IdSet *id0, *id1, *newid;
 
     for(i=0; i < dim0; ++i) {
-        id0 = PtrLst_pop(w0[i]);
-        if(id0 == NULL)
-            continue;
-        for(j=0; j < dim1; ++j) {
-            PtrLst_rewind(w1[j]);
-            for(id1=PtrLst_next(w1[j]);
-                id1;
-                id1=PtrLst_next(w1[j])) {
-                newid = IdSet_join(id0, id1, nsamples, sample);
-                if(newid == NULL)
-                    continue;
+        for(id0=PtrLst_pop(w0[i]);
+            id0;
+            id0=PtrLst_pop(w0[i])) {
+            
+            IdSet_sanityCheck(id0, __FILE__, __LINE__);
+
+            for(j=0; j < dim1; ++j) {
+                PtrLst_rewind(w1[j]);
+
+                for(id1=PtrLst_next(w1[j]);
+                    id1;
+                    id1=PtrLst_next(w1[j])) {
+
+                    IdSet_sanityCheck(id1, __FILE__, __LINE__);
+                    newid = IdSet_join(id0, id1, nsamples, sample);
+                    if(newid == NULL)
+                        continue;
+                    IdSet_sanityCheck(newid, __FILE__, __LINE__);
                     
-                // non-NULL means id0 and id1 are compatible
-                // and can be added to the list of
-                // descendants.
-                int k = i+j+ nsamples + 2;
-                assert(k == newid->nIds);
-                PtrLst_push(d[k-1], newid);
+                    // non-NULL means id0 and id1 are compatible
+                    // and can be added to the list of
+                    // descendants.
+                    int k = i+j+ nsamples + 2;
+                    assert(k == newid->nIds);
+                    PtrLst_push(d[k-1], newid);
+                }
             }
+            IdSet_free(id0);
         }
-        IdSet_free(id0);
     }
 
     // Get rid of any empty lists at the top of d and reset n.

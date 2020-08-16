@@ -188,8 +188,9 @@ int main(int argc, char *argv[]) {
     PtrPtrMap *ppm = PtrPtrMap_new();
     Segment *duproot = Segment_dup(abc, ppm);
     CHECKMEM(duproot);
-    assert(Segment_feasible(duproot, bnd, verbose));
     PtrPtrMap_free(ppm);
+
+    assert(Segment_feasible(duproot, bnd, verbose));
 
     assert(Segment_equals(abc, duproot));
 
@@ -224,6 +225,10 @@ int main(int argc, char *argv[]) {
     unitTstResult("Segment", "OK");
 
     BranchTab_free(bt);
+    PtrQueue_free(fixedQ);
+    PtrQueue_free(freeQ);
+    PtrQueue_free(constrQ);
+    ParStore_free(ps);
 
     return 0;
 
