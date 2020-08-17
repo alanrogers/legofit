@@ -53,14 +53,12 @@ enum {
 };
 
 typedef struct te_variable {
-    char *name;
     void *address;
     int type;
     void *context;
-    struct te_variable *next;
 } te_variable;
 
-te_variable *te_variable_new(const char *name, void *address);
+te_variable *te_variable_new(void *address);
 void te_free_variables(StrPtrMap *pars);
 
 /* Parses the input expression, evaluates it, and frees it. */

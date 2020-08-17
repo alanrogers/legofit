@@ -32,25 +32,25 @@ int main(int argc, char **argv) {
     double w=1.0, x=2.0, y=3.0, z=4.0;
     StrPtrMap *pars = StrPtrMap_new();
 
-    status = StrPtrMap_insert(pars, "w", te_variable_new("w", &w));
+    status = StrPtrMap_insert(pars, "w", te_variable_new(&w));
     if(status) {
         fprintf(stderr, "%s:%d: duplicate insertion\n",__FILE__,__LINE__);
         exit(EXIT_FAILURE);
     }
 
-    status = StrPtrMap_insert(pars, "x", te_variable_new("x", &x));
+    status = StrPtrMap_insert(pars, "x", te_variable_new(&x));
     if(status) {
         fprintf(stderr, "%s:%d: duplicate insertion\n",__FILE__,__LINE__);
         exit(EXIT_FAILURE);
     }
     
-    status = StrPtrMap_insert(pars, "y", te_variable_new("y", &y));
+    status = StrPtrMap_insert(pars, "y", te_variable_new(&y));
     if(status) {
         fprintf(stderr, "%s:%d: duplicate insertion\n",__FILE__,__LINE__);
         exit(EXIT_FAILURE);
     }
 
-    status = StrPtrMap_insert(pars, "z", te_variable_new("z", &z));
+    status = StrPtrMap_insert(pars, "z", te_variable_new(&z));
     if(status) {
         fprintf(stderr, "%s:%d: duplicate insertion\n",__FILE__,__LINE__);
         exit(EXIT_FAILURE);

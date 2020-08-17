@@ -88,18 +88,16 @@ void te_free_parameters(te_expr * n);
 void next_token(state * s);
 static double pi(void);
 static double e(void);
-static te_variable *new_func(const char *name, void *address, int type,
-                                 void *context);
+static te_variable *new_func(void *address, int type, void *context);
 static void init_func_map(void);
 int string_copy(int dlen, char dest[dlen], int slen, const char src[slen]);
 
-te_variable *te_variable_new(const char *name, void *address) {
+te_variable *te_variable_new(void *address) {
     te_variable *self = malloc(sizeof(te_variable));
     if(self==NULL)
         return NULL;
     memset(self, 0, sizeof(te_variable));
 
-    self->name = strdup(name);
     self->address = address;
     return self;
 }
@@ -115,7 +113,7 @@ void te_free_variables(StrPtrMap *pars) {
     StrPtrMap_ptrArray(pars, len, v);
     for(unsigned i=0; i<len; ++i) {
         te_variable *var = v[i];
-        free(var->name);
+        //free(var->name);
         free(var);
     }
     StrPtrMap_free(pars);
@@ -227,83 +225,58 @@ static void init_func_map(void) {
     int status = 0;
 
     status |= StrPtrMap_insert(func_map, "abs",
-                               new_func("abs", fabs,
-                                        TE_FUNCTION1 | TE_FLAG_PURE, 0));
+                               new_func(fabs, TE_FUNCTION1 | TE_FLAG_PURE, 0));
     status |= StrPtrMap_insert(func_map, "acos",
-                               new_func("acos", acos,
-                                        TE_FUNCTION1 | TE_FLAG_PURE, 0));
+                               new_func(acos, TE_FUNCTION1 | TE_FLAG_PURE, 0));
     status |= StrPtrMap_insert(func_map, "asin",
-                               new_func("asin", asin,
-                                        TE_FUNCTION1 | TE_FLAG_PURE, 0));
+                               new_func(asin, TE_FUNCTION1 | TE_FLAG_PURE, 0));
     status |= StrPtrMap_insert(func_map, "atan",
-                               new_func("atan", atan,
-                                        TE_FUNCTION1 | TE_FLAG_PURE, 0));
+                               new_func(atan, TE_FUNCTION1 | TE_FLAG_PURE, 0));
     status |= StrPtrMap_insert(func_map, "atan2",
-                               new_func("atan2", atan2,
-                                        TE_FUNCTION2 | TE_FLAG_PURE, 0));
+                               new_func(atan2, TE_FUNCTION2 | TE_FLAG_PURE, 0));
     status |= StrPtrMap_insert(func_map, "ceil",
-                               new_func("ceil", ceil,
-                                        TE_FUNCTION1 | TE_FLAG_PURE, 0));
+                               new_func(ceil, TE_FUNCTION1 | TE_FLAG_PURE, 0));
     status |= StrPtrMap_insert(func_map, "cos",
-                               new_func("cos", cos,
-                                        TE_FUNCTION1 | TE_FLAG_PURE, 0));
+                               new_func(cos, TE_FUNCTION1 | TE_FLAG_PURE, 0));
     status |= StrPtrMap_insert(func_map, "cosh",
-                               new_func("cosh", cosh,
-                                        TE_FUNCTION1 | TE_FLAG_PURE, 0));
+                               new_func(cosh, TE_FUNCTION1 | TE_FLAG_PURE, 0));
     status |= StrPtrMap_insert(func_map, "e",
-                               new_func("e", e,
-                                        TE_FUNCTION0 | TE_FLAG_PURE, 0));
+                               new_func(e, TE_FUNCTION0 | TE_FLAG_PURE, 0));
     status |= StrPtrMap_insert(func_map, "exp",
-                               new_func("exp", exp,
-                                        TE_FUNCTION1 | TE_FLAG_PURE, 0));
+                               new_func(exp, TE_FUNCTION1 | TE_FLAG_PURE, 0));
     status |= StrPtrMap_insert(func_map, "fac",
-                               new_func("fac", fac,
-                                        TE_FUNCTION1 | TE_FLAG_PURE, 0));
+                               new_func(fac, TE_FUNCTION1 | TE_FLAG_PURE, 0));
     status |= StrPtrMap_insert(func_map, "floor",
-                               new_func("floor", floor,
-                                        TE_FUNCTION1 | TE_FLAG_PURE, 0));
+                               new_func(floor, TE_FUNCTION1 | TE_FLAG_PURE, 0));
     status |= StrPtrMap_insert(func_map, "ln",
-                               new_func("ln", log,
-                                        TE_FUNCTION1 | TE_FLAG_PURE, 0));
+                               new_func(log, TE_FUNCTION1 | TE_FLAG_PURE, 0));
 #ifdef TE_NAT_LOG
     status |= StrPtrMap_insert(func_map, "log",
-                               new_func("log", log,
-                                        TE_FUNCTION1 | TE_FLAG_PURE, 0));
+                               new_func(log, TE_FUNCTION1 | TE_FLAG_PURE, 0));
 #else
     status |= StrPtrMap_insert(func_map, "log",
-                               new_func("log", log10,
-                                        TE_FUNCTION1 | TE_FLAG_PURE, 0));
+                               new_func(log10, TE_FUNCTION1 | TE_FLAG_PURE, 0));
 #endif
     status |= StrPtrMap_insert(func_map, "log10",
-                               new_func("log10", log10,
-                                        TE_FUNCTION1 | TE_FLAG_PURE, 0));
+                               new_func(log10, TE_FUNCTION1 | TE_FLAG_PURE, 0));
     status |= StrPtrMap_insert(func_map, "ncr",
-                               new_func("ncr", ncr,
-                                        TE_FUNCTION2 | TE_FLAG_PURE, 0));
+                               new_func(ncr, TE_FUNCTION2 | TE_FLAG_PURE, 0));
     status |= StrPtrMap_insert(func_map, "npr",
-                               new_func("npr", npr,
-                                        TE_FUNCTION2 | TE_FLAG_PURE, 0));
+                               new_func(npr, TE_FUNCTION2 | TE_FLAG_PURE, 0));
     status |= StrPtrMap_insert(func_map, "pi",
-                               new_func("pi", pi,
-                                        TE_FUNCTION0 | TE_FLAG_PURE, 0));
+                               new_func(pi, TE_FUNCTION0 | TE_FLAG_PURE, 0));
     status |= StrPtrMap_insert(func_map, "pow",
-                               new_func("pow", pow,
-                                        TE_FUNCTION2 | TE_FLAG_PURE, 0));
+                               new_func(pow, TE_FUNCTION2 | TE_FLAG_PURE, 0));
     status |= StrPtrMap_insert(func_map, "sin",
-                               new_func("sin", sin,
-                                        TE_FUNCTION1 | TE_FLAG_PURE, 0));
+                               new_func(sin, TE_FUNCTION1 | TE_FLAG_PURE, 0));
     status |= StrPtrMap_insert(func_map, "sinh",
-                               new_func("sinh", sinh,
-                                        TE_FUNCTION1 | TE_FLAG_PURE, 0));
+                               new_func(sinh, TE_FUNCTION1 | TE_FLAG_PURE, 0));
     status |= StrPtrMap_insert(func_map, "sqrt",
-                               new_func("sqrt", sqrt,
-                                        TE_FUNCTION1 | TE_FLAG_PURE, 0));
+                               new_func(sqrt, TE_FUNCTION1 | TE_FLAG_PURE, 0));
     status |= StrPtrMap_insert(func_map, "tan",
-                               new_func("tan", tan,
-                                        TE_FUNCTION1 | TE_FLAG_PURE, 0));
+                               new_func(tan, TE_FUNCTION1 | TE_FLAG_PURE, 0));
     status |= StrPtrMap_insert(func_map, "tanh",
-                               new_func("tanh", tanh,
-                                        TE_FUNCTION1 | TE_FLAG_PURE, 0));
+                               new_func(tanh, TE_FUNCTION1 | TE_FLAG_PURE, 0));
     if(status) {
         fprintf(stderr,"%s:%s:%d: can't initialize func_map\n",
                 __FILE__,__func__,__LINE__);
@@ -311,16 +284,14 @@ static void init_func_map(void) {
     }
 }
 
-static te_variable *new_func(const char *name, void *address, int type,
+static te_variable *new_func(void *address, int type,
                                  void *context) {
     te_variable *new = malloc(sizeof(te_variable));
     if(new == NULL)
         return NULL;
-    new->name = strdup(name);
     new->address = address;
     new->type = type;
     new->context = context;
-    new->next = NULL;
     return new;
 }
 
