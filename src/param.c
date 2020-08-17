@@ -177,7 +177,7 @@ void Param_copy(Param *to, const Param *from) {
     to->constr = NULL;
 }
 
-void Param_compileConstraint(Param *self, te_variable *te_pars) {
+void Param_compileConstraint(Param *self, StrPtrMap *te_pars) {
 
     int status;
 

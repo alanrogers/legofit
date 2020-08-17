@@ -62,7 +62,7 @@ struct ParStore {
     // enclosing Param object.
     PtrPtrMap *byaddr;      // look up by address
 
-    te_variable *te_pars;    // for tinyexpr.c
+    StrPtrMap *te_pars;    // for tinyexpr.c
 };
 
 static int  ParStore_constrain(ParStore *self);
@@ -116,7 +116,7 @@ ParStore *ParStore_new(PtrQueue *fixedQ, PtrQueue *freeQ, PtrQueue *constrQ) {
 
     self->byname = StrInt_new();
     self->byaddr = PtrPtrMap_new();
-    self->te_pars = NULL;
+    self->te_pars = StrPtrMap_new();
 
     // Map parameter name to parameter index.
     // Map value address to Param address.
@@ -136,8 +136,8 @@ ParStore *ParStore_new(PtrQueue *fixedQ, PtrQueue *freeQ, PtrQueue *constrQ) {
             exit(EXIT_FAILURE);
         }
 
-        self->te_pars =
-            te_variable_push(self->te_pars, par->name, &par->value);
+        StrPtrMap_insert(self->te_pars, par->name,
+                         te_variable_new(&par->value));
     }
 
     // compile constraints
@@ -182,7 +182,7 @@ ParStore *ParStore_dup(const ParStore * old) {
     new->constr = new->fixed + new->nFixed;
 
     new->byname = StrInt_new();
-    new->te_pars = NULL;
+    new->te_pars = StrPtrMap_new();
 
     for(int i = 0; i < new->nPar; ++i) {
         Param *par = new->par + i;
@@ -195,8 +195,8 @@ ParStore *ParStore_dup(const ParStore * old) {
         if(errno)
             DUPLICATE_PAR(par->name);
 
-        new->te_pars =
-            te_variable_push(new->te_pars, par->name, &par->value);
+        StrPtrMap_insert(new->te_pars, par->name,
+                         te_variable_new(&par->value));
     }
 
     // compile constraints
@@ -298,7 +298,7 @@ void ParStore_printConstrained(ParStore * self, FILE * fp) {
 void ParStore_free(ParStore * self) {
     assert(self);
     StrInt_free(self->byname);
-    te_variable_free(self->te_pars);
+    te_free_variables(self->te_pars);
     for(int i=0; i < self->nPar; ++i)
         Param_freePtrs(self->par + i);
     free(self->par);

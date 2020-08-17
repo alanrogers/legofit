@@ -3,9 +3,9 @@
 
 #include "typedefs.h"
 #include "tinyexpr.h"
+#include "strptrmap.h"
 #include <stdio.h>
 #include <gsl/gsl_randist.h>
-#include "tinyexpr.h"
 
 #define NAMESIZE 40
 
@@ -23,7 +23,7 @@ double Param_getValue(const Param *self);
 int    Param_compare(const Param *lhs, const Param *rhs);
 int    Param_isFree(const Param *self);
 int    Param_setValue(Param *self, double value);
-void   Param_compileConstraint(Param *self, te_variable *te_pars);
+void   Param_compileConstraint(Param *self, StrPtrMap *te_pars);
 void   Param_constrain(Param *par);
 void   Param_copy(Param *to, const Param *from);
 void   Param_freePtrs(Param *self);
