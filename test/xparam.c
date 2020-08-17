@@ -51,7 +51,7 @@ int main(int argc, char *argv[]) {
     assert(Param_isFree(par));
 
     double v;
-    for(int i=0; i< 100; ++i) {
+    for(int i=0; i < 4; ++i) {
         v = Param_getTrialValue(par, rng);
         assert(v >= 100.0);
         assert(v < 200.0);
@@ -82,14 +82,14 @@ int main(int argc, char *argv[]) {
     Param_freePtrs(par);
     free(par);
 
-    te_variable *pars = NULL;
+    StrPtrMap *pars = StrPtrMap_new();
 
     char formula[100];
     double w=1.0, x=2.0, y=3.0, z=4.0;
-    pars = te_variable_push(pars, "w", &w);
-    pars = te_variable_push(pars, "x", &x);
-    pars = te_variable_push(pars, "y", &y);
-    pars = te_variable_push(pars, "z", &z);
+    StrPtrMap_insert(pars, "w", &w);
+    StrPtrMap_insert(pars, "x", &x);
+    StrPtrMap_insert(pars, "y", &y);
+    StrPtrMap_insert(pars, "z", &z);
     sprintf(formula, "%s", "w + x*y - z");
 
     // A constrained Param
@@ -121,7 +121,7 @@ int main(int argc, char *argv[]) {
     unitTstResult("Param", "OK");
 
     gsl_rng_free(rng);
-    te_variable_free(pars);
+    te_free_variables(pars);
 
     return 0;
 
