@@ -115,8 +115,13 @@ int main(int argc, char *argv[]) {
     w += 1;
     Param_constrain(par2);
     assert(5.0 == Param_getValue(par2));
+    Param_freePtrs(par2);
+    free(par2);
 
     unitTstResult("Param", "OK");
+
+    gsl_rng_free(rng);
+    te_variable_free(pars);
 
     return 0;
 

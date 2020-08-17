@@ -188,7 +188,7 @@ XERROR := xerror.o error.o misc.o
 xerror : $(XERROR)
 	$(CC) $(CFLAGS) -o $@ $(XERROR) $(lib)
 
-XPARAM := xparam.o misc.o param.o tinyexpr.o dtnorm.o 
+XPARAM := xparam.o misc.o param.o tinyexpr.o dtnorm.o strptrmap.o
 xparam : $(XPARAM)
 	$(CC) $(CFLAGS) -o $@ $(XPARAM) $(lib)
 
