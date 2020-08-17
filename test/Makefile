@@ -310,7 +310,7 @@ xgptree : $(XGPTREE)
 
 XPARSTORE := xparstore.o misc.o parstore.o binary.o ptrptrmap.o ptrqueue.o \
         tinyexpr.o param.o strint.o \
-	dtnorm.o 
+	dtnorm.o strptrmap.o
 xparstore : $(XPARSTORE)
 	$(CC) $(CFLAGS) -o $@ $(XPARSTORE) $(lib)
 

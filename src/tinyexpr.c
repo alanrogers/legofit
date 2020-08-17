@@ -37,7 +37,6 @@ For log = natural log uncomment the next line. */
 #define TE_NAT_LOG
 
 #include "tinyexpr.h"
-#include "strptrmap.h"
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
@@ -74,7 +73,7 @@ typedef struct state {
     };
     void       *context;
 
-    const te_variable *lookup;
+    StrPtrMap *lookup;
 } state;
 
 #define TYPE_MASK(TYPE) ((TYPE)&0x0000001F)
@@ -89,10 +88,10 @@ void te_free_parameters(te_expr * n);
 void next_token(state * s);
 static double pi(void);
 static double e(void);
-te_variable *te_variable_new(const char *name, void *address);
 static te_variable *new_func(const char *name, void *address, int type,
                                  void *context);
 static void init_func_map(void);
+int string_copy(int dlen, char dest[dlen], int slen, const char src[slen]);
 
 te_variable *te_variable_new(const char *name, void *address) {
     te_variable *self = malloc(sizeof(te_variable));
@@ -105,22 +104,21 @@ te_variable *te_variable_new(const char *name, void *address) {
     return self;
 }
 
-// Push new variable onto end of list.
-te_variable *te_variable_push(te_variable *self, const char *name,
-                              void *address) {
-    if(self == NULL)
-        return te_variable_new(name, address);
-    self->next = te_variable_push(self->next, name, address);
-    return self;
-}
+// Free all variables and the hash map that holds them.
+void te_free_variables(StrPtrMap *pars) {
 
-// Free linked list.
-void te_variable_free(te_variable *self) {
-    if(self==NULL)
+    unsigned len = StrPtrMap_size(pars);
+    if(len == 0)
         return;
-    te_variable_free(self->next);
-    free(self->name);
-    free(self);
+    
+    void *v[len];
+    StrPtrMap_ptrArray(pars, len, v);
+    for(unsigned i=0; i<len; ++i) {
+        te_variable *var = v[i];
+        free(var->name);
+        free(var);
+    }
+    StrPtrMap_free(pars);
 }
 
 static te_expr *new_expr(const int type, const te_expr * parameters[]) {
@@ -326,48 +324,11 @@ static te_variable *new_func(const char *name, void *address, int type,
     return new;
 }
 
-#if 0
-static const te_variable *find_builtin(const char *name, int len) {
-    int         imin = 0;
-    int         imax = sizeof(functions) / sizeof(te_variable) - 2;
-
-    /*Binary search. */
-    while(imax >= imin) {
-        const int   i = (imin + ((imax - imin) / 2));
-        int         c = strncmp(name, functions[i].name, len);
-        if(!c)
-            c = '\0' - functions[i].name[len];
-        if(c == 0) {
-            return functions + i;
-        } else if(c > 0) {
-            imin = i + 1;
-        } else {
-            imax = i - 1;
-        }
-    }
-
-    return 0;
-}
-#else
-static const te_variable *find_builtin(const char *name, int len) {
+static const te_variable *find_builtin(const char *name) {
     if(func_map == NULL)
         init_func_map();
 
     return StrPtrMap_get(func_map, name);
-}
-#endif
-
-static const te_variable *find_lookup(const state * s, const char *name,
-                                      int len) {
-    const te_variable *var;
-    if(!s->lookup)
-        return 0;
-
-    for(var = s->lookup; var; var = var->next) {
-        if(strncmp(name, var->name, len) == 0 && var->name[len] == '\0')
-            return var;
-    }
-    return NULL;
 }
 
 static double add(double a, double b) {
@@ -390,8 +351,22 @@ static double comma(double a, double b) {
     return b;
 }
 
+/// Copy slen bytes from src into dest, and add a terminating '\0' character.
+/// Return 0 on success, 1 on bufferflow.
+int string_copy(int dlen, char dest[dlen], int slen, const char src[slen]) {
+    if(dlen < slen + 1)
+        return 1;
+    int i;
+    for(i=0; i < slen; ++i)
+        dest[i] = src[i];
+    dest[i] = '\0';
+    return 0;
+}
+
 void next_token(state * s) {
     s->type = TOK_NULL;
+
+    char name[100];
 
     do {
 
@@ -418,11 +393,16 @@ void next_token(state * s) {
                 start = s->next;
                 while(isalnum(*s->next) || *s->next == '_')
                     s->next++;
-
-                const te_variable *var =
-                    find_lookup(s, start, s->next - start);
+                int status = string_copy(sizeof(name), name,
+                                         s->next-start, start);
+                if(status) {
+                    fprintf(stderr,"%s:%d: buffer overflow\n",
+                            __FILE__,__LINE__);
+                    exit(EXIT_FAILURE);
+                }
+                const te_variable *var = StrPtrMap_get(s->lookup, name);
                 if(!var)
-                    var = find_builtin(start, s->next - start);
+                    var = find_builtin(name);
 
                 if(!var) {
                     s->type = TOK_ERROR;
@@ -860,11 +840,11 @@ static void optimize(te_expr * n) {
     }
 }
 
-te_expr    *te_compile(const char *expression, const te_variable * variables,
-                       int *error) {
+te_expr *te_compile(const char *expression, StrPtrMap * varmap,
+                    int *error) {
     state       s;
     s.start = s.next = expression;
-    s.lookup = variables;
+    s.lookup = varmap;
 
     next_token(&s);
     te_expr    *root = list(&s);

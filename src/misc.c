@@ -436,7 +436,11 @@ char       *strlowercase(char *s) {
 }
 
 /// Hash a character string
+#ifdef __clang__
+unsigned long strhash(const char *ss) __attribute__((no_sanitize("integer"))){
+#else
 unsigned long strhash(const char *ss) {
+#endif
     unsigned long hashval;
     int c;
     const unsigned char *s = (const unsigned char *) ss;

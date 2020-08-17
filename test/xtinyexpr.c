@@ -9,6 +9,7 @@
 
 #include "tinyexpr.h"
 #include "misc.h"
+#include "strptrmap.h"
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
@@ -29,12 +30,31 @@ int main(int argc, char **argv) {
 
     int status;
     double w=1.0, x=2.0, y=3.0, z=4.0;
-    te_variable *pars = NULL;
+    StrPtrMap *pars = StrPtrMap_new();
 
-    pars = te_variable_push(pars, "w", &w);
-    pars = te_variable_push(pars, "x", &x);
-    pars = te_variable_push(pars, "y", &y);
-    pars = te_variable_push(pars, "z", &z);
+    status = StrPtrMap_insert(pars, "w", te_variable_new("w", &w));
+    if(status) {
+        fprintf(stderr, "%s:%d: duplicate insertion\n",__FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
+
+    status = StrPtrMap_insert(pars, "x", te_variable_new("x", &x));
+    if(status) {
+        fprintf(stderr, "%s:%d: duplicate insertion\n",__FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
+    
+    status = StrPtrMap_insert(pars, "y", te_variable_new("y", &y));
+    if(status) {
+        fprintf(stderr, "%s:%d: duplicate insertion\n",__FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
+
+    status = StrPtrMap_insert(pars, "z", te_variable_new("z", &z));
+    if(status) {
+        fprintf(stderr, "%s:%d: duplicate insertion\n",__FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
 
     char formula[100];
     sprintf(formula, "%s", "w + x*y - z");
@@ -74,7 +94,20 @@ int main(int argc, char **argv) {
         te_print(expr, stdout);
     
     te_free(expr);
-    te_variable_free(pars);
+
+    sprintf(formula, "%s", "exp(x+log(y+z))");
+    expr = te_compile(formula, pars, &status);
+    if(expr == NULL) {
+        fprintf(stderr,"%s:%d: parse error\n", __FILE__,__LINE__);
+        fprintf(stderr,"  %s\n", formula);
+        fprintf(stderr,"  %*s^\nError near here\n", status-1, "");
+        exit(EXIT_FAILURE);
+    }
+    val = te_eval(expr);
+    assert(val == exp(x+log(y+z)));
+    
+    te_free(expr);
+    te_free_variables(pars);
 
     unitTstResult("tinyexpr", "OK");
     return 0;

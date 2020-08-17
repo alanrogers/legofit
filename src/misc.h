@@ -37,7 +37,11 @@ double      KLdiverg(int n, const double o[n], const double e[n]);
 double      sumDbl(int n, const double x[n]);
 double      reflect(double x, double lo, double hi);
 char       *strlowercase(char *s);
+#ifdef __clang__
+unsigned long strhash(const char *ss) __attribute__((no_sanitize("integer")));
+#else
 unsigned long strhash(const char *ss);
+#endif
 int         stripchr(char *s, int c);
 char       *stripWhiteSpace(char *buff);
 char       *stripInternalWhiteSpace(char *buff);
