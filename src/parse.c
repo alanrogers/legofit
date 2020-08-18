@@ -744,6 +744,8 @@ PtrPair mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, Bounds * bnd) {
     StrPtrMap_free(popmap);
     StrPtrMap_free(parmap);
 
+    assert(root);
+    assert(parstore);
     PtrPair ptrpair = {root, parstore};
     return ptrpair;
 }
@@ -893,7 +895,6 @@ int main(int argc, char **argv) {
     };
 
     int nseg = countSegments(fp);
-    fprintf(stderr, "nseg=%d\n", nseg);
     assert(6 == nseg);
     unitTstResult("countSegments", "OK");
 
@@ -922,6 +923,10 @@ int main(int argc, char **argv) {
         printf("Used %d constrained parameters in \"parstore\".\n",
                ParStore_nConstrained(parstore));
     }
+
+    PopNode_free(root);
+    assert(parstore);
+    ParStore_free(parstore);
 
     unitTstResult("mktree", "OK");
 

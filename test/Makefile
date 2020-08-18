@@ -266,7 +266,9 @@ XPARSE := xparse.o misc.o tokenizer.o gptree.o lblndx.o \
        branchtab.o network.o parstore.o popnode.o binary.o gene.o \
        dprintf.o dtnorm.o tinyexpr.o param.o addrparmap.o \
        sampndx.o strptrmap.o ptrptrmap.o ptrqueue.o strint.o \
-       error.o
+       error.o segment.o ptrvec.o comb.o setpart.o \
+       ptrlst.o u64u64map.o migoutcome.o idset.o matcoal.o \
+       rational.o
 xparse : $(XPARSE)
 	$(CC) $(CFLAGS) -o $@ $(XPARSE) $(lib)
 
