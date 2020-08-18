@@ -129,6 +129,17 @@ int main(int argc, char **argv) {
 
     ParStore_free(ps);
     ParStore_free(ps2);
+
+    assert(0 == PtrQueue_size(freeQ));
+    assert(0 == PtrQueue_size(fixedQ));
+    assert(0 == PtrQueue_size(constrQ));
+
+    PtrQueue_free(freeQ);
+    PtrQueue_free(fixedQ);
+    PtrQueue_free(constrQ);
+
+    gsl_rng_free(rng);
+    
     unitTstResult("ParStore", "OK");
 
     return 0;

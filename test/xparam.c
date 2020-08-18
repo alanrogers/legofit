@@ -86,10 +86,15 @@ int main(int argc, char *argv[]) {
 
     char formula[100];
     double w=1.0, x=2.0, y=3.0, z=4.0;
-    StrPtrMap_insert(pars, "w", &w);
-    StrPtrMap_insert(pars, "x", &x);
-    StrPtrMap_insert(pars, "y", &y);
-    StrPtrMap_insert(pars, "z", &z);
+    status = 0;
+    status |= StrPtrMap_insert(pars, "w", te_variable_new(&w));
+    status |= StrPtrMap_insert(pars, "x", te_variable_new(&x));
+    status |= StrPtrMap_insert(pars, "y", te_variable_new(&y));
+    status |= StrPtrMap_insert(pars, "z", te_variable_new(&z));
+    if(status) {
+        fprintf(stderr, "%s:%d: duplicate insertion\n",__FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
     sprintf(formula, "%s", "w + x*y - z");
 
     // A constrained Param

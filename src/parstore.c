@@ -95,6 +95,7 @@ ParStore *ParStore_new(PtrQueue *fixedQ, PtrQueue *freeQ, PtrQueue *constrQ) {
         Param_move(self->free+i, par);
         free(par);
     }
+    assert(0 == PtrQueue_size(freeQ));
 
     for(unsigned i=0; i < self->nFixed; ++i) {
         Param *par = PtrQueue_pop(fixedQ);
@@ -105,18 +106,36 @@ ParStore *ParStore_new(PtrQueue *fixedQ, PtrQueue *freeQ, PtrQueue *constrQ) {
         }
         assert(FIXED & par->type);
         Param_move(self->fixed+i, par);
+        free(par);
     }
+    assert(0 == PtrQueue_size(fixedQ));
     
     for(unsigned i=0; i < self->nConstr; ++i) {
         Param *par = PtrQueue_pop(constrQ);
         assert(par);
         assert(CONSTRAINED & par->type);
         Param_move(self->constr+i, par);
+        free(par);
     }
+    assert(0 == PtrQueue_size(constrQ));
 
     self->byname = StrInt_new();
+    if(self->byname == NULL) {
+        fprintf(stderr,"%s:%d: bad StrInt_new()\n",__FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
+
     self->byaddr = PtrPtrMap_new();
+    if(self->byaddr == NULL) {
+        fprintf(stderr,"%s:%d: bad PtrPtrMap_new()\n",__FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
+
     self->te_pars = StrPtrMap_new();
+    if(self->te_pars == NULL) {
+        fprintf(stderr,"%s:%d: bad StrPtrMap_new()\n",__FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
 
     // Map parameter name to parameter index.
     // Map value address to Param address.
@@ -182,6 +201,7 @@ ParStore *ParStore_dup(const ParStore * old) {
     new->constr = new->fixed + new->nFixed;
 
     new->byname = StrInt_new();
+    new->byaddr = PtrPtrMap_new();
     new->te_pars = StrPtrMap_new();
 
     for(int i = 0; i < new->nPar; ++i) {
@@ -195,6 +215,13 @@ ParStore *ParStore_dup(const ParStore * old) {
         if(errno)
             DUPLICATE_PAR(par->name);
 
+        int status = PtrPtrMap_insert(new->byaddr, &par->value, par);
+        if(status) {
+            fprintf(stderr,"%s:%d: duplicate parameter address\n",
+                    __FILE__,__LINE__);
+            exit(EXIT_FAILURE);
+        }
+
         StrPtrMap_insert(new->te_pars, par->name,
                          te_variable_new(&par->value));
     }
@@ -203,6 +230,7 @@ ParStore *ParStore_dup(const ParStore * old) {
     for(int i=0; i < new->nConstr; ++i)
         Param_compileConstraint(new->par+i, new->te_pars);
 
+    assert(new->byaddr);
     ParStore_sanityCheck(new, __FILE__, __LINE__);
     return new;
 }
@@ -298,10 +326,14 @@ void ParStore_printConstrained(ParStore * self, FILE * fp) {
 void ParStore_free(ParStore * self) {
     assert(self);
     StrInt_free(self->byname);
-    te_free_variables(self->te_pars);
+    assert(self->byaddr);
+    PtrPtrMap_free(self->byaddr);
+
     for(int i=0; i < self->nPar; ++i)
         Param_freePtrs(self->par + i);
     free(self->par);
+
+    te_free_variables(self->te_pars);
     free(self);
 }
 
@@ -408,11 +440,11 @@ static void ParStore_chkDependencies(ParStore * self) {
         assert(par->constr != NULL);
         len = te_dependencies(par->constr, len, dep);
 
+        assert(self->byaddr);
         // Check that each dependent constrained parameter comes before
         // "par" in the array of parameters. This implies that
         // dependencies will be set before par is set.
         for(int j = 0; j < len; ++j) {
-            assert(self->byaddr);
             // dpar is Param structure associated with value pointer
             // dep[j]
             int status;

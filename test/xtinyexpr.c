@@ -59,6 +59,7 @@ int main(int argc, char **argv) {
     char formula[100];
     sprintf(formula, "%s", "w + x*y - z");
 
+    status = 0;
     te_expr *expr = te_compile(formula, pars, &status);
     if(expr == NULL) {
         fprintf(stderr,"%s:%d: parse error\n", __FILE__,__LINE__);

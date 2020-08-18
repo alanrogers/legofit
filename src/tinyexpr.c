@@ -97,8 +97,8 @@ te_variable *te_variable_new(void *address) {
     if(self==NULL)
         return NULL;
     memset(self, 0, sizeof(te_variable));
-
     self->address = address;
+    self->type = TE_VARIABLE;
     return self;
 }
 
@@ -106,15 +106,13 @@ te_variable *te_variable_new(void *address) {
 void te_free_variables(StrPtrMap *pars) {
 
     unsigned len = StrPtrMap_size(pars);
-    if(len == 0)
-        return;
-    
-    void *v[len];
-    StrPtrMap_ptrArray(pars, len, v);
-    for(unsigned i=0; i<len; ++i) {
-        te_variable *var = v[i];
-        //free(var->name);
-        free(var);
+    if(len > 0) {
+        void *v[len];
+        StrPtrMap_ptrArray(pars, len, v);
+        for(unsigned i=0; i<len; ++i) {
+            te_variable *var = v[i];
+            free(var);
+        }
     }
     StrPtrMap_free(pars);
 }
