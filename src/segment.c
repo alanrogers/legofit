@@ -226,6 +226,8 @@ void Segment_free(Segment *self) {
         PtrLst_free(self->w[0][i]);
         PtrLst_free(self->w[1][i]);
     }
+
+    free(self);
 }
 
 /// Traverse network, removing segments with no children and
@@ -982,6 +984,8 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
         }
         PtrLst_free(msd.migrants);
         PtrLst_free(msd.natives);
+        for(IdSet *s=PtrVec_pop(msd.a); s; s=PtrVec_pop(msd.a))
+            IdSet_free(s);
         PtrVec_free(msd.a);
     }
 
