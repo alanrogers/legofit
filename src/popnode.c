@@ -969,7 +969,14 @@ int main(int argc, char **argv) {
 
     assert(PopNode_equals(abc, duproot));
 
+    PopNode_free(abc);
+    PopNode_free(duproot);
+
     unitTstResult("PopNode", "OK");
+
+    PtrQueue_free(freeQ);
+    PtrQueue_free(fixedQ);
+    PtrQueue_free(constrQ);
 
     ParStore_free(ps);
     gsl_rng_free(rng);

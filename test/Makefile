@@ -290,7 +290,7 @@ xpopnode.o : ../src/popnode.c
 
 XPOPNODE := xpopnode.o dtnorm.o misc.o gene.o parstore.o tinyexpr.o \
    param.o branchtab.o ptrptrmap.o ptrqueue.o strint.o \
-   binary.o
+   binary.o strptrmap.o
 xpopnode : $(XPOPNODE)
 	$(CC) $(CFLAGS) -o $@ $(XPOPNODE) $(lib)
 
