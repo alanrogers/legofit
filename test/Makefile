@@ -312,6 +312,14 @@ XGPTREE := xgptree.o addrparmap.o misc.o branchtab.o parstore.o lblndx.o \
 xgptree : $(XGPTREE)
 	$(CC) $(CFLAGS) -o $@ $(XGPTREE) $(lib)
 
+XMCTREE := xmctree.o mctree.o segment.o parstore.o lblndx.o sampndx.o misc.o \
+    idset.o matcoal.o network.o param.o ptrlst.o ptrptrmap.o ptrqueue.o \
+    ptrvec.o strint.o strptrmap.o binary.o comb.o setpart.o tinyexpr.o \
+    parse.o dtnorm.o migoutcome.o u64u64map.o rational.o popnode.o \
+    error.o gptree.o gene.o branchtab.o dprintf.o
+xmctree : $(XMCTREE)
+	$(CC) $(CFLAGS) -o $@ $(XMCTREE) $(lib)
+
 XPARSTORE := xparstore.o misc.o parstore.o binary.o ptrptrmap.o ptrqueue.o \
         tinyexpr.o param.o strint.o \
 	dtnorm.o strptrmap.o

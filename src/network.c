@@ -57,13 +57,26 @@ void Network_init(enum NetworkType type) {
         Node_print = PopNode_print;
         break;
     case MATCOAL:
+        Network_dup = NULL;
+        Network_feasible = MCTree_feasible;
+        Network_free = MCTree_free;
+        Network_getLblNdx = MCTree_getLblNdx;
+        Network_getNameFree = NULL;
+        Network_getParams = NULL;
+        Network_new = MCTree_new;
+        Network_nFree = NULL;
+        Network_patprob = NULL;
+        Network_printParStore = MCTree_printParStore;
+        Network_randomize = NULL;
+        Network_sanityCheck = MCTree_sanityCheck;
+        Network_setParams = NULL;
+        Network_initStateVec = NULL;
+        Node_new = Segment_new;
         Node_addChild = Segment_addChild;
         Node_mix = Segment_mix;
         Node_root = Segment_root;
         Node_print = Segment_print;
-        fprintf(stderr,"%s:%d: type MATCOAL not yet implemented\n",
-                __FILE__,__LINE__);
-        exit(EXIT_FAILURE);
+        break;
     default:
         fprintf(stderr,"%s:%d: unknown type (%d)\n",
                 __FILE__,__LINE__, type);

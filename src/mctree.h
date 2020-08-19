@@ -5,23 +5,23 @@
 #  include <stdio.h>
 #  include <gsl/gsl_rng.h>
 
-MCTree     *MCTree_dup(const MCTree *old);
-int         MCTree_feasible(const MCTree *self, int verbose);
-void        MCTree_free(MCTree *self);
-LblNdx      MCTree_getLblNdx(MCTree *self);
-const char *MCTree_getNameFree(MCTree * self, int i);
-void        MCTree_getParams(MCTree *self, int n, double x[n]);
-MCTree     *MCTree_new(const char *fname, Bounds bnd);
-int         MCTree_nFree(const MCTree *self);
-void        MCTree_patprob(MCTree *self, BranchTab *branchtab,
+void       *MCTree_dup(const void *old);
+int         MCTree_feasible(const void * vself, int verbose);
+void        MCTree_free(void *self);
+LblNdx      MCTree_getLblNdx(void *self);
+const char *MCTree_getNameFree(void * self, int i);
+void        MCTree_getParams(void *self, int n, double x[n]);
+void       *MCTree_new(const char *fname, Bounds bnd);
+int         MCTree_nFree(const void *self);
+void        MCTree_patprob(void *self, BranchTab *branchtab,
                             gsl_rng *rng, unsigned long nreps,
                             int doSing);
-void        MCTree_printParStore(MCTree *self, FILE *fp);
-void        MCTree_printParStoreFree(MCTree *self, FILE *fp);
-void        MCTree_randomize(MCTree *self, gsl_rng *rng);
-void        MCTree_sanityCheck(MCTree *self, const char *file, int line);
-int         MCTree_setParams(MCTree *self, int n, double x[n]);
-void        MCTree_initStateVec(MCTree *gpt, int ndx, int n, double x[n],
+void        MCTree_printParStore(void * vself, FILE * fp);
+void        MCTree_printParStoreFree(void *self, FILE *fp);
+void        MCTree_randomize(void *self, gsl_rng *rng);
+void        MCTree_sanityCheck(void * vself, const char *file, int line);
+int         MCTree_setParams(void *self, int n, double x[n]);
+void        MCTree_initStateVec(void *gpt, int ndx, int n, double x[n],
                                 gsl_rng *rng);
 #endif
 
