@@ -1359,3 +1359,32 @@ static void mv_idsets_to_parent(Segment *self, int ipar, PtrLst **a) {
         PtrLst_move(self->parent[ipar]->w[iself][i], a[i]);
     }
 }
+
+/// Remove all references to samples from tree of populations.
+/// Sets "visited" to 0 in every node.
+void Segment_clear(Segment * self) {
+    assert(self);
+    for(int i = 0; i < self->nchildren; ++i) {
+        assert(self->child[i]);
+        Segment_clear(self->child[i]);
+    }
+
+    self->nsamples = 0;
+    self->visited = 0;
+    //memset(self->sample, 0, sizeof(self->sample));
+    Segment_sanityCheck(self, __FILE__, __LINE__);
+}
+
+/// Return 1 if PopNode tree is empty of samples
+int Segment_isClear(const Segment * self) {
+    if(self == NULL)
+        return 1;
+    if(self->nsamples > 0)
+        return 0;
+
+    for(int i = 0; i < self->nchildren; ++i) {
+        if(!Segment_isClear(self->child[i]))
+            return 0;
+    }
+    return 1;
+}

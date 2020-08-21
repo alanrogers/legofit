@@ -28,7 +28,7 @@ EXTERN void        (*Network_randomize)(void *self, gsl_rng *rng);
 EXTERN void        (*Network_sanityCheck)(void *self, const char *file,
                                           int line);
 EXTERN int         (*Network_setParams)(void *self, int n, double x[n]);
-EXTERN void        (*Network_initStateVec)(void *gpt, int ndx, int n,
+EXTERN void        (*Network_initStateVec)(void *vself, int ndx, int n,
                                            double x[n], gsl_rng *rng);
 
 EXTERN void       *(*Node_new)(int twoN_i, int start_i, ParStore *ps);

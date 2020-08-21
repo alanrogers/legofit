@@ -333,6 +333,12 @@ int GPTree_feasible(const void * vself, int verbose) {
     return PopNode_feasible(self->rootPop, self->bnd, verbose);
 }
 
+unsigned GPTree_nSamples(void *vself) {
+    GPTree *self = vself;
+
+    return SampNdx_size(&self->sndx);
+}
+
 #ifdef TEST
 
 #  include <string.h>

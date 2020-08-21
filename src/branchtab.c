@@ -315,7 +315,7 @@ void BranchTab_minusEquals(BranchTab *lhs, BranchTab *rhs) {
 /// the total branch length associated with that site pattern, and
 /// sumsqr[i] is the corresponding sum of squared branch lengths.
 void BranchTab_toArrays(BranchTab *self, unsigned n, tipId_t key[n],
-                        double value[n], double sumsqr[n]) {
+                        double value[n]) {
     int i, j=0;
     for(i=0; i<BT_DIM; ++i) {
         BTLink *link;

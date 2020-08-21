@@ -200,7 +200,17 @@ static MpfrMatCoal * MpfrMatCoal_new(int nLin) {
     return self;
 }
 
+int MpfrMatCoal_isInitialized(void) {
+    return nsamples > 0;
+}
+
 void MpfrMatCoal_initExterns(long nsamp) {
+    if(nsamples) {
+        fprintf(stderr,"%s:%d: Can't call %s twice.\n",
+                __FILE__,__LINE__,__func__);
+        exit(EXIT_FAILURE);
+    }
+
     matcoal = malloc((nsamp-1) * sizeof(matcoal[0]));
     CHECKMEM(matcoal);
 
@@ -231,11 +241,15 @@ static void MpfrMatCoal_free(MpfrMatCoal *self) {
     for(i=0; i < npairs; ++i)
         mpfr_clear(self->hmat[i]);
 
+    for(i=0; i < dim; ++i)
+        mpfr_clear(self->expn[i]);
+
     free(self->offset);
     free(self->beta);
     free(self->gmat);
     free(self->hmat);
     free(self->z);
+    free(self->expn);
     free(self);
 }
 

@@ -23,6 +23,7 @@ void        GPTree_sanityCheck(void *vself, const char *file, int line);
 int         GPTree_setParams(void *vself, int n, double x[n]);
 void        GPTree_initStateVec(void *gpt, int ndx, int n, double x[n],
                                 gsl_rng *rng);
+unsigned    GPTree_nSamples(void *vself);
 #endif
 
 

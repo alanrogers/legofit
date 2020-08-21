@@ -9,6 +9,7 @@
 
 #include "branchtab.h"
 #include "error.h"
+#include "lblndx.h"
 #include "matcoal.h"
 #include "misc.h"
 #include "param.h"
@@ -218,7 +219,20 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    //BranchTab_print(bt, stdout);
+    if(verbose) {
+        unsigned npat = BranchTab_size(bt);
+        tipId_t pat[npat];
+        double brlen[npat];
+        BranchTab_toArrays(bt, npat, pat, brlen);
+        unsigned ord[npat];
+        orderpat(npat, ord, pat);
+        for(int j=0; j < npat; ++j)
+            printf("%o %lf\n", pat[ord[j]], brlen[ord[j]]);
+    }
+
+    assert(0 == Segment_isClear(abc));
+    Segment_clear(abc);
+    assert(1 == Segment_isClear(abc));
 
     Segment_unvisit(abc);
     Segment_free(abc);

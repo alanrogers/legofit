@@ -111,6 +111,7 @@ void        usage(void);
 void usage(void) {
     fprintf(stderr, "usage: legosim [options] input_file_name\n");
     fprintf(stderr, "   where options may include:\n");
+    tellopt("-e or --estimate", "stochastic algorithm");
     tellopt("-i <x> or --nItr <x>", "number of iterations in simulation");
 	tellopt("-1 or --singletons", "Use singleton site patterns");
     tellopt("-U <x>", "Mutations per generation per haploid genome.");
@@ -123,6 +124,7 @@ int main(int argc, char **argv) {
 
     static struct option myopts[] = {
         /* {char *name, int has_arg, int *flag, int val} */
+        {"estimate", no_argument, 0, 'e'},
         {"nItr", required_argument, 0, 'i'},
         {"mutations", required_argument, 0, 'U'},
         {"singletons", no_argument, 0, '1'},
@@ -141,6 +143,7 @@ int main(int argc, char **argv) {
     double      U=0.0;          // mutations pre gen per haploid genome
     int         optndx;
     long        nreps = 100;
+    int         estimate = 0;
     char        fname[200] = { '\0' };
 #if defined(__DATE__) && defined(__TIME__)
     printf("# Program was compiled: %s %s\n", __DATE__, __TIME__);
@@ -162,6 +165,9 @@ int main(int argc, char **argv) {
         case ':':
         case '?':
             usage();
+            break;
+        case 'e':
+            estimate = 1;
             break;
         case 'i':
             nreps = strtol(optarg, &end, 10);
@@ -203,7 +209,10 @@ int main(int argc, char **argv) {
     }
     assert(fname[0] != '\0');
 
-    Network_init(SIM);
+    if(estimate)
+        Network_init(STOCHASTIC);
+    else
+        Network_init(DETERMINISTIC);
 
     printf("# nreps                       : %lu\n", nreps);
     printf("# input file                  : %s\n", fname);
@@ -221,12 +230,12 @@ int main(int argc, char **argv) {
             .lo_t = lo_t,
             .hi_t = hi_t
     };
-    GPTree *gptree = GPTree_new(fname, bnd);
-    LblNdx lblndx = GPTree_getLblNdx(gptree);
+    void *network = Network_new(fname, bnd);
+    LblNdx lblndx = Network_getLblNdx(network);
 
-    int dim = GPTree_nFree(gptree);
+    int dim = Network_nFree(network);
     double x[dim];
-    GPTree_getParams(gptree, dim, x);
+    Network_getParams(network, dim, x);
 
     // No need to lock rngseed, because only 1 thread is running.
     rngseed = currtime^pid;
@@ -234,7 +243,7 @@ int main(int argc, char **argv) {
     gsl_rng_set(rng, rngseed);
     rngseed = (rngseed == ULONG_MAX ? 0 : rngseed+1);
 
-    BranchTab *bt = patprob(gptree, nreps, doSing, rng);
+    BranchTab *bt = patprob(network, nreps, doSing, rng);
     BranchTab_divideBy(bt, (double) nreps);
     //BranchTab_print(bt, stdout);
 
@@ -242,9 +251,8 @@ int main(int argc, char **argv) {
     unsigned npat = BranchTab_size(bt);
     tipId_t pat[npat];
     double prob[npat];
-    double sqr[npat];
-    BranchTab_toArrays(bt, npat, pat, prob, sqr);
-    //GPTree_printParStore(gptree, stdout);
+    BranchTab_toArrays(bt, npat, pat, prob);
+    //Network_printParStore(network, stdout);
 
     // Determine order for printing lines of output
     unsigned ord[npat];
@@ -269,8 +277,8 @@ int main(int argc, char **argv) {
 
     gsl_rng_free(rng);
     BranchTab_free(bt);
-    GPTree_sanityCheck(gptree, __FILE__, __LINE__);
-    GPTree_free(gptree);
+    Network_sanityCheck(network, __FILE__, __LINE__);
+    Network_free(network);
 
     return 0;
 }

@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 
+int  MpfrMatCoal_isInitialized(void);
 void MpfrMatCoal_initExterns(long nsamp);
 void MpfrMatCoal_freeExterns(void);
 void MpfrMatCoal_project(int dim, double ans[dim], double v);

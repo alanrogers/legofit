@@ -27,7 +27,7 @@
 #undef EXTERN
 
 struct Network {
-    int method;  // either MATCOAL or SIM
+    enum NetworkType method;  // either DETERMINISTIC or STOCHASTIC
     GPTree *gptree;
     MCTree *mctree;
 };
@@ -35,7 +35,7 @@ struct Network {
 /// Initialize model of network
 void Network_init(enum NetworkType type) {
     switch(type) {
-    case SIM:
+    case STOCHASTIC:
         Network_dup = GPTree_dup;
         Network_feasible = GPTree_feasible;
         Network_free = GPTree_free;
@@ -56,21 +56,21 @@ void Network_init(enum NetworkType type) {
         Node_root = PopNode_root;
         Node_print = PopNode_print;
         break;
-    case MATCOAL:
-        Network_dup = NULL;
+    case DETERMINISTIC:
+        Network_dup = MCTree_dup;
         Network_feasible = MCTree_feasible;
         Network_free = MCTree_free;
         Network_getLblNdx = MCTree_getLblNdx;
-        Network_getNameFree = NULL;
-        Network_getParams = NULL;
+        Network_getNameFree = MCTree_getNameFree;
+        Network_getParams = MCTree_getParams;
         Network_new = MCTree_new;
-        Network_nFree = NULL;
-        Network_patprob = NULL;
+        Network_nFree = MCTree_nFree;
+        Network_patprob = MCTree_patprob;
         Network_printParStore = MCTree_printParStore;
-        Network_randomize = NULL;
+        Network_randomize = MCTree_randomize;
         Network_sanityCheck = MCTree_sanityCheck;
-        Network_setParams = NULL;
-        Network_initStateVec = NULL;
+        Network_setParams = MCTree_setParams;
+        Network_initStateVec = MCTree_initStateVec;
         Node_new = Segment_new;
         Node_addChild = Segment_addChild;
         Node_mix = Segment_mix;
@@ -89,12 +89,6 @@ void Network_init(enum NetworkType type) {
 #  include <string.h>
 #  include <assert.h>
 #  include <time.h>
-
-#  ifdef NDEBUG
-#    error "Unit tests must be compiled without -DNDEBUG flag"
-#  endif
-
-#  include <assert.h>
 #  include <unistd.h>
 
 #  ifdef NDEBUG
@@ -102,14 +96,16 @@ void Network_init(enum NetworkType type) {
 #  endif
 
 int Network_equals(Network *a, Network *b);
+
 int Network_equals(Network *a, Network *b) {
     switch(self->method) {
-    case SIM:
+    case STOCHASTIC:
         return GPTree_equals(a->gptree, b->gptree);
-    case MATCOAL:
+    case DETERMINISTIC:
         return MCTree_equals(a->mctree, b->mctree)
     default:
-        fprintf(stderr,"%s:%d: bad method\n",__FILE__,__LINE__);
+        fprintf(stderr,"%s:%d: bad method (%d)\n",
+                __FILE__,__LINE__, self->method);
         exit(EXIT_FAILURE);
     }
 }
@@ -171,7 +167,7 @@ int main(int argc, char **argv) {
         .lo_t = 0.0,
         .hi_t = INFINITY
     };
-    int method = SIM;
+    int method = STOCHASTIC;
     Network    *g = Network_new(fname, bnd, method);
     Network    *g2 = Network_dup(g);
     assert(Network_equals(g, g2));

@@ -158,7 +158,16 @@ static MatCoal * MatCoal_new(int nLin) {
     return self;
 }
 
+int MatCoal_nSamples(void) {
+    return nsamples;
+}
+
 void MatCoal_initExterns(long nsamp) {
+    if(nsamples) {
+        fprintf(stderr,"%s:%d: Can't call %s twice.\n",
+                __FILE__,__LINE__,__func__);
+        exit(EXIT_FAILURE);
+    }
     matcoal = malloc((nsamp-1) * sizeof(matcoal[0]));
     CHECKMEM(matcoal);
 

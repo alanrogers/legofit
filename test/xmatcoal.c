@@ -64,7 +64,9 @@ int main(int argc, char **argv) {
     if(nsamples < 2)
         usage();
 
+    assert(0 == MatCoal_nSamples());
     MatCoal_initExterns(nsamples);
+    assert(nsamples == MatCoal_nSamples());
     MpfrMatCoal_initExterns(nsamples);
     if(verbose==2) {
         MatCoal_printAll(stdout);

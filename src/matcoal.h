@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 
+int  MatCoal_nSamples(void);
 void MatCoal_initExterns(long nsamp);
 void MatCoal_freeExterns(void);
 void MatCoal_eigenvals(int dim, double eig[dim], double v);

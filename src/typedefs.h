@@ -78,6 +78,6 @@ typedef uint64_t tipId_t;
 #define POPNAMESIZE 30
 #define MAXSAMP ((int)(8*sizeof(tipId_t)))
 
-enum NetworkType { SIM, MATCOAL };
+enum NetworkType { STOCHASTIC, DETERMINISTIC };
 
 #endif

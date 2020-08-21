@@ -14,8 +14,8 @@ of separations and of episodes of gene flow, and levels of gene flow.
           termination criterion
        -t <x> or --threads <x>
           number of threads (default is auto)
-       -d or --deterministic
-          deterministic algorithm
+       -e or --estimate
+          estimate site pattern probabilities by simulation
        -F <x> or --scaleFactor <x>
           set DE scale factor
        -x <x> or --crossover <x>
@@ -248,7 +248,7 @@ void usage(void) {
     fprintf(stderr, "Options may include:\n");
     tellopt("-T <x> or --tol <x>", "termination criterion");
     tellopt("-t <x> or --threads <x>", "number of threads (default is auto)");
-    tellopt("-d or --deterministic", "deterministic algorithm");
+    tellopt("-e or --estimate", "stochastic algorithm");
     tellopt("-F <x> or --scaleFactor <x>", "set DE scale factor");
     tellopt("-x <x> or --crossover <x>", "set DE crossover probability");
     tellopt("-s <x> or --strategy <x>", "set DE strategy");
@@ -276,7 +276,7 @@ int main(int argc, char **argv) {
     static struct option myopts[] = {
         /* {char *name, int has_arg, int *flag, int val} */
         {"threads", required_argument, 0, 't'},
-        {"deterministic", no_argument, 0, 'd'},
+        {"estimate", no_argument, 0, 'e'},
         {"crossover", required_argument, 0, 'x'},
         {"scaleFactor", required_argument, 0, 'F'},
         {"strategy", required_argument, 0, 's'},
@@ -316,7 +316,7 @@ int main(int argc, char **argv) {
     int strategy = 2;
     int ptsPerDim = 10;
     int verbose = 0;
-    int deterministic = 0;
+    int estimate = 0;
     SimSched *simSched = SimSched_new();
 
     assert(SimSched_nStages(simSched) == 0);
@@ -340,8 +340,8 @@ int main(int argc, char **argv) {
         if(i == -1)
             break;
         switch (i) {
-        case 'd':
-            deterministic = 1;
+        case 'e':
+            estimate = 1;
             break;
         case ':':
         case '?':
@@ -441,25 +441,28 @@ int main(int argc, char **argv) {
     snprintf(patfname, sizeof(patfname), "%s", argv[optind + 1]);
     assert(patfname[0] != '\0');
 
-    // Default simulation schedule.
-    // Stage 1: 200 DE generations of 1000 simulation replicates
-    // Stage 2: 100 generations of 10000 replicates
-    if(deterministic) {
+    if(estimate) {
+        Network_init(SIM);
+
+        if(0 != SimSched_nStages(simSched)) {
+            // Default simulation schedule.
+            // Stage 1: 200 DE generations of 1000 simulation replicates
+            // Stage 2: 100 generations of 10000 replicates
+            SimSched_append(simSched, 200, 1000);
+            SimSched_append(simSched, 100, 10000);
+            SimSched_append(simSched, 1000, simreps);
+        }
+    }else{
         Network_init(MATCOAL);
         if(0 != SimSched_nStages(simSched)) {
-            fprintf(stderr,"%s:%d: Can't use -S or --stage with"
-                    " -d or --deterministic\n",
+            fprintf(stderr,"%s:%d: Arguments -S or --stage require"
+                    " -e or --estimate\n",
                     __FILE__,__LINE__);
             exit(EXIT_FAILURE);
         }
-    }else if(0 == SimSched_nStages(simSched)) {
-        Network_init(SIM);
-        SimSched_append(simSched, 200, 1000);
-        SimSched_append(simSched, 100, 10000);
-        SimSched_append(simSched, 1000, simreps);
     }
 
-    if(!deterministic)
+    if(estimate)
         SimSched_print(simSched, stdout);
 
     Bounds bnd = {
@@ -540,10 +543,10 @@ int main(int argc, char **argv) {
     if(nThreads > npts)
         nThreads = npts;
 
-    if(deterministic)
-        printf("# Obj func evaluation: %s\n", "deterministic");
-    else
+    if(estimate)
         printf("# Obj func evaluation: %s\n", "simulation");
+    else
+        printf("# Obj func evaluation: %s\n", "deterministic");
     printf("# DE strategy        : %d\n", strategy);
     printf("#    F               : %lg\n", F);
     printf("#    CR              : %lg\n", CR);
@@ -718,8 +721,7 @@ int main(int argc, char **argv) {
     unsigned npat = BranchTab_size(bt);
     tipId_t pat[npat];
     double brlen[npat];
-    double sqr[npat];
-    BranchTab_toArrays(bt, npat, pat, brlen, sqr);
+    BranchTab_toArrays(bt, npat, pat, brlen);
 
     // Determine order for printing lines of output
     unsigned ord[npat];

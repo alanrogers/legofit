@@ -15,6 +15,7 @@
 #include <math.h>
 #include <pthread.h>
 #include <string.h>
+#include <unistd.h>
 
 #ifdef NDEBUG
 #  error "Unit tests must be compiled without -DNDEBUG flag"
@@ -70,6 +71,11 @@ int main(int argc, char **argv) {
         verbose = 1;
     }
 
+    gsl_rng    *rng = gsl_rng_alloc(gsl_rng_taus);
+    long unsigned seed = time(NULL);
+    seed ^= getpid();
+    gsl_rng_set(rng, seed);
+
     const char *fname = "mktree-tmp.lgo";
     FILE       *fp = fopen(fname, "w");
     fputs(tstInput, fp);
@@ -84,7 +90,7 @@ int main(int argc, char **argv) {
         .hi_t = INFINITY
     };
     MCTree     *g = MCTree_new(fname, bnd);
-#if 0    
+
     MCTree     *g2 = MCTree_dup(g);
     assert(MCTree_equals(g, g2));
 
@@ -92,13 +98,12 @@ int main(int argc, char **argv) {
     assert( !MCTree_equals(g, g2) );
     gsl_rng_free(rng);
     rng = NULL;
-#endif    
 
     if(verbose) {
-        //fprintf(stderr,"Before randomization:\n");
+        fprintf(stderr,"Before randomization:\n");
         MCTree_printParStore(g, stderr);
-        //fprintf(stderr,"After randomization:\n");
-        //MCTree_printParStore(g2, stderr);
+        fprintf(stderr,"After randomization:\n");
+        MCTree_printParStore(g2, stderr);
     }
 
     const LblNdx lblndx = MCTree_getLblNdx(g);
@@ -106,7 +111,7 @@ int main(int argc, char **argv) {
         LblNdx_print(&lblndx, stdout);
 
     MCTree_free(g);
-    //MCTree_free(g2);
+    MCTree_free(g2);
 
     unlink(fname);
     unitTstResult("MCTree", "OK");
