@@ -27,7 +27,7 @@ void   IdSet_copyMigOutcome(IdSet *self, const IdSet *old);
 IdSet *IdSet_dup(const IdSet *old);
 IdSet *IdSet_join(IdSet *left, IdSet *right, int nsamples,
                   tipId_t samples[nsamples]);
-IdSet *IdSet_new(int nIds, const tipId_t tid[nIds], double prob);
+IdSet *IdSet_new(int nIds, const tipId_t *tid, double prob);
 IdSet *IdSet_newTip(tipId_t tid);
 void   IdSet_print(IdSet *self, FILE *fp);
 void   IdSet_sanityCheck(IdSet *self, const char *file, int lineno);

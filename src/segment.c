@@ -924,6 +924,13 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
         // Include k=1, because this is a finite segment.
         for(k=1; k <= n; ++k) {
             sd.a = a[k-1];
+#ifndef NDEBUG
+            if(PtrLst_length(sd.a)) {
+                fprintf(stderr,"%s:%d: n=%d k=%d len(a[%d])=%lu\n",
+                        __FILE__,__LINE__,
+                        n, k, k-1, PtrLst_length(sd.a));
+            }
+#endif            
             assert(0 == PtrLst_length(sd.a));
             sd.nparts = k;
             sd.prior = pr[k-1];

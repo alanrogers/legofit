@@ -48,7 +48,7 @@ int main(int argc, char **argv) {
     }
 
     int nIds = 5;
-    tipId_t tid[5] = {1, 2, 3, 4, 5};
+    tipId_t tid[5] = {1, 2, 4, 8, 16};
     double pr = 0.5;
 
     IdSet *a = IdSet_new(nIds, tid, pr);
@@ -71,7 +71,7 @@ int main(int argc, char **argv) {
     }
 
     nIds = 3;
-    tipId_t tid2[3] = {6,7,8};
+    tipId_t tid2[3] = {32,64,128};
     pr = 0.5;
     IdSet *c = IdSet_new(nIds, tid2, pr);
     IdSet_sanityCheck(c, __FILE__, __LINE__);
