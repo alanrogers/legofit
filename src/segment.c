@@ -765,7 +765,8 @@ int visitMig(int nmig, int *migndx, void *data) {
                           mdat->outcome, mdat->pr);
         IdSet_sanityCheck(nat, __FILE__, __LINE__);
         PtrLst_push(mdat->natives, nat);
-    }    
+    }
+    mdat->outcome += 1;
 
     return 0;
 }
