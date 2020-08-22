@@ -16,9 +16,9 @@ static void MatCoal_print(MatCoal *self, FILE *fp);
 struct MatCoal {
     int nLin; // number of lineages in epoch
 
-    // Array of dimension nLin-1. The i'th entry is (i+2) choose 2.
-    // For example, if nLin=3, then beta has two entries: 2 choose 2
-    // and 3 choose 2.  
+    // Array of dimension dim = nLin-1. The i'th entry is (i+2) choose
+    // 2.  For example, if nLin=3, then beta has two entries: 2 choose
+    // 2 and 3 choose 2.
     double *beta;
     
     /*
@@ -204,9 +204,10 @@ void MatCoal_freeExterns(void) {
 
 /// Calculate eigenvalues for dimension dim and time v.
 void MatCoal_eigenvals(int dim, double eig[dim], double v) {
-    int ndx = dim-1;
+    int nlin = dim+1;  // number of lineages
+    int ndx = dim-1;   // index into array matcoal
     MatCoal *mc = matcoal[ndx];
-    assert(dim == mc->nLin - 1);
+    assert(nlin == mc->nLin);
     for(int i=0; i<dim; ++i)
         eig[i] = exp(-v*mc->beta[i]);
 }
@@ -217,9 +218,11 @@ void MatCoal_eigenvals(int dim, double eig[dim], double v) {
 /// on the eigenvalues in eig, so it does not appear as an argument.
 void MatCoal_project(int dim, double ans[dim], double eig[dim]) {
     int i, j;
-    int ndx = dim-1;
+    int nlin = dim+1;  // number of lineages
+    int ndx = dim-1;   // index into array matcoal
+    assert(ndx < nsamples-1);
     MatCoal *mc = matcoal[ndx];
-    assert(dim == mc->nLin - 1);
+    assert(nlin == mc->nLin);
     
     // Multiply matrix gmat[dim-1] times vector eig
     for(i=0; i<dim; ++i) {
@@ -240,9 +243,11 @@ void MatCoal_project(int dim, double ans[dim], double eig[dim]) {
 /// MatCoal_ciLen.
 void MatCoal_ciLen(int dim, double ans[dim], double eig[dim]) {
     int i, j;
-    int ndx = dim-1;
+    int nlin = dim+1;  // number of lineages
+    int ndx = dim-1;   // index into array matcoal
     MatCoal *mc = matcoal[ndx];
-    assert(dim == mc->nLin - 1);
+    assert(ndx < nsamples-1);
+    assert(nlin == mc->nLin);
 
     // ans = z + H*eig
     for(i=0; i<dim; ++i) {

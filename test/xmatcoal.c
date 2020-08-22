@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
     double v;
     int dim;
 
-    // For each possible dimension (2..(nsamples-1)) and for durations
+    // For each possible dimension (1..(nsamples-1)) and for durations
     // (v) ranging from 0 to infinity, calculate the state vector
     // (using _project) and the expected length of each coalescent
     // interval (using _ciLen). Each calculation is done both in
@@ -85,7 +85,7 @@ int main(int argc, char **argv) {
     // MpfrMatCoal. The error is measured as the largest absolute
     // difference between the low-precision and the high-precision
     // calculation. Maxerr is the largest error encountered.
-    for(dim=2; dim < nsamples; ++dim) {
+    for(dim=1; dim < nsamples; ++dim) {
         double eig[dim];
         for(v=0.0; v<10.0; v += 0.5) {
             MatCoal_eigenvals(dim, eig, v);

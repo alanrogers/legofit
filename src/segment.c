@@ -48,7 +48,7 @@ struct MigDat {
     double pr; // probability of 
     PtrLst *migrants, *natives;
     PtrVec *a;
-    unsigned migrationEvent;
+    unsigned migrationEvent, outcome;
 };
 
 // Data manipulated by visitSetPart function.
@@ -740,20 +740,31 @@ int visitMig(int nmig, int *migndx, void *data) {
         for(i=0; i<nmig; ++i)
             migid[i] = set->tid[migndx[i]];
 
+        if(nmig == 0) {
+            nmig = 1;
+            migid[0] = 0; // empty set
+        }
+
         for(i=0; i < nnat; ++i)
             natid[i] = set->tid[natndx[i]];
 
+        if(nnat == 0) {
+            nnat = 1;
+            natid[0] = 0; // empty set
+        }
+
         // Create IdSet objects for migrants and natives
-        if(nmig > 0) {
-            IdSet *mig = IdSet_new(nmig, migid, mdat->pr * set->p);
-            IdSet_sanityCheck(mig, __FILE__, __LINE__);
-            PtrLst_push(mdat->migrants, mig);
-        }
-        if(nnat > 0) {
-            IdSet *nat = IdSet_new(nnat, natid, mdat->pr * set->p);
-            IdSet_sanityCheck(nat, __FILE__, __LINE__);
-            PtrLst_push(mdat->natives, nat);
-        }
+        IdSet *mig = IdSet_new(nmig, migid, set->p);
+        IdSet_addMigEvent(mig, mdat->migrationEvent,
+                          mdat->outcome, mdat->pr);
+        IdSet_sanityCheck(mig, __FILE__, __LINE__);
+        PtrLst_push(mdat->migrants, mig);
+
+        IdSet *nat = IdSet_new(nnat, natid, set->p);
+        IdSet_addMigEvent(nat, mdat->migrationEvent,
+                          mdat->outcome, mdat->pr);
+        IdSet_sanityCheck(nat, __FILE__, __LINE__);
+        PtrLst_push(mdat->natives, nat);
     }    
 
     return 0;
@@ -924,17 +935,13 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
     }
 
     // Transfer IdSet objects to parental waiting rooms.
-    if(self->nparents == 1 || self->mix == 0.0) {
+    if(self->nparents == 1) {
         mv_idsets_to_parent(self, 0, a);
     }else{
         assert(self->nparents == 2);
-
-        if(self->mix == 1.0)
-            mv_idsets_to_parent(self, 1, a);
-
         assert(self->mix_i >= 0);
-        assert(self->mix > 0.0);
-        assert(self->mix < 1.0);
+        assert(self->mix >= 0.0);
+        assert(self->mix <= 1.0);
 
         // natives go to parent[0], migrants to parent[1]
 
@@ -949,7 +956,8 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
                       .migrants = PtrLst_new(),
                       .natives = PtrLst_new(),
                       .a = NULL,
-                      .migrationEvent = nextMigrationEvent()
+                      .migrationEvent = nextMigrationEvent(),
+                      .outcome = 0
         };
         for(k=1; k <= self->max; ++k) {
             msd.a = PtrVec_from_PtrLst(msd.a, a[k-1]); // empties a[k-1]
@@ -997,6 +1005,7 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
 
 static int Segment_coalesceInfinite(Segment *self, double v, int dosing,
                                     BranchTab *branchtab) {
+    assert(self->max > 0);
     double elen[self->max];
     int n, status=0;
 
@@ -1098,6 +1107,16 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
     }
     assert(self->max > 0);
 
+    fprintf(stderr,"%s: wmax=[%d,%d] max=%d 2N=%lg t=[%lg,%lg]\n",
+            __func__, self->wmax[0], self->wmax[1], self->max,
+            self->twoN, self->start, self->end);
+
+    for(int i=0; i < self->max; ++i) {
+        fprintf(stderr,"%s:%d: nIds=%d\n", __FILE__,__LINE__, i+1);
+        for(int j=0; j < PtrVec_length(self->d[i]); ++j)
+            IdSet_print(PtrVec_get(self->d[i], j), stderr);
+    }
+
     if(self->end_i == -1) {
         status = Segment_coalesceInfinite(self, INFINITY, dosing, branchtab);
     }else{
@@ -1183,7 +1202,8 @@ static PtrVec **get_descendants1(int dim, PtrLst **w, int nsamples,
         IdSet *ids = PtrLst_pop(w[i]);
         while(ids) {
             ids = IdSet_addSamples(ids, nsamples, sample);
-            PtrVec_push(d[i+nsamples], ids);
+            int nIds = IdSet_nIds(ids);
+            PtrVec_push(d[nIds-1], ids);
             ids = PtrLst_pop(w[i]);
         }
     }
@@ -1230,7 +1250,6 @@ PtrVec **get_descendants2(int dim0, PtrLst **w0,
      * an entry of dvec.
      */
     n = dim0 + dim1 + nsamples;
-    *newdim = n;
     assert(n > 0);
 
     PtrLst *d[n];
@@ -1278,9 +1297,8 @@ PtrVec **get_descendants2(int dim0, PtrLst **w0,
     }
     *newdim = n;
 
-    if(n == 0) {
+    if(n == 0)
         return NULL;
-    }
 
     PtrVec **dvec = malloc(n * sizeof(PtrVec *));
 

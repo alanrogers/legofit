@@ -21,8 +21,10 @@ void IdSet_sanityCheck(IdSet *self, const char *file, int lineno) {
     REQUIRE(self->nIds > 0, file, lineno);
     REQUIRE(self->p >= 0.0, file, lineno);
     REQUIRE(self->p <= 1.0, file, lineno);
-    for(int i=0; i < self->nIds; ++i)
-        REQUIRE(self->tid[i] > 0, file, lineno);
+    for(int i=0; i < self->nIds; ++i) {
+        if(self->tid[i] == 0)
+            REQUIRE(self->nIds == 1, file, lineno);
+    }
 #endif    
 }
 
@@ -31,7 +33,7 @@ void IdSet_print(IdSet *self, FILE *fp) {
         fputs("-----------------------\n", fp);
         return;
     }
-    fprintf(fp, "probability = %lf nIds=%d\n",
+    fprintf(fp, "pr=%lf nIds=%d:",
             self->p, self->nIds);
     for(int i=0; i < self->nIds; ++i)
         fprintf(fp, " 0%o", self->tid[i]);
@@ -99,16 +101,31 @@ IdSet *IdSet_join(IdSet *left, IdSet *right, int nsamples,
         return NULL;
     }
     
-    // Copy all tipId_t values into tid
+    // Copy all tipId_t values except 0s into tid
     tipId_t tid[nIds];
-    for(int i=nIds=0; i < left->nIds; ++i)
-        tid[nIds++] = left->tid[i];
+    for(int i=nIds=0; i < left->nIds; ++i) {
+        if(left->tid[i])
+            tid[nIds++] = left->tid[i];
+    }
 
-    for(int i=0; i < right->nIds; ++i)
-        tid[nIds++] = right->tid[i];
+    for(int i=0; i < right->nIds; ++i) {
+        if(right->tid[i])
+            tid[nIds++] = right->tid[i];
+    }
 
     for(int i=0; i<nsamples; ++i)
         tid[nIds++] = samples[i];
+
+#ifndef NDEBUG
+    for(int i=0; i<nIds; ++i)
+        assert(tid[i] > 0);
+#endif    
+
+    // In case left and right were empty and nsamples==0.
+    if(nIds == 0) {
+        nIds = 1;
+        tid[0] = 0;
+    }
 
     IdSet *new = IdSet_new(nIds, tid, left->p * right->p);
     new->mig = mig;
@@ -128,9 +145,14 @@ IdSet *IdSet_addSamples(IdSet *old, int nsamples, tipId_t *samples) {
     int nIds = old->nIds + nsamples;
     tipId_t tid[nIds];
 
-    memcpy(tid, old->tid, old->nIds * sizeof(tipId_t));
-    memcpy(tid + old->nIds, samples, nsamples * sizeof(tipId_t));
+    for(int i=nIds=0; i < old->nIds; ++i) {
+        if(old->tid[i])
+            tid[nIds++] = old->tid[i];
+    }
 
+    for(int i=0; i < nsamples; ++i)
+            tid[nIds++] = samples[i];
+    
     IdSet *new = IdSet_new(nIds, tid, old->p);
     new->mig = old->mig;
     old->mig = NULL;
