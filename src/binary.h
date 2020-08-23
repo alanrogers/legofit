@@ -21,6 +21,7 @@ uint32_t    uint64Hash(uint64_t key) __attribute__((no_sanitize("integer")));
 #endif
 int         nlz(tipId_t x);
 int         nlz64(uint64_t x);
+int         no_shared_bits(int n, tipId_t *tid);
 static inline int isPow2(tipId_t x);
 
 static inline int isPow2(tipId_t x) {

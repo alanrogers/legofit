@@ -26,11 +26,7 @@ void IdSet_sanityCheck(IdSet *self, const char *file, int lineno) {
 
     // The bits set in each tipId_t value should be mutually
     // exclusive.
-    tipId_t u = 0; // union of prior tipId_t values
-    for(int i=0; i < self->nIds; ++i) {
-        REQUIRE((u & self->tid[i]) == 0, file, lineno);
-        u |= self->tid[i];
-    }
+    REQUIRE(no_shared_bits(self->nIds, self->tid), file, lineno);
 #endif    
 }
 

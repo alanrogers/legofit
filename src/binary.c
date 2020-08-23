@@ -1,10 +1,10 @@
 /**
-@file binary.c
-@brief Functions for fiddling with bits.
+   @file binary.c
+   @brief Functions for fiddling with bits.
 
-@copyright Copyright (c) 2016, Alan R. Rogers 
-<rogers@anthro.utah.edu>. This file is released under the Internet
-Systems Consortium License, which can be found in file "LICENSE".
+   @copyright Copyright (c) 2016, Alan R. Rogers 
+   <rogers@anthro.utah.edu>. This file is released under the Internet
+   Systems Consortium License, which can be found in file "LICENSE".
 */
 
 #include "binary.h"
@@ -184,32 +184,44 @@ int num1bits(tipId_t x) {
 /// https://gist.github.com/badboy/6267743
 /// This generates integer overflows, presumably by design.
 #ifdef __clang__
-uint32_t uint32Hash( uint32_t key ) __attribute__((no_sanitize("integer"))){
+uint32_t uint32Hash( uint32_t key ) __attribute__((no_sanitize("integer")))
 #else
-uint32_t uint32Hash( uint32_t key ) {
+    uint32_t uint32Hash( uint32_t key )
 #endif
-   key = (key+0x7ed55d16) + (key<<12);
-   key = (key^0xc761c23c) ^ (key>>19);
-   key = (key+0x165667b1) + (key<<5);
-   key = (key+0xd3a2646c) ^ (key<<9);
-   key = (key+0xfd7046c5) + (key<<3);
-   key = (key^0xb55a4f09) ^ (key>>16);
-   return key;
+{    
+    key = (key+0x7ed55d16) + (key<<12);
+    key = (key^0xc761c23c) ^ (key>>19);
+    key = (key+0x165667b1) + (key<<5);
+    key = (key+0xd3a2646c) ^ (key<<9);
+    key = (key+0xfd7046c5) + (key<<3);
+    key = (key^0xb55a4f09) ^ (key>>16);
+    return key;
 }
 
 /// Hash function for a 64-bit integer.
 #ifdef __clang__
-uint32_t uint64Hash(uint64_t key) __attribute__((no_sanitize("integer"))){
+uint32_t uint64Hash(uint64_t key) __attribute__((no_sanitize("integer")))
 #else
-uint32_t uint64Hash(uint64_t key) {
+    uint32_t uint64Hash(uint64_t key)
 #endif
-  key = (~key) + (key << 18);
-  key = key ^ (key >> 31);
-  key = key * 21;
-  key = key ^ (key >> 11);
-  key = key + (key << 6);
-  key = key ^ (key >> 22);
-  return (uint32_t) key;
+{    
+    key = (~key) + (key << 18);
+    key = key ^ (key >> 31);
+    key = key * 21;
+    key = key ^ (key >> 11);
+    key = key + (key << 6);
+    key = key ^ (key >> 22);
+    return (uint32_t) key;
 }
 
-
+/// Return 1 if the values in array share no bits; 0 otherwise.
+/// Returns 1 if n==0.
+int no_shared_bits(int n, tipId_t *tid) {
+    tipId_t u = 0; // union of prior tipId_t values
+    for(int i=0; i < n; ++i) {
+        if(u & tid[i])
+            return 0;
+        u |= tid[i];
+    }
+    return 1;
+}

@@ -325,9 +325,15 @@ long binom(long n, long x) {
  * @param[in] x number to choose out of n.
  */
 long double lbinom(long n, long x) {
-    long double ans = lgammal( (long double) (n+1));
-    ans -= lgammal( (long double) (x+1));
-    ans -= lgammal( (long double) (n-x+1));
+    long double ans;
+
+    if(x == 0 || x == n)
+        ans = 0.0L;
+    else {
+        ans = lgammal( (long double) (n+1));
+        ans -= lgammal( (long double) (x+1));
+        ans -= lgammal( (long double) (n-x+1));
+    }
 
     return ans;
 }

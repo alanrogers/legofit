@@ -87,15 +87,15 @@ struct Segment {
     // max number of lineages in this segment.
     int max;
 
-    tipId_t sample[MAXSAMP]; // array of length nsamples
+    tipId_t sample[MAXSAMP+1]; // array of length nsamples
 
     // Waiting rooms.  Each child loads IdSet objects into one of two
     // waiting rooms. w[i] is the i'th waiting room, where i is in
     // [0,1]. w[i] is the waiting room for child i. The number of
     // waiting rooms equals the number of children. w[i][j] is a list
-    // of IdSet objects, each of which contains i+1 tipId_t values.
+    // of IdSet objects, each of which contains j tipId_t values.
     // wmax[i] is the maximum number of lineages in the i'th waiting
-    // room, so 0 <= j < wmax[i]. If there are no waiting rooms
+    // room, so 0 <= j <= wmax[i]. If there are no waiting rooms
     // (i.e. if nchildren=0), then the descendants at the beginning of the
     // segment consist only of those in array "sample". If there is
     // one waiting room, then the ids in "sample" are added to each of
@@ -106,13 +106,13 @@ struct Segment {
     // "samples" to obtain the list of IdSet objects at the beginning
     // of the segment. 
     int wmax[2];
-    PtrLst *w[2][MAXSAMP];
+    PtrLst *w[2][MAXSAMP+1];
 
     // d[i] is a pointer to a PtrVec, which is allocated within
     // Segment_coalesce. This PtrVec holds IdSet objects that contain
-    // i+1 tipId_t values, each representing a descendant at the
+    // i tipId_t values, each representing a descendant at the
     // recent end of the Segment. The number of PtrVec
-    // pointers--i.e. the dimension of array d--is self->max.
+    // pointers--i.e. the dimension of array d--is 1+self->max.
     PtrVec **d;
 };
 
@@ -194,7 +194,7 @@ void *Segment_new(int twoN_i, int start_i, ParStore *ps) {
     self->end = INFINITY;
     self->mix = 0.0;
 
-    for(int i=0; i < MAXSAMP; ++i) {
+    for(int i=0; i <= MAXSAMP; ++i) {
         self->w[0][i] = PtrLst_new();
         self->w[1][i] = PtrLst_new();
     }
@@ -222,7 +222,7 @@ void Segment_free(Segment *self) {
         self->nparents -= 1;
     }
 
-    for(int i=0; i < MAXSAMP; ++i) {
+    for(int i=0; i <= MAXSAMP; ++i) {
         PtrLst_free(self->w[0][i]);
         PtrLst_free(self->w[1][i]);
     }
@@ -238,8 +238,13 @@ void Segment_prune(Segment *self) {
     if(self->nchildren > 0)
         Segment_prune(self->child[0]);
 
-    if(self->nchildren == 0 && self->nsamples == 0)
+    if(self->nchildren == 0 && self->nsamples == 0) {
+        if(self->nparents == 2)
+            unlink_child(self, self->parent[1]);
+        if(self->nparents > 0)
+            unlink_child(self, self->parent[0]);
         Segment_free(self);
+    }
 }
 
 /// Set all "visited" flags to false.
@@ -340,6 +345,39 @@ void Segment_sanityCheck(Segment * self, const char *file, int lineno) {
         Segment_sanityCheck(self->child[0], file, lineno);
     if(self->nchildren > 1)
         Segment_sanityCheck(self->child[1], file, lineno);
+
+    REQUIRE(no_shared_bits(self->nsamples, self->sample), file, lineno);
+    REQUIRE(self->wmax[0] <= MAXSAMP, file, lineno);
+    REQUIRE(self->wmax[1] <= MAXSAMP, file, lineno);
+    IdSet *id;
+    if(self->nchildren > 0) {
+        for(int i=0; i <= self->wmax[0]; ++i) {
+            PtrLst_rewind(self->w[0][i]);
+            for(id=PtrLst_next(self->w[0][i]);
+                id;
+                id=PtrLst_next(self->w[0][i])) {
+                IdSet_sanityCheck(id, __FILE__, __LINE__);
+            }
+        }
+    }
+    if(self->nchildren > 1) {
+        for(int i=0; i <= self->wmax[1]; ++i) {
+            PtrLst_rewind(self->w[1][i]);
+            for(id=PtrLst_next(self->w[1][i]);
+                id;
+                id=PtrLst_next(self->w[1][i])) {
+                IdSet_sanityCheck(id, file, lineno);
+            }
+        }
+    }
+    if(self->d != NULL) {
+        for(int i=0; i < self->max; ++i) {
+            for(int j=0; j < PtrVec_length(self->d[i]); ++j) {
+                id = PtrVec_get(self->d[i], j);
+                IdSet_sanityCheck(id, file, lineno);
+            }
+        }
+    }
 #endif
 }
 
@@ -545,40 +583,50 @@ Segment *Segment_dup(Segment *old_root, PtrPtrMap *ppm) {
     Segment *node, *new_root=NULL;
 
     // Connect each node to its parents and children,
-    // and identify the root of the duplicated network.
+    // identify the root of the duplicated network,
+    // initialize nu->d and nu->w.
     for(unsigned i=0; i < nnodes; ++i) {
         Segment *old = old_nodes[i];
-        Segment *new = PtrPtrMap_get(ppm, old, &status);
+        Segment *nu = PtrPtrMap_get(ppm, old, &status);
         assert(status == 0);
 
         // root is the node with no parents
         if(old->nparents == 0) {
             assert(new_root == NULL);
-            new_root = new;
+            new_root = nu;
         }
 
         // connect new node to its parents
         if(old->nparents > 0) {
             node = PtrPtrMap_get(ppm, old->parent[0], &status);
             assert(status == 0);
-            new->parent[0] = node;
+            nu->parent[0] = node;
         }
         if(old->nparents > 1) {
             node = PtrPtrMap_get(ppm, old->parent[1], &status);
             assert(status == 0);
-            new->parent[1] = node;
+            nu->parent[1] = node;
         }
 
         // connect new node to its children
         if(old->nchildren > 0) {
             node = PtrPtrMap_get(ppm, old->child[0], &status);
             assert(status == 0);
-            new->child[0] = node;
+            nu->child[0] = node;
         }
         if(old->nchildren > 1) {
             node = PtrPtrMap_get(ppm, old->child[1], &status);
             assert(status == 0);
-            new->child[1] = node;
+            nu->child[1] = node;
+        }
+
+        nu->d = NULL;
+        nu->wmax[0] = old->wmax[0];
+        nu->wmax[1] = old->wmax[1];
+
+        for(i=0; i <= MAXSAMP; ++i) {
+            nu->w[0][i] = PtrLst_new();
+            nu->w[1][i] = PtrLst_new();
         }
     }
 
@@ -620,12 +668,6 @@ int visitComb(int d, int ndx[d], void *data) {
         for(int j=0; j < d; ++j) {
             assert(ndx[j] < ids->nIds);
             assert(ndx[j] >= 0);
-#ifndef NDEBUG
-            if(ids->tid[ndx[j]] == 0) {
-                fprintf(stderr,"%s:%d: j=%d d=%d nIds=%d ids->tid[%u] = 0\n",
-                        __FILE__,__LINE__, j, d, ids->nIds, ndx[j]);
-            }
-#endif            
             assert(ids->tid[ndx[j]]);
             sitepat |= ids->tid[ndx[j]];
         }
@@ -647,7 +689,7 @@ int visitComb(int d, int ndx[d], void *data) {
 /// Visit a set partition. n is the number of descendants, a[i] is the
 /// index of the ancestor of the i'th descendant.
 int visitSetPart(unsigned n, unsigned a[n], void *data) {
-    SetPartDat *vdat = (SetPartDat *) data;
+    SetPartDat *vdat = data;
     int status=0;
 
     // Calculate the size, c[i], of each part. In other words,
@@ -689,8 +731,8 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
         // states.
 
         IdSet *ancestors = IdSet_new(k, sitepat, p * descendants->p);
-        IdSet_sanityCheck(ancestors, __FILE__, __LINE__);
         IdSet_copyMigOutcome(ancestors, descendants);
+        IdSet_sanityCheck(ancestors, __FILE__, __LINE__);
         status = PtrLst_push(vdat->a, ancestors);
         if(status) {
             fprintf(stderr,"%s:%d can't push ancestors; status=%d\n",
@@ -703,7 +745,8 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
 }
 
 /// Visit a combination defining migrants. migndx has the 0-based
-/// indices of the current set of migrants. Its length is nmig.
+/// indices of the current set of migrants. Its length is nmig, which
+/// may be zero.
 int visitMig(int nmig, int *migndx, void *data) {
     MigDat *mdat = (MigDat *) data;
     int nnat = mdat->nNatives;
@@ -740,18 +783,8 @@ int visitMig(int nmig, int *migndx, void *data) {
         for(i=0; i<nmig; ++i)
             migid[i] = set->tid[migndx[i]];
 
-        if(nmig == 0) {
-            nmig = 1;
-            migid[0] = 0; // empty set
-        }
-
         for(i=0; i < nnat; ++i)
             natid[i] = set->tid[natndx[i]];
-
-        if(nnat == 0) {
-            nnat = 1;
-            natid[0] = 0; // empty set
-        }
 
         // Create IdSet objects for migrants and natives
         IdSet *mig = IdSet_new(nmig, migid, set->p);
@@ -875,35 +908,43 @@ static int Segment_equals_r(Segment *a, Segment *b) {
 static int Segment_coalesceFinite(Segment *self, double v, int dosing,
                                   BranchTab *branchtab) {
     assert(self->max > 0);
-    double pr[self->max], elen[self->max];
+    double pr[1+self->max], elen[1+self->max];
     int n, i, k, iself, status=0;
 
-    // Array of lists of ancestors. a[k-1] is the list for sets of k
+    // Array of lists of ancestors. a[k] is the list for sets of k
     // ancestors.  
-    PtrLst *a[self->max];
-    for(i=0; i < self->max; ++i)
+    PtrLst *a[2 + self->max];
+    for(i=0; i <= self->max; ++i)
         a[i] = PtrLst_new();
     
     SetPartDat sd = {.branchtab = branchtab,
                      .dosing = dosing,
     };
 
-    // Handle case of a segment with a single lineage
-    if(PtrVec_length(self->d[0]) > 0) {
+    // Cases of 0 or 1 lineages
+    for(n=0; n<=1; ++n) {
+        if(0 == PtrVec_length(self->d[n]))
+            continue;
 
         int nIds = PtrVec_length(self->d[0]);
-        for(i=0; i < nIds; ++i) {
-            IdSet *d = PtrVec_get(self->d[0], i);
-            assert(d->nIds == 1);
-            BranchTab_add(branchtab, d->tid[0], d->p * v);
+        for(int j=0; j < nIds; ++j) {
+            IdSet *ids = PtrVec_get(self->d[0], j);
 
-            IdSet *new = IdSet_dup(d);
-            PtrLst_push(a[0], new);
+            if(n==1) {
+                // Single lineage in finite Segment contributes
+                // to branchtab.
+                assert(ids->nIds == 1);
+                BranchTab_add(branchtab, ids->tid[0], ids->p * v);
+            }
+
+            IdSet *new = IdSet_dup(ids);
+            PtrLst_push(a[n], new);
         }
     }
-    
-    // Outer loop over numbers of descendants.
-    // Calculate probabilities and expected values, p[1] and elen.
+
+    // Cases of 2..max lineages.  Outer loop over numbers of
+    // descendants.  Calculate probabilities and expected values, p[1]
+    // and elen.
     for(n=2; n <= self->max; ++n) {
 
         // eigenvalues of transient states
@@ -918,17 +959,17 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
         // ancient end of the segment.
         project(n, pr, eig);
 
-        sd.d = self->d[n-1];
+        sd.d = self->d[n];
 
-        // Loop over number, k, of ancestors.
-        // Include k=1, because this is a finite segment.
+        // Loop over number, k, of ancestors.  Include k=1, because
+        // this is a finite segment.
         for(k=1; k <= n; ++k) {
-            sd.a = a[k-1];
+            sd.a = a[k];
 #ifndef NDEBUG
             if(PtrLst_length(sd.a)) {
-                fprintf(stderr,"%s:%d: n=%d k=%d len(a[%d])=%lu\n",
+                fprintf(stderr,"%s:%d: n=%d len(a[%d])=%lu\n",
                         __FILE__,__LINE__,
-                        n, k, k-1, PtrLst_length(sd.a));
+                        n, k, PtrLst_length(sd.a));
             }
 #endif            
             assert(0 == PtrLst_length(sd.a));
@@ -967,8 +1008,8 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
                       .migrationEvent = nextMigrationEvent(),
                       .outcome = 0
         };
-        for(k=1; k <= self->max; ++k) {
-            msd.a = PtrVec_from_PtrLst(msd.a, a[k-1]); // empties a[k-1]
+        for(k=0; k <= self->max; ++k) {
+            msd.a = PtrVec_from_PtrLst(msd.a, a[k]); // empties a[k]
             for(long x=0; x <= k; ++x) {
                 // prob that x of k lineages are migrants
                 long double lnpr = lbinom(k, x)
@@ -983,19 +1024,14 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
                     return status;
 
                 // transfer natives
-                if(msd.nNatives > 0) {
-                    iself = self_ndx(self, self->parent[0]);
-                    assert(k-x-1 < self->parent[0]->wmax[iself]);
-                    PtrLst_move(self->parent[0]->w[iself][k-x-1], msd.natives);
-                }
+                iself = self_ndx(self, self->parent[0]);
+                assert(k-x <= self->parent[0]->wmax[iself]);
+                PtrLst_move(self->parent[0]->w[iself][k-x], msd.natives);
 
                 // transfer migrants
-                if(msd.nMigrants > 0) {
-                    iself = self_ndx(self, self->parent[1]);
-                    assert(x > 0);
-                    assert(x-1 < self->parent[1]->wmax[iself]);
-                    PtrLst_move(self->parent[1]->w[iself][x-1], msd.migrants);
-                }
+                iself = self_ndx(self, self->parent[1]);
+                assert(x <= self->parent[1]->wmax[iself]);
+                PtrLst_move(self->parent[1]->w[iself][x], msd.migrants);
             }
         }
         PtrLst_free(msd.migrants);
@@ -1014,7 +1050,7 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
 static int Segment_coalesceInfinite(Segment *self, double v, int dosing,
                                     BranchTab *branchtab) {
     assert(self->max > 0);
-    double elen[self->max];
+    double elen[1+self->max];
     int n, status=0;
 
     CombDat cd = {.branchtab = branchtab,
@@ -1034,17 +1070,17 @@ static int Segment_coalesceInfinite(Segment *self, double v, int dosing,
         // containing i+1 lineages.
         coalescent_interval_length(n, elen, eig, v);
 
-        cd.d = self->d[n-1];
+        cd.d = self->d[n];
 
-        // Loop over number, k, of ancestors.
-        // Exclude k=1, because this is an infinite segment.
+        // Loop over number, k, of ancestors.  Exclude k=1, because
+        // this is an infinite segment.
         for(int k=2; k <= n; ++k) {
             
             // portion of log Qdk that doesn't involve d
             long double lnconst = logl(k) - lbinom(n-1, k-1);
 
             // Within each interval, there can be ancestors
-            // with 1 descendant, 2, 3, ..., n-k+2.
+            // with 1 descendant, 2, 3, ..., n-k+1.
             for(int d=1; d <= n-k+1; ++d) {
                 long double lnprob = lnconst
                     + lbinom(n-d-1, k-1) - lbinom(n,d);
@@ -1133,7 +1169,7 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
     }
 
     // Free IdSet objects of descendants
-    for(int i=0; i < self->max; ++i) {
+    for(int i=0; i <= self->max; ++i) {
         for(IdSet *ids=PtrVec_pop(self->d[i]);
             ids;
             ids = PtrVec_pop(self->d[i])) {
@@ -1154,25 +1190,24 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
 /// augmented by the entries (if any) in vector "sample". If there are
 /// no entries in any of the w[i], the returned array contains a
 /// single non-empty entry, with the entries of "samples". If "w" and
-/// "samples" are both empty, *newdim will equal 0 and the function
-/// returns NULL. Otherwise, *newdim is the dimension of the returned
+/// "samples" are both empty, *newmax will equal 0 and the function
+/// returns NULL. Otherwise, *newmax is the dimension of the returned
 /// array.
 ///
-/// On entry, dim is the dimension of array w, and nsamples is the
-/// dimension of array sample. On return *newdim is the dimension of
-/// the newly-allocated array returned by the function.
-static PtrVec **get_descendants1(int dim, PtrLst **w, int nsamples,
-                                 tipId_t *sample, int *newdim) {
-    int i, n, m;
+/// On entry, wmax is the largest index of array w, and nsamples is
+/// the dimension of array sample. On return *newmax is the dimension
+/// of the newly-allocated array returned by the function.
+static PtrVec **get_descendants1(int wmax, PtrLst **w, int nsamples,
+                                 tipId_t *sample, int *newmax) {
+    int i, n, m, dim=wmax+1;
 
-    while(dim > 0 && PtrLst_length(w[dim-1]) == 0)
+    while(w && dim > 0 && PtrLst_length(w[dim-1]) == 0)
         dim -= 1;
 
     n = dim + nsamples;
-    *newdim = n;
-    if(n==0) {
+    *newmax = n-1;
+    if(n==0)
         return NULL;
-    }
 
     PtrVec **d = malloc(n * sizeof(PtrVec *));
     CHECKMEM(d);
@@ -1223,9 +1258,10 @@ static PtrVec **get_descendants1(int dim, PtrLst **w, int nsamples,
 // by combining all compatible pairs from w0 and w1, and then adding
 // the tipId_t values from array sample. On return, w0 and w1 are
 // arrays of empty lists.
-PtrVec **get_descendants2(int dim0, PtrLst **w0,
-                          int dim1, PtrLst **w1,
-                          int nsamples, tipId_t *sample, int *newdim) {
+PtrVec **get_descendants2(int wmax0, PtrLst **w0,
+                          int wmax1, PtrLst **w1,
+                          int nsamples, tipId_t *sample, int *newmax) {
+    int dim0 = wmax0+1, dim1 = wmax1+1;
     int i, j, n;
 
     // Is waiting room 0 empty?
@@ -1238,14 +1274,14 @@ PtrVec **get_descendants2(int dim0, PtrLst **w0,
 
     // If either waiting room is empty, call get_descendants1.
     if(dim0 == 0)
-        return get_descendants1(dim1, w1, nsamples, sample, newdim);
+        return get_descendants1(dim1-1, w1, nsamples, sample, newmax);
 
     if(dim1 == 0)
-        return get_descendants1(dim0, w0, nsamples, sample, newdim);
+        return get_descendants1(dim0-1, w0, nsamples, sample, newmax);
 
     /*
      * Segment has two children. The returned value (dvec) is an array
-     * of vectors. The i'th vector contains sets of i+1
+     * of vectors. The i'th vector contains sets of i
      * descendants. Each such set is the union of (a) an entry from
      * w0, (b) an entry from w1, and (c) the samples (if any) in
      * "sample". Some entries in w0 may be incompatible with some in
@@ -1289,9 +1325,10 @@ PtrVec **get_descendants2(int dim0, PtrLst **w0,
                     // non-NULL means id0 and id1 are compatible
                     // and can be added to the list of
                     // descendants.
-                    int k = i+j+ nsamples + 2;
+                    int k = i+j+ nsamples;
                     assert(k == newid->nIds);
-                    PtrLst_push(d[k-1], newid);
+                    assert(k < n);
+                    PtrLst_push(d[k], newid);
                 }
             }
             IdSet_free(id0);
@@ -1303,7 +1340,7 @@ PtrVec **get_descendants2(int dim0, PtrLst **w0,
         PtrLst_free(d[n-1]);
         n -= 1;
     }
-    *newdim = n;
+    *newmax = n-1;
 
     if(n == 0)
         return NULL;
@@ -1334,15 +1371,15 @@ static void coalescent_interval_length(int n, double elen[n],
                                        double eig[n], double v) {
     // Calculate expected length, within the segment, of
     // coalescent intervals with 2,3,...,n lineages.  elen[i] is
-    // expected length of interval with i-1 lineages.
+    // expected length of interval with i+1 lineages.
     // elen[0] not set.
     MatCoal_ciLen(n-1, elen+1, eig);
 
     // Calculate expected length, elen[0], of interval with one
     // lineage.  elen[i] refers to interval with i+1 lineages.
     double sum = 0.0;
-    for(int i=n; i >= 2; --i)
-        sum += elen[i-1];
+    for(int i = n-1; i > 0; --i)
+        sum += elen[i];
     elen[0] = v - sum;
 
 }
@@ -1358,14 +1395,14 @@ static void project(int n, double pr[n], double eig[n]) {
     // indices will often have smaller probabilities.  pr[i]
     // is prob of i+1 lineages; pr[0] not set.
     double sum=0.0;
-    for(int i=n; i > 1; --i)
-        sum += pr[i-1];
+    for(int i = n-1; i > 0; --i)
+        sum += pr[i];
     pr[0] = 1.0-sum;
-
 }
 
 /// Return 1 if each PtrLst in array w is empty; return 0 otherwise.
-static int w_isempty(int dim, PtrLst **w) {
+static int w_isempty(int wmax, PtrLst **w) {
+    int dim = wmax+1;
     for(int i=0; i<dim; ++i) {
         if(PtrLst_length(w[i]) > 0)
             return 0;
@@ -1373,15 +1410,15 @@ static int w_isempty(int dim, PtrLst **w) {
     return 1;
 }
 
-// Move all IdSet objects to parent ipar. Empties each list
-// in array a.
+// Move all IdSet objects to parent ipar. Empties each list in array
+// a.
 static void mv_idsets_to_parent(Segment *self, int ipar, PtrLst **a) {
     int iself = self_ndx(self, self->parent[ipar]);
 
     assert(self == self->parent[ipar]->child[iself]);
 
     self->parent[ipar]->wmax[iself] = self->max;
-    for(int i=0; i < self->max; ++i) {
+    for(int i=0; i <= self->max; ++i) {
         PtrLst_move(self->parent[ipar]->w[iself][i], a[i]);
     }
 }
@@ -1397,7 +1434,6 @@ void Segment_clear(Segment * self) {
 
     self->nsamples = 0;
     self->visited = 0;
-    //memset(self->sample, 0, sizeof(self->sample));
     Segment_sanityCheck(self, __FILE__, __LINE__);
 }
 
