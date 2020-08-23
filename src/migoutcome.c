@@ -137,3 +137,15 @@ MigOutcome *MigOutcome_join(MigOutcome *left, MigOutcome *right,
     *mutually_exclusive = 0;
     return head;
 }
+
+/// Probability of current MigOutcome list is the product of
+/// the probabilties of the elements of the list.
+double MigOutcome_prob(MigOutcome *head) {
+    MigOutcome *mo;
+    double pr = 1.0;
+
+    for(mo=head; mo; mo = mo->next)
+        pr *= mo->pr;
+
+    return pr;
+}

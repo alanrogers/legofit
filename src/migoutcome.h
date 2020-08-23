@@ -46,5 +46,6 @@ void        MigOutcome_free(MigOutcome *self);
 void        MigOutcome_print(MigOutcome *self, FILE *fp);
 MigOutcome *MigOutcome_join(MigOutcome *left, MigOutcome *right,
                             int *mutually_exclusive);
+double      MigOutcome_prob(MigOutcome *head);
 
 #endif

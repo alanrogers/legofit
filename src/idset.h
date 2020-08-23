@@ -33,11 +33,18 @@ void   IdSet_print(IdSet *self, FILE *fp);
 void   IdSet_sanityCheck(IdSet *self, const char *file, int lineno);
 static inline void IdSet_free(IdSet *self);
 static inline int IdSet_nIds(IdSet *self);
+static inline double IdSet_prob(IdSet *self);
 
 static inline void IdSet_free(IdSet *self) {
     MigOutcome_free(self->mig);
     free(self);
 }
+
 static inline int IdSet_nIds(IdSet *self) { return self->nIds; }
+
+static inline double IdSet_prob(IdSet *self) {
+    return self->p * MigOutcome_prob(self->mig);
+}
+
 
 #endif
