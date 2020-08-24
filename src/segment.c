@@ -1027,7 +1027,7 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
             msd.a = PtrVec_from_PtrLst(msd.a, a[k]); // empties a[k]
             for(long x=0; x <= k; ++x) {
                 // prob that x of k lineages are migrants
-                long double lnpr = lbinom(k, x)
+                long double lnpr = logl(binom(k, x))
                     + x*logl(self->mix)
                     + (k-x)*logl(1.0-self->mix);
                 
@@ -1092,7 +1092,7 @@ static int Segment_coalesceInfinite(Segment *self, double v, int dosing,
         for(int k=2; k <= n; ++k) {
             
             // portion of log Qdk that doesn't involve d
-            long double lnconst = logl(k) - lbinom(n-1, k-1);
+            long double lnconst = logl(k) - logl(binom(n-1, k-1));
 
             fprintf(stderr,"%s:%d: lnconst=%Lg\n",
                     __FILE__,__LINE__, lnconst);
@@ -1104,15 +1104,16 @@ static int Segment_coalesceInfinite(Segment *self, double v, int dosing,
                         __FILE__,__LINE__,n,k,d);
                 
                 long double lnprob = lnconst
-                    + lbinom(n-d-1, k-1) - lbinom(n,d);
+                    + logl(binom(n-d-1, k-1))
+                    - logl(binom(n,d));
 
-                fprintf(stderr,"%s:%d: lbinom(%d, %d)=%Lg\n",
+                fprintf(stderr,"%s:%d: binom(%d, %d)=%lld\n",
                         __FILE__,__LINE__, n-d-1, k-1,
-                        lbinom(n-d-1, k-1));
+                        binom(n-d-1, k-1));
 
-                fprintf(stderr,"%s:%d: lbinom(%d, %d)=%Lg\n",
+                fprintf(stderr,"%s:%d: binom(%d, %d)=%lld\n",
                         __FILE__,__LINE__, n, d,
-                        lbinom(n, d));
+                        binom(n, d));
                 
                 fprintf(stderr,"%s:%d: lnprob=%Lg\n",
                         __FILE__,__LINE__, lnprob);

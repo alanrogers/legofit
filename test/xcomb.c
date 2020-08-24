@@ -197,7 +197,7 @@ int main(int argc, char **argv) {
     if(verbose) {
         printf("traverseComb returned %d. count=%d\n",
                status, cdata.count);
-        printf("Expecting count=%ld\n", binom(ntot, n[0]));
+        printf("Expecting count=%lld\n", binom(ntot, n[0]));
     }
 
     assert(cdata.count == binom(ntot, n[0]));
@@ -237,7 +237,16 @@ int main(int argc, char **argv) {
     assert(binom(5,4) == 5);
     assert(binom(5,5) == 1);
     assert(binom(0,0) == 1);
+    assert(binom(-1,0) == 1);
+    assert(binom(-1,1) == -1);
+    assert(binom(-1,2) == 1);
+    assert(binom(-1,4) == 1);
+    assert(binom(-2,1) == -2);
+    assert(binom(-2,2) == 3);
+    assert(binom(-2,3) == -4);
     unitTstResult("binom", "OK");
+
+    binom_free();
 
     unitTstResult("traverseMultiComb", status==0 ? "OK" : "FAIL");
 

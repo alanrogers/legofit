@@ -8,6 +8,7 @@
 */
 #include "comb.h"
 #include "misc.h"
+#include "u64i64map.h"
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
@@ -300,42 +301,65 @@ long multinom(int k, int x[k]) {
     return (long) floor(exp(ans) + 0.5);
 }
 
-/**
- * Binomial coefficient. Return n!/(x! * (n-x)!), the number of ways
- * of choosing x items out of n.
- *
- * @param[in] n total number of items
- *
- * @param[in] x number to choose out of n.
- */
-long binom(long n, long x) {
-    long double ans = lgammal( (long double) (n+1));
-    ans -= lgammal( (long double) (x+1));
-    ans -= lgammal( (long double) (n-x+1));
+// So we don't have to calculate the same value more than once.
+static U64I64Map *map=NULL;
 
-    return (long) floorl(expl(ans) + 0.5);
-}
+/// Binomial coefficient.
+int64_t binom(int32_t n, int32_t x) {
+    int status;
+    uint64_t key;
+    int64_t value;
 
-/**
- * Natural log of binomial coefficient. Return log(n!/(x! * (n-x)!)),
- * the log of the number of ways of choosing x items out of n.
- *
- * @param[in] n total number of items
- *
- * @param[in] x number to choose out of n.
- */
-long double lbinom(long n, long x) {
-    long double ans;
+    if(x == 0 || n == x)
+        return 1LL;
 
-    if(n == 0 && x != 0)
-        ans = -INFINITY;
-    else if(x == 0 || x == n)
-        ans = 0.0L;
-    else {
-        ans = lgammal( (long double) (n+1));
-        ans -= lgammal( (long double) (x+1));
-        ans -= lgammal( (long double) (n-x+1));
+    if(n == 0) // n==0 && x != 0
+        return 0LL;
+
+    if(x < 0)
+        return 0LL;
+
+    // Construct a 64-bit key from two 32-bit arguments.
+    key = (uint32_t) n;
+    key <<= 32;
+    key |= (uint32_t) x;
+
+    if(map == NULL) {
+        // allocate hash table on first call
+        map = U64I64Map_new();
+        CHECKMEM(map);
+    }else{
+        value = U64I64Map_get(map, key, &status);
+        if(status == 0)
+            return value;
     }
 
-    return ans;
+    if(n > 0) {
+        value = binom(n-1, x-1) + binom(n-1, x);
+    }else{
+        long double v = 1.0;
+        while(x > 0) {
+            v *= n / (long double) x;
+            --n;
+            --x;
+        }
+        value = (int64_t) floorl(v + 0.5);
+    }
+
+    status = U64I64Map_insert(map, key, value);
+    if(status) {
+        fprintf(stderr,"%s:%d: inserted duplicated value\n",
+                __FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
+
+    return value;
+}
+
+/// Free the hash map used to store binom values.
+void binom_free(void) {
+    if(map) {
+        U64I64Map_free(map);
+        map = NULL;
+    }
 }

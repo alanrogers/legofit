@@ -125,14 +125,14 @@ XBINARY := xbinary.o binary.o misc.o
 xbinary : $(XBINARY)
 	$(CC) $(CFLAGS) -o $@ $(XBINARY) $(lib)
 
-XCOMB := xcomb.o comb.o misc.o
+XCOMB := xcomb.o comb.o misc.o u64i64map.o binary.o
 xcomb : $(XCOMB)
 	$(CC) $(CFLAGS) -o $@ $(XCOMB) $(lib)
 
 XSEGMENT := xsegment.o misc.o segment.o idset.o branchtab.o migoutcome.o \
     parstore.o param.o ptrlst.o ptrptrmap.o ptrqueue.o ptrvec.o strint.o \
     tinyexpr.o dtnorm.o binary.o setpart.o u64u64map.o matcoal.o comb.o \
-    rational.o strptrmap.o lblndx.o
+    rational.o strptrmap.o lblndx.o u64i64map.o
 xsegment : $(XSEGMENT)
 	$(CC) $(CFLAGS) -o $@ $(XSEGMENT) $(lib)
 

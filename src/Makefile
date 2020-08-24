@@ -64,7 +64,7 @@ LEGOSIM := legosim.o addrparmap.o binary.o branchtab.o dprintf.o dtnorm.o \
    parse.o parstore.o patprob.o popnode.o rngseed.o sampndx.o \
    strptrmap.o tinyexpr.o tokenizer.o ptrptrmap.o ptrqueue.o strint.o \
    segment.o idset.o matcoal.o ptrlst.o ptrvec.o comb.o migoutcome.o \
-   setpart.o rational.o u64u64map.o mctree.o
+   setpart.o rational.o u64u64map.o mctree.o u64i64map.o
 legosim : $(LEGOSIM)
 	$(CC) $(CFLAGS) -o $@ $(LEGOSIM) $(lib)
 
