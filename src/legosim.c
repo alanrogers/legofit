@@ -214,12 +214,14 @@ int main(int argc, char **argv) {
     else
         Network_init(DETERMINISTIC);
 
-    printf("# nreps                       : %lu\n", nreps);
-    printf("# input file                  : %s\n", fname);
-    if(U)
-        printf("# mutations per haploid genome: %lf\n", U);
-    else
-        printf("# not simulating mutations\n");
+    if(estimate) {
+        printf("# nreps                       : %lu\n", nreps);
+        printf("# input file                  : %s\n", fname);
+        if(U)
+            printf("# mutations per haploid genome: %lf\n", U);
+        else
+            printf("# not simulating mutations\n");
+    }
 
     printf("# %s singleton site patterns.\n",
            (doSing ? "including" : "excluding"));
@@ -244,14 +246,15 @@ int main(int argc, char **argv) {
     rngseed = (rngseed == ULONG_MAX ? 0 : rngseed+1);
 
     BranchTab *bt = patprob(network, nreps, doSing, rng);
-    BranchTab_divideBy(bt, (double) nreps);
+    if(estimate)
+        BranchTab_divideBy(bt, (double) nreps);
     //BranchTab_print(bt, stdout);
 
     // Put site patterns and branch lengths into arrays.
     unsigned npat = BranchTab_size(bt);
     tipId_t pat[npat];
-    double prob[npat];
-    BranchTab_toArrays(bt, npat, pat, prob);
+    double elen[npat];
+    BranchTab_toArrays(bt, npat, pat, elen);
     //Network_printParStore(network, stdout);
 
     // Determine order for printing lines of output
@@ -269,10 +272,10 @@ int main(int argc, char **argv) {
                  patLbl(sizeof(buff), buff, pat[ord[j]], &lblndx));
         if(U) {
             unsigned mutations;
-            mutations = gsl_ran_poisson(rng, U*prob[ord[j]]);
+            mutations = gsl_ran_poisson(rng, U*elen[ord[j]]);
             printf("%15s %15u\n", buff2, mutations);
         }else
-            printf("%15s %15.7lf\n", buff2, prob[ord[j]]);
+            printf("%15s %15.7lf\n", buff2, elen[ord[j]]);
     }
 
     gsl_rng_free(rng);

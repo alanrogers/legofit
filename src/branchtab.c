@@ -275,9 +275,11 @@ int BranchTab_divideBy(BranchTab *self, double denom) {
 void BranchTab_print(const BranchTab *self, FILE *fp) {
     unsigned i;
     for(i=0; i < BT_DIM; ++i) {
-        fprintf(fp, "%2u:", i);
-        BTLink_print(self->tab[i], fp);
-        putc('\n', fp);
+        if(self->tab[i]) {
+            fprintf(fp, "%2u:", i);
+            BTLink_print(self->tab[i], fp);
+            putc('\n', fp);
+        }
     }
 }
 

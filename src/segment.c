@@ -686,6 +686,7 @@ int visitComb(int d, int ndx[d], void *data) {
                 __FILE__,__func__,__LINE__,ids->p * dat->contrib);
         BranchTab_add(dat->branchtab, sitepat,
                       ids->p * dat->contrib);
+        BranchTab_print(dat->branchtab, stderr);
     }
     return 0;
 }
@@ -733,6 +734,7 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
                     p * vdat->elen * IdSet_prob(descendants));
             BranchTab_add(vdat->branchtab, sitepat[j],
                           p * vdat->elen * IdSet_prob(descendants));
+            BranchTab_print(vdat->branchtab, stderr);
         }
 
         // Add the current set partition to the list of ancestral
@@ -952,6 +954,7 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
                         __FILE__,__func__,__LINE__,
                         ids->p * v);
                 BranchTab_add(branchtab, ids->tid[0], ids->p * v);
+                BranchTab_print(branchtab, stderr);
             }
 
             IdSet *new = IdSet_dup(ids);
