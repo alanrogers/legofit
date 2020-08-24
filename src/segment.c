@@ -91,17 +91,16 @@ struct Segment {
     // [0,1]. w[i] is the waiting room for child i. The number of
     // waiting rooms equals the number of children. w[i][j] is a list
     // of IdSet objects, each of which contains j tipId_t values.
-    // wmax[i] is the maximum number of lineages in the i'th waiting
-    // room, so 0 <= j < wdim[i]. If there are no waiting rooms
-    // (i.e. if nchildren=0), then the descendants at the beginning of the
-    // segment consist only of those in array "sample". If there is
-    // one waiting room, then the ids in "sample" are added to each of
-    // the sets in w[0], and the resulting list of IdSet objects
-    // represents the state at the beginning of the segment. If there
-    // are two waiting rooms, then we begin with all pairs of IdSet
-    // objects in w[0] and w[1]. To each pair, we add the ids in
-    // "samples" to obtain the list of IdSet objects at the beginning
-    // of the segment. 
+    // wdim[i] is the dimension of the i'th waiting room, so 0 <= j <
+    // wdim[i]. If there are no waiting rooms (i.e. if nchildren=0),
+    // then the descendants at the beginning of the segment consist
+    // only of those in array "sample". If there is one waiting room,
+    // then the ids in "sample" are added to each of the sets in w[0],
+    // and the resulting list of IdSet objects represents the state at
+    // the beginning of the segment. If there are two waiting rooms,
+    // then we begin with all pairs of IdSet objects in w[0] and
+    // w[1]. To each pair, we add the ids in "samples" to obtain the
+    // list of IdSet objects at the beginning of the segment.
     int wdim[2];
     PtrLst *w[2][MAXSAMP+1];
 
@@ -112,9 +111,9 @@ struct Segment {
 
     // d[i] is a pointer to a PtrVec, which is allocated within
     // Segment_coalesce. This PtrVec holds IdSet objects that contain
-    // i tipId_t values, each representing a descendant at the
-    // recent end of the Segment. The number of PtrVec
-    // pointers--i.e. the dimension of array d--is 1+self->max.
+    // i tipId_t values, each representing a descendant at the recent
+    // end of the Segment. The number of PtrVec pointers--i.e. the
+    // dimension of array d--is self->dim.
     PtrVec **d;
 };
 
@@ -951,7 +950,7 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
         }
     }
 
-    // Cases of 2..max lineages.  Outer loop over numbers of
+    // Cases of 2..(dim-1) lineages.  Outer loop over numbers of
     // descendants.  Calculate probabilities and expected values, p[1]
     // and elen.
     for(n=2; n < self->dim; ++n) {
@@ -1051,7 +1050,7 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
 
 static int Segment_coalesceInfinite(Segment *self, double v, int dosing,
                                     BranchTab *branchtab) {
-    assert(self->max > 0);
+    assert(self->dim > 0);
     double elen[self->dim];
     int n, status=0;
 
@@ -1157,8 +1156,8 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
             __func__, self->wdim[0], self->wdim[1], self->dim,
             self->twoN, self->start, self->end);
 
-    for(int i=0; i < self->max; ++i) {
-        fprintf(stderr,"%s:%d: nIds=%d\n", __FILE__,__LINE__, i+1);
+    for(int i=0; i < self->dim; ++i) {
+        fprintf(stderr,"%s:%d: nIds=%d\n", __FILE__,__LINE__, i);
         for(int j=0; j < PtrVec_length(self->d[i]); ++j)
             IdSet_print(PtrVec_get(self->d[i], j), stderr);
     }
@@ -1265,17 +1264,14 @@ static PtrVec **get_descendants1(int wdim, PtrLst **w, int nsamples,
     return d;
 }
 
-XXXXXXXXXXX
-
 // Return a vector of vectors of IdSet objects. The i'th vector
-// contains sets of i+1 descendants. The IdSet objects are generated
+// contains sets of i descendants. The IdSet objects are generated
 // by combining all compatible pairs from w0 and w1, and then adding
 // the tipId_t values from array sample. On return, w0 and w1 are
 // arrays of empty lists.
-PtrVec **get_descendants2(int wmax0, PtrLst **w0,
-                          int wmax1, PtrLst **w1,
-                          int nsamples, tipId_t *sample, int *newmax) {
-    int dim0 = wmax0+1, dim1 = wmax1+1;
+PtrVec **get_descendants2(int dim0, PtrLst **w0,
+                          int dim1, PtrLst **w1,
+                          int nsamples, tipId_t *sample, int *newdim) {
     int i, j, n;
 
     // Is waiting room 0 empty?
@@ -1288,10 +1284,10 @@ PtrVec **get_descendants2(int wmax0, PtrLst **w0,
 
     // If either waiting room is empty, call get_descendants1.
     if(dim0 == 0)
-        return get_descendants1(dim1-1, w1, nsamples, sample, newmax);
+        return get_descendants1(dim1-1, w1, nsamples, sample, newdim);
 
     if(dim1 == 0)
-        return get_descendants1(dim0-1, w0, nsamples, sample, newmax);
+        return get_descendants1(dim0-1, w0, nsamples, sample, newdim);
 
     /*
      * Segment has two children. The returned value (dvec) is an array
@@ -1307,8 +1303,16 @@ PtrVec **get_descendants2(int wmax0, PtrLst **w0,
      * lists. Then each linked list is converted into an array to form
      * an entry of dvec.
      */
-    n = dim0 + dim1 + nsamples;
-    assert(n > 0);
+    n = nsamples;
+    if(dim0)
+        n += dim0-1;
+    if(dim1)
+        n += dim1-1;
+    if(n)
+        n += 1;
+
+    if(n==0)
+        return NULL;
 
     PtrLst *d[n];
     for(i=0; i<n; ++i)
@@ -1322,6 +1326,7 @@ PtrVec **get_descendants2(int wmax0, PtrLst **w0,
             id0=PtrLst_pop(w0[i])) {
             
             IdSet_sanityCheck(id0, __FILE__, __LINE__);
+            assert(IdSet_nIds(id0) == i);
 
             for(j=0; j < dim1; ++j) {
                 PtrLst_rewind(w1[j]);
@@ -1331,6 +1336,8 @@ PtrVec **get_descendants2(int wmax0, PtrLst **w0,
                     id1=PtrLst_next(w1[j])) {
 
                     IdSet_sanityCheck(id1, __FILE__, __LINE__);
+                    assert(IdSet_nIds(id1) == j);
+
                     newid = IdSet_join(id0, id1, nsamples, sample);
                     if(newid == NULL)
                         continue;
@@ -1354,7 +1361,7 @@ PtrVec **get_descendants2(int wmax0, PtrLst **w0,
         PtrLst_free(d[n-1]);
         n -= 1;
     }
-    *newmax = n-1;
+    *newdim = n;
 
     if(n == 0)
         return NULL;
@@ -1395,7 +1402,6 @@ static void coalescent_interval_length(int n, double elen[n],
     for(int i = n-1; i > 0; --i)
         sum += elen[i];
     elen[0] = v - sum;
-
 }
 
 static void project(int n, double pr[n], double eig[n-1]) {
@@ -1415,8 +1421,7 @@ static void project(int n, double pr[n], double eig[n-1]) {
 }
 
 /// Return 1 if each PtrLst in array w is empty; return 0 otherwise.
-static int w_isempty(int wmax, PtrLst **w) {
-    int dim = wmax+1;
+static int w_isempty(int dim, PtrLst **w) {
     for(int i=0; i<dim; ++i) {
         if(PtrLst_length(w[i]) > 0)
             return 0;
@@ -1427,6 +1432,7 @@ static int w_isempty(int wmax, PtrLst **w) {
 // Move all IdSet objects to parent ipar. Empties each list in array
 // a.
 static void mv_idsets_to_parent(Segment *self, int ipar, PtrLst **a) {
+    assert(ipar < self->nparents);
     int iself = self_ndx(self, self->parent[ipar]);
 
     assert(self == self->parent[ipar]->child[iself]);
