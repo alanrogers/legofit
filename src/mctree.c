@@ -321,7 +321,7 @@ void MCTree_patprob(void * vself, BranchTab * branchtab, gsl_rng * rng,
                 __FILE__, __LINE__, status);
         exit(EXIT_FAILURE);
     }
-    BranchTab_normalize(branchtab);
+    //BranchTab_normalize(branchtab);
 }
 
 unsigned MCTree_nSamples(void *vself) {

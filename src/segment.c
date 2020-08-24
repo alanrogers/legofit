@@ -682,6 +682,8 @@ int visitComb(int d, int ndx[d], void *data) {
             continue;
       
         // Increment BranchTab entry for current sitepat value.
+        fprintf(stderr,"%s:%s:%d: adding %lg\n",
+                __FILE__,__func__,__LINE__,ids->p * dat->contrib);
         BranchTab_add(dat->branchtab, sitepat,
                       ids->p * dat->contrib);
     }
@@ -725,9 +727,13 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
 
         // Loop over ancestors, i.e. over site patterns, adding
         // to the corresponding entry in BranchTab.
-        for(int j=0; j<k; ++j)
+        for(int j=0; j<k; ++j) {
+            fprintf(stderr,"%s:%s:%d: adding %lg\n",
+                    __FILE__,__func__,__LINE__,
+                    p * vdat->elen * IdSet_prob(descendants));
             BranchTab_add(vdat->branchtab, sitepat[j],
                           p * vdat->elen * IdSet_prob(descendants));
+        }
 
         // Add the current set partition to the list of ancestral
         // states.
@@ -942,6 +948,9 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
                 // Single lineage in finite Segment contributes
                 // to branchtab.
                 assert(IdSet_nIds(ids) == 1);
+                fprintf(stderr,"%s:%s:%d: adding %lg\n",
+                        __FILE__,__func__,__LINE__,
+                        ids->p * v);
                 BranchTab_add(branchtab, ids->tid[0], ids->p * v);
             }
 

@@ -1,0 +1,10 @@
+# Simplest possible .lgo file. The command 'legosim -1 input0.lgo'
+# should report E[BranchLength] = 2 for site patterns x and y.
+time fixed    zero=0
+twoN fixed     one=1
+time fixed    Txy=1
+segment x     t=zero   twoN=one    samples=1
+segment y     t=zero   twoN=one    samples=1
+segment xy    t=Txy    twoN=one
+derive x  from xy
+derive y from xy 
