@@ -934,9 +934,9 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
         if(0 == PtrVec_length(self->d[n]))
             continue;
 
-        int nIds = PtrVec_length(self->d[0]);
+        int nIds = PtrVec_length(self->d[n]);
         for(int j=0; j < nIds; ++j) {
-            IdSet *ids = PtrVec_get(self->d[0], j);
+            IdSet *ids = PtrVec_get(self->d[n], j);
 
             if(n==1) {
                 // Single lineage in finite Segment contributes
@@ -1133,11 +1133,6 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
         self->d = get_descendants1(self->wdim[0], self->w[0],
                                    self->nsamples, self->sample,
                                    &self->dim);
-        if(self->dim == 0) {
-            fprintf(stderr,"%s:%d: d=%p 2N=%lg t=[%lg, %lg]\n",
-                    __FILE__,__LINE__, self->d, self->twoN,
-                    self->start, self->end);
-        }
         assert(self->dim > 0);
         assert(w_isempty(self->wdim[0], self->w[0]));
         break;
@@ -1156,16 +1151,6 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
         exit(EXIT_FAILURE);
     }
     assert(self->dim > 0);
-
-    fprintf(stderr,"%s: wdim=[%d,%d] dim=%d 2N=%lg t=[%lg,%lg]\n",
-            __func__, self->wdim[0], self->wdim[1], self->dim,
-            self->twoN, self->start, self->end);
-
-    for(int i=0; i < self->dim; ++i) {
-        fprintf(stderr,"%s:%d: nIds=%d\n", __FILE__,__LINE__, i);
-        for(int j=0; j < PtrVec_length(self->d[i]); ++j)
-            IdSet_print(PtrVec_get(self->d[i], j), stderr);
-    }
 
     if(self->end_i == -1) {
         status = Segment_coalesceInfinite(self, INFINITY, dosing, branchtab);
@@ -1233,11 +1218,6 @@ static PtrVec **get_descendants1(int wdim, PtrLst **w, int nsamples,
             d[i] = PtrVec_new(0);
         d[n-1] = PtrVec_new(1);
         {
-            fprintf(stderr,"%s:%d: samples=",__FILE__,__LINE__);
-            for(int k=0; k<nsamples; ++k)
-                fprintf(stderr," %u", sample[k]);
-            putc('\n', stderr);
-            
             IdSet *id = IdSet_new(nsamples, sample, 1.0);
             IdSet_sanityCheck(id, __FILE__, __LINE__);
             PtrVec_push(d[n-1], id);

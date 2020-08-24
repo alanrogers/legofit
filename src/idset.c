@@ -18,7 +18,7 @@ void IdSet_sanityCheck(IdSet *self, const char *file, int lineno) {
 #ifndef NDEBUG
     if(self == NULL)
        return;
-    REQUIRE(self->nIds >- 0, file, lineno);
+    REQUIRE(self->nIds >= 0, file, lineno);
     REQUIRE(self->p >= 0.0, file, lineno);
     REQUIRE(self->p <= 1.0, file, lineno);
     for(int i=0; i < self->nIds; ++i)
