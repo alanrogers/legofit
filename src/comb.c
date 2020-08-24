@@ -327,7 +327,9 @@ long binom(long n, long x) {
 long double lbinom(long n, long x) {
     long double ans;
 
-    if(x == 0 || x == n)
+    if(n == 0 && x != 0)
+        ans = -INFINITY;
+    else if(x == 0 || x == n)
         ans = 0.0L;
     else {
         ans = lgammal( (long double) (n+1));

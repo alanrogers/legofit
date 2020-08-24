@@ -682,8 +682,9 @@ int visitComb(int d, int ndx[d], void *data) {
             continue;
       
         // Increment BranchTab entry for current sitepat value.
-        fprintf(stderr,"%s:%s:%d: adding %lg\n",
-                __FILE__,__func__,__LINE__,ids->p * dat->contrib);
+        fprintf(stderr,"%s:%s:%d: adding %lg*%lg to %u\n",
+                __FILE__,__func__,__LINE__,ids->p, dat->contrib,
+                sitepat);
         BranchTab_add(dat->branchtab, sitepat,
                       ids->p * dat->contrib);
         BranchTab_print(dat->branchtab, stderr);
@@ -729,9 +730,10 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
         // Loop over ancestors, i.e. over site patterns, adding
         // to the corresponding entry in BranchTab.
         for(int j=0; j<k; ++j) {
-            fprintf(stderr,"%s:%s:%d: adding %lg\n",
+            fprintf(stderr,"%s:%s:%d: adding %lg to %u\n",
                     __FILE__,__func__,__LINE__,
-                    p * vdat->elen * IdSet_prob(descendants));
+                    p * vdat->elen * IdSet_prob(descendants),
+                    sitepat[j]);
             BranchTab_add(vdat->branchtab, sitepat[j],
                           p * vdat->elen * IdSet_prob(descendants));
             BranchTab_print(vdat->branchtab, stderr);
@@ -950,9 +952,9 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
                 // Single lineage in finite Segment contributes
                 // to branchtab.
                 assert(IdSet_nIds(ids) == 1);
-                fprintf(stderr,"%s:%s:%d: adding %lg\n",
+                fprintf(stderr,"%s:%s:%d: adding %lg to %u\n",
                         __FILE__,__func__,__LINE__,
-                        ids->p * v);
+                        ids->p * v, ids->tid[0]);
                 BranchTab_add(branchtab, ids->tid[0], ids->p * v);
                 BranchTab_print(branchtab, stderr);
             }
@@ -1092,14 +1094,35 @@ static int Segment_coalesceInfinite(Segment *self, double v, int dosing,
             // portion of log Qdk that doesn't involve d
             long double lnconst = logl(k) - lbinom(n-1, k-1);
 
+            fprintf(stderr,"%s:%d: lnconst=%Lg\n",
+                    __FILE__,__LINE__, lnconst);
+            
             // Within each interval, there can be ancestors
             // with 1 descendant, 2, 3, ..., n-k+1.
             for(int d=1; d <= n-k+1; ++d) {
+                fprintf(stderr,"%s:%d: n=%d k=%d, d=%d\n",
+                        __FILE__,__LINE__,n,k,d);
+                
                 long double lnprob = lnconst
                     + lbinom(n-d-1, k-1) - lbinom(n,d);
 
+                fprintf(stderr,"%s:%d: lbinom(%d, %d)=%Lg\n",
+                        __FILE__,__LINE__, n-d-1, k-1,
+                        lbinom(n-d-1, k-1));
+
+                fprintf(stderr,"%s:%d: lbinom(%d, %d)=%Lg\n",
+                        __FILE__,__LINE__, n, d,
+                        lbinom(n, d));
+                
+                fprintf(stderr,"%s:%d: lnprob=%Lg\n",
+                        __FILE__,__LINE__, lnprob);
+                
                 // probability of site pattern
                 cd.contrib = (double) expl(lnprob);
+
+                fprintf(stderr,"%s:%d: contrib=%lg*%lg\n",
+                        __FILE__,__LINE__,
+                        cd.contrib, elen[k-1]);
 
                 // times expected length of interval
                 cd.contrib *= elen[k-1];
