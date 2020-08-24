@@ -81,7 +81,7 @@ int main(int argc, char **argv) {
     fputs(tstInput, fp);
     fclose(fp);
 
-    Network_init(MATCOAL);
+    Network_init(DETERMINISTIC);
 
     Bounds      bnd = {
         .lo_twoN = 0.0,

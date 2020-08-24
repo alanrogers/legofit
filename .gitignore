@@ -1,5 +1,6 @@
 *.o
 *~
+*.dSYM
 bepe
 booma
 clic
@@ -50,6 +51,7 @@ xjobqueue
 xlblndx
 xlinereader
 xmatcoal
+xmctree
 xmpfrmatcoal
 xmigoutcome
 xmisc
