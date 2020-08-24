@@ -628,9 +628,9 @@ Segment *Segment_dup(Segment *old_root, PtrPtrMap *ppm) {
         nu->wdim[0] = old->wdim[0];
         nu->wdim[1] = old->wdim[1];
 
-        for(i=0; i <= MAXSAMP; ++i) {
-            nu->w[0][i] = PtrLst_new();
-            nu->w[1][i] = PtrLst_new();
+        for(int j=0; j <= MAXSAMP; ++j) {
+            nu->w[0][j] = PtrLst_new();
+            nu->w[1][j] = PtrLst_new();
         }
     }
 
@@ -1133,6 +1133,11 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
         self->d = get_descendants1(self->wdim[0], self->w[0],
                                    self->nsamples, self->sample,
                                    &self->dim);
+        if(self->dim == 0) {
+            fprintf(stderr,"%s:%d: d=%p 2N=%lg t=[%lg, %lg]\n",
+                    __FILE__,__LINE__, self->d, self->twoN,
+                    self->start, self->end);
+        }
         assert(self->dim > 0);
         assert(w_isempty(self->wdim[0], self->w[0]));
         break;
@@ -1228,7 +1233,12 @@ static PtrVec **get_descendants1(int wdim, PtrLst **w, int nsamples,
             d[i] = PtrVec_new(0);
         d[n-1] = PtrVec_new(1);
         {
-            IdSet *id = IdSet_new(n, sample, 1.0);
+            fprintf(stderr,"%s:%d: samples=",__FILE__,__LINE__);
+            for(int k=0; k<nsamples; ++k)
+                fprintf(stderr," %u", sample[k]);
+            putc('\n', stderr);
+            
+            IdSet *id = IdSet_new(nsamples, sample, 1.0);
             IdSet_sanityCheck(id, __FILE__, __LINE__);
             PtrVec_push(d[n-1], id);
         }
