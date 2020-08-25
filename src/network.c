@@ -14,11 +14,11 @@
  * Systems Consortium License, which can be found in file "LICENSE".
  */
 
-#include "typedefs.h"
+#include "branchtab.h"
 #include "gptree.h"
+#include "mctree.h"
 #include "popnode.h"
 #include "segment.h"
-#include "mctree.h"
 #include <gsl/gsl_rng.h>
 
 // External variables defined here
@@ -34,6 +34,8 @@ struct Network {
 
 /// Initialize model of network
 void Network_init(enum NetworkType type) {
+    networkType = type;
+
     switch(type) {
     case STOCHASTIC:
         Network_dup = GPTree_dup;
@@ -44,7 +46,7 @@ void Network_init(enum NetworkType type) {
         Network_getParams = GPTree_getParams;
         Network_new = GPTree_new;
         Network_nFree = GPTree_nFree;
-        Network_patprob = GPTree_patprob;
+        Network_brlen = GPTree_brlen;
         Network_printParStore = GPTree_printParStore;
         Network_randomize = GPTree_randomize;
         Network_sanityCheck = GPTree_sanityCheck;
@@ -65,7 +67,7 @@ void Network_init(enum NetworkType type) {
         Network_getParams = MCTree_getParams;
         Network_new = MCTree_new;
         Network_nFree = MCTree_nFree;
-        Network_patprob = MCTree_patprob;
+        Network_brlen = MCTree_brlen;
         Network_printParStore = MCTree_printParStore;
         Network_randomize = MCTree_randomize;
         Network_sanityCheck = MCTree_sanityCheck;
@@ -82,6 +84,13 @@ void Network_init(enum NetworkType type) {
                 __FILE__,__LINE__, type);
         exit(EXIT_FAILURE);
     }
+}
+
+void Network_patprob(void *self, BranchTab *branchtab,
+                    gsl_rng *rng, unsigned long nreps,
+                    int doSing) {
+    Network_brlen(self, branchtab, rng, nreps, doSing);
+    BranchTab_normalize(branchtab);
 }
 
 #ifdef TEST

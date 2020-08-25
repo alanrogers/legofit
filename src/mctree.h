@@ -14,7 +14,7 @@ const char *MCTree_getNameFree(void * self, int i);
 void        MCTree_getParams(void *self, int n, double x[n]);
 void       *MCTree_new(const char *fname, Bounds bnd);
 int         MCTree_nFree(const void *self);
-void        MCTree_patprob(void * vself, BranchTab * branchtab, gsl_rng * rng,
+void        MCTree_brlen(void * vself, BranchTab * branchtab, gsl_rng * rng,
                            unsigned long nreps, int doSing);
 void        MCTree_printParStore(void * vself, FILE * fp);
 void        MCTree_printParStoreFree(void *self, FILE *fp);

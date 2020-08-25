@@ -139,8 +139,8 @@ int GPTree_nFree(const void * self) {
 /// @param[in] nreps number of replicate gene trees to simulate
 /// @param[in] doSing if doSing is non-zero, singleton site patterns
 /// will be tabulated.
-void GPTree_patprob(void * vself, BranchTab * branchtab, gsl_rng * rng,
-                     unsigned long nreps, int doSing) {
+void GPTree_brlen(void * vself, BranchTab * branchtab, gsl_rng * rng,
+                  unsigned long nreps, int doSing) {
     GPTree *self = vself;
     unsigned long rep;
     for(rep = 0; rep < nreps; ++rep) {
@@ -170,7 +170,6 @@ void GPTree_patprob(void * vself, BranchTab * branchtab, gsl_rng * rng,
         Gene_free(self->rootGene);
         self->rootGene = NULL;
     }
-    BranchTab_normalize(branchtab);
 }
 
 /// GPTree constructor

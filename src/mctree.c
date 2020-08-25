@@ -295,8 +295,8 @@ void MCTree_initStateVec(void *self, int ndx, int n, double x[n],
 /// @param[in] nreps number of replicate gene trees to simulate (NOT USED)
 /// @param[in] doSing if doSing is non-zero, singleton site patterns
 /// will be tabulated.
-void MCTree_patprob(void * vself, BranchTab * branchtab, gsl_rng * rng,
-                    unsigned long nreps, int doSing) {
+void MCTree_brlen(void * vself, BranchTab * branchtab, gsl_rng * rng,
+                  unsigned long nreps, int doSing) {
     UNUSED(rng);
     UNUSED(nreps);
     MCTree *self = vself;

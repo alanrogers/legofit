@@ -77,6 +77,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+// Site pattern representing the union of all samples.
+tipId_t union_all_samples = 0;
+
 /// Abort if token is missing
 # define CHECK_TOKEN(tok, orig) {                                  \
         if((tok) == NULL) {                                        \
@@ -741,6 +744,11 @@ PtrPair mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, Bounds * bnd) {
             }
         }
     }
+
+    // site pattern representing the union of all samples
+    unsigned nsamples = SampNdx_size(sndx);
+    union_all_samples = (1LU << nsamples) - 1;
+    
     StrPtrMap_free(popmap);
     StrPtrMap_free(parmap);
 

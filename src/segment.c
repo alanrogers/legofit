@@ -24,8 +24,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-// The total number of samples.
-//static int total_samples = 0;
+// Site pattern representing the union of all samples.
+extern tipId_t union_all_samples;
 
 typedef struct MigDat MigDat;
 typedef struct CombDat CombDat;
@@ -680,6 +680,13 @@ int visitComb(int d, int ndx[d], void *data) {
         // Skip singletons unless data->dosing is nonzero
         if(!dat->dosing && isPow2(sitepat))
             continue;
+
+        if(sitepat == union_all_samples)
+            continue;
+        
+        fprintf(stderr,"%s:%d: adding %lg to pattern o%o\n",
+                __FILE__,__LINE__, ids->p * dat->contrib,
+                sitepat);
       
         // Increment BranchTab entry for current sitepat value.
         BranchTab_add(dat->branchtab, sitepat,
@@ -726,10 +733,15 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
         // Loop over ancestors, i.e. over site patterns, adding
         // to the corresponding entry in BranchTab.
         for(int j=0; j<k; ++j) {
-            fprintf(stderr,"%s:%s:%d: adding %lg to %u\n",
-                    __FILE__,__func__,__LINE__,
+
+            if(sitepat[j] == union_all_samples)
+                continue;
+            
+            fprintf(stderr,"%s:%d: adding %lg to pattern o%o\n",
+                    __FILE__,__LINE__,
                     p * vdat->elen * IdSet_prob(descendants),
                     sitepat[j]);
+      
             BranchTab_add(vdat->branchtab, sitepat[j],
                           p * vdat->elen * IdSet_prob(descendants));
         }
@@ -943,10 +955,16 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
         for(int j=0; j < nIds; ++j) {
             IdSet *ids = PtrVec_get(self->d[n], j);
 
-            if(n==1) {
+            if(n==1 && ids->tid[0] != union_all_samples) {
                 // Single lineage in finite Segment contributes
                 // to branchtab.
                 assert(IdSet_nIds(ids) == 1);
+
+                fprintf(stderr,"%s:%d: adding %lg to pattern o%o\n",
+                        __FILE__,__LINE__,
+                        ids->p * v,
+                        ids->tid[0]);
+      
                 BranchTab_add(branchtab, ids->tid[0], ids->p * v);
             }
 

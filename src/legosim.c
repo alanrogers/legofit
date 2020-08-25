@@ -5,7 +5,7 @@
 
 # `legosim`: coalescent simulations within a network of populations
 
-    usage: legosim [options] input_file
+    usage: legosim [options] input_file_name
        where options may include:
        -i <x> or --nItr <x>
           number of iterations in simulation
@@ -15,6 +15,10 @@
           Mutations per generation per haploid genome.
        -h or --help
           print this message
+       --version
+          print version and exit
+    Deterministic algorithm is the default. Options -i, --nItr, or -U enable
+    stochastic algorithm.
 
 Here, "input_file" should be in @ref lgo ".lgo" format, which
 describes the history of population size, subdivision, and gene
@@ -111,12 +115,13 @@ void        usage(void);
 void usage(void) {
     fprintf(stderr, "usage: legosim [options] input_file_name\n");
     fprintf(stderr, "   where options may include:\n");
-    tellopt("-e or --estimate", "stochastic algorithm");
     tellopt("-i <x> or --nItr <x>", "number of iterations in simulation");
 	tellopt("-1 or --singletons", "Use singleton site patterns");
     tellopt("-U <x>", "Mutations per generation per haploid genome.");
     tellopt("-h or --help", "print this message");
     tellopt("--version", "print version and exit");
+    fprintf(stderr,"Deterministic algorithm is the default. Options"
+           " -i, --nItr, or -U enable\nstochastic algorithm.\n");
     exit(1);
 }
 
@@ -124,7 +129,6 @@ int main(int argc, char **argv) {
 
     static struct option myopts[] = {
         /* {char *name, int has_arg, int *flag, int val} */
-        {"estimate", no_argument, 0, 'e'},
         {"nItr", required_argument, 0, 'i'},
         {"mutations", required_argument, 0, 'U'},
         {"singletons", no_argument, 0, '1'},
@@ -170,6 +174,7 @@ int main(int argc, char **argv) {
             estimate = 1;
             break;
         case 'i':
+            estimate = 1;
             nreps = strtol(optarg, &end, 10);
             if(*end != '\0') {
                 fprintf(stderr,"Can't parse %s as an integer\n", optarg);
@@ -177,6 +182,7 @@ int main(int argc, char **argv) {
             }
             break;
         case 'U':
+            estimate = 1;
             U = strtod(optarg,&end);
             if(*end != '\0') {
                 fprintf(stderr,"Can't parse %s as a float\n", optarg);
@@ -214,14 +220,16 @@ int main(int argc, char **argv) {
     else
         Network_init(DETERMINISTIC);
 
+    printf("# input file                  : %s\n", fname);
     if(estimate) {
+        printf("# algorithm                   : %s\n", "stochastic");
         printf("# nreps                       : %lu\n", nreps);
-        printf("# input file                  : %s\n", fname);
         if(U)
             printf("# mutations per haploid genome: %lf\n", U);
         else
             printf("# not simulating mutations\n");
-    }
+    }else
+        printf("# algorithm                   : %s\n", "deterministic");
 
     printf("# %s singleton site patterns.\n",
            (doSing ? "including" : "excluding"));
@@ -245,9 +253,7 @@ int main(int argc, char **argv) {
     gsl_rng_set(rng, rngseed);
     rngseed = (rngseed == ULONG_MAX ? 0 : rngseed+1);
 
-    BranchTab *bt = patprob(network, nreps, doSing, rng);
-    if(estimate)
-        BranchTab_divideBy(bt, (double) nreps);
+    BranchTab *bt = brlen(network, nreps, doSing, rng);
     //BranchTab_print(bt, stdout);
 
     // Put site patterns and branch lengths into arrays.

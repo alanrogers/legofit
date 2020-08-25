@@ -13,6 +13,8 @@ const char *GPTree_getNameFree(void * vself, int i);
 void        GPTree_getParams(void *vself, int n, double x[n]);
 void       *GPTree_new(const char *fname, Bounds bnd);
 int         GPTree_nFree(const void *vself);
+void        GPTree_brlen(void * vself, BranchTab * branchtab, gsl_rng * rng,
+                         unsigned long nreps, int doSing);
 void        GPTree_patprob(void *vself, BranchTab *branchtab,
                             gsl_rng *rng, unsigned long nreps,
                             int doSing);

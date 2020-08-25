@@ -46,8 +46,11 @@ static int tfunc(void *varg, void *tdata) {
     gsl_rng   *rng = (gsl_rng *) tdata;
 
     assert(Network_feasible(arg->network, 0));
-    Network_patprob(arg->network, arg->branchtab, rng, arg->nreps,
-                    arg->doSing);
+    Network_brlen(arg->network, arg->branchtab, rng, arg->nreps,
+                  arg->doSing);
+
+    if(networkType == STOCHASTIC)
+        BranchTab_divideBy(arg->branchtab, (double) arg->nreps);
 
     return 0;
 }
@@ -74,12 +77,10 @@ static void ThreadArg_free(ThreadArg * self) {
     free(self);
 }
 
-/// Estimate site pattern probabilities.  On return, pat[i] identifies
-/// the i'th pattern, and prob[i] estimates its probability.  Function
-/// returns a pointer to a newly-allocated object of type BranchTab,
-/// which contains all the observed site patterns and their estimated
-/// probabilities. 
-BranchTab *patprob(const void *network, long nreps,
+/// Estimate branch lengths. Function returns a pointer to a
+/// newly-allocated object of type BranchTab, which contains all the
+/// observed site patterns and their mean branch lengths.
+BranchTab *brlen(const void *network, long nreps,
                    int doSing, gsl_rng *rng) {
 
     ThreadArg *tharg;
