@@ -248,6 +248,8 @@ int main(int argc, char **argv) {
 
     binom_free();
 
+    free(n);
+
     unitTstResult("traverseMultiComb", status==0 ? "OK" : "FAIL");
 
     return 0;
