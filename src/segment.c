@@ -655,6 +655,8 @@ void     Segment_print(FILE * fp, void * vself, int indent) {
 
 /// Visit a combination
 int visitComb(int d, int ndx[d], void *data) {
+    fprintf(stderr,"%s:%d:\n",__func__,__LINE__); 
+
     assert(d>0);
     CombDat *dat = (CombDat *) data;
 
@@ -685,12 +687,12 @@ int visitComb(int d, int ndx[d], void *data) {
             continue;
         
         fprintf(stderr,"%s:%d: adding %lg to pattern o%o\n",
-                __FILE__,__LINE__, ids->p * dat->contrib,
+                __FILE__,__LINE__, IdSet_prob(ids) * dat->contrib,
                 sitepat);
       
         // Increment BranchTab entry for current sitepat value.
         BranchTab_add(dat->branchtab, sitepat,
-                      ids->p * dat->contrib);
+                      IdSet_prob(ids) * dat->contrib);
     }
     return 0;
 }
@@ -698,6 +700,8 @@ int visitComb(int d, int ndx[d], void *data) {
 /// Visit a set partition. n is the number of descendants, a[i] is the
 /// index of the ancestor of the i'th descendant.
 int visitSetPart(unsigned n, unsigned a[n], void *data) {
+    fprintf(stderr,"%s:%d:\n",__func__,__LINE__); 
+
     SetPartDat *vdat = data;
     int status=0;
 
@@ -711,7 +715,10 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
     }
 
     double p = probPartition(k, c, vdat->lnconst);
-    p *= vdat->prior;
+
+    fprintf(stderr,"%s:%s:%d: set prob=%lg prior=%lg\n",
+            __FILE__,__func__,__LINE__, p, vdat->prior);
+
 
     // nIds is the number of IdSet objects, each representing
     // a set of n descendants.
@@ -737,9 +744,10 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
             if(sitepat[j] == union_all_samples)
                 continue;
             
-            fprintf(stderr,"%s:%d: adding %lg to pattern o%o\n",
+            fprintf(stderr,"%s:%d: adding %lg=%lg*%lg*%lg to pattern o%o\n",
                     __FILE__,__LINE__,
                     p * vdat->elen * IdSet_prob(descendants),
+                    p, vdat->elen, IdSet_prob(descendants),
                     sitepat[j]);
       
             BranchTab_add(vdat->branchtab, sitepat[j],
@@ -749,7 +757,10 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
         // Add the current set partition to the list of ancestral
         // states.
 
-        IdSet *ancestors = IdSet_new(k, sitepat, p * descendants->p);
+        fprintf(stderr,"%s:%s:%d: new IdSet pr=%lg * %lg\n",
+                __FILE__,__func__,__LINE__, p, descendants->p);
+        IdSet *ancestors = IdSet_new(k, sitepat,
+                                     p * vdat->prior * descendants->p);
         IdSet_copyMigOutcome(ancestors, descendants);
         IdSet_sanityCheck(ancestors, __FILE__, __LINE__);
         status = PtrLst_push(vdat->a, ancestors);
@@ -767,6 +778,8 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
 /// indices of the current set of migrants. Its length is nmig, which
 /// may be zero.
 int visitMig(int nmig, int *migndx, void *data) {
+    fprintf(stderr,"%s:%d:\n",__func__,__LINE__); 
+
     MigDat *mdat = (MigDat *) data;
     int nnat = mdat->nNatives;
     int i;
@@ -927,6 +940,8 @@ static int Segment_equals_r(Segment *a, Segment *b) {
 static int Segment_coalesceFinite(Segment *self, double v, int dosing,
                                   BranchTab *branchtab) {
 
+    fprintf(stderr,"%s:%d:\n",__func__,__LINE__); 
+
     /*
       pr[i] = prob of i+1 lineages
       elen[i] = expected length of interval w/ i+1 lineages
@@ -990,6 +1005,15 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
         // Calculate pr[i], the probability of i+1 lineages at the
         // ancient end of the segment.
         project(n, pr, eig);
+
+        fprintf(stderr,"%s:%d: MatCoal pr:",__FILE__,__LINE__);
+        for(int ii=0; ii<n; ++ii)
+            fprintf(stderr," %d:%lg", ii+1, pr[ii]);
+        putc('\n', stderr);
+        fprintf(stderr,"%s:%d: MatCoal elen:",__FILE__,__LINE__);
+        for(int ii=0; ii<n; ++ii)
+            fprintf(stderr," %d:%lg", ii+1, elen[ii]);
+        putc('\n', stderr);
 
         sd.d = self->d[n];
 
@@ -1073,6 +1097,8 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
 
 static int Segment_coalesceInfinite(Segment *self, double v, int dosing,
                                     BranchTab *branchtab) {
+    fprintf(stderr,"%s:%d:\n",__func__,__LINE__); 
+
     assert(self->dim > 0);
     double elen[self->dim];
     int n, status=0;
@@ -1128,6 +1154,8 @@ static int Segment_coalesceInfinite(Segment *self, double v, int dosing,
 }
 
 int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
+    fprintf(stderr,"%s:%d:\n",__func__,__LINE__); 
+
     int status=0;
 
     if(self->visited)
@@ -1177,6 +1205,20 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
     }
     assert(self->dim > 0);
 
+    fprintf(stderr,"%s:%s:%d: nchild=%d npar=%d d:\n",
+            __FILE__,__func__,__LINE__,
+            self->nchildren, self->nparents);
+    for(int i=0; i < self->dim; ++i) {
+        fprintf(stderr,"%2d:", i);
+        int j;
+        for(j=0; j < PtrVec_length(self->d[i]); ++j) {
+            IdSet *ids=PtrVec_get(self->d[i], j);
+            IdSet_print(ids, stderr);
+        }
+        if(j==0)
+            putc('\n', stderr);
+    }
+
     if(self->end_i == -1) {
         status = Segment_coalesceInfinite(self, INFINITY, dosing, branchtab);
     }else{
@@ -1215,6 +1257,8 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
 /// of the newly-allocated array returned by the function.
 static PtrVec **get_descendants1(int wdim, PtrLst **w, int nsamples,
                                  tipId_t *sample, int *newdim) {
+    fprintf(stderr,"%s:%d:\n",__func__,__LINE__); 
+
     int i, n, m;
 
     if(w) {
@@ -1287,6 +1331,8 @@ static PtrVec **get_descendants1(int wdim, PtrLst **w, int nsamples,
 PtrVec **get_descendants2(int dim0, PtrLst **w0,
                           int dim1, PtrLst **w1,
                           int nsamples, tipId_t *sample, int *newdim) {
+    fprintf(stderr,"%s:%d:\n",__func__,__LINE__); 
+
     int i, j, n;
 
     // Is waiting room 0 empty?
@@ -1299,10 +1345,10 @@ PtrVec **get_descendants2(int dim0, PtrLst **w0,
 
     // If either waiting room is empty, call get_descendants1.
     if(dim0 == 0)
-        return get_descendants1(dim1-1, w1, nsamples, sample, newdim);
+        return get_descendants1(dim1, w1, nsamples, sample, newdim);
 
     if(dim1 == 0)
-        return get_descendants1(dim0-1, w0, nsamples, sample, newdim);
+        return get_descendants1(dim0, w0, nsamples, sample, newdim);
 
     /*
      * Segment has two children. The returned value (dvec) is an array
@@ -1405,6 +1451,8 @@ PtrVec **get_descendants2(int dim0, PtrLst **w0,
 
 static void coalescent_interval_length(int n, double elen[n],
                                        double eig[n-1], double v) {
+    fprintf(stderr,"%s:%d:\n",__func__,__LINE__); 
+
     // Calculate expected length, within the segment, of
     // coalescent intervals with 2,3,...,n lineages.  elen[i] is
     // expected length of interval with i+1 lineages.
@@ -1420,6 +1468,8 @@ static void coalescent_interval_length(int n, double elen[n],
 }
 
 static void project(int n, double pr[n], double eig[n-1]) {
+    fprintf(stderr,"%s:%d:\n",__func__,__LINE__); 
+
     // Calculate prob of 2,3,...,n ancestors at ancent end of
     // segment. On return, pr[1] = prob[2], pr[n-1] = prob[n],
     // pr[0] not set.
