@@ -19,7 +19,7 @@ struct MatCoal {
     // Array of dimension dim = nLin-1. The i'th entry is (i+2) choose
     // 2.  For example, if nLin=3, then beta has two entries: 2 choose
     // 2 and 3 choose 2.
-    double *beta;
+    long double *beta;
     
     /*
       Layout of upper triangular matrix gmat is row major:
@@ -36,7 +36,7 @@ struct MatCoal {
       Number of stored elements is dim*(dim+1)/2. dim=nLin-1.
     */
     // Matrix of scaled column eigenvectors
-    double *gmat;
+    long double *gmat;
 
     // Array of dim offsets, used to address elements of gmat.
     int *offset;
@@ -44,11 +44,11 @@ struct MatCoal {
     // Matrix for calculating expected lengths of coalescent
     // intervals.  hmat is upper triangular and is stored just
     // like gmat. The ij-th element is hmat[offset[i] + j]
-    double *hmat;
+    long double *hmat;
 
     // Vector for calculating expected lengths of coalescent intervals
     // Dimension is dim.
-    double *z;
+    long double *z;
 };
 
 // Number of haploid samples in the data. 0 until initialized
@@ -203,20 +203,20 @@ void MatCoal_freeExterns(void) {
 }
 
 /// Calculate eigenvalues for dimension dim and time v.
-void MatCoal_eigenvals(int dim, double eig[dim], double v) {
+void MatCoal_eigenvals(int dim, long double eig[dim], long double v) {
     int nlin = dim+1;  // number of lineages
     int ndx = dim-1;   // index into array matcoal
     MatCoal *mc = matcoal[ndx];
     assert(nlin == mc->nLin);
     for(int i=0; i<dim; ++i)
-        eig[i] = exp(-v*mc->beta[i]);
+        eig[i] = expl(-v*mc->beta[i]);
 }
 
 /// Calculate the probability that there are 2,3,...(dim+1) lines of
 /// descent. Call MatCoal_eigenvals first to calculate eig. The length
 /// of the interval affects the calculation only through its effect
 /// on the eigenvalues in eig, so it does not appear as an argument.
-void MatCoal_project(int dim, double ans[dim], double eig[dim]) {
+void MatCoal_project(int dim, long double ans[dim], long double eig[dim]) {
     int i, j;
     int nlin = dim+1;  // number of lineages
     int ndx = dim-1;   // index into array matcoal
@@ -241,7 +241,7 @@ void MatCoal_project(int dim, double ans[dim], double eig[dim]) {
 /// length of the interval affects the calculation only via the
 /// eigenvalues in eig and therefore does not appear as an argument in
 /// MatCoal_ciLen.
-void MatCoal_ciLen(int dim, double ans[dim], double eig[dim]) {
+void MatCoal_ciLen(int dim, long double ans[dim], long double eig[dim]) {
     int i, j;
     int nlin = dim+1;  // number of lineages
     int ndx = dim-1;   // index into array matcoal

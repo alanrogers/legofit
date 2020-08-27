@@ -271,7 +271,7 @@ void MpfrMatCoal_freeExterns(void) {
 
 /// Calculate the probability that, after v units of coalescent time,
 /// there are 2,3,...(dim+1) lines of descent.
-void MpfrMatCoal_project(int dim, double ans[dim], double v) {
+void MpfrMatCoal_project(int dim, long double ans[dim], long double v) {
     int i, j;
     int ndx = dim-1;
     MpfrMatCoal *mc = matcoal[ndx];
@@ -303,7 +303,7 @@ void MpfrMatCoal_project(int dim, double ans[dim], double v) {
 /// there were 2,3,...(dim+1) lines of descent. To get the expected
 /// length of the interval with 1 line of descent, subtract the sum
 /// of ans from v.
-void MpfrMatCoal_ciLen(int dim, double ans[dim], double v) {
+void MpfrMatCoal_ciLen(int dim, long double ans[dim], long double v) {
     int i, j;
     int ndx = dim-1;
     MpfrMatCoal *mc = matcoal[ndx];

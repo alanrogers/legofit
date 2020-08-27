@@ -6,9 +6,9 @@
 int  MatCoal_nSamples(void);
 void MatCoal_initExterns(long nsamp);
 void MatCoal_freeExterns(void);
-void MatCoal_eigenvals(int dim, double eig[dim], double v);
-void MatCoal_project(int dim, double ans[dim], double eig[dim]);
-void MatCoal_ciLen(int dim, double ans[dim], double eig[dim]);
+void MatCoal_eigenvals(int dim, long double eig[dim], long double v);
+void MatCoal_project(int dim, long double ans[dim], long double eig[dim]);
+void MatCoal_ciLen(int dim, long double ans[dim], long double eig[dim]);
 void MatCoal_printAll(FILE *fp);
 
 #endif

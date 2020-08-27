@@ -11,7 +11,7 @@ static int MigOutcome_cmp(MigOutcome *a, unsigned event);
 static MigOutcome *MigOutcome_new(MigOutcome *next,
                                   unsigned event,
                                   unsigned outcomes,  
-                                  double pr);
+                                  long double pr);
 
 /// Increment external migration_event variable.
 unsigned nextMigrationEvent(void) {
@@ -29,7 +29,7 @@ static int MigOutcome_cmp(MigOutcome *a, unsigned event) {
 MigOutcome *MigOutcome_insert(MigOutcome *head,
                               unsigned event,
                               unsigned outcome,
-                              double pr) {
+                              long double pr) {
     int cmp = MigOutcome_cmp(head, event);
     if(cmp < 0) {
         head->next = MigOutcome_insert(head->next, event, outcome,
@@ -50,7 +50,7 @@ MigOutcome *MigOutcome_insert(MigOutcome *head,
 static MigOutcome *MigOutcome_new(MigOutcome *next,
                                   unsigned event,
                                   unsigned outcome,  
-                                  double pr) {
+                                  long double pr) {
     MigOutcome *self = malloc(sizeof(MigOutcome));
     CHECKMEM(self);
 
@@ -81,7 +81,7 @@ void MigOutcome_print(MigOutcome *self, FILE *fp) {
     for(MigOutcome *m=self; m; m = m->next) {
         if(m != self)
             putc(' ', fp);
-        fprintf(fp,"%u:%u:%g",m->event, m->outcome, m->pr);
+        fprintf(fp,"%u:%u:%Lg",m->event, m->outcome, m->pr);
     }
     fputc('\n', fp);
 }
@@ -140,9 +140,9 @@ MigOutcome *MigOutcome_join(MigOutcome *left, MigOutcome *right,
 
 /// Probability of current MigOutcome list is the product of
 /// the probabilties of the elements of the list.
-double MigOutcome_prob(MigOutcome *head) {
+long double MigOutcome_prob(MigOutcome *head) {
     MigOutcome *mo;
-    double pr = 1.0;
+    long double pr = 1.0L;
 
     for(mo=head; mo; mo = mo->next)
         pr *= mo->pr;

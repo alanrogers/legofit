@@ -11,6 +11,7 @@
 #  include <gsl/gsl_rng.h>
 
 static inline int Dbl_near(double x, double y);
+int LDbl_near(long double x, long double y);
 static inline int Dbl_equals_allowNonfinite(double x, double y);
 int         compareInts(const void *void_x, const void *void_y);
 int         compareLongs(const void *void_x, const void *void_y);

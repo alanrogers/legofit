@@ -14,5 +14,6 @@ long unsigned PtrLst_length(PtrLst *self);
 void    PtrLst_rewind(PtrLst *self);
 void   *PtrLst_next(PtrLst *self);
 void    PtrLst_move(PtrLst *to, PtrLst *from);
+void    PtrLst_append(PtrLst *to, PtrLst *from);
 
 #endif

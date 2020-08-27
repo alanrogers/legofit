@@ -259,7 +259,7 @@ int main(int argc, char **argv) {
     // Put site patterns and branch lengths into arrays.
     unsigned npat = BranchTab_size(bt);
     tipId_t pat[npat];
-    double elen[npat];
+    long double elen[npat];
     BranchTab_toArrays(bt, npat, pat, elen);
     //Network_printParStore(network, stdout);
 
@@ -281,7 +281,7 @@ int main(int argc, char **argv) {
             mutations = gsl_ran_poisson(rng, U*elen[ord[j]]);
             printf("%15s %15u\n", buff2, mutations);
         }else
-            printf("%15s %15.7lf\n", buff2, elen[ord[j]]);
+            printf("%15s %15.7Lf\n", buff2, elen[ord[j]]);
     }
 
     gsl_rng_free(rng);

@@ -17,35 +17,35 @@ int main(void) {
     MpfrMatCoal_initExterns(nsamples);
     MpfrMatCoal_printAll(stdout);
 
-    double ans[nsamples];
-    double v = 0.01;
+    long double ans[nsamples];
+    long double v = 0.01;
     int dim=2;
 
     printf("dim=%d\n", dim);
     MpfrMatCoal_project(dim, ans, v);
-    printf("x[%lf]:", v);
+    printf("x[%Lf]:", v);
     for(i=0; i<dim; ++i)
-        printf(" %lg", ans[i]);
+        printf(" %Lg", ans[i]);
     putchar('\n');
 
     MpfrMatCoal_ciLen(dim, ans, v);
-    printf("len[%lf]:", v);
+    printf("len[%Lf]:", v);
     for(i=0; i<dim; ++i)
-        printf(" %lg", ans[i]);
+        printf(" %Lg", ans[i]);
     fputs("\n\n", stdout);
 
     dim = nsamples-1;
     printf("dim=%d\n", dim);
     MpfrMatCoal_project(dim, ans, v);
-    printf("x[%lf]:", v);
+    printf("x[%Lf]:", v);
     for(i=0; i<dim; ++i)
-        printf(" %lg", ans[i]);
+        printf(" %Lg", ans[i]);
     putchar('\n');
 
     MpfrMatCoal_ciLen(dim, ans, v);
-    printf("len[%lf]:", v);
+    printf("len[%Lf]:", v);
     for(i=0; i<dim; ++i)
-        printf(" %lg", ans[i]);
+        printf(" %Lg", ans[i]);
     fputs("\n\n", stdout);
 
     v = 0.0;
@@ -53,29 +53,29 @@ int main(void) {
 
     printf("dim=%d\n", dim);
     MpfrMatCoal_project(dim, ans, v);
-    printf("x[%lf]:", v);
+    printf("x[%Lf]:", v);
     for(i=0; i<dim; ++i)
-        printf(" %lg", ans[i]);
+        printf(" %Lg", ans[i]);
     putchar('\n');
 
     MpfrMatCoal_ciLen(dim, ans, v);
-    printf("len[%lf]:", v);
+    printf("len[%Lf]:", v);
     for(i=0; i<dim; ++i)
-        printf(" %lg", ans[i]);
+        printf(" %Lg", ans[i]);
     fputs("\n\n", stdout);
 
     dim = nsamples-1;
     printf("dim=%d\n", dim);
     MpfrMatCoal_project(dim, ans, v);
-    printf("x[%lf]:", v);
+    printf("x[%Lf]:", v);
     for(i=0; i<dim; ++i)
-        printf(" %lg", ans[i]);
+        printf(" %Lg", ans[i]);
     putchar('\n');
 
     MpfrMatCoal_ciLen(dim, ans, v);
-    printf("len[%lf]:", v);
+    printf("len[%Lf]:", v);
     for(i=0; i<dim; ++i)
-        printf(" %lg", ans[i]);
+        printf(" %Lg", ans[i]);
     fputs("\n\n", stdout);
 
     v = INFINITY;
@@ -83,29 +83,29 @@ int main(void) {
 
     printf("dim=%d\n", dim);
     MpfrMatCoal_project(dim, ans, v);
-    printf("x[%lf]:", v);
+    printf("x[%Lf]:", v);
     for(i=0; i<dim; ++i)
-        printf(" %lg", ans[i]);
+        printf(" %Lg", ans[i]);
     putchar('\n');
 
     MpfrMatCoal_ciLen(dim, ans, v);
-    printf("len[%lf]:", v);
+    printf("len[%Lf]:", v);
     for(i=0; i<dim; ++i)
-        printf(" %lg", ans[i]);
+        printf(" %Lg", ans[i]);
     fputs("\n\n", stdout);
 
     dim = nsamples-1;
     printf("dim=%d\n", dim);
     MpfrMatCoal_project(dim, ans, v);
-    printf("x[%lf]:", v);
+    printf("x[%Lf]:", v);
     for(i=0; i<dim; ++i)
-        printf(" %lg", ans[i]);
+        printf(" %Lg", ans[i]);
     putchar('\n');
 
     MpfrMatCoal_ciLen(dim, ans, v);
-    printf("len[%lf]:", v);
+    printf("len[%Lf]:", v);
     for(i=0; i<dim; ++i)
-        printf(" %lg", ans[i]);
+        printf(" %Lg", ans[i]);
     fputs("\n\n", stdout);
 
     MpfrMatCoal_freeExterns();

@@ -32,7 +32,7 @@ objects, which represent all the migration events it has experienced.
 struct MigOutcome {
     unsigned event;        // which episode of migration?
     unsigned outcome;     // outcome of this event
-    double pr;             // probability of this outcome
+    long double pr;       // probability of this outcome
     struct MigOutcome *next;
 };
 
@@ -40,12 +40,12 @@ unsigned    nextMigrationEvent(void);
 MigOutcome *MigOutcome_insert(MigOutcome *head,
                               unsigned event,
                               unsigned outcome,  
-                              double pr);
+                              long double pr);
 MigOutcome *MigOutcome_dup(MigOutcome *old);
 void        MigOutcome_free(MigOutcome *self);
 void        MigOutcome_print(MigOutcome *self, FILE *fp);
 MigOutcome *MigOutcome_join(MigOutcome *left, MigOutcome *right,
                             int *mutually_exclusive);
-double      MigOutcome_prob(MigOutcome *head);
+long double  MigOutcome_prob(MigOutcome *head);
 
 #endif

@@ -8,7 +8,7 @@
 
 // A set of tipId_t values.
 struct IdSet {
-    double p; // probability of this set
+    long double p; // probability of this set
     int nIds; // number of Ids in this set
 
     MigOutcome *mig;
@@ -20,20 +20,20 @@ struct IdSet {
 
 IdSet *IdSet_addSamples(IdSet *old, int nsamples, tipId_t *samples);
 void   IdSet_addMigEvent(IdSet *self, unsigned event, unsigned outcome,
-                         double pr);
+                         long double pr);
 IdSet *IdSet_join(IdSet *left, IdSet *right, int nsamples,
                   tipId_t *samples);
 void   IdSet_copyMigOutcome(IdSet *self, const IdSet *old);
 IdSet *IdSet_dup(const IdSet *old);
 IdSet *IdSet_join(IdSet *left, IdSet *right, int nsamples,
                   tipId_t samples[nsamples]);
-IdSet *IdSet_new(int nIds, const tipId_t *tid, double prob);
+IdSet *IdSet_new(int nIds, const tipId_t *tid, long double prob);
 IdSet *IdSet_newTip(tipId_t tid);
 void   IdSet_print(IdSet *self, FILE *fp);
 void   IdSet_sanityCheck(IdSet *self, const char *file, int lineno);
 static inline void IdSet_free(IdSet *self);
 static inline int IdSet_nIds(IdSet *self);
-static inline double IdSet_prob(IdSet *self);
+static inline long double IdSet_prob(IdSet *self);
 
 static inline void IdSet_free(IdSet *self) {
     MigOutcome_free(self->mig);
@@ -42,7 +42,7 @@ static inline void IdSet_free(IdSet *self) {
 
 static inline int IdSet_nIds(IdSet *self) { return self->nIds; }
 
-static inline double IdSet_prob(IdSet *self) {
+static inline long double IdSet_prob(IdSet *self) {
     return self->p * MigOutcome_prob(self->mig);
 }
 

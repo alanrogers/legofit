@@ -35,7 +35,7 @@ void IdSet_print(IdSet *self, FILE *fp) {
         fputs("-----------------------\n", fp);
         return;
     }
-    fprintf(fp, "pr=%lf nIds=%d:",
+    fprintf(fp, "pr=%Lf nIds=%d:",
             self->p, self->nIds);
     for(int i=0; i < self->nIds; ++i)
         fprintf(fp, " 0%o", self->tid[i]);
@@ -48,7 +48,7 @@ void IdSet_print(IdSet *self, FILE *fp) {
  * Allocate a new IdSet object with given values of nIds, tid, and
  * prob. Uses the struct hack.
  */
-IdSet *IdSet_new(int nIds, const tipId_t *tid, double prob) {
+IdSet *IdSet_new(int nIds, const tipId_t *tid, long double prob) {
     size_t size = sizeof(IdSet);
     if(nIds > 1)
         size += (nIds-1) * sizeof(tipId_t);
@@ -114,7 +114,7 @@ IdSet *IdSet_join(IdSet *left, IdSet *right, int nsamples,
 }
 
 void IdSet_addMigEvent(IdSet *self, unsigned event, unsigned outcome,
-                       double pr) {
+                       long double pr) {
     self->mig = MigOutcome_insert(self->mig, event, outcome, pr);
 }
 

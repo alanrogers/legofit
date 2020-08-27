@@ -788,3 +788,10 @@ void collapse_whitespace(char * buff) {
     }
     *w = '\0';
 }
+
+/// Return 1 if the relative difference between x and y is less than or
+/// equal to 8*LDBL_EPSILON.
+int LDbl_near(long double x, long double y) {
+    return fabsl(x - y) <= fmaxl(fabsl(x), fabsl(y)) * 8.0 * DBL_EPSILON;
+}
+ 

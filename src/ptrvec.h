@@ -15,6 +15,7 @@ void    PtrVec_free(PtrVec *self);
 int     PtrVec_push(PtrVec *self, void *val);
 void   *PtrVec_pop(PtrVec *self);
 int     PtrVec_resize(PtrVec *self, unsigned size);
+static inline void PtrVec_empty(PtrVec *self);
 static inline void *PtrVec_get(PtrVec *self, unsigned i);
 static inline unsigned PtrVec_length(PtrVec *self);
 
@@ -26,5 +27,10 @@ static inline void *PtrVec_get(PtrVec *self, unsigned i) {
 static inline unsigned PtrVec_length(PtrVec *self) {
     return self->used;
 }
+
+static inline void PtrVec_empty(PtrVec *self) {
+    self->used = 0;
+}
+
 
 #endif

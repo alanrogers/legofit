@@ -118,3 +118,22 @@ void PtrLst_move(PtrLst *to, PtrLst *from) {
     from->count = 0;
     from->head = from->curr = NULL;
 }
+
+// Append "from" to end of "to" and clear "from".
+void PtrLst_append(PtrLst *to, PtrLst *from) {
+    if(to->count == 0) {
+        PtrLst_move(to, from);
+        return;
+    }
+
+    assert(to->head);
+
+    PtrLstEl *tail = to->head;
+    while(tail->next)
+        tail = tail->next;
+
+    tail->next = from->head;
+    to->count += from->count;
+    from->count = 0;
+    from->head = from->curr = NULL;
+}

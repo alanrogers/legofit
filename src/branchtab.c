@@ -29,7 +29,7 @@
 typedef struct BTLink {
     struct BTLink  *next;
     tipId_t         key;
-    double          value;
+    long double          value;
 } BTLink;
 
 /// Hash table for branch lengths.
@@ -40,9 +40,9 @@ struct BranchTab {
     BTLink         *tab[BT_DIM];
 };
 
-BTLink     *BTLink_new(tipId_t key, double value);
-BTLink     *BTLink_add(BTLink * self, tipId_t key, double value);
-double      BTLink_get(BTLink * self, tipId_t key);
+BTLink     *BTLink_new(tipId_t key, long double value);
+BTLink     *BTLink_add(BTLink * self, tipId_t key, long double value);
+long double BTLink_get(BTLink * self, tipId_t key);
 int         BTLink_hasSingletons(BTLink * self);
 void        BTLink_free(BTLink * self);
 void        BTLink_printShallow(const BTLink * self, FILE *fp);
@@ -72,7 +72,7 @@ static inline uint64_t tipIdHash( uint64_t key) {
 #endif
 
 /// Constructor of class BTLink
-BTLink         *BTLink_new(tipId_t key, double value) {
+BTLink         *BTLink_new(tipId_t key, long double value) {
     BTLink         *new = malloc(sizeof(*new));
     CHECKMEM(new);
 
@@ -117,7 +117,7 @@ void BTLink_free(BTLink * self) {
 
 /// Add a value to a BTLink object. On return, self->value
 /// equals the old value plus the new one.
-BTLink *BTLink_add(BTLink * self, tipId_t key, double value) {
+BTLink *BTLink_add(BTLink * self, tipId_t key, long double value) {
     if(self == NULL || key < self->key) {
         BTLink *new = BTLink_new(key, value);
         new->next = self;
@@ -132,9 +132,9 @@ BTLink *BTLink_add(BTLink * self, tipId_t key, double value) {
 }
 
 /// Return value corresponding to key, or nan if no value is found.
-double BTLink_get(BTLink * self, tipId_t key) {
+long double BTLink_get(BTLink * self, tipId_t key) {
     if(self == NULL || key < self->key)
-        return nan("");
+        return nanl("");
     else if(key > self->key)
         return BTLink_get(self->next, key);
     assert(key == self->key);
@@ -153,7 +153,7 @@ int BTLink_hasSingletons(BTLink * self) {
 void BTLink_printShallow(const BTLink * self, FILE *fp) {
     if(self == NULL)
         return;
-    fprintf(fp, " [%lo, %lf]", (unsigned long) self->key, self->value);
+    fprintf(fp, " [%lo, %Lf]", (unsigned long) self->key, self->value);
 }
 
 void BTLink_print(const BTLink * self, FILE *fp) {
@@ -218,7 +218,7 @@ int BranchTab_hasSingletons(BranchTab * self) {
 }
 
 /// Return value corresponding to key, or nan if no value is found.
-double BranchTab_get(BranchTab * self, tipId_t key) {
+long double BranchTab_get(BranchTab * self, tipId_t key) {
     unsigned h = tipIdHash(key) & (BT_DIM-1u);
     assert(h < BT_DIM);
     assert(self);
@@ -227,7 +227,7 @@ double BranchTab_get(BranchTab * self, tipId_t key) {
 
 /// Add a value to table. If key already exists, new value is added to
 /// old one.
-void BranchTab_add(BranchTab * self, tipId_t key, double value) {
+void BranchTab_add(BranchTab * self, tipId_t key, long double value) {
     assert(!self->frozen);
     if(key==0) {
         fprintf(stderr,"%s:%s:%d: key mustn't equal 0\n",
@@ -254,7 +254,7 @@ unsigned BranchTab_size(BranchTab * self) {
 }
 
 /// Divide all values by denom. Return 0 on success, or 1 on failure.
-int BranchTab_divideBy(BranchTab *self, double denom) {
+int BranchTab_divideBy(BranchTab *self, long double denom) {
 #ifndef NDEBUG
     assert(!self->frozen);
     self->frozen = 1;  // you can only call this function once
@@ -301,7 +301,7 @@ void BranchTab_minusEquals(BranchTab *lhs, BranchTab *rhs) {
     for(i=0; i<BT_DIM; ++i) {
         BTLink *link;
         for(link=rhs->tab[i]; link!=NULL; link=link->next) {
-            double x = BranchTab_get(lhs, link->key);
+            long double x = BranchTab_get(lhs, link->key);
             if(isnan(x)) {
                 fprintf(stderr,"%s:%s:%d: incompatible arguments\n",
                         __FILE__,__func__,__LINE__);
@@ -317,7 +317,7 @@ void BranchTab_minusEquals(BranchTab *lhs, BranchTab *rhs) {
 /// the total branch length associated with that site pattern, and
 /// sumsqr[i] is the corresponding sum of squared branch lengths.
 void BranchTab_toArrays(BranchTab *self, unsigned n, tipId_t key[n],
-                        double value[n]) {
+                        long double value[n]) {
     int i, j=0;
     for(i=0; i<BT_DIM; ++i) {
         BTLink *link;
@@ -376,9 +376,9 @@ BranchTab *BranchTab_rmPops(BranchTab *old, tipId_t remove) {
 }
 
 /// Return sum of values in BranchTab.
-double BranchTab_sum(const BranchTab *self) {
+long double BranchTab_sum(const BranchTab *self) {
     unsigned i;
-    double s=0.0;
+    long double s=0.0;
 
     for(i = 0; i < BT_DIM; ++i) {
         BTLink *el;
@@ -390,15 +390,15 @@ double BranchTab_sum(const BranchTab *self) {
 }
 
 /// Return negative of sum of p*ln(p)
-double BranchTab_entropy(const BranchTab *self) {
+long double BranchTab_entropy(const BranchTab *self) {
     assert(Dbl_near(1.0, BranchTab_sum(self)));
     unsigned i;
-    double entropy=0.0;
+    long double entropy=0.0;
 
     for(i = 0; i < BT_DIM; ++i) {
         BTLink *el;
         for(el = self->tab[i]; el; el = el->next)
-            entropy -= el->value * log(el->value);
+            entropy -= el->value * logl(el->value);
     }
 
     return entropy;
@@ -408,7 +408,7 @@ double BranchTab_entropy(const BranchTab *self) {
 /// on success, or 1 on failure.
 int BranchTab_normalize(BranchTab *self) {
     unsigned i;
-    double s = BranchTab_sum(self);
+    long double s = BranchTab_sum(self);
 
     if(s==0)
         return 1;
@@ -427,14 +427,14 @@ int BranchTab_normalize(BranchTab *self) {
 /// should be normalized before entering this function. Use
 /// BranchTab_normalize to normalize. Function returns HUGE_VAL if there
 /// are observed values without corresponding values in expt.
-double BranchTab_KLdiverg(const BranchTab *obs, const BranchTab *expt) {
-    assert(Dbl_near(1.0, BranchTab_sum(obs)));
-    assert(Dbl_near(1.0, BranchTab_sum(expt)));
+long double BranchTab_KLdiverg(const BranchTab *obs, const BranchTab *expt) {
+    assert(LDbl_near(1.0L, BranchTab_sum(obs)));
+    assert(LDbl_near(1.0L, BranchTab_sum(expt)));
 
     int i;
-    double kl=0.0;
-    double p;  // observed frequency
-    double q;  // frequency under model
+    long double kl=0.0;
+    long double p;  // observed frequency
+    long double q;  // frequency under model
     for(i=0; i < BT_DIM; ++i) {
         BTLink *o, *e;
         o = obs->tab[i];
@@ -467,7 +467,7 @@ double BranchTab_KLdiverg(const BranchTab *obs, const BranchTab *expt) {
             }else{
                 if(q==0.0)
                     return HUGE_VAL;
-                kl += p*log(p/q);
+                kl += p*logl(p/q);
             }
         }
         while(o) { // e->value is q=0: fail unless p=0
@@ -484,13 +484,13 @@ double BranchTab_KLdiverg(const BranchTab *obs, const BranchTab *expt) {
 /// Negative log likelihood. Multinomial model.
 /// lnL is sum across site patterns of x*log(p), where x is an
 /// observed site pattern count and p its probability.
-double BranchTab_negLnL(const BranchTab *obs, const BranchTab *expt) {
-    assert(Dbl_near(1.0, BranchTab_sum(expt)));
+long double BranchTab_negLnL(const BranchTab *obs, const BranchTab *expt) {
+    assert(LDbl_near(1.0L, BranchTab_sum(expt)));
 
     int i;
-    double lnL=0.0;
-    double x;  // observed count
-    double p;  // probability under model
+    long double lnL=0.0;
+    long double x;  // observed count
+    long double p;  // probability under model
     for(i=0; i < BT_DIM; ++i) {
         BTLink *o, *e;  // observed and expected
         o = obs->tab[i];
@@ -515,7 +515,7 @@ double BranchTab_negLnL(const BranchTab *obs, const BranchTab *expt) {
                 if(x != 0.0)
                     return HUGE_VAL;  // blows up
             }else
-                lnL += x*log(p);
+                lnL += x*logl(p);
         }
         while(o) { // e->value is p=0
             x = o->value;
@@ -603,18 +603,18 @@ int main(int argc, char **argv) {
     assert(0 == BranchTab_size(bt));
 
     tipId_t key[25];
-    double  val[25];
+    long double  val[25];
 
     int i;
     for(i=0; i < 25; ++i) {
         key[i] = i+1;
-        val[i] = (double) key[i];
+        val[i] = (long double) key[i];
         BranchTab_add(bt, key[i], val[i]);
         assert(i+1 == BranchTab_size(bt));
     }
     for(i=0; i < 25; ++i) {
         key[i] = i+1;
-        val[i] = (double) key[i];
+        val[i] = (long double) key[i];
         BranchTab_add(bt, key[i], val[i]);
     }
 
@@ -624,14 +624,15 @@ int main(int argc, char **argv) {
         assert(2*val[i] == BranchTab_get(bt, key[i]));
     }
 
-    double x = BranchTab_sum(bt);
+    long double x = BranchTab_sum(bt);
     if(verbose)
-        printf("BranchTab_sum: %lg\n", x);
+        printf("BranchTab_sum: %Lg\n", x);
     assert(0 == BranchTab_normalize(bt));
-    assert(Dbl_near(1.0, BranchTab_sum(bt)));
+    printf("sum=%Lg\n", BranchTab_sum(bt));
+    assert(LDbl_near(1.0, BranchTab_sum(bt)));
     x = BranchTab_entropy(bt);
     if(verbose)
-        printf("BranchTab_entropy: %lg\n", x);
+        printf("BranchTab_entropy: %Lg\n", x);
 
     if(verbose)
         BranchTab_print(bt, stdout);
@@ -655,7 +656,7 @@ int main(int argc, char **argv) {
         BranchTab_print(bt2, stdout);
     }
     assert(BranchTab_size(bt) > BranchTab_size(bt2));
-    assert(Dbl_near(BranchTab_sum(bt), BranchTab_sum(bt2)));
+    assert(LDbl_near(BranchTab_sum(bt), BranchTab_sum(bt2)));
     unitTstResult("BranchTab_collapse", "OK");
     
     // test make_map and remap_bits
