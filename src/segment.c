@@ -133,7 +133,7 @@ int    visitComb(int d, int ndx[d], void *data);
 int    visitSetPart(unsigned n, unsigned a[n], void *data);
 int    visitMig(int nmig, int *migndx, void *data);
 static void  unlink_child(Segment *child, Segment *parent);
-static int Segment_coalesceFinite(Segment *self, double v, int dosing,
+static int Segment_coalesceFinite(Segment *self, int dosing,
                                   BranchTab *branchtab);
 static int Segment_coalesceInfinite(Segment *self, double v, int dosing,
                                     BranchTab *branchtab);
@@ -950,7 +950,7 @@ static int Segment_equals_r(Segment *a, Segment *b) {
     return 1;
 }
 
-static int Segment_coalesceFinite(Segment *self, double v, int dosing,
+static int Segment_coalesceFinite(Segment *self, int dosing,
                                   BranchTab *branchtab) {
 
     fprintf(stderr,"%s:%d: SEGNUM %d\n",
@@ -963,7 +963,11 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
      */
     assert(self->dim > 0);
     double pr[self->dim], elen[self->dim];
+    double v = (self->end - self->start) / self->twoN;
     int n, i, k, iself, status=0;
+
+    assert(isfinite(v));
+    assert(v >= 0.0);
 
     // Array of lists of ancestors. a[k] is the list for sets of k
     // ancestors.  
@@ -991,10 +995,11 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
 
                 fprintf(stderr,"%s:%d: adding %lg to pattern o%o\n",
                         __FILE__,__LINE__,
-                        IdSet_prob(ids) * v,
+                        IdSet_prob(ids) * v * self->twoN,
                         ids->tid[0]);
       
-                BranchTab_add(branchtab, ids->tid[0], IdSet_prob(ids) * v);
+                BranchTab_add(branchtab, ids->tid[0],
+                              IdSet_prob(ids) * v * self->twoN);
             }
 
             IdSet *new = IdSet_dup(ids);
@@ -1015,6 +1020,10 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
         // Calculate the expected length, elen[i], of the subinterval
         // containing i+1 lineages.
         coalescent_interval_length(n, elen, eig, v);
+
+        // Convert from coalescent time to generations
+        for(int ii=0; ii < n; ++ii)
+            elen[ii] *= self->twoN;
         
         // Calculate pr[i], the probability of i+1 lineages at the
         // ancient end of the segment.
@@ -1077,11 +1086,19 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
             }
             for(long x=0; x <= k; ++x) {
                 // prob that x of k lineages are migrants
-                long double lnpr = logl(binom(k, x))
-                    + x*logl(self->mix)
-                    + (k-x)*logl(1.0-self->mix);
-                
-                msd.pr = expl(lnpr);
+                long double migprob;
+                if(self->mix == 0.0) {
+                    migprob = x==0 ? 1.0 : 0.0;
+                }else if(self->mix == 1) {
+                    migprob = x==k ? 1.0 : 0.0;
+                }else{
+                    migprob = logl(binom(k, x))
+                        + x*logl(self->mix)
+                        + (k-x)*logl(1.0-self->mix);
+                    migprob = expl(migprob);
+                }
+                assert(isfinite(migprob));
+                msd.pr = migprob;
                 msd.nMigrants = x;
                 msd.nNatives = k - x;
                 status = traverseComb(k, x, visitMig, &msd);
@@ -1138,6 +1155,10 @@ static int Segment_coalesceInfinite(Segment *self, double v, int dosing,
         // containing i+1 lineages.
         coalescent_interval_length(n, elen, eig, v);
 
+        // Convert from coalescent time to generations
+        for(int ii=0; ii < n; ++ii)
+            elen[ii] *= self->twoN;
+        
         cd.d = self->d[n];
 
         // Loop over number, k, of ancestors.  Exclude k=1, because
@@ -1241,8 +1262,7 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
     if(self->end_i == -1) {
         status = Segment_coalesceInfinite(self, INFINITY, dosing, branchtab);
     }else{
-        double v = self->end - self->start;
-        status = Segment_coalesceFinite(self, v, dosing, branchtab);
+        status = Segment_coalesceFinite(self, dosing, branchtab);
     }
 
     // Free IdSet objects of descendants
