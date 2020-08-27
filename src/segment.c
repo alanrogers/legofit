@@ -8,6 +8,8 @@
  * Systems Consortium License, which can be found in file "LICENSE".
  */
 
+int segnum = 0;
+
 #include "binary.h"
 #include "branchtab.h"
 #include "comb.h"
@@ -72,6 +74,7 @@ struct SetPartDat {
 // One segment of a population network. This version works
 // with MCTree.
 struct Segment {
+    int            segnum; // for debugging
     int            nparents, nchildren, nsamples;
     int            visited;     // for traversal algorithm
     double         twoN;        // ptr to current pop size
@@ -184,6 +187,8 @@ void *Segment_new(int twoN_i, int start_i, ParStore *ps) {
     CHECKMEM(self);
 
     memset(self, 0, sizeof(*self));
+
+    self->segnum = segnum++;  // debug
 
     self->twoN_i = twoN_i;
     self->start_i = start_i;
@@ -778,8 +783,6 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
 /// indices of the current set of migrants. Its length is nmig, which
 /// may be zero.
 int visitMig(int nmig, int *migndx, void *data) {
-    fprintf(stderr,"%s:%d:\n",__func__,__LINE__); 
-
     MigDat *mdat = (MigDat *) data;
     int nnat = mdat->nNatives;
     int i;
@@ -799,6 +802,16 @@ int visitMig(int nmig, int *migndx, void *data) {
     }
     while(j < nnat)
         natndx[j++] = next++;
+
+    fprintf(stderr,"%s:%d: nmig=%d nnat=%d: ",
+            __func__,__LINE__, nmig, nnat);
+    for(int ii=0; ii<nmig; ++ii)
+        fprintf(stderr," %d", migndx[ii]);
+    fputs(" :", stderr);
+    for(int ii=0; ii<nnat; ++ii)
+        fprintf(stderr," %d", natndx[ii]);
+    putc('\n', stderr);
+
 
     // Arrays of tipId_values also have an extra entry
     // to guard against problems of zero length.
@@ -940,7 +953,8 @@ static int Segment_equals_r(Segment *a, Segment *b) {
 static int Segment_coalesceFinite(Segment *self, double v, int dosing,
                                   BranchTab *branchtab) {
 
-    fprintf(stderr,"%s:%d:\n",__func__,__LINE__); 
+    fprintf(stderr,"%s:%d: SEGNUM %d\n",
+            __func__,__LINE__, self->segnum); 
 
     /*
       pr[i] = prob of i+1 lineages
@@ -977,10 +991,10 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
 
                 fprintf(stderr,"%s:%d: adding %lg to pattern o%o\n",
                         __FILE__,__LINE__,
-                        ids->p * v,
+                        IdSet_prob(ids) * v,
                         ids->tid[0]);
       
-                BranchTab_add(branchtab, ids->tid[0], ids->p * v);
+                BranchTab_add(branchtab, ids->tid[0], IdSet_prob(ids) * v);
             }
 
             IdSet *new = IdSet_dup(ids);
@@ -1058,6 +1072,9 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
         };
         for(k=0; k < self->dim; ++k) {
             msd.a = PtrVec_from_PtrLst(msd.a, a[k]); // empties a[k]
+            if(PtrVec_length(msd.a) == 0u) {
+                continue;
+            }
             for(long x=0; x <= k; ++x) {
                 // prob that x of k lineages are migrants
                 long double lnpr = logl(binom(k, x))
@@ -1097,7 +1114,8 @@ static int Segment_coalesceFinite(Segment *self, double v, int dosing,
 
 static int Segment_coalesceInfinite(Segment *self, double v, int dosing,
                                     BranchTab *branchtab) {
-    fprintf(stderr,"%s:%d:\n",__func__,__LINE__); 
+    fprintf(stderr,"%s:%d: SEGNUM %d\n",
+            __func__,__LINE__, self->segnum); 
 
     assert(self->dim > 0);
     double elen[self->dim];
@@ -1154,7 +1172,8 @@ static int Segment_coalesceInfinite(Segment *self, double v, int dosing,
 }
 
 int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
-    fprintf(stderr,"%s:%d:\n",__func__,__LINE__); 
+    fprintf(stderr,"%s:%d: SEGNUM %d\n",
+            __func__,__LINE__, self->segnum); 
 
     int status=0;
 
