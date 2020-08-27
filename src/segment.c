@@ -8,6 +8,8 @@
  * Systems Consortium License, which can be found in file "LICENSE".
  */
 
+#define VERBOSE
+
 int segnum = 0;
 
 #include "binary.h"
@@ -690,7 +692,7 @@ int visitComb(int d, int ndx[d], void *data) {
         if(sitepat == union_all_samples)
             continue;
 
-#if 0        
+#ifdef VERBOSE        
         fprintf(stderr,"%s:%d: adding %Lg to pattern o%o\n",
                 __FILE__,__LINE__, IdSet_prob(ids) * dat->contrib,
                 sitepat);
@@ -720,7 +722,7 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
 
     long double p = probPartition(k, c, vdat->lnconst);
 
-#if 0    
+#ifdef VERBOSE    
     fprintf(stderr,"%s:%s:%d: set prob=%Lg prior=%Lg\n",
             __FILE__,__func__,__LINE__, p, vdat->prior);
 #endif    
@@ -750,7 +752,7 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
             if(sitepat[j] == union_all_samples)
                 continue;
 
-#if 0            
+#ifdef VERBOSE            
             fprintf(stderr,"%s:%d: adding %Lg=%Lg*%Lg*%Lg to pattern o%o\n",
                     __FILE__,__LINE__,
                     p * vdat->elen * IdSet_prob(descendants),
@@ -765,7 +767,7 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
         // Add the current set partition to the list of ancestral
         // states.
 
-#if 0        
+#ifdef VERBOSE        
         fprintf(stderr,"%s:%s:%d: new IdSet pr=%Lg * %Lg\n",
                 __FILE__,__func__,__LINE__, p, descendants->p);
 #endif        
@@ -808,7 +810,7 @@ int visitMig(int nmig, int *migndx, void *data) {
     while(j < nnat)
         natndx[j++] = next++;
 
-#if 0    
+#ifdef VERBOSE    
     fprintf(stderr,"%s:%d: nmig=%d nnat=%d: ",
             __func__,__LINE__, nmig, nnat);
     for(int ii=0; ii<nmig; ++ii)
@@ -959,7 +961,7 @@ static int Segment_equals_r(Segment *a, Segment *b) {
 static int Segment_coalesceFinite(Segment *self, int dosing,
                                   BranchTab *branchtab) {
 
-#if 0    
+#ifdef VERBOSE    
     fprintf(stderr,"%s:%d: SEGNUM %d\n",
             __func__,__LINE__, self->segnum);
 #endif    
@@ -1001,7 +1003,7 @@ static int Segment_coalesceFinite(Segment *self, int dosing,
                 // to branchtab.
                 assert(IdSet_nIds(ids) == 1);
 
-#if 0                
+#ifdef VERBOSE                
                 fprintf(stderr,"%s:%d: adding %Lg to pattern o%o\n",
                         __FILE__,__LINE__,
                         IdSet_prob(ids) * v * self->twoN,
@@ -1039,7 +1041,7 @@ static int Segment_coalesceFinite(Segment *self, int dosing,
         // ancient end of the segment.
         project(n, pr, eig);
 
-#if 0        
+#ifdef VERBOSE        
         fprintf(stderr,"%s:%d: MatCoal pr:",__FILE__,__LINE__);
         for(int ii=0; ii<n; ++ii)
             fprintf(stderr," %d:%Lg", ii+1, pr[ii]);
@@ -1146,7 +1148,7 @@ static int Segment_coalesceFinite(Segment *self, int dosing,
 static int Segment_coalesceInfinite(Segment *self, long double v,
                                     int dosing,
                                     BranchTab *branchtab) {
-#if 0    
+#ifdef VERBOSE    
     fprintf(stderr,"%s:%d: SEGNUM %d\n",
             __func__,__LINE__, self->segnum);
 #endif    
@@ -1210,7 +1212,7 @@ static int Segment_coalesceInfinite(Segment *self, long double v,
 }
 
 int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
-#if 0    
+#ifdef VERBOSE    
     fprintf(stderr,"%s:%d: SEGNUM %d\n",
             __func__,__LINE__, self->segnum);
 #endif    
@@ -1264,7 +1266,7 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
     }
     assert(self->dim > 0);
 
-#if 0    
+#ifdef VERBOSE    
     fprintf(stderr,"%s:%s:%d: nchild=%d npar=%d d:\n",
             __FILE__,__func__,__LINE__,
             self->nchildren, self->nparents);

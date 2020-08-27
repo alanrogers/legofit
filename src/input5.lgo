@@ -1,0 +1,18 @@
+time fixed    zero=0
+twoN fixed     one=1
+twoN fixed    twoNz = 2
+time fixed    Txy=1
+time fixed    Tm = 0.5
+time fixed    Txyz = 2
+mixFrac fixed m = 1
+segment x     t=zero   twoN=one    samples=1
+segment y     t=zero   twoN=one    samples=1
+segment y2    t=Tm     twoN=one
+segment z     t=Tm     twoN=twoNz  samples=1
+segment xy    t=Txy    twoN=one
+segment xyz   t=Txyz   twoN=one
+mix y from y2 + m * z
+derive x  from xy
+derive y2 from xy
+derive xy from xyz
+derive z  from xyz
