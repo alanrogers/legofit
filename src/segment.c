@@ -817,9 +817,10 @@ int visitMig(int nmig, int *migndx, void *data) {
     while(j < nnat)
         natndx[j++] = next++;
 
-#ifdef VERBOSE    
-    fprintf(stderr,"%s:%d: nmig=%d nnat=%d: ",
-            __func__,__LINE__, nmig, nnat);
+#if 1
+    fprintf(stderr,"%s:%d: nmig=%d nnat=%d event=%d outcome=%d: ",
+            __func__,__LINE__, nmig, nnat, mdat->mig_event,
+            mdat->mig_outcome);
     for(int ii=0; ii<nmig; ++ii)
         fprintf(stderr," %d", migndx[ii]);
     fputs(" :", stderr);
@@ -858,8 +859,14 @@ static void migrate(PtrLst *migrants, PtrLst *natives, PtrVec *sets,
     // number of sets of ancestors
     int nSets = PtrVec_length(sets);
 
+    fprintf(stderr,"%s:%d: nSets=%d\n", __func__,__LINE__, nSets);
     for(int i_set=0; i_set < nSets; ++i_set) {
         IdSet *set = PtrVec_get(sets, i_set);
+
+        fprintf(stderr,"%s:%d: set %d:", __func__,__LINE__,i_set);
+        for(int i=0; i < nmig+nnat; ++i)
+            fprintf(stderr," %o", set->tid[i]);
+        putc('\n', stderr);
 
         IdSet_sanityCheck(set, __FILE__, __LINE__);
 
@@ -868,8 +875,18 @@ static void migrate(PtrLst *migrants, PtrLst *natives, PtrVec *sets,
         for(int i=0; i<nmig; ++i)
             migid[i] = set->tid[migndx[i]];
 
+        fprintf(stderr,"%s:%d: migrants:", __func__,__LINE__);
+        for(int i=0; i<nmig; ++i)
+            fprintf(stderr," %o", migid[i]);
+        putc('\n', stderr);
+
         for(int i=0; i < nnat; ++i)
             natid[i] = set->tid[natndx[i]];
+
+        fprintf(stderr,"%s:%d: natives:", __func__,__LINE__);
+        for(int i=0; i<nnat; ++i)
+            fprintf(stderr," %o", natid[i]);
+        putc('\n', stderr);
 
         // Create IdSet objects for migrants and natives
         IdSet *mig = IdSet_new(nmig, migid, set->p);
@@ -1267,7 +1284,8 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
         self->d = get_descendants1(0, NULL,
                                    self->nsamples, self->sample,
                                    &self->dim);
-        assert(self->dim > 0);
+        if(self->dim == 0)
+            return 0;
         break;
     case 1:
         self->d = get_descendants1(self->wdim[0], self->w[0],

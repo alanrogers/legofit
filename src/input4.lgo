@@ -34,8 +34,8 @@ mixFrac free   mXY = 0
 time constrained TmXY = 0.5*(Txy + Tav)
 time constrained TmS = 0.5*(Td + Tnd)
 time constrained TmSND = 0.5*(Tnd + Txynd)
-segment x    t=zero   twoN=one     samples=1
-segment y    t=zero   twoN=one     samples=1
+segment x    t=zero   twoN=one     #samples=1
+segment y    t=zero   twoN=one     #samples=1
 segment v    t=Tv     twoN=twoNn   samples=1
 segment a    t=Ta     twoN=twoNn   samples=1
 segment a2   t=TmXY   twoN=twoNn
