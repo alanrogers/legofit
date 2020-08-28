@@ -49,10 +49,10 @@ struct CombDat {
 // Data manipulated by migrate function
 struct MigDat {
     int nMigrants, nNatives;
-    long double pr; // probability of this migration outcome
+    long double mig_pr; // probability of this migration outcome
     PtrLst *migrants, *natives;
     PtrVec *a;
-    unsigned migrationEvent, outcome;
+    unsigned mig_event, mig_outcome;
 };
 
 // Data manipulated by visitSetPart function.
@@ -145,6 +145,11 @@ static int Segment_equals_r(Segment *a, Segment *b);
 static int self_ndx(Segment *self, Segment *parent);
 PtrVec *PtrVec_from_PtrLst(PtrVec *to, PtrLst *from);
 static int w_isempty(int dim, PtrLst **w);
+static void migrate(PtrLst *migrants, PtrLst *natives, PtrVec *sets,
+                    int nmig, int *migndx, int nnat, int *natndx,
+                    int mig_event, int mig_outcome, long double mig_pr);
+static void mv_to_waiting_room(Segment *self, PtrLst *src, int ipar,
+                               int nlin);
 
 // Return index of self among children of parent
 static int self_ndx(Segment *self, Segment *parent) {
@@ -775,6 +780,7 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
         IdSet *ancestors = IdSet_new(k, sitepat,
                                      p * vdat->prior * descendants->p);
         IdSet_copyMigOutcome(ancestors, descendants);
+
         IdSet_sanityCheck(ancestors, __FILE__, __LINE__);
         status = PtrLst_push(vdat->a, ancestors);
         if(status) {
@@ -822,42 +828,61 @@ int visitMig(int nmig, int *migndx, void *data) {
     putc('\n', stderr);
 #endif
 
-    // Arrays of tipId_values also have an extra entry
-    // to guard against problems of zero length.
-    tipId_t migid[1 + nmig], natid[1 + nnat];
-
-    // number of sets of ancestors
-    int nSets = PtrVec_length(mdat->a);
-
-    for(int i_set=0; i_set < nSets; ++i_set) {
-        IdSet *set = PtrVec_get(mdat->a, i_set);
-
-        assert(IdSet_nIds(set) == nmig + nnat);
-
-        for(i=0; i<nmig; ++i)
-            migid[i] = set->tid[migndx[i]];
-
-        for(i=0; i < nnat; ++i)
-            natid[i] = set->tid[natndx[i]];
-
-        // Create IdSet objects for migrants and natives
-        IdSet *mig = IdSet_new(nmig, migid, set->p);
-        IdSet_addMigEvent(mig, mdat->migrationEvent,
-                          mdat->outcome, mdat->pr);
-        IdSet_sanityCheck(mig, __FILE__, __LINE__);
-        PtrLst_push(mdat->migrants, mig);
-
-        IdSet *nat = IdSet_new(nnat, natid, set->p);
-        IdSet_addMigEvent(nat, mdat->migrationEvent,
-                          mdat->outcome, mdat->pr);
-        IdSet_sanityCheck(nat, __FILE__, __LINE__);
-        PtrLst_push(mdat->natives, nat);
-    }
-    mdat->outcome += 1;
+    migrate(mdat->migrants, mdat->natives, mdat->a, nmig, migndx,
+            nnat, natndx, mdat->mig_event, mdat->mig_outcome,
+            mdat->mig_pr);
+    mdat->mig_outcome += 1;
 
     return 0;
 }
 
+/**
+ * On entry, "sets" is a vector of IdSet objects, which will be copied,
+ * and the copies allocated among migrants and natives. Each copy will
+ * acquire a MigOutcome label, which is constructed using mig_event,
+ * mig_outcome, and mig_pr. Each set within "sets" should have the
+ * same length (number of tipId_t values), and that length should
+ * correspond to the indices in arrays "migndx" and "natndx". The
+ * first of these arrays holds the indices of the migrant tipId_t
+ * values within each set, and the second holds indices of natives.
+ * On return, "migrants" and "natives" contain IdSet objects of
+ * migrants and natives.
+ */
+static void migrate(PtrLst *migrants, PtrLst *natives, PtrVec *sets,
+                    int nmig, int *migndx, int nnat, int *natndx,
+                    int mig_event, int mig_outcome, long double mig_pr) {
+
+    // Extra entry guards against problems of zero length.
+    tipId_t migid[1 + nmig], natid[1 + nnat];
+
+    // number of sets of ancestors
+    int nSets = PtrVec_length(sets);
+
+    for(int i_set=0; i_set < nSets; ++i_set) {
+        IdSet *set = PtrVec_get(sets, i_set);
+
+        IdSet_sanityCheck(set, __FILE__, __LINE__);
+
+        assert(IdSet_nIds(set) == nmig + nnat);
+
+        for(int i=0; i<nmig; ++i)
+            migid[i] = set->tid[migndx[i]];
+
+        for(int i=0; i < nnat; ++i)
+            natid[i] = set->tid[natndx[i]];
+
+        // Create IdSet objects for migrants and natives
+        IdSet *mig = IdSet_new(nmig, migid, set->p);
+        IdSet_addMigEvent(mig, mig_event, mig_outcome, mig_pr);
+        IdSet_sanityCheck(mig, __FILE__, __LINE__);
+        PtrLst_push(migrants, mig);
+
+        IdSet *nat = IdSet_new(nnat, natid, set->p);
+        IdSet_addMigEvent(nat, mig_event, mig_outcome, mig_pr);
+        IdSet_sanityCheck(nat, __FILE__, __LINE__);
+        PtrLst_push(natives, nat);
+    }
+}
 
 /// If to==NULL, then return a new PtrVec, containing all the
 /// pointers in "from". On return, "from" is empty, but the
@@ -1072,15 +1097,24 @@ static int Segment_coalesceFinite(Segment *self, int dosing,
     // Transfer IdSet objects to parental waiting rooms.
     if(self->nparents == 1) {
         mv_idsets_to_parent(self, 0, a);
+    }else if(self->mix == 0.0) {
+
+        // everyone is a native
+        mv_idsets_to_parent(self, 0, a);
+        
+    }else if(self->mix == 1.0) {
+
+        // everyone is a migrant
+        mv_idsets_to_parent(self, 1, a);
+        
     }else{
         assert(self->nparents == 2);
-        assert(self->mix_i >= 0);
-        assert(self->mix >= 0.0);
-        assert(self->mix <= 1.0);
+        assert(self->mix > 0.0);
+        assert(self->mix < 1.0);
 
         // natives go to parent[0], migrants to parent[1]
 
-        // Set dimension of w arrays in the two parents
+        // Set wdim in the two parents
         for(int ipar = 0; ipar < 2; ++ipar) {
             iself = self_ndx(self, self->parent[ipar]);
             self->parent[ipar]->wdim[iself] = self->dim;
@@ -1091,46 +1125,36 @@ static int Segment_coalesceFinite(Segment *self, int dosing,
                       .migrants = PtrLst_new(),
                       .natives = PtrLst_new(),
                       .a = NULL,
-                      .migrationEvent = nextMigrationEvent(),
-                      .outcome = 0
+                      .mig_event = nextMigrationEvent(),
+                      .mig_outcome = 0
         };
         for(k=0; k < self->dim; ++k) {
             msd.a = PtrVec_from_PtrLst(msd.a, a[k]); // empties a[k]
-            if(PtrVec_length(msd.a) == 0u) {
+            if(PtrVec_length(msd.a) == 0u)
                 continue;
-            }
-            for(long x=0; x <= k; ++x) {
+
+            for(int x=0; x <= k; ++x) {
+
                 // prob that x of k lineages are migrants
-                long double migprob;
-                if(self->mix == 0.0) {
-                    migprob = x==0 ? 1.0 : 0.0;
-                }else if(self->mix == 1) {
-                    migprob = x==k ? 1.0 : 0.0;
-                }else{
-                    migprob = logl(binom(k, x))
-                        + x*logl(self->mix)
-                        + (k-x)*logl(1.0-self->mix);
-                    migprob = expl(migprob);
-                }
+                long double migprob = logl(binom(k, x))
+                    + x*logl(self->mix)
+                    + (k-x)*logl(1.0-self->mix);
+                migprob = expl(migprob);
                 assert(isfinite(migprob));
-                if(migprob > 0) {
-                    msd.pr = migprob;
-                    msd.nMigrants = x;
-                    msd.nNatives = k - x;
-                    status = traverseComb(k, x, visitMig, &msd);
-                    if(status)
-                        return status;
 
-                    // transfer natives
-                    iself = self_ndx(self, self->parent[0]);
-                    assert(k-x < self->parent[0]->wdim[iself]);
-                    PtrLst_append(self->parent[0]->w[iself][k-x], msd.natives);
+                msd.mig_pr = migprob;
+                msd.nMigrants = x;
+                msd.nNatives = k - x;
 
-                    // transfer migrants
-                    iself = self_ndx(self, self->parent[1]);
-                    assert(x < self->parent[1]->wdim[iself]);
-                    PtrLst_append(self->parent[1]->w[iself][x], msd.migrants);
-                }
+                status = traverseComb(k, x, visitMig, &msd);
+                if(status)
+                    return status;
+
+                // transfer natives
+                mv_to_waiting_room(self, msd.natives, 0, k-x);
+
+                // transfer migrants
+                mv_to_waiting_room(self, msd.migrants, 1, x);
             }
             PtrVec_empty(msd.a);
         }
@@ -1249,22 +1273,21 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
         self->d = get_descendants1(self->wdim[0], self->w[0],
                                    self->nsamples, self->sample,
                                    &self->dim);
-        assert(self->dim > 0);
+        if(self->dim == 0)
+            return 0;
         assert(w_isempty(self->wdim[0], self->w[0]));
         break;
-    case 2:
+    default:
+        assert(self->nchildren == 2);
         self->d = get_descendants2(self->wdim[0], self->w[0],
                                    self->wdim[1], self->w[1],
                                    self->nsamples, self->sample,
                                    &self->dim);
-        assert(self->dim > 0);
+        if(self->dim == 0)
+            return 0;
         assert(w_isempty(self->wdim[0], self->w[0]));
         assert(w_isempty(self->wdim[1], self->w[1]));
         break;
-    default:
-        fprintf(stderr,"%s:%d: illegal number of children: %d\n",
-                __FILE__,__LINE__, self->nchildren);
-        exit(EXIT_FAILURE);
     }
     assert(self->dim > 0);
 
@@ -1379,6 +1402,7 @@ static PtrVec **get_descendants1(int wdim, PtrLst **w, int nsamples,
             ids = PtrLst_pop(w[i])) {
 
             ids = IdSet_addSamples(ids, nsamples, sample);
+            
             int nIds = IdSet_nIds(ids);
             PtrVec_push(d[nIds], ids);
         }
@@ -1465,6 +1489,7 @@ PtrVec **get_descendants2(int dim0, PtrLst **w0,
                     newid = IdSet_join(id0, id1, nsamples, sample);
                     if(newid == NULL)
                         continue;
+
                     IdSet_sanityCheck(newid, __FILE__, __LINE__);
                     
                     // non-NULL means id0 and id1 are compatible
@@ -1555,20 +1580,6 @@ static int w_isempty(int dim, PtrLst **w) {
     return 1;
 }
 
-// Move all IdSet objects to parent ipar. Empties each list in array
-// a.
-static void mv_idsets_to_parent(Segment *self, int ipar, PtrLst **a) {
-    assert(ipar < self->nparents);
-    int iself = self_ndx(self, self->parent[ipar]);
-
-    assert(self == self->parent[ipar]->child[iself]);
-
-    self->parent[ipar]->wdim[iself] = self->dim;
-    for(int i=0; i < self->dim; ++i) {
-        PtrLst_move(self->parent[ipar]->w[iself][i], a[i]);
-    }
-}
-
 /// Remove all references to samples from tree of populations.
 /// Sets "visited" to 0 in every node.
 void Segment_clear(Segment * self) {
@@ -1595,4 +1606,34 @@ int Segment_isClear(const Segment * self) {
             return 0;
     }
     return 1;
+}
+
+// Move all IdSet objects to parent ipar. Empties each list in array
+// a.
+static void mv_idsets_to_parent(Segment *self, int ipar, PtrLst **a) {
+    assert(ipar < self->nparents);
+    int iself = self_ndx(self, self->parent[ipar]);
+
+    assert(self == self->parent[ipar]->child[iself]);
+
+    self->parent[ipar]->wdim[iself] = self->dim;
+    for(int i=0; i < self->dim; ++i) {
+        PtrLst_move(self->parent[ipar]->w[iself][i], a[i]);
+    }
+}
+
+/**
+ * Move IdSet objects from list "src" into the relevant waiting room
+ * of parent ipar. "nlin" is the number of lineages in each IdSet
+ * object within "src". It also serves as the index into the parental
+ * waiting room. On return, "src" is empty, and
+ * self->parent[ipar]->w[iself][nlin] contains the IdSet objects that
+ * were originally in "src". Here, "iself" is the index of "self" in
+ * the parent's list of children.
+ */
+static void mv_to_waiting_room(Segment *self, PtrLst *src, int ipar,
+                               int nlin) {
+    int iself = self_ndx(self, self->parent[ipar]);
+    assert(nlin < self->parent[ipar]->wdim[iself]);
+    PtrLst_append(self->parent[ipar]->w[iself][nlin], src);
 }

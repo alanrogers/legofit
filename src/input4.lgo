@@ -19,10 +19,18 @@ twoN free   twoNnd = 2000
 twoN free   twoNxy = 20000
 twoN free   twoNxynd = 20000
 twoN free   twoNs = 2000
-mixFrac free   mN = 0.01
-mixFrac free   mS = 0.01
-mixFrac free   mSND = 0.01
-mixFrac free   mXY = 0.01
+#mixFrac free   mN = 0.01
+mixFrac free   mN = 0
+
+#mixFrac free   mS = 0.01
+mixFrac free   mS = 0
+
+mixFrac free   mSND = 0.1
+#mixFrac free   mSND = 0
+
+#mixFrac free   mXY = 0.01
+mixFrac free   mXY = 0
+
 time constrained TmXY = 0.5*(Txy + Tav)
 time constrained TmS = 0.5*(Td + Tnd)
 time constrained TmSND = 0.5*(Tnd + Txynd)

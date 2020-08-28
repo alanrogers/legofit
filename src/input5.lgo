@@ -4,7 +4,7 @@ twoN fixed    twoNz = 2
 time fixed    Txy=1
 time fixed    Tm = 0.5
 time fixed    Txyz = 2
-mixFrac fixed m = 1
+mixFrac fixed m = 0
 segment x     t=zero   twoN=one    samples=1
 segment y     t=zero   twoN=one    samples=1
 segment y2    t=Tm     twoN=one
