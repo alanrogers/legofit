@@ -8,7 +8,7 @@
  * Systems Consortium License, which can be found in file "LICENSE".
  */
 
-#define VERBOSE
+//#define VERBOSE
 
 int segnum = 0;
 
@@ -758,6 +758,7 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
                     p * vdat->elen * IdSet_prob(descendants),
                     p, vdat->elen, IdSet_prob(descendants),
                     sitepat[j]);
+            IdSet_print(descendants, stderr);
 #endif            
       
             BranchTab_add(vdat->branchtab, sitepat[j],
@@ -1112,25 +1113,26 @@ static int Segment_coalesceFinite(Segment *self, int dosing,
                     migprob = expl(migprob);
                 }
                 assert(isfinite(migprob));
-                msd.pr = migprob;
-                msd.nMigrants = x;
-                msd.nNatives = k - x;
-                status = traverseComb(k, x, visitMig, &msd);
-                if(status)
-                    return status;
+                if(migprob > 0) {
+                    msd.pr = migprob;
+                    msd.nMigrants = x;
+                    msd.nNatives = k - x;
+                    status = traverseComb(k, x, visitMig, &msd);
+                    if(status)
+                        return status;
 
-                // transfer natives
-                iself = self_ndx(self, self->parent[0]);
-                assert(k-x < self->parent[0]->wdim[iself]);
-                PtrLst_append(self->parent[0]->w[iself][k-x], msd.natives);
+                    // transfer natives
+                    iself = self_ndx(self, self->parent[0]);
+                    assert(k-x < self->parent[0]->wdim[iself]);
+                    PtrLst_append(self->parent[0]->w[iself][k-x], msd.natives);
 
-                // transfer migrants
-                iself = self_ndx(self, self->parent[1]);
-                assert(x < self->parent[1]->wdim[iself]);
-                PtrLst_append(self->parent[1]->w[iself][x], msd.migrants);
-
-                PtrVec_empty(msd.a);
+                    // transfer migrants
+                    iself = self_ndx(self, self->parent[1]);
+                    assert(x < self->parent[1]->wdim[iself]);
+                    PtrLst_append(self->parent[1]->w[iself][x], msd.migrants);
+                }
             }
+            PtrVec_empty(msd.a);
         }
         PtrLst_free(msd.migrants);
         PtrLst_free(msd.natives);

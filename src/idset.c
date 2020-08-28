@@ -24,8 +24,11 @@ void IdSet_sanityCheck(IdSet *self, const char *file, int lineno) {
     for(int i=0; i < self->nIds; ++i)
         REQUIRE(self->tid[i] > 0, file, lineno);
 
-    // The bits set in each tipId_t value should be mutually
-    // exclusive.
+    // Empty IdSet objects arise only by migration.
+    if(self->nIds == 0)
+        REQUIRE(NULL !=  self->mig, file, lineno);
+
+    // tipId_t values should not share bits
     REQUIRE(no_shared_bits(self->nIds, self->tid), file, lineno);
 #endif    
 }
@@ -109,6 +112,26 @@ IdSet *IdSet_join(IdSet *left, IdSet *right, int nsamples,
 
     IdSet *new = IdSet_new(nIds, tid, left->p * right->p);
     new->mig = mig;
+
+#ifndef NDEBUG    
+    if(!no_shared_bits(nIds, tid)) {
+        fprintf(stderr,"%s:%s:%d: shared bits\n",
+                __FILE__,__func__,__LINE__);
+
+        putc('\n', stderr);
+        fprintf(stderr,"new:");
+        IdSet_print(new, stderr);
+
+        putc('\n', stderr);
+        fprintf(stderr,"left:");
+        IdSet_print(left, stderr);
+
+        putc('\n', stderr);
+        fprintf(stderr,"right:");
+        IdSet_print(right, stderr);
+        putc('\n', stderr);
+    }
+#endif    
 
     return new;
 }
