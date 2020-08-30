@@ -8,7 +8,6 @@
 #define KEYCAST uint64_t
 #define VALTYPE int64_t
 #define HASH uint64Hash
-#define HASH_DIM 1024ul
 #define CMP(a,b) ((a)<(b) ? -1 : (a)>(b) ? 1 : 0)
 
 #include "hashmap.h"

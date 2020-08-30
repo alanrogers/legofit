@@ -13,7 +13,7 @@ tests := xaddrparmap xbinary xbooma xboot xbranchtab xcomb xdafreader \
   xptrvec \
   xstrptrmap xrafreader xrational xscrmreader xsampndx xsetpart \
   xsimsched xstate xstrdblqueue xstrint xtinyexpr xtokenizer \
-  xu64u64map xuintqueue xwraparound xmatcoal
+  xu64u64map xu64i64map xuintqueue xwraparound xmatcoal
 
 CC := gcc
 
@@ -105,6 +105,7 @@ test : $(tests)
 	-./xtinyexpr
 	-./xtokenizer
 	-./xu64u64map
+	-./xu64i64map
 	-./xuintqueue
 	-./xwraparound
 	@echo "ALL UNIT TESTS WERE COMPLETED."
@@ -370,6 +371,10 @@ u64u64map.o : ../src/u64u64map.c ../src/u64u64map.h ../src/hashmap.h \
 XU64U64MAP := xu64u64map.o misc.o binary.o u64u64map.o
 xu64u64map : $(XU64U64MAP)
 	$(CC) $(CFLAGS) -o $@ $(XU64U64MAP) $(lib)
+
+XU64I64MAP := xu64i64map.o misc.o binary.o u64i64map.o
+xu64i64map : $(XU64I64MAP)
+	$(CC) $(CFLAGS) -o $@ $(XU64I64MAP) $(lib)
 
 ptru32map.o : ../src/ptru32map.c ../src/ptru32map.h ../src/hashmap.h \
    ../src/hashmap.src

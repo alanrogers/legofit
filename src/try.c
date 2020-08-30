@@ -1,10 +1,8 @@
 #include <stdio.h>
 #include <math.h>
 int main(void) {
-    double x = -INFINITY;
-    if(isinf(x))
-        printf("x is infinite\n");
-    else
-        printf("x is finite\n");
+    __int128_t x = 1234567890987654321;
+
+    printf("%lld%lld\n", (long long) (x>>64), (long long) x);
     return 0;
 }

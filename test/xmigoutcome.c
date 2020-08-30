@@ -45,12 +45,16 @@ int main(int argc, char **argv) {
         }
     }
 
+    assert(0 > MigOutcome_cmp(mo[0], mo[1]));
+
     MigOutcome *mo3 = MigOutcome_dup(mo[0]);
     if(verbose) {
         MigOutcome_print(mo[0], stdout);
         MigOutcome_print(mo[1], stdout);
         MigOutcome_print(mo3, stdout);
     }
+
+    assert(0 == MigOutcome_cmp(mo[0], mo3));
 
     int mutually_exclusive;
     MigOutcome *mo4 = MigOutcome_join(mo[0], mo[1], &mutually_exclusive);
@@ -66,8 +70,10 @@ int main(int argc, char **argv) {
     mo4 = MigOutcome_join(mo[0], mo3, &mutually_exclusive);
     assert(mo4);
     assert(mutually_exclusive == 0);
-    if(verbose)
+    if(verbose) {
         MigOutcome_print(mo4, stdout);
+        putchar('\n');
+    }
 
     MigOutcome_free(mo4);
     mo4 = NULL;

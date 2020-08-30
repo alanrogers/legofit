@@ -5,7 +5,7 @@
  *
  * Generic code for a hash map. To create a concrete version, include
  * this into a .c file that defines MAPTYPE, KEYTYPE, VALTYPE, CMP,
- * HASH, and HASH_DIM.
+ * and HASH.
  *
  * @copyright Copyright (c) 2020, Alan R. Rogers
  * <rogers@anthro.utah.edu>. This file is released under the Internet
@@ -14,22 +14,17 @@
 
 #define INNER(CLASS, NAME) CLASS ## _ ## NAME
 #define FUNC(CLASS, NAME) INNER(CLASS, NAME)
-
-#include "error.h"
-#include <assert.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-
 #define XSTR(x) STR(x)
 #define STR(x) #x
 
-// Make sure HASH_DIM is a power of 2
-#if (HASH_DIM==0u || (HASH_DIM & (HASH_DIM-1u)))
-#pragma message "Map type:" XSTR(MAPTYPE)
-#pragma message "HASH_DIM:" XSTR(HASH_DIM)
-# error $MAPTYPE : HASH_DIM must be a power of 2
-#endif
+#include "error.h"
+#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/errno.h>
+
+static int resize(MAPTYPE *self);
 
 typedef struct El El;
 
@@ -44,7 +39,10 @@ struct El {
 
 /// The hash table.
 struct MAPTYPE {
-    El         *tab[HASH_DIM];
+    int      dim;   // current size of table
+    unsigned mask;
+    long     nelem; // number of elements stored
+    El     **tab;   // array of dim pointers to El pointers.
 };
 
 static El  *El_new(KEYTYPE key, VALTYPE value);
@@ -109,18 +107,31 @@ static void El_free(El * e) {
 }
 
 /// Constructor
-MAPTYPE    * FUNC(MAPTYPE, new)(void) {
+MAPTYPE    * FUNC(MAPTYPE, new)(int dim) {
     MAPTYPE    *new = malloc(sizeof(*new));
     CHECKMEM(new);
-    memset(new->tab, 0, sizeof(new->tab));
+    if(!isPow2(dim)) {
+        fprintf(stderr,"%s:%d: dim=%d; must be a power of 2\n",
+                __FILE__,__LINE__, dim);
+        exit(EXIT_FAILURE);
+    }
+    new->dim = dim;
+    new->mask = dim - 1;
+    new->nelem = 0;
+    new->tab = malloc(dim * sizeof(new->tab[0]));
+    if(new->tab == NULL) {
+        fprintf(stderr,"%s:%d: bad malloc\n",__FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
+    memset(new->tab, 0, dim * sizeof(new->tab[0]));
     return new;
 }
 
 /// Destructor
 void FUNC(MAPTYPE, free)(MAPTYPE * self) {
-    int i;
-    for(i=0; i < HASH_DIM; ++i)
+    for(int i=0; i < self->dim; ++i)
         El_free(self->tab[i]);
+    free(self->tab);
     free(self);
 }
 
@@ -130,10 +141,8 @@ void FUNC(MAPTYPE, free)(MAPTYPE * self) {
 /// which C will then try to convert into VALTYPE. 
 VALTYPE FUNC(MAPTYPE, get)(MAPTYPE * self, const KEYTYPE key, int *status) {
 
-    // Same as hash % HASH_DIM but faster. Requires
-    // that HASH_DIM be a power of 2.
-    unsigned long h = HASH( (KEYCAST) key) & (HASH_DIM-1ul);
-    assert(h < HASH_DIM);
+    unsigned long h = HASH( (KEYCAST) key) & self->mask;
+    assert(h < self->dim);
 
     assert(self);
 
@@ -152,19 +161,29 @@ VALTYPE FUNC(MAPTYPE, get)(MAPTYPE * self, const KEYTYPE key, int *status) {
     return 0;
 }
 
-/// Insert a value into the table.
-/// @return 0 on success; 1 if pointers is already in table.
+/// Insert a value into the table, resizing if necessary.
+/// @return 0 on success; 1 if pointers is already in table; ENOMEM
+/// if the function attempts unsuccessfully to resize the hash table.
 int FUNC(MAPTYPE, insert)(MAPTYPE * self, KEYTYPE key, VALTYPE value) {
 
-    // Same as hash % HASH_DIM but faster. Requires
-    // that HASH_DIM be a power of 2.
-    unsigned long h = HASH( (KEYCAST) key) & (HASH_DIM-1ul);
-    assert(h < HASH_DIM);
     int status;
+
+    if(self->nelem > 0.7 * self->dim) {
+        status = resize(self);
+        if(status)
+            return status;
+    }
+
+    unsigned long h = HASH( (KEYCAST) key) & self->mask;
+    assert(h < self->dim);
 
     assert(self);
 
     self->tab[h] = El_insert(self->tab[h], key, value, &status);
+
+    if(status == 0)
+        self->nelem += 1;
+    
     return status;
 }
 
@@ -173,7 +192,7 @@ unsigned long FUNC(MAPTYPE, size)(MAPTYPE * self) {
     unsigned    i;
     unsigned long size = 0;
 
-    for(i = 0; i < HASH_DIM; ++i) {
+    for(i = 0; i < self->dim; ++i) {
         El *el;
         for(el = self->tab[i]; el; el = el->next)
             ++size;
@@ -185,7 +204,7 @@ unsigned long FUNC(MAPTYPE, size)(MAPTYPE * self) {
 /// return BUFFER_OVERFLOW. Otherwise return 0.
 int FUNC(MAPTYPE, keys)(MAPTYPE *self, unsigned size, KEYTYPE keys[size]) {
     unsigned box, j;
-    for(box=j=0; box < HASH_DIM; ++box) {
+    for(box=j=0; box < self->dim; ++box) {
         El *el;
         for(el = self->tab[box]; el; el = el->next) {
             if(j == size)
@@ -196,3 +215,31 @@ int FUNC(MAPTYPE, keys)(MAPTYPE *self, unsigned size, KEYTYPE keys[size]) {
     return 0;
 }
 
+/// Double the size of the hash map and rehash.
+static int resize(MAPTYPE *self) {
+    int dim = 2*self->dim, status;
+    unsigned mask = dim-1;
+    El **tab = malloc(dim * sizeof(tab[0]));
+    if(tab == NULL)
+        return ENOMEM;
+
+    for(int i=0; i < self->dim; ++i) {
+        for(El *e=self->tab[i]; e; e=e->next) {
+            unsigned long h = HASH( (KEYCAST) e->key) & mask;
+            assert(h < dim);
+            tab[h] = El_insert(tab[h], e->key, e->value, &status);
+            if(status)
+                goto error;
+        }
+        El_free(self->tab[i]);
+    }
+    free(self->tab);
+    self->tab = tab;
+    self->dim = dim;
+    self->mask = mask;
+    return 0;
+    
+ error:
+    free(tab);
+    return status;
+}

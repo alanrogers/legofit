@@ -7,7 +7,7 @@ and VALTYPE.
 #define INNER(CLASS, NAME) CLASS ## _ ## NAME
 #define FUNC(CLASS, NAME) INNER(CLASS, NAME)
 
-MAPTYPE * FUNC(MAPTYPE, new)(void);
+MAPTYPE * FUNC(MAPTYPE, new)(int dim);
 void      FUNC(MAPTYPE, free)(MAPTYPE * self);
 VALTYPE   FUNC(MAPTYPE, get)(MAPTYPE * self, const KEYTYPE key, int *status);
 int       FUNC(MAPTYPE, insert)(MAPTYPE * self, KEYTYPE key,

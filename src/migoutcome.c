@@ -7,7 +7,7 @@
 // not thread safe
 static unsigned migration_event = 0;
 
-static int MigOutcome_cmp(MigOutcome *a, unsigned event);
+static int MigOutcome_cmp_shallow(MigOutcome *a, unsigned event);
 static MigOutcome *MigOutcome_new(MigOutcome *next,
                                   unsigned event,
                                   unsigned outcomes,  
@@ -18,7 +18,7 @@ unsigned nextMigrationEvent(void) {
     return migration_event++;
 }
 
-static int MigOutcome_cmp(MigOutcome *a, unsigned event) {
+static int MigOutcome_cmp_shallow(MigOutcome *a, unsigned event) {
     if(a == NULL || a->event > event)
         return 1;
     if(a->event < event)
@@ -30,7 +30,7 @@ MigOutcome *MigOutcome_insert(MigOutcome *head,
                               unsigned event,
                               unsigned outcome,
                               long double pr) {
-    int cmp = MigOutcome_cmp(head, event);
+    int cmp = MigOutcome_cmp_shallow(head, event);
     if(cmp < 0) {
         head->next = MigOutcome_insert(head->next, event, outcome,
                                        pr);
@@ -81,9 +81,8 @@ void MigOutcome_print(MigOutcome *self, FILE *fp) {
     for(MigOutcome *m=self; m; m = m->next) {
         if(m != self)
             putc(' ', fp);
-        fprintf(fp,"%u:%u:%Lg",m->event, m->outcome, m->pr);
+        fprintf(fp,"%u/%u",m->outcome, m->event);
     }
-    fputc('\n', fp);
 }
 
 /**
@@ -148,4 +147,35 @@ long double MigOutcome_prob(MigOutcome *head) {
         pr *= mo->pr;
 
     return pr;
+}
+
+int MigOutcome_cmp(const MigOutcome *left, const MigOutcome *right) {
+    if(left==NULL && right==NULL)
+        return 0;
+    if(right==NULL) // left!=NULL
+        return 1;
+    if(left==NULL)  // right!=NULL
+        return -1;
+    if(left->event > right->event)
+        return 1;
+    if (left->event < right->event)
+        return -1;
+    if (left->outcome > right->outcome)
+        return 1;
+    if (left->outcome < right->outcome)
+        return -1;
+    return MigOutcome_cmp(left->next, right->next);
+}
+
+uint32_t MigOutcome_hash(const MigOutcome *self)
+    __attribute__((no_sanitize("integer"))) {
+    if(self==NULL)
+        return 0;
+    uint32_t hash = 17;
+    hash = hash * 37 + uint32Hash(self->event);
+    hash = hash * 37 + uint32Hash(self->outcome);
+    uint32_t h = MigOutcome_hash(self->next);
+    if(h)
+        hash = hash * 37 + h;
+    return hash;
 }

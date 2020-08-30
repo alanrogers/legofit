@@ -12,6 +12,8 @@
 
 int segnum = 0;
 
+int verbosity = 0;
+
 #include "binary.h"
 #include "branchtab.h"
 #include "comb.h"
@@ -150,6 +152,7 @@ static void migrate(PtrLst *migrants, PtrLst *natives, PtrVec *sets,
                     int mig_event, int mig_outcome, long double mig_pr);
 static void mv_to_waiting_room(Segment *self, PtrLst *src, int ipar,
                                int nlin);
+void Segment_print_d(Segment *self, const char *func, int line);
 
 // Return index of self among children of parent
 static int self_ndx(Segment *self, Segment *parent) {
@@ -725,6 +728,8 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
         ++c[a[i]];
     }
 
+    tipId_t sitepat[k];
+
     long double p = probPartition(k, c, vdat->lnconst);
 
 #ifdef VERBOSE    
@@ -738,7 +743,6 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
     unsigned nIds = PtrVec_length(vdat->d);
     for(unsigned i=0; i < nIds; ++i) {
         IdSet *descendants = PtrVec_get(vdat->d, i);
-        tipId_t sitepat[k];
         memset(sitepat, 0, k*sizeof(tipId_t));
 
         assert(n == IdSet_nIds(descendants));
@@ -866,7 +870,8 @@ static void migrate(PtrLst *migrants, PtrLst *natives, PtrVec *sets,
         fprintf(stderr,"%s:%d: set %d:", __func__,__LINE__,i_set);
         for(int i=0; i < nmig+nnat; ++i)
             fprintf(stderr," %o", set->tid[i]);
-        putc('\n', stderr);
+        fputs(" : ", stderr);
+        MigOutcome_print(set->mig, stderr);
 
         IdSet_sanityCheck(set, __FILE__, __LINE__);
 
@@ -875,18 +880,22 @@ static void migrate(PtrLst *migrants, PtrLst *natives, PtrVec *sets,
         for(int i=0; i<nmig; ++i)
             migid[i] = set->tid[migndx[i]];
 
+#if 0        
         fprintf(stderr,"%s:%d: migrants:", __func__,__LINE__);
         for(int i=0; i<nmig; ++i)
             fprintf(stderr," %o", migid[i]);
         putc('\n', stderr);
+#endif        
 
         for(int i=0; i < nnat; ++i)
             natid[i] = set->tid[natndx[i]];
 
+#if 0        
         fprintf(stderr,"%s:%d: natives:", __func__,__LINE__);
         for(int i=0; i<nnat; ++i)
             fprintf(stderr," %o", natid[i]);
         putc('\n', stderr);
+#endif
 
         // Create IdSet objects for migrants and natives
         IdSet *mig = IdSet_new(nmig, migid, set->p);
@@ -1004,10 +1013,7 @@ static int Segment_equals_r(Segment *a, Segment *b) {
 static int Segment_coalesceFinite(Segment *self, int dosing,
                                   BranchTab *branchtab) {
 
-#ifdef VERBOSE    
-    fprintf(stderr,"%s:%d: SEGNUM %d\n",
-            __func__,__LINE__, self->segnum);
-#endif    
+    Segment_print_d(self, __func__,__LINE__);
 
     /*
       pr[i] = prob of i+1 lineages
@@ -1038,6 +1044,12 @@ static int Segment_coalesceFinite(Segment *self, int dosing,
             continue;
 
         int nIds = PtrVec_length(self->d[n]);
+
+        if(self->segnum==4 && n==1) {
+            fprintf(stderr,"%s:%d: segnum 4 n 1 nIds=%d\n",
+                    __func__,__LINE__, nIds);
+        }
+        
         for(int j=0; j < nIds; ++j) {
             IdSet *ids = PtrVec_get(self->d[n], j);
 
@@ -1058,6 +1070,7 @@ static int Segment_coalesceFinite(Segment *self, int dosing,
             }
 
             IdSet *new = IdSet_dup(ids);
+            IdSet_sanityCheck(new, __FILE__,__LINE__);
             PtrLst_push(a[n], new);
         }
     }
@@ -1113,7 +1126,13 @@ static int Segment_coalesceFinite(Segment *self, int dosing,
 
     // Transfer IdSet objects to parental waiting rooms.
     if(self->nparents == 1) {
+        if(self->segnum == 4) {
+            fprintf(stderr,"%s:%d: verbosity on for segnum %d\n",
+                    __func__,__LINE__, self->segnum);
+            verbosity = 1;
+        }
         mv_idsets_to_parent(self, 0, a);
+        verbosity = 0;
     }else if(self->mix == 0.0) {
 
         // everyone is a native
@@ -1137,7 +1156,6 @@ static int Segment_coalesceFinite(Segment *self, int dosing,
             self->parent[ipar]->wdim[iself] = self->dim;
         }
 
-        //  P[x] = (k choose x) * m^x * (1-m)^(k-x)
         MigDat msd = {
                       .migrants = PtrLst_new(),
                       .natives = PtrLst_new(),
@@ -1145,6 +1163,8 @@ static int Segment_coalesceFinite(Segment *self, int dosing,
                       .mig_event = nextMigrationEvent(),
                       .mig_outcome = 0
         };
+        fprintf(stderr,"%s:%d: mig_event %d is in segnum %d\n",
+                __func__,__LINE__, msd.mig_event, self->segnum);
         for(k=0; k < self->dim; ++k) {
             msd.a = PtrVec_from_PtrLst(msd.a, a[k]); // empties a[k]
             if(PtrVec_length(msd.a) == 0u)
@@ -1152,7 +1172,8 @@ static int Segment_coalesceFinite(Segment *self, int dosing,
 
             for(int x=0; x <= k; ++x) {
 
-                // prob that x of k lineages are migrants
+                // Prob that x of k lineages are migrants is
+                // binomial with index k and parameter "mix".
                 long double migprob = logl(binom(k, x))
                     + x*logl(self->mix)
                     + (k-x)*logl(1.0-self->mix);
@@ -1191,10 +1212,7 @@ static int Segment_coalesceFinite(Segment *self, int dosing,
 static int Segment_coalesceInfinite(Segment *self, long double v,
                                     int dosing,
                                     BranchTab *branchtab) {
-#ifdef VERBOSE    
-    fprintf(stderr,"%s:%d: SEGNUM %d\n",
-            __func__,__LINE__, self->segnum);
-#endif    
+    Segment_print_d(self, __func__,__LINE__);
 
     assert(self->dim > 0);
     long double elen[self->dim];
@@ -1221,6 +1239,9 @@ static int Segment_coalesceInfinite(Segment *self, long double v,
         for(int ii=0; ii < n; ++ii)
             elen[ii] *= self->twoN;
         
+        if(PtrVec_length(self->d[n]) == 0)
+            continue;
+
         cd.d = self->d[n];
 
         // Loop over number, k, of ancestors.  Exclude k=1, because
@@ -1265,6 +1286,23 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
     if(self->visited)
         return 0;
     self->visited = 1;
+
+    switch(self->nchildren) {
+    case 0:
+        fprintf(stderr,"%s:%d: SEGNUM %d is a tip\n",
+                __func__,__LINE__, self->segnum);
+        break;
+    case 1:
+        fprintf(stderr,"%s:%d: SEGNUM %d <- %d\n",
+                __func__,__LINE__, self->segnum,
+                self->child[0]->segnum);
+        break;
+    default:
+        fprintf(stderr,"%s:%d: SEGNUM %d <- %d + %d\n",
+                __func__,__LINE__, self->segnum,
+                self->child[0]->segnum, self->child[1]->segnum);
+        break;
+    }
 
     if(self->nchildren > 0) {
         status = Segment_coalesce(self->child[0], dosing, branchtab);
@@ -1632,6 +1670,17 @@ static void mv_idsets_to_parent(Segment *self, int ipar, PtrLst **a) {
     assert(ipar < self->nparents);
     int iself = self_ndx(self, self->parent[ipar]);
 
+    if(verbosity > 0) {
+        PtrLst_rewind(a[1]);
+        fprintf(stderr,"%s debug:", __func__);
+        for(IdSet *set = PtrLst_next(a[1]);
+            set;
+            set = PtrLst_next(a[1])) {
+            IdSet_print(set, stderr);
+        }
+        putc('\n', stderr);
+    }
+
     assert(self == self->parent[ipar]->child[iself]);
 
     self->parent[ipar]->wdim[iself] = self->dim;
@@ -1654,4 +1703,17 @@ static void mv_to_waiting_room(Segment *self, PtrLst *src, int ipar,
     int iself = self_ndx(self, self->parent[ipar]);
     assert(nlin < self->parent[ipar]->wdim[iself]);
     PtrLst_append(self->parent[ipar]->w[iself][nlin], src);
+}
+
+void Segment_print_d(Segment *self, const char *func, int line) {
+    fprintf(stderr,"%s:%d: SEGNUM %d. d:\n",
+            func,line, self->segnum);
+    for(int i=0; i < self->dim; ++i) {
+        fprintf(stderr, "%d@", i);
+        for(int j=0; j < PtrVec_length(self->d[i]); ++j) {
+            IdSet *set = PtrVec_get(self->d[i], j);
+            IdSet_print(set, stderr);
+        }
+        putc('\n', stderr);
+    }
 }

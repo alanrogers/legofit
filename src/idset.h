@@ -34,6 +34,8 @@ void   IdSet_sanityCheck(IdSet *self, const char *file, int lineno);
 static inline void IdSet_free(IdSet *self);
 static inline int IdSet_nIds(IdSet *self);
 static inline long double IdSet_prob(IdSet *self);
+int    IdSet_cmp(const IdSet *left, const IdSet *right);
+uint32_t IdSet_hash(const IdSet *self) __attribute__((no_sanitize("integer")));
 
 static inline void IdSet_free(IdSet *self) {
     MigOutcome_free(self->mig);

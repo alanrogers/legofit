@@ -42,8 +42,10 @@ int main(int argc, char **argv) {
 
     for(i=0; i<ntips; ++i) {
         tip[i] = IdSet_newTip(1u << i);
-        if(verbose)
+        if(verbose) {
             IdSet_print(tip[i], stdout);
+            putchar('\n');
+        }
         IdSet_sanityCheck(tip[i], __FILE__, __LINE__);
     }
 
@@ -57,17 +59,22 @@ int main(int argc, char **argv) {
     if(verbose) {
         printf("A set with 5 ids\n");
         IdSet_print(a, stdout);
+        putchar('\n');
     }
 
     IdSet *b = IdSet_dup(a);
     IdSet_sanityCheck(b, __FILE__, __LINE__);
 
+    assert(0 == IdSet_cmp(a, b));
+
     if(verbose) {
         printf("Two duplicate IdSet objects\n");
         printf("***a:\n");
         IdSet_print(a, stdout);
+        putchar('\n');
         printf("***b:\n");
         IdSet_print(b, stdout);
+        putchar('\n');
     }
 
     nIds = 3;
@@ -75,6 +82,8 @@ int main(int argc, char **argv) {
     pr = 0.5;
     IdSet *c = IdSet_new(nIds, tid2, pr);
     IdSet_sanityCheck(c, __FILE__, __LINE__);
+
+    assert(0 < IdSet_cmp(a, c));
 
     IdSet_addMigEvent(a, 1,1, 0.1);
     IdSet_addMigEvent(a, 2,2, 0.2);
@@ -87,10 +96,13 @@ int main(int argc, char **argv) {
         printf("a join c = d\n");
         printf("***a:\n");
         IdSet_print(a, stdout);
+        putchar('\n');
         printf("***c:\n");
         IdSet_print(c, stdout);
+        putchar('\n');
         printf("***d:\n");
         IdSet_print(d, stdout);
+        putchar('\n');
     }
 
     // construct "e", which is mutually exclusive with "a".

@@ -38,13 +38,21 @@ void IdSet_print(IdSet *self, FILE *fp) {
         fputs("-----------------------\n", fp);
         return;
     }
+#if 0    
     fprintf(fp, "pr=%Lf nIds=%d:",
             self->p, self->nIds);
-    for(int i=0; i < self->nIds; ++i)
-        fprintf(fp, " 0%o", self->tid[i]);
-    putc('\n', fp);
-    fprintf(fp,"mig history:");
-    MigOutcome_print(self->mig, fp);
+#endif
+    fputs("[", fp);
+    for(int i=0; i < self->nIds; ++i) {
+        if(i>0)
+            putc(' ', fp);
+        fprintf(fp, "%o", self->tid[i]);
+    }
+    if(self->mig) {
+        putc(':', fp);
+        MigOutcome_print(self->mig, fp);
+    }
+    fputs("]", fp);
 }
 
 /**
@@ -169,5 +177,29 @@ IdSet *IdSet_newTip(tipId_t tid) {
     self->mig = NULL;
     self->tid[0] = tid;
     return self;
+}
+
+int IdSet_cmp(const IdSet *left, const IdSet *right) {
+    int diff = left->nIds - right->nIds;
+    if(diff)
+        return diff;
+    for(int i=0; i < left->nIds; ++i) {
+        if(left->tid[i] > right->tid[i])
+            return 1;
+        else if(left->tid[i] < right->tid[i])
+            return -1;
+    }
+    return MigOutcome_cmp(left->mig, right->mig);
+}
+
+uint32_t IdSet_hash(const IdSet *self)
+    __attribute__((no_sanitize("integer"))) {
+    uint32_t hash = 17;
+    for(int i=0; i < self->nIds; ++i)
+        hash = hash * 37 + uint32Hash(self->tid[i]);
+    uint32_t h = MigOutcome_hash(self->mig);
+    if(h)
+        hash = hash * 37 + h;
+    return hash;
 }
 

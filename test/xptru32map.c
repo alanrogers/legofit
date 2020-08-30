@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
     }
 
 
-    PtrU32Map *map = PtrU32Map_new();
+    PtrU32Map *map = PtrU32Map_new(8);
 
     const int nvals = 50;
     unsigned key[nvals] = {0};
