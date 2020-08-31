@@ -8,5 +8,7 @@ void      IdSetTbl_free(IdSetTbl * self);
 int       IdSetTbl_add(IdSetTbl * self, IdSet *idset);
 int       IdSetTbl_size(IdSetTbl * self);
 int       IdSetTbl_toArray(IdSetTbl *self, unsigned size, IdSet *v[size]);
+int       IdSetTbl_rewind(IdSetTbl *self);
+IdSet    *IdSetTbl_next(IdSetTbl *self);
 
 #endif

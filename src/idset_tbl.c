@@ -35,6 +35,8 @@ struct IdSetTbl {
     unsigned mask;
     long     nelem; // number of elements stored
     El     **tab;   // array of dim pointers to El pointers.
+    El *curr;
+    int currndx;
 };
 
 static El  *El_new(IdSet *idset)
@@ -122,6 +124,8 @@ IdSetTbl *IdSetTbl_new(int dim) {
         exit(EXIT_FAILURE);
     }
     memset(new->tab, 0, dim * sizeof(new->tab[0]));
+    new->curr = NULL;
+    new->currndx = -1;
     return new;
 }
 
@@ -211,4 +215,49 @@ static int resize(IdSetTbl *self) {
  error:
     free(tab);
     return status;
+}
+
+/// Move curr to first filled bucket in hash table. Return 0
+/// on success or 1 if the hash table is empty;
+int IdSetTbl_rewind(IdSetTbl *self) {
+    int i;
+    for(i=0; i < self->dim; ++i) {
+        if(self->tab[i] != NULL) {
+            self->currndx = i;
+            self->curr = self->tab[i];
+            break;
+        }
+    }
+    if(i == self->dim) {
+        self->currndx = -1;
+        self->curr = NULL
+        return 1; // failure
+    }
+    return 0;
+}
+
+/// Return the next IdSet pointer, or NULL if there are no more. Then
+/// move to next entry in the hash table.
+IdSet *IdSetTbl_next(IdSetTbl *self) {
+    if(self->curr == NULL)
+        return NULL;
+    IdSet *rval = curr->idset;
+    self->curr = self->curr->next;
+    if(self->curr == NULL) {
+        // Look for a bucket that isn't empty.
+        for(int i = self->currndx+1; i < self->dim; ++i) {
+            if(self->tab[i]) {
+                self->currndx = i;
+                self->curr = self->tab[i];
+                break;
+            }
+        }
+
+        // All remaining buckets are empty.
+        if(i == self->dim) {
+            self->currndx = -1;
+            self->curr = NULL;
+        }
+    }
+    return rval;
 }
