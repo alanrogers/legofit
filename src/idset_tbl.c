@@ -58,18 +58,18 @@ static El *El_new(IdSet *idset) {
 ///     list = El_add(list, idset, &status);
 ///     switch(status) {
 ///     case 0:
-///         printf("Added new IdSet to list\n");
+///         printf("Added to probability of existing IdSet.\n");
 ///         break;
 ///     case 1:
-///         printf("Added to probability of existing IdSet.\n");
+///         printf("Added new IdSet to list\n");
 ///         break;
 ///     default:
 ///         printf("This should not happen.\n");
 ///     }
 /// @param self current element of list
 /// @param[in] idset, a pointer
-/// @param[out] status pointer to int, which will be set to 0 if the
-/// new IdSet did not previously exist in the list or to 1 if it was
+/// @param[out] status pointer to int, which will be set to 1 if the
+/// new IdSet did not previously exist in the list or to 0 if it was
 /// already there.
 /// @return pointer to self or to a newly-allocated El.
 static El *El_add(El *self, IdSet *idset, int *status) {
@@ -77,7 +77,7 @@ static El *El_add(El *self, IdSet *idset, int *status) {
     if(self == NULL) {
         new = El_new(idset);
         new->next = NULL;
-        *status = 0;
+        *status = 1;
         return new;
     }
 
@@ -85,7 +85,7 @@ static El *El_add(El *self, IdSet *idset, int *status) {
     if(cmp < 0) {
         new = El_new(idset);
         new->next = self;
-        *status = 0;
+        *status = 1;
         return new;
     }else if(cmp > 0) {
         self->next = El_add(self->next, idset, status);
@@ -95,7 +95,7 @@ static El *El_add(El *self, IdSet *idset, int *status) {
     // one to that of the old one and free the new one.
     self->idset->p += idset->p;
     IdSet_free(idset);
-    *status = 1;
+    *status = 0;
     return self;
 }
 
@@ -133,9 +133,9 @@ void IdSetTbl_free(IdSetTbl * self) {
     free(self);
 }
 
-/// Add a value to the table, resizing if necessary.
-/// @return 0 on success; 1 if pointers is already in table; ENOMEM
-/// if the function attempts unsuccessfully to resize the hash table.
+/// Add a value to the table, resizing if necessary.  @return 0 on
+/// success; ENOMEM if the function attempts unsuccessfully to resize
+/// the hash table.
 int IdSetTbl_add(IdSetTbl * self, IdSet *idset) {
 
     int status;
@@ -143,7 +143,7 @@ int IdSetTbl_add(IdSetTbl * self, IdSet *idset) {
     if(self->nelem > 0.7 * self->dim) {
         status = resize(self);
         if(status)
-            return status;
+            return ENOMEM;
     }
 
     unsigneed h = IdSet_hash(idset) & self->mask;
@@ -152,18 +152,16 @@ int IdSetTbl_add(IdSetTbl * self, IdSet *idset) {
     assert(self);
 
     self->tab[h] = El_add(self->tab[h], idset, &status);
-    if(status == 1)
-        self->nelem += 1;
+    self->nelem += status;
     
-    return status;
+    return 0;
 }
 
 /// Return the number of elements.
-unsigned long FUNC(IdSetTbl, size)(IdSetTbl * self) {
-    unsigned    i;
-    unsigned long size = 0;
+int IdSetTbl_size(IdSetTbl * self) {
+    int size = 0;
 
-    for(i = 0; i < self->dim; ++i) {
+    for(int i = 0; i < self->dim; ++i) {
         El *el;
         for(el = self->tab[i]; el; el = el->next)
             ++size;
@@ -171,16 +169,16 @@ unsigned long FUNC(IdSetTbl, size)(IdSetTbl * self) {
     return size;
 }
 
-/// Put idsets into array "idsets". If the array isn't large enough,
+/// Put idset pointers into array "v". If the array isn't large enough,
 /// return BUFFER_OVERFLOW. Otherwise return 0.
-int FUNC(IdSetTbl, keys)(IdSetTbl *self, unsigned size, IdSet *keys[size]) {
-    unsigned box, j;
+int IdSetTbl_toArray(IdSetTbl *self, unsigned size, IdSet *v[size]) {
+    int box, j;
     for(box=j=0; box < self->dim; ++box) {
         El *el;
         for(el = self->tab[box]; el; el = el->next) {
             if(j == size)
                 return BUFFER_OVERFLOW;
-            keys[j++] = el->key;
+            v[j++] = el->idset;
         }
     }
     return 0;
@@ -196,9 +194,9 @@ static int resize(IdSetTbl *self) {
 
     for(int i=0; i < self->dim; ++i) {
         for(El *e=self->tab[i]; e; e=e->next) {
-            unsigned long h = HASH( (KEYCAST) e->idset) & mask;
+            unsigned long h = IdSet_hash(e->idset) & mask;
             assert(h < dim);
-            tab[h] = El_add(tab[h], e->idset, e->value, &status);
+            tab[h] = El_add(tab[h], e->idset, &status);
             if(status)
                 goto error;
         }
