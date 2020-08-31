@@ -168,6 +168,22 @@ int num1bits(tipId_t x) {
     return n;
 }
 
+/// Round up to the next largest power of 2.
+tipId_t next_power_of_2(tipId_t x) {
+    if(x == 0)
+        return 1;
+    if(isPow2(x))
+        return x;
+
+    // Turn off all bits except the highest.
+    do {
+        x &= x-1;
+    }while(x & (x-1));
+
+    // Shift the highest bit one position to the left.
+    return x << 1;
+}
+
 /// Hash function for a 32-bit integer. From Thomas Wang's 1997
 /// article: 
 /// https://gist.github.com/badboy/6267743

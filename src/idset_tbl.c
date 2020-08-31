@@ -1,22 +1,14 @@
 /**
- * @file hashmap.c
+ * @file idset_tbl.c
  * @author Alan R. Rogers
- * @brief Generic hashmap code.
- *
- * Generic code for a hash map. To create a concrete version, include
- * this into a .c file that defines MAPTYPE, KEYTYPE, VALTYPE, CMP,
- * and HASH.
+ * @brief A table of IdSet values.
  *
  * @copyright Copyright (c) 2020, Alan R. Rogers
  * <rogers@anthro.utah.edu>. This file is released under the Internet
  * Systems Consortium License, which can be found in file "LICENSE".
  */
 
-#define INNER(CLASS, NAME) CLASS ## _ ## NAME
-#define FUNC(CLASS, NAME) INNER(CLASS, NAME)
-#define XSTR(x) STR(x)
-#define STR(x) #x
-
+#include "idset_tbl.h"
 #include "error.h"
 #include "binary.h"
 #include <assert.h>
@@ -25,7 +17,7 @@
 #include <string.h>
 #include <sys/errno.h>
 
-static int resize(MAPTYPE *self);
+static int resize(IdSetTbl *self);
 
 typedef struct El El;
 
@@ -34,68 +26,76 @@ typedef struct El El;
 /// stored in a sorted linked list.
 struct El {
     struct El  *next;          ///< next item in list
-    KEYTYPE key;
-    VALTYPE value;
+    IdSet *idset;
 };
 
 /// The hash table.
-struct MAPTYPE {
+struct IdSetTbl {
     int      dim;   // current size of table
     unsigned mask;
     long     nelem; // number of elements stored
     El     **tab;   // array of dim pointers to El pointers.
 };
 
-static El  *El_new(KEYTYPE key, VALTYPE value);
+static El  *El_new(IdSet *idset)
 static void El_free(El * e);
-static El  *El_insert(El *self, KEYTYPE key, VALTYPE value, int *status);
+static El  *El_add(El *self, IdSet *idset, int *status);
 
 /// Construct a new element with given key and value
-static El *El_new(KEYTYPE key, VALTYPE value) {
-    El         *new = malloc(sizeof(*new));
+static El *El_new(IdSet *idset) {
+    El *new = malloc(sizeof(*new));
     CHECKMEM(new);
 
     new->next = NULL;
-    new->key = key;
-    new->value = value;
+    new->idset = idset;
     return new;
 }
 
-/// Insert a new key/value pair into the linked list. Usage:
+/// Add an new IdSet into the linked list. Usage:
 ///
 ///     El *list=NULL;
 ///     int status;
-///     list = El_insert(list, key, value, &status);
-///     if(status != 0)
-///         printf("Error: key is already in list\n");
-///
+///     list = El_add(list, idset, &status);
+///     switch(status) {
+///     case 0:
+///         printf("Added new IdSet to list\n");
+///         break;
+///     case 1:
+///         printf("Added to probability of existing IdSet.\n");
+///         break;
+///     default:
+///         printf("This should not happen.\n");
+///     }
 /// @param self current element of list
-/// @param[in] key, a pointer
-/// @param[in] value, another pointer 
-/// @param[out] status pointer to int, which will be set to 0 on
-/// success or 1 if value is already in list.
+/// @param[in] idset, a pointer
+/// @param[out] status pointer to int, which will be set to 0 if the
+/// new IdSet did not previously exist in the list or to 1 if it was
+/// already there.
 /// @return pointer to self or to a newly-allocated El.
-static El *El_insert(El *self, KEYTYPE key, VALTYPE value, int *status) {
+static El *El_add(El *self, IdSet *idset, int *status) {
     El *new;
     if(self == NULL) {
-        new = El_new(key, value);
+        new = El_new(idset);
         new->next = NULL;
-        *status = 0; // success
+        *status = 0;
         return new;
     }
 
-    int cmp = CMP(self->key, key);
+    int cmp = IdSet_cmp(self->idset, idset);
     if(cmp < 0) {
-        new = El_new(key, value);
+        new = El_new(idset);
         new->next = self;
-        *status = 0; // success
+        *status = 0;
         return new;
     }else if(cmp > 0) {
-        self->next = El_insert(self->next, key, value, status);
+        self->next = El_add(self->next, idset, status);
         return self;
     }
-    assert(key == self->key);
-    *status = 1; // failure
+    // Identical IdSets. Add the probability of the new
+    // one to that of the old one and free the new one.
+    self->idset->p += idset->p;
+    IdSet_free(idset);
+    *status = 1;
     return self;
 }
 
@@ -108,8 +108,8 @@ static void El_free(El * e) {
 }
 
 /// Constructor
-MAPTYPE    * FUNC(MAPTYPE, new)(int dim) {
-    MAPTYPE    *new = malloc(sizeof(*new));
+IdSetTbl *IdSetTbl_new(int dim) {
+    IdSetTbl  *new = malloc(sizeof(*new));
     CHECKMEM(new);
 
     dim = next_power_of_2(dim);
@@ -126,43 +126,17 @@ MAPTYPE    * FUNC(MAPTYPE, new)(int dim) {
 }
 
 /// Destructor
-void FUNC(MAPTYPE, free)(MAPTYPE * self) {
+void IdSetTbl_free(IdSetTbl * self) {
     for(int i=0; i < self->dim; ++i)
         El_free(self->tab[i]);
     free(self->tab);
     free(self);
 }
 
-/// Get the value associated with key. On success, *status is set equal to 0
-/// and the function returns the value associated with the key. If the key
-/// is not found, *status is set equal to 1, and the function returns 0,
-/// which C will then try to convert into VALTYPE. 
-VALTYPE FUNC(MAPTYPE, get)(MAPTYPE * self, const KEYTYPE key, int *status) {
-
-    unsigned long h = HASH( (KEYCAST) key) & self->mask;
-    assert(h < self->dim);
-
-    assert(self);
-
-    El *el;
-    for(el = self->tab[h]; el; el = el->next) {
-        int cmp = CMP(el->key, key);
-        if(cmp == 0) {
-            *status = 0;
-            return el->value;
-        }else if(cmp < 0) {
-            *status = 1;
-            return 0;
-        }
-    }
-    *status = 1;
-    return 0;
-}
-
-/// Insert a value into the table, resizing if necessary.
+/// Add a value to the table, resizing if necessary.
 /// @return 0 on success; 1 if pointers is already in table; ENOMEM
 /// if the function attempts unsuccessfully to resize the hash table.
-int FUNC(MAPTYPE, insert)(MAPTYPE * self, KEYTYPE key, VALTYPE value) {
+int IdSetTbl_add(IdSetTbl * self, IdSet *idset) {
 
     int status;
 
@@ -172,21 +146,20 @@ int FUNC(MAPTYPE, insert)(MAPTYPE * self, KEYTYPE key, VALTYPE value) {
             return status;
     }
 
-    unsigned long h = HASH( (KEYCAST) key) & self->mask;
+    unsigneed h = IdSet_hash(idset) & self->mask;
     assert(h < self->dim);
 
     assert(self);
 
-    self->tab[h] = El_insert(self->tab[h], key, value, &status);
-
-    if(status == 0)
+    self->tab[h] = El_add(self->tab[h], idset, &status);
+    if(status == 1)
         self->nelem += 1;
     
     return status;
 }
 
 /// Return the number of elements.
-unsigned long FUNC(MAPTYPE, size)(MAPTYPE * self) {
+unsigned long FUNC(IdSetTbl, size)(IdSetTbl * self) {
     unsigned    i;
     unsigned long size = 0;
 
@@ -198,9 +171,9 @@ unsigned long FUNC(MAPTYPE, size)(MAPTYPE * self) {
     return size;
 }
 
-/// Put keys into array "keys". If the array isn't large enough,
+/// Put idsets into array "idsets". If the array isn't large enough,
 /// return BUFFER_OVERFLOW. Otherwise return 0.
-int FUNC(MAPTYPE, keys)(MAPTYPE *self, unsigned size, KEYTYPE keys[size]) {
+int FUNC(IdSetTbl, keys)(IdSetTbl *self, unsigned size, IdSet *keys[size]) {
     unsigned box, j;
     for(box=j=0; box < self->dim; ++box) {
         El *el;
@@ -214,7 +187,7 @@ int FUNC(MAPTYPE, keys)(MAPTYPE *self, unsigned size, KEYTYPE keys[size]) {
 }
 
 /// Double the size of the hash map and rehash.
-static int resize(MAPTYPE *self) {
+static int resize(IdSetTbl *self) {
     int dim = 2*self->dim, status;
     unsigned mask = dim-1;
     El **tab = malloc(dim * sizeof(tab[0]));
@@ -223,9 +196,9 @@ static int resize(MAPTYPE *self) {
 
     for(int i=0; i < self->dim; ++i) {
         for(El *e=self->tab[i]; e; e=e->next) {
-            unsigned long h = HASH( (KEYCAST) e->key) & mask;
+            unsigned long h = HASH( (KEYCAST) e->idset) & mask;
             assert(h < dim);
-            tab[h] = El_insert(tab[h], e->key, e->value, &status);
+            tab[h] = El_add(tab[h], e->idset, e->value, &status);
             if(status)
                 goto error;
         }

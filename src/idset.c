@@ -14,6 +14,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+static void merge(int nz, tipId_t *z, int nx, tipId_t *x,
+                  int ny, tipId_t *y);
+
 void IdSet_sanityCheck(IdSet *self, const char *file, int lineno) {
 #ifndef NDEBUG
     if(self == NULL)
@@ -27,6 +30,10 @@ void IdSet_sanityCheck(IdSet *self, const char *file, int lineno) {
     // Empty IdSet objects arise only by migration.
     if(self->nIds == 0)
         REQUIRE(NULL !=  self->mig, file, lineno);
+
+    // tipId_t values should be sorted in increasing order
+    for(int i=1; i < self->nIds; ++i)
+        REQUIRE(self->tid[i-1] < self->tid[i], file, lineno);
 
     // tipId_t values should not share bits
     REQUIRE(no_shared_bits(self->nIds, self->tid), file, lineno);
@@ -107,16 +114,17 @@ IdSet *IdSet_join(IdSet *left, IdSet *right, int nsamples,
     if(mutually_exclusive)
         return NULL;
 
-    int nIds = left->nIds + right->nIds + nsamples;
+    int left_plus_right = left->nIds + right->nIds;
+    int nIds = left_plus_right + nsamples;
     
     // Copy all tipId_t values into tid. Allocating 1 extra
     // position to avoid problems with 0-length arrays.
-    tipId_t tid[1+nIds];
+    tipId_t tid[1+nIds], buff[1+left_plus_right];
 
-    memcpy(tid, left->tid, left->nIds * sizeof(tipId_t));
-    memcpy(tid + left->nIds, right->tid, right->nIds * sizeof(tipId_t));
-    memcpy(tid + left->nIds + right->nIds, samples,
-           nsamples * sizeof(tipId_t));
+    // Copy all ids into tid while maintaining sort.
+    merge(left_plus_right, buff, left->nIds, left->tid,
+          right->nIds, right->tid);
+    merge(nIds, tid, left_plus_right, buff, nsamples, samples);
 
     IdSet *new = IdSet_new(nIds, tid, left->p * right->p);
     new->mig = mig;
@@ -156,9 +164,8 @@ IdSet *IdSet_addSamples(IdSet *old, int nsamples, tipId_t *samples) {
     int nIds = old->nIds + nsamples;
     tipId_t tid[nIds];
 
-    memcpy(tid, old->tid, old->nIds * sizeof(tipId_t));
-    memcpy(tid + old->nIds, samples, nsamples * sizeof(tipId_t));
-    
+    merge(nIds, tid, old->nIds, old->tid, nsamples, samples);
+
     IdSet *new = IdSet_new(nIds, tid, old->p);
     new->mig = old->mig;
     old->mig = NULL;
@@ -203,3 +210,21 @@ uint32_t IdSet_hash(const IdSet *self)
     return hash;
 }
 
+// Copy x and y into z, while maintaining sort.
+static void merge(int nz, tipId_t *z, int nx, tipId_t *x,
+                  int ny, tipId_t *y) {
+    assert(nz == nx + ny);
+
+    int ix=0, iy=0, iz=0;
+
+    while(ix<nx && iy<ny) {
+        if(x[ix] < y[iy])
+            z[iz++] = x[ix++];
+        else
+            z[iz++] = y[iy++];
+    }
+    while(ix < nx)
+        z[iz++] = x[ix++];
+    while(iy < ny)
+        z[iz++] = y[iy++];
+}

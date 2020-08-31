@@ -249,7 +249,7 @@ void *GPTree_dup(const void * vold) {
 
     // A hashmap that maps old PopNode pointers to new ones. It is
     // populated by PopNode_dup and used by SampNdx_remapPtrs.
-    PtrPtrMap *ppm = PtrPtrMap_new();
+    PtrPtrMap *ppm = PtrPtrMap_new(2 * old->nseg);
     CHECKMEM(ppm);
 
     new->rootPop = PopNode_dup(old->rootPop, ppm);

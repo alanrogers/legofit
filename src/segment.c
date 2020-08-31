@@ -153,6 +153,7 @@ static void migrate(PtrLst *migrants, PtrLst *natives, PtrVec *sets,
 static void mv_to_waiting_room(Segment *self, PtrLst *src, int ipar,
                                int nlin);
 void Segment_print_d(Segment *self, const char *func, int line);
+static int tipidcmp(const void *vx, const void *vy);
 
 // Return index of self among children of parent
 static int self_ndx(Segment *self, Segment *parent) {
@@ -777,6 +778,8 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
         // Add the current set partition to the list of ancestral
         // states.
 
+        qsort(&sitepat[0], (size_t) k, sizeof(sitepat[0]), tipidcmp);
+
 #ifdef VERBOSE        
         fprintf(stderr,"%s:%s:%d: new IdSet pr=%Lg * %Lg\n",
                 __FILE__,__func__,__LINE__, p, descendants->p);
@@ -785,7 +788,9 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
                                      p * vdat->prior * descendants->p);
         IdSet_copyMigOutcome(ancestors, descendants);
 
+#ifndef NDEBUG        
         IdSet_sanityCheck(ancestors, __FILE__, __LINE__);
+#endif        
         status = PtrLst_push(vdat->a, ancestors);
         if(status) {
             fprintf(stderr,"%s:%d can't push ancestors; status=%d\n",
@@ -880,7 +885,7 @@ static void migrate(PtrLst *migrants, PtrLst *natives, PtrVec *sets,
         for(int i=0; i<nmig; ++i)
             migid[i] = set->tid[migndx[i]];
 
-#if 0        
+#if 1        
         fprintf(stderr,"%s:%d: migrants:", __func__,__LINE__);
         for(int i=0; i<nmig; ++i)
             fprintf(stderr," %o", migid[i]);
@@ -890,7 +895,7 @@ static void migrate(PtrLst *migrants, PtrLst *natives, PtrVec *sets,
         for(int i=0; i < nnat; ++i)
             natid[i] = set->tid[natndx[i]];
 
-#if 0        
+#if 1        
         fprintf(stderr,"%s:%d: natives:", __func__,__LINE__);
         for(int i=0; i<nnat; ++i)
             fprintf(stderr," %o", natid[i]);
@@ -900,12 +905,16 @@ static void migrate(PtrLst *migrants, PtrLst *natives, PtrVec *sets,
         // Create IdSet objects for migrants and natives
         IdSet *mig = IdSet_new(nmig, migid, set->p);
         IdSet_addMigEvent(mig, mig_event, mig_outcome, mig_pr);
+#ifndef NDEBUG        
         IdSet_sanityCheck(mig, __FILE__, __LINE__);
+#endif        
         PtrLst_push(migrants, mig);
 
         IdSet *nat = IdSet_new(nnat, natid, set->p);
         IdSet_addMigEvent(nat, mig_event, mig_outcome, mig_pr);
+#ifndef NDEBUG        
         IdSet_sanityCheck(nat, __FILE__, __LINE__);
+#endif        
         PtrLst_push(natives, nat);
     }
 }
@@ -1716,4 +1725,17 @@ void Segment_print_d(Segment *self, const char *func, int line) {
         }
         putc('\n', stderr);
     }
+}
+
+/// This sorts tipId_t values into numerical order, unlike the
+/// more complex comparison function, compare_tipId, which is defined
+/// in lblndx.c.
+static int tipidcmp(const void *vx, const void *vy) {
+    tipId_t const * x = vx;
+    tipId_t const * y = vy;
+    if(*x > *y)
+        return 1;
+    if(*x < *y)
+        return -1;
+    return 0;
 }

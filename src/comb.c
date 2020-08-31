@@ -326,7 +326,7 @@ int64_t binom(int32_t n, int32_t x) {
 
     if(map == NULL) {
         // allocate hash table on first call
-        map = U64I64Map_new();
+        map = U64I64Map_new(128);
         CHECKMEM(map);
     }else{
         value = U64I64Map_get(map, key, &status);

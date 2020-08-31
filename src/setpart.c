@@ -37,7 +37,7 @@ uint64_t stirling2(uint32_t n, uint32_t k) {
 
     if(map == NULL) {
         // allocate hash table on first call
-        map = U64U64Map_new();
+        map = U64U64Map_new(128);
         CHECKMEM(map);
     }else{
         value = U64U64Map_get(map, key, &status);

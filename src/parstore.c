@@ -125,7 +125,7 @@ ParStore *ParStore_new(PtrQueue *fixedQ, PtrQueue *freeQ, PtrQueue *constrQ) {
         exit(EXIT_FAILURE);
     }
 
-    self->byaddr = PtrPtrMap_new();
+    self->byaddr = PtrPtrMap_new(2 * self->nPar);
     if(self->byaddr == NULL) {
         fprintf(stderr,"%s:%d: bad PtrPtrMap_new()\n",__FILE__,__LINE__);
         exit(EXIT_FAILURE);
@@ -201,7 +201,7 @@ ParStore *ParStore_dup(const ParStore * old) {
     new->constr = new->fixed + new->nFixed;
 
     new->byname = StrInt_new();
-    new->byaddr = PtrPtrMap_new();
+    new->byaddr = PtrPtrMap_new(2 * new->nPar);
     new->te_pars = StrPtrMap_new();
 
     for(int i = 0; i < new->nPar; ++i) {

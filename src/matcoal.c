@@ -272,7 +272,7 @@ static void MatCoal_print(MatCoal *self, FILE *fp) {
     fprintf(fp, "\nnLin=%d\n", self->nLin);
     fprintf(fp, "beta:");
     for(i=0; i < dim; ++i)
-        fprintf(fp, " %lf", self->beta[i]);
+        fprintf(fp, " %Lf", self->beta[i]);
     putc('\n', fp);
 
     fprintf(fp, "G:\n");
@@ -280,13 +280,13 @@ static void MatCoal_print(MatCoal *self, FILE *fp) {
         for(j=0; j<i; ++j)
             fprintf(fp," 0");
         for(j=i; j<dim; ++j)
-            fprintf(fp," %lf", self->gmat[self->offset[i] + j]);
+            fprintf(fp," %Lf", self->gmat[self->offset[i] + j]);
         putc('\n', fp);
     }
 
     fprintf(fp, "z:");
     for(i=0; i<dim; ++i)
-        fprintf(fp, " %lf", self->z[i]);
+        fprintf(fp, " %Lf", self->z[i]);
     putc('\n', fp);
 
     fprintf(fp, "H:\n");
@@ -294,7 +294,7 @@ static void MatCoal_print(MatCoal *self, FILE *fp) {
         for(j=0; j<i; ++j)
             fprintf(fp, " 0");
         for(j=i; j<dim; ++j)
-            fprintf(fp," %lf", self->hmat[self->offset[i] + j]);
+            fprintf(fp," %Lf", self->hmat[self->offset[i] + j]);
         putc('\n', fp);
     }
 }
