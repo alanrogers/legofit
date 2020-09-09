@@ -19,6 +19,7 @@ int verbosity = 0;
 #include "comb.h"
 #include "error.h"
 #include "idset.h"
+#include "idsetset.h"
 #include "matcoal.h"
 #include "misc.h"
 #include "parstore.h"
@@ -109,7 +110,7 @@ struct Segment {
     // w[1]. To each pair, we add the ids in "samples" to obtain the
     // list of IdSet objects at the beginning of the segment.
     int wdim[2];
-    PtrLst *w[2][MAXSAMP+1];
+    IdSetTbl *w[2][MAXSAMP+1];
 
     // Dimension of array d. d[i] holds IdSet objects with i lineages.
     // Thus d[0] refers to empty sets. The largest possible set has
