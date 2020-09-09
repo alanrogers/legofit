@@ -5,7 +5,7 @@ prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
 tests := xaddrparmap xbinary xbooma xboot xbranchtab xcomb xdafreader \
   xdiffev \
-  xdtnorm xerror xgene xgptree xhessian xidset xidsettbl xintpart \
+  xdtnorm xerror xgene xgptree xhessian xidset xidsetset xintpart \
   xjobqueue xlblndx xlinereader xmigoutcome xmisc xmpfrmatcoal \
   xsimreader \
   xparam xparse xparseopf xparstore xpointbuff xpopnode xptrlst xptrptrmap \
@@ -72,7 +72,7 @@ test : $(tests)
 	-./xgptree
 	-./xhessian
 	-./xidset
-	-./xidsettbl
+	-./xidsetset
 	-./xintpart
 	-./xjobqueue
 	-./xlblndx
@@ -399,9 +399,9 @@ XIDSET := xidset.o idset.o misc.o binary.o migoutcome.o
 xidset : $(XIDSET)
 	$(CC) $(CFLAGS) -o $@ $(XIDSET) $(lib)
 
-XIDSETTBL := xidsettbl.o idsettbl.o idset.o misc.o binary.o migoutcome.o
-xidsettbl : $(XIDSETTBL)
-	$(CC) $(CFLAGS) -o $@ $(XIDSETTBL) $(lib)
+XIDSETSET := xidsetset.o idsetset.o idset.o misc.o binary.o migoutcome.o
+xidsetset : $(XIDSETSET)
+	$(CC) $(CFLAGS) -o $@ $(XIDSETSET) $(lib)
 
 # Make dependencies file
 depend : *.c

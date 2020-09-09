@@ -1,19 +1,19 @@
 /**
- * @file idsettbl.c
+ * @file idsetset.c
  * @author Alan R. Rogers
  * @brief A table of IdSet values.
  *
- * The IdSetTbl_add function merges entries that have identical tipId_t values
+ * The IdSetSet_add function merges entries that have identical tipId_t values
  * and also identical migration histories. In that case, the probabilities of
  * duplicate IdSet values add. If the IdSet objects are not identical,
- * the IdSetTbl_add function as separate copies.
+ * the IdSetSet_add function as separate copies.
  *
- * To iterate across an IdSetTbl named x:
+ * To iterate across an IdSetSet named x:
  *
- * IdSetTbl_rewind(x);
- * for( IdSet *idset = IdSetTbl_next(x);
+ * IdSetSet_rewind(x);
+ * for( IdSet *idset = IdSetSet_next(x);
  *      idset;
- *      idset = IdSetTbl_next(x); {
+ *      idset = IdSetSet_next(x); {
  *     <operate on idset>
  * }
  *
@@ -22,7 +22,7 @@
  * Systems Consortium License, which can be found in file "LICENSE".
  */
 
-#include "idsettbl.h"
+#include "idsetset.h"
 #include "idset.h"
 #include "error.h"
 #include "binary.h"
@@ -33,7 +33,7 @@
 #include <string.h>
 #include <sys/errno.h>
 
-static int resize(IdSetTbl *self);
+static int resize(IdSetSet *self);
 
 typedef struct El El;
 
@@ -46,7 +46,7 @@ struct El {
 };
 
 /// The hash table.
-struct IdSetTbl {
+struct IdSetSet {
     int      dim;   // current size of table
     unsigned mask;
     long     nelem; // number of elements stored
@@ -126,8 +126,8 @@ static void El_free(El * e) {
 }
 
 /// Constructor
-IdSetTbl *IdSetTbl_new(int dim) {
-    IdSetTbl  *new = malloc(sizeof(*new));
+IdSetSet *IdSetSet_new(int dim) {
+    IdSetSet  *new = malloc(sizeof(*new));
     CHECKMEM(new);
 
     dim = next_power_of_2(dim);
@@ -146,7 +146,7 @@ IdSetTbl *IdSetTbl_new(int dim) {
 }
 
 /// Destructor
-void IdSetTbl_free(IdSetTbl * self) {
+void IdSetSet_free(IdSetSet * self) {
     for(int i=0; i < self->dim; ++i)
         El_free(self->tab[i]);
     free(self->tab);
@@ -156,7 +156,7 @@ void IdSetTbl_free(IdSetTbl * self) {
 /// Add a value to the table, resizing if necessary.  @return 0 on
 /// success; ENOMEM if the function attempts unsuccessfully to resize
 /// the hash table.
-int IdSetTbl_add(IdSetTbl * self, IdSet *idset) {
+int IdSetSet_add(IdSetSet * self, IdSet *idset) {
 
     int status;
 
@@ -178,7 +178,7 @@ int IdSetTbl_add(IdSetTbl * self, IdSet *idset) {
 }
 
 /// Return the number of elements.
-int IdSetTbl_size(IdSetTbl * self) {
+int IdSetSet_size(IdSetSet * self) {
     int size = 0;
 
     for(int i = 0; i < self->dim; ++i) {
@@ -191,7 +191,7 @@ int IdSetTbl_size(IdSetTbl * self) {
 
 /// Put idset pointers into array "v". If the array isn't large enough,
 /// return BUFFER_OVERFLOW. Otherwise return 0.
-int IdSetTbl_toArray(IdSetTbl *self, unsigned size, IdSet *v[size]) {
+int IdSetSet_toArray(IdSetSet *self, unsigned size, IdSet *v[size]) {
     int box, j;
     for(box=j=0; box < self->dim; ++box) {
         El *el;
@@ -205,7 +205,7 @@ int IdSetTbl_toArray(IdSetTbl *self, unsigned size, IdSet *v[size]) {
 }
 
 /// Double the size of the hash map and rehash.
-static int resize(IdSetTbl *self) {
+static int resize(IdSetSet *self) {
     int dim = 2*self->dim, status;
     unsigned mask = dim-1;
     El **tab = malloc(dim * sizeof(tab[0]));
@@ -244,7 +244,7 @@ static int resize(IdSetTbl *self) {
 
 /// Move curr to first filled bucket in hash table. Return 0
 /// on success or 1 if the hash table is empty;
-int IdSetTbl_rewind(IdSetTbl *self) {
+int IdSetSet_rewind(IdSetSet *self) {
     int i;
     for(i=0; i < self->dim; ++i) {
         if(self->tab[i] != NULL) {
@@ -263,7 +263,7 @@ int IdSetTbl_rewind(IdSetTbl *self) {
 
 /// Return the next IdSet pointer, or NULL if there are no more. Then
 /// move to next entry in the hash table.
-IdSet *IdSetTbl_next(IdSetTbl *self) {
+IdSet *IdSetSet_next(IdSetSet *self) {
     if(self->curr == NULL)
         return NULL;
     IdSet *rval = self->curr->idset;

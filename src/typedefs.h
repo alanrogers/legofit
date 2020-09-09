@@ -16,7 +16,7 @@ typedef struct HashTab HashTab;
 typedef struct HashTabSeq HashTabSeq;
 typedef struct History History;
 typedef struct IdSet IdSet;
-typedef struct IdSetTbl IdSetTbl;
+typedef struct IdSetSet IdSetSet;
 typedef struct LblNdx LblNdx;
 typedef struct LineReader LineReader;
 typedef struct MCTree MCTree;

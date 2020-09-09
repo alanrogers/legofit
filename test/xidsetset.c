@@ -1,12 +1,12 @@
 /**
- * @file xidsettbl.c
+ * @file xidsetset.c
  * @author Alan R. Rogers
  * @brief Test idset_tbl.c.
  * @copyright Copyright (c) 2020, Alan R. Rogers
  * <rogers@anthro.utah.edu>. This file is released under the Internet
  * Systems Consortium License, which can be found in file "LICENSE".
  */
-#include "idsettbl.h"
+#include "idsetset.h"
 #include "idset.h"
 #include "misc.h"
 #include "migoutcome.h"
@@ -37,8 +37,8 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    IdSetTbl *ist = IdSetTbl_new(0); // will round up to next pwr of 2
-    CHECKMEM(ist);
+    IdSetSet *iss = IdSetSet_new(0); // will round up to next pwr of 2
+    CHECKMEM(iss);
 
     int status;
     const int ntips = 4;
@@ -48,7 +48,7 @@ int main(int argc, char **argv) {
     for(i=0; i<ntips; ++i) {
         tip[i] = IdSet_newTip(1u << i);
         IdSet_sanityCheck(tip[i], __FILE__, __LINE__);
-        status = IdSetTbl_add(ist, tip[i]);
+        status = IdSetSet_add(iss, tip[i]);
         switch(status) {
         case ENOMEM:
             fprintf(stderr,"%s:%d: bad alloc\n",__FILE__,__LINE__);
@@ -68,7 +68,7 @@ int main(int argc, char **argv) {
     IdSet *a = IdSet_new(nIds, tid, pr);
     IdSet_sanityCheck(a, __FILE__, __LINE__);
 
-    status = IdSetTbl_add(ist, a);
+    status = IdSetSet_add(iss, a);
     assert(status == 0);
 
     IdSet *b = IdSet_dup(a);
@@ -76,7 +76,7 @@ int main(int argc, char **argv) {
 
     assert(0 == IdSet_cmp(a, b));
 
-    status = IdSetTbl_add(ist, b);
+    status = IdSetSet_add(iss, b);
     assert(status == 0);
 
     nIds = 3;
@@ -91,14 +91,14 @@ int main(int argc, char **argv) {
     IdSet_addMigEvent(a, 2,2, 0.2);
     IdSet_addMigEvent(c, 3,3, 0.3);
 
-    status = IdSetTbl_add(ist, c);
+    status = IdSetSet_add(iss, c);
     assert(status == 0);
 
     IdSet *d = IdSet_join(a, c, 0, NULL);
     assert(d);
     IdSet_sanityCheck(d, __FILE__, __LINE__);
 
-    status = IdSetTbl_add(ist, d);
+    status = IdSetSet_add(iss, d);
     assert(status == 0);
 
     // construct "e", which is mutually exclusive with "a".
@@ -106,32 +106,32 @@ int main(int argc, char **argv) {
     IdSet_sanityCheck(e, __FILE__, __LINE__);
     IdSet_addMigEvent(e, 1, 2, 0.1);
 
-    status = IdSetTbl_add(ist, e);
+    status = IdSetSet_add(iss, e);
     assert(status == 0);
 
     // can't join IdSet objects with mutually exclusive
-    // migration histories.
+    // migration hissories.
     assert(NULL == IdSet_join(a, e, 0, NULL));
 
-    IdSetTbl_rewind(ist);
-    for(a=IdSetTbl_next(ist); a; a=IdSetTbl_next(ist))
+    IdSetSet_rewind(iss);
+    for(a=IdSetSet_next(iss); a; a=IdSetSet_next(iss))
         IdSet_sanityCheck(a, __FILE__,__LINE__);
 
     if(verbose) {
-        IdSetTbl_rewind(ist);
-        for(a=IdSetTbl_next(ist); a; a=IdSetTbl_next(ist))
+        IdSetSet_rewind(iss);
+        for(a=IdSetSet_next(iss); a; a=IdSetSet_next(iss))
             IdSet_print(a, stderr);
         putc('\n', stderr);
     }
 
-    IdSetTbl_rewind(ist);
-    for(a=IdSetTbl_next(ist); a; a=IdSetTbl_next(ist))
+    IdSetSet_rewind(iss);
+    for(a=IdSetSet_next(iss); a; a=IdSetSet_next(iss))
         IdSet_free(a);
     
 
-    IdSetTbl_free(ist);
+    IdSetSet_free(iss);
 
-    unitTstResult("IdSetTbl", "OK");
+    unitTstResult("IdSetSet", "OK");
     
     return 0;
 }
