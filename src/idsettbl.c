@@ -1,16 +1,32 @@
 /**
- * @file idset_tbl.c
+ * @file idsettbl.c
  * @author Alan R. Rogers
  * @brief A table of IdSet values.
+ *
+ * The IdSetTbl_add function merges entries that have identical tipId_t values
+ * and also identical migration histories. In that case, the probabilities of
+ * duplicate IdSet values add. If the IdSet objects are not identical,
+ * the IdSetTbl_add function as separate copies.
+ *
+ * To iterate across an IdSetTbl named x:
+ *
+ * IdSetTbl_rewind(x);
+ * for( IdSet *idset = IdSetTbl_next(x);
+ *      idset;
+ *      idset = IdSetTbl_next(x); {
+ *     <operate on idset>
+ * }
  *
  * @copyright Copyright (c) 2020, Alan R. Rogers
  * <rogers@anthro.utah.edu>. This file is released under the Internet
  * Systems Consortium License, which can be found in file "LICENSE".
  */
 
-#include "idset_tbl.h"
+#include "idsettbl.h"
+#include "idset.h"
 #include "error.h"
 #include "binary.h"
+#include "misc.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -39,7 +55,7 @@ struct IdSetTbl {
     int currndx;
 };
 
-static El  *El_new(IdSet *idset)
+static El  *El_new(IdSet *idset);
 static void El_free(El * e);
 static El  *El_add(El *self, IdSet *idset, int *status);
 
@@ -150,7 +166,7 @@ int IdSetTbl_add(IdSetTbl * self, IdSet *idset) {
             return ENOMEM;
     }
 
-    unsigneed h = IdSet_hash(idset) & self->mask;
+    unsigned h = IdSet_hash(idset) & self->mask;
     assert(h < self->dim);
 
     assert(self);
@@ -201,8 +217,20 @@ static int resize(IdSetTbl *self) {
             unsigned long h = IdSet_hash(e->idset) & mask;
             assert(h < dim);
             tab[h] = El_add(tab[h], e->idset, &status);
-            if(status)
-                goto error;
+            switch(status) {
+            case 0:
+                fprintf(stderr,"%s:%d: duplicate key\n",__FILE__,__LINE__);
+                free(tab);
+                exit(EXIT_FAILURE);
+                break;
+            case 1:
+                break;
+            default:
+                fprintf(stderr,"%s:%d: unknown error\n",__FILE__,__LINE__);
+                free(tab);
+                exit(EXIT_FAILURE);
+                break;
+            }
         }
         El_free(self->tab[i]);
     }
@@ -212,9 +240,6 @@ static int resize(IdSetTbl *self) {
     self->mask = mask;
     return 0;
     
- error:
-    free(tab);
-    return status;
 }
 
 /// Move curr to first filled bucket in hash table. Return 0
@@ -230,7 +255,7 @@ int IdSetTbl_rewind(IdSetTbl *self) {
     }
     if(i == self->dim) {
         self->currndx = -1;
-        self->curr = NULL
+        self->curr = NULL;
         return 1; // failure
     }
     return 0;
@@ -241,11 +266,12 @@ int IdSetTbl_rewind(IdSetTbl *self) {
 IdSet *IdSetTbl_next(IdSetTbl *self) {
     if(self->curr == NULL)
         return NULL;
-    IdSet *rval = curr->idset;
+    IdSet *rval = self->curr->idset;
     self->curr = self->curr->next;
     if(self->curr == NULL) {
         // Look for a bucket that isn't empty.
-        for(int i = self->currndx+1; i < self->dim; ++i) {
+        int i;
+        for(i = self->currndx+1; i < self->dim; ++i) {
             if(self->tab[i]) {
                 self->currndx = i;
                 self->curr = self->tab[i];

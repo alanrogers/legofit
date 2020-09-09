@@ -1,5 +1,5 @@
-#ifndef IDSET_TBL_H
-#define IDSET_TBL_H
+#ifndef IDSETTBL_H
+#define IDSETTBL_H
 
 #include "typedefs.h"
 
