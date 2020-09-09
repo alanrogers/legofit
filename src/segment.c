@@ -110,19 +110,18 @@ struct Segment {
     // w[1]. To each pair, we add the ids in "samples" to obtain the
     // list of IdSet objects at the beginning of the segment.
     int wdim[2];
-    IdSetTbl *w[2][MAXSAMP+1];
+    IdSetSet *w[2][MAXSAMP+1];
 
     // Dimension of array d. d[i] holds IdSet objects with i lineages.
     // Thus d[0] refers to empty sets. The largest possible set has
     // dim-1 lineages.
     int dim;
 
-    // d[i] is a pointer to a PtrVec, which is allocated within
-    // Segment_coalesce. This PtrVec holds IdSet objects that contain
-    // i tipId_t values, each representing a descendant at the recent
-    // end of the Segment. The number of PtrVec pointers--i.e. the
-    // dimension of array d--is self->dim.
-    PtrVec **d;
+    // d[i] is a pointer to an IdSetSet, which is allocated within
+    // Segment_coalesce. This holds IdSet objects that contain i
+    // tipId_t values, each representing a descendant at the recent
+    // end of the Segment. The dimension of array d is self->dim.
+    IdSetSet **d;
 };
 
 static PtrVec **get_descendants1(int dim, PtrLst **w, int nsamples,
