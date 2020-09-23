@@ -53,8 +53,7 @@ struct CombDat {
 struct MigDat {
     int nMigrants, nNatives;
     long double mig_pr; // probability of this migration outcome
-    PtrLst *migrants, *natives;
-    PtrVec *a;
+    PtrLst *migrants, *natives, *a;
     unsigned mig_event, mig_outcome;
 };
 
@@ -110,7 +109,7 @@ struct Segment {
     // w[1]. To each pair, we add the ids in "samples" to obtain the
     // list of IdSet objects at the beginning of the segment.
     int wdim[2];
-    IdSetSet *w[2][MAXSAMP+1];
+    PtrLst *w[2][MAXSAMP+1];
 
     // Dimension of array d. d[i] holds IdSet objects with i lineages.
     // Thus d[0] refers to empty sets. The largest possible set has
@@ -124,11 +123,11 @@ struct Segment {
     IdSetSet **d;
 };
 
-static PtrVec **get_descendants1(int dim, PtrLst **w, int nsamples,
-                                 tipId_t *sample, int *newdim);
-static PtrVec **get_descendants2(int dim0, PtrLst **w0,
-                                 int dim1, PtrLst **w1,
-                                 int nsamples, tipId_t *sample, int *newdim);
+static IdSetSet **get_descendants1(int dim, IdSetSet **w, int nsamples,
+                                   tipId_t *sample, int *newdim);
+static IdSetSet **get_descendants2(int dim0, IdSetSet **w0,
+                                   int dim1, IdSetSet **w1,
+                                   int nsamples, tipId_t *sample, int *newdim);
 static void mv_idsets_to_parent(Segment *self, int ipar, PtrLst **a);
 static void coalescent_interval_length(int n, long double elen[n-1],
                                        long double eig[n],
@@ -147,7 +146,7 @@ static int Segment_equals_r(Segment *a, Segment *b);
 static int self_ndx(Segment *self, Segment *parent);
 PtrVec *PtrVec_from_PtrLst(PtrVec *to, PtrLst *from);
 static int w_isempty(int dim, PtrLst **w);
-static void migrate(PtrLst *migrants, PtrLst *natives, PtrVec *sets,
+static void migrate(PtrLst *migrants, PtrLst *natives, PtrLst *sets,
                     int nmig, int *migndx, int nnat, int *natndx,
                     int mig_event, int mig_outcome, long double mig_pr);
 static void mv_to_waiting_room(Segment *self, PtrLst *src, int ipar,
@@ -393,9 +392,13 @@ void Segment_sanityCheck(Segment * self, const char *file, int lineno) {
     }
     if(self->d != NULL) {
         for(int i=0; i < self->dim; ++i) {
-            for(int j=0; j < PtrVec_length(self->d[i]); ++j) {
-                id = PtrVec_get(self->d[i], j);
+            IdSetSet_rewind(self->d[i]);
+            for(IdSet *id = IdSetSet_next(self->d[i]);
+                id;
+                id = IdSetSet_next(self->d[i])) {
+
                 IdSet_sanityCheck(id, file, lineno);
+
             }
         }
     }
@@ -858,7 +861,7 @@ int visitMig(int nmig, int *migndx, void *data) {
  * On return, "migrants" and "natives" contain IdSet objects of
  * migrants and natives.
  */
-static void migrate(PtrLst *migrants, PtrLst *natives, PtrVec *sets,
+static void migrate(PtrLst *migrants, PtrLst *natives, PtrLst *sets,
                     int nmig, int *migndx, int nnat, int *natndx,
                     int mig_event, int mig_outcome, long double mig_pr) {
 
@@ -869,9 +872,11 @@ static void migrate(PtrLst *migrants, PtrLst *natives, PtrVec *sets,
     int nSets = PtrVec_length(sets);
 
     fprintf(stderr,"%s:%d: nSets=%d\n", __func__,__LINE__, nSets);
-    for(int i_set=0; i_set < nSets; ++i_set) {
-        IdSet *set = PtrVec_get(sets, i_set);
-
+    PtrLst_rewind(sets);
+    for(IdSet *set = PtrLst_next(sets);
+        set;
+        set = PtrLst_next(sets)) {
+        
         fprintf(stderr,"%s:%d: set %d:", __func__,__LINE__,i_set);
         for(int i=0; i < nmig+nnat; ++i)
             fprintf(stderr," %o", set->tid[i]);
@@ -1049,18 +1054,15 @@ static int Segment_coalesceFinite(Segment *self, int dosing,
 
     // Cases of 0 or 1 lineages
     for(n=0; n <= 1 && n < self->dim; ++n) {
-        if(0 == PtrVec_length(self->d[n]))
+        int nIds = IdSetSet_size(self->d[n]);
+
+        if(0 == nIds)
             continue;
 
-        int nIds = PtrVec_length(self->d[n]);
-
-        if(self->segnum==4 && n==1) {
-            fprintf(stderr,"%s:%d: segnum 4 n 1 nIds=%d\n",
-                    __func__,__LINE__, nIds);
-        }
-        
-        for(int j=0; j < nIds; ++j) {
-            IdSet *ids = PtrVec_get(self->d[n], j);
+        IdSetSet_rewind(self->d[n]);
+        for(IdSet *ids = IdSetSet_next(self->d[n]);
+            ids;
+            ids = IdSetSet_next(self->d[n])) {
 
             if(n==1 && ids->tid[0] != union_all_samples) {
                 // Single lineage in finite Segment contributes
@@ -1175,7 +1177,7 @@ static int Segment_coalesceFinite(Segment *self, int dosing,
         fprintf(stderr,"%s:%d: mig_event %d is in segnum %d\n",
                 __func__,__LINE__, msd.mig_event, self->segnum);
         for(k=0; k < self->dim; ++k) {
-            msd.a = PtrVec_from_PtrLst(msd.a, a[k]); // empties a[k]
+            msd.a = a[k];
             if(PtrVec_length(msd.a) == 0u)
                 continue;
 
@@ -1395,8 +1397,8 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
     return status;
 }
 
-/// Return a newly-allocated array of PtrVec vectors. The i'th
-/// vector contains all the IdSet entries in w[i], with each entry
+/// Return a newly-allocated array of IdSetSet objects. The i'th
+/// object contains all the IdSet entries in w[i], with each entry
 /// augmented by the entries (if any) in vector "sample". If there are
 /// no entries in any of the w[i], the returned array contains a
 /// single non-empty entry, with the entries of "samples". If "w" and
@@ -1407,7 +1409,7 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
 /// On entry, wdim is the dimension of array w, and nsamples is
 /// the dimension of array sample. On return *newdim is the dimension
 /// of the newly-allocated array returned by the function.
-static PtrVec **get_descendants1(int wdim, PtrLst **w, int nsamples,
+static IdSetSet **get_descendants1(int wdim, PtrLst **w, int nsamples,
                                  tipId_t *sample, int *newdim) {
     int i, n, m;
 
@@ -1428,21 +1430,21 @@ static PtrVec **get_descendants1(int wdim, PtrLst **w, int nsamples,
     if(n == 0)
         return NULL;
 
-    PtrVec **d = malloc(n * sizeof(PtrVec *));
+    IdSetSet **d = malloc(n * sizeof(IdSetSet *));
     CHECKMEM(d);
 
     if(wdim == 0) {
         // w is empty: there is only one IdSet, which contains
         // the samples, and goes in d[n-1] = d[nsamples].
         for(i=0; i < n-1; ++i)
-            d[i] = PtrVec_new(0);
-        d[n-1] = PtrVec_new(1);
+            d[i] = IdSetSet_new(0);
+        d[n-1] = IdSetSet_new(1);
         {
             IdSet *id = IdSet_new(nsamples, sample, 1.0);
             IdSet_sanityCheck(id, __FILE__, __LINE__);
-            PtrVec_push(d[n-1], id);
+            IdSetSet_add(d[n-1], id);
         }
-        assert(1 == PtrVec_length(d[n-1]));
+        assert(1 == IdSetSet_size(d[n-1]));
         return d;
     }
 
@@ -1450,14 +1452,15 @@ static PtrVec **get_descendants1(int wdim, PtrLst **w, int nsamples,
 
     // If nsamples>0, the initial vector(s) are empty.
     for(i=0; i<nsamples; ++i)
-        d[i] = PtrVec_new(0);
+        d[i] = IdSetSet_new(0);
 
     // Allocate non-empty vectors
     for(i=nsamples; i<n; ++i) {
         int j = i - nsamples;
         assert(w[j]);
-        m = PtrLst_length(w[j]);
-        d[i] = PtrVec_new(m);
+        m = IdSetSet_size(w[j]);
+        m = ceil(10.0*m/7.0);
+        d[i] = IdSetSet_new(m);
     }
 
     // Fill non-empty vectors
@@ -1469,20 +1472,19 @@ static PtrVec **get_descendants1(int wdim, PtrLst **w, int nsamples,
             ids = IdSet_addSamples(ids, nsamples, sample);
             
             int nIds = IdSet_nIds(ids);
-            PtrVec_push(d[nIds], ids);
+            IdSetSet_add(d[nIds], ids);
         }
     }
     return d;
 }
 
-// Return a vector of vectors of IdSet objects. The i'th vector
-// contains sets of i descendants. The IdSet objects are generated
-// by combining all compatible pairs from w0 and w1, and then adding
-// the tipId_t values from array sample. On return, w0 and w1 are
-// arrays of empty lists.
-PtrVec **get_descendants2(int dim0, PtrLst **w0,
-                          int dim1, PtrLst **w1,
-                          int nsamples, tipId_t *sample, int *newdim) {
+// Return a vector of IdSetSet objects. The i'th object contains sets
+// of i descendants. The IdSet objects are generated by combining all
+// compatible pairs from w0 and w1, and then adding the tipId_t values
+// from array sample. On return, w0 and w1 are empty sets.
+IdSetSet **get_descendants2(int dim0, PtrLst **w0,
+                            int dim1, PtrLst **w1,
+                            int nsamples, tipId_t *sample, int *newdim) {
     int i, j, n;
 
     // Is waiting room 0 empty?
@@ -1502,17 +1504,13 @@ PtrVec **get_descendants2(int dim0, PtrLst **w0,
 
     /*
      * Segment has two children. The returned value (dvec) is an array
-     * of vectors. The i'th vector contains sets of i
-     * descendants. Each such set is the union of (a) an entry from
-     * w0, (b) an entry from w1, and (c) the samples (if any) in
-     * "sample". Some entries in w0 may be incompatible with some in
-     * w1, because they represent mutually exclusive outcomes of the
-     * same migration event. These mutually exclusive pairs are not
-     * used. For this reason, we cannot figure out in advance how many
-     * IdSet objects will be in each entry of dvec[i]. To solve this
-     * problem, the algorithm first fills an array of linked
-     * lists. Then each linked list is converted into an array to form
-     * an entry of dvec.
+     * of IdSetSet objects. The i'th object contains IdSet objects,
+     * each of which of which contains i descendants. Each IdSet is
+     * the union of (a) an entry from w0, (b) an entry from w1, and
+     * (c) the samples (if any) in "sample". Some entries in w0 may be
+     * incompatible with some in w1, because they represent mutually
+     * exclusive outcomes of the same migration event. These mutually
+     * exclusive pairs are not used.
      */
     if(nsamples || dim0 || dim1) {
         n = 1;
@@ -1527,6 +1525,9 @@ PtrVec **get_descendants2(int dim0, PtrLst **w0,
     if(n==0)
         return NULL;
 
+    // Use PtrLst to begin with, because we can't predict how many
+    // sets will be in each IdSetSet object. This avoids expensive
+    // reallocations of the hash table.
     PtrLst *d[n];
     for(i=0; i<n; ++i)
         d[i] = PtrLst_new();
@@ -1570,6 +1571,17 @@ PtrVec **get_descendants2(int dim0, PtrLst **w0,
         }
     }
 
+    // Empty w1; w0 is already empty.
+    for(j=0; j < dim1; ++j) {
+        for(IdSet *id = PtrLst_pop(w1[j]);
+            id;
+            id = PtrLst_pop(w1[j])) {
+
+            IdSet_free(id);
+
+        }
+    }
+
     // Get rid of any empty lists at the top of d and reset n.
     while(n > 0 && 0 == PtrLst_length(d[n-1])) {
         PtrLst_free(d[n-1]);
@@ -1580,23 +1592,26 @@ PtrVec **get_descendants2(int dim0, PtrLst **w0,
     if(n == 0)
         return NULL;
 
-    PtrVec **dvec = malloc(n * sizeof(PtrVec *));
+    IdSetSet **dvec = malloc(n * sizeof(dvec[0]));
 
-    // Convert lists of descendants into vectors and
+    // Convert lists of descendants into IdSetSet objects and
     // install in dvec. Also free the entries of d[i].
     for(i=0; i<n; ++i) {
-        dvec[i] = PtrVec_from_PtrLst(NULL, d[i]);
-        PtrLst_free(d[i]);
-    }
+        int m = PtrLst_length(d[i]);
+        m = ceil(10.0 * m / 7.0);
+        dvec[i] = IdSetSet_new(m);
+        for(IdSet *id = PtrLst_pop(d[i]);
+            id;
+            id = PtrLst_pop(d[i])) {
 
-    // Empty w1. w0 is already empty.
-    for(i=0; i < dim1; ++i) {
-        for(id1=PtrLst_pop(w1[i]);
-            id1;
-            id1=PtrLst_pop(w1[i])) {
-
-            IdSet_free(id1);
+            status = IdSetSet_add(dvec[i], id);
+            if(status) {
+                fprintf(stderr,"%s:%d: allocation error\n",
+                        __FILE__,__LINE__);
+                exit(EXIT_FAILURE);
+            }
         }
+        PtrLst_free(d[i]);
     }
 
     return dvec;
@@ -1679,6 +1694,7 @@ static void mv_idsets_to_parent(Segment *self, int ipar, PtrLst **a) {
     assert(ipar < self->nparents);
     int iself = self_ndx(self, self->parent[ipar]);
 
+#ifndef NDEBUG    
     if(verbosity > 0) {
         PtrLst_rewind(a[1]);
         fprintf(stderr,"%s debug:", __func__);
@@ -1689,12 +1705,19 @@ static void mv_idsets_to_parent(Segment *self, int ipar, PtrLst **a) {
         }
         putc('\n', stderr);
     }
+#endif    
 
     assert(self == self->parent[ipar]->child[iself]);
 
     self->parent[ipar]->wdim[iself] = self->dim;
     for(int i=0; i < self->dim; ++i) {
-        PtrLst_move(self->parent[ipar]->w[iself][i], a[i]);
+        for(IdSet *id = PtrLst_pop(a[i]);
+            id;
+            id = PtrLst_pop(a[i])) {
+
+            IdSetSet_add(self->parent[ipar]->w[iself][i], id);
+
+        }
     }
 }
 
@@ -1711,7 +1734,14 @@ static void mv_to_waiting_room(Segment *self, PtrLst *src, int ipar,
                                int nlin) {
     int iself = self_ndx(self, self->parent[ipar]);
     assert(nlin < self->parent[ipar]->wdim[iself]);
-    PtrLst_append(self->parent[ipar]->w[iself][nlin], src);
+
+    for(IdSet *id = PtrLst_pop(src);
+        id;
+        id = PtrLst_pop(src)) {
+
+        IdSetSet_add(self->parent[ipar]->w[iself][nlin], id);
+
+    }
 }
 
 void Segment_print_d(Segment *self, const char *func, int line) {
@@ -1719,9 +1749,13 @@ void Segment_print_d(Segment *self, const char *func, int line) {
             func,line, self->segnum);
     for(int i=0; i < self->dim; ++i) {
         fprintf(stderr, "%d@", i);
-        for(int j=0; j < PtrVec_length(self->d[i]); ++j) {
-            IdSet *set = PtrVec_get(self->d[i], j);
-            IdSet_print(set, stderr);
+        IdSetSet_rewind(self->d[i]);
+        for(IdSet *id = IdSetSet_next(self->d[i]);
+            id;
+            id = IdSetSet_next(self->d[i])) {
+
+            IdSet_print(id, stderr);
+
         }
         putc('\n', stderr);
     }

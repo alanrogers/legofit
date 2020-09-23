@@ -122,6 +122,7 @@ static void El_free(El * e) {
     if(e == NULL)
         return;
     El_free(e->next);
+    IdSet_free(e->idset);
     free(e);
 }
 
@@ -153,6 +154,16 @@ void IdSetSet_free(IdSetSet * self) {
     free(self);
 }
 
+/// Empty IdSetSet, freeing all contained IdSet objects,
+/// but not freeing the IdSetSet.
+void IdSetSet_empty(IdSetSet * self) {
+    for(int i=0; i < self->dim; ++i)
+        El_free(self->tab[i]);
+    self->nelem = 0;
+    self->curr = NULL;
+    self->currndx = -1;
+}
+
 /// Add a value to the table, resizing if necessary.  @return 0 on
 /// success; ENOMEM if the function attempts unsuccessfully to resize
 /// the hash table.
@@ -178,6 +189,7 @@ int IdSetSet_add(IdSetSet * self, IdSet *idset) {
 }
 
 /// Return the number of elements.
+/// I may need to make this faster.
 int IdSetSet_size(IdSetSet * self) {
     int size = 0;
 
