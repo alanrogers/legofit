@@ -172,8 +172,8 @@ int num1bits(tipId_t x) {
 tipId_t next_power_of_2(tipId_t x) {
     if(x == 0)
         return 1;
-    if(isPow2(x))
-        return x;
+    if( (x & (x-1)) == 0 )
+        return x; // x is already a power of 2
 
     // Turn off all bits except the highest.
     do {

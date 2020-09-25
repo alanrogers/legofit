@@ -25,7 +25,6 @@ int verbosity = 0;
 #include "parstore.h"
 #include "ptrlst.h"
 #include "ptrptrmap.h"
-#include "ptrvec.h"
 #include "segment.h"
 #include "setpart.h"
 #include <stdlib.h>
@@ -44,7 +43,7 @@ typedef struct SetPartDat SetPartDat;
 // Data manipulated by visitComb function
 struct CombDat {
     long double contrib; // Pr[site pattern]*E[len of interval]
-    PtrVec *d;
+    IdSetSet *d;
     BranchTab *branchtab;
     int dosing;    // do singleton site patterns if nonzero
 };
@@ -68,8 +67,8 @@ struct SetPartDat {
     // a is a list of IdSet objects for sets of ancestors
     PtrLst *a;
 
-    // PtrVec_get(d, i) is the IdSet for the i'th set of descendants
-    PtrVec *d;
+    // descendants
+    IdSetSet *d;
 
     BranchTab *branchtab;
     int dosing;      // do singleton site patterns if nonzero
@@ -109,7 +108,7 @@ struct Segment {
     // w[1]. To each pair, we add the ids in "samples" to obtain the
     // list of IdSet objects at the beginning of the segment.
     int wdim[2];
-    PtrLst *w[2][MAXSAMP+1];
+    IdSetSet *w[2][MAXSAMP+1];
 
     // Dimension of array d. d[i] holds IdSet objects with i lineages.
     // Thus d[0] refers to empty sets. The largest possible set has
@@ -144,8 +143,7 @@ static int Segment_coalesceInfinite(Segment *self, long double v, int dosing,
 static void Segment_duplicate_nodes(Segment *old, PtrPtrMap *ppm);
 static int Segment_equals_r(Segment *a, Segment *b);
 static int self_ndx(Segment *self, Segment *parent);
-PtrVec *PtrVec_from_PtrLst(PtrVec *to, PtrLst *from);
-static int w_isempty(int dim, PtrLst **w);
+static int w_isempty(int dim, IdSetSet **w);
 static void migrate(PtrLst *migrants, PtrLst *natives, PtrLst *sets,
                     int nmig, int *migndx, int nnat, int *natndx,
                     int mig_event, int mig_outcome, long double mig_pr);
@@ -212,8 +210,8 @@ void *Segment_new(int twoN_i, int start_i, ParStore *ps) {
     self->mix = 0.0;
 
     for(int i=0; i <= MAXSAMP; ++i) {
-        self->w[0][i] = PtrLst_new();
-        self->w[1][i] = PtrLst_new();
+        self->w[0][i] = IdSetSet_new(0);
+        self->w[1][i] = IdSetSet_new(0);
     }
 
     // other fields are not initialized by Segment_new.
@@ -240,8 +238,8 @@ void Segment_free(Segment *self) {
     }
 
     for(int i=0; i <= MAXSAMP; ++i) {
-        PtrLst_free(self->w[0][i]);
-        PtrLst_free(self->w[1][i]);
+        IdSetSet_free_deep(self->w[0][i]);
+        IdSetSet_free_deep(self->w[1][i]);
     }
 
     if(self->d)
@@ -372,28 +370,32 @@ void Segment_sanityCheck(Segment * self, const char *file, int lineno) {
     IdSet *id;
     if(self->nchildren > 0) {
         for(int i=0; i < self->wdim[0]; ++i) {
-            PtrLst_rewind(self->w[0][i]);
-            for(id=PtrLst_next(self->w[0][i]);
+            IdSetSet_rewind(self->w[0][i]);
+            for(id=IdSetSet_next(self->w[0][i]);
                 id;
-                id=PtrLst_next(self->w[0][i])) {
+                id=IdSetSet_next(self->w[0][i])) {
+                
                 IdSet_sanityCheck(id, __FILE__, __LINE__);
+                
             }
         }
     }
     if(self->nchildren > 1) {
         for(int i=0; i < self->wdim[1]; ++i) {
-            PtrLst_rewind(self->w[1][i]);
-            for(id=PtrLst_next(self->w[1][i]);
+            IdSetSet_rewind(self->w[1][i]);
+            for(id=IdSetSet_next(self->w[1][i]);
                 id;
-                id=PtrLst_next(self->w[1][i])) {
+                id=IdSetSet_next(self->w[1][i])) {
+                
                 IdSet_sanityCheck(id, file, lineno);
+                
             }
         }
     }
     if(self->d != NULL) {
         for(int i=0; i < self->dim; ++i) {
             IdSetSet_rewind(self->d[i]);
-            for(IdSet *id = IdSetSet_next(self->d[i]);
+            for(id = IdSetSet_next(self->d[i]);
                 id;
                 id = IdSetSet_next(self->d[i])) {
 
@@ -649,8 +651,8 @@ Segment *Segment_dup(Segment *old_root, PtrPtrMap *ppm) {
         nu->wdim[1] = old->wdim[1];
 
         for(int j=0; j <= MAXSAMP; ++j) {
-            nu->w[0][j] = PtrLst_new();
-            nu->w[1][j] = PtrLst_new();
+            nu->w[0][j] = IdSetSet_new(0);
+            nu->w[1][j] = IdSetSet_new(0);
         }
     }
 
@@ -677,13 +679,9 @@ void     Segment_print(FILE * fp, void * vself, int indent) {
 int visitComb(int d, int ndx[d], void *data) {
     assert(d>0);
     CombDat *dat = (CombDat *) data;
+    IdSet *ids;
 
-    unsigned nIdSets = PtrVec_length(dat->d);
-
-    assert(nIdSets > 0);
-    
-    for(unsigned i=0; i < nIdSets; ++i) {
-        IdSet *ids = PtrVec_get(dat->d, i);
+    while( (ids = IdSetSet_next(dat->d)) != NULL) {
         
         // sitepat is the union of the current set of descendants, as
         // described in ndx.
@@ -742,11 +740,13 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
 #endif    
 
 
-    // nIds is the number of IdSet objects, each representing
+    // Loop over IdSet objects
     // a set of n descendants.
-    unsigned nIds = PtrVec_length(vdat->d);
-    for(unsigned i=0; i < nIds; ++i) {
-        IdSet *descendants = PtrVec_get(vdat->d, i);
+    IdSetSet_rewind(vdat->d);
+    for(IdSet *descendants = IdSetSet_next(vdat->d);
+        descendants;
+        descendants = IdSetSet_next(vdat->d)) {
+
         memset(sitepat, 0, k*sizeof(tipId_t));
 
         assert(n == IdSet_nIds(descendants));
@@ -865,19 +865,20 @@ static void migrate(PtrLst *migrants, PtrLst *natives, PtrLst *sets,
                     int nmig, int *migndx, int nnat, int *natndx,
                     int mig_event, int mig_outcome, long double mig_pr) {
 
+    IdSet *set;
+    
     // Extra entry guards against problems of zero length.
     tipId_t migid[1 + nmig], natid[1 + nnat];
 
     // number of sets of ancestors
-    int nSets = PtrVec_length(sets);
+    int nSets = PtrLst_length(sets);
 
     fprintf(stderr,"%s:%d: nSets=%d\n", __func__,__LINE__, nSets);
+
     PtrLst_rewind(sets);
-    for(IdSet *set = PtrLst_next(sets);
-        set;
-        set = PtrLst_next(sets)) {
+    while( (set = PtrLst_next(sets)) != NULL ) {
         
-        fprintf(stderr,"%s:%d: set %d:", __func__,__LINE__,i_set);
+        fprintf(stderr,"%s:%d:", __func__,__LINE__);
         for(int i=0; i < nmig+nnat; ++i)
             fprintf(stderr," %o", set->tid[i]);
         fputs(" : ", stderr);
@@ -924,35 +925,6 @@ static void migrate(PtrLst *migrants, PtrLst *natives, PtrLst *sets,
     }
 }
 
-/// If to==NULL, then return a new PtrVec, containing all the
-/// pointers in "from". On return, "from" is empty, but the
-/// PtrLst object itself is not freed.
-///
-/// If to!=NULL, then resize "to" so that it is large enough to hold
-/// all the pointers in "from", and move all pointers from "from" into
-/// "to". Return "to".
-PtrVec *PtrVec_from_PtrLst(PtrVec *to, PtrLst *from) {
-    unsigned nIdSets = PtrLst_length(from);
-
-    if(to) {
-        // resize "to"
-        assert(PtrVec_length(to) == 0);
-        if(PtrVec_resize(to, nIdSets)) {
-            fprintf(stderr,"%s:%d: allocation error\n",
-                    __FILE__,__LINE__);
-            exit(EXIT_FAILURE);
-        }
-    }else {
-        // fresh allocation
-        to = PtrVec_new(nIdSets);
-    }
-    
-    for(IdSet *idset = PtrLst_pop(from); idset; idset = PtrLst_pop(from))
-        PtrVec_push(to, idset);
-
-    return to;
-}
-
 /// Traverse tree, making a duplicate of each node, and putting
 /// the duplicates into a hash map (called ppm) in which the old
 /// node is the key and the new duplicate is the value associated
@@ -973,8 +945,8 @@ static void Segment_duplicate_nodes(Segment *old, PtrPtrMap *ppm) {
         Segment_duplicate_nodes(old->child[1], ppm);
 
     for(int i=0; i <= MAXSAMP; ++i) {
-        new->w[0][i] = PtrLst_new();
-        new->w[1][i] = PtrLst_new();
+        new->w[0][i] = IdSetSet_new(0);
+        new->w[1][i] = IdSetSet_new(0);
     }
 }
 
@@ -1043,11 +1015,14 @@ static int Segment_coalesceFinite(Segment *self, int dosing,
     assert(v >= 0.0);
 
     // Array of lists of ancestors. a[k] is the list for sets of k
-    // ancestors.  
+    // ancestors. The case of k=0 arises from migration events in
+    // which all migrants went the other way. When these empty IdSet
+    // objects combine with full objects from a sister branch, they
+    // contribute information about migration history.
     PtrLst *a[self->dim];
     for(i=0; i < self->dim; ++i)
         a[i] = PtrLst_new();
-    
+
     SetPartDat sd = {.branchtab = branchtab,
                      .dosing = dosing,
     };
@@ -1176,9 +1151,14 @@ static int Segment_coalesceFinite(Segment *self, int dosing,
         };
         fprintf(stderr,"%s:%d: mig_event %d is in segnum %d\n",
                 __func__,__LINE__, msd.mig_event, self->segnum);
+
+        // Loop over the number, k, of ancestors. This includes 0
+        // because migration can produce empty sets (because everyone
+        // migrated the other way).
         for(k=0; k < self->dim; ++k) {
+
             msd.a = a[k];
-            if(PtrVec_length(msd.a) == 0u)
+            if(PtrLst_length(msd.a) == 0)
                 continue;
 
             for(int x=0; x <= k; ++x) {
@@ -1205,13 +1185,14 @@ static int Segment_coalesceFinite(Segment *self, int dosing,
                 // transfer migrants
                 mv_to_waiting_room(self, msd.migrants, 1, x);
             }
-            PtrVec_empty(msd.a);
+            {
+                IdSet *s;
+                while( (s = PtrLst_pop(a[k])) != NULL)
+                    IdSet_free(s);
+            }
         }
         PtrLst_free(msd.migrants);
         PtrLst_free(msd.natives);
-        for(IdSet *s=PtrVec_pop(msd.a); s; s=PtrVec_pop(msd.a))
-            IdSet_free(s);
-        PtrVec_free(msd.a);
     }
 
     for(i=0; i < self->dim; ++i)
@@ -1250,7 +1231,7 @@ static int Segment_coalesceInfinite(Segment *self, long double v,
         for(int ii=0; ii < n; ++ii)
             elen[ii] *= self->twoN;
         
-        if(PtrVec_length(self->d[n]) == 0)
+        if(IdSetSet_size(self->d[n]) == 0)
             continue;
 
         cd.d = self->d[n];
@@ -1364,12 +1345,12 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
             self->nchildren, self->nparents);
     for(int i=0; i < self->dim; ++i) {
         fprintf(stderr,"%2d:", i);
-        int j;
-        for(j=0; j < PtrVec_length(self->d[i]); ++j) {
-            IdSet *ids=PtrVec_get(self->d[i], j);
+        IdSetSet_rewind(self->d[i]);
+        IdSet *ids;
+        while( (ids = IdSetSet_next(self->d[i])) != NULL ) {
             IdSet_print(ids, stderr);
         }
-        if(j==0)
+        if( IdSetSet_length(self->d[i]) == 0 )
             putc('\n', stderr);
     }
 #endif    
@@ -1382,14 +1363,7 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
 
     // Free IdSet objects of descendants
     for(int i=0; i < self->dim; ++i) {
-        for(IdSet *ids=PtrVec_pop(self->d[i]);
-            ids;
-            ids = PtrVec_pop(self->d[i])) {
-            
-            IdSet_free(ids);
-
-        }
-        PtrVec_free(self->d[i]);
+        IdSetSet_free_deep(self->d[i]);
     }
     free(self->d);
     self->d = NULL;
@@ -1409,12 +1383,12 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
 /// On entry, wdim is the dimension of array w, and nsamples is
 /// the dimension of array sample. On return *newdim is the dimension
 /// of the newly-allocated array returned by the function.
-static IdSetSet **get_descendants1(int wdim, PtrLst **w, int nsamples,
+static IdSetSet **get_descendants1(int wdim, IdSetSet **w, int nsamples,
                                  tipId_t *sample, int *newdim) {
     int i, n, m;
 
     if(w) {
-        while(wdim > 0 && PtrLst_length(w[wdim-1]) == 0)
+        while(wdim > 0 && IdSetSet_size(w[wdim-1]) == 0)
             wdim -= 1;
     }else
         wdim = 0;
@@ -1459,21 +1433,23 @@ static IdSetSet **get_descendants1(int wdim, PtrLst **w, int nsamples,
         int j = i - nsamples;
         assert(w[j]);
         m = IdSetSet_size(w[j]);
-        m = ceil(10.0*m/7.0);
         d[i] = IdSetSet_new(m);
     }
 
     // Fill non-empty vectors
     for(i=0; i < wdim; ++i) {
-        for(IdSet *ids=PtrLst_pop(w[i]);
+        IdSetSet_rewind(w[i]);
+        for(IdSet *ids=IdSetSet_next(w[i]);
             ids;
-            ids = PtrLst_pop(w[i])) {
+            ids = IdSetSet_next(w[i])) {
 
+            // Freed old ids and returns pointer to new one
             ids = IdSet_addSamples(ids, nsamples, sample);
             
             int nIds = IdSet_nIds(ids);
             IdSetSet_add(d[nIds], ids);
         }
+        IdSetSet_empty_shallow(w[i]);
     }
     return d;
 }
@@ -1482,17 +1458,17 @@ static IdSetSet **get_descendants1(int wdim, PtrLst **w, int nsamples,
 // of i descendants. The IdSet objects are generated by combining all
 // compatible pairs from w0 and w1, and then adding the tipId_t values
 // from array sample. On return, w0 and w1 are empty sets.
-IdSetSet **get_descendants2(int dim0, PtrLst **w0,
-                            int dim1, PtrLst **w1,
+IdSetSet **get_descendants2(int dim0, IdSetSet **w0,
+                            int dim1, IdSetSet **w1,
                             int nsamples, tipId_t *sample, int *newdim) {
     int i, j, n;
 
     // Is waiting room 0 empty?
-    while(dim0 > 0 && PtrLst_length(w0[dim0-1]) == 0)
+    while(dim0 > 0 && IdSetSet_size(w0[dim0-1]) == 0)
         dim0 -= 1;
 
     // Is waiting room 1 empty?
-    while(dim1 > 0 && PtrLst_length(w1[dim1-1]) == 0)
+    while(dim1 > 0 && IdSetSet_size(w1[dim1-1]) == 0)
         dim1 -= 1;
 
     // If either waiting room is empty, call get_descendants1.
@@ -1535,19 +1511,20 @@ IdSetSet **get_descendants2(int dim0, PtrLst **w0,
     IdSet *id0, *id1, *newid;
 
     for(i=0; i < dim0; ++i) {
-        for(id0=PtrLst_pop(w0[i]);
+        IdSetSet_rewind(w0[i]);
+        for(id0=IdSetSet_next(w0[i]);
             id0;
-            id0=PtrLst_pop(w0[i])) {
+            id0=IdSetSet_next(w0[i])) {
             
             IdSet_sanityCheck(id0, __FILE__, __LINE__);
             assert(IdSet_nIds(id0) == i);
 
             for(j=0; j < dim1; ++j) {
-                PtrLst_rewind(w1[j]);
+                IdSetSet_rewind(w1[j]);
 
-                for(id1=PtrLst_next(w1[j]);
+                for(id1=IdSetSet_next(w1[j]);
                     id1;
-                    id1=PtrLst_next(w1[j])) {
+                    id1=IdSetSet_next(w1[j])) {
 
                     IdSet_sanityCheck(id1, __FILE__, __LINE__);
                     assert(IdSet_nIds(id1) == j);
@@ -1567,19 +1544,13 @@ IdSetSet **get_descendants2(int dim0, PtrLst **w0,
                     PtrLst_push(d[k], newid);
                 }
             }
-            IdSet_free(id0);
         }
+        IdSetSet_empty_deep(w0[i]);
     }
 
     // Empty w1; w0 is already empty.
     for(j=0; j < dim1; ++j) {
-        for(IdSet *id = PtrLst_pop(w1[j]);
-            id;
-            id = PtrLst_pop(w1[j])) {
-
-            IdSet_free(id);
-
-        }
+        IdSetSet_empty_deep(w1[j]);
     }
 
     // Get rid of any empty lists at the top of d and reset n.
@@ -1592,19 +1563,18 @@ IdSetSet **get_descendants2(int dim0, PtrLst **w0,
     if(n == 0)
         return NULL;
 
-    IdSetSet **dvec = malloc(n * sizeof(dvec[0]));
+    IdSetSet **dss = malloc(n * sizeof(dss[0]));
 
     // Convert lists of descendants into IdSetSet objects and
-    // install in dvec. Also free the entries of d[i].
+    // install in dss. Also free the entries of d[i].
     for(i=0; i<n; ++i) {
         int m = PtrLst_length(d[i]);
-        m = ceil(10.0 * m / 7.0);
-        dvec[i] = IdSetSet_new(m);
+        dss[i] = IdSetSet_new(m);
         for(IdSet *id = PtrLst_pop(d[i]);
             id;
             id = PtrLst_pop(d[i])) {
 
-            status = IdSetSet_add(dvec[i], id);
+            int status = IdSetSet_add(dss[i], id);
             if(status) {
                 fprintf(stderr,"%s:%d: allocation error\n",
                         __FILE__,__LINE__);
@@ -1614,7 +1584,7 @@ IdSetSet **get_descendants2(int dim0, PtrLst **w0,
         PtrLst_free(d[i]);
     }
 
-    return dvec;
+    return dss;
 }
 
 static void coalescent_interval_length(int n, long double elen[n],
@@ -1652,9 +1622,9 @@ static void project(int n, long double pr[n], long double eig[n-1]) {
 }
 
 /// Return 1 if each PtrLst in array w is empty; return 0 otherwise.
-static int w_isempty(int dim, PtrLst **w) {
+static int w_isempty(int dim, IdSetSet **w) {
     for(int i=0; i<dim; ++i) {
-        if(PtrLst_length(w[i]) > 0)
+        if(IdSetSet_size(w[i]) > 0)
             return 0;
     }
     return 1;
@@ -1711,12 +1681,17 @@ static void mv_idsets_to_parent(Segment *self, int ipar, PtrLst **a) {
 
     self->parent[ipar]->wdim[iself] = self->dim;
     for(int i=0; i < self->dim; ++i) {
+
+        // parental waiting room
+        IdSetSet *w = self->parent[ipar]->w[iself][i];
+        
+        int m = PtrLst_length(a[i]);
+        IdSetSet_reserve(w, m);
         for(IdSet *id = PtrLst_pop(a[i]);
             id;
             id = PtrLst_pop(a[i])) {
 
-            IdSetSet_add(self->parent[ipar]->w[iself][i], id);
-
+            IdSetSet_add(w, id);
         }
     }
 }
@@ -1735,13 +1710,15 @@ static void mv_to_waiting_room(Segment *self, PtrLst *src, int ipar,
     int iself = self_ndx(self, self->parent[ipar]);
     assert(nlin < self->parent[ipar]->wdim[iself]);
 
-    for(IdSet *id = PtrLst_pop(src);
-        id;
-        id = PtrLst_pop(src)) {
+    // parental waiting room
+    IdSetSet *w = self->parent[ipar]->w[iself][nlin];
 
-        IdSetSet_add(self->parent[ipar]->w[iself][nlin], id);
+    int m = PtrLst_length(src);
+    IdSetSet_reserve(w, m);
 
-    }
+    IdSet *id;
+    while( (id = PtrLst_pop(src)) != NULL )
+        IdSetSet_add(w, id);
 }
 
 void Segment_print_d(Segment *self, const char *func, int line) {

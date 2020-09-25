@@ -157,6 +157,7 @@ void IdSet_addMigEvent(IdSet *self, unsigned event, unsigned outcome,
     self->mig = MigOutcome_insert(self->mig, event, outcome, pr);
 }
 
+/// Return pointer to new IdSet and free old one.
 IdSet *IdSet_addSamples(IdSet *old, int nsamples, tipId_t *samples) {
     if(nsamples == 0)
         return old;

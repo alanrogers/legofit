@@ -80,6 +80,8 @@ int PtrLst_push(PtrLst *self, void *ptr) {
     return 0;
 }
 
+/// Remove next pointer from list and return it. Return NULL
+/// if list is empty.
 void *PtrLst_pop(PtrLst *self) {
     void *ptr;
     self->head = PtrLstEl_pop(self->head, &ptr);

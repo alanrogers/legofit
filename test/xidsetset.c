@@ -128,8 +128,7 @@ int main(int argc, char **argv) {
     for(a=IdSetSet_next(iss); a; a=IdSetSet_next(iss))
         IdSet_free(a);
     
-
-    IdSetSet_free(iss);
+    IdSetSet_free_shallow(iss);
 
     unitTstResult("IdSetSet", "OK");
     

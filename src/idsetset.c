@@ -33,7 +33,11 @@
 #include <string.h>
 #include <sys/errno.h>
 
-static int resize(IdSetSet *self);
+static int resize(IdSetSet *self, int dim);
+
+static const double sets_per_bucket = 0.7;
+static const double buckets_per_set = 1.0/sets_per_bucket;
+
 
 typedef struct El El;
 
@@ -50,13 +54,15 @@ struct IdSetSet {
     int      dim;   // current size of table
     unsigned mask;
     long     nelem; // number of elements stored
+    long     maxelem; // max nelem before resize
     El     **tab;   // array of dim pointers to El pointers.
     El *curr;
     int currndx;
 };
 
 static El  *El_new(IdSet *idset);
-static void El_free(El * e);
+static void El_free_shallow(El * e);
+static void El_free_deep(El * e);
 static El  *El_add(El *self, IdSet *idset, int *status);
 
 /// Construct a new element with given key and value
@@ -117,48 +123,75 @@ static El *El_add(El *self, IdSet *idset, int *status) {
     return self;
 }
 
-/// Destroy a linked list of El objects.
-static void El_free(El * e) {
+/// Destroy a linked list of El objects, but do not free IdSet pointers.
+static void El_free_shallow(El * e) {
     if(e == NULL)
         return;
-    El_free(e->next);
+    El_free_shallow(e->next);
+    free(e);
+}
+
+/// Destroy a linked list of El objects, including IdSet pointers.
+static void El_free_deep(El * e) {
+    if(e == NULL)
+        return;
+    El_free_deep(e->next);
     IdSet_free(e->idset);
     free(e);
 }
 
-/// Constructor
-IdSetSet *IdSetSet_new(int dim) {
+/// Constructor reserves space for n elements.
+IdSetSet *IdSetSet_new(int n) {
     IdSetSet  *new = malloc(sizeof(*new));
     CHECKMEM(new);
 
-    dim = next_power_of_2(dim);
+    dim = next_power_of_2(n * buckets_per_set);
     new->dim = dim;
     new->mask = dim - 1;
+    new->maxelem = ceil(sets_per_bucket * new->dim);
     new->nelem = 0;
     new->tab = malloc(dim * sizeof(new->tab[0]));
-    if(new->tab == NULL) {
-        fprintf(stderr,"%s:%d: bad malloc\n",__FILE__,__LINE__);
-        exit(EXIT_FAILURE);
-    }
+    CHECKMEM(new->tab);
+
     memset(new->tab, 0, dim * sizeof(new->tab[0]));
     new->curr = NULL;
     new->currndx = -1;
     return new;
 }
 
-/// Destructor
-void IdSetSet_free(IdSetSet * self) {
+/// Shallow destructor does not free IdSet objects
+void IdSetSet_free_shallow(IdSetSet * self) {
     for(int i=0; i < self->dim; ++i)
-        El_free(self->tab[i]);
+        El_free_shallow(self->tab[i]);
     free(self->tab);
     free(self);
 }
 
-/// Empty IdSetSet, freeing all contained IdSet objects,
-/// but not freeing the IdSetSet.
-void IdSetSet_empty(IdSetSet * self) {
+/// Deep destructor frees IdSet objects
+void IdSetSet_free_deep(IdSetSet * self) {
     for(int i=0; i < self->dim; ++i)
-        El_free(self->tab[i]);
+        El_free_deep(self->tab[i]);
+    free(self->tab);
+    free(self);
+}
+
+/// Empty IdSetSet. Does not free the IdSet pointers.
+void IdSetSet_empty_shallow(IdSetSet * self) {
+    for(int i=0; i < self->dim; ++i) {
+        El_free_shallow(self->tab[i]);
+        self->tab[i] = NULL;
+    }
+    self->nelem = 0;
+    self->curr = NULL;
+    self->currndx = -1;
+}
+
+/// Empty IdSetSet, including IdSet pointers.
+void IdSetSet_empty_deep(IdSetSet * self) {
+    for(int i=0; i < self->dim; ++i) {
+        El_free_deep(self->tab[i]);
+        self->tab[i] = NULL;
+    }
     self->nelem = 0;
     self->curr = NULL;
     self->currndx = -1;
@@ -171,8 +204,8 @@ int IdSetSet_add(IdSetSet * self, IdSet *idset) {
 
     int status;
 
-    if(self->nelem > 0.7 * self->dim) {
-        status = resize(self);
+    if(self->nelem > self->maxelem) {
+        status = resize(self, 2 * self->dim);
         if(status)
             return ENOMEM;
     }
@@ -216,11 +249,16 @@ int IdSetSet_toArray(IdSetSet *self, unsigned size, IdSet *v[size]) {
     return 0;
 }
 
-/// Double the size of the hash map and rehash.
-static int resize(IdSetSet *self) {
-    int dim = 2*self->dim, status;
+/// Change the size of the hash map and rehash.
+static int resize(IdSetSet *self, int dim) {
+    if(!isPow2(dim)) {
+        fprintf(stderr,"%s:%d: dim=%d is not a power of 2\n",
+                __FILE__,__LINE__, dim);
+        exit(EXIT_FAILURE);
+    }
+    int status;
     unsigned mask = dim-1;
-    El **tab = malloc(dim * sizeof(tab[0]));
+    El **tab = malloc(newdim * sizeof(tab[0]));
     if(tab == NULL)
         return ENOMEM;
 
@@ -244,14 +282,14 @@ static int resize(IdSetSet *self) {
                 break;
             }
         }
-        El_free(self->tab[i]);
+        El_free_shallow(self->tab[i]);
     }
     free(self->tab);
     self->tab = tab;
     self->dim = dim;
+    self->maxelem = ceil(sets_per_bucket * self->dim);
     self->mask = mask;
     return 0;
-    
 }
 
 /// Move curr to first filled bucket in hash table. Return 0
@@ -298,4 +336,17 @@ IdSet *IdSetSet_next(IdSetSet *self) {
         }
     }
     return rval;
+}
+
+/// Make sure hash table is large enough to hold m additional
+/// elements.
+int IdSetSet_reserve(IdSetSet *self, int m) {
+    m += self->nelem;
+    if(m > self->maxelem) {
+        m = next_power_of_2(m * buckets_per_set);
+        int status = resize(self, m);
+        if(status)
+            return ENOMEM;
+    }
+    return 0;
 }
