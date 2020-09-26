@@ -25,6 +25,9 @@
 #error "Unit tests must be compiled without -DNDEBUG flag"
 #endif
 
+// Site pattern representing the union of all samples.
+extern tipId_t union_all_samples;
+
 int main(int argc, char *argv[]) {
 
     int status, verbose = 0;
@@ -129,7 +132,9 @@ int main(int argc, char *argv[]) {
 
     c = Segment_new(ni, ti, ps);
     assert(c);
-    
+
+    union_all_samples = (1LU << 3) - 1;
+
     Segment_newSample(a, 0);
     Segment_newSample(b, 1);
     Segment_newSample(c, 2);
@@ -186,7 +191,7 @@ int main(int argc, char *argv[]) {
 
     assert(Segment_feasible(abc, bnd, verbose));
 
-    PtrPtrMap *ppm = PtrPtrMap_new();
+    PtrPtrMap *ppm = PtrPtrMap_new(0);
     Segment *duproot = Segment_dup(abc, ppm);
     CHECKMEM(duproot);
     PtrPtrMap_free(ppm);
@@ -222,12 +227,12 @@ int main(int argc, char *argv[]) {
     if(verbose) {
         unsigned npat = BranchTab_size(bt);
         tipId_t pat[npat];
-        double brlen[npat];
+        long double brlen[npat];
         BranchTab_toArrays(bt, npat, pat, brlen);
         unsigned ord[npat];
         orderpat(npat, ord, pat);
         for(int j=0; j < npat; ++j)
-            printf("%o %lf\n", pat[ord[j]], brlen[ord[j]]);
+            printf("%o %Lf\n", pat[ord[j]], brlen[ord[j]]);
     }
 
     assert(0 == Segment_isClear(abc));

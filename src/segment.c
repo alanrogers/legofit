@@ -31,7 +31,7 @@ int verbosity = 0;
 #include <string.h>
 
 // Site pattern representing the union of all samples.
-extern tipId_t union_all_samples;
+tipId_t union_all_samples = 0;
 
 typedef struct MigDat MigDat;
 typedef struct CombDat CombDat;
@@ -678,6 +678,7 @@ void     Segment_print(FILE * fp, void * vself, int indent) {
 /// Visit a combination
 int visitComb(int d, int ndx[d], void *data) {
     assert(d>0);
+    assert(union_all_samples != 0);
     CombDat *dat = (CombDat *) data;
     IdSet *ids;
 
@@ -718,6 +719,7 @@ int visitComb(int d, int ndx[d], void *data) {
 /// Visit a set partition. n is the number of descendants, a[i] is the
 /// index of the ancestor of the i'th descendant.
 int visitSetPart(unsigned n, unsigned a[n], void *data) {
+    assert(union_all_samples != 0);
     SetPartDat *vdat = data;
     int status=0;
 
@@ -999,6 +1001,7 @@ static int Segment_equals_r(Segment *a, Segment *b) {
 static int Segment_coalesceFinite(Segment *self, int dosing,
                                   BranchTab *branchtab) {
 
+    assert(union_all_samples != 0);
     Segment_print_d(self, __func__,__LINE__);
 
     /*

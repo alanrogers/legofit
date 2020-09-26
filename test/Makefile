@@ -132,7 +132,7 @@ xcomb : $(XCOMB)
 	$(CC) $(CFLAGS) -o $@ $(XCOMB) $(lib)
 
 XSEGMENT := xsegment.o misc.o segment.o idset.o branchtab.o migoutcome.o \
-    parstore.o param.o ptrlst.o ptrptrmap.o ptrqueue.o ptrvec.o strint.o \
+    parstore.o param.o ptrlst.o ptrptrmap.o ptrqueue.o idsetset.o strint.o \
     tinyexpr.o dtnorm.o binary.o setpart.o u64u64map.o matcoal.o comb.o \
     rational.o strptrmap.o lblndx.o u64i64map.o
 xsegment : $(XSEGMENT)

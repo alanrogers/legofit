@@ -145,7 +145,7 @@ IdSetSet *IdSetSet_new(int n) {
     IdSetSet  *new = malloc(sizeof(*new));
     CHECKMEM(new);
 
-    dim = next_power_of_2(n * buckets_per_set);
+    int dim = next_power_of_2(n * buckets_per_set);
     new->dim = dim;
     new->mask = dim - 1;
     new->maxelem = ceil(sets_per_bucket * new->dim);
@@ -258,7 +258,7 @@ static int resize(IdSetSet *self, int dim) {
     }
     int status;
     unsigned mask = dim-1;
-    El **tab = malloc(newdim * sizeof(tab[0]));
+    El **tab = malloc(dim * sizeof(tab[0]));
     if(tab == NULL)
         return ENOMEM;
 
