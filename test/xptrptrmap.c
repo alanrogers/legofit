@@ -39,7 +39,7 @@ int main(int argc, char **argv) {
     }
 
 
-    PtrPtrMap *map = PtrPtrMap_new(8);
+    PtrPtrMap *map = PtrPtrMap_new(0);
 
     const int nvals = 50;
     unsigned key[nvals], value[nvals];

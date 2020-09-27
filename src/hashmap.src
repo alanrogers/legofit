@@ -220,6 +220,7 @@ static int resize(MAPTYPE *self) {
     El **tab = malloc(dim * sizeof(tab[0]));
     if(tab == NULL)
         return ENOMEM;
+    memset(tab, 0, dim * sizeof(tab[0]));
 
     for(int i=0; i < self->dim; ++i) {
         for(El *e=self->tab[i]; e; e=e->next) {

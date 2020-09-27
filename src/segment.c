@@ -8,7 +8,7 @@
  * Systems Consortium License, which can be found in file "LICENSE".
  */
 
-//#define VERBOSE
+#define VERBOSE
 
 int segnum = 0;
 
@@ -682,6 +682,7 @@ int visitComb(int d, int ndx[d], void *data) {
     CombDat *dat = (CombDat *) data;
     IdSet *ids;
 
+    IdSetSet_rewind(dat->d);
     while( (ids = IdSetSet_next(dat->d)) != NULL) {
         
         // sitepat is the union of the current set of descendants, as
@@ -1249,7 +1250,7 @@ static int Segment_coalesceInfinite(Segment *self, long double v,
             // Within each interval, there can be ancestors
             // with 1 descendant, 2, 3, ..., n-k+1.
             for(int d=1; d <= n-k+1; ++d) {
-                
+
                 long double lnprob = lnconst
                     + logl(binom(n-d-1, k-2))
                     - logl(binom(n,d));
@@ -1353,8 +1354,7 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
         while( (ids = IdSetSet_next(self->d[i])) != NULL ) {
             IdSet_print(ids, stderr);
         }
-        if( IdSetSet_length(self->d[i]) == 0 )
-            putc('\n', stderr);
+        putc('\n', stderr);
     }
 #endif    
 
@@ -1370,6 +1370,10 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
     }
     free(self->d);
     self->d = NULL;
+
+    fprintf(stderr,"%s:%d: SEGNUM %d branchtab:\n",
+            __func__, __LINE__, self->segnum);
+    BranchTab_print(branchtab, stderr);
 
     return status;
 }
@@ -1388,7 +1392,7 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
 /// of the newly-allocated array returned by the function.
 static IdSetSet **get_descendants1(int wdim, IdSetSet **w, int nsamples,
                                  tipId_t *sample, int *newdim) {
-    int i, n, m;
+    int i, n, m, status;
 
     if(w) {
         while(wdim > 0 && IdSetSet_size(w[wdim-1]) == 0)
@@ -1419,7 +1423,9 @@ static IdSetSet **get_descendants1(int wdim, IdSetSet **w, int nsamples,
         {
             IdSet *id = IdSet_new(nsamples, sample, 1.0);
             IdSet_sanityCheck(id, __FILE__, __LINE__);
-            IdSetSet_add(d[n-1], id);
+            status = IdSetSet_add(d[n-1], id);
+            if(status)
+                ERR(status, "bad return from IdSetSet_add");
         }
         assert(1 == IdSetSet_size(d[n-1]));
         return d;
@@ -1450,7 +1456,9 @@ static IdSetSet **get_descendants1(int wdim, IdSetSet **w, int nsamples,
             ids = IdSet_addSamples(ids, nsamples, sample);
             
             int nIds = IdSet_nIds(ids);
-            IdSetSet_add(d[nIds], ids);
+            status = IdSetSet_add(d[nIds], ids);
+            if(status)
+                ERR(status, "bad return from IdSetSet_add");
         }
         IdSetSet_empty_shallow(w[i]);
     }
@@ -1578,11 +1586,8 @@ IdSetSet **get_descendants2(int dim0, IdSetSet **w0,
             id = PtrLst_pop(d[i])) {
 
             int status = IdSetSet_add(dss[i], id);
-            if(status) {
-                fprintf(stderr,"%s:%d: allocation error\n",
-                        __FILE__,__LINE__);
-                exit(EXIT_FAILURE);
-            }
+            if(status)
+                ERR(status, "bad return from IdSetSet_add");
         }
         PtrLst_free(d[i]);
     }
@@ -1666,14 +1671,14 @@ int Segment_isClear(const Segment * self) {
 static void mv_idsets_to_parent(Segment *self, int ipar, PtrLst **a) {
     assert(ipar < self->nparents);
     int iself = self_ndx(self, self->parent[ipar]);
+    int status;
 
 #ifndef NDEBUG    
     if(verbosity > 0) {
         PtrLst_rewind(a[1]);
         fprintf(stderr,"%s debug:", __func__);
-        for(IdSet *set = PtrLst_next(a[1]);
-            set;
-            set = PtrLst_next(a[1])) {
+        IdSet *set;
+        while( (set = PtrLst_next(a[1])) != NULL) {
             IdSet_print(set, stderr);
         }
         putc('\n', stderr);
@@ -1687,14 +1692,19 @@ static void mv_idsets_to_parent(Segment *self, int ipar, PtrLst **a) {
 
         // parental waiting room
         IdSetSet *w = self->parent[ipar]->w[iself][i];
+
+#ifndef NDEBUG
+        IdSetSet_sanityCheck(w, __FILE__,__LINE__);
+#endif
         
         int m = PtrLst_length(a[i]);
         IdSetSet_reserve(w, m);
-        for(IdSet *id = PtrLst_pop(a[i]);
-            id;
-            id = PtrLst_pop(a[i])) {
 
-            IdSetSet_add(w, id);
+        IdSet *id;
+        while( (id = PtrLst_pop(a[i])) != NULL ) {
+            status = IdSetSet_add(w, id);
+            if(status)
+                ERR(status, "bad return from IdSetSet_add");
         }
     }
 }
@@ -1720,8 +1730,11 @@ static void mv_to_waiting_room(Segment *self, PtrLst *src, int ipar,
     IdSetSet_reserve(w, m);
 
     IdSet *id;
-    while( (id = PtrLst_pop(src)) != NULL )
-        IdSetSet_add(w, id);
+    while( (id = PtrLst_pop(src)) != NULL ) {
+        int status = IdSetSet_add(w, id);
+        if(status)
+            ERR(status, "bad return from IdSetSet_add");
+    }
 }
 
 void Segment_print_d(Segment *self, const char *func, int line) {

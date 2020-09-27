@@ -39,6 +39,7 @@ int main(int argc, char **argv) {
 
     IdSetSet *iss = IdSetSet_new(0); // will round up to next pwr of 2
     CHECKMEM(iss);
+    IdSetSet_sanityCheck(iss, __FILE__, __LINE__);
 
     int status;
     const int ntips = 4;
@@ -49,16 +50,9 @@ int main(int argc, char **argv) {
         tip[i] = IdSet_newTip(1u << i);
         IdSet_sanityCheck(tip[i], __FILE__, __LINE__);
         status = IdSetSet_add(iss, tip[i]);
-        switch(status) {
-        case ENOMEM:
-            fprintf(stderr,"%s:%d: bad alloc\n",__FILE__,__LINE__);
-            exit(EXIT_FAILURE);
-        case 0:
-            break;
-        default:
-            fprintf(stderr,"%s:%d: unknown error\n",__FILE__,__LINE__);
-            exit(EXIT_FAILURE);
-        }
+        if(status)
+            ERR(status, "bad return from IdSetSet_add");
+        IdSetSet_sanityCheck(iss, __FILE__, __LINE__);
     }
 
     int nIds = 5;
@@ -69,7 +63,9 @@ int main(int argc, char **argv) {
     IdSet_sanityCheck(a, __FILE__, __LINE__);
 
     status = IdSetSet_add(iss, a);
-    assert(status == 0);
+    if(status)
+        ERR(status, "bad return from IdSetSet_add");
+    IdSetSet_sanityCheck(iss, __FILE__, __LINE__);
 
     IdSet *b = IdSet_dup(a);
     IdSet_sanityCheck(b, __FILE__, __LINE__);
@@ -77,7 +73,9 @@ int main(int argc, char **argv) {
     assert(0 == IdSet_cmp(a, b));
 
     status = IdSetSet_add(iss, b);
-    assert(status == 0);
+    if(status)
+        ERR(status, "bad return from IdSetSet_add");
+    IdSetSet_sanityCheck(iss, __FILE__, __LINE__);
 
     nIds = 3;
     tipId_t tid2[3] = {32,64,128};
@@ -92,14 +90,16 @@ int main(int argc, char **argv) {
     IdSet_addMigEvent(c, 3,3, 0.3);
 
     status = IdSetSet_add(iss, c);
-    assert(status == 0);
+    if(status)
+        ERR(status, "bad return from IdSetSet_add");
 
     IdSet *d = IdSet_join(a, c, 0, NULL);
     assert(d);
     IdSet_sanityCheck(d, __FILE__, __LINE__);
 
     status = IdSetSet_add(iss, d);
-    assert(status == 0);
+    if(status)
+        ERR(status, "bad return from IdSetSet_add");
 
     // construct "e", which is mutually exclusive with "a".
     IdSet *e = IdSet_new(nIds, tid2, pr);
@@ -107,13 +107,15 @@ int main(int argc, char **argv) {
     IdSet_addMigEvent(e, 1, 2, 0.1);
 
     status = IdSetSet_add(iss, e);
-    assert(status == 0);
+    if(status)
+        ERR(status, "bad return from IdSetSet_add");
 
     // can't join IdSet objects with mutually exclusive
-    // migration hissories.
+    // migration histories.
     assert(NULL == IdSet_join(a, e, 0, NULL));
 
     IdSetSet_rewind(iss);
+    IdSetSet_sanityCheck(iss, __FILE__, __LINE__);
     for(a=IdSetSet_next(iss); a; a=IdSetSet_next(iss))
         IdSet_sanityCheck(a, __FILE__,__LINE__);
 
@@ -124,11 +126,8 @@ int main(int argc, char **argv) {
         putc('\n', stderr);
     }
 
-    IdSetSet_rewind(iss);
-    for(a=IdSetSet_next(iss); a; a=IdSetSet_next(iss))
-        IdSet_free(a);
-    
-    IdSetSet_free_shallow(iss);
+    IdSetSet_sanityCheck(iss, __FILE__, __LINE__);
+    IdSetSet_free_deep(iss);
 
     unitTstResult("IdSetSet", "OK");
     

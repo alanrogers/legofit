@@ -38,7 +38,6 @@ static int resize(IdSetSet *self, int dim);
 static const double sets_per_bucket = 0.7;
 static const double buckets_per_set = 1.0/sets_per_bucket;
 
-
 typedef struct El El;
 
 /// A single key-value pair, with a pointer to the next one.
@@ -61,9 +60,10 @@ struct IdSetSet {
 };
 
 static El  *El_new(IdSet *idset);
-static void El_free_shallow(El * e);
-static void El_free_deep(El * e);
+static El  *El_free_shallow(El * e);
+static El  *El_free_deep(El * e);
 static El  *El_add(El *self, IdSet *idset, int *status);
+static void El_sanityCheck(El *el, const char *file, int line);
 
 /// Construct a new element with given key and value
 static El *El_new(IdSet *idset) {
@@ -124,20 +124,29 @@ static El *El_add(El *self, IdSet *idset, int *status) {
 }
 
 /// Destroy a linked list of El objects, but do not free IdSet pointers.
-static void El_free_shallow(El * e) {
+static El *El_free_shallow(El * e) {
     if(e == NULL)
-        return;
+        return NULL;
     El_free_shallow(e->next);
     free(e);
+    return NULL;
 }
 
 /// Destroy a linked list of El objects, including IdSet pointers.
-static void El_free_deep(El * e) {
+static El *El_free_deep(El * e) {
     if(e == NULL)
-        return;
+        return NULL;
     El_free_deep(e->next);
     IdSet_free(e->idset);
     free(e);
+    return NULL;
+}
+
+static void El_sanityCheck(El *el, const char *file, int line) {
+    if(el == NULL)
+        return;
+    El_sanityCheck(el->next, file, line);
+    IdSet_sanityCheck(el->idset, file, line);
 }
 
 /// Constructor reserves space for n elements.
@@ -162,7 +171,7 @@ IdSetSet *IdSetSet_new(int n) {
 /// Shallow destructor does not free IdSet objects
 void IdSetSet_free_shallow(IdSetSet * self) {
     for(int i=0; i < self->dim; ++i)
-        El_free_shallow(self->tab[i]);
+        self->tab[i] = El_free_shallow(self->tab[i]);
     free(self->tab);
     free(self);
 }
@@ -170,17 +179,15 @@ void IdSetSet_free_shallow(IdSetSet * self) {
 /// Deep destructor frees IdSet objects
 void IdSetSet_free_deep(IdSetSet * self) {
     for(int i=0; i < self->dim; ++i)
-        El_free_deep(self->tab[i]);
+        self->tab[i] = El_free_deep(self->tab[i]);
     free(self->tab);
     free(self);
 }
 
 /// Empty IdSetSet. Does not free the IdSet pointers.
 void IdSetSet_empty_shallow(IdSetSet * self) {
-    for(int i=0; i < self->dim; ++i) {
-        El_free_shallow(self->tab[i]);
-        self->tab[i] = NULL;
-    }
+    for(int i=0; i < self->dim; ++i)
+        self->tab[i] = El_free_shallow(self->tab[i]);
     self->nelem = 0;
     self->curr = NULL;
     self->currndx = -1;
@@ -188,10 +195,8 @@ void IdSetSet_empty_shallow(IdSetSet * self) {
 
 /// Empty IdSetSet, including IdSet pointers.
 void IdSetSet_empty_deep(IdSetSet * self) {
-    for(int i=0; i < self->dim; ++i) {
-        El_free_deep(self->tab[i]);
-        self->tab[i] = NULL;
-    }
+    for(int i=0; i < self->dim; ++i)
+        self->tab[i] = El_free_deep(self->tab[i]);
     self->nelem = 0;
     self->curr = NULL;
     self->currndx = -1;
@@ -204,7 +209,7 @@ int IdSetSet_add(IdSetSet * self, IdSet *idset) {
 
     int status;
 
-    if(self->nelem > self->maxelem) {
+    if(1+self->nelem > self->maxelem) {
         status = resize(self, 2 * self->dim);
         if(status)
             return ENOMEM;
@@ -261,6 +266,7 @@ static int resize(IdSetSet *self, int dim) {
     El **tab = malloc(dim * sizeof(tab[0]));
     if(tab == NULL)
         return ENOMEM;
+    memset(tab, 0, dim * sizeof(tab[0]));
 
     for(int i=0; i < self->dim; ++i) {
         for(El *e=self->tab[i]; e; e=e->next) {
@@ -282,13 +288,17 @@ static int resize(IdSetSet *self, int dim) {
                 break;
             }
         }
-        El_free_shallow(self->tab[i]);
+        self->tab[i] = El_free_shallow(self->tab[i]);
     }
     free(self->tab);
     self->tab = tab;
     self->dim = dim;
     self->maxelem = ceil(sets_per_bucket * self->dim);
     self->mask = mask;
+
+#ifndef NDEBUG
+    IdSetSet_sanityCheck(self,__FILE__,__LINE__);
+#endif    
     return 0;
 }
 
@@ -350,3 +360,22 @@ int IdSetSet_reserve(IdSetSet *self, int m) {
     }
     return 0;
 }
+
+void IdSetSet_sanityCheck(IdSetSet *self, const char *file, int line) {
+#ifndef NDEBUG
+    REQUIRE(self != NULL, file, line);
+    REQUIRE(self->dim > 0, file, line);
+    REQUIRE(isPow2(self->dim), file, line);
+    REQUIRE(self->mask == self->dim - 1, file, line);
+    REQUIRE(self->nelem >= 0, file, line);
+    REQUIRE(self->nelem <= self->maxelem, file, line);
+    REQUIRE(self->maxelem == ceil(sets_per_bucket * self->dim), file, line);
+    REQUIRE(self->tab != 0, file, line);
+    REQUIRE(self->currndx == -1 || (self->currndx >=0 &&
+                                    self->currndx < self->dim),
+            file, line);
+    for(int i=0; i < self->dim; ++i)
+        El_sanityCheck(self->tab[i], file, line);
+#endif    
+}
+

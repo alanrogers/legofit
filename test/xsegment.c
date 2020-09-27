@@ -191,7 +191,7 @@ int main(int argc, char *argv[]) {
 
     assert(Segment_feasible(abc, bnd, verbose));
 
-    PtrPtrMap *ppm = PtrPtrMap_new(0);
+    PtrPtrMap *ppm = PtrPtrMap_new(10);
     Segment *duproot = Segment_dup(abc, ppm);
     CHECKMEM(duproot);
     PtrPtrMap_free(ppm);

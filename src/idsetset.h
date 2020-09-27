@@ -12,6 +12,7 @@ IdSetSet *IdSetSet_new(int dim);
 IdSet    *IdSetSet_next(IdSetSet *self);
 int       IdSetSet_reserve(IdSetSet *self, int m);
 int       IdSetSet_rewind(IdSetSet *self);
+void      IdSetSet_sanityCheck(IdSetSet *self, const char *file, int line);
 int       IdSetSet_size(IdSetSet * self);
 int       IdSetSet_toArray(IdSetSet *self, unsigned size, IdSet *v[size]);
 
