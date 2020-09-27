@@ -8,7 +8,7 @@
  * Systems Consortium License, which can be found in file "LICENSE".
  */
 
-#define VERBOSE
+//#define VERBOSE
 
 int segnum = 0;
 
@@ -146,7 +146,7 @@ static int self_ndx(Segment *self, Segment *parent);
 static int w_isempty(int dim, IdSetSet **w);
 static void migrate(PtrLst *migrants, PtrLst *natives, PtrLst *sets,
                     int nmig, int *migndx, int nnat, int *natndx,
-                    int mig_event, int mig_outcome, long double mig_pr);
+                    MigDat *md);
 static void mv_to_waiting_room(Segment *self, PtrLst *src, int ipar,
                                int nlin);
 void Segment_print_d(Segment *self, const char *func, int line);
@@ -833,7 +833,7 @@ int visitMig(int nmig, int *migndx, void *data) {
         natndx[j++] = next++;
 
 #if 1
-    fprintf(stderr,"%s:%d: nmig=%d nnat=%d event=%d outcome=%d: ",
+    fprintf(stderr,"%s:%d: nmig=%d nnat=%d event_outcome=%d_%d: ",
             __func__,__LINE__, nmig, nnat, mdat->mig_event,
             mdat->mig_outcome);
     for(int ii=0; ii<nmig; ++ii)
@@ -845,9 +845,7 @@ int visitMig(int nmig, int *migndx, void *data) {
 #endif
 
     migrate(mdat->migrants, mdat->natives, mdat->a, nmig, migndx,
-            nnat, natndx, mdat->mig_event, mdat->mig_outcome,
-            mdat->mig_pr);
-    mdat->mig_outcome += 1;
+            nnat, natndx, mdat);
 
     return 0;
 }
@@ -866,7 +864,7 @@ int visitMig(int nmig, int *migndx, void *data) {
  */
 static void migrate(PtrLst *migrants, PtrLst *natives, PtrLst *sets,
                     int nmig, int *migndx, int nnat, int *natndx,
-                    int mig_event, int mig_outcome, long double mig_pr) {
+                    MigDat *mdat) {
 
     IdSet *set;
     
@@ -886,6 +884,7 @@ static void migrate(PtrLst *migrants, PtrLst *natives, PtrLst *sets,
             fprintf(stderr," %o", set->tid[i]);
         fputs(" : ", stderr);
         MigOutcome_print(set->mig, stderr);
+        putc('\n', stderr);
 
         IdSet_sanityCheck(set, __FILE__, __LINE__);
 
@@ -895,7 +894,8 @@ static void migrate(PtrLst *migrants, PtrLst *natives, PtrLst *sets,
             migid[i] = set->tid[migndx[i]];
 
 #if 1        
-        fprintf(stderr,"%s:%d: migrants:", __func__,__LINE__);
+        fprintf(stderr,"%s:%d: %d_%d: migrants:",
+                __func__,__LINE__, mdat->mig_event, mdat->mig_outcome);
         for(int i=0; i<nmig; ++i)
             fprintf(stderr," %o", migid[i]);
         putc('\n', stderr);
@@ -905,7 +905,8 @@ static void migrate(PtrLst *migrants, PtrLst *natives, PtrLst *sets,
             natid[i] = set->tid[natndx[i]];
 
 #if 1        
-        fprintf(stderr,"%s:%d: natives:", __func__,__LINE__);
+        fprintf(stderr,"%s:%d: %d_%d: natives:",
+                __func__,__LINE__, mdat->mig_event, mdat->mig_outcome);
         for(int i=0; i<nnat; ++i)
             fprintf(stderr," %o", natid[i]);
         putc('\n', stderr);
@@ -913,14 +914,17 @@ static void migrate(PtrLst *migrants, PtrLst *natives, PtrLst *sets,
 
         // Create IdSet objects for migrants and natives
         IdSet *mig = IdSet_new(nmig, migid, set->p);
-        IdSet_addMigEvent(mig, mig_event, mig_outcome, mig_pr);
+        IdSet_addMigEvent(mig, mdat->mig_event, mdat->mig_outcome,
+                          mdat->mig_pr);
 #ifndef NDEBUG        
         IdSet_sanityCheck(mig, __FILE__, __LINE__);
 #endif        
         PtrLst_push(migrants, mig);
 
         IdSet *nat = IdSet_new(nnat, natid, set->p);
-        IdSet_addMigEvent(nat, mig_event, mig_outcome, mig_pr);
+        IdSet_addMigEvent(nat, mdat->mig_event, mdat->mig_outcome,
+                          mdat->mig_pr);
+        ++mdat->mig_outcome;
 #ifndef NDEBUG        
         IdSet_sanityCheck(nat, __FILE__, __LINE__);
 #endif        
@@ -1331,6 +1335,8 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
         break;
     default:
         assert(self->nchildren == 2);
+        fprintf(stderr,"%s:%d: SEGNUM %d calling get_descendants2\n",
+                __func__,__LINE__,self->segnum);
         self->d = get_descendants2(self->wdim[0], self->w[0],
                                    self->wdim[1], self->w[1],
                                    self->nsamples, self->sample,
@@ -1370,10 +1376,6 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
     }
     free(self->d);
     self->d = NULL;
-
-    fprintf(stderr,"%s:%d: SEGNUM %d branchtab:\n",
-            __func__, __LINE__, self->segnum);
-    BranchTab_print(branchtab, stderr);
 
     return status;
 }
