@@ -10,10 +10,9 @@
  *
  * To iterate across an IdSetSet named x:
  *
+ * IdSet *idset;
  * IdSetSet_rewind(x);
- * for( IdSet *idset = IdSetSet_next(x);
- *      idset;
- *      idset = IdSetSet_next(x); {
+ * while( (idset = IdSetSet_next(x)) != NULL ) {
  *     <operate on idset>
  * }
  *

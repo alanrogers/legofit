@@ -6,7 +6,7 @@ time fixed    Tm = 0.5
 time fixed    Tbeta = 0.75
 time fixed    Txyz = 2
 mixFrac fixed m = 1
-segment x     t=zero   twoN=one    samples=1
+segment x     t=zero   twoN=one    samples=2
 segment y     t=zero   twoN=one    samples=1
 segment y2    t=Tm     twoN=one
 segment y3    t=Tbeta    twoN=one

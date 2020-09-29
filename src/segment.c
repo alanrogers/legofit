@@ -705,7 +705,7 @@ int visitComb(int d, int ndx[d], void *data) {
             continue;
 
 #ifdef VERBOSE        
-        fprintf(stderr,"%s:%d: adding %Lg to pattern o%o\n",
+        fprintf(stderr,"%s:%d: add %Lg to pattern %o\n",
                 __FILE__,__LINE__, IdSet_prob(ids) * dat->contrib,
                 sitepat);
 #endif        
@@ -769,7 +769,7 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
                 continue;
 
 #ifdef VERBOSE            
-            fprintf(stderr,"%s:%d: adding %Lg=%Lg*%Lg*%Lg to pattern o%o\n",
+            fprintf(stderr,"%s:%d: add %Lg=%Lg*%Lg*%Lg to pattern %o\n",
                     __FILE__,__LINE__,
                     p * vdat->elen * IdSet_prob(descendants),
                     p, vdat->elen, IdSet_prob(descendants),
@@ -1053,7 +1053,7 @@ static int Segment_coalesceFinite(Segment *self, int dosing,
                 assert(IdSet_nIds(ids) == 1);
 
 #ifdef VERBOSE                
-                fprintf(stderr,"%s:%d: adding %Lg to pattern o%o\n",
+                fprintf(stderr,"%s:%d: add %Lg to pattern %o\n",
                         __FILE__,__LINE__,
                         IdSet_prob(ids) * v * self->twoN,
                         ids->tid[0]);

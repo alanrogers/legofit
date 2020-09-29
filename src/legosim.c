@@ -271,9 +271,9 @@ int main(int argc, char **argv) {
         printf("#%14s %15s\n", "SitePat", "Count");
     else
         printf("#%14s %15s\n", "SitePat", "E[BranchLength]");
-    char        buff[100];
+    char        buff[1000];
     for(j = 0; j < npat; ++j) {
-        char        buff2[100];
+        char        buff2[1000];
         snprintf(buff2, sizeof(buff2), "%s",
                  patLbl(sizeof(buff), buff, pat[ord[j]], &lblndx));
         if(U) {
