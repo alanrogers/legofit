@@ -488,7 +488,7 @@ int main(int argc, char **argv) {
         CHECKMEM(boot);
     }
 
-    unsigned long nsites = 0, nbadaa = 0, nfixed = 0;
+    unsigned long nsites = 0, nfixed=0, nbadaa = 0;
     long        snpndx = -1;
 
     // Iterate through daf files
@@ -505,6 +505,10 @@ int main(int argc, char **argv) {
             break;
         case EOF:
             done=1;
+            continue;
+        case MONOMORPHIC_SITE:
+            ++nsites;
+            ++nfixed;
             continue;
         case ALLELE_MISMATCH:
         case NO_ANCESTRAL_ALLELE:

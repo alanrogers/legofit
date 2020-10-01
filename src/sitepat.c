@@ -526,7 +526,7 @@ int main(int argc, char **argv) {
         CHECKMEM(boot);
     }
 
-    unsigned long nsites = 0, nbadaa = 0, nbadref=0, nmultalt=0;
+    unsigned long nsites = 0, nfixed=0, nbadaa = 0, nbadref=0, nmultalt=0;
     long        snpndx = -1;
 
     // Iterate through raf files
@@ -557,6 +557,10 @@ int main(int argc, char **argv) {
         case MULTIPLE_ALT:
             ++nsites;
             ++nmultalt;
+            continue;
+        case MONOMORPHIC_SITE:
+            ++nsites;
+            ++nfixed;
             continue;
         case NO_ANCESTRAL_ALLELE:
             ++nsites;
@@ -643,6 +647,8 @@ int main(int argc, char **argv) {
         printf("# Disagreements about ref allele : %lu\n", nbadref);
     if(nmultalt)
         printf("# Sites with multiple alt alleles: %lu\n", nmultalt);
+    if(nfixed)
+        printf("# Monomorphic sites              : %lu\n", nfixed);
     if(nbadaa)
         printf("# Undetermined ancestral allele  : %lu\n", nbadaa);
     printf("# Sites used                     : %lu\n",
