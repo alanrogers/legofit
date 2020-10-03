@@ -81,7 +81,7 @@ void MigOutcome_print(MigOutcome *self, FILE *fp) {
     for(MigOutcome *m=self; m; m = m->next) {
         if(m != self)
             putc(' ', fp);
-        fprintf(fp,"%u_%u", m->event, m->outcome);
+        fprintf(fp,"%u_%u_%Lg", m->event, m->outcome, m->pr);
     }
 }
 
