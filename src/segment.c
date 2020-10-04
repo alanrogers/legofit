@@ -1171,12 +1171,14 @@ static int Segment_coalesceFinite(Segment *self, int dosing,
 
             for(int x=0; x <= k; ++x) {
 
-                // Prob that x of k lineages are migrants is
-                // binomial with index k and parameter "mix".
-                long double migprob = logl(binom(k, x))
-                    + x*logl(self->mix)
-                    + (k-x)*logl(1.0-self->mix);
-                migprob = expl(migprob);
+                // Prob that a particular set of x lineages are
+                // migrants and the remaining k-x are natives. Not
+                // binomial, because the probability refers to a
+                // particular set of x lineages. The "k choose x" term
+                // of the binomial shows up here as the number of
+                // sets traversed by the call to traverseComb.
+                long double migprob = powl(self->mix, x)
+                    * powl(1.0 - self->mix, k-x);
                 assert(isfinite(migprob));
 
                 msd.mig_pr = migprob;
