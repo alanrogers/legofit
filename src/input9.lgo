@@ -1,0 +1,22 @@
+# We start with 2 samples in segment a at time 0. After 1 unit of coalescent
+# time, there is a probability 1-exp(-1) that these have coalesced to
+# a single lineage. Then each lineages migrates to segment s with
+# probability 1/2 and immediately migrates back. The migration should
+# have no effect, so the expected branch lengths are those of a single
+# randomly-mating population of size twoN=1. Both branch lengths
+# should equal 1.
+time fixed    Tc = 1
+time fixed    Tm = 1
+time fixed    Ta = 0
+twoN fixed    twoNa = 1
+twoN fixed    twoNc = 1
+twoN fixed    twoNs = 1
+mixFrac fixed m = 0.5
+segment s  t=Tm  twoN=twoNs
+segment a  t=Ta  twoN=twoNa  samples=2
+segment b  t=Tm  twoN=twoNa
+segment c  t=Tc  twoN=twoNc
+mix     a  from b + m * s
+derive  b  from c
+derive  s  from c
+

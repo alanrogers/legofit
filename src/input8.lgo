@@ -4,8 +4,7 @@
 # Segments "b" and "s" are also huge, with 0 length, so once again
 # no coalescent events happen. Then "b" and "s" join to form "c", which
 # has infinite length and twoN=1. The lengths of the two branches
-# should each equal 1. The simulation algorithm gets this right, but
-# the new algorithm gets an incorrect answer, 1.5.
+# should each equal 1.
 time fixed  zero = 0
 twoN fixed  one = 1
 twoN fixed  big = 1e9
