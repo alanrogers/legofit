@@ -1744,15 +1744,12 @@ static void mv_to_waiting_room(Segment *self, PtrLst *src, int ipar,
 void Segment_print_d(Segment *self, const char *func, int line) {
     fprintf(stderr,"%s:%d: SEGNUM %d. d:\n",
             func,line, self->segnum);
+    IdSet *id;
     for(int i=0; i < self->dim; ++i) {
         fprintf(stderr, "%d@", i);
         IdSetSet_rewind(self->d[i]);
-        for(IdSet *id = IdSetSet_next(self->d[i]);
-            id;
-            id = IdSetSet_next(self->d[i])) {
-
+        while( (id = IdSetSet_next(self->d[i])) != NULL) {
             IdSet_print(id, stderr);
-
         }
         putc('\n', stderr);
     }

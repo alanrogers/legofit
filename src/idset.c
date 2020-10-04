@@ -55,6 +55,7 @@ void IdSet_print(IdSet *self, FILE *fp) {
             putc(' ', fp);
         fprintf(fp, "%o", self->tid[i]);
     }
+    fprintf(fp,":%Lg", self->p);
     if(self->mig) {
         putc(':', fp);
         MigOutcome_print(self->mig, fp);
