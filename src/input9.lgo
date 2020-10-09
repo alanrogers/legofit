@@ -7,14 +7,14 @@
 # should equal 1.
 time fixed    Tc = 1
 time fixed    Tm = 1
-time fixed    Ta = 0
+time fixed    zero = 0
 twoN fixed    twoNa = 1
 twoN fixed    twoNc = 1
 twoN fixed    twoNs = 1
 mixFrac fixed m = 0.5
-segment s  t=Tm  twoN=twoNs
-segment a  t=Ta  twoN=twoNa  samples=2
+segment a  t=zero twoN=twoNa  samples=2
 segment b  t=Tm  twoN=twoNa
+segment s  t=Tm  twoN=twoNs
 segment c  t=Tc  twoN=twoNc
 mix     a  from b + m * s
 derive  b  from c

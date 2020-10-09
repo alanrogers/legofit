@@ -41,10 +41,6 @@ void IdSet_sanityCheck(IdSet *self, const char *file, int lineno) {
 }
 
 void IdSet_print(IdSet *self, FILE *fp) {
-    if(self==NULL) {
-        fputs("-----------------------\n", fp);
-        return;
-    }
 #if 0    
     fprintf(fp, "pr=%Lf nIds=%d:",
             self->p, self->nIds);

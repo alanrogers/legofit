@@ -832,7 +832,7 @@ int visitMig(int nmig, int *migndx, void *data) {
     while(j < nnat)
         natndx[j++] = next++;
 
-#if 1
+#if 0
     fprintf(stderr,"%s:%d: nmig=%d nnat=%d event_outcome=%d_%d: ",
             __func__,__LINE__, nmig, nnat, mdat->mig_event,
             mdat->mig_outcome);
@@ -871,21 +871,9 @@ static void migrate(PtrLst *migrants, PtrLst *natives, PtrLst *sets,
     // Extra entry guards against problems of zero length.
     tipId_t migid[1 + nmig], natid[1 + nnat];
 
-    // number of sets of ancestors
-    int nSets = PtrLst_length(sets);
-
-    fprintf(stderr,"%s:%d: nSets=%d\n", __func__,__LINE__, nSets);
-
     PtrLst_rewind(sets);
     while( (set = PtrLst_next(sets)) != NULL ) {
         
-        fprintf(stderr,"%s:%d:", __func__,__LINE__);
-        for(int i=0; i < nmig+nnat; ++i)
-            fprintf(stderr," %o", set->tid[i]);
-        fputs(" : ", stderr);
-        MigOutcome_print(set->mig, stderr);
-        putc('\n', stderr);
-
         IdSet_sanityCheck(set, __FILE__, __LINE__);
 
         assert(IdSet_nIds(set) == nmig + nnat);
@@ -893,23 +881,19 @@ static void migrate(PtrLst *migrants, PtrLst *natives, PtrLst *sets,
         for(int i=0; i<nmig; ++i)
             migid[i] = set->tid[migndx[i]];
 
-#if 1        
-        fprintf(stderr,"%s:%d: %d_%d: migrants:",
-                __func__,__LINE__, mdat->mig_event, mdat->mig_outcome);
-        for(int i=0; i<nmig; ++i)
-            fprintf(stderr," %o", migid[i]);
-        putc('\n', stderr);
-#endif        
-
         for(int i=0; i < nnat; ++i)
             natid[i] = set->tid[natndx[i]];
 
 #if 1        
-        fprintf(stderr,"%s:%d: %d_%d: natives:",
+        fprintf(stderr,"%s:%d: %d_%d: [mig; nat]: [",
                 __func__,__LINE__, mdat->mig_event, mdat->mig_outcome);
+        for(int i=0; i<nmig; ++i)
+            fprintf(stderr," %o", migid[i]);
+
+        fprintf(stderr,"; ");
         for(int i=0; i<nnat; ++i)
             fprintf(stderr," %o", natid[i]);
-        putc('\n', stderr);
+        fprintf(stderr,"]\n");
 #endif
 
         // Create IdSet objects for migrants and natives
@@ -1120,11 +1104,6 @@ static int Segment_coalesceFinite(Segment *self, int dosing,
 
     // Transfer IdSet objects to parental waiting rooms.
     if(self->nparents == 1) {
-        if(self->segnum == 4) {
-            fprintf(stderr,"%s:%d: verbosity on for segnum %d\n",
-                    __func__,__LINE__, self->segnum);
-            verbosity = 1;
-        }
         mv_idsets_to_parent(self, 0, a);
         verbosity = 0;
     }else if(self->mix == 0.0) {
@@ -1157,8 +1136,6 @@ static int Segment_coalesceFinite(Segment *self, int dosing,
                       .mig_event = nextMigrationEvent(),
                       .mig_outcome = 0
         };
-        fprintf(stderr,"%s:%d: mig_event %d is in segnum %d\n",
-                __func__,__LINE__, msd.mig_event, self->segnum);
 
         // Loop over the number, k, of ancestors. This includes 0
         // because migration can produce empty sets (because everyone
