@@ -8,7 +8,7 @@
  * Systems Consortium License, which can be found in file "LICENSE".
  */
 
-//#define VERBOSE
+#define VERBOSE
 
 int segnum = 0;
 
@@ -769,12 +769,11 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
                 continue;
 
 #ifdef VERBOSE            
-            fprintf(stderr,"%s:%d: add %Lg=%Lg*%Lg*%Lg to pattern %o\n",
-                    __FILE__,__LINE__,
+            fprintf(stderr,"%s:%s:%d: add %Lg=%Lg*%Lg*%Lg to pattern %o\n",
+                    __FILE__,__func__,__LINE__,
                     p * vdat->elen * IdSet_prob(descendants),
                     p, vdat->elen, IdSet_prob(descendants),
                     sitepat[j]);
-            IdSet_print(descendants, stderr);
 #endif            
       
             BranchTab_add(vdat->branchtab, sitepat[j],
