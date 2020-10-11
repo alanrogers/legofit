@@ -791,8 +791,10 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
         qsort(&sitepat[0], (size_t) k, sizeof(sitepat[0]), tipidcmp);
 
 #ifdef VERBOSE        
-        fprintf(stderr,"%s:%s:%d: new IdSet pr=%Lg * %Lg\n",
-                __FILE__,__func__,__LINE__, p, descendants->p);
+        fprintf(stderr,"%s:%s:%d: new IdSet pr = %Lg = %Lg * %Lg * %Lg\n",
+                __FILE__,__func__,__LINE__, p * vdat->prior * descendants->p,
+                p, vdat->prior,
+                descendants->p);
 #endif        
         IdSet *ancestors = IdSet_new(k, sitepat,
                                      p * vdat->prior * descendants->p);
@@ -1247,7 +1249,7 @@ static int Segment_coalesceInfinite(Segment *self, long double v,
 
                 // times expected length of interval
                 cd.contrib *= elen[k-1];
-                
+
                 status = traverseComb(n, d, visitComb, &cd);
                 if(status)
                     return status;
@@ -1528,6 +1530,9 @@ IdSetSet **get_descendants2(int dim0, IdSetSet **w0,
                     newid = IdSet_join(id0, id1, nsamples, sample);
                     if(newid == NULL)
                         continue;
+
+                    fprintf(stderr,"%s:%d: IdSet.pr=%Lg; pars: %Lg %Lg\n",
+                            __func__,__LINE__,newid->p, id0->p, id1->p);
 
                     IdSet_sanityCheck(newid, __FILE__, __LINE__);
                     

@@ -8,7 +8,7 @@
  */
 #include "idset.h"
 #include "misc.h"
-#include "migoutcome.h"
+#include "event.h"
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>

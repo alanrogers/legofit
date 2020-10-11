@@ -5,8 +5,8 @@ prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
 tests := xaddrparmap xbinary xbooma xboot xbranchtab xcomb xdafreader \
   xdiffev \
-  xdtnorm xerror xgene xgptree xhessian xidset xidsetset xintpart \
-  xjobqueue xlblndx xlinereader xmigoutcome xmisc xmpfrmatcoal \
+  xdtnorm xerror xeventlst xgene xgptree xhessian xidset xidsetset xintpart \
+  xjobqueue xlblndx xlinereader xmisc xmpfrmatcoal \
   xsimreader \
   xparam xparse xparseopf xparstore xpointbuff xpopnode xptrlst xptrptrmap \
   xptrqueue xptru32map \
@@ -78,7 +78,7 @@ test : $(tests)
 	-./xlblndx
 	-./xlinereader
 	-./xmatcoal
-	-./xmigoutcome
+	-./xeventlst
 	-./xmisc
 	-./xmpfrmatcoal
 	-./xsimreader
@@ -131,7 +131,7 @@ XCOMB := xcomb.o comb.o misc.o u64i64map.o binary.o
 xcomb : $(XCOMB)
 	$(CC) $(CFLAGS) -o $@ $(XCOMB) $(lib)
 
-XSEGMENT := xsegment.o misc.o segment.o idset.o branchtab.o migoutcome.o \
+XSEGMENT := xsegment.o misc.o segment.o idset.o branchtab.o eventlst.o \
     parstore.o param.o ptrlst.o ptrptrmap.o ptrqueue.o idsetset.o strint.o \
     tinyexpr.o dtnorm.o binary.o setpart.o u64u64map.o matcoal.o comb.o \
     rational.o strptrmap.o lblndx.o u64i64map.o
@@ -158,9 +158,9 @@ XPTRVEC := xptrvec.o ptrvec.o misc.o
 xptrvec : $(XPTRVEC)
 	$(CC) $(CFLAGS) -o $@ $(XPTRVEC) $(lib)
 
-XMIGOUTCOME := xmigoutcome.o migoutcome.o misc.o
-xmigoutcome : $(XMIGOUTCOME)
-	$(CC) $(CFLAGS) -o $@ $(XMIGOUTCOME) $(lib)
+XEVENTLST := xeventlst.o eventlst.o misc.o binary.o
+xeventlst : $(XEVENTLST)
+	$(CC) $(CFLAGS) -o $@ $(XEVENTLST) $(lib)
 
 XSETPART := xsetpart.o setpart.o misc.o u64u64map.o binary.o
 xsetpart : $(XSETPART)
@@ -269,7 +269,7 @@ XPARSE := xparse.o misc.o tokenizer.o gptree.o lblndx.o \
        dprintf.o dtnorm.o tinyexpr.o param.o addrparmap.o \
        sampndx.o strptrmap.o ptrptrmap.o ptrqueue.o strint.o \
        error.o segment.o ptrvec.o comb.o setpart.o \
-       ptrlst.o u64u64map.o migoutcome.o idset.o matcoal.o \
+       ptrlst.o u64u64map.o eventlst.o idset.o matcoal.o \
        rational.o
 xparse : $(XPARSE)
 	$(CC) $(CFLAGS) -o $@ $(XPARSE) $(lib)
@@ -310,14 +310,14 @@ XGPTREE := xgptree.o addrparmap.o misc.o branchtab.o parstore.o lblndx.o \
         dprintf.o dtnorm.o parse.o tinyexpr.o sampndx.o \
         network.o ptrptrmap.o ptrqueue.o strint.o error.o segment.o \
         idset.o matcoal.o ptrlst.o ptrvec.o comb.o setpart.o rational.o \
-        u64u64map.o migoutcome.o
+        u64u64map.o eventlst.o
 xgptree : $(XGPTREE)
 	$(CC) $(CFLAGS) -o $@ $(XGPTREE) $(lib)
 
 XMCTREE := xmctree.o mctree.o segment.o parstore.o lblndx.o sampndx.o misc.o \
     idset.o matcoal.o network.o param.o ptrlst.o ptrptrmap.o ptrqueue.o \
     ptrvec.o strint.o strptrmap.o binary.o comb.o setpart.o tinyexpr.o \
-    parse.o dtnorm.o migoutcome.o u64u64map.o rational.o popnode.o \
+    parse.o dtnorm.o eventlst.o u64u64map.o rational.o popnode.o \
     error.o gptree.o gene.o branchtab.o dprintf.o
 xmctree : $(XMCTREE)
 	$(CC) $(CFLAGS) -o $@ $(XMCTREE) $(lib)
@@ -395,11 +395,11 @@ XSTRDBLQUEUE := xstrdblqueue.o strdblqueue.o misc.o
 xstrdblqueue : $(XSTRDBLQUEUE)
 	$(CC) $(CFLAGS) -o $@ $(XSTRDBLQUEUE) $(lib)
 
-XIDSET := xidset.o idset.o misc.o binary.o migoutcome.o
+XIDSET := xidset.o idset.o misc.o binary.o eventlst.o
 xidset : $(XIDSET)
 	$(CC) $(CFLAGS) -o $@ $(XIDSET) $(lib)
 
-XIDSETSET := xidsetset.o idsetset.o idset.o misc.o binary.o migoutcome.o
+XIDSETSET := xidsetset.o idsetset.o idset.o misc.o binary.o eventlst.o
 xidsetset : $(XIDSETSET)
 	$(CC) $(CFLAGS) -o $@ $(XIDSETSET) $(lib)
 

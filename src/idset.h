@@ -2,7 +2,7 @@
 #  define ARR_IDSET_H
 
 #  include "typedefs.h"
-#  include "migoutcome.h"
+#  include "event.h"
 #  include <stdio.h>
 #  include <stdlib.h>
 
@@ -11,7 +11,7 @@ struct IdSet {
     long double p; // probability of this set
     int nIds; // number of Ids in this set
 
-    MigOutcome *mig;
+    Event *evlst; // linked list of events, outcomes and probs.
 
     // Array of length nIds. tid[i] is the id of the i'th haploid
     // individual in this set. Allocated using the struct hack.
@@ -19,11 +19,11 @@ struct IdSet {
 };
 
 IdSet *IdSet_addSamples(IdSet *old, int nsamples, tipId_t *samples);
-void   IdSet_addMigEvent(IdSet *self, unsigned event, unsigned outcome,
+void   IdSet_addEvent(IdSet *self, unsigned event, unsigned outcome,
                          long double pr);
 IdSet *IdSet_join(IdSet *left, IdSet *right, int nsamples,
                   tipId_t *samples);
-void   IdSet_copyMigOutcome(IdSet *self, const IdSet *old);
+void   IdSet_copyEvent(IdSet *self, const IdSet *old);
 IdSet *IdSet_dup(const IdSet *old);
 IdSet *IdSet_join(IdSet *left, IdSet *right, int nsamples,
                   tipId_t samples[nsamples]);
@@ -38,14 +38,14 @@ int    IdSet_cmp(const IdSet *left, const IdSet *right);
 uint32_t IdSet_hash(const IdSet *self) __attribute__((no_sanitize("integer")));
 
 static inline void IdSet_free(IdSet *self) {
-    MigOutcome_free(self->mig);
+    Event_free(self->evlst);
     free(self);
 }
 
 static inline int IdSet_nIds(IdSet *self) { return self->nIds; }
 
 static inline long double IdSet_prob(IdSet *self) {
-    return self->p * MigOutcome_prob(self->mig);
+    return self->p * Event_prob(self->evlst);
 }
 
 

@@ -1,12 +1,12 @@
 /**
- * @file xmigoutcome.c
+ * @file xeventlst.c
  * @author Alan R. Rogers
- * @brief Test migoutcome.c.
+ * @brief Test event.c.
  * @copyright Copyright (c) 2020, Alan R. Rogers
  * <rogers@anthro.utah.edu>. This file is released under the Internet
  * Systems Consortium License, which can be found in file "LICENSE".
  */
-#include "migoutcome.h"
+#include "eventlst.h"
 #include "misc.h"
 #include <stdio.h>
 #include <string.h>
@@ -25,63 +25,63 @@ int main(int argc, char **argv) {
         break;
     case 2:
         if(strncmp(argv[1], "-v", 2) != 0) {
-            fprintf(stderr, "usage: xmigoutcome [-v]\n");
+            fprintf(stderr, "usage: xevent [-v]\n");
             exit(1);
         }
         verbose = 1;
         break;
     default:
-        fprintf(stderr, "usage: xmigoutcome [-v]\n");
+        fprintf(stderr, "usage: xevent [-v]\n");
         exit(1);
     }
 
-    MigOutcome *mo[2] = {NULL, NULL};
+    EventLst *mo[2] = {NULL, NULL};
 
     for(unsigned i=0; i < 3; ++i) {
-        unsigned event = nextMigrationEvent();
+        unsigned event = nextEvent();
         for(unsigned outcome = 0; outcome < 2; ++outcome) {
-            mo[outcome] = MigOutcome_insert(mo[outcome], event,
+            mo[outcome] = EventLst_insert(mo[outcome], event,
                                             outcome, 0.5);
         }
     }
 
-    assert(0 > MigOutcome_cmp(mo[0], mo[1]));
+    assert(0 > EventLst_cmp(mo[0], mo[1]));
 
-    MigOutcome *mo3 = MigOutcome_dup(mo[0]);
+    EventLst *mo3 = EventLst_dup(mo[0]);
     if(verbose) {
-        MigOutcome_print(mo[0], stdout);
-        MigOutcome_print(mo[1], stdout);
-        MigOutcome_print(mo3, stdout);
+        EventLst_print(mo[0], stdout);
+        EventLst_print(mo[1], stdout);
+        EventLst_print(mo3, stdout);
     }
 
-    assert(0 == MigOutcome_cmp(mo[0], mo3));
+    assert(0 == EventLst_cmp(mo[0], mo3));
 
     int mutually_exclusive;
-    MigOutcome *mo4 = MigOutcome_join(mo[0], mo[1], &mutually_exclusive);
+    EventLst *mo4 = EventLst_join(mo[0], mo[1], &mutually_exclusive);
     assert(mo4 == NULL);
     assert(mutually_exclusive == 1);
 
-    MigOutcome_free(mo3);
+    EventLst_free(mo3);
     mo3 = NULL;
     for(unsigned i=0; i < 2; ++i) {
-        unsigned event = nextMigrationEvent();
-        mo3 = MigOutcome_insert(mo3, event, 1, 0.5);
+        unsigned event = nextEvent();
+        mo3 = EventLst_insert(mo3, event, 1, 0.5);
     }
-    mo4 = MigOutcome_join(mo[0], mo3, &mutually_exclusive);
+    mo4 = EventLst_join(mo[0], mo3, &mutually_exclusive);
     assert(mo4);
     assert(mutually_exclusive == 0);
     if(verbose) {
-        MigOutcome_print(mo4, stdout);
+        EventLst_print(mo4, stdout);
         putchar('\n');
     }
 
-    MigOutcome_free(mo4);
+    EventLst_free(mo4);
     mo4 = NULL;
-    mo4 = MigOutcome_join(mo[0], mo[0], &mutually_exclusive);
+    mo4 = EventLst_join(mo[0], mo[0], &mutually_exclusive);
     assert(mo4);
     assert(mutually_exclusive == 0);
 
-    MigOutcome *a=mo[0], *b=mo[1];
+    EventLst *a=mo[0], *b=mo[1];
     while(a && b) {
         assert(a->event == b->event);
         assert(a->outcome != b->outcome);
@@ -91,12 +91,12 @@ int main(int argc, char **argv) {
     }
     assert(a==NULL);
     assert(b==NULL);
-    MigOutcome_free(mo[0]);
-    MigOutcome_free(mo[1]);
-    MigOutcome_free(mo3);
-    MigOutcome_free(mo4);
+    EventLst_free(mo[0]);
+    EventLst_free(mo[1]);
+    EventLst_free(mo3);
+    EventLst_free(mo4);
 
-    unitTstResult("MigOutcome", "OK");
+    unitTstResult("EventLst", "OK");
     
     return 0;
 }

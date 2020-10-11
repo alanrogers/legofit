@@ -29,7 +29,7 @@ void IdSet_sanityCheck(IdSet *self, const char *file, int lineno) {
 
     // Empty IdSet objects arise only by migration.
     if(self->nIds == 0)
-        REQUIRE(NULL !=  self->mig, file, lineno);
+        REQUIRE(NULL !=  self->evlst, file, lineno);
 
     // tipId_t values should be sorted in increasing order
     for(int i=1; i < self->nIds; ++i)
@@ -53,7 +53,7 @@ void IdSet_print(IdSet *self, FILE *fp) {
     }
     fprintf(fp,":%Lg", self->p);
     putc(':', fp);
-    MigOutcome_print(self->mig, fp);
+    Event_print(self->evlst, fp);
     fputs("]", fp);
 }
 
@@ -71,7 +71,7 @@ IdSet *IdSet_new(int nIds, const tipId_t *tid, long double prob) {
 
     self->nIds = nIds;
     self->p = prob;
-    self->mig = NULL;
+    self->evlst = NULL;
 
     memcpy(self->tid, tid, nIds * sizeof(tipId_t));
 
@@ -83,14 +83,14 @@ IdSet *IdSet_dup(const IdSet *old) {
     if(old == NULL)
         return NULL;
     IdSet *new = IdSet_new(old->nIds, old->tid, old->p);
-    new->mig = MigOutcome_dup(old->mig);
+    new->evlst = Event_dup(old->evlst);
     return new;
 }
 
-// Add MigOutcome list from old into self.
-void IdSet_copyMigOutcome(IdSet *self, const IdSet *old) {
-    assert(self->mig == NULL);
-    self->mig = MigOutcome_dup(old->mig);
+// Add Event list from old into self.
+void IdSet_copyEvent(IdSet *self, const IdSet *old) {
+    assert(self->evlst == NULL);
+    self->evlst = Event_dup(old->evlst);
 }
 
 /**
@@ -104,8 +104,8 @@ IdSet *IdSet_join(IdSet *left, IdSet *right, int nsamples,
                   tipId_t *samples) {
 
     int mutually_exclusive;
-    MigOutcome *mig = MigOutcome_join(left->mig, right->mig,
-                                      &mutually_exclusive);
+    Event *evlst = Event_join(left->evlst, right->evlst,
+                              &mutually_exclusive);
     if(mutually_exclusive)
         return NULL;
 
@@ -122,7 +122,7 @@ IdSet *IdSet_join(IdSet *left, IdSet *right, int nsamples,
     merge(nIds, tid, left_plus_right, buff, nsamples, samples);
 
     IdSet *new = IdSet_new(nIds, tid, left->p * right->p);
-    new->mig = mig;
+    new->evlst = evlst;
 
 #ifndef NDEBUG    
     if(!no_shared_bits(nIds, tid)) {
@@ -147,9 +147,9 @@ IdSet *IdSet_join(IdSet *left, IdSet *right, int nsamples,
     return new;
 }
 
-void IdSet_addMigEvent(IdSet *self, unsigned event, unsigned outcome,
+void IdSet_addEvent(IdSet *self, unsigned event, unsigned outcome,
                        long double pr) {
-    self->mig = MigOutcome_insert(self->mig, event, outcome, pr);
+    self->event = Event_insert(self->event, event, outcome, pr);
 }
 
 /// Return pointer to new IdSet and free old one.
@@ -163,8 +163,8 @@ IdSet *IdSet_addSamples(IdSet *old, int nsamples, tipId_t *samples) {
     merge(nIds, tid, old->nIds, old->tid, nsamples, samples);
 
     IdSet *new = IdSet_new(nIds, tid, old->p);
-    new->mig = old->mig;
-    old->mig = NULL;
+    new->evlst = old->evlst;
+    old->evlst = NULL;
 
     IdSet_free(old);
     return new;
@@ -177,7 +177,7 @@ IdSet *IdSet_newTip(tipId_t tid) {
 
     self->nIds = 1;
     self->p = 1.0;
-    self->mig = NULL;
+    self->evlst = NULL;
     self->tid[0] = tid;
     return self;
 }
@@ -192,7 +192,7 @@ int IdSet_cmp(const IdSet *left, const IdSet *right) {
         else if(left->tid[i] < right->tid[i])
             return -1;
     }
-    return MigOutcome_cmp(left->mig, right->mig);
+    return Event_cmp(left->evlst, right->evlst);
 }
 
 uint32_t IdSet_hash(const IdSet *self)
@@ -200,7 +200,7 @@ uint32_t IdSet_hash(const IdSet *self)
     uint32_t hash = 17;
     for(int i=0; i < self->nIds; ++i)
         hash = hash * 37 + uint32Hash(self->tid[i]);
-    uint32_t h = MigOutcome_hash(self->mig);
+    uint32_t h = Event_hash(self->evlst);
     if(h)
         hash = hash * 37 + h;
     return hash;
