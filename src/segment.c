@@ -704,10 +704,15 @@ int visitComb(int d, int ndx[d], void *data) {
         if(sitepat == union_all_samples)
             continue;
 
-#ifdef VERBOSE        
-        fprintf(stderr,"%s:%d: add %Lg to pattern %o\n",
-                __FILE__,__LINE__, IdSet_prob(ids) * dat->contrib,
+#ifdef VERBOSE
+        long double idsetprob = IdSet_prob(ids);
+        fprintf(stderr,"%s:%d: add %Lg = %Lg*%Lg to pattern %o\n",
+                __FILE__,__LINE__, idsetprob, dat->contrib,
+                idsetprob * dat->contrib,
                 sitepat);
+        fprintf(stderr, " IdSets:");
+        IdSet_print(ids, stderr);
+        putc('\n', stderr);
 #endif        
       
         // Increment BranchTab entry for current sitepat value.
