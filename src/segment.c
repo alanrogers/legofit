@@ -59,6 +59,7 @@ struct MigDat {
 // Data manipulated by visitSetPart function.
 struct SetPartDat {
     unsigned nparts; // Number of parts in partition
+    unsigned event, outcome;
 
     long double prior; // prob of k ancestors given n descendants
     long double lnconst;  // log of constant in Durrett's theorem 1.5
@@ -687,14 +688,7 @@ int visitComb(int d, int ndx[d], void *data) {
         
         // sitepat is the union of the current set of descendants, as
         // described in ndx.
-        tipId_t sitepat = 0;
-        for(int j=0; j < d; ++j) {
-            assert(ndx[j] < ids->nIds);
-            assert(ndx[j] >= 0);
-            assert(ids->tid[ndx[j]]);
-            sitepat |= ids->tid[ndx[j]];
-        }
-        
+        tipId_t sitepat = IdSet_union(ids, d, ndx);
         assert(sitepat > 0);
 
         // Skip singletons unless data->dosing is nonzero
@@ -739,32 +733,22 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
     }
 
     tipId_t sitepat[k];
-
     long double p = probPartition(k, c, vdat->lnconst);
+    IdSet *descendants;    // Set of n descendants
 
 #ifdef VERBOSE    
     fprintf(stderr,"%s:%s:%d: set prob=%Lg prior=%Lg\n",
             __FILE__,__func__,__LINE__, p, vdat->prior);
 #endif    
 
-
     // Loop over IdSet objects
-    // a set of n descendants.
     IdSetSet_rewind(vdat->d);
-    for(IdSet *descendants = IdSetSet_next(vdat->d);
-        descendants;
-        descendants = IdSetSet_next(vdat->d)) {
+    while( (descendants = IdSetSet_next(vdat->d)) != NULL) {
 
-        memset(sitepat, 0, k*sizeof(tipId_t));
-
-        assert(n == IdSet_nIds(descendants));
-
-        // Loop over descendants, creating a sitepat for each
-        // ancestor. a[i] is the index of the ancestor of the i'th
-        // descendant. sitepat[j] is the site pattern of the j'th
-        // ancestor.
-        for(int j=0; j<n; ++j)
-            sitepat[a[j]] |= descendants->tid[j];
+        // Create a sitepat value for each ancestor. sitepat[i] is
+        // the union of the tipId_t values in "descendants" that are
+        // assigned to ancestor i by array "a".
+        IdSet_partition(descendants, k, sitepat, n, a);
 
         // Loop over ancestors, i.e. over site patterns, adding
         // to the corresponding entry in BranchTab.
@@ -791,14 +775,14 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
         qsort(&sitepat[0], (size_t) k, sizeof(sitepat[0]), tipidcmp);
 
 #ifdef VERBOSE        
-        fprintf(stderr,"%s:%s:%d: new IdSet pr = %Lg = %Lg * %Lg * %Lg\n",
-                __FILE__,__func__,__LINE__, p * vdat->prior * descendants->p,
-                p, vdat->prior,
-                descendants->p);
-#endif        
-        IdSet *ancestors = IdSet_new(k, sitepat,
-                                     p * vdat->prior * descendants->p);
-        IdSet_copyMigOutcome(ancestors, descendants);
+        fprintf(stderr,"%s:%s:%d: new IdSet pr = %Lg = %Lg * %Lg\n",
+                __FILE__,__func__,__LINE__, p * vdat->prior,
+                p, vdat->prior);
+#endif
+        EventLst *evlst = IdSet_dupEventLst(descendants);
+        evlst = EventLst_insert(evlst, vdat->event, vdat->outcome,
+                                p * vdat->prior);
+        IdSet *ancestors = IdSet_new(k, sitepat, evlst);
 
 #ifndef NDEBUG        
         IdSet_sanityCheck(ancestors, __FILE__, __LINE__);
@@ -809,6 +793,7 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
                     __FILE__,__LINE__, status);
             exit(EXIT_FAILURE);
         }
+        vdat->outcome += 1;
     }
 
     return status;
@@ -884,15 +869,15 @@ static void migrate(PtrLst *migrants, PtrLst *natives, PtrLst *sets,
 
         assert(IdSet_nIds(set) == nmig + nnat);
 
-        for(int i=0; i<nmig; ++i)
-            migid[i] = set->tid[migndx[i]];
+        // fill migid with tipId_t values of migrants
+        IdSet_get_tid(set, nmig, migid, migndx);
 
-        for(int i=0; i < nnat; ++i)
-            natid[i] = set->tid[natndx[i]];
+        // fill natid with tipId_t values of natives
+        IdSet_get_tid(set, nnat, natid, natndx);
 
 #if 1        
         fprintf(stderr,"%s:%d: %d_%d: [mig; nat]: [",
-                __func__,__LINE__, mdat->mig_event, mdat->mig_outcome);
+                __func__,__LINE__, mdat->event, mdat->outcome);
         for(int i=0; i<nmig; ++i)
             fprintf(stderr," %o", migid[i]);
 
@@ -902,9 +887,13 @@ static void migrate(PtrLst *migrants, PtrLst *natives, PtrLst *sets,
         fprintf(stderr,"]\n");
 #endif
 
+        /*
+          The following can't be right. I need to import the EventLst data
+        */
+
         // Create IdSet objects for migrants and natives
         IdSet *mig = IdSet_new(nmig, migid, set->p);
-        IdSet_addMigEvent(mig, mdat->mig_event, mdat->mig_outcome,
+        IdSet_addMigEvent(mig, mdat->event, mdat->outcome,
                           mdat->mig_pr);
 #ifndef NDEBUG        
         IdSet_sanityCheck(mig, __FILE__, __LINE__);
@@ -1022,7 +1011,7 @@ static int Segment_coalesceFinite(Segment *self, int dosing,
         a[i] = PtrLst_new();
 
     SetPartDat sd = {.branchtab = branchtab,
-                     .dosing = dosing,
+                     .dosing = dosing
     };
 
     // Cases of 0 or 1 lineages
@@ -1032,10 +1021,10 @@ static int Segment_coalesceFinite(Segment *self, int dosing,
         if(0 == nIds)
             continue;
 
+        IdSet *ids;
+
         IdSetSet_rewind(self->d[n]);
-        for(IdSet *ids = IdSetSet_next(self->d[n]);
-            ids;
-            ids = IdSetSet_next(self->d[n])) {
+        while( (ids = IdSetSet_next(self->d[n])) != NULL) {
 
             if(n==1 && ids->tid[0] != union_all_samples) {
                 // Single lineage in finite Segment contributes
@@ -1102,6 +1091,8 @@ static int Segment_coalesceFinite(Segment *self, int dosing,
             sd.prior = pr[k-1];
             sd.elen = elen[k-1];
             sd.lnconst = lnCoalConst(n, k);
+            sd.event = nextEvent();
+            sd.outcome=0;
             status = traverseSetPartitions(n, k, visitSetPart, &sd);
             if(status)
                 return status;

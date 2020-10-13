@@ -241,4 +241,50 @@ int IdSet_nIds(IdSet *self) {
     return self->nIds;
 }
 
+/// Return a tipId_t value representing the union of the values
+/// within this IdSet object whose indices are given in ndx, an array
+/// of length n.
+tipId_t IdSet_union(IdSet *self, int n, int *ndx) {
+    tipId_t u = 0;
+    for(int j=0; j < n; ++j) {
+        assert(ndx[j] < self->ids);
+        assert(ndx[j] >= 0);
+        assert(self->tid[ndx[j]]);
+        u |= self->tid[ndx[j]];
+    }
+    return u;
+}
 
+/// On entry, k is the number of parts into which this IdSet will be
+/// subdivided, n must equal self->nIds, and a[j] is the index of the
+/// part into which the j'th tipId_t value will be assigned.
+///
+/// On return, partition[i] is the union of the tipId_t values in self
+/// which belong to the i'th part.
+void IdSet_partition(IdSet *self, unsigned k, tipId_t part[k],
+                    unsigned n, unsigned a[n]) {
+    memset(part, 0, k*sizeof(tipId_t));
+    assert(n == self->nIds);
+    
+    // Loop over tid values, "or"ing each one into the relevant
+    // entry of "part", as specified in array "a". 
+    for(int j=0; j<n; ++j) {
+        assert(a[j] < k);
+        part[a[j]] |= self->tid[j];
+    }
+}
+
+/// Return a duplicate of the EventLst of this IdSet.
+EventLst *IdSet_dupEventLst(const IdSet *self) {
+    return Eventlst_dup(self->evlst);
+}
+
+/// Fill array "tid" with the tipId_t values whose indices are
+/// listed in array "ndx".
+void IdSet_get_tid(const IdSet *self, unsigned n, tipId_t *tid,
+                   unsigned *ndx) {
+    for(int i=0; i<n; ++i) {
+        assert(ndx[i] < self->nIds);
+        tid[i] = self->tid[i];
+    }
+}
