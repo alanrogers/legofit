@@ -4,18 +4,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// not thread safe
-static unsigned global_event = 0;
-
 static int EventLst_cmp_shallow(EventLst *a, unsigned event);
 static EventLst *EventLst_new(EventLst *next,
                                   unsigned event,
                                   unsigned outcomes,  
                                   long double pr);
 
-/// Increment external event variable.
+/// Return 0-based index of next event. Not thread safe.
 unsigned nextEvent(void) {
-    return global_event++;
+    static unsigned event = 0;
+    return event++;
 }
 
 static int EventLst_cmp_shallow(EventLst *a, unsigned event) {

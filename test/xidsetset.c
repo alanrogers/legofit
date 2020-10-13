@@ -58,8 +58,10 @@ int main(int argc, char **argv) {
     int nIds = 5;
     tipId_t tid[5] = {1, 2, 4, 8, 16};
     double pr = 0.5;
+    unsigned event = nextEvent();
+    unsigned outcome = 0;
 
-    IdSet *a = IdSet_new(nIds, tid, pr);
+    IdSet *a = IdSet_new(nIds, tid, EventLst_insert(NULL,event,outcome,pr));
     IdSet_sanityCheck(a, __FILE__, __LINE__);
 
     status = IdSetSet_add(iss, a);
@@ -72,22 +74,17 @@ int main(int argc, char **argv) {
 
     assert(0 == IdSet_cmp(a, b));
 
-    status = IdSetSet_add(iss, b);
-    if(status)
-        ERR(status, "bad return from IdSetSet_add");
-    IdSetSet_sanityCheck(iss, __FILE__, __LINE__);
-
     nIds = 3;
     tipId_t tid2[3] = {32,64,128};
     pr = 0.5;
-    IdSet *c = IdSet_new(nIds, tid2, pr);
+    IdSet *c = IdSet_new(nIds, tid2, EventLst_insert(NULL,event,outcome,pr));
     IdSet_sanityCheck(c, __FILE__, __LINE__);
 
     assert(0 < IdSet_cmp(a, c));
 
-    IdSet_addMigEvent(a, 1,1, 0.1);
-    IdSet_addMigEvent(a, 2,2, 0.2);
-    IdSet_addMigEvent(c, 3,3, 0.3);
+    IdSet_addEvent(a, 1,1, 0.1);
+    IdSet_addEvent(a, 2,2, 0.2);
+    IdSet_addEvent(c, 3,3, 0.3);
 
     status = IdSetSet_add(iss, c);
     if(status)
@@ -102,9 +99,9 @@ int main(int argc, char **argv) {
         ERR(status, "bad return from IdSetSet_add");
 
     // construct "e", which is mutually exclusive with "a".
-    IdSet *e = IdSet_new(nIds, tid2, pr);
+    IdSet *e = IdSet_new(nIds, tid2, EventLst_insert(NULL,event,outcome,pr));
     IdSet_sanityCheck(e, __FILE__, __LINE__);
-    IdSet_addMigEvent(e, 1, 2, 0.1);
+    IdSet_addEvent(e, 1, 2, 0.1);
 
     status = IdSetSet_add(iss, e);
     if(status)

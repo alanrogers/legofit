@@ -8,7 +8,7 @@
  */
 #include "idset.h"
 #include "misc.h"
-#include "event.h"
+#include "eventlst.h"
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
@@ -52,8 +52,11 @@ int main(int argc, char **argv) {
     int nIds = 5;
     tipId_t tid[5] = {1, 2, 4, 8, 16};
     double pr = 0.5;
+    unsigned event = nextEvent();
+    unsigned outcome = 0;
 
-    IdSet *a = IdSet_new(nIds, tid, pr);
+    IdSet *a = IdSet_new(nIds, tid, EventLst_insert(NULL, event,
+                                                    outcome, pr));
     IdSet_sanityCheck(a, __FILE__, __LINE__);
 
     if(verbose) {
@@ -67,27 +70,31 @@ int main(int argc, char **argv) {
 
     assert(0 == IdSet_cmp(a, b));
 
+    nIds = 3;
+    tipId_t tid2[3] = {32,64,128};
+    pr = 0.5;
+    IdSet *c = IdSet_new(nIds, tid2, EventLst_insert(NULL, event,
+                                                     outcome, pr));
+    IdSet_sanityCheck(c, __FILE__, __LINE__);
+
+    assert(0 < IdSet_cmp(a, c));
+
+    IdSet_addEvent(a, 1,1, 0.1);
+    IdSet_addEvent(a, 2,2, 0.2);
+    IdSet_addEvent(c, 3,3, 0.3);
+
     if(verbose) {
-        printf("Two duplicate IdSet objects\n");
+        printf("Several IdSet objects\n");
         printf("***a:\n");
         IdSet_print(a, stdout);
         putchar('\n');
         printf("***b:\n");
         IdSet_print(b, stdout);
         putchar('\n');
+        printf("***c:\n");
+        IdSet_print(c, stdout);
+        putchar('\n');
     }
-
-    nIds = 3;
-    tipId_t tid2[3] = {32,64,128};
-    pr = 0.5;
-    IdSet *c = IdSet_new(nIds, tid2, pr);
-    IdSet_sanityCheck(c, __FILE__, __LINE__);
-
-    assert(0 < IdSet_cmp(a, c));
-
-    IdSet_addMigEvent(a, 1,1, 0.1);
-    IdSet_addMigEvent(a, 2,2, 0.2);
-    IdSet_addMigEvent(c, 3,3, 0.3);
 
     IdSet *d = IdSet_join(a, c, 0, NULL);
     assert(d);
@@ -106,9 +113,8 @@ int main(int argc, char **argv) {
     }
 
     // construct "e", which is mutually exclusive with "a".
-    IdSet *e = IdSet_new(nIds, tid2, pr);
+    IdSet *e = IdSet_new(nIds, tid2, EventLst_insert(NULL, 1, 2, 0.1));
     IdSet_sanityCheck(e, __FILE__, __LINE__);
-    IdSet_addMigEvent(e, 1, 2, 0.1);
 
     // can't join IdSet objects with mutually exclusive
     // migration histories.

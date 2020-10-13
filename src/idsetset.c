@@ -113,10 +113,16 @@ static El *El_add(El *self, IdSet *idset, int *status) {
     }else if(cmp > 0) {
         self->next = El_add(self->next, idset, status);
         return self;
+    }else{
+        // Identical IdSets. If this ever happens, abort.
+        fprintf(stderr,"%s:%s:%d: cannot add identical IdSet objects\n",
+                __FILE__,__func__,__LINE__);
+        IdSet_print(self->idset, stderr);
+        putc('\n', stderr);
+        IdSet_print(idset, stderr);
+        putc('\n', stderr);
+        exit(EXIT_FAILURE);
     }
-    // Identical IdSets. Add the probability of the new
-    // one to that of the old one and free the new one.
-    self->idset->p += idset->p;
     IdSet_free(idset);
     *status = 0;
     return self;
