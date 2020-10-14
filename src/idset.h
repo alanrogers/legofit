@@ -11,7 +11,7 @@ void   IdSet_addEvent(IdSet *self, unsigned event, unsigned outcome,
                       long double pr);
 IdSet *IdSet_join(IdSet *left, IdSet *right, int nsamples,
                   tipId_t *samples);
-void IdSet_copyEventLst(IdSet *self, const IdSet *old);
+void   IdSet_copyEventLst(IdSet *self, const IdSet *old);
 IdSet *IdSet_dup(const IdSet *old);
 EventLst *IdSet_dupEventLst(const IdSet *self);
 IdSet *IdSet_join(IdSet *left, IdSet *right, int nsamples,
@@ -26,10 +26,9 @@ long double IdSet_prob(IdSet *self);
 int    IdSet_cmp(const IdSet *left, const IdSet *right);
 uint32_t IdSet_hash(const IdSet *self) __attribute__((no_sanitize("integer")));
 tipId_t IdSet_union(IdSet *self, int n, int *ndx);
-void   IdSet_partition(IdSet *self, unsigned k, tipId_t partition[k],
+void   IdSet_partition(IdSet *self, unsigned k, tipId_t part[k],
                        unsigned n, unsigned a[n]);
-void IdSet_get_tid(const IdSet *self, unsigned n, tipId_t *tid,
-                   unsigned *ndx);
-
+IdSet *IdSet_subset(const IdSet *self, int n, int *ndx);
+int    IdSet_get(const IdSet *self, int i);
 
 #endif

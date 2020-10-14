@@ -53,7 +53,7 @@ struct MigDat {
     int nMigrants, nNatives;
     long double mig_pr; // probability of this migration outcome
     PtrLst *migrants, *natives, *a;
-    unsigned mig_event, mig_outcome;
+    unsigned event, outcome;
 };
 
 // Data manipulated by visitSetPart function.
@@ -146,7 +146,8 @@ static int Segment_equals_r(Segment *a, Segment *b);
 static int self_ndx(Segment *self, Segment *parent);
 static int w_isempty(int dim, IdSetSet **w);
 static void migrate(PtrLst *migrants, PtrLst *natives, PtrLst *sets,
-                    int nmig, int *migndx, int nnat, int *natndx,
+                    int nmig, int *migndx,
+                    int nnat, int *natndx,
                     MigDat *md);
 static void mv_to_waiting_room(Segment *self, PtrLst *src, int ipar,
                                int nlin);
@@ -793,7 +794,7 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
                     __FILE__,__LINE__, status);
             exit(EXIT_FAILURE);
         }
-        vdat->outcome += 1;
+        ++vdat->outcome;
     }
 
     return status;
@@ -854,14 +855,11 @@ int visitMig(int nmig, int *migndx, void *data) {
  * migrants and natives.
  */
 static void migrate(PtrLst *migrants, PtrLst *natives, PtrLst *sets,
-                    int nmig, int *migndx, int nnat, int *natndx,
-                    MigDat *mdat) {
+                    int nmig, int *migndx,
+                    int nnat, int *natndx, MigDat *mdat) {
 
     IdSet *set;
     
-    // Extra entry guards against problems of zero length.
-    tipId_t migid[1 + nmig], natid[1 + nnat];
-
     PtrLst_rewind(sets);
     while( (set = PtrLst_next(sets)) != NULL ) {
         
@@ -869,45 +867,21 @@ static void migrate(PtrLst *migrants, PtrLst *natives, PtrLst *sets,
 
         assert(IdSet_nIds(set) == nmig + nnat);
 
-        // fill migid with tipId_t values of migrants
-        IdSet_get_tid(set, nmig, migid, migndx);
+        // IdSet objects for migrants and natives
+        IdSet *mig = IdSet_subset(set, nmig, migndx);
+        IdSet *nat = IdSet_subset(set, nnat, natndx);
 
-        // fill natid with tipId_t values of natives
-        IdSet_get_tid(set, nnat, natid, natndx);
+        IdSet_addEvent(mig, mdat->event, mdat->outcome, mdat->mig_pr);
+        IdSet_addEvent(nat, mdat->event, mdat->outcome, mdat->mig_pr);
 
-#if 1        
-        fprintf(stderr,"%s:%d: %d_%d: [mig; nat]: [",
-                __func__,__LINE__, mdat->event, mdat->outcome);
-        for(int i=0; i<nmig; ++i)
-            fprintf(stderr," %o", migid[i]);
-
-        fprintf(stderr,"; ");
-        for(int i=0; i<nnat; ++i)
-            fprintf(stderr," %o", natid[i]);
-        fprintf(stderr,"]\n");
-#endif
-
-        /*
-          The following can't be right. I need to import the EventLst data
-        */
-
-        // Create IdSet objects for migrants and natives
-        IdSet *mig = IdSet_new(nmig, migid, set->p);
-        IdSet_addMigEvent(mig, mdat->event, mdat->outcome,
-                          mdat->mig_pr);
 #ifndef NDEBUG        
         IdSet_sanityCheck(mig, __FILE__, __LINE__);
-#endif        
-        PtrLst_push(migrants, mig);
-
-        IdSet *nat = IdSet_new(nnat, natid, set->p);
-        IdSet_addMigEvent(nat, mdat->mig_event, mdat->mig_outcome,
-                          mdat->mig_pr);
-        ++mdat->mig_outcome;
-#ifndef NDEBUG        
         IdSet_sanityCheck(nat, __FILE__, __LINE__);
 #endif        
+        PtrLst_push(migrants, mig);
         PtrLst_push(natives, nat);
+
+        ++mdat->outcome;
     }
 }
 
@@ -1016,9 +990,9 @@ static int Segment_coalesceFinite(Segment *self, int dosing,
 
     // Cases of 0 or 1 lineages
     for(n=0; n <= 1 && n < self->dim; ++n) {
-        int nIds = IdSetSet_size(self->d[n]);
+        int nsets = IdSetSet_size(self->d[n]);
 
-        if(0 == nIds)
+        if(0 == nsets)
             continue;
 
         IdSet *ids;
@@ -1026,7 +1000,7 @@ static int Segment_coalesceFinite(Segment *self, int dosing,
         IdSetSet_rewind(self->d[n]);
         while( (ids = IdSetSet_next(self->d[n])) != NULL) {
 
-            if(n==1 && ids->tid[0] != union_all_samples) {
+            if( n==1 && union_all_samples != IdSet_get(ids, 0) ) {
                 // Single lineage in finite Segment contributes
                 // to branchtab.
                 assert(IdSet_nIds(ids) == 1);
@@ -1035,10 +1009,10 @@ static int Segment_coalesceFinite(Segment *self, int dosing,
                 fprintf(stderr,"%s:%d: add %Lg to pattern %o\n",
                         __FILE__,__LINE__,
                         IdSet_prob(ids) * v * self->twoN,
-                        ids->tid[0]);
+                        IdSet_get(ids, 0));
 #endif                
       
-                BranchTab_add(branchtab, ids->tid[0],
+                BranchTab_add(branchtab, IdSet_get(ids, 0),
                               IdSet_prob(ids) * v * self->twoN);
             }
 
@@ -1130,8 +1104,8 @@ static int Segment_coalesceFinite(Segment *self, int dosing,
                       .migrants = PtrLst_new(),
                       .natives = PtrLst_new(),
                       .a = NULL,
-                      .mig_event = nextMigrationEvent(),
-                      .mig_outcome = 0
+                      .event = nextEvent(),
+                      .outcome = 0
         };
 
         // Loop over the number, k, of ancestors. This includes 0
@@ -1151,11 +1125,9 @@ static int Segment_coalesceFinite(Segment *self, int dosing,
                 // particular set of x lineages. The "k choose x" term
                 // of the binomial shows up here as the number of
                 // sets traversed by the call to traverseComb.
-                long double migprob = powl(self->mix, x)
-                    * powl(1.0 - self->mix, k-x);
-                assert(isfinite(migprob));
+                msd.mig_pr = powl(self->mix, x) * powl(1.0 - self->mix, k-x);
+                assert(isfinite(msd.mig_pr));
 
-                msd.mig_pr = migprob;
                 msd.nMigrants = x;
                 msd.nNatives = k - x;
 
@@ -1399,7 +1371,7 @@ static IdSetSet **get_descendants1(int wdim, IdSetSet **w, int nsamples,
             d[i] = IdSetSet_new(0);
         d[n-1] = IdSetSet_new(1);
         {
-            IdSet *id = IdSet_new(nsamples, sample, 1.0);
+            IdSet *id = IdSet_new(nsamples, sample, NULL);
             IdSet_sanityCheck(id, __FILE__, __LINE__);
             status = IdSetSet_add(d[n-1], id);
             if(status)
@@ -1522,16 +1494,25 @@ IdSetSet **get_descendants2(int dim0, IdSetSet **w0,
                     if(newid == NULL)
                         continue;
 
-                    fprintf(stderr,"%s:%d: IdSet.pr=%Lg; pars: %Lg %Lg\n",
-                            __func__,__LINE__,newid->p, id0->p, id1->p);
+                    fprintf(stderr,"%s:%d: newid", __func__,__LINE__);
+                    IdSet_print(newid, stderr);
+                    putc('\n', stderr);
 
+                    fprintf(stderr,"%s:%d: id0", __func__,__LINE__);
+                    IdSet_print(id0, stderr);
+                    putc('\n', stderr);
+
+                    fprintf(stderr,"%s:%d: id1", __func__,__LINE__);
+                    IdSet_print(id1, stderr);
+                    putc('\n', stderr);
+                    
                     IdSet_sanityCheck(newid, __FILE__, __LINE__);
                     
                     // non-NULL means id0 and id1 are compatible
                     // and can be added to the list of
                     // descendants.
                     int k = i+j+ nsamples;
-                    assert(k == newid->nIds);
+                    assert(k == IdSet_nIds(newid));
                     assert(k < n);
                     PtrLst_push(d[k], newid);
                 }
