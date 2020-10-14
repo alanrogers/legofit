@@ -8,11 +8,9 @@
  * Systems Consortium License, which can be found in file "LICENSE".
  */
 
-#define VERBOSE
+//#define VERBOSE
 
 int segnum = 0;
-
-int verbosity = 0;
 
 #include "binary.h"
 #include "branchtab.h"
@@ -151,7 +149,9 @@ static void migrate(PtrLst *migrants, PtrLst *natives, PtrLst *sets,
                     MigDat *md);
 static void mv_to_waiting_room(Segment *self, PtrLst *src, int ipar,
                                int nlin);
+#ifndef NDEBUG
 void Segment_print_d(Segment *self, const char *func, int line);
+#endif
 static int tipidcmp(const void *vx, const void *vy);
 
 // Return index of self among children of parent
@@ -699,17 +699,6 @@ int visitComb(int d, int ndx[d], void *data) {
         if(sitepat == union_all_samples)
             continue;
 
-#ifdef VERBOSE
-        long double idsetprob = IdSet_prob(ids);
-        fprintf(stderr,"%s:%d: add %Lg = %Lg*%Lg to pattern %o\n",
-                __FILE__,__LINE__, idsetprob, dat->contrib,
-                idsetprob * dat->contrib,
-                sitepat);
-        fprintf(stderr, " IdSets:");
-        IdSet_print(ids, stderr);
-        putc('\n', stderr);
-#endif        
-      
         // Increment BranchTab entry for current sitepat value.
         BranchTab_add(dat->branchtab, sitepat,
                       IdSet_prob(ids) * dat->contrib);
@@ -737,11 +726,6 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
     long double p = probPartition(k, c, vdat->lnconst);
     IdSet *descendants;    // Set of n descendants
 
-#ifdef VERBOSE    
-    fprintf(stderr,"%s:%s:%d: set prob=%Lg prior=%Lg\n",
-            __FILE__,__func__,__LINE__, p, vdat->prior);
-#endif    
-
     // Loop over IdSet objects
     IdSetSet_rewind(vdat->d);
     while( (descendants = IdSetSet_next(vdat->d)) != NULL) {
@@ -758,14 +742,6 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
             if(sitepat[j] == union_all_samples)
                 continue;
 
-#ifdef VERBOSE            
-            fprintf(stderr,"%s:%s:%d: add %Lg=%Lg*%Lg*%Lg to pattern %o\n",
-                    __FILE__,__func__,__LINE__,
-                    p * vdat->elen * IdSet_prob(descendants),
-                    p, vdat->elen, IdSet_prob(descendants),
-                    sitepat[j]);
-#endif            
-      
             BranchTab_add(vdat->branchtab, sitepat[j],
                           p * vdat->elen * IdSet_prob(descendants));
         }
@@ -775,11 +751,6 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
 
         qsort(&sitepat[0], (size_t) k, sizeof(sitepat[0]), tipidcmp);
 
-#ifdef VERBOSE        
-        fprintf(stderr,"%s:%s:%d: new IdSet pr = %Lg = %Lg * %Lg\n",
-                __FILE__,__func__,__LINE__, p * vdat->prior,
-                p, vdat->prior);
-#endif
         EventLst *evlst = IdSet_dupEventLst(descendants);
         evlst = EventLst_insert(evlst, vdat->event, vdat->outcome,
                                 p * vdat->prior);
@@ -823,18 +794,6 @@ int visitMig(int nmig, int *migndx, void *data) {
     }
     while(j < nnat)
         natndx[j++] = next++;
-
-#if 0
-    fprintf(stderr,"%s:%d: nmig=%d nnat=%d event_outcome=%d_%d: ",
-            __func__,__LINE__, nmig, nnat, mdat->mig_event,
-            mdat->mig_outcome);
-    for(int ii=0; ii<nmig; ++ii)
-        fprintf(stderr," %d", migndx[ii]);
-    fputs(" :", stderr);
-    for(int ii=0; ii<nnat; ++ii)
-        fprintf(stderr," %d", natndx[ii]);
-    putc('\n', stderr);
-#endif
 
     migrate(mdat->migrants, mdat->natives, mdat->a, nmig, migndx,
             nnat, natndx, mdat);
@@ -960,7 +919,6 @@ static int Segment_coalesceFinite(Segment *self, int dosing,
                                   BranchTab *branchtab) {
 
     assert(union_all_samples != 0);
-    Segment_print_d(self, __func__,__LINE__);
 
     /*
       pr[i] = prob of i+1 lineages
@@ -1005,13 +963,6 @@ static int Segment_coalesceFinite(Segment *self, int dosing,
                 // to branchtab.
                 assert(IdSet_nIds(ids) == 1);
 
-#ifdef VERBOSE                
-                fprintf(stderr,"%s:%d: add %Lg to pattern %o\n",
-                        __FILE__,__LINE__,
-                        IdSet_prob(ids) * v * self->twoN,
-                        IdSet_get(ids, 0));
-#endif                
-      
                 BranchTab_add(branchtab, IdSet_get(ids, 0),
                               IdSet_prob(ids) * v * self->twoN);
             }
@@ -1043,18 +994,6 @@ static int Segment_coalesceFinite(Segment *self, int dosing,
         // Calculate pr[i], the probability of i+1 lineages at the
         // ancient end of the segment.
         project(n, pr, eig);
-
-#ifdef VERBOSE        
-        fprintf(stderr,"%s:%d: MatCoal pr:",__FILE__,__LINE__);
-        for(int ii=0; ii<n; ++ii)
-            fprintf(stderr," %d:%Lg", ii+1, pr[ii]);
-        putc('\n', stderr);
-        fprintf(stderr,"%s:%d: MatCoal elen:",__FILE__,__LINE__);
-        for(int ii=0; ii<n; ++ii)
-            fprintf(stderr," %d:%Lg", ii+1, elen[ii]);
-        putc('\n', stderr);
-#endif        
-
         sd.d = self->d[n];
 
         // Loop over number, k, of ancestors.  Include k=1, because
@@ -1076,7 +1015,6 @@ static int Segment_coalesceFinite(Segment *self, int dosing,
     // Transfer IdSet objects to parental waiting rooms.
     if(self->nparents == 1) {
         mv_idsets_to_parent(self, 0, a);
-        verbosity = 0;
     }else if(self->mix == 0.0) {
 
         // everyone is a native
@@ -1160,7 +1098,6 @@ static int Segment_coalesceFinite(Segment *self, int dosing,
 static int Segment_coalesceInfinite(Segment *self, long double v,
                                     int dosing,
                                     BranchTab *branchtab) {
-    Segment_print_d(self, __func__,__LINE__);
 
     assert(self->dim > 0);
     long double elen[self->dim];
@@ -1224,33 +1161,12 @@ static int Segment_coalesceInfinite(Segment *self, long double v,
 }
 
 int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
-#ifdef VERBOSE    
-    fprintf(stderr,"%s:%d: SEGNUM %d\n",
-            __func__,__LINE__, self->segnum);
-#endif    
 
     int status=0;
 
     if(self->visited)
         return 0;
     self->visited = 1;
-
-    switch(self->nchildren) {
-    case 0:
-        fprintf(stderr,"%s:%d: SEGNUM %d is a tip\n",
-                __func__,__LINE__, self->segnum);
-        break;
-    case 1:
-        fprintf(stderr,"%s:%d: SEGNUM %d <- %d\n",
-                __func__,__LINE__, self->segnum,
-                self->child[0]->segnum);
-        break;
-    default:
-        fprintf(stderr,"%s:%d: SEGNUM %d <- %d + %d\n",
-                __func__,__LINE__, self->segnum,
-                self->child[0]->segnum, self->child[1]->segnum);
-        break;
-    }
 
     if(self->nchildren > 0) {
         status = Segment_coalesce(self->child[0], dosing, branchtab);
@@ -1283,8 +1199,6 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
         break;
     default:
         assert(self->nchildren == 2);
-        fprintf(stderr,"%s:%d: SEGNUM %d calling get_descendants2\n",
-                __func__,__LINE__,self->segnum);
         self->d = get_descendants2(self->wdim[0], self->w[0],
                                    self->wdim[1], self->w[1],
                                    self->nsamples, self->sample,
@@ -1296,21 +1210,6 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
         break;
     }
     assert(self->dim > 0);
-
-#ifdef VERBOSE    
-    fprintf(stderr,"%s:%s:%d: nchild=%d npar=%d d:\n",
-            __FILE__,__func__,__LINE__,
-            self->nchildren, self->nparents);
-    for(int i=0; i < self->dim; ++i) {
-        fprintf(stderr,"%2d:", i);
-        IdSetSet_rewind(self->d[i]);
-        IdSet *ids;
-        while( (ids = IdSetSet_next(self->d[i])) != NULL ) {
-            IdSet_print(ids, stderr);
-        }
-        putc('\n', stderr);
-    }
-#endif    
 
     if(self->end_i == -1) {
         status = Segment_coalesceInfinite(self, INFINITY, dosing, branchtab);
@@ -1494,18 +1393,6 @@ IdSetSet **get_descendants2(int dim0, IdSetSet **w0,
                     if(newid == NULL)
                         continue;
 
-                    fprintf(stderr,"%s:%d: newid", __func__,__LINE__);
-                    IdSet_print(newid, stderr);
-                    putc('\n', stderr);
-
-                    fprintf(stderr,"%s:%d: id0", __func__,__LINE__);
-                    IdSet_print(id0, stderr);
-                    putc('\n', stderr);
-
-                    fprintf(stderr,"%s:%d: id1", __func__,__LINE__);
-                    IdSet_print(id1, stderr);
-                    putc('\n', stderr);
-                    
                     IdSet_sanityCheck(newid, __FILE__, __LINE__);
                     
                     // non-NULL means id0 and id1 are compatible
@@ -1635,18 +1522,6 @@ static void mv_idsets_to_parent(Segment *self, int ipar, PtrLst **a) {
     int iself = self_ndx(self, self->parent[ipar]);
     int status;
 
-#ifndef NDEBUG    
-    if(verbosity > 0) {
-        PtrLst_rewind(a[1]);
-        fprintf(stderr,"%s debug:", __func__);
-        IdSet *set;
-        while( (set = PtrLst_next(a[1])) != NULL) {
-            IdSet_print(set, stderr);
-        }
-        putc('\n', stderr);
-    }
-#endif    
-
     assert(self == self->parent[ipar]->child[iself]);
 
     self->parent[ipar]->wdim[iself] = self->dim;
@@ -1699,9 +1574,8 @@ static void mv_to_waiting_room(Segment *self, PtrLst *src, int ipar,
     }
 }
 
+#ifndef NDEBUG
 void Segment_print_d(Segment *self, const char *func, int line) {
-    fprintf(stderr,"%s:%d: SEGNUM %d. d:\n",
-            func,line, self->segnum);
     IdSet *id;
     for(int i=0; i < self->dim; ++i) {
         fprintf(stderr, "%d@", i);
@@ -1712,6 +1586,7 @@ void Segment_print_d(Segment *self, const char *func, int line) {
         putc('\n', stderr);
     }
 }
+#endif
 
 /// This sorts tipId_t values into numerical order, unlike the
 /// more complex comparison function, compare_tipId, which is defined

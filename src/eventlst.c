@@ -17,9 +17,9 @@ unsigned nextEvent(void) {
 }
 
 static int EventLst_cmp_shallow(EventLst *a, unsigned event) {
-    if(a == NULL || a->event > event)
+    if(a == NULL || a->event < event)
         return 1;
-    if(a->event < event)
+    if(a->event > event)
         return -1;
     return 0;
 }
@@ -154,13 +154,13 @@ int EventLst_cmp(const EventLst *left, const EventLst *right) {
         return 1;
     if(left==NULL)  // right!=NULL
         return -1;
-    if(left->event > right->event)
+    if(left->event < right->event)
         return 1;
-    if (left->event < right->event)
+    if (left->event > right->event)
         return -1;
-    if (left->outcome > right->outcome)
-        return 1;
     if (left->outcome < right->outcome)
+        return 1;
+    if (left->outcome > right->outcome)
         return -1;
     return EventLst_cmp(left->next, right->next);
 }
