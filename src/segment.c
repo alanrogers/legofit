@@ -856,8 +856,12 @@ static void Segment_duplicate_nodes(Segment *old, PtrPtrMap *ppm) {
     Segment *new = memdup(old, sizeof(*old));
     CHECKMEM(new);
     old->visited = 1;
+#ifndef NDEBUG    
     int status = PtrPtrMap_insert(ppm, old, new);
     assert(status==0);
+#else    
+    (void) PtrPtrMap_insert(ppm, old, new);
+#endif    
     if(old->nchildren > 0)
         Segment_duplicate_nodes(old->child[0], ppm);
     if(old->nchildren > 1)
@@ -917,6 +921,8 @@ static int Segment_equals_r(Segment *a, Segment *b) {
 
 static int Segment_coalesceFinite(Segment *self, int dosing,
                                   BranchTab *branchtab) {
+
+    fprintf(stderr,"%s:%d: segnum %d\n", __func__,__LINE__, self->segnum);
 
     assert(union_all_samples != 0);
 
@@ -1370,37 +1376,42 @@ IdSetSet **get_descendants2(int dim0, IdSetSet **w0,
 
     IdSet *id0, *id1, *newid;
 
+    fprintf(stderr,"%s:%d\n", __func__,__LINE__);
     for(i=0; i < dim0; ++i) {
         IdSetSet_rewind(w0[i]);
-        for(id0=IdSetSet_next(w0[i]);
-            id0;
-            id0=IdSetSet_next(w0[i])) {
-            
+        while( (id0=IdSetSet_next(w0[i])) != NULL) {
+
+#ifndef NDEBUG            
             IdSet_sanityCheck(id0, __FILE__, __LINE__);
             assert(IdSet_nIds(id0) == i);
+#endif            
 
             for(j=0; j < dim1; ++j) {
                 IdSetSet_rewind(w1[j]);
 
-                for(id1=IdSetSet_next(w1[j]);
-                    id1;
-                    id1=IdSetSet_next(w1[j])) {
+                while( (id1=IdSetSet_next(w1[j])) != NULL) {
 
+#ifndef NDEBUG            
                     IdSet_sanityCheck(id1, __FILE__, __LINE__);
                     assert(IdSet_nIds(id1) == j);
+#endif            
 
                     newid = IdSet_join(id0, id1, nsamples, sample);
                     if(newid == NULL)
                         continue;
-
-                    IdSet_sanityCheck(newid, __FILE__, __LINE__);
-                    
-                    // non-NULL means id0 and id1 are compatible
-                    // and can be added to the list of
+                    // non-NULL means id0 and id1 are compatible,
+                    // and newid can be added to the list of
                     // descendants.
-                    int k = i+j+ nsamples;
+
+#ifndef NDEBUG
+                    IdSet_sanityCheck(newid, __FILE__, __LINE__);
+#endif
+                    
+                    int k = i + j + nsamples;
+
                     assert(k == IdSet_nIds(newid));
                     assert(k < n);
+
                     PtrLst_push(d[k], newid);
                 }
             }
@@ -1408,6 +1419,7 @@ IdSetSet **get_descendants2(int dim0, IdSetSet **w0,
         IdSetSet_empty_deep(w0[i]);
     }
 
+    fprintf(stderr,"%s:%d\n", __func__,__LINE__);
     // Empty w1; w0 is already empty.
     for(j=0; j < dim1; ++j) {
         IdSetSet_empty_deep(w1[j]);
