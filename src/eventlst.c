@@ -17,9 +17,9 @@ unsigned nextEvent(void) {
 }
 
 static int EventLst_cmp_shallow(EventLst *a, unsigned event) {
-    if(a == NULL || a->event > event)
+    if(a == NULL || a->event < event)
         return 1;
-    if(a->event < event)
+    if(a->event > event)
         return -1;
     return 0;
 }
@@ -36,9 +36,14 @@ EventLst *EventLst_insert(EventLst *head,
     }else if(cmp > 0) {
         return EventLst_new(head, event, outcome, pr);
     }else{
-        fprintf(stderr,"%s:%s:%d: can't insert a new outcome for"
-                " existing event %u\n",
-                __FILE__,__func__,__LINE__, event);
+        assert(head != NULL);
+#ifndef NDEBUG        
+        dostacktrace(__FILE__,__LINE__, stderr);
+#endif        
+        fprintf(stderr,"%s:%s:%d: can't insert a new outcome (%u) for \n"
+                "  event %u;  old outcome = %u\n",
+                __FILE__,__func__,__LINE__, outcome, event,
+                head->outcome);
         exit(EXIT_FAILURE);
     }
 
@@ -94,11 +99,11 @@ EventLst *EventLst_join(EventLst *left, EventLst *right,
     EventLst *head = NULL;
 
     while(left && right) {
-        if(left->event < right->event) {
+        if(left->event > right->event) {
             head = EventLst_insert(head, left->event,
                                      left->outcome, left->pr);
             left = left->next;
-        }else if(left->event > right->event) {
+        }else if(left->event < right->event) {
             head = EventLst_insert(head, right->event,
                                      right->outcome, right->pr);
             right = right->next;
@@ -155,13 +160,13 @@ int EventLst_cmp(const EventLst *left, const EventLst *right) {
     if(left==NULL)  // right!=NULL
         return -1;
     if(left->event > right->event)
-        return 1;
+        return -1;
     if (left->event < right->event)
-        return -1;
-    if (left->outcome > right->outcome)
         return 1;
-    if (left->outcome < right->outcome)
+    if (left->outcome > right->outcome)
         return -1;
+    if (left->outcome < right->outcome)
+        return 1;
     return EventLst_cmp(left->next, right->next);
 }
 

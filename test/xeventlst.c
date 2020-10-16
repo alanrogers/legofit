@@ -45,7 +45,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    assert(0 > EventLst_cmp(mo[0], mo[1]));
+    assert(0 < EventLst_cmp(mo[0], mo[1]));
 
     EventLst *mo3 = EventLst_dup(mo[0]);
     if(verbose) {
