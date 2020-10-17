@@ -232,16 +232,8 @@ int IdSetSet_add(IdSetSet * self, IdSet *idset) {
 }
 
 /// Return the number of elements.
-/// I may need to make this faster.
 int IdSetSet_size(IdSetSet * self) {
-    int size = 0;
-
-    for(int i = 0; i < self->dim; ++i) {
-        El *el;
-        for(el = self->tab[i]; el; el = el->next)
-            ++size;
-    }
-    return size;
+    return self->nelem;
 }
 
 /// Put idset pointers into array "v". If the array isn't large enough,

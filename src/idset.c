@@ -27,6 +27,8 @@ struct IdSet {
 
 static void merge(int nz, tipId_t *z, int nx, tipId_t *x,
                   int ny, tipId_t *y);
+static void merge3(int nw, tipId_t *w, int nz, tipId_t *z,
+                   int nx, tipId_t *x, int ny, tipId_t *y);
 
 void IdSet_sanityCheck(IdSet *self, const char *file, int lineno) {
 #ifndef NDEBUG
@@ -115,17 +117,17 @@ IdSet *IdSet_join(IdSet *left, IdSet *right, int nsamples,
     if(mutually_exclusive)
         return NULL;
 
-    int left_plus_right = left->nIds + right->nIds;
-    int nIds = left_plus_right + nsamples;
+    int nIds = left->nIds + right->nIds + nsamples;
     
     // Copy all tipId_t values into tid. Allocating 1 extra
     // position to avoid problems with 0-length arrays.
-    tipId_t tid[1+nIds], buff[1+left_plus_right];
+    tipId_t tid[1+nIds];
 
     // Copy all ids into tid while maintaining sort.
-    merge(left_plus_right, buff, left->nIds, left->tid,
-          right->nIds, right->tid);
-    merge(nIds, tid, left_plus_right, buff, nsamples, samples);
+    merge3(nIds, tid,
+           left->nIds, left->tid,
+           right->nIds, right->tid,
+           nsamples, samples);
 
     IdSet *new = IdSet_new(nIds, tid, evlst);
 
@@ -226,6 +228,37 @@ static void merge(int nz, tipId_t *z, int nx, tipId_t *x,
         z[iz++] = x[ix++];
     while(iy < ny)
         z[iz++] = y[iy++];
+}
+
+// Copy x, y, and z into w while maintaining sort.
+static void merge3(int nw, tipId_t *w, int nz, tipId_t *z,
+                   int nx, tipId_t *x, int ny, tipId_t *y) {
+    assert(nz == nx + ny + nz);
+
+    int iw=0, ix=0, iy=0, iz=0;
+
+    while(ix<nx && iy<ny && iz<nz) {
+        if(x[ix] < y[iy]) {
+            if(x[ix] < z[iz])
+                w[iw++] = x[ix++];
+            else
+                w[iw++] = z[iz++];
+        }else{
+            // y <= x
+            if(y[iy] < z[iz])
+                w[iw++] = y[iy++];
+            else
+                w[iw++] = z[iz++];
+        }
+    }
+
+    if(iz==nz) {
+        merge(nw-iw, w+iw, nx-ix, x+ix, ny-iy, y+iy);
+    }else if(iy==ny) {
+        merge(nw-iw, w+iw, nx-ix, x+ix, nz-iz, z+iz);
+    }else{
+        merge(nw-iw, w+iw, ny-iy, y+iy, nz-iz, z+iz);
+    }
 }
 
 void IdSet_free(IdSet *self) {
