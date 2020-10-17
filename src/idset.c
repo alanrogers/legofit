@@ -124,10 +124,16 @@ IdSet *IdSet_join(IdSet *left, IdSet *right, int nsamples,
     tipId_t tid[1+nIds];
 
     // Copy all ids into tid while maintaining sort.
-    merge3(nIds, tid,
-           left->nIds, left->tid,
-           right->nIds, right->tid,
-           nsamples, samples);
+    if(nsamples) {
+        merge3(nIds, tid,
+               left->nIds, left->tid,
+               right->nIds, right->tid,
+               nsamples, samples);
+    }else{
+        merge(nIds, tid,
+              left->nIds, left->tid,
+              right->nIds, right->tid);
+    }
 
     IdSet *new = IdSet_new(nIds, tid, evlst);
 
@@ -257,6 +263,7 @@ static void merge3(int nw, tipId_t *w, int nz, tipId_t *z,
     }else if(iy==ny) {
         merge(nw-iw, w+iw, nx-ix, x+ix, nz-iz, z+iz);
     }else{
+        // ix==nx
         merge(nw-iw, w+iw, ny-iy, y+iy, nz-iz, z+iz);
     }
 }
