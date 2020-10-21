@@ -14,8 +14,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-// Exclude IdSet objects whose probability is < min_prob.
-long double min_prob = 0.0L;
+// Exclude IdSet objects whose probability is <= improbable.
+long double improbable = 0.0L;
 
 // A set of tipId_t values.
 struct IdSet {
@@ -155,7 +155,7 @@ IdSet *IdSet_join(IdSet *left, IdSet *right, int nsamples,
 #endif    
     
     long double pr = EventLst_prob(evlst);
-    if(mutually_exclusive || pr <= min_prob)
+    if(mutually_exclusive || pr <= improbable)
         return NULL;
 
     int nIds = left->nIds + right->nIds + nsamples;

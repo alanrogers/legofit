@@ -150,9 +150,9 @@ int main(int argc, char **argv) {
     int         estimate = 0;
     char        fname[200] = { '\0' };
 
-    // Ignore IdSet objects with probabilities < min_prob.
-    extern long double min_prob;
-    min_prob = 1e-5;
+    // Ignore IdSet objects with probabilities <= improbable.
+    extern long double improbable;
+    improbable = 1e-6;
 
 #if defined(__DATE__) && defined(__TIME__)
     printf("# Program was compiled: %s %s\n", __DATE__, __TIME__);

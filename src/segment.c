@@ -10,7 +10,7 @@
 
 //#define VERBOSE
 
-extern long double min_prob;
+extern long double improbable;
 
 #include "binary.h"
 #include "branchtab.h"
@@ -754,7 +754,7 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
         IdSet *ancestors = IdSet_new(k, sitepat, evlst);
 
         // Ignore improbable IdSets
-        if(IdSet_prob(ancestors) <= min_prob) {
+        if(IdSet_prob(ancestors) <= improbable) {
             IdSet_free(ancestors);
             continue;
         }
@@ -837,7 +837,7 @@ static void migrate(PtrLst *migrants, PtrLst *natives, PtrLst *sets,
         IdSet_addEvent(nat, mdat->event, mdat->outcome, mdat->mig_pr);
 
         // Ignore improbable IdSets
-        if(IdSet_prob(mig) <= min_prob) {
+        if(IdSet_prob(mig) <= improbable) {
             IdSet_free(mig);
             IdSet_free(nat);
             continue;
@@ -1558,8 +1558,10 @@ static void mv_idsets_to_parent(Segment *self, int ipar, PtrLst **a) {
         IdSet *id;
         while( (id = PtrLst_pop(a[i])) != NULL ) {
 
-            if(IdSet_prob(id) <= min_prob)
+            if(IdSet_prob(id) <= improbable) {
+                IdSet_free(id);
                 continue;
+            }
                     
             status = IdSetSet_add(w, id);
             if(status)
@@ -1591,8 +1593,10 @@ static void mv_to_waiting_room(Segment *self, PtrLst *src, int ipar,
     IdSet *id;
     while( (id = PtrLst_pop(src)) != NULL ) {
 
-        if(IdSet_prob(id) <= min_prob)
+        if(IdSet_prob(id) <= improbable) {
+            IdSet_free(id);
             continue;
+        }
         
         int status = IdSetSet_add(w, id);
         if(status)
