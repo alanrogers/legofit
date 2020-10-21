@@ -784,8 +784,12 @@ static void PopNode_duplicate_nodes(PopNode *old, PtrPtrMap *ppm) {
     PopNode *new = memdup(old, sizeof(*old));
     CHECKMEM(new);
     old->visited = 1;
+#ifndef NDEBUG    
     int status = PtrPtrMap_insert(ppm, old, new);
     assert(status==0);
+#else
+    (void) PtrPtrMap_insert(ppm, old, new);
+#endif    
     if(old->nchildren > 0)
         PopNode_duplicate_nodes(old->child[0], ppm);
     if(old->nchildren > 1)

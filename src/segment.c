@@ -10,7 +10,7 @@
 
 //#define VERBOSE
 
-int segnum = 0;
+extern long double min_prob;
 
 #include "binary.h"
 #include "branchtab.h"
@@ -76,7 +76,6 @@ struct SetPartDat {
 // One segment of a population network. This version works
 // with MCTree.
 struct Segment {
-    int            segnum; // for debugging
     int            nparents, nchildren, nsamples;
     int            visited;     // for traversal algorithm
     double    twoN;        // ptr to current pop size
@@ -198,8 +197,6 @@ void *Segment_new(int twoN_i, int start_i, ParStore *ps) {
     CHECKMEM(self);
 
     memset(self, 0, sizeof(*self));
-
-    self->segnum = segnum++;  // debug
 
     self->twoN_i = twoN_i;
     self->start_i = start_i;
@@ -756,6 +753,12 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
                                 p * vdat->prior);
         IdSet *ancestors = IdSet_new(k, sitepat, evlst);
 
+        // Ignore improbable IdSets
+        if(IdSet_prob(ancestors) <= min_prob) {
+            IdSet_free(ancestors);
+            continue;
+        }
+
 #ifndef NDEBUG        
         IdSet_sanityCheck(ancestors, __FILE__, __LINE__);
 #endif        
@@ -832,6 +835,13 @@ static void migrate(PtrLst *migrants, PtrLst *natives, PtrLst *sets,
 
         IdSet_addEvent(mig, mdat->event, mdat->outcome, mdat->mig_pr);
         IdSet_addEvent(nat, mdat->event, mdat->outcome, mdat->mig_pr);
+
+        // Ignore improbable IdSets
+        if(IdSet_prob(mig) <= min_prob) {
+            IdSet_free(mig);
+            IdSet_free(nat);
+            continue;
+        }
 
 #ifndef NDEBUG        
         IdSet_sanityCheck(mig, __FILE__, __LINE__);
@@ -921,8 +931,6 @@ static int Segment_equals_r(Segment *a, Segment *b) {
 
 static int Segment_coalesceFinite(Segment *self, int dosing,
                                   BranchTab *branchtab) {
-
-    fprintf(stderr,"%s:%d: segnum %d\n", __func__,__LINE__, self->segnum);
 
     assert(union_all_samples != 0);
 
@@ -1376,7 +1384,6 @@ IdSetSet **get_descendants2(int dim0, IdSetSet **w0,
 
     IdSet *id0, *id1, *newid;
 
-    fprintf(stderr,"%s:%d\n", __func__,__LINE__);
     for(i=0; i < dim0; ++i) {
         IdSetSet_rewind(w0[i]);
         while( (id0=IdSetSet_next(w0[i])) != NULL) {
@@ -1419,7 +1426,6 @@ IdSetSet **get_descendants2(int dim0, IdSetSet **w0,
         IdSetSet_empty_deep(w0[i]);
     }
 
-    fprintf(stderr,"%s:%d\n", __func__,__LINE__);
     // Empty w1; w0 is already empty.
     for(j=0; j < dim1; ++j) {
         IdSetSet_empty_deep(w1[j]);
@@ -1551,6 +1557,10 @@ static void mv_idsets_to_parent(Segment *self, int ipar, PtrLst **a) {
 
         IdSet *id;
         while( (id = PtrLst_pop(a[i])) != NULL ) {
+
+            if(IdSet_prob(id) <= min_prob)
+                continue;
+                    
             status = IdSetSet_add(w, id);
             if(status)
                 ERR(status, "bad return from IdSetSet_add");
@@ -1580,6 +1590,10 @@ static void mv_to_waiting_room(Segment *self, PtrLst *src, int ipar,
 
     IdSet *id;
     while( (id = PtrLst_pop(src)) != NULL ) {
+
+        if(IdSet_prob(id) <= min_prob)
+            continue;
+        
         int status = IdSetSet_add(w, id);
         if(status)
             ERR(status, "bad return from IdSetSet_add");
