@@ -204,10 +204,9 @@ void MatCoal_freeExterns(void) {
 
 /// Calculate eigenvalues for dimension dim and time v.
 void MatCoal_eigenvals(int dim, long double eig[dim], long double v) {
-    int nlin = dim+1;  // number of lineages
     int ndx = dim-1;   // index into array matcoal
     MatCoal *mc = matcoal[ndx];
-    assert(nlin == mc->nLin);
+    assert(dim+1 == mc->nLin);
     for(int i=0; i<dim; ++i)
         eig[i] = expl(-v*mc->beta[i]);
 }
@@ -218,11 +217,10 @@ void MatCoal_eigenvals(int dim, long double eig[dim], long double v) {
 /// on the eigenvalues in eig, so it does not appear as an argument.
 void MatCoal_project(int dim, long double ans[dim], long double eig[dim]) {
     int i, j;
-    int nlin = dim+1;  // number of lineages
     int ndx = dim-1;   // index into array matcoal
     assert(ndx < nsamples-1);
     MatCoal *mc = matcoal[ndx];
-    assert(nlin == mc->nLin);
+    assert(dim+1 == mc->nLin);
     
     // Multiply matrix gmat[dim-1] times vector eig
     for(i=0; i<dim; ++i) {
@@ -243,11 +241,10 @@ void MatCoal_project(int dim, long double ans[dim], long double eig[dim]) {
 /// MatCoal_ciLen.
 void MatCoal_ciLen(int dim, long double ans[dim], long double eig[dim]) {
     int i, j;
-    int nlin = dim+1;  // number of lineages
     int ndx = dim-1;   // index into array matcoal
     MatCoal *mc = matcoal[ndx];
     assert(ndx < nsamples-1);
-    assert(nlin == mc->nLin);
+    assert(dim+1 == mc->nLin);
 
     // ans = z + H*eig
     for(i=0; i<dim; ++i) {

@@ -10,6 +10,17 @@ static EventLst *EventLst_new(EventLst *next,
                                   unsigned outcomes,  
                                   long double pr);
 
+void EventLst_sanityCheck(const EventLst *self, const char *file, int lineno) {
+#ifndef NDEBUG    
+    if(self == NULL)
+        return;
+
+    REQUIRE(self->pr >= 0.0L, file, lineno);
+    REQUIRE(self->pr <= 1.0L, file, lineno);
+    EventLst_sanityCheck(self->next, file, lineno);
+#endif
+}
+
 /// Return 0-based index of next event. Not thread safe.
 unsigned nextEvent(void) {
     static unsigned event = 0;

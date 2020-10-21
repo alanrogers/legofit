@@ -99,6 +99,10 @@ IdSet *IdSet_new(int nIds, const tipId_t *tid, EventLst *evlst) {
 
     IdSet *self = IdSet_new_noEventLst(nIds, tid);
 
+#ifndef NDEBUG    
+    EventLst_sanityCheck(evlst, __FILE__, __LINE__);
+#endif    
+
     self->evlst = evlst;
     self->pr = EventLst_prob(evlst);
 
@@ -114,6 +118,10 @@ IdSet *IdSet_dup(const IdSet *old) {
     new->evlst = EventLst_dup(old->evlst);
     new->pr = old->pr;
 
+#ifndef NDEBUG    
+    EventLst_sanityCheck(new->evlst, __FILE__, __LINE__);
+#endif    
+
     return new;
 }
 
@@ -122,6 +130,7 @@ void IdSet_copyEventLst(IdSet *self, const IdSet *old) {
     assert(self->evlst == NULL);
     self->evlst = EventLst_dup(old->evlst);
     self->pr = EventLst_prob(old->evlst);
+
 }
 
 /**
@@ -137,6 +146,11 @@ IdSet *IdSet_join(IdSet *left, IdSet *right, int nsamples,
     int mutually_exclusive;
     EventLst *evlst = EventLst_join(left->evlst, right->evlst,
                                     &mutually_exclusive);
+
+#ifndef NDEBUG    
+    EventLst_sanityCheck(evlst, __FILE__, __LINE__);
+#endif    
+    
     long double pr = EventLst_prob(evlst);
     if(mutually_exclusive || pr == 0)
         return NULL;
@@ -204,8 +218,9 @@ IdSet *IdSet_addSamples(IdSet *old, int nsamples, tipId_t *samples) {
     merge(nIds, tid, old->nIds, old->tid, nsamples, samples);
 
     IdSet *new = IdSet_new_noEventLst(nIds, tid);
-    old->evlst = NULL;
+    new->evlst = old->evlst;
     new->pr = old->pr;
+    old->evlst = NULL;
 
     IdSet_free(old);
     return new;
@@ -220,6 +235,11 @@ IdSet *IdSet_newTip(tipId_t tid) {
     self->pr = 1.0L;
     self->evlst = NULL;
     self->tid[0] = tid;
+
+#ifndef NDEBUG    
+    EventLst_sanityCheck(self->evlst, __FILE__, __LINE__);
+#endif    
+    
     return self;
 }
 
@@ -346,7 +366,13 @@ void IdSet_partition(IdSet *self, unsigned k, tipId_t part[k],
 
 /// Return a duplicate of the EventLst of this IdSet.
 EventLst *IdSet_dupEventLst(const IdSet *self) {
-    return EventLst_dup(self->evlst);
+    EventLst *evlst = EventLst_dup(self->evlst);
+
+#ifndef NDEBUG    
+    EventLst_sanityCheck(evlst, __FILE__, __LINE__);
+#endif    
+
+    return evlst;
 }
 
 /// Return a pointer to an IdSet representing a subset of "self".

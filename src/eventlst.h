@@ -51,5 +51,7 @@ long double EventLst_prob(EventLst *head);
 int         EventLst_cmp(const EventLst *left, const EventLst *right);
 uint32_t    EventLst_hash(const EventLst *self)
     __attribute__((no_sanitize("integer")));
+void        EventLst_sanityCheck(const EventLst *self,
+                                 const char *file, int lineno);
 
 #endif

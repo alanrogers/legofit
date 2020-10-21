@@ -42,12 +42,14 @@ int main(int argc, char **argv) {
         for(unsigned outcome = 0; outcome < 2; ++outcome) {
             mo[outcome] = EventLst_insert(mo[outcome], event,
                                             outcome, 0.5);
+            EventLst_sanityCheck(mo[outcome], __FILE__,__LINE__);
         }
     }
 
     assert(0 < EventLst_cmp(mo[0], mo[1]));
 
     EventLst *mo3 = EventLst_dup(mo[0]);
+    EventLst_sanityCheck(mo3, __FILE__,__LINE__);
     if(verbose) {
         EventLst_print(mo[0], stdout);
         EventLst_print(mo[1], stdout);
@@ -60,6 +62,7 @@ int main(int argc, char **argv) {
     EventLst *mo4 = EventLst_join(mo[0], mo[1], &mutually_exclusive);
     assert(mo4 == NULL);
     assert(mutually_exclusive == 1);
+    EventLst_sanityCheck(mo4, __FILE__,__LINE__);
 
     EventLst_free(mo3);
     mo3 = NULL;
@@ -70,6 +73,7 @@ int main(int argc, char **argv) {
     mo4 = EventLst_join(mo[0], mo3, &mutually_exclusive);
     assert(mo4);
     assert(mutually_exclusive == 0);
+    EventLst_sanityCheck(mo4, __FILE__,__LINE__);
     if(verbose) {
         EventLst_print(mo4, stdout);
         putchar('\n');
@@ -80,6 +84,7 @@ int main(int argc, char **argv) {
     mo4 = EventLst_join(mo[0], mo[0], &mutually_exclusive);
     assert(mo4);
     assert(mutually_exclusive == 0);
+    EventLst_sanityCheck(mo4, __FILE__,__LINE__);
 
     EventLst *a=mo[0], *b=mo[1];
     while(a && b) {
