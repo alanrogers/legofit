@@ -17,6 +17,7 @@
 // A set of tipId_t values.
 struct IdSet {
     int nIds; // number of Ids in this set
+    long double pr;
 
     EventLst *evlst; // linked list of events, outcomes and probs.
 
@@ -29,6 +30,7 @@ static void merge(int nz, tipId_t *z, int nx, tipId_t *x,
                   int ny, tipId_t *y);
 static void merge3(int nw, tipId_t *w, int nz, tipId_t *z,
                    int nx, tipId_t *x, int ny, tipId_t *y);
+static IdSet *IdSet_new_noEventLst(int nIds, const tipId_t *tid);
 
 void IdSet_sanityCheck(IdSet *self, const char *file, int lineno) {
 #ifndef NDEBUG
@@ -41,6 +43,9 @@ void IdSet_sanityCheck(IdSet *self, const char *file, int lineno) {
     // Empty IdSet objects arise only by migration.
     if(self->nIds == 0)
         REQUIRE(NULL !=  self->evlst, file, lineno);
+
+    REQUIRE(self->pr >= 0.0, file, lineno);
+    REQUIRE(self->pr <= 1.0, file, lineno);
 
     // tipId_t values should be sorted in increasing order
     for(int i=1; i < self->nIds; ++i)
@@ -61,27 +66,41 @@ void IdSet_print(IdSet *self, FILE *fp) {
             putc(' ', fp);
         fprintf(fp, "%u", self->tid[i]);
     }
+    fprintf(fp,": %Lg", self->pr);
     putc(':', fp);
     EventLst_print(self->evlst, fp);
     fputs("]", fp);
 }
 
 /**
- * Allocate a new IdSet object with given values of nIds, tid, and
- * prob. Uses the struct hack.
+ * Allocate a new IdSet object with given values of nIds and tid. Leave
+ * evlst and pr unset. This function is used only within the current file,
+ * and in each case, pr and evlst are then set by the calling function.
  */
-IdSet *IdSet_new(int nIds, const tipId_t *tid, EventLst *evlst) {
+static IdSet *IdSet_new_noEventLst(int nIds, const tipId_t *tid) {
     size_t size = sizeof(IdSet);
     if(nIds > 1)
         size += (nIds-1) * sizeof(tipId_t);
     
     IdSet *self = malloc(size);
     CHECKMEM(self);
-
     self->nIds = nIds;
-    self->evlst = evlst;
 
     memcpy(self->tid, tid, nIds * sizeof(tipId_t));
+
+    return self;
+}
+
+/**
+ * Allocate a new IdSet object with given values of nIds, tid, and
+ * evlst.
+ */
+IdSet *IdSet_new(int nIds, const tipId_t *tid, EventLst *evlst) {
+
+    IdSet *self = IdSet_new_noEventLst(nIds, tid);
+
+    self->evlst = evlst;
+    self->pr = EventLst_prob(evlst);
 
     return self;
 }
@@ -90,8 +109,11 @@ IdSet *IdSet_new(int nIds, const tipId_t *tid, EventLst *evlst) {
 IdSet *IdSet_dup(const IdSet *old) {
     if(old == NULL)
         return NULL;
-    IdSet *new = IdSet_new(old->nIds, old->tid,
-                           EventLst_dup(old->evlst));
+
+    IdSet *new = IdSet_new_noEventLst(old->nIds, old->tid);
+    new->evlst = EventLst_dup(old->evlst);
+    new->pr = old->pr;
+
     return new;
 }
 
@@ -99,6 +121,7 @@ IdSet *IdSet_dup(const IdSet *old) {
 void IdSet_copyEventLst(IdSet *self, const IdSet *old) {
     assert(self->evlst == NULL);
     self->evlst = EventLst_dup(old->evlst);
+    self->pr = EventLst_prob(old->evlst);
 }
 
 /**
@@ -114,7 +137,8 @@ IdSet *IdSet_join(IdSet *left, IdSet *right, int nsamples,
     int mutually_exclusive;
     EventLst *evlst = EventLst_join(left->evlst, right->evlst,
                                     &mutually_exclusive);
-    if(mutually_exclusive)
+    long double pr = EventLst_prob(evlst);
+    if(mutually_exclusive || pr == 0)
         return NULL;
 
     int nIds = left->nIds + right->nIds + nsamples;
@@ -135,7 +159,10 @@ IdSet *IdSet_join(IdSet *left, IdSet *right, int nsamples,
               right->nIds, right->tid);
     }
 
-    IdSet *new = IdSet_new(nIds, tid, evlst);
+    IdSet *new = IdSet_new_noEventLst(nIds, tid);
+
+    new->pr = pr;
+    new->evlst = evlst;
 
 #ifndef NDEBUG    
     if(!no_shared_bits(nIds, tid)) {
@@ -163,6 +190,7 @@ IdSet *IdSet_join(IdSet *left, IdSet *right, int nsamples,
 void IdSet_addEvent(IdSet *self, unsigned event, unsigned outcome,
                     long double pr) {
     self->evlst = EventLst_insert(self->evlst, event, outcome, pr);
+    self->pr = EventLst_prob(self->evlst);
 }
 
 /// Return pointer to new IdSet and free old one.
@@ -175,8 +203,9 @@ IdSet *IdSet_addSamples(IdSet *old, int nsamples, tipId_t *samples) {
 
     merge(nIds, tid, old->nIds, old->tid, nsamples, samples);
 
-    IdSet *new = IdSet_new(nIds, tid, old->evlst);
+    IdSet *new = IdSet_new_noEventLst(nIds, tid);
     old->evlst = NULL;
+    new->pr = old->pr;
 
     IdSet_free(old);
     return new;
@@ -188,6 +217,7 @@ IdSet *IdSet_newTip(tipId_t tid) {
     CHECKMEM(self);
 
     self->nIds = 1;
+    self->pr = 1.0L;
     self->evlst = NULL;
     self->tid[0] = tid;
     return self;
@@ -274,7 +304,7 @@ void IdSet_free(IdSet *self) {
 }
 
 long double IdSet_prob(IdSet *self) {
-    return EventLst_prob(self->evlst);
+    return self->pr;
 }
 
 int IdSet_nIds(IdSet *self) {
@@ -331,8 +361,11 @@ IdSet *IdSet_subset(const IdSet *self, int n, int *ndx) {
         tid[i] = self->tid[ndx[i]];
     }
 
-    EventLst *evlst = EventLst_dup(self->evlst);
-    return IdSet_new(n, tid, evlst);
+    IdSet *new = IdSet_new_noEventLst(n, tid);
+    new->pr = self->pr;
+    new->evlst = EventLst_dup(self->evlst);
+    
+    return new;
 }
 
 /// Return i'th tipId_t value.
