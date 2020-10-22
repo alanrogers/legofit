@@ -3,6 +3,7 @@
 
 #  include "typedefs.h"
 #  include <stddef.h>
+#  include <stdint.h>
 #  include <stdio.h>
 
 void        printBits(size_t size, void const *const ptr, FILE *fp);

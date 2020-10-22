@@ -231,7 +231,7 @@ void *ThreadState_new(void *notused) {
 
     pthread_mutex_lock(&seedLock);
     gsl_rng_set(rng, rngseed);
-    rngseed = (rngseed == ULONG_MAX ? 0 : rngseed + 1);
+    rngseed += 1; // wraps to 0 at ULONG_MAX
     pthread_mutex_unlock(&seedLock);
 
     return rng;
@@ -477,7 +477,7 @@ int main(int argc, char **argv) {
 
     gsl_rng *rng = gsl_rng_alloc(gsl_rng_taus);
     gsl_rng_set(rng, rngseed);
-    rngseed = (rngseed == ULONG_MAX ? 0 : rngseed + 1);
+    rngseed += 1;
 
     int dim = Network_nFree(network); // number of free parameters
     if(dim == 0) {

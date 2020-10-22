@@ -735,7 +735,11 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
         // Loop over ancestors, i.e. over site patterns, adding
         // to the corresponding entry in BranchTab.
         for(int j=0; j<k; ++j) {
-
+            
+            // Skip singletons unless data->dosing is nonzero
+            if(!vdat->dosing && isPow2(sitepat[j]))
+                continue;
+            
             if(sitepat[j] == union_all_samples)
                 continue;
 
@@ -972,13 +976,18 @@ static int Segment_coalesceFinite(Segment *self, int dosing,
         IdSetSet_rewind(self->d[n]);
         while( (ids = IdSetSet_next(self->d[n])) != NULL) {
 
-            if( n==1 && union_all_samples != IdSet_get(ids, 0) ) {
-                // Single lineage in finite Segment contributes
-                // to branchtab.
-                assert(IdSet_nIds(ids) == 1);
+            if( n==1 ) {
+                tipId_t sitepat = IdSet_get(ids, 0);
+                if( sitepat != union_all_samples
+                    && ( dosing || !isPow2(sitepat) )
+                    ) {
+                        // Single lineage in finite Segment contributes
+                        // to branchtab.
+                        assert(IdSet_nIds(ids) == 1);
 
-                BranchTab_add(branchtab, IdSet_get(ids, 0),
-                              IdSet_prob(ids) * v * self->twoN);
+                        BranchTab_add(branchtab, sitepat,
+                                      IdSet_prob(ids) * v * self->twoN);
+                    }
             }
 
             IdSet *new = IdSet_dup(ids);

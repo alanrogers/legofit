@@ -10,7 +10,6 @@
 #include "binary.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
 #include <assert.h>
 
 static int nlz32(uint32_t x);

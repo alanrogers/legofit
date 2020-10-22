@@ -116,26 +116,30 @@ void usage(void) {
     fprintf(stderr, "usage: legosim [options] input_file_name\n");
     fprintf(stderr, "   where options may include:\n");
     tellopt("-i <x> or --nItr <x>", "number of iterations in simulation");
-	tellopt("-1 or --singletons", "Use singleton site patterns");
+    tellopt("-1 or --singletons", "Use singleton site patterns");
+    tellopt("-d <x> or --deterministic <x>",
+            "Deterministic algorithm, ignoring states with Pr <= x"); 
     tellopt("-U <x>", "Mutations per generation per haploid genome.");
     tellopt("-h or --help", "print this message");
     tellopt("--version", "print version and exit");
-    fprintf(stderr,"Deterministic algorithm is the default. Options"
-           " -i, --nItr, or -U enable\nstochastic algorithm.\n");
+    fprintf(stderr,"Options -i, --nItr, and -U cannot be used with"
+            " --deterministic");
     exit(1);
 }
 
 int main(int argc, char **argv) {
 
-    static struct option myopts[] = {
+    static struct option myopts[] =
+        {
         /* {char *name, int has_arg, int *flag, int val} */
-        {"nItr", required_argument, 0, 'i'},
-        {"mutations", required_argument, 0, 'U'},
-        {"singletons", no_argument, 0, '1'},
-        {"help", no_argument, 0, 'h'},
-        {"version", no_argument, 0, 'V'},
-        {NULL, 0, NULL, 0}
-    };
+         {"deterministic", required_argument, 0, 'd'},
+         {"nItr", required_argument, 0, 'i'},
+         {"mutations", required_argument, 0, 'U'},
+         {"singletons", no_argument, 0, '1'},
+         {"help", no_argument, 0, 'h'},
+         {"version", no_argument, 0, 'V'},
+         {NULL, 0, NULL, 0}
+        };
     hdr("legosim: generate site patterns by coalescent simulation");
 
     int         i, j;
@@ -147,12 +151,11 @@ int main(int argc, char **argv) {
     double      U=0.0;          // mutations pre gen per haploid genome
     int         optndx;
     long        nreps = 100;
-    int         estimate = 0;
+    int         deterministic = 0, stochastic = 0;
     char        fname[200] = { '\0' };
 
     // Ignore IdSet objects with probabilities <= improbable.
     extern long double improbable;
-    improbable = 1e-6;
 
 #if defined(__DATE__) && defined(__TIME__)
     printf("# Program was compiled: %s %s\n", __DATE__, __TIME__);
@@ -167,7 +170,7 @@ int main(int argc, char **argv) {
     // command line arguments
     for(;;) {
         char *end;
-        i = getopt_long(argc, argv, "i:t:U:1h", myopts, &optndx);
+        i = getopt_long(argc, argv, "d:i:t:U:1h", myopts, &optndx);
         if(i == -1)
             break;
         switch (i) {
@@ -175,11 +178,18 @@ int main(int argc, char **argv) {
         case '?':
             usage();
             break;
+        case 'd':
+            deterministic = 1;
+            improbable = strtold(optarg, &end);
+            if(*end != '\0') {
+                fprintf(stderr,"Can't parse %s as a long double\n", optarg);
+                exit(EXIT_FAILURE);
+            }
+            break;
         case 'e':
-            estimate = 1;
             break;
         case 'i':
-            estimate = 1;
+            stochastic = 1;
             nreps = strtol(optarg, &end, 10);
             if(*end != '\0') {
                 fprintf(stderr,"Can't parse %s as an integer\n", optarg);
@@ -187,10 +197,10 @@ int main(int argc, char **argv) {
             }
             break;
         case 'U':
-            estimate = 1;
+            stochastic = 1;
             U = strtod(optarg,&end);
             if(*end != '\0') {
-                fprintf(stderr,"Can't parse %s as a float\n", optarg);
+                fprintf(stderr,"Can't parse %s as a double\n", optarg);
                 exit(EXIT_FAILURE);
             }
             break;
@@ -220,21 +230,29 @@ int main(int argc, char **argv) {
     }
     assert(fname[0] != '\0');
 
-    if(estimate)
-        Network_init(STOCHASTIC);
-    else
+    if(deterministic && stochastic) {
+        fprintf(stderr,"Options -d and --deterministic cannot be used"
+                " with -i, --nItr, or -U.\n");
+        usage();
+    }
+
+    if(deterministic)
         Network_init(DETERMINISTIC);
+    else
+        Network_init(STOCHASTIC);
 
     printf("# input file                  : %s\n", fname);
-    if(estimate) {
+    if(deterministic) {
+        printf("# algorithm                   : %s\n", "deterministic");
+        printf("# ignoring probs <=           : %Lg\n", improbable);
+    }else {
         printf("# algorithm                   : %s\n", "stochastic");
         printf("# nreps                       : %lu\n", nreps);
         if(U)
             printf("# mutations per haploid genome: %lf\n", U);
         else
             printf("# not simulating mutations\n");
-    }else
-        printf("# algorithm                   : %s\n", "deterministic");
+    }
 
     printf("# %s singleton site patterns.\n",
            (doSing ? "including" : "excluding"));
@@ -256,7 +274,7 @@ int main(int argc, char **argv) {
     rngseed = currtime^pid;
     gsl_rng  *rng = gsl_rng_alloc(gsl_rng_taus);
     gsl_rng_set(rng, rngseed);
-    rngseed = (rngseed == ULONG_MAX ? 0 : rngseed+1);
+    rngseed += 1;  // wraps to 0 at ULONG_MAX
 
     BranchTab *bt = brlen(network, nreps, doSing, rng);
     //BranchTab_print(bt, stdout);
