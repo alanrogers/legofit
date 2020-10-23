@@ -5,50 +5,103 @@
 
 # `legosim`: coalescent simulations within a network of populations
 
+    #######################################
+    # legosim: site pattern probabilities #
+    #            version 1.89             #
+    #######################################
+    
+    # Program was compiled: Oct 22 2020 12:30:21
+    # Program was run: Thu Oct 22 13:04:35 2020
+    
+    # cmd: legosim -h
     usage: legosim [options] input_file_name
        where options may include:
        -i <x> or --nItr <x>
           number of iterations in simulation
        -1 or --singletons
           Use singleton site patterns
+       -d <x> or --deterministic <x>
+          Deterministic algorithm, ignoring states with Pr <= x
        -U <x>
           Mutations per generation per haploid genome.
        -h or --help
           print this message
        --version
           print version and exit
-    Deterministic algorithm is the default. Options -i, --nItr, or -U enable
-    stochastic algorithm.
+    Options -i, --nItr, and -U cannot be used with --deterministic.
 
 Here, "input_file" should be in @ref lgo ".lgo" format, which
 describes the history of population size, subdivision, and gene
-flow. By default (i.e. if the `-U` option is not used), the output
-looks like this:
+flow. The default output looks like this:
 
-    ############################################################
-    # legosim: generate site patterns by coalescent simulation #
-    ############################################################
-
-    # Program was compiled: Dec 25 2016 10:10:51
-    # Program was run: Sun Dec 25 10:13:47 2016
-
-    # cmd: ./legosim -i 10000 input.lgo
-    # nreps                       : 10000
+    #######################################
+    # legosim: site pattern probabilities #
+    #            version 1.89             #
+    #######################################
+    
+    # Program was compiled: Oct 22 2020 12:30:21
+    # Program was run: Thu Oct 22 13:06:00 2020
+    
+    # cmd: legosim -1 -i 10000 input.lgo
     # input file                  : input.lgo
+    # algorithm                   : stochastic
+    # nreps                       : 10000
     # not simulating mutations
-    # excluding singleton site patterns.
-    #       SitePat E[BranchLength]
-                x:y      39.7970280
-                x:n      38.9656878
-                y:n      40.8560014
+    # including singleton site patterns.
+    #       SitePat            Prob
+                  x    0.1561022758
+                  y    0.1481613681
+                  n    0.4023022625
+                x:y    0.2853347943
+                x:n    0.0000791958
+                y:n    0.0080201035
 
 Here, the "SitePat" column labels site patterns. For example, site
 pattern xy (denoted by "x:y" in this output) refers to nocleotide
 sites at which the derived allele is present in single haploid samples
-from X and Y but not in samples from other populations. This site
-pattern arises when a mutation strikes a branch that is ancestral only
-to the samples from X and Y. The average length of this branch in
-generations appears under "E[BranchLength]".
+from X and Y but not in samples from other populations. The
+probability of this site pattern, under the model of history specified
+in file `input.lgo`, is given in the "Prob" column.
+
+These probabilities are estimated by coalescent simulation and are not
+exact. The more iterations (as specified by `-i` or `--iterations`)
+the better the approximation will be. Alternatively, one can use the
+`-d` or `--deterministic` option to use a highly accurate
+deterministic algorithm:
+
+    #######################################
+    # legosim: site pattern probabilities #
+    #            version 1.89             #
+    #######################################
+    
+    # Program was compiled: Oct 22 2020 12:30:21
+    # Program was run: Thu Oct 22 13:09:27 2020
+    
+    # cmd: legosim -1 -d 0 input.lgo
+    # input file                  : input.lgo
+    # algorithm                   : deterministic
+    # ignoring probs <=           : 0
+    # including singleton site patterns.
+    #       SitePat            Prob
+                  x    0.1560242402
+                  y    0.1481456533
+                  n    0.4023561523
+                x:y    0.2854101359
+                x:n    0.0000926157
+                y:n    0.0079712026
+
+In this example, I used the option `-d 0`, which says to use the
+deterministic algorithm, ignoring states whose probability is less
+than or equal to 0. This calculates probabilities very accurately.
+
+The deterministic algorithm sums across all possible histories of the
+samples defined in the .lgo file. The number of histories increases
+rapidly with sample size and with the number of migration events. For
+larger models, it is not feasible to use `-d 0`. However, one can
+still use the deterministic algorithm to obtain an approximate answer,
+using an argument such as `-d 1e-6`. This tells legosim to use the
+deterministic algorithm while ignoring states whose probability is
+less than or equal to 1e-6.
 
 To simulate site pattern counts across an entire genome, use the `-U`
 option, whose argument give the expected number of mutations per
@@ -123,7 +176,7 @@ void usage(void) {
     tellopt("-h or --help", "print this message");
     tellopt("--version", "print version and exit");
     fprintf(stderr,"Options -i, --nItr, and -U cannot be used with"
-            " --deterministic");
+            " --deterministic.\n");
     exit(1);
 }
 
@@ -140,7 +193,7 @@ int main(int argc, char **argv) {
          {"version", no_argument, 0, 'V'},
          {NULL, 0, NULL, 0}
         };
-    hdr("legosim: generate site patterns by coalescent simulation");
+    hdr("legosim: site pattern probabilities");
 
     int         i, j;
     int         doSing=0;  // nonzero => use singleton site patterns
@@ -277,6 +330,7 @@ int main(int argc, char **argv) {
     rngseed += 1;  // wraps to 0 at ULONG_MAX
 
     BranchTab *bt = brlen(network, nreps, doSing, rng);
+    BranchTab_normalize(bt);
     //BranchTab_print(bt, stdout);
 
     // Put site patterns and branch lengths into arrays.
@@ -293,7 +347,7 @@ int main(int argc, char **argv) {
     if(U)
         printf("#%14s %15s\n", "SitePat", "Count");
     else
-        printf("#%14s %15s\n", "SitePat", "E[BranchLength]");
+        printf("#%14s %15s\n", "SitePat", "Prob");
     char        buff[1000];
     for(j = 0; j < npat; ++j) {
         char        buff2[1000];
@@ -304,7 +358,7 @@ int main(int argc, char **argv) {
             mutations = gsl_ran_poisson(rng, U*elen[ord[j]]);
             printf("%15s %15u\n", buff2, mutations);
         }else
-            printf("%15s %15.7Lf\n", buff2, elen[ord[j]]);
+            printf("%15s %15.10Lf\n", buff2, elen[ord[j]]);
     }
 
     gsl_rng_free(rng);

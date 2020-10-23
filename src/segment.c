@@ -1022,6 +1022,8 @@ static int Segment_coalesceFinite(Segment *self, int dosing,
         // Loop over number, k, of ancestors.  Include k=1, because
         // this is a finite segment.
         for(k=1; k <= n; ++k) {
+            if(pr[k-1] <= improbable)
+                continue; // skip improbable states
             sd.a = a[k];
             sd.nparts = k;
             sd.prior = pr[k-1];
