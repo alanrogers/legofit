@@ -61,13 +61,13 @@ pattern xy (denoted by "x:y" in this output) refers to nocleotide
 sites at which the derived allele is present in single haploid samples
 from X and Y but not in samples from other populations. The
 probability of this site pattern, under the model of history specified
-in file `input.lgo`, is given in the "Prob" column.
+in file `input.lgo`, is given in the "Prob" column. These
+probabilities are estimated by coalescent simulation and are not
+exact. The more iterations (as specified by `-i` or `--iterations`) 
+the better the approximation will be. 
 
-These probabilities are estimated by coalescent simulation and are not
-exact. The more iterations (as specified by `-i` or `--iterations`)
-the better the approximation will be. Alternatively, one can use the
-`-d` or `--deterministic` option to use a highly accurate
-deterministic algorithm:
+Alternatively, one can use the `-d` or `--deterministic` option to use
+a highly accurate deterministic algorithm:
 
     #######################################
     # legosim: site pattern probabilities #
@@ -112,34 +112,38 @@ haploid genome, including monomorphic sites but excluding those that
 fail quality control. For example, adding `-U 18` to the command above
 led to the following output:
 
-    ############################################################
-    # legosim: generate site patterns by coalescent simulation #
-    ############################################################
-
-    # Program was compiled: Dec 25 2016 10:10:51
-    # Program was run: Mon Dec 26 09:31:59 2016
-
-    # cmd: ./legosim -i 10000 -U 18 input.lgo
-    # nreps                       : 10000
+    #######################################
+    # legosim: site pattern probabilities #
+    #            version 1.89             #
+    #######################################
+    
+    # Program was compiled: Oct 22 2020 22:30:28
+    # Program was run: Fri Oct 23 12:35:53 2020
+    
+    # cmd: legosim -1 -i 10000 -U 18 input.lgo
     # input file                  : input.lgo
+    # algorithm                   : stochastic
+    # nreps                       : 10000
     # mutations per haploid genome: 18.000000
-    # excluding singleton site patterns.
+    # including singleton site patterns.
     #       SitePat           Count
-                x:y             770
-                x:n             713
-                y:n             677
+                  x               4
+                  y               1
+                  n               8
+                x:y               5
+                x:n               0
+                y:n               0
 
-Now, the 2nd column is labeled "Count" rather than "E[BranchLength]"
-and gives the simulated count of each site pattern across the genome
-as a whole. It is calculated by sampling from a Poisson distribution
-with mean @f$\mu L b@f$, where @f$\mu@f$ and @f$L@f$ are as described
-above, and @f$b@f$ is the average branch length as reported without
-the `-U` option. This Poisson model treats nucleotide sites as
-independent, ignoring linkage disequilibrium. The counts it provides
-are correct in expectation, but their variances in repeated runs of
-the program are probably too small.
+Now, the 2nd column is labeled "Count" rather than "Prob" and gives
+the simulated count of each site pattern across the genome as a
+whole. It is calculated by sampling from a Poisson distribution with
+mean @f$\mu L b@f$, where @f$\mu@f$ and @f$L@f$ are as described
+above, and @f$b@f$ is the average branch length. This Poisson model
+treats nucleotide sites as independent, ignoring linkage
+disequilibrium. The counts it provides are correct in expectation, but
+their variances in repeated runs of the program are too small.
 
-@copyright Copyright (c) 2015, 2016, Alan R. Rogers
+@copyright Copyright (c) 2015, 2016, 2020, Alan R. Rogers
 <rogers@anthro.utah.edu>. This file is released under the Internet
 Systems Consortium License, which can be found in file "LICENSE".
 */
@@ -330,13 +334,16 @@ int main(int argc, char **argv) {
     rngseed += 1;  // wraps to 0 at ULONG_MAX
 
     BranchTab *bt = brlen(network, nreps, doSing, rng);
-    BranchTab_normalize(bt);
+    if(!U)
+        BranchTab_normalize(bt);
+
     //BranchTab_print(bt, stdout);
 
     // Put site patterns and branch lengths into arrays.
     unsigned npat = BranchTab_size(bt);
     tipId_t pat[npat];
     long double elen[npat];
+
     BranchTab_toArrays(bt, npat, pat, elen);
     //Network_printParStore(network, stdout);
 
@@ -348,6 +355,7 @@ int main(int argc, char **argv) {
         printf("#%14s %15s\n", "SitePat", "Count");
     else
         printf("#%14s %15s\n", "SitePat", "Prob");
+        
     char        buff[1000];
     for(j = 0; j < npat; ++j) {
         char        buff2[1000];

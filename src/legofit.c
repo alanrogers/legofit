@@ -246,23 +246,24 @@ void usage(void) {
     fprintf(stderr, "   where file input.lgo describes population history,\n"
             "   and file sitepat.txt contains site pattern frequencies.\n");
     fprintf(stderr, "Options may include:\n");
-    tellopt("-T <x> or --tol <x>", "termination criterion");
-    tellopt("-t <x> or --threads <x>", "number of threads (default is auto)");
-    tellopt("-e or --estimate", "stochastic algorithm");
+    tellopt("-1 or --singletons", "Use singleton site patterns");
+    tellopt("-d <x> or --deterministic <x>",
+            "Deterministic algorithm, ignoring states with Pr <= x"); 
     tellopt("-F <x> or --scaleFactor <x>", "set DE scale factor");
-    tellopt("-x <x> or --crossover <x>", "set DE crossover probability");
+    tellopt("-h or --help", "print this message");
+    tellopt("-p <x> or --ptsPerDim <x>", "number of DE points per free var");
     tellopt("-s <x> or --strategy <x>", "set DE strategy");
     tellopt("-S <g>@<r> or --stage <g>@<r>",
             "add stage with <g> generations and <r> simulation reps");
-    tellopt("-p <x> or --ptsPerDim <x>", "number of DE points per free var");
     tellopt("--stateIn <filename>",
             "read initial state from new-style file. Option may be repeated.");
     tellopt("--stateOut <filename>",
             "write final state to file");
-    tellopt("-1 or --singletons", "Use singleton site patterns");
+    tellopt("-T <x> or --tol <x>", "termination criterion");
+    tellopt("-t <x> or --threads <x>", "number of threads (default is auto)");
     tellopt("-v or --verbose", "verbose output");
     tellopt("--version", "Print version and exit");
-    tellopt("-h or --help", "print this message");
+    tellopt("-x <x> or --crossover <x>", "set DE crossover probability");
     exit(1);
 }
 
@@ -275,8 +276,8 @@ int main(int argc, char **argv) {
 
     static struct option myopts[] = {
         /* {char *name, int has_arg, int *flag, int val} */
+        {"deterministic", required_argument, 0, 'd'},
         {"threads", required_argument, 0, 't'},
-        {"estimate", no_argument, 0, 'e'},
         {"crossover", required_argument, 0, 'x'},
         {"scaleFactor", required_argument, 0, 'F'},
         {"strategy", required_argument, 0, 's'},
@@ -316,8 +317,11 @@ int main(int argc, char **argv) {
     int strategy = 2;
     int ptsPerDim = 10;
     int verbose = 0;
-    int estimate = 0;
+    int deterministic = 0, stochastic = 0;
     SimSched *simSched = SimSched_new();
+
+    // Ignore IdSet objects with probabilities <= improbable.
+    extern long double improbable;
 
     assert(SimSched_nStages(simSched) == 0);
 
@@ -336,12 +340,18 @@ int main(int argc, char **argv) {
 
     // command line arguments
     for(;;) {
-        i = getopt_long(argc, argv, "dT:t:F:p:s:S:a:vx:1h", myopts, &optndx);
+        char *end;
+        i = getopt_long(argc, argv, "d:T:t:F:p:s:S:a:vx:1h", myopts, &optndx);
         if(i == -1)
             break;
         switch (i) {
-        case 'e':
-            estimate = 1;
+        case 'd':
+            deterministic = 1;
+            improbable = strtold(optarg, &end);
+            if(*end != '\0') {
+                fprintf(stderr,"Can't parse %s as a long double\n", optarg);
+                exit(EXIT_FAILURE);
+            }
             break;
         case ':':
         case '?':
@@ -366,6 +376,7 @@ int main(int argc, char **argv) {
             break;
         case 'S':
         {
+            stochastic = 1;
             // Add a stage to simSched.
             char b[20], *g, *r;
             status = snprintf(b, sizeof b, "%s", optarg);
@@ -441,10 +452,18 @@ int main(int argc, char **argv) {
     snprintf(patfname, sizeof(patfname), "%s", argv[optind + 1]);
     assert(patfname[0] != '\0');
 
-    if(estimate) {
-        Network_init(SIM);
+    if(deterministic && stochastic) {
+        fprintf(stderr,"Options -d and --deterministic cannot be used"
+                " with -S or --stage\n");
+        usage();
+    }
 
-        if(0 != SimSched_nStages(simSched)) {
+    if(deterministic) {
+        Network_init(DETERMINISTIC);
+    }else{
+        Network_init(STOCHASTIC);
+
+        if(0 == SimSched_nStages(simSched)) {
             // Default simulation schedule.
             // Stage 1: 200 DE generations of 1000 simulation replicates
             // Stage 2: 100 generations of 10000 replicates
@@ -452,17 +471,9 @@ int main(int argc, char **argv) {
             SimSched_append(simSched, 100, 10000);
             SimSched_append(simSched, 1000, simreps);
         }
-    }else{
-        Network_init(MATCOAL);
-        if(0 != SimSched_nStages(simSched)) {
-            fprintf(stderr,"%s:%d: Arguments -S or --stage require"
-                    " -e or --estimate\n",
-                    __FILE__,__LINE__);
-            exit(EXIT_FAILURE);
-        }
     }
 
-    if(estimate)
+    if(!deterministic)
         SimSched_print(simSched, stdout);
 
     Bounds bnd = {
@@ -543,10 +554,12 @@ int main(int argc, char **argv) {
     if(nThreads > npts)
         nThreads = npts;
 
-    if(estimate)
-        printf("# Obj func evaluation: %s\n", "simulation");
-    else
-        printf("# Obj func evaluation: %s\n", "deterministic");
+    if(deterministic) {
+        printf("# algorithm          : %s\n", "deterministic");
+        printf("# ignoring probs <=  : %Lg\n", improbable);
+    }else {
+        printf("# algorithm          : %s\n", "stochastic");
+    }
     printf("# DE strategy        : %d\n", strategy);
     printf("#    F               : %lg\n", F);
     printf("#    CR              : %lg\n", CR);
@@ -688,7 +701,7 @@ int main(int argc, char **argv) {
                 __FILE__, __LINE__);
         exit(EXIT_FAILURE);
     }
-    BranchTab *bt = patprob(network, simreps, doSing, rng);
+    BranchTab *bt = brlen(network, simreps, doSing, rng);
     BranchTab_divideBy(bt, (double) simreps);
     //    BranchTab_print(bt, stdout);
 
