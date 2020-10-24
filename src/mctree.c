@@ -8,6 +8,7 @@
  * Systems Consortium License, which can be found in file "LICENSE".
  */
 
+// silence compiler warning about unused function parameter
 #define UNUSED(x) (void)(x)
 
 #include "branchtab.h"

@@ -288,8 +288,8 @@ int main(int argc, char **argv) {
     assert(fname[0] != '\0');
 
     if(deterministic && stochastic) {
-        fprintf(stderr,"Options -d and --deterministic cannot be used"
-                " with -i, --nItr, or -U.\n");
+        fprintf(stderr,"\nOptions -d and --deterministic cannot be used"
+                " with -i, --nItr, or -U.\n\n");
         usage();
     }
 

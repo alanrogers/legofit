@@ -376,7 +376,6 @@ int main(int argc, char **argv) {
             break;
         case 'S':
         {
-            stochastic = 1;
             // Add a stage to simSched.
             char b[20], *g, *r;
             status = snprintf(b, sizeof b, "%s", optarg);
@@ -453,13 +452,19 @@ int main(int argc, char **argv) {
     assert(patfname[0] != '\0');
 
     if(deterministic && stochastic) {
-        fprintf(stderr,"Options -d and --deterministic cannot be used"
-                " with -S or --stage\n");
+        fprintf(stderr,"\nOptions -d and --deterministic cannot be used"
+                " with -S or --stage\n\n");
         usage();
     }
 
     if(deterministic) {
         Network_init(DETERMINISTIC);
+
+        if(0 == SimSched_nStages(simSched)) {
+            // Default simulation schedule.
+            // 1000 generations of 1 replicate
+            SimSched_append(simSched, 1000, 1);
+        }
     }else{
         Network_init(STOCHASTIC);
 
@@ -473,8 +478,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    if(!deterministic)
-        SimSched_print(simSched, stdout);
+    SimSched_print(simSched, stdout);
 
     Bounds bnd = {
         .lo_twoN = lo_twoN,
