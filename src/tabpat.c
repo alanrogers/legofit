@@ -111,7 +111,7 @@ interval:
     # Tabulated 12327755 SNPs
     # bootstrap output file = tabpat.boot
     # confidence level = 95%
-    #       SitePat             E[count]          loBnd          hiBnd
+    #       SitePat             E[count]            low           high
                 x:y       340952.4592501 338825.6604586 342406.6670816
                 x:n        46874.1307236  46361.5798377  47438.1857029
                 x:d        46034.4670204  45605.6588012  46631.6434277
@@ -123,7 +123,7 @@ interval:
               x:n:d        96676.3877423  95935.5184294  97417.6241185
               y:n:d       100311.4411513  99292.9839140 101163.3457462
 
-Here, `loBnd` and `hiBnd` are the limits of a 95% confidence
+Here, `low` and `high` are the limits of a 95% confidence
 interval. The bootstrap output files look like `tabpat.boot000`,
 `tabpat.boot001`, and so on.
 
@@ -640,7 +640,7 @@ int main(int argc, char **argv) {
     // print labels and binary representation of site patterns
     printf("# %13s %20s", "SitePat", "E[count]");
     if(bootreps > 0)
-        printf(" %15s %15s", "loBnd", "hiBnd");
+        printf(" %15s %15s", "low", "high");
     putchar('\n');
     for(i = 0; i < npat; ++i) {
         printf("%15s %20.7lf",
