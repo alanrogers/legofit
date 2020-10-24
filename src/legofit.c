@@ -701,7 +701,7 @@ int main(int argc, char **argv) {
                 __FILE__, __LINE__);
         exit(EXIT_FAILURE);
     }
-    BranchTab *bt = brlen(network, simreps, doSing, rng);
+    BranchTab *bt = get_brlen(network, simreps, doSing, rng);
     BranchTab_divideBy(bt, (double) simreps);
     //    BranchTab_print(bt, stdout);
 
@@ -733,7 +733,7 @@ int main(int argc, char **argv) {
     // Put site patterns and branch lengths into arrays.
     unsigned npat = BranchTab_size(bt);
     tipId_t pat[npat];
-    double brlen[npat];
+    long double brlen[npat];
     BranchTab_toArrays(bt, npat, pat, brlen);
 
     // Determine order for printing lines of output
@@ -746,7 +746,7 @@ int main(int argc, char **argv) {
         char buff2[100];
         snprintf(buff2, sizeof(buff2), "%s",
                  patLbl(sizeof(buff), buff, pat[ord[j]], &lblndx));
-        printf("%15s %10.7lf\n", buff2, brlen[ord[j]]);
+        printf("%15s %10.7Lf\n", buff2, brlen[ord[j]]);
     }
 
     if(stateOut) {

@@ -80,8 +80,8 @@ static void ThreadArg_free(ThreadArg * self) {
 /// Estimate branch lengths. Function returns a pointer to a
 /// newly-allocated object of type BranchTab, which contains all the
 /// observed site patterns and their mean branch lengths.
-BranchTab *brlen(const void *network, long nreps,
-                   int doSing, gsl_rng *rng) {
+BranchTab *get_brlen(const void *network, long nreps,
+                     int doSing, gsl_rng *rng) {
 
     ThreadArg *tharg;
 

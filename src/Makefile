@@ -1,7 +1,7 @@
 destination := $(HOME)/bin
 global_destination := $(HOME)/group/bin
-opt := -DNDEBUG -O2  -finline-functions  # For full optimization
-#opt := -O0 -fno-inline-functions -rdynamic -DDEBUG     # For debugging
+#opt := -DNDEBUG -O2  -finline-functions  # For full optimization
+opt := -O0 -fno-inline-functions -rdynamic -DDEBUG     # For debugging
 #opt := -O2  -finline-functions  # Optimization + debugging
 #prof := -pg -rdynamic                    # For profiling under gcc
 #prof := --fprofile-generate               # For profiling under clang
@@ -74,14 +74,17 @@ LEGOFIT := legofit.o addrparmap.o binary.o branchtab.o cost.o diffev.o \
    network.o param.o parse.o parseopf.o parstore.o patprob.o \
    pointbuff.o popnode.o rngseed.o sampndx.o simsched.o state.o \
    strptrmap.o tinyexpr.o tokenizer.o ptrptrmap.o ptrqueue.o strint.o \
-   mctree.o
+   mctree.o matcoal.o segment.o eventlst.o idset.o idsetset.o ptrlst.o \
+   rational.o comb.o u64i64map.o setpart.o u64u64map.o
 legofit : $(LEGOFIT)
 	$(CC) $(CFLAGS) -o $@ $(LEGOFIT) $(lib)
 
 PCLGO := pclgo.o misc.o strdblqueue.o gptree.o parstore.o param.o popnode.o \
   gene.o addrparmap.o branchtab.o lblndx.o dtnorm.o dprintf.o \
   tinyexpr.o tokenizer.o parse.o binary.o strptrmap.o sampndx.o network.o \
-  error.o ptrptrmap.o ptrqueue.o strint.o
+  error.o ptrptrmap.o ptrqueue.o strint.o mctree.o segment.o eventlst.o \
+  idsetset.o matcoal.o ptrlst.o comb.o idset.o u64i64map.o rational.o \
+  setpart.o u64u64map.o
 pclgo : $(PCLGO)
 	$(CC) $(CFLAGS) -o $@ $(PCLGO) $(lib)
 

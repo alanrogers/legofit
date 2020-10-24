@@ -483,7 +483,8 @@ long double BranchTab_KLdiverg(const BranchTab *obs, const BranchTab *expt) {
 
 /// Negative log likelihood. Multinomial model.
 /// lnL is sum across site patterns of x*log(p), where x is an
-/// observed site pattern count and p its probability.
+/// observed site pattern count and p its probability. Normalize
+/// expt before calling this function.
 long double BranchTab_negLnL(const BranchTab *obs, const BranchTab *expt) {
     assert(LDbl_near(1.0L, BranchTab_sum(expt)));
 
