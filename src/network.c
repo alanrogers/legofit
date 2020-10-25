@@ -48,6 +48,7 @@ void Network_init(enum NetworkType type) {
         Network_nFree = GPTree_nFree;
         Network_brlen = GPTree_brlen;
         Network_printParStore = GPTree_printParStore;
+        Network_printParStoreFree = GPTree_printParStoreFree;
         Network_randomize = GPTree_randomize;
         Network_sanityCheck = GPTree_sanityCheck;
         Network_setParams = GPTree_setParams;
@@ -69,6 +70,7 @@ void Network_init(enum NetworkType type) {
         Network_nFree = MCTree_nFree;
         Network_brlen = MCTree_brlen;
         Network_printParStore = MCTree_printParStore;
+        Network_printParStoreFree = MCTree_printParStoreFree;
         Network_randomize = MCTree_randomize;
         Network_sanityCheck = MCTree_sanityCheck;
         Network_setParams = MCTree_setParams;

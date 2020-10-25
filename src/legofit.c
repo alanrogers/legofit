@@ -700,13 +700,12 @@ int main(int argc, char **argv) {
     DEStatus destat = diffev(dim, estimate, &cost, &yspread, dep, rng);
 
     // Get mean site pattern branch lengths
-    if(GPTree_setParams(network, dim, estimate)) {
+    if(Network_setParams(network, dim, estimate)) {
         fprintf(stderr, "%s:%d: free params violate constraints\n",
                 __FILE__, __LINE__);
         exit(EXIT_FAILURE);
     }
     BranchTab *bt = get_brlen(network, simreps, doSing, rng);
-    BranchTab_divideBy(bt, (double) simreps);
     //    BranchTab_print(bt, stdout);
 
     const char *whyDEstopped;

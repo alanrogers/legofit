@@ -49,8 +49,7 @@ static int tfunc(void *varg, void *tdata) {
     Network_brlen(arg->network, arg->branchtab, rng, arg->nreps,
                   arg->doSing);
 
-    if(networkType == STOCHASTIC)
-        BranchTab_divideBy(arg->branchtab, (double) arg->nreps);
+    BranchTab_divideBy(arg->branchtab, (double) arg->nreps);
 
     return 0;
 }

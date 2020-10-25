@@ -1,0 +1,13 @@
+time fixed    zero=0
+twoN fixed     one=1
+time fixed     Txyz=2
+time free      Txy=1
+segment x     t=zero   twoN=one    samples=1
+segment y     t=zero   twoN=one    samples=1
+segment z     t=zero   twoN=one    samples=1
+segment xy    t=Txy    twoN=one
+segment xyz   t=Txyz   twoN=one
+derive x  from xy
+derive y from xy
+derive xy from xyz
+derive z from xyz

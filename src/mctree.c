@@ -116,6 +116,13 @@ void MCTree_printParStore(void * vself, FILE * fp) {
     ParStore_print(self->parstore, fp);
 }
 
+/// Print a description of free parameters.
+void MCTree_printParStoreFree(void * vself, FILE * fp) {
+    MCTree *self = vself;
+    ParStore_printFree(self->parstore, fp);
+    ParStore_printConstrained(self->parstore, fp);
+}
+
 /// Get the LblNdx object from a MCTree
 LblNdx MCTree_getLblNdx(void * vself) {
     return ((MCTree *) vself)->lblndx;

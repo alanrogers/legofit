@@ -291,11 +291,13 @@ void ParStore_getFreeParams(ParStore * self, int n, double x[n]) {
 
 /// Print a ParStore
 void ParStore_print(ParStore * self, FILE * fp) {
-    fprintf(fp, "Fixed:\n");
-    for(int i=0; i < self->nFixed; ++i) 
-        fprintf(fp, "  %8s = %lg\n",
-                self->fixed[i].name,
-                self->fixed[i].value);
+    if(self->nFixed) {
+        fprintf(fp, "Fixed:\n");
+        for(int i=0; i < self->nFixed; ++i) 
+            fprintf(fp, "  %8s = %lg\n",
+                    self->fixed[i].name,
+                    self->fixed[i].value);
+    }
 
     ParStore_printFree(self, fp);
     ParStore_printConstrained(self, fp);
@@ -303,6 +305,9 @@ void ParStore_print(ParStore * self, FILE * fp) {
 
 /// Print free parameter values
 void ParStore_printFree(ParStore * self, FILE * fp) {
+    if(self->nFree == 0)
+        return;
+
     fprintf(fp, "Free:\n");
     for(int i=0; i < self->nFree; ++i)
         fprintf(fp, "  %8s = %lg\n",
@@ -312,6 +317,9 @@ void ParStore_printFree(ParStore * self, FILE * fp) {
 
 /// Print constrained parameter values
 void ParStore_printConstrained(ParStore * self, FILE * fp) {
+    if(self->nConstr == 0)
+        return;
+
     fprintf(fp, "Constrained:\n");
     for(int i=0; i < self->nConstr; ++i)
         fprintf(fp, "  %8s = %lg\n",
