@@ -199,6 +199,15 @@ void Param_compileConstraint(Param *self, StrPtrMap *te_pars) {
 /// Set value of constrained parameter.  Abort with an error message
 /// if result is NaN.
 void Param_constrain(Param *par) {
+#ifndef NDEBUG    
+    if(par->constr == NULL) {
+        fprintf(stderr,"%s:%s:%d: NULL argument %p\n",
+                __FILE__,__func__,__LINE__, par->constr);
+        fprintf(stderr,"formula: %s = %s\n",
+                par->name, par->formula);
+        exit(EXIT_FAILURE);
+    }
+#endif    
     par->value = te_eval(par->constr);
     if(isnan(par->value)) {
         fprintf(stderr,"%s:%d: constraint returned NaN\n",

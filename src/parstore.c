@@ -228,7 +228,7 @@ ParStore *ParStore_dup(const ParStore * old) {
 
     // compile constraints
     for(int i=0; i < new->nConstr; ++i)
-        Param_compileConstraint(new->par+i, new->te_pars);
+        Param_compileConstraint(new->constr+i, new->te_pars);
 
     assert(new->byaddr);
     ParStore_sanityCheck(new, __FILE__, __LINE__);
@@ -371,6 +371,7 @@ void ParStore_sanityCheck(ParStore * self, const char *file, int line) {
         REQUIRE(j == i, file, line);
         if(par->type & CONSTRAINED) {
             REQUIRE(par->formula, file, line);
+            REQUIRE(par->constr, file, line);
         }else{
             REQUIRE(NULL == par->formula, file, line);
             REQUIRE(NULL == par->constr, file, line);
@@ -418,8 +419,9 @@ static int ParStore_constrain(ParStore * self) {
         if(par->value > par->high)
             return 1;
     }
-    for(int i=0; i < self->nConstr; ++i)
+    for(int i=0; i < self->nConstr; ++i) {
         Param_constrain(self->constr + i);
+    }
 
     return 0;
 }
