@@ -1,8 +1,12 @@
 #include "eventlst.h"
 #include "misc.h"
 #include "ptrqueue.h"
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+pthread_mutex_t event_counter_lock = PTHREAD_MUTEX_INITIALIZER;
+static unsigned event_counter = 0;
 
 static int EventLst_cmp_shallow(EventLst *a, unsigned event);
 static EventLst *EventLst_new(EventLst *next,
@@ -21,10 +25,17 @@ void EventLst_sanityCheck(const EventLst *self, const char *file, int lineno) {
 #endif
 }
 
-/// Return 0-based index of next event. Not thread safe.
+/// Return integer label of next event. Multiple threads will compete
+/// for the same sequence of event labels, so the values acquired by
+/// any given thread may not be consecutive. This doesn't matter. All
+/// that matters is that later events have higher values than earlier
+/// ones within each thread.
 unsigned nextEvent(void) {
-    static unsigned event = 0;
-    return event++;
+    pthread_mutex_lock(&event_counter_lock);
+    unsigned event = event_counter++;
+    pthread_mutex_unlock(&event_counter_lock);
+
+    return event;
 }
 
 static int EventLst_cmp_shallow(EventLst *a, unsigned event) {

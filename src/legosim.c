@@ -172,6 +172,8 @@ void        usage(void);
 void usage(void) {
     fprintf(stderr, "usage: legosim [options] input_file_name\n");
     fprintf(stderr, "   where options may include:\n");
+    tellopt("-b or --branch_length", "print branch lengths rather than"
+            " probabilities");
     tellopt("-i <x> or --nItr <x>", "number of iterations in simulation");
     tellopt("-1 or --singletons", "Use singleton site patterns");
     tellopt("-d <x> or --deterministic <x>",
@@ -181,6 +183,8 @@ void usage(void) {
     tellopt("--version", "print version and exit");
     fprintf(stderr,"Options -i, --nItr, and -U cannot be used with"
             " --deterministic.\n");
+    fprintf(stderr,"Option -U cannot be used with"
+            " -b or --branch_length.\n");
     exit(1);
 }
 
@@ -189,6 +193,7 @@ int main(int argc, char **argv) {
     static struct option myopts[] =
         {
         /* {char *name, int has_arg, int *flag, int val} */
+         {"branch_length", no_argument, 0, 'b'},
          {"deterministic", required_argument, 0, 'd'},
          {"nItr", required_argument, 0, 'i'},
          {"mutations", required_argument, 0, 'U'},
@@ -201,6 +206,7 @@ int main(int argc, char **argv) {
 
     int         i, j;
     int         doSing=0;  // nonzero => use singleton site patterns
+    int         print_brlen=0; // nonzero => print branch lengths
     time_t      currtime = time(NULL);
     unsigned long pid = (unsigned long) getpid();
     double      lo_twoN = 0.0, hi_twoN = DBL_MAX;  // twoN bounds
@@ -227,13 +233,16 @@ int main(int argc, char **argv) {
     // command line arguments
     for(;;) {
         char *end;
-        i = getopt_long(argc, argv, "d:i:t:U:1h", myopts, &optndx);
+        i = getopt_long(argc, argv, "bd:i:t:U:1h", myopts, &optndx);
         if(i == -1)
             break;
         switch (i) {
         case ':':
         case '?':
             usage();
+            break;
+        case 'b':
+            print_brlen = 1;
             break;
         case 'd':
             deterministic = 1;
@@ -293,6 +302,12 @@ int main(int argc, char **argv) {
         usage();
     }
 
+    if(print_brlen && U) {
+        fprintf(stderr,"\nOptions -b and --branch_length cannot be used"
+                " with -U.\n\n");
+        usage();
+    }
+
     if(deterministic)
         Network_init(DETERMINISTIC);
     else
@@ -334,10 +349,8 @@ int main(int argc, char **argv) {
     rngseed += 1;  // wraps to 0 at ULONG_MAX
 
     BranchTab *bt = get_brlen(network, nreps, doSing, rng);
-    if(!U)
+    if(!U && !print_brlen)
         BranchTab_normalize(bt);
-
-    //BranchTab_print(bt, stdout);
 
     // Put site patterns and branch lengths into arrays.
     unsigned npat = BranchTab_size(bt);
@@ -351,8 +364,15 @@ int main(int argc, char **argv) {
     unsigned ord[npat];
     orderpat(npat, ord, pat);
 
+    if(deterministic && improbable > 0 && print_brlen)
+        fprintf(stderr, "\n# Warning: E[brlen] may be biased downward"
+                " because the argument to -d\n"
+                "# or --deterministic was > 0.\n\n");
+
     if(U)
         printf("#%14s %15s\n", "SitePat", "Count");
+    else if(print_brlen)
+        printf("#%14s %15s\n", "SitePat", "E[brlen]");
     else
         printf("#%14s %15s\n", "SitePat", "Prob");
         

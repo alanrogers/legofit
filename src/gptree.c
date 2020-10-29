@@ -130,8 +130,8 @@ int GPTree_nFree(const void * self) {
     return ParStore_nFree(((const GPTree *) self)->parstore);
 }
 
-/// Use coalescent simulation to estimate the probability of each site
-/// pattern.
+/// Use coalescent simulation to estimate the mean branch length
+/// associated with each site pattern.
 /// @param self GPTree object
 /// @param[out] branchtab BranchTab object, which will tabulate branch
 /// lengths from this simulations.
@@ -170,6 +170,8 @@ void GPTree_brlen(void * vself, BranchTab * branchtab, gsl_rng * rng,
         Gene_free(self->rootGene);
         self->rootGene = NULL;
     }
+
+    BranchTab_divideBy(branchtab, (double) nreps);
 }
 
 /// GPTree constructor

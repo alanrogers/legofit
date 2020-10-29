@@ -310,12 +310,7 @@ void MCTree_brlen(void * vself, BranchTab * branchtab, gsl_rng * rng,
     MCTree *self = vself;
     Segment_clear(self->rootPop);   // remove old samples
 
-    // Put samples into the gene tree. This allocates memory for
-    // each Gene in the sample and puts pointers to them into the
-    // Segments that are controlled by the SampNdx. The Gene
-    // objects aren't owned by SampNdx or Segment. They will
-    // eventually be freed by a call to Gene_free, which
-    // recursively frees the root and all descendants.
+    // Put samples into the gene tree.
     for(unsigned i=0; i < SampNdx_size(&self->sndx); ++i) {
         Segment *node = (Segment *) SampNdx_get(&self->sndx, i);
         Segment_newSample(node, i);
