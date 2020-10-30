@@ -317,7 +317,8 @@ int main(int argc, char **argv) {
     int strategy = 2;
     int ptsPerDim = 10;
     int verbose = 0;
-    int deterministic = 0, stochastic = 0;
+    int deterministic = 0;
+    int empty_reps = 0;
     SimSched *simSched = SimSched_new();
 
     // Ignore IdSet objects with probabilities <= improbable.
@@ -349,8 +350,9 @@ int main(int argc, char **argv) {
             deterministic = 1;
             improbable = strtold(optarg, &end);
             if(*end != '\0') {
-                fprintf(stderr,"Can't parse %s as a long double\n", optarg);
-                exit(EXIT_FAILURE);
+                fprintf(stderr,"\nIllegal argument to -d or --deterministic.\n"
+                        "Can't parse %s as a long double.\n\n", optarg);
+                usage();
             }
             break;
         case ':':
@@ -385,12 +387,33 @@ int main(int argc, char **argv) {
                 exit(EXIT_FAILURE);
             }
             g = r = b;
+
+            // Parse string like "123@456". g is for diffev generations
+            // and points to "123". r is for simulation replicates and
+            // points to "456". It is legal to omit the "@456" part,
+            // but only if -d or --deterministic is also used.
             (void) strsep(&r, "@");
-            if(r == NULL || strlen(r) == 0 || strlen(g) == 0)
+            if(strlen(g) == 0)
                 usage();
             long stageGen = strtol(g, NULL, 10);
-            long stageRep = strtol(r, NULL, 10);
+
+            long stageRep;
+            if(r == NULL || strlen(r) == 0) {
+                empty_reps = 1;
+                stageRep = 0;
+            }else{
+                stageRep = strtol(r, NULL, 10);
+                if(stageRep == 0)
+                    empty_reps = 1;
+            }
             simreps = stageRep;
+
+            if(stageGen < 0 || stageRep < 0) {
+                fprintf(stderr,"Argument to -S or --stage can't have"
+                        " negative integers: \"%s\" is illegal.\n",
+                        optarg);
+                exit(EXIT_FAILURE);
+            }
             SimSched_append(simSched, stageGen, stageRep);
         }
             break;
@@ -451,10 +474,14 @@ int main(int argc, char **argv) {
     snprintf(patfname, sizeof(patfname), "%s", argv[optind + 1]);
     assert(patfname[0] != '\0');
 
-    if(deterministic && stochastic) {
-        fprintf(stderr,"\nOptions -d and --deterministic cannot be used"
-                " with -S or --stage\n\n");
-        usage();
+    if(!deterministic && empty_reps) {
+        fprintf(stderr,"\nAt least one -S or --stage argument specified"
+                " zero simulation replicates. In\n"
+                "other words, there was no \"@\" or there was no positive"
+                " integer after the \"@\".\n"
+                "This is only legal when -d or --deterministic is also"
+                " used.\n");
+        exit(EXIT_FAILURE);
     }
 
     if(deterministic) {
@@ -464,6 +491,10 @@ int main(int argc, char **argv) {
             // Default simulation schedule.
             // 1000 generations of 1 replicate
             SimSched_append(simSched, 1000, 1);
+        }else if(1 < SimSched_nStages(simSched)) {
+            fprintf(stderr,"\nDon't use the -S or --stage argument"
+                    " more than once when using -d or --deterministic\n");
+            exit(EXIT_FAILURE);
         }
     }else{
         Network_init(STOCHASTIC);
