@@ -254,7 +254,9 @@ void usage(void) {
     tellopt("-p <x> or --ptsPerDim <x>", "number of DE points per free var");
     tellopt("-s <x> or --strategy <x>", "set DE strategy");
     tellopt("-S <g>@<r> or --stage <g>@<r>",
-            "add stage with <g> generations and <r> simulation reps");
+            "add stage with <g> generations and <r> simulation reps."
+            " The \"@<r>\"\n"
+            "      portion can be omitted if -d or --deterministic are used.");
     tellopt("--stateIn <filename>",
             "read initial state from new-style file. Option may be repeated.");
     tellopt("--stateOut <filename>",
