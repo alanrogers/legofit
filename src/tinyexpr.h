@@ -27,6 +27,7 @@
 
 #define TE_NAT_LOG
 
+#include "strptrmap.h"
 #include <stdio.h>
 
 typedef struct te_expr {
@@ -52,17 +53,13 @@ enum {
 };
 
 typedef struct te_variable {
-    // name is not freed by te_variable_free
-    const char *name;
-    
     void *address;
     int type;
     void *context;
-    struct te_variable *next;
 } te_variable;
 
-te_variable *te_variable_push(te_variable *self, const char *name, void *address);
-void te_variable_free(te_variable *self);
+te_variable *te_variable_new(void *address);
+void te_free_variables(StrPtrMap *pars);
 
 /* Parses the input expression, evaluates it, and frees it. */
 
@@ -72,7 +69,8 @@ double te_interp(const char *expression, int *error);
 /* Parses the input expression and binds variables. */
 
 /* Returns NULL on error. */
-te_expr *te_compile(const char *expression, const te_variable * variables, int *error);
+te_expr *te_compile(const char *expression, StrPtrMap * varmap,
+                    int *error);
 
 /* Evaluates the expression. */
 double te_eval(const te_expr * n);

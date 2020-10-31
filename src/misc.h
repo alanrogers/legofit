@@ -11,6 +11,7 @@
 #  include <gsl/gsl_rng.h>
 
 static inline int Dbl_near(double x, double y);
+int LDbl_near(long double x, long double y);
 static inline int Dbl_equals_allowNonfinite(double x, double y);
 int         compareInts(const void *void_x, const void *void_y);
 int         compareLongs(const void *void_x, const void *void_y);
@@ -34,10 +35,14 @@ int         strCountSetChunks(const char *str, const char *sep);
 int         strchrcnt(const char *s, int c);
 void       *memdup(const void *p, size_t n);
 double      KLdiverg(int n, const double o[n], const double e[n]);
-double      sum_double(int n, const double x[n]);
+double      sumDbl(int n, const double x[n]);
 double      reflect(double x, double lo, double hi);
 char       *strlowercase(char *s);
-unsigned    strhash(const char *ss);
+#ifdef __clang__
+unsigned long strhash(const char *ss) __attribute__((no_sanitize("integer")));
+#else
+unsigned long strhash(const char *ss);
+#endif
 int         stripchr(char *s, int c);
 char       *stripWhiteSpace(char *buff);
 char       *stripInternalWhiteSpace(char *buff);
@@ -53,6 +58,7 @@ int         readline(int dim, char buff[dim], FILE *fp);
 const char *mybasename(const char *name);
 int         legalName(const char *name);
 int         strnncopy(size_t n, char dst[n], size_t m, const char src[m]);
+void        collapse_whitespace(char * buff);
 static inline double survival(double t, double twoN);
 
 #  define ERR(code, msg) do{                        \
@@ -78,13 +84,14 @@ static inline double survival(double t, double twoN);
         }                                                   \
     } while(0)
 
-#  define REQUIRE(x,file,lineno) do { \
-  if (!(x)) { \
-    dostacktrace(__FILE__,__LINE__,stderr); \
-    eprintf("ERR@%s:%d->%s:%d: Sanity check FAIL\n",\
-            (file),(lineno),__FILE__,__LINE__); \
-   }\
-} while(0)
+#  define REQUIRE(x, file, line) do {                                   \
+        if (!(x)) {                                                     \
+            dostacktrace(__FILE__,__LINE__,stderr);                     \
+            fprintf(stderr,"ERR@%s:%d->%s:%d: Sanity check FAIL\n",     \
+                    (file), (line), __FILE__,__LINE__);                 \
+            exit(EXIT_FAILURE);                                         \
+        }                                                               \
+    } while(0)
 
 // If PTR!=NULL, add offset OSET to pointer PTR (if SIGN>0) or
 // subtract it (otherwise). Units are sizeof(char) rather than the

@@ -187,6 +187,20 @@ int main(int argc, char **argv) {
     
     unitTstResult("nlz", "OK");
 
+    assert(1 == next_power_of_2(0));
+    assert(1 == next_power_of_2(1));
+    assert(2 == next_power_of_2(2));
+    assert(4 == next_power_of_2(3));
+    assert(4 == next_power_of_2(4));
+    assert(8 == next_power_of_2(5));
+    assert(8 == next_power_of_2(6));
+    assert(8 == next_power_of_2(7));
+    assert(8 == next_power_of_2(8));
+    assert(16 == next_power_of_2(9));
+
+    unitTstResult("next_power_of_2", "OK");
+
     unitTstResult("binary", "OK");
+    
     return 0;
 }

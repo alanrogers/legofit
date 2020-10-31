@@ -381,7 +381,7 @@ int RAFReader_findDaf(int n, RAFReader * r[n]) {
         maxp = fmax(maxp, p);
     }
     if(maxp == 0.0 || minp == 1.0)
-        return NO_ANCESTRAL_ALLELE;
+        return MONOMORPHIC_SITE;
 
     // Make sure REF and ALT are consistent across readers
     if((status = RAFReader_alleleCheck(n, r)))

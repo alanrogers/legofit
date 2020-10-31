@@ -5,6 +5,7 @@
 #  include <stdbool.h>
 #  include <gsl/gsl_rng.h>
 
+<<<<<<< HEAD
 struct PopNode {
     int         nparents, nchildren;
     double      *twoN;           // ptr to current pop size
@@ -23,23 +24,31 @@ int         PopNode_mix(PopNode * child, double *mPtr, PopNode * introgressor,
                         PopNode * native);
 void        PopNode_newGene(PopNode * self, unsigned ndx);
 void        PopNode_addSample(PopNode * self, Gene * gene);
-Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng);
-void        PopNode_chkDependencies(PopNode * self, ParStore * parstore);
-int         PopNode_feasible(const PopNode *self, Bounds bnd, int verbose);
-void        PopNode_free(PopNode * self);
+=======
+int         PopNode_addChild(void * vparent, void * vchild);
 void        PopNode_clear(PopNode * self);
+>>>>>>> matcoal
+Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng);
+PopNode    *PopNode_dup(PopNode *old_root, PtrPtrMap *ppm);
+int         PopNode_equals(PopNode *a, PopNode *b);
+int         PopNode_feasible(const PopNode *self, Bounds bnd, int verbose);
+void        PopNode_free(PopNode *self);
 int         PopNode_isClear(const PopNode *self);
-void        PopNode_print(FILE * fp, PopNode * self, int indent);
-void        PopNode_printShallow(PopNode * self, FILE * fp);
-PopNode    *PopNode_root(PopNode * self);
-void        PopNode_sanityFromLeaf(PopNode * self, const char *file,
-                                   int line);
-int         PopNode_nsamples(PopNode * self);
-void        PopNode_shiftParamPtrs(PopNode *self, size_t dp, int sign);
+int         PopNode_mix(void * vchild, int mix_i, void * vintrogressor,
+                        void * vnative, ParStore *ps);
+void       *PopNode_new(int twoN_i, int start_i, ParStore *ps);
+void        PopNode_newSample(PopNode * self, unsigned ndx);
+void        PopNode_print(FILE * fp, void * vself, int indent);
+void       *PopNode_root(void * vself);
+void        PopNode_update(PopNode *self, ParStore *ps);
+void        PopNode_unvisit(PopNode *self);
 void        PopNode_shiftPopNodePtrs(PopNode *self, size_t dp, int sign);
 
+<<<<<<< HEAD
 NodeStore  *NodeStore_new(int len, PopNode *v);
 void        NodeStore_free(NodeStore *self);
 PopNode    *NodeStore_alloc(NodeStore *self);
 
+=======
+>>>>>>> matcoal
 #endif

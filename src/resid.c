@@ -452,21 +452,18 @@ int main(int argc, char **argv) {
 
         // Set npat, pat. Allocate mat.
         if(npat==0) {
-            double *frq = NULL, *sqr = NULL;
+            long double *frq = NULL;
             npat = BranchTab_size(resid);
             mat = malloc(npat * nDataFiles * sizeof(*mat));
             pat = malloc(npat * sizeof(*pat));
             frq = malloc(npat * sizeof(*frq));
-            sqr = malloc(npat * sizeof(*sqr));
             CHECKMEM(mat);
             CHECKMEM(pat);
             CHECKMEM(frq);
-            CHECKMEM(sqr);
             memset(mat, 255u, npat*nDataFiles*sizeof(*mat));
-            BranchTab_toArrays(resid, npat, pat, frq, sqr);
+            BranchTab_toArrays(resid, npat, pat, frq);
             qsort(pat, (size_t) npat, sizeof(pat[0]), compare_tipId);
             free(frq);
-            free(sqr);
         }
 
         // Normalize the BranchTabs

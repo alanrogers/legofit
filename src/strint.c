@@ -157,7 +157,7 @@ void StrInt_free(StrInt * self) {
 /// Insert a key-value pair into the hash table. Set errno=EDOM if
 /// pair already exists.
 void StrInt_insert(StrInt *self, const char *key, int value) {
-    unsigned    h = strhash(key) & (STRINT_DIM - 1u);
+    unsigned long h = strhash(key) & (STRINT_DIM - 1ul);
     assert(h < STRINT_DIM);
     assert(self);
     self->tab[h] = SILink_insert(self->tab[h], key, value);
@@ -166,7 +166,7 @@ void StrInt_insert(StrInt *self, const char *key, int value) {
 /// Return value corresponding to key. If key is not in table, return
 /// -1 and set errno = EDOM.
 int StrInt_get(StrInt * self, const char *key) {
-    unsigned    h = strhash(key) & (STRINT_DIM - 1u);
+    unsigned long h = strhash(key) & (STRINT_DIM - 1ul);
     assert(h < STRINT_DIM);
     assert(self);
     return SILink_get(self->tab[h], key);
@@ -174,7 +174,7 @@ int StrInt_get(StrInt * self, const char *key) {
 
 /// Return 1 if key exists in hash map; 0 otherwise.
 int StrInt_exists(StrInt * self, const char *key) {
-    unsigned    h = strhash(key) & (STRINT_DIM - 1u);
+    unsigned long h = strhash(key) & (STRINT_DIM - 1ul);
     assert(h < STRINT_DIM);
     assert(self);
     return SILink_exists(self->tab[h], key);

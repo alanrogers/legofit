@@ -1,14 +1,15 @@
 destination := $(HOME)/bin
 global_destination := $(HOME)/group/bin
-#opt := -DNDEBUG -O3  -finline-functions  # For full optimization
-opt := -O0 -fno-inline-functions -rdynamic -DDEBUG     # For debugging
-#opt := -O3  -finline-functions  # Optimization + debugging
-#prof := -pg -rdynamic                    # For profiling
+opt := -DNDEBUG -O2  -finline-functions  # For full optimization
+#opt := -O0 -fno-inline-functions -rdynamic -DDEBUG     # For debugging
+#opt := -O2  -finline-functions  # Optimization + debugging
+#prof := -pg -rdynamic                    # For profiling under gcc
+#prof := --fprofile-generate               # For profiling under clang
 prof :=
 incl := -I/usr/local/include -I/opt/local/include
 
 targets := legosim legofit tabpat sitepat scrmpat daf raf numcores \
-     joinraf raf2daf bepe booma maub pclgo resid simpat ms2sim clic rafdaf
+     joinraf raf2daf bepe booma pclgo resid simpat ms2sim clic rafdaf
 pytargets := diverg.py bootci.py flatfile.py axt2raf.py flatpat.py legotree.py
 tests := xzeroin xbinary
 
@@ -27,10 +28,25 @@ warn := \
  -Wno-unused-parameter \
  -Wno-unused-function \
  -Wshadow \
- -Wundef \
  -Wwrite-strings
 
-CFLAGS := -g -std=gnu99 $(warn) $(incl) $(opt) $(prof)
+# MacOS only
+ifeq ($(shell uname -s), Darwin)
+  warn +=  -Wno-nullability-completeness
+endif
+
+# Abort on integer overflow or underflow
+ubsan =
+#ifeq ($(shell uname -s), Darwin)
+#    # clang syntax
+#    ubsan += -fsanitize=undefined,integer \
+#              -fno-sanitize-recover=undefined,integer
+#else
+#    # gcc syntax
+#    ubsan += -fsanitize=undefined -fno-sanitize-recover=undefined
+#endif
+
+CFLAGS := -g -std=gnu99 $(ubsan) $(warn) $(incl) $(opt) $(prof)
 
 lib := -L/usr/local/lib -lgsl -lgslcblas -lpthread -lm
 
@@ -44,27 +60,31 @@ test : $(tests)
 	-./xzeroin
 	@echo "ALL UNIT TESTS WERE COMPLETED."
 
-LINEAGES := lineages.o misc.o lblndx.o binary.o
-lineages : $(lineages)
-	$(CC) $(CFLAGS) -o $@ $(LINEAGES) $(lib)
-
-LEGOSIM := legosim.o addrparmap.o patprob.o gptree.o binary.o jobqueue.o \
-  misc.o parse.o branchtab.o popnodetab.o lblndx.o tokenizer.o param.o \
-  parstore.o popnode.o gene.o dprintf.o rngseed.o dtnorm.o tinyexpr.o \
-  strparmap.o sampndx.o
+LEGOSIM := legosim.o addrparmap.o binary.o branchtab.o dprintf.o dtnorm.o \
+   error.o eventlst.o gene.o gptree.o jobqueue.o lblndx.o network.o misc.o \
+   param.o parse.o parstore.o patprob.o popnode.o rngseed.o sampndx.o \
+   strptrmap.o tinyexpr.o tokenizer.o ptrptrmap.o ptrqueue.o strint.o \
+   segment.o idset.o idsetset.o matcoal.o ptrlst.o comb.o \
+   setpart.o rational.o u64u64map.o mctree.o u64i64map.o
 legosim : $(LEGOSIM)
 	$(CC) $(CFLAGS) -o $@ $(LEGOSIM) $(lib)
 
-LEGOFIT := legofit.o addrparmap.o patprob.o gptree.o binary.o jobqueue.o \
-  misc.o parse.o branchtab.o popnodetab.o lblndx.o tokenizer.o parstore.o \
-  popnode.o gene.o cost.o diffev.o dprintf.o rngseed.o simsched.o dtnorm.o \
-  tinyexpr.o state.o strparmap.o param.o pointbuff.o sampndx.o
+LEGOFIT := legofit.o addrparmap.o binary.o branchtab.o cost.o diffev.o \
+   dprintf.o dtnorm.o error.o gene.o gptree.o jobqueue.o lblndx.o misc.o \
+   network.o param.o parse.o parseopf.o parstore.o patprob.o \
+   pointbuff.o popnode.o rngseed.o sampndx.o simsched.o state.o \
+   strptrmap.o tinyexpr.o tokenizer.o ptrptrmap.o ptrqueue.o strint.o \
+   mctree.o matcoal.o segment.o eventlst.o idset.o idsetset.o ptrlst.o \
+   rational.o comb.o u64i64map.o setpart.o u64u64map.o
 legofit : $(LEGOFIT)
 	$(CC) $(CFLAGS) -o $@ $(LEGOFIT) $(lib)
 
 PCLGO := pclgo.o misc.o strdblqueue.o gptree.o parstore.o param.o popnode.o \
-  gene.o addrparmap.o branchtab.o lblndx.o strparmap.o dtnorm.o dprintf.o \
-  tinyexpr.o tokenizer.o parse.o binary.o popnodetab.o sampndx.o
+  gene.o addrparmap.o branchtab.o lblndx.o dtnorm.o dprintf.o \
+  tinyexpr.o tokenizer.o parse.o binary.o strptrmap.o sampndx.o network.o \
+  error.o ptrptrmap.o ptrqueue.o strint.o mctree.o segment.o eventlst.o \
+  idsetset.o matcoal.o ptrlst.o comb.o idset.o u64i64map.o rational.o \
+  setpart.o u64u64map.o
 pclgo : $(PCLGO)
 	$(CC) $(CFLAGS) -o $@ $(PCLGO) $(lib)
 
@@ -139,6 +159,12 @@ zeroin.o : zeroin.h
 TRY := try.o binary.o
 try : $(TRY)
 	$(CC) $(CFLAGS) -o $@ $(TRY) $(lib)
+
+ptrptrmap.o : ptrptrmap.c ptrptrmap.h hashmap.h hashmap.src
+
+ptru32map.o : ptru32map.c ptru32map.h hashmap.h hashmap.src
+
+u64u64map.o : u64u64map.c u64u64map.h hashmap.h hashmap.src
 
 # Make dependencies file
 depend : *.c *.h

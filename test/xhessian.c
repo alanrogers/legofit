@@ -45,7 +45,7 @@ int main(int argc, char **argv) {
     gsl_rng_set(rng, time(NULL));
     double sigma=0.01;
 
-	switch (argc) {
+    switch (argc) {
     case 1:
         break;
     case 2:
@@ -62,10 +62,8 @@ int main(int argc, char **argv) {
 
     double tru[nterms];
     int offset[dim];
-    for(i=0; i<=dim; ++i) {
+    for(i=0; i<dim; ++i)
         offset[i] = (i*(i+1))/2;
-        tru[1+i] = 0.0;
-    }
 
     for(j=0; j<dim; ++j) {
         for(k=j; k<dim; ++k)

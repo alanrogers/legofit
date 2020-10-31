@@ -222,6 +222,25 @@ int main(int argc, char **argv) {
     assert(4 == strchrcnt(",,,,", ','));
     
     unitTstResult("strchrcnt", "OK");
-    
+
+    // test collapse_whitespace
+    strcpy(buff, " aa   bcde                f ");
+    collapse_whitespace(buff);
+    assert(0 == strcmp(buff, " aa bcde f "));
+
+    strcpy(buff, "aa");
+    collapse_whitespace(buff);
+    assert(0 == strcmp(buff, "aa"));
+
+    strcpy(buff, "");
+    collapse_whitespace(buff);
+    assert(0 == strcmp(buff, ""));
+
+    strcpy(buff, "          ");
+    collapse_whitespace(buff);
+    assert(0 == strcmp(buff, " "));
+
+    unitTstResult("collapse_whitespace", "OK");
+        
     return 0;
 }

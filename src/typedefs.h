@@ -10,33 +10,52 @@ typedef struct BootChr BootChr;
 typedef struct Bounds Bounds;
 typedef struct BranchTab BranchTab;
 typedef struct Constraint Constraint;
+typedef struct EventLst EventLst;
 typedef struct Gene Gene;
-typedef struct GetLineTok GetLineTok;
 typedef struct GPTree GPTree;
 typedef struct HashTab HashTab;
 typedef struct HashTabSeq HashTabSeq;
+typedef struct History History;
+typedef struct IdSet IdSet;
+typedef struct IdSetSet IdSetSet;
 typedef struct LblNdx LblNdx;
 typedef struct LineReader LineReader;
+typedef struct MCTree MCTree;
 typedef struct NameList NameList;
-typedef struct NodeStore NodeStore;
+typedef struct Network Network;
 typedef struct Param Param;
 typedef struct ParStore ParStore;
 typedef struct Point Point;
 typedef struct PointBuff PointBuff;
 typedef struct PopNode PopNode;
-typedef struct PopNodeTab PopNodeTab;
+typedef struct PtrPair PtrPair;
+typedef struct PtrPtrMap PtrPtrMap;
+typedef struct PtrU32Map PtrU32Map;
+typedef struct PtrLst PtrLst;
+typedef struct PtrQueue PtrQueue;
+typedef struct PtrVec PtrVec;
 typedef struct ScrmReader ScrmReader;
+typedef struct Segment Segment;
 typedef struct SimReader SimReader;
 typedef struct SimSched SimSched;
 typedef struct SampNdx SampNdx;
+typedef struct SplitLst SplitLst;
 typedef struct State State;
-typedef struct StrDblMap StrDblMap;
+typedef struct Stirling2 Stirling2;
 typedef struct StrInt StrInt;
 typedef struct StrParMap StrParMap;
+typedef struct StrPtrMap StrPtrMap;
 typedef struct Tokenizer Tokenizer;
 typedef struct UINTqueue UINTqueue;
+typedef struct U64U64Map U64U64Map;
+typedef struct U64I64Map U64I64Map;
 typedef struct DAFReader DAFReader;
 typedef struct RAFReader RAFReader;
+
+// For returning a pair of pointers
+struct PtrPair {
+    void *a, *b;
+};
 
 #if 1
 #  define TIPID_SIZE 32
@@ -47,10 +66,7 @@ typedef uint64_t tipId_t;
 #endif
 
 #define KL_COST 1
-#define CHISQR_COST 2
-#define SMPLCHISQR_COST 3
-#define POISSON_COST 4
-#define LNL_COST 5
+#define LNL_COST 2
 #define COST KL_COST
 
 #define FREE 1
@@ -64,4 +80,9 @@ typedef uint64_t tipId_t;
 #define POPNAMESIZE 30
 #define MAXSAMP ((int)(8*sizeof(tipId_t)))
 
+<<<<<<< HEAD
+=======
+enum NetworkType { STOCHASTIC, DETERMINISTIC };
+
+>>>>>>> matcoal
 #endif

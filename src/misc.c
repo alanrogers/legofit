@@ -379,8 +379,8 @@ int compareDoubles(const void *void_x, const void *void_y) {
 double KLdiverg(int n, const double o[n], const double e[n]) {
     int i;
     double kl=0.0;
-    assert(Dbl_near(1.0, sum_double(n, o)));
-    assert(Dbl_near(1.0, sum_double(n, e)));
+    assert(Dbl_near(1.0, sumDbl(n, o)));
+    assert(Dbl_near(1.0, sumDbl(n, e)));
     for(i = 0; i < n; ++i) {
         if(o[i]==0.0 && e[i]==0.0)
             continue;
@@ -391,20 +391,14 @@ double KLdiverg(int n, const double o[n], const double e[n]) {
     return kl;
 }
 
-/// Sum an array of doubles. Unwrapped loop.
-double sum_double(int n, const double x[n]) {
-    register double rval;
-    register int i, m;
+/// Sum an array of doubles.
+double sumDbl(int n, const double x[n]) {
+    register long double rval = 0.0;
 
     assert(n >= 0);
 
-    rval = 0.0;
-    m = n % 5;
-    for(i = 0; i < m; ++i)
+    for(register int i = 0; i < n; ++i)
         rval += x[i];
-
-    for(i = m; i < n; i += 5)
-        rval += x[i] + x[i + 1] + x[i + 2] + x[i + 3] + x[i + 4];
 
     return rval;
 }
@@ -442,7 +436,11 @@ char       *strlowercase(char *s) {
 }
 
 /// Hash a character string
-unsigned strhash(const char *ss) {
+#ifdef __clang__
+unsigned long strhash(const char *ss) __attribute__((no_sanitize("integer"))){
+#else
+unsigned long strhash(const char *ss) {
+#endif
     unsigned long hashval;
     int c;
     const unsigned char *s = (const unsigned char *) ss;
@@ -764,3 +762,36 @@ int strchrcnt(const char *s, int c) {
     }
     return n;
 }
+
+// Replace multiple whitespace characters with a single space
+// in buff.
+void collapse_whitespace(char * buff) {
+    char *w, *r;
+    int nsp = 0;
+    w = r = buff;
+    while(*r != '\0') {
+        if(isspace(*r)) {
+            if(nsp == 0) {
+                if(r>w)
+                    *w = ' ';
+                ++w;
+            }
+            ++r;
+            ++nsp;
+        }else{
+            nsp = 0;
+            if(r>w)
+                *w = *r;
+            ++r;
+            ++w;
+        }
+    }
+    *w = '\0';
+}
+
+/// Return 1 if the relative difference between x and y is less than or
+/// equal to 8*LDBL_EPSILON.
+int LDbl_near(long double x, long double y) {
+    return fabsl(x - y) <= fmaxl(fabsl(x), fabsl(y)) * 8.0 * DBL_EPSILON;
+}
+ 

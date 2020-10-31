@@ -103,7 +103,7 @@ int main(int argc, char **argv){
 
     bool verbose = 0;
 
-	  switch (argc) {
+    switch (argc) {
     case 1:
         break;
     case 2:

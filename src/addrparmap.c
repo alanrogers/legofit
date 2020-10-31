@@ -43,11 +43,7 @@ void AddrParMap_free(AddrParMap *h) {
 
 AddrParMap *AddrParMap_new(Param *par) {
     AddrParMap *self = malloc(sizeof(AddrParMap));
-    if(self==NULL) {
-        fprintf(stderr,"%s:%d: can't allocate memory\n",
-                __FILE__, __LINE__);
-        exit(EXIT_FAILURE);
-    }
+    CHECKMEM(self);
     self->par = par;  // no copy because par is not locally owned
     self->color = RED;
     self->left = self->right = NULL;
@@ -126,6 +122,7 @@ void AddrParMap_flipColors(AddrParMap *h) {
 #    error "Unit tests must be compiled without -DNDEBUG flag"
 #  endif
 
+#include "network.h"
 #include <string.h>
 
 void AddrParMap_print(AddrParMap *h, FILE *fp, int indent);
@@ -158,19 +155,23 @@ int main(int argc, char **argv) {
         verbose = 1;
     }
 
+    Network_init(SIM);
+
     double a[] = {0.0, 1.0, 2.0, 0.5};
 
-    Param parvec[4];
-    Param_init(parvec+0, "par0", a[0], 0.0, 1.0, FREE);
-    Param_init(parvec+1, "par1", a[1], -INFINITY, INFINITY, CONSTRAINED);
-    Param_init(parvec+2, "par2", a[2], 1.0, 1e6, FIXED);
-    Param_init(parvec+3, "par3", a[3], -1.0, 1.0, CONSTRAINED);
+    Param *parvec[4];
+    parvec[0] = Param_new("par0", a[0], 0.0, 1.0, FREE, NULL);
+    parvec[1] = Param_new("par1", a[1], -INFINITY, INFINITY,
+                          CONSTRAINED, "3 + 4*y");
+    parvec[2] = Param_new("par2", a[2], 1.0, 1e6, FIXED, NULL);
+    parvec[3] = Param_new("par3", a[3], -1.0, 1.0, CONSTRAINED,
+                          "y - z");
 
     AddrParMap *root = NULL;
-    root = AddrParMap_insert(root, parvec+0);
-    root = AddrParMap_insert(root, parvec+1);
-    root = AddrParMap_insert(root, parvec+2);
-    root = AddrParMap_insert(root, parvec+3);
+    root = AddrParMap_insert(root, parvec[0]);
+    root = AddrParMap_insert(root, parvec[1]);
+    root = AddrParMap_insert(root, parvec[2]);
+    root = AddrParMap_insert(root, parvec[3]);
 
     if(verbose)
         AddrParMap_print(root, stdout, 0);
@@ -178,27 +179,29 @@ int main(int argc, char **argv) {
     // Search for nodes that exist. Each search should succeed.
     Param *par;
 
-    par = AddrParMap_search(root, &parvec[0].value);
-    assert(par);
+    par = AddrParMap_search(root, &(parvec[0]->value));
+    assert(par == parvec[0]);
     assert(strcmp(par->name, "par0") == 0);
 
-    par = AddrParMap_search(root, &parvec[1].value);
-    assert(par);
+    par = AddrParMap_search(root, &(parvec[1]->value));
+    assert(par == parvec[1]);
     assert(strcmp(par->name, "par1") == 0);
     
-    par = AddrParMap_search(root, &parvec[2].value);
-    assert(par);
+    par = AddrParMap_search(root, &(parvec[2]->value));
+    assert(par == parvec[2]);
     assert(strcmp(par->name, "par2") == 0);
 
-    par = AddrParMap_search(root, &parvec[3].value);
-    assert(par);
+    par = AddrParMap_search(root, &(parvec[3]->value));
+    assert(par == parvec[3]);
     assert(strcmp(par->name, "par3") == 0);
 
     // Search for nodes that don't exist. Each search should fail.
-    par = AddrParMap_search(root, 1lu + &parvec[3].value);
+    par = AddrParMap_search(root, 1lu + &(parvec[3]->value));
     assert(par == NULL);
 
     AddrParMap_free(root);
+    for(int i=0; i < 4; ++i)
+        free(parvec[i]);
     printf("%-26s %s\n", "AddrParMap", "OK");
 }
 #endif
