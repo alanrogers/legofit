@@ -665,8 +665,6 @@ PtrPair mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, Bounds * bnd) {
             strcat(buff, " "); // add space after operator
             strcat(buff, buff2);
         }
-        fprintf(stderr,"buff: %s\n", buff);
-
         collapse_whitespace(buff);
 
         snprintf(orig, sizeof orig, "%s", buff);
