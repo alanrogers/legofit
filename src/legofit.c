@@ -247,6 +247,7 @@ void usage(void) {
             "   and file sitepat.txt contains site pattern frequencies.\n");
     fprintf(stderr, "Options may include:\n");
     tellopt("-1 or --singletons", "Use singleton site patterns");
+    tellopt("-c or --clic", "write output files needed by clic"); 
     tellopt("-d <x> or --deterministic <x>",
             "Deterministic algorithm, ignoring states with Pr <= x"); 
     tellopt("-F <x> or --scaleFactor <x>", "set DE scale factor");
@@ -278,6 +279,7 @@ int main(int argc, char **argv) {
 
     static struct option myopts[] = {
         /* {char *name, int has_arg, int *flag, int val} */
+        {"clic", no_argument, 0, 'c'},
         {"deterministic", required_argument, 0, 'd'},
         {"threads", required_argument, 0, 't'},
         {"crossover", required_argument, 0, 'x'},
@@ -304,6 +306,7 @@ int main(int argc, char **argv) {
     double lo_t = 0.0, hi_t = 1e7;  // t bounds
     int nThreads = 0;           // total number of threads
     int doSing = 0;             // nonzero means use singleton site patterns
+    int write_clic_pts = 0;
     int status, optndx;
     long simreps = 1000000;
     char lgofname[200] = { '\0' };
@@ -315,7 +318,9 @@ int main(int argc, char **argv) {
     // DiffEv parameters
     double F = 0.3;
     double CR = 0.8;
-    double ytol = 3e-5;         // stop when yspread <= ytol
+    double ytol = -1.0;         // stop when yspread <= ytol
+    double ytol_default_stochastic = 3e-5;
+    double ytol_default_deterministic = 1e-10;
     int strategy = 2;
     int ptsPerDim = 10;
     int verbose = 0;
@@ -344,10 +349,13 @@ int main(int argc, char **argv) {
     // command line arguments
     for(;;) {
         char *end;
-        i = getopt_long(argc, argv, "d:T:t:F:p:s:S:a:vx:1h", myopts, &optndx);
+        i = getopt_long(argc, argv, "cd:T:t:F:p:s:S:a:vx:1h", myopts, &optndx);
         if(i == -1)
             break;
         switch (i) {
+        case 'c':
+            write_clic_pts = 1;
+            break;
         case 'd':
             deterministic = 1;
             improbable = strtold(optarg, &end);
@@ -489,6 +497,9 @@ int main(int argc, char **argv) {
     if(deterministic) {
         Network_init(DETERMINISTIC);
 
+        if(ytol < 0.0)
+            ytol = ytol_default_deterministic;
+
         if(0 == SimSched_nStages(simSched)) {
             // Default simulation schedule.
             // 1000 generations of 1 replicate
@@ -500,6 +511,9 @@ int main(int argc, char **argv) {
         }
     }else{
         Network_init(STOCHASTIC);
+
+        if(ytol < 0.0)
+            ytol = ytol_default_stochastic;
 
         if(0 == SimSched_nStages(simSched)) {
             // Default simulation schedule.
@@ -625,8 +639,8 @@ int main(int argc, char **argv) {
 
     // Construct name for output file to which we will write
     // points for use in estimating Hessian matrix.
-    char ptsfname[200];
-    {
+    char ptsfname[200] = {0};
+    if(write_clic_pts){
         char a[200], b[200];
         strcpy(a, basename(lgofname));
         strcpy(b, basename(patfname));
@@ -652,8 +666,8 @@ int main(int argc, char **argv) {
                 ++version;
             }
         }
+        printf("# pts output file    : %s\n", ptsfname);
     }
-    printf("# pts output file    : %s\n", ptsfname);
 
     // Observed site pattern frequencies
     BranchTab *rawObs = parseOpf(patfname, &lblndx);
@@ -790,77 +804,80 @@ int main(int argc, char **argv) {
         fclose(stateOut);
     }
 
-    double S = BranchTab_sum(rawObs); // sum of site pattern counts
-    double entropy = BranchTab_entropy(obs); // -sum p ln(p)
-    if(nQuadPts != PointBuff_size(dep.pb)) {
-        fprintf(stderr,"Warning@%s:%d: expecting %u points; got %u\n",
-                __FILE__,__LINE__, nQuadPts, PointBuff_size(dep.pb));
-        nQuadPts = PointBuff_size(dep.pb);
-    }
+    if(write_clic_pts) {
 
-    assert( access( ptsfname, F_OK ) == -1 );
-
-    FILE *qfp = fopen(ptsfname, "w");
-    if(qfp == NULL) {
-        fprintf(stderr,"%s:%d: can't write file %s: using stdout\n",
-                __FILE__,__LINE__,ptsfname);
-        qfp = stdout;
-    }
-
-    // First line contains dimensions. Each row contains dim+1 values:
-    // first lnL, then dim parameter values.
-    fprintf(qfp, "%u %d\n", nQuadPts, dim);
-
-    // header
-    fprintf(qfp, "%s", "lnL");
-    for(i=0; i < dim; ++i)
-        fprintf(qfp, " %s", Network_getNameFree(network, i));
-    putc('\n', qfp);
-
-    double lnL;
-
-    // print estimate first
-#if COST==KL_COST
-    lnL = -S*(cost + entropy);
-#else
-    lnL = -cost;
-#endif
-    fprintf(qfp, "%0.18lg", lnL);
-    for(i=0; i < dim; ++i)
-        fprintf(qfp, " %0.18lg", estimate[i]);
-    putc('\n', qfp);
-
-    // print contents of PointBuff, omitting any that exactly
-    // equal the point estimate
-    while(0 != PointBuff_size(dep.pb)) {
-        double c, par[dim];
-        c = PointBuff_pop(dep.pb, dim, par);
-
-        // Is current point the estimate? If so, skip it.
-        int is_estimate=1;
-        if(c != cost)
-            is_estimate=0;
-        for(i=0; is_estimate && i < dim; ++i) {
-            if(par[i] != estimate[i])
-                is_estimate = 0;
+        double S = BranchTab_sum(rawObs); // sum of site pattern counts
+        double entropy = BranchTab_entropy(obs); // -sum p ln(p)
+        if(nQuadPts != PointBuff_size(dep.pb)) {
+            fprintf(stderr,"Warning@%s:%d: expecting %u points; got %u\n",
+                    __FILE__,__LINE__, nQuadPts, PointBuff_size(dep.pb));
+            nQuadPts = PointBuff_size(dep.pb);
         }
-        if(is_estimate)
-            continue;
 
+        assert( access( ptsfname, F_OK ) == -1 );
+
+        FILE *qfp = fopen(ptsfname, "w");
+        if(qfp == NULL) {
+            fprintf(stderr,"%s:%d: can't write file %s: using stdout\n",
+                    __FILE__,__LINE__,ptsfname);
+            qfp = stdout;
+        }
+
+        // First line contains dimensions. Each row contains dim+1 values:
+        // first lnL, then dim parameter values.
+        fprintf(qfp, "%u %d\n", nQuadPts, dim);
+
+        // header
+        fprintf(qfp, "%s", "lnL");
+        for(i=0; i < dim; ++i)
+            fprintf(qfp, " %s", Network_getNameFree(network, i));
+        putc('\n', qfp);
+
+        double lnL;
+
+        // print estimate first
 #if COST==KL_COST
-        lnL = -S*(c + entropy); // Kullback-Leibler cost function
+        lnL = -S*(cost + entropy);
 #else
-        lnL = -c;               // negLnL cost function
+        lnL = -cost;
 #endif
         fprintf(qfp, "%0.18lg", lnL);
         for(i=0; i < dim; ++i)
-            fprintf(qfp, " %0.18lg", par[i]);
+            fprintf(qfp, " %0.18lg", estimate[i]);
         putc('\n', qfp);
-    }
-    if(qfp != stdout) {
-        fclose(qfp);
-        fprintf(stderr,"%d points written to file %s\n",
-                nQuadPts, ptsfname);
+
+        // print contents of PointBuff, omitting any that exactly
+        // equal the point estimate
+        while(0 != PointBuff_size(dep.pb)) {
+            double c, par[dim];
+            c = PointBuff_pop(dep.pb, dim, par);
+
+            // Is current point the estimate? If so, skip it.
+            int is_estimate=1;
+            if(c != cost)
+                is_estimate=0;
+            for(i=0; is_estimate && i < dim; ++i) {
+                if(par[i] != estimate[i])
+                    is_estimate = 0;
+            }
+            if(is_estimate)
+                continue;
+
+#if COST==KL_COST
+            lnL = -S*(c + entropy); // Kullback-Leibler cost function
+#else
+            lnL = -c;               // negLnL cost function
+#endif
+            fprintf(qfp, "%0.18lg", lnL);
+            for(i=0; i < dim; ++i)
+                fprintf(qfp, " %0.18lg", par[i]);
+            putc('\n', qfp);
+        }
+        if(qfp != stdout) {
+            fclose(qfp);
+            fprintf(stderr,"%d points written to file %s\n",
+                    nQuadPts, ptsfname);
+        }
     }
 
     PointBuff_free(dep.pb);

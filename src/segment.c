@@ -264,6 +264,20 @@ void Segment_prune(Segment *self) {
     }
 }
 
+void Segment_update(Segment *self, ParStore *ps) {
+    assert(self);
+    self->twoN = ParStore_getVal(ps, self->twoN_i);
+    self->start = ParStore_getVal(ps, self->start_i);
+    if(self->end_i >= 0)
+        self->end = ParStore_getVal(ps, self->end_i);
+    if(self->mix_i >= 0)
+        self->mix = ParStore_getVal(ps, self->mix_i);
+    if(self->nchildren > 0)
+        Segment_update(self->child[0], ps);
+    if(self->nchildren > 1)
+        Segment_update(self->child[1], ps);
+}
+
 /// Set all "visited" flags to false.
 void Segment_unvisit(Segment *self) {
     if(self->nchildren > 0)
@@ -1530,7 +1544,7 @@ void Segment_clear(Segment * self) {
     Segment_sanityCheck(self, __FILE__, __LINE__);
 }
 
-/// Return 1 if PopNode tree is empty of samples
+/// Return 1 if Segment tree is empty of samples
 int Segment_isClear(const Segment * self) {
     if(self == NULL)
         return 1;

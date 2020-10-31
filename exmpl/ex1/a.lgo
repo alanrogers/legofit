@@ -1,7 +1,6 @@
 time fixed    zero=0
 twoN fixed     one=1
 time fixed     Txyz=2
-#time free      Txy=1 # true value
 time free      Txy=0.5
 segment x     t=zero   twoN=one    samples=1
 segment y     t=zero   twoN=one    samples=1

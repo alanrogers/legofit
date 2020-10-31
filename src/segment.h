@@ -19,6 +19,7 @@ void     Segment_prune(Segment *self);
 void    *Segment_root(void * vself);
 void     Segment_sanityCheck(Segment * self, const char *file, int lineno);
 void     Segment_unvisit(Segment *self);
+void     Segment_update(Segment *self, ParStore *ps);
 void     Segment_clear(Segment * self);
 int      Segment_isClear(const Segment * self);
 

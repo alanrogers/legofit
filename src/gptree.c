@@ -94,6 +94,8 @@ void GPTree_randomize(void * vself, gsl_rng * rng) {
                     __FILE__,__LINE__,trial);
             exit(EXIT_FAILURE);
         }
+        PopNode_update(self->rootPop, self->parstore);
+
         // Bisect to satisfy inequality constraints.
         while( !GPTree_feasible(self, 0) ) {
             trial = orig + 0.5*(trial - orig);
@@ -102,6 +104,7 @@ void GPTree_randomize(void * vself, gsl_rng * rng) {
                         __FILE__,__LINE__,trial);
                 exit(EXIT_FAILURE);
             }
+            PopNode_update(self->rootPop, self->parstore);
         }
     }
 }
@@ -114,7 +117,11 @@ void GPTree_randomize(void * vself, gsl_rng * rng) {
 int GPTree_setParams(void * vself, int n, double x[n]) {
     GPTree *self = vself;
     assert(n == ParStore_nFree(self->parstore));
-    return ParStore_setFreeParams(self->parstore, n, x);
+    int status = ParStore_setFreeParams(self->parstore, n, x);
+    if(status)
+        return status;
+    PopNode_update(self->rootPop, self->parstore);
+    return 0;
 }
 
 /// Copy free parameters from GPTree into an array

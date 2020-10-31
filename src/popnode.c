@@ -665,7 +665,6 @@ int PopNode_feasible(const PopNode * self, Bounds bnd, int verbose) {
 
     switch (self->nchildren) {
     case 2:
-        fprintf(stderr,"%s:%s:%d\n",__FILE__,__func__,__LINE__);
         if(self->start < self->child[1]->start) {
             if(verbose)
                 fprintf(stderr,
@@ -675,7 +674,6 @@ int PopNode_feasible(const PopNode * self, Bounds bnd, int verbose) {
         }
         // fall through
     case 1:
-        fprintf(stderr,"%s:%s:%d\n",__FILE__,__func__,__LINE__);
         if(self->start < self->child[0]->start) {
             if(verbose)
                 fprintf(stderr,
@@ -701,6 +699,7 @@ int PopNode_feasible(const PopNode * self, Bounds bnd, int verbose) {
         if(0 == PopNode_feasible(self->child[i], bnd, verbose))
             return 0;
     }
+
     return 1;
 }
 

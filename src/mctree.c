@@ -274,7 +274,11 @@ int MCTree_nFree(const void * self) {
 int MCTree_setParams(void * vself, int n, double x[n]) {
     MCTree *self = vself;
     assert(n == ParStore_nFree(self->parstore));
-    return ParStore_setFreeParams(self->parstore, n, x);
+    int status = ParStore_setFreeParams(self->parstore, n, x);
+    if(status)
+        return status;
+    Segment_update(self->rootPop, self->parstore);
+    return 0;
 }
 
 /// Initialize vector x. If ndx==0, simply copy the parameter vector
