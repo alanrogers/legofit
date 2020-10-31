@@ -269,26 +269,6 @@ void PopNode_unvisit(PopNode *self) {
 }
 
 /// PopNode constructor
-<<<<<<< HEAD
-PopNode    *PopNode_new(double *twoN, double *start, NodeStore * ns) {
-    PopNode    *new = NodeStore_alloc(ns);
-    CHECKMEM(new);
-
-    new->nparents = new->nchildren = 0;
-    new->twoN = twoN;
-    new->mix = NULL;
-    new->start = start;
-    new->end = NULL;
-
-    memset(new->parent, 0, sizeof(new->parent));
-    memset(new->child, 0, sizeof(new->child));
-
-    new->nsamples = 0;
-    memset(new->sample, 0, sizeof(new->sample));
-
-    PopNode_sanityCheck(new, __FILE__, __LINE__);
-    return new;
-=======
 void *PopNode_new(int twoN_i, int start_i, ParStore *ps) {
     PopNode    *self = malloc(sizeof(PopNode));
     CHECKMEM(self);
@@ -320,7 +300,6 @@ void PopNode_update(PopNode *self, ParStore *ps) {
         PopNode_update(self->child[0], ps);
     if(self->nchildren > 1)
         PopNode_update(self->child[1], ps);
->>>>>>> matcoal
 }
 
 /// Connect parent and child
@@ -414,15 +393,10 @@ static void PopNode_transferSample(PopNode * self, Gene * gene) {
 /// @param[in] mPtr pointer to the gene flow variable
 /// @param[inout] introgressor pointer to the introgressing parent
 /// @param[inout] native pointer to the native parent
-<<<<<<< HEAD
-int PopNode_mix(PopNode * child, double *mPtr, PopNode * introgressor,
-                PopNode * native) {
-=======
 int PopNode_mix(void * vchild, int mix_i, void * vintrogressor,
                 void * vnative, ParStore *ps) {
     PopNode *child = vchild, *introgressor = vintrogressor,
         *native = vnative;
->>>>>>> matcoal
 
     if(introgressor->nchildren > 1) {
         fprintf(stderr,"%s:%s:%d:"
@@ -477,12 +451,8 @@ int PopNode_mix(void * vchild, int mix_i, void * vintrogressor,
     child->parent[0] = native;
     child->parent[1] = introgressor;
     child->nparents = 2;
-<<<<<<< HEAD
-    child->mix = mPtr;
-=======
     child->mix_i = mix_i;
     child->mix = ParStore_getVal(ps, mix_i);
->>>>>>> matcoal
     introgressor->child[introgressor->nchildren] = child;
     ++introgressor->nchildren;
     native->child[native->nchildren] = child;
@@ -720,11 +690,7 @@ int PopNode_feasible(const PopNode * self, Bounds bnd, int verbose) {
         if(self->mix < 0.0 || self->mix > 1.0) {
             if(verbose)
                 fprintf(stderr, "%s FAIL: mix=%lg not in [0, 1]\n",
-<<<<<<< HEAD
-                        __func__, *self->mix);
-=======
                         __func__, self->mix);
->>>>>>> matcoal
             return 0;
         }
     }
@@ -774,8 +740,6 @@ PopNode *PopNode_dup(PopNode *old_root, PtrPtrMap *ppm) {
             new_root = new;
         }
 
-<<<<<<< HEAD
-=======
         // connect new node to its parents
         if(old->nparents > 0) {
             node = PtrPtrMap_get(ppm, old->parent[0], &status);
@@ -833,7 +797,6 @@ static void PopNode_duplicate_nodes(PopNode *old, PtrPtrMap *ppm) {
         PopNode_duplicate_nodes(old->child[1], ppm);
 }
 
->>>>>>> matcoal
 #ifdef TEST
 
 #  include "ptrqueue.h"
@@ -858,67 +821,6 @@ int main(int argc, char **argv) {
         verbose = 1;
     }
 
-<<<<<<< HEAD
-    tipId_t     id1 = 1;
-    tipId_t     id2 = 2;
-
-    int         nseg = 10;
-    PopNode     v[nseg];
-    NodeStore  *ns = NodeStore_new(nseg, v);
-    CHECKMEM(ns);
-
-    PopNode    *node = NodeStore_alloc(ns);
-    assert(node == v);
-    node = NodeStore_alloc(ns);
-    assert(node == &v[1]);
-    node = NodeStore_alloc(ns);
-    assert(node == &v[2]);
-
-    NodeStore_free(ns);
-    unitTstResult("NodeStore", "OK");
-
-    ns = NodeStore_new(nseg, v);
-    CHECKMEM(ns);
-
-    double      twoN0 = 1.0, start0 = 0.0;
-    PopNode    *p0 = PopNode_new(&twoN0, &start0, ns);
-    assert(p0->twoN == &twoN0);
-    assert(p0->start == &start0);
-    assert(p0->end == NULL);
-    assert(p0->mix == NULL);
-    assert(p0->nsamples == 0);
-    assert(p0->nchildren == 0);
-    assert(p0->child[0] == NULL);
-    assert(p0->child[1] == NULL);
-    assert(p0->parent[0] == NULL);
-    assert(p0->parent[1] == NULL);
-
-    double      twoN1 = 100.0, start1 = 123.0;
-    PopNode    *p1 = PopNode_new(&twoN1, &start1, ns);
-    assert(p1->twoN == &twoN1);
-    assert(p1->start == &start1);
-    assert(p1->end == NULL);
-    assert(p1->mix == NULL);
-    assert(p1->nsamples == 0);
-    assert(p1->nchildren == 0);
-    assert(p1->child[0] == NULL);
-    assert(p1->child[1] == NULL);
-    assert(p1->parent[0] == NULL);
-    assert(p1->parent[1] == NULL);
-
-    Gene       *g1 = Gene_new(id1);
-    Gene       *g2 = Gene_new(id2);
-    PopNode_addSample(p1, g1);
-    PopNode_addSample(p1, g2);
-    assert(p1->nsamples == 2);
-
-    int status=PopNode_addChild(p1, p0);
-    assert(status==0);
-    assert(p1->nchildren == 1);
-    assert(p0->nparents == 1);
-    assert(p1->child[0] == p0);
-    assert(p0->parent[0] == p1);
-=======
     gsl_rng *rng = gsl_rng_alloc(gsl_rng_taus);
     gsl_rng_set(rng, 1u);
 
@@ -1027,7 +929,6 @@ int main(int argc, char **argv) {
 
     status = PopNode_addChild(abc, c2);
     assert(status == 0);
->>>>>>> matcoal
 
     if(verbose) {
         PopNode_printShallow(abc, stdout);
@@ -1043,28 +944,6 @@ int main(int argc, char **argv) {
     PopNode_transferSample(b, gb);
     PopNode_transferSample(c, gc);
 
-<<<<<<< HEAD
-    int         i;
-    size_t      parent[2], child[2];
-    for(i = 0; i < p1->nparents; ++i)
-        parent[i] = (size_t) p1->parent[i];
-    for(i = 0; i < p1->nchildren; ++i)
-        child[i] = (size_t) p1->child[i];
-    PopNode_shiftPopNodePtrs(p1, (size_t) 1u, 1);
-    for(i = 0; i < p1->nparents; ++i)
-        assert(parent[i] + 1u == (size_t) p1->parent[i]);
-    for(i = 0; i < p1->nchildren; ++i)
-        assert(child[i] + 1u == (size_t) p1->child[i]);
-
-    unitTstResult("PopNode", "untested");
-
-    NodeStore_free(ns);
-
-    ParStore_free(ps);
-    Gene_free(g1);
-    Gene_free(g2);
-
-=======
     assert(!PopNode_isClear(abc));
 
     PopNode_unvisit(abc);
@@ -1107,7 +986,6 @@ int main(int argc, char **argv) {
     ParStore_free(ps);
     gsl_rng_free(rng);
 
->>>>>>> matcoal
     return 0;
 
 }

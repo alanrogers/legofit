@@ -80,9 +80,6 @@ typedef uint64_t tipId_t;
 #define POPNAMESIZE 30
 #define MAXSAMP ((int)(8*sizeof(tipId_t)))
 
-<<<<<<< HEAD
-=======
 enum NetworkType { STOCHASTIC, DETERMINISTIC };
 
->>>>>>> matcoal
 #endif

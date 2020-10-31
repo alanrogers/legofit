@@ -67,15 +67,9 @@
 #include "param.h"
 #include "parse.h"
 #include "parstore.h"
-<<<<<<< HEAD
-#include "popnode.h"
-#include "error.h"
-#include "sampndx.h"
-=======
 #include "ptrqueue.h"
 #include "sampndx.h"
 #include "strptrmap.h"
->>>>>>> matcoal
 #include <assert.h>
 #include <ctype.h>
 #include <stdbool.h>
@@ -214,14 +208,9 @@ int getRange(double x[2], char **next, const char *orig) {
 /// parameters
 /// @param[in] bnd the bounds of each type of parameter
 /// @param[in] orig original input line
-<<<<<<< HEAD
-void parseParam(char *next, unsigned ptype,
-                ParStore * parstore, Bounds * bnd, const char *orig) {
-=======
 void parseParam(char *next, unsigned ptype, StrPtrMap *parmap,
                 PtrQueue *fixedQ, PtrQueue *freeQ, PtrQueue *constrQ,
                 Bounds * bnd, const char *orig) {
->>>>>>> matcoal
     // Read type of parameter
     {
         char *tok = nextWhitesepToken(&next);
@@ -419,13 +408,8 @@ void parseSegment(char *next, StrPtrMap * popmap, SampNdx * sndx,
     }
 
     assert(strlen(popName) > 0);
-<<<<<<< HEAD
-    PopNode *thisNode = PopNode_new(twoNptr, tPtr, ns);
-    if(0 != PopNodeTab_insert(poptbl, popName, thisNode)) {
-=======
     void *thisNode = Node_new(twoN_i, start_i, parstore);
     if(0 != StrPtrMap_insert(popmap, popName, thisNode)) {
->>>>>>> matcoal
         fprintf(stderr, "%s:%d: duplicate \"segment %s\"\n",
                 __FILE__, __LINE__, popName);
         fprintf(stderr, "input: %s\n", orig);
@@ -574,12 +558,8 @@ void parseMix(char *next, StrPtrMap * popmap, ParStore * parstore,
         exit(EXIT_FAILURE);
     }
 
-<<<<<<< HEAD
-    int status = PopNode_mix(childNode, mPtr, parNode1, parNode0);
-=======
     int status = Node_mix(childNode, mix_i, parNode1, parNode0,
                           parstore);
->>>>>>> matcoal
     switch(status){
     case 0:
         break;
@@ -607,11 +587,7 @@ void parseMix(char *next, StrPtrMap * popmap, ParStore * parstore,
 
 // Read a line into buff, skipping blank lines; strip comments and
 // trailing whitespace.  Return 0 on success; EOF on end of file.
-<<<<<<< HEAD
-int get_one_line(size_t n, char buff[n], FILE * fp) {
-=======
 static int get_one_line(size_t n, char buff[n], FILE * fp) {
->>>>>>> matcoal
     do{
         if(fgets(buff, n, fp) == NULL)
             return EOF;

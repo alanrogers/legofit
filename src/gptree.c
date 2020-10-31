@@ -14,13 +14,8 @@
 #include "parse.h"
 #include "param.h"
 #include "parstore.h"
-<<<<<<< HEAD
-#include "sampndx.h"
-#include <string.h>
-=======
 #include "ptrptrmap.h"
 #include "sampndx.h"
->>>>>>> matcoal
 #include <errno.h>
 #include <gsl/gsl_rng.h>
 #include <string.h>
@@ -40,13 +35,8 @@ struct GPTree {
     int         nseg;           // number of segments in population tree.
     PopNode    *rootPop;        // root of population tree
     Gene       *rootGene;       // root of gene tree
-<<<<<<< HEAD
-    Bounds      bnd;            // legal range of twoN parameters and time parameters
-    ParStore   *parstore;       // Parameters
-=======
     Bounds      bnd;            // legal range of twoN parameters and time pars
     ParStore   *parstore;       // All parameters
->>>>>>> matcoal
     LblNdx      lblndx;         // Index of sample labels
     SampNdx     sndx;           // Index of sample pointers into PopNode objs
 };
@@ -164,16 +154,6 @@ void GPTree_brlen(void * vself, BranchTab * branchtab, gsl_rng * rng,
         PopNode_clear(self->rootPop);   // remove old samples
 
         // Put samples into the gene tree. This allocates memory for
-<<<<<<< HEAD
-        // each Gene in the sample 
-        // and puts pointers to them into the PopNodes that are controlled by
-        // the SampNdx. The Gene objects aren't owned by SampNdx or
-        // PopNode. They will eventually be freed by a call to Gene_free,
-        // which recursively frees the root and all descendants.
-        for(unsigned i=0; i < SampNdx_size(&(self->sndx)); ++i) {
-            PopNode *node = (PopNode *) SampNdx_get(&(self->sndx), i);
-            PopNode_newGene(node, i);
-=======
         // each Gene in the sample and puts pointers to them into the
         // PopNodes that are controlled by the SampNdx. The Gene
         // objects aren't owned by SampNdx or PopNode. They will
@@ -182,7 +162,6 @@ void GPTree_brlen(void * vself, BranchTab * branchtab, gsl_rng * rng,
         for(unsigned i=0; i < SampNdx_size(&self->sndx); ++i) {
             PopNode *node = (PopNode *) SampNdx_get(&self->sndx, i);
             PopNode_newSample(node, i);
->>>>>>> matcoal
         }
 
         // coalescent simulation generates gene genealogy within

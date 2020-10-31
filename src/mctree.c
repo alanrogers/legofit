@@ -236,6 +236,8 @@ void MCTree_randomize(void * vself, gsl_rng * rng) {
                     __FILE__,__LINE__,trial);
             exit(EXIT_FAILURE);
         }
+        Segment_update(self->rootPop, self->parstore);
+
         // Bisect to satisfy inequality constraints.
         while( !MCTree_feasible(self, 0) ) {
             trial = orig + 0.5*(trial - orig);
@@ -244,6 +246,7 @@ void MCTree_randomize(void * vself, gsl_rng * rng) {
                         __FILE__,__LINE__,trial, par->type);
                 exit(EXIT_FAILURE);
             }
+            Segment_update(self->rootPop, self->parstore);
         }
     }
 }
