@@ -794,7 +794,7 @@ DEStatus diffev(int dim, double estimate[dim], double *loCost, double *yspread,
                 // display after every refresh generations
                 fflush(stdout);
                 fprintf(stderr,
-                        "%d:%d cost=%1.10lg yspread=%lf\n",
+                        "%d:%d cost=%1.10lg yspread=%lg\n",
                         stage, gen, cmin, *yspread);
                 fprintf(stderr, "   Best params:");
                 for(j = 0; j < dim; j++) {
