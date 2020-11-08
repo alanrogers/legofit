@@ -415,7 +415,7 @@ int main(int argc, char **argv) {
     fputs(tstInput, fp);
     fclose(fp);
 
-    Network_init(SIM);
+    Network_init(STOCHASTIC);
 
     Bounds      bnd = {
         .lo_twoN = 0.0,

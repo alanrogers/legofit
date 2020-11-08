@@ -37,7 +37,7 @@ int PtrVec_push(PtrVec *self, void *val) {
         unsigned n = self->buffsize;
         self->buffsize = (n==0? 2 : 2*n);
         void *old = self->buff;
-        self->buff = realloc(self->buff, self->buffsize);
+        self->buff = realloc(self->buff, self->buffsize * sizeof(void*));
         if(self->buff == NULL) {
             if(old)
                 free(old);

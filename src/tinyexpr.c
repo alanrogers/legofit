@@ -1,4 +1,10 @@
-/*
+/**
+ * This version of tinyexpr has been modified from Lewis Van Winkle's original. 
+ * The revised version uses hash tables to map names to functions and to
+ * variables.
+ * 
+ * Alan Rogers
+ *
  * TINYEXPR - Tiny recursive descent parser and evaluation engine in C
  *
  * Copyright (c) 2015, 2016 Lewis Van Winkle
@@ -37,6 +43,7 @@ For log = natural log uncomment the next line. */
 #define TE_NAT_LOG
 
 #include "tinyexpr.h"
+#include "misc.h"
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
@@ -44,6 +51,7 @@ For log = natural log uncomment the next line. */
 #include <limits.h>
 #include <errno.h>
 #include <ctype.h>
+#include <pthread.h>
 
 #ifndef NAN
 #define NAN (0.0/0.0)
@@ -209,10 +217,39 @@ static double npr(double n, double r) {
     return ncr(n, r) * fac(r);
 }
 
+static pthread_mutex_t func_map_lock = PTHREAD_MUTEX_INITIALIZER;
 static StrPtrMap *func_map=NULL;
+
+/// Free func_map
+void te_free_func_map(void) {
+    int status = pthread_mutex_lock(&func_map_lock);
+    if(status)
+        ERR(status, "lock");
+
+    unsigned len = StrPtrMap_size(func_map);
+    if(len > 0) {
+        void *v[len];
+        StrPtrMap_ptrArray(func_map, len, v);
+        for(unsigned i=0; i<len; ++i) {
+            te_variable *var = v[i];
+            free(var);
+        }
+    }
+    StrPtrMap_free(func_map);
+
+    status = pthread_mutex_unlock(&func_map_lock);
+    if(status)
+        ERR(status, "unlock");
+
+    func_map = NULL;
+}
 
 /// Initialize func_map; abort on failure.
 static void init_func_map(void) {
+    int status = pthread_mutex_lock(&func_map_lock);
+    if(status)
+        ERR(status, "lock");
+
     func_map =  StrPtrMap_new();
     if(func_map == NULL) {
         fprintf(stderr,"%s:%d: can't allocate func_map\n",
@@ -220,7 +257,7 @@ static void init_func_map(void) {
         exit(EXIT_FAILURE);
     }
 
-    int status = 0;
+    status = 0;
 
     status |= StrPtrMap_insert(func_map, "abs",
                                new_func(fabs, TE_FUNCTION1 | TE_FLAG_PURE, 0));
@@ -280,6 +317,10 @@ static void init_func_map(void) {
                 __FILE__,__func__,__LINE__);
         exit(EXIT_FAILURE);
     }
+
+    status = pthread_mutex_unlock(&func_map_lock);
+    if(status)
+        ERR(status, "unlock");
 }
 
 static te_variable *new_func(void *address, int type,
@@ -297,7 +338,17 @@ static const te_variable *find_builtin(const char *name) {
     if(func_map == NULL)
         init_func_map();
 
-    return StrPtrMap_get(func_map, name);
+    int status = pthread_mutex_lock(&func_map_lock);
+    if(status)
+        ERR(status, "lock");
+
+    te_variable *rval = StrPtrMap_get(func_map, name);
+
+    status = pthread_mutex_unlock(&func_map_lock);
+    if(status)
+        ERR(status, "unlock");
+
+    return rval;
 }
 
 static double add(double a, double b) {

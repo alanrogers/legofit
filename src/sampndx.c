@@ -147,7 +147,7 @@ int main(int argc, char **argv) {
     assert(!SampNdx_equals(&sndx, &sndx2));
 
     int status;
-    PtrPtrMap *ppm = PtrPtrMap_new();
+    PtrPtrMap *ppm = PtrPtrMap_new(512);
 
     for(int i=0; i < nseg; ++i) {
         status = PtrPtrMap_insert(ppm, v+i, w+i);
@@ -158,6 +158,9 @@ int main(int argc, char **argv) {
 
     for(int i=0; i<nseg; ++i)
         assert(&w[i] == SampNdx_get(&sndx, i));
+
+    PtrPtrMap_free(ppm);
+    ppm = NULL;
 
     unitTstResult("SampNdx", "OK");
 

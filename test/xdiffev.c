@@ -270,7 +270,7 @@ int main(int argc, char *argv[]) {
         .threadData = NULL,
         .ThreadState_new = NULL,
         .ThreadState_free = NULL,
-		.state = state,
+        .state = state,
         .simSched = simSched,
         .ytol = ytol,
         .pb = PointBuff_new(dim, nQuadPts)
@@ -297,6 +297,9 @@ int main(int argc, char *argv[]) {
         ok = 0;
         break;
     }
+
+    State_free(state);
+    PointBuff_free(dep.pb);
 
     SimSched_free(simSched);
     gsl_rng_free(rng);

@@ -137,6 +137,7 @@ int main(int argc, char **argv) {
     PtrQueue_free(freeQ);
     PtrQueue_free(fixedQ);
     PtrQueue_free(constrQ);
+    te_free_func_map();
 
     gsl_rng_free(rng);
     

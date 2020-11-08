@@ -172,6 +172,7 @@ int main(int argc, char **argv) {
 
     assert(vdat.count == numIntPart(n, k));
 
+    numIntPart_free();
     unitTstResult("IntPart", status==0 ? "OK" : "FAIL");
     return 0;
 }

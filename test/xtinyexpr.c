@@ -109,6 +109,7 @@ int main(int argc, char **argv) {
     
     te_free(expr);
     te_free_variables(pars);
+    te_free_func_map();
 
     unitTstResult("tinyexpr", "OK");
     return 0;

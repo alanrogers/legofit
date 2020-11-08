@@ -150,7 +150,7 @@ int main(int argc, char **argv) {
             assert(0.1 == RAFReader_daf(r[1]));
             assert(0.0 == RAFReader_daf(r[2]));
         }else if(i==2) {
-            assert(status==NO_ANCESTRAL_ALLELE);
+            assert(status==MONOMORPHIC_SITE);
             assert(0 == strcmp("10",RAFReader_chr(r[0])));
             assert(200UL == RAFReader_nucpos(r[0]));
         }else if(i==3) {

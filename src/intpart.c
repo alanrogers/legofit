@@ -12,14 +12,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
 
 // So we don't have to calculate the same value more than once.
+
+static pthread_mutex_t map_lock = PTHREAD_MUTEX_INITIALIZER;
 static U64U64Map *map=NULL;
 
 /// Number of ways to partition a positive integer n into k parts.
 uint64_t numIntPart(int32_t n, int32_t k) {
     uint64_t key, value;
-    int status;
+    int status, lockstat;
 
     if(n==0 && k==0)
         return 1ULL;
@@ -34,20 +37,51 @@ uint64_t numIntPart(int32_t n, int32_t k) {
 
     if(map == NULL) {
         // allocate hash table on first call
-        map = U64U64Map_new();
+
+        lockstat = pthread_mutex_lock(&map_lock);
+        if(lockstat)
+            ERR(lockstat, "lock");
+
+        map = U64U64Map_new(512);
+
+        lockstat = pthread_mutex_unlock(&map_lock);
+        if(lockstat)
+            ERR(lockstat, "unlock");
+
         CHECKMEM(map);
     }else{
+        lockstat = pthread_mutex_lock(&map_lock);
+        if(lockstat)
+            ERR(lockstat, "lock");
+
         value = U64U64Map_get(map, key, &status);
+
+        lockstat = pthread_mutex_unlock(&map_lock);
+        if(lockstat)
+            ERR(lockstat, "unlock");
+
         if(status == 0)
             return value;
     }
+
     value = numIntPart(n-k, k) + numIntPart(n-1, k-1);
+
+    lockstat = pthread_mutex_lock(&map_lock);
+    if(lockstat)
+        ERR(lockstat, "lock");
+
     status = U64U64Map_insert(map, key, value);
+
+    lockstat = pthread_mutex_unlock(&map_lock);
+    if(lockstat)
+        ERR(lockstat, "unlock");
+
     if(status) {
         fprintf(stderr,"%s:%d: inserted duplicated value\n",
                 __FILE__,__LINE__);
         exit(EXIT_FAILURE);
     }
+
     return value;
 }
 
@@ -105,3 +139,18 @@ int traverseIntPartitions(int n, int k,
     return 0;
 }
 
+/// Free static variable.
+void numIntPart_free(void) {
+    int status = pthread_mutex_lock(&map_lock);
+    if(status)
+        ERR(status, "lock");
+
+    if(map) {
+        U64U64Map_free(map);
+        map = NULL;
+    }
+
+    status = pthread_mutex_unlock(&map_lock);
+    if(status)
+        ERR(status, "unlock");
+}

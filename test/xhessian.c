@@ -91,8 +91,9 @@ int main(int argc, char **argv) {
             for(j=0; j<dim; ++j)
                 dat[j] = gsl_ran_flat(rng, -1.0, 1.0);
         }
-        fprintf(fp, "%0.18g", quadsurf(dim, dat, offset, nterms,
-                                       tru, rng, sigma));
+        double qs = quadsurf(dim, dat, offset, nterms,
+                             tru, rng, sigma);
+        fprintf(fp, "%0.18g", qs);
         for(j=0; j<dim; ++j)
             fprintf(fp, " %0.18g", dat[j]);
         putc('\n', fp);

@@ -965,7 +965,7 @@ int main(int argc, char **argv) {
     PopNode_clear(abc);
     assert(PopNode_feasible(abc, bnd, verbose));
 
-    PtrPtrMap *ppm = PtrPtrMap_new();
+    PtrPtrMap *ppm = PtrPtrMap_new(512);
     PopNode *duproot = PopNode_dup(abc, ppm);
     CHECKMEM(duproot);
     assert(PopNode_feasible(duproot, bnd, verbose));

@@ -79,6 +79,7 @@ int main(void) {
     assert(p == NULL);
 
     PtrVec_free(v);
+    v = NULL;
 
     unitTstResult("PtrVec", "OK");
     return 0;

@@ -844,7 +844,7 @@ int main(int argc, char **argv) {
         verbose = 1;
     }
 
-    Network_init(SIM);
+    Network_init(STOCHASTIC);
     const char *tstFname = "mktree-tmp.lgo";
     FILE *fp = fopen(tstFname, "w");
     fputs(tstInput, fp);
@@ -940,7 +940,6 @@ int main(int argc, char **argv) {
 
     unitTstResult("mktree", "OK");
 
-    ParStore_free(parstore);
     fclose(fp);
     unlink(tstFname);
     return 0;

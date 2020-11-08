@@ -238,6 +238,13 @@ int main(int argc, char **argv){
     b = StrDblQueue_push(b, "y", 4.0);
     assert(1.0 == StrDblQueue_msd(a,b));
 
+    a = StrDblQueue_free(a);
+    b = StrDblQueue_free(b);
+    c = StrDblQueue_free(c);
+    d = StrDblQueue_free(d);
+    e = StrDblQueue_free(e);
+    f = StrDblQueue_free(f);
+
     unitTstResult("StrDblQueue", "OK");
 
     return 0;

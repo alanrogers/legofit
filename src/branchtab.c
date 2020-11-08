@@ -629,7 +629,6 @@ int main(int argc, char **argv) {
     if(verbose)
         printf("BranchTab_sum: %Lg\n", x);
     assert(0 == BranchTab_normalize(bt));
-    printf("sum=%Lg\n", BranchTab_sum(bt));
     assert(LDbl_near(1.0, BranchTab_sum(bt)));
     x = BranchTab_entropy(bt);
     if(verbose)

@@ -123,6 +123,8 @@ int main(int argc, char **argv) {
         putc('\n', stderr);
     }
 
+    IdSet_free(b);
+
     IdSetSet_sanityCheck(iss, __FILE__, __LINE__);
     IdSetSet_free_deep(iss);
 

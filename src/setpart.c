@@ -6,6 +6,7 @@
 #include <string.h>
 #include <assert.h>
 #include <math.h>
+#include <pthread.h>
 
 static int f(int mu, int nu, int sigma, unsigned n, 
               unsigned a[n+1], int (*visit)(unsigned nn, unsigned a[nn],
@@ -15,13 +16,14 @@ static int b(int mu, int nu, int sigma, unsigned n,
                                             void *data), void *data);
 
 // So we don't have to calculate the same value more than once.
+static pthread_mutex_t map_lock = PTHREAD_MUTEX_INITIALIZER;
 static U64U64Map *map=NULL;
 
 // Stirling numbers of the second kind.  stirling2(n,k) is the number
 // of ways of partitioning a set of n objects into k subsets.
 uint64_t stirling2(uint32_t n, uint32_t k) {
     uint64_t key, value;
-    int status;
+    int status, lockstat;
 
     // Initial conditions
     if(n==0 && k==0)
@@ -37,18 +39,46 @@ uint64_t stirling2(uint32_t n, uint32_t k) {
 
     if(map == NULL) {
         // allocate hash table on first call
+
+        lockstat = pthread_mutex_lock(&map_lock);
+        if(lockstat)
+            ERR(lockstat, "lock");
+
         map = U64U64Map_new(128);
+
+        lockstat = pthread_mutex_unlock(&map_lock);
+        if(lockstat)
+            ERR(lockstat, "unlock");
+
         CHECKMEM(map);
     }else{
+        lockstat = pthread_mutex_lock(&map_lock);
+        if(lockstat)
+            ERR(lockstat, "lock");
+
         value = U64U64Map_get(map, key, &status);
+
+        lockstat = pthread_mutex_unlock(&map_lock);
+        if(lockstat)
+            ERR(lockstat, "unlock");
+
         if(status == 0)
             return value;
     }
 
     // Fundamental recurrence relation
     value = k*stirling2(n-1, k) + stirling2(n-1, k-1);
+
+    lockstat = pthread_mutex_lock(&map_lock);
+    if(lockstat)
+        ERR(lockstat, "lock");
     
     status = U64U64Map_insert(map, key, value);
+
+    lockstat = pthread_mutex_unlock(&map_lock);
+    if(lockstat)
+        ERR(lockstat, "unlock");
+
     if(status) {
         fprintf(stderr,"%s:%d: inserted duplicated value\n",
                 __FILE__,__LINE__);
@@ -59,10 +89,18 @@ uint64_t stirling2(uint32_t n, uint32_t k) {
 
 /// Free the hash map used to store stirling2 values.
 void stirling2_free(void) {
+    int status = pthread_mutex_lock(&map_lock);
+    if(status)
+        ERR(status, "lock");
+
     if(map) {
         U64U64Map_free(map);
         map = NULL;
     }
+
+    status = pthread_mutex_unlock(&map_lock);
+    if(status)
+        ERR(status, "unlock");
 }
 
 /** 

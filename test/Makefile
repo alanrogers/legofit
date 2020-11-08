@@ -3,17 +3,18 @@ vpath %.c ../src
 opt :=  -O0 -fno-inline-functions -DDEBUG
 prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
-tests := xaddrparmap xbinary xbooma xboot xbranchtab xcomb xdafreader \
+tests := xbinary xboot xbranchtab xcomb xdafreader \
   xdiffev \
   xdtnorm xerror xeventlst xgene xgptree xhessian xidset xidsetset xintpart \
   xjobqueue xlblndx xlinereader xmisc xmpfrmatcoal \
-  xsimreader \
   xparam xparse xparseopf xparstore xpointbuff xpopnode xptrlst xptrptrmap \
   xptrqueue xptru32map \
   xptrvec \
   xstrptrmap xrafreader xrational xscrmreader xsampndx xsetpart \
   xsimsched xstate xstrdblqueue xstrint xtinyexpr xtokenizer \
-  xu64u64map xu64i64map xuintqueue xwraparound xmatcoal
+  xu64u64map xu64i64map xuintqueue xmatcoal \
+  xbooma xsimreader
+
 
 CC := gcc
 
@@ -58,7 +59,6 @@ lib := -L/usr/local/lib -lgsl -lgslcblas -lpthread -lm
 all : $(tests)
 
 test : $(tests)
-	-./xaddrparmap
 	-./xbinary
 	-./xbooma
 	-./xboot
@@ -108,7 +108,6 @@ test : $(tests)
 	-./xu64u64map
 	-./xu64i64map
 	-./xuintqueue
-	-./xwraparound
 	@echo "ALL UNIT TESTS WERE COMPLETED."
 
 XMATCOAL := xmatcoal.o matcoal.o misc.o rational.o mpfrmatcoal.o
@@ -169,10 +168,6 @@ xsetpart : $(XSETPART)
 XLINEREADER := xlinereader.o linereader.o misc.o
 xlinereader : $(XLINEREADER)
 	$(CC) $(CFLAGS) -o $@ $(XLINEREADER) $(lib)
-
-XWRAPAROUND := xwraparound.o wraparound.o
-xwraparound : $(XWRAPAROUND)
-	$(CC) $(CFLAGS) -o $@ $(XWRAPAROUND) $(lib)
 
 XSTATE := xstate.o state.o misc.o
 xstate : $(XSTATE)
@@ -266,11 +261,11 @@ xparse.o : parse.c
 
 XPARSE := xparse.o misc.o tokenizer.o gptree.o lblndx.o \
        branchtab.o network.o parstore.o popnode.o binary.o gene.o \
-       dprintf.o dtnorm.o tinyexpr.o param.o addrparmap.o \
+       dprintf.o dtnorm.o tinyexpr.o param.o \
        sampndx.o strptrmap.o ptrptrmap.o ptrqueue.o strint.o \
        error.o segment.o ptrvec.o comb.o setpart.o \
        ptrlst.o u64u64map.o eventlst.o idset.o matcoal.o \
-       rational.o
+       rational.o idsetset.o mctree.o u64i64map.o
 xparse : $(XPARSE)
 	$(CC) $(CFLAGS) -o $@ $(XPARSE) $(lib)
 
@@ -305,12 +300,12 @@ xsimsched : $(XSIMSCHED)
 xgptree.o : gptree.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/gptree.c
 
-XGPTREE := xgptree.o addrparmap.o misc.o branchtab.o parstore.o lblndx.o \
+XGPTREE := xgptree.o misc.o branchtab.o parstore.o lblndx.o \
         tokenizer.o strptrmap.o gene.o param.o popnode.o binary.o \
         dprintf.o dtnorm.o parse.o tinyexpr.o sampndx.o \
         network.o ptrptrmap.o ptrqueue.o strint.o error.o segment.o \
         idset.o matcoal.o ptrlst.o ptrvec.o comb.o setpart.o rational.o \
-        u64u64map.o eventlst.o
+        u64u64map.o eventlst.o idsetset.o mctree.o u64i64map.o
 xgptree : $(XGPTREE)
 	$(CC) $(CFLAGS) -o $@ $(XGPTREE) $(lib)
 
@@ -355,16 +350,6 @@ xstrint.o : strint.c
 XSTRINT := xstrint.o misc.o binary.o lblndx.o
 xstrint : $(XSTRINT)
 	$(CC) $(CFLAGS) -o $@ $(XSTRINT) $(lib)
-
-xaddrparmap.o : addrparmap.c
-	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/addrparmap.c
-
-XADDRPARMAP := xaddrparmap.o misc.o param.o tinyexpr.o dtnorm.o gptree.o \
-   parstore.o gene.o lblndx.o popnode.o branchtab.o \
-   tokenizer.o parse.o binary.o strptrmap.o dprintf.o sampndx.o \
-   network.o ptrptrmap.o ptrqueue.o strint.o error.o
-xaddrparmap : $(XADDRPARMAP)
-	$(CC) $(CFLAGS) -o $@ $(XADDRPARMAP) $(lib)
 
 u64u64map.o : ../src/u64u64map.c ../src/u64u64map.h ../src/hashmap.h \
    ../src/hashmap.src
