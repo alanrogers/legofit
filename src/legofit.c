@@ -191,6 +191,7 @@ Systems Consortium License, which can be found in file "LICENSE".
 **/
 
 #include "branchtab.h"
+#include "comb.h"
 #include "cost.h"
 #include "diffev.h"
 #include "lblndx.h"
@@ -889,6 +890,8 @@ int main(int argc, char **argv) {
     Network_free(network);
     SimSched_free(simSched);
     State_free(state);
+    binom_free();
+    MatCoal_freeExterns();
     for(i=0; i<dim; ++i)
         free(parnames[i]);
 

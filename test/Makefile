@@ -9,7 +9,7 @@ tests := xbinary xboot xbranchtab xcomb xdafreader \
   xjobqueue xlblndx xlinereader xmisc xmpfrmatcoal \
   xparam xparse xparseopf xparstore xpointbuff xpopnode xptrlst xptrptrmap \
   xptrqueue xptru32map \
-  xptrvec \
+  xptrvec xsegment \
   xstrptrmap xrafreader xrational xscrmreader xsampndx xsetpart \
   xsimsched xstate xstrdblqueue xstrint xtinyexpr xtokenizer \
   xu64u64map xu64i64map xuintqueue xmatcoal \
@@ -97,6 +97,7 @@ test : $(tests)
 	-./xrational
 	-./xsampndx
 	-./xscrmreader
+	-./xsegment
 	-./xsetpart
 	-./xsimsched
 	-./xstate

@@ -13,6 +13,7 @@
 #include <string.h>
 #include <assert.h>
 #include <math.h>
+#include <pthread.h>
 
 typedef struct MCdat MCdat;
 
@@ -302,11 +303,12 @@ long multinom(int k, int x[k]) {
 }
 
 // So we don't have to calculate the same value more than once.
+static pthread_mutex_t map_lock = PTHREAD_MUTEX_INITIALIZER;
 static U64I64Map *map=NULL;
 
 /// Binomial coefficient.
 int64_t binom(int32_t n, int32_t x) {
-    int status;
+    int status, lockstat;
     uint64_t key;
     int64_t value;
 
@@ -326,10 +328,28 @@ int64_t binom(int32_t n, int32_t x) {
 
     if(map == NULL) {
         // allocate hash table on first call
+        lockstat = pthread_mutex_lock(&map_lock);
+        if(lockstat)
+            ERR(lockstat, "lock");
+
         map = U64I64Map_new(128);
+
+        lockstat = pthread_mutex_unlock(&map_lock);
+        if(lockstat)
+            ERR(lockstat, "unlock");
+
         CHECKMEM(map);
     }else{
+        lockstat = pthread_mutex_lock(&map_lock);
+        if(lockstat)
+            ERR(lockstat, "lock");
+
         value = U64I64Map_get(map, key, &status);
+
+        lockstat = pthread_mutex_unlock(&map_lock);
+        if(lockstat)
+            ERR(lockstat, "unlock");
+
         if(status == 0)
             return value;
     }
@@ -346,7 +366,16 @@ int64_t binom(int32_t n, int32_t x) {
         value = (int64_t) floorl(v + 0.5);
     }
 
+    lockstat = pthread_mutex_lock(&map_lock);
+    if(lockstat)
+        ERR(lockstat, "lock");
+
     status = U64I64Map_insert(map, key, value);
+
+    lockstat = pthread_mutex_unlock(&map_lock);
+    if(lockstat)
+        ERR(lockstat, "unlock");
+
     if(status) {
         fprintf(stderr,"%s:%d: inserted duplicated value\n",
                 __FILE__,__LINE__);
@@ -358,8 +387,16 @@ int64_t binom(int32_t n, int32_t x) {
 
 /// Free the hash map used to store binom values.
 void binom_free(void) {
+    int status = pthread_mutex_lock(&map_lock);
+    if(status)
+        ERR(status, "lock");
+
     if(map) {
         U64I64Map_free(map);
         map = NULL;
     }
+
+    status = pthread_mutex_unlock(&map_lock);
+    if(status)
+        ERR(status, "unlock");
 }

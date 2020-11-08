@@ -149,6 +149,7 @@ Systems Consortium License, which can be found in file "LICENSE".
 */
 
 #include "branchtab.h"
+#include "comb.h"
 #include "gptree.h"
 #include "lblndx.h"
 #include "network.h"
@@ -393,6 +394,8 @@ int main(int argc, char **argv) {
     BranchTab_free(bt);
     Network_sanityCheck(network, __FILE__, __LINE__);
     Network_free(network);
+    binom_free();
+    MatCoal_freeExterns();
 
     return 0;
 }

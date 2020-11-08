@@ -187,12 +187,8 @@ static void MatCoal_free(MatCoal *self) {
 }
 
 void MatCoal_freeExterns(void) {
-    if(nsamples == 0) {
-        fprintf(stderr,"%s:%s:%d: can't free externs, because they"
-                " aren't allocated.\n",
-                __FILE__,__func__,__LINE__);
-        exit(EXIT_FAILURE);
-    }
+    if(nsamples == 0)
+        return;
     
     for(int i=0; i < nsamples-1; ++i)
         MatCoal_free(matcoal[i]);

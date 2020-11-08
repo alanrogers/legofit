@@ -660,13 +660,8 @@ Segment *Segment_dup(Segment *old_root, PtrPtrMap *ppm) {
         }
 
         nu->d = NULL;
-        nu->wdim[0] = old->wdim[0];
-        nu->wdim[1] = old->wdim[1];
-
-        for(int j=0; j <= MAXSAMP; ++j) {
-            nu->w[0][j] = IdSetSet_new(0);
-            nu->w[1][j] = IdSetSet_new(0);
-        }
+        assert(nu->wdim[0] == old->wdim[0]);
+        assert(nu->wdim[1] == old->wdim[1]);
     }
 
     return new_root;

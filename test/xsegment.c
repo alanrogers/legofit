@@ -8,6 +8,7 @@
  */
 
 #include "branchtab.h"
+#include "comb.h"
 #include "error.h"
 #include "lblndx.h"
 #include "matcoal.h"
@@ -252,6 +253,8 @@ int main(int argc, char *argv[]) {
     PtrQueue_free(freeQ);
     PtrQueue_free(constrQ);
     ParStore_free(ps);
+    binom_free();
+    MatCoal_freeExterns();
 
     return 0;
 

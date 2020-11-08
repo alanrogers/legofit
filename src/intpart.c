@@ -15,7 +15,6 @@
 #include <pthread.h>
 
 // So we don't have to calculate the same value more than once.
-
 static pthread_mutex_t map_lock = PTHREAD_MUTEX_INITIALIZER;
 static U64U64Map *map=NULL;
 
