@@ -18,10 +18,37 @@
 static pthread_mutex_t map_lock = PTHREAD_MUTEX_INITIALIZER;
 static U64U64Map *map=NULL;
 
-/// Number of ways to partition a positive integer n into k parts.
+static uint64_t numIntPart_r(int32_t n, int32_t k);
+
+/// Number of ways to partition a positive integer n into k parts. The
+/// public-facing function just locks the map and calls the static
+/// recursive function, numIntPart_r.
 uint64_t numIntPart(int32_t n, int32_t k) {
+    int lockstat = pthread_mutex_lock(&map_lock);
+    if(lockstat)
+        ERR(lockstat, "lock");
+
+    if(map == NULL) {
+        // allocate hash table on first call
+        map = U64U64Map_new(512);
+        CHECKMEM(map);
+    }
+
+    uint64_t value = numIntPart_r(n, k);
+
+    lockstat = pthread_mutex_unlock(&map_lock);
+    if(lockstat)
+        ERR(lockstat, "unlock");
+
+    return value;
+}
+
+/// Called by numIntPart. This assumes that the map is locked and does
+/// the real work of calculating the number of ways to partition a
+/// positive integer n into k parts.
+static uint64_t numIntPart_r(int32_t n, int32_t k) {
     uint64_t key, value;
-    int status, lockstat;
+    int status;
 
     if(n==0 && k==0)
         return 1ULL;
@@ -34,47 +61,12 @@ uint64_t numIntPart(int32_t n, int32_t k) {
     key <<= 32;
     key |= (uint32_t) k;
 
-    if(map == NULL) {
-        // allocate hash table on first call
+    value = U64U64Map_get(map, key, &status);
+    if(status == 0)
+        return value;
 
-        lockstat = pthread_mutex_lock(&map_lock);
-        if(lockstat)
-            ERR(lockstat, "lock");
-
-        map = U64U64Map_new(512);
-
-        lockstat = pthread_mutex_unlock(&map_lock);
-        if(lockstat)
-            ERR(lockstat, "unlock");
-
-        CHECKMEM(map);
-    }else{
-        lockstat = pthread_mutex_lock(&map_lock);
-        if(lockstat)
-            ERR(lockstat, "lock");
-
-        value = U64U64Map_get(map, key, &status);
-
-        lockstat = pthread_mutex_unlock(&map_lock);
-        if(lockstat)
-            ERR(lockstat, "unlock");
-
-        if(status == 0)
-            return value;
-    }
-
-    value = numIntPart(n-k, k) + numIntPart(n-1, k-1);
-
-    lockstat = pthread_mutex_lock(&map_lock);
-    if(lockstat)
-        ERR(lockstat, "lock");
-
+    value = numIntPart_r(n-k, k) + numIntPart_r(n-1, k-1);
     status = U64U64Map_insert(map, key, value);
-
-    lockstat = pthread_mutex_unlock(&map_lock);
-    if(lockstat)
-        ERR(lockstat, "unlock");
-
     if(status) {
         fprintf(stderr,"%s:%d: inserted duplicated value\n",
                 __FILE__,__LINE__);

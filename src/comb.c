@@ -306,9 +306,31 @@ long multinom(int k, int x[k]) {
 static pthread_mutex_t map_lock = PTHREAD_MUTEX_INITIALIZER;
 static U64I64Map *map=NULL;
 
+static int64_t binom_r(int32_t n, int32_t x);
+
 /// Binomial coefficient.
 int64_t binom(int32_t n, int32_t x) {
-    int status, lockstat;
+    int lockstat = pthread_mutex_lock(&map_lock);
+    if(lockstat)
+        ERR(lockstat, "lock");
+
+    if(map == NULL) {
+        // allocate hash table on first call
+        map = U64I64Map_new(512);
+        CHECKMEM(map);
+    }
+
+    uint64_t value = binom_r(n, x);
+
+    lockstat = pthread_mutex_unlock(&map_lock);
+    if(lockstat)
+        ERR(lockstat, "unlock");
+
+    return value;
+}
+
+static int64_t binom_r(int32_t n, int32_t x) {
+    int status;
     uint64_t key;
     int64_t value;
 
@@ -326,36 +348,12 @@ int64_t binom(int32_t n, int32_t x) {
     key <<= 32;
     key |= (uint32_t) x;
 
-    if(map == NULL) {
-        // allocate hash table on first call
-        lockstat = pthread_mutex_lock(&map_lock);
-        if(lockstat)
-            ERR(lockstat, "lock");
-
-        map = U64I64Map_new(128);
-
-        lockstat = pthread_mutex_unlock(&map_lock);
-        if(lockstat)
-            ERR(lockstat, "unlock");
-
-        CHECKMEM(map);
-    }else{
-        lockstat = pthread_mutex_lock(&map_lock);
-        if(lockstat)
-            ERR(lockstat, "lock");
-
-        value = U64I64Map_get(map, key, &status);
-
-        lockstat = pthread_mutex_unlock(&map_lock);
-        if(lockstat)
-            ERR(lockstat, "unlock");
-
-        if(status == 0)
+    value = U64I64Map_get(map, key, &status);
+    if(status == 0)
             return value;
-    }
 
     if(n > 0) {
-        value = binom(n-1, x-1) + binom(n-1, x);
+        value = binom_r(n-1, x-1) + binom_r(n-1, x);
     }else{
         long double v = 1.0;
         while(x > 0) {
@@ -366,16 +364,7 @@ int64_t binom(int32_t n, int32_t x) {
         value = (int64_t) floorl(v + 0.5);
     }
 
-    lockstat = pthread_mutex_lock(&map_lock);
-    if(lockstat)
-        ERR(lockstat, "lock");
-
     status = U64I64Map_insert(map, key, value);
-
-    lockstat = pthread_mutex_unlock(&map_lock);
-    if(lockstat)
-        ERR(lockstat, "unlock");
-
     if(status) {
         fprintf(stderr,"%s:%d: inserted duplicated value\n",
                 __FILE__,__LINE__);

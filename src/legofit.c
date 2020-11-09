@@ -195,6 +195,7 @@ Systems Consortium License, which can be found in file "LICENSE".
 #include "cost.h"
 #include "diffev.h"
 #include "lblndx.h"
+#include "matcoal.h"
 #include "network.h"
 #include "parseopf.h"
 #include "parstore.h"

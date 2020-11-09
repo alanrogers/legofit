@@ -19,11 +19,34 @@ static int b(int mu, int nu, int sigma, unsigned n,
 static pthread_mutex_t map_lock = PTHREAD_MUTEX_INITIALIZER;
 static U64U64Map *map=NULL;
 
+static uint64_t stirling2_r(uint32_t n, uint32_t k);
+
 // Stirling numbers of the second kind.  stirling2(n,k) is the number
 // of ways of partitioning a set of n objects into k subsets.
 uint64_t stirling2(uint32_t n, uint32_t k) {
+    int lockstat = pthread_mutex_lock(&map_lock);
+    if(lockstat)
+        ERR(lockstat, "lock");
+
+    if(map == NULL) {
+        // allocate hash table on first call
+        map = U64U64Map_new(512);
+        CHECKMEM(map);
+    }
+
+    uint64_t value = stirling2_r(n, k);
+
+    lockstat = pthread_mutex_unlock(&map_lock);
+    if(lockstat)
+        ERR(lockstat, "unlock");
+
+    return value;
+}
+
+/// Recursive version of stirling2, which does the real work.
+static uint64_t stirling2_r(uint32_t n, uint32_t k) {
     uint64_t key, value;
-    int status, lockstat;
+    int status;
 
     // Initial conditions
     if(n==0 && k==0)
@@ -37,48 +60,14 @@ uint64_t stirling2(uint32_t n, uint32_t k) {
     key <<= 32;
     key |= k;
 
-    if(map == NULL) {
-        // allocate hash table on first call
-
-        lockstat = pthread_mutex_lock(&map_lock);
-        if(lockstat)
-            ERR(lockstat, "lock");
-
-        map = U64U64Map_new(128);
-
-        lockstat = pthread_mutex_unlock(&map_lock);
-        if(lockstat)
-            ERR(lockstat, "unlock");
-
-        CHECKMEM(map);
-    }else{
-        lockstat = pthread_mutex_lock(&map_lock);
-        if(lockstat)
-            ERR(lockstat, "lock");
-
-        value = U64U64Map_get(map, key, &status);
-
-        lockstat = pthread_mutex_unlock(&map_lock);
-        if(lockstat)
-            ERR(lockstat, "unlock");
-
-        if(status == 0)
-            return value;
-    }
+    value = U64U64Map_get(map, key, &status);
+    if(status == 0)
+        return value;
 
     // Fundamental recurrence relation
-    value = k*stirling2(n-1, k) + stirling2(n-1, k-1);
+    value = k*stirling2_r(n-1, k) + stirling2_r(n-1, k-1);
 
-    lockstat = pthread_mutex_lock(&map_lock);
-    if(lockstat)
-        ERR(lockstat, "lock");
-    
     status = U64U64Map_insert(map, key, value);
-
-    lockstat = pthread_mutex_unlock(&map_lock);
-    if(lockstat)
-        ERR(lockstat, "unlock");
-
     if(status) {
         fprintf(stderr,"%s:%d: inserted duplicated value\n",
                 __FILE__,__LINE__);
