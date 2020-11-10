@@ -138,7 +138,7 @@ int main(int argc, char **argv) {
         usage();
     }
 
-    printf("# rafdaf version %s\n", VERSION);
+    printf("# rafdaf version %s\n", GIT_VERSION);
     printf("# Population labels:\n");
     for(i = 0; i < n; ++i)
         printf("#  %s=%s\n", poplbl[i], fname[i]);
