@@ -1,5 +1,5 @@
 destination := $(HOME)/bin
-git_version := "$(shell git describe --tags)"
+git_version := "$(shell git describe --dirty --always --tags)"
 global_destination := $(HOME)/group/bin
 opt := -DNDEBUG -O2  -finline-functions  # For full optimization
 #opt := -O0 -fno-inline-functions -rdynamic -DDEBUG     # For debugging
