@@ -8,7 +8,7 @@
 static int EventLst_cmp_shallow(EventLst *a, long unsigned event);
 static EventLst *EventLst_new(EventLst *next,
                                   long unsigned event,
-                                  long unsigned outcomes,  
+                                  long unsigned outcome,  
                                   long double pr);
 
 void EventLst_sanityCheck(const EventLst *self, const char *file, int lineno) {
@@ -57,9 +57,9 @@ EventLst *EventLst_insert(EventLst *head,
 }
 
 static EventLst *EventLst_new(EventLst *next,
-                                  long unsigned event,
-                                  long unsigned outcome,  
-                                  long double pr) {
+                              long unsigned event,
+                              long unsigned outcome,  
+                              long double pr) {
     EventLst *self = malloc(sizeof(EventLst));
     CHECKMEM(self);
 
