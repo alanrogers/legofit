@@ -9,7 +9,6 @@
 #include "misc.h"
 #include "binary.h"
 #include "lblndx.h"
-#include "version.h"
 #include "error.h"
 #include <assert.h>
 #include <ctype.h>
@@ -600,7 +599,7 @@ char * strltrunc(char *s, int n) {
 void hdr(const char *msg) {
     int i, wid, len1, len2, status;
     char version[100], buff[100];
-    status = snprintf(version, sizeof(version), "version %s", VERSION);
+    status = snprintf(version, sizeof(version), "version %s", GIT_VERSION);
     if(status >= sizeof(version)) {
         fprintf(stderr,"%s:%d: buffer overflow\n",__FILE__,__LINE__);
         exit(EXIT_FAILURE);

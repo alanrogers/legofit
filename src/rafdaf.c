@@ -41,7 +41,6 @@ Systems Consortium License, which can be found in file "LICENSE".
 #include "strint.h"
 #include "error.h"
 #include "typedefs.h"
-#include "version.h"
 #include <ctype.h>
 #include <errno.h>
 #include <getopt.h>
@@ -95,7 +94,7 @@ int main(int argc, char **argv) {
             usage();
             break;
         case 'V':
-            printf("rafdaf version %s\n", VERSION);
+            printf("rafdaf version %s\n", GIT_VERSION);
             return 0;
         case 'h':
             usage();

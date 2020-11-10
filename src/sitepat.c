@@ -165,7 +165,6 @@ Systems Consortium License, which can be found in file "LICENSE".
 #include "strint.h"
 #include "error.h"
 #include "typedefs.h"
-#include "version.h"
 #include <ctype.h>
 #include <errno.h>
 #include <getopt.h>
@@ -333,7 +332,7 @@ int main(int argc, char **argv) {
             }
             break;
         case 'V':
-            printf("sitepat version %s\n", VERSION);
+            printf("sitepat version %s\n", GIT_VERSION);
             return 0;
         case 'h':
             usage();
@@ -416,7 +415,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    printf("# sitepat version %s\n", VERSION);
+    printf("# sitepat version %s\n", GIT_VERSION);
     printf("# Population labels:\n");
     for(i = 0; i < n; ++i)
         printf("#  %s=%s\n", poplbl[i], fname[i]);

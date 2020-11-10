@@ -98,7 +98,6 @@ Systems Consortium License, which can be found in file "LICENSE".
 #include "misc.h"
 #include "simreader.h"
 #include "typedefs.h"
-#include "version.h"
 #include "error.h"
 #include <ctype.h>
 #include <errno.h>
@@ -214,7 +213,7 @@ int main(int argc, char **argv) {
             usage();
             break;
         case 'V':
-            printf("simpat version %s\n", VERSION);
+            printf("simpat version %s\n", GIT_VERSION);
             return 0;
         default:
             usage();
@@ -251,7 +250,7 @@ int main(int argc, char **argv) {
     }
     int n = SimReader_sampleDim(r);
 
-    printf("# simpat version %s\n", VERSION);
+    printf("# simpat version %s\n", GIT_VERSION);
 
     unsigned long npat = (1UL << n) - 2UL;  // number of site patterns
     if(!doSing)

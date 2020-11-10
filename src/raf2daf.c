@@ -33,7 +33,6 @@ Systems Consortium License, which can be found in file "LICENSE".
 #include "misc.h"
 #include "strint.h"
 #include "error.h"
-#include "version.h"
 #include <ctype.h>
 #include <errno.h>
 #include <getopt.h>
@@ -87,7 +86,7 @@ int main(int argc, char **argv) {
             break;
         switch (i) {
         case 'V':
-            printf("raf2daf version %s\n", VERSION);
+            printf("raf2daf version %s\n", GIT_VERSION);
             return 0;
         case 'm':
             logMismatch = 1;
@@ -152,7 +151,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    printf("raf2daf version %s\n", VERSION);
+    printf("raf2daf version %s\n", GIT_VERSION);
 
     unsigned long nsites = 0, nbadaa = 0, nbadref=0, nmultalt=0;
 
