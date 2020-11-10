@@ -58,8 +58,8 @@ int main(int argc, char **argv) {
     int nIds = 5;
     tipId_t tid[5] = {1, 2, 4, 8, 16};
     double pr = 0.5;
-    unsigned event = nextEvent();
-    unsigned outcome = 0;
+    long unsigned event = 0;
+    long unsigned outcome = 0;
 
     IdSet *a = IdSet_new(nIds, tid, EventLst_insert(NULL,event,outcome,pr));
     IdSet_sanityCheck(a, __FILE__, __LINE__);

@@ -7,7 +7,8 @@
 
 int         PopNode_addChild(void * vparent, void * vchild);
 void        PopNode_clear(PopNode * self);
-Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng);
+Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng,
+                             long unsigned *event_counter);
 PopNode    *PopNode_dup(PopNode *old_root, PtrPtrMap *ppm);
 int         PopNode_equals(PopNode *a, PopNode *b);
 int         PopNode_feasible(const PopNode *self, Bounds bnd, int verbose);

@@ -6,7 +6,7 @@ incl := -I/usr/local/include -I/opt/local/include -I../src
 tests := xbinary xboot xbranchtab xcomb xdafreader \
   xdiffev \
   xdtnorm xerror xeventlst xgene xgptree xhessian xidset xidsetset xintpart \
-  xjobqueue xlblndx xlinereader xmisc xmpfrmatcoal \
+  xjobqueue xlblndx xlinereader xmctree xmisc xmpfrmatcoal \
   xparam xparse xparseopf xparstore xpointbuff xpopnode xptrlst xptrptrmap \
   xptrqueue xptru32map \
   xptrvec xsegment \
@@ -78,6 +78,7 @@ test : $(tests)
 	-./xlblndx
 	-./xlinereader
 	-./xmatcoal
+	-./xmctree
 	-./xeventlst
 	-./xmisc
 	-./xmpfrmatcoal
@@ -314,7 +315,7 @@ XMCTREE := xmctree.o mctree.o segment.o parstore.o lblndx.o sampndx.o misc.o \
     idset.o matcoal.o network.o param.o ptrlst.o ptrptrmap.o ptrqueue.o \
     ptrvec.o strint.o strptrmap.o binary.o comb.o setpart.o tinyexpr.o \
     parse.o dtnorm.o eventlst.o u64u64map.o rational.o popnode.o \
-    error.o gptree.o gene.o branchtab.o dprintf.o
+    error.o gptree.o gene.o branchtab.o dprintf.o idsetset.o u64i64map.o
 xmctree : $(XMCTREE)
 	$(CC) $(CFLAGS) -o $@ $(XMCTREE) $(lib)
 

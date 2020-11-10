@@ -89,9 +89,9 @@ void Network_init(enum NetworkType type) {
 }
 
 void Network_patprob(void *self, BranchTab *branchtab,
-                    gsl_rng *rng, unsigned long nreps,
-                    int doSing) {
-    Network_brlen(self, branchtab, rng, nreps, doSing);
+                     gsl_rng *rng, unsigned long nreps,
+                     int doSing, long unsigned *event_counter) {
+    Network_brlen(self, branchtab, rng, nreps, doSing, event_counter);
     BranchTab_normalize(branchtab);
 }
 

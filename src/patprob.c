@@ -28,6 +28,7 @@ typedef struct ThreadArg ThreadArg;
 /** Data structure used by each thread */
 struct ThreadArg {
     unsigned long nreps;
+    long unsigned event_counter;
     int         doSing; // nonzero => tabulate singletons
     void       *network;
 
@@ -46,8 +47,9 @@ static int tfunc(void *varg, void *tdata) {
     gsl_rng   *rng = (gsl_rng *) tdata;
 
     assert(Network_feasible(arg->network, 0));
+    arg->event_counter = 0;
     Network_brlen(arg->network, arg->branchtab, rng, arg->nreps,
-                  arg->doSing);
+                  arg->doSing, &arg->event_counter);
 
     return 0;
 }
@@ -59,6 +61,7 @@ static ThreadArg *ThreadArg_new(const void *network, unsigned nreps,
     CHECKMEM(a);
 
     a->nreps = nreps;
+    a->event_counter = 0;
     a->doSing = doSing;
     a->network = Network_dup(network);
     assert(Network_feasible(a->network, 0));

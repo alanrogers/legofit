@@ -37,13 +37,14 @@ int main(int argc, char **argv) {
 
     EventLst *mo[2] = {NULL, NULL};
 
+    long unsigned event = 0;
     for(unsigned i=0; i < 3; ++i) {
-        unsigned event = nextEvent();
-        for(unsigned outcome = 0; outcome < 2; ++outcome) {
+        for(long unsigned outcome = 0; outcome < 2; ++outcome) {
             mo[outcome] = EventLst_insert(mo[outcome], event,
                                             outcome, 0.5);
             EventLst_sanityCheck(mo[outcome], __FILE__,__LINE__);
         }
+        event += 1;
     }
 
     assert(0 < EventLst_cmp(mo[0], mo[1]));
@@ -67,8 +68,8 @@ int main(int argc, char **argv) {
     EventLst_free(mo3);
     mo3 = NULL;
     for(unsigned i=0; i < 2; ++i) {
-        unsigned event = nextEvent();
         mo3 = EventLst_insert(mo3, event, 1, 0.5);
+        ++event;
     }
     mo4 = EventLst_join(mo[0], mo3, &mutually_exclusive);
     assert(mo4);

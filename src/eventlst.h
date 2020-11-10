@@ -31,16 +31,16 @@ lineage has a sorted linked list of EventLst objects, which represent all
 the migration events it has experienced.
  **/
 struct EventLst {
-    unsigned event;        // which episode of migration?
-    unsigned outcome;     // outcome of this event
+    long unsigned event;        // which episode of migration?
+    long unsigned outcome;     // outcome of this event
     long double pr;       // probability of this outcome
     struct EventLst *next;
 };
 
 unsigned    nextEvent(void);
 EventLst   *EventLst_insert(EventLst *head,
-                            unsigned event,
-                            unsigned outcome,  
+                            long unsigned event,
+                            long unsigned outcome,  
                             long double pr);
 EventLst   *EventLst_dup(EventLst *old);
 void        EventLst_free(EventLst *self);

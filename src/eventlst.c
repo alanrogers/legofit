@@ -5,13 +5,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-pthread_mutex_t event_counter_lock = PTHREAD_MUTEX_INITIALIZER;
-static unsigned event_counter = 0;
-
-static int EventLst_cmp_shallow(EventLst *a, unsigned event);
+static int EventLst_cmp_shallow(EventLst *a, long unsigned event);
 static EventLst *EventLst_new(EventLst *next,
-                                  unsigned event,
-                                  unsigned outcomes,  
+                                  long unsigned event,
+                                  long unsigned outcomes,  
                                   long double pr);
 
 void EventLst_sanityCheck(const EventLst *self, const char *file, int lineno) {
@@ -25,20 +22,7 @@ void EventLst_sanityCheck(const EventLst *self, const char *file, int lineno) {
 #endif
 }
 
-/// Return integer label of next event. Multiple threads will compete
-/// for the same sequence of event labels, so the values acquired by
-/// any given thread may not be consecutive. This doesn't matter. All
-/// that matters is that later events have higher values than earlier
-/// ones within each thread.
-unsigned nextEvent(void) {
-    pthread_mutex_lock(&event_counter_lock);
-    unsigned event = event_counter++;
-    pthread_mutex_unlock(&event_counter_lock);
-
-    return event;
-}
-
-static int EventLst_cmp_shallow(EventLst *a, unsigned event) {
+static int EventLst_cmp_shallow(EventLst *a, long unsigned event) {
     if(a == NULL || a->event < event)
         return 1;
     if(a->event > event)
@@ -47,8 +31,8 @@ static int EventLst_cmp_shallow(EventLst *a, unsigned event) {
 }
 
 EventLst *EventLst_insert(EventLst *head,
-                    unsigned event,
-                    unsigned outcome,
+                    long unsigned event,
+                    long unsigned outcome,
                     long double pr) {
     int cmp = EventLst_cmp_shallow(head, event);
     if(cmp < 0) {
@@ -62,8 +46,8 @@ EventLst *EventLst_insert(EventLst *head,
 #ifndef NDEBUG        
         dostacktrace(__FILE__,__LINE__, stderr);
 #endif        
-        fprintf(stderr,"%s:%s:%d: can't insert a new outcome (%u) for \n"
-                "  event %u;  old outcome = %u\n",
+        fprintf(stderr,"%s:%s:%d: can't insert a new outcome (%lu) for \n"
+                "  event %lu;  old outcome = %lu\n",
                 __FILE__,__func__,__LINE__, outcome, event,
                 head->outcome);
         exit(EXIT_FAILURE);
@@ -73,8 +57,8 @@ EventLst *EventLst_insert(EventLst *head,
 }
 
 static EventLst *EventLst_new(EventLst *next,
-                                  unsigned event,
-                                  unsigned outcome,  
+                                  long unsigned event,
+                                  long unsigned outcome,  
                                   long double pr) {
     EventLst *self = malloc(sizeof(EventLst));
     CHECKMEM(self);
@@ -106,7 +90,7 @@ void EventLst_print(EventLst *self, FILE *fp) {
     for(EventLst *m=self; m; m = m->next) {
         if(m != self)
             putc(' ', fp);
-        fprintf(fp,"%u_%u_%Lg", m->event, m->outcome, m->pr);
+        fprintf(fp,"%lu_%lu_%Lg", m->event, m->outcome, m->pr);
     }
 }
 
@@ -197,8 +181,8 @@ uint32_t EventLst_hash(const EventLst *self)
     if(self==NULL)
         return 0;
     uint32_t hash = 17;
-    hash = hash * 37 + uint32Hash(self->event);
-    hash = hash * 37 + uint32Hash(self->outcome);
+    hash = hash * 37 + uint64Hash(self->event);
+    hash = hash * 37 + uint64Hash(self->outcome);
     uint32_t h = EventLst_hash(self->next);
     if(h)
         hash = hash * 37 + h;

@@ -2,11 +2,8 @@
 #include <stdint.h>
 
 int main(void) {
-    uint8_t x = 0;
-
-    for(int i=0; i<257; ++i)
-        printf("%hhu\n", x++);
-
+    printf("sizeof(unsigned): %lu\n", sizeof(unsigned));
+    printf("sizeof(long unsigned): %lu\n", sizeof(long unsigned));
     return 0;
 }
 

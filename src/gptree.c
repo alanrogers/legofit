@@ -147,7 +147,11 @@ int GPTree_nFree(const void * self) {
 /// @param[in] doSing if doSing is non-zero, singleton site patterns
 /// will be tabulated.
 void GPTree_brlen(void * vself, BranchTab * branchtab, gsl_rng * rng,
-                  unsigned long nreps, int doSing) {
+                  unsigned long nreps, int doSing,
+                  long unsigned *event_counter) {
+
+    UNUSED(event_counter);
+    
     GPTree *self = vself;
     unsigned long rep;
     for(rep = 0; rep < nreps; ++rep) {
@@ -166,7 +170,7 @@ void GPTree_brlen(void * vself, BranchTab * branchtab, gsl_rng * rng,
 
         // coalescent simulation generates gene genealogy within
         // population tree.
-        self->rootGene = PopNode_coalesce(self->rootPop, rng);
+        self->rootGene = PopNode_coalesce(self->rootPop, rng, event_counter);
         assert(self->rootGene);
 
         // Traverse gene tree, accumulating branch lengths in bins

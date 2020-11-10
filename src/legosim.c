@@ -152,6 +152,7 @@ Systems Consortium License, which can be found in file "LICENSE".
 #include "comb.h"
 #include "gptree.h"
 #include "lblndx.h"
+#include "matcoal.h"
 #include "network.h"
 #include "parstore.h"
 #include "patprob.h"

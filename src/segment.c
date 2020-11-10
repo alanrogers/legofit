@@ -51,13 +51,13 @@ struct MigDat {
     int nMigrants, nNatives;
     long double mig_pr; // probability of this migration outcome
     PtrLst *migrants, *natives, *a;
-    unsigned event, outcome;
+    long unsigned event, outcome;
 };
 
 // Data manipulated by visitSetPart function.
 struct SetPartDat {
     unsigned nparts; // Number of parts in partition
-    unsigned event, outcome;
+    long unsigned event, outcome;
 
     long double prior; // prob of k ancestors given n descendants
     long double lnconst;  // log of constant in Durrett's theorem 1.5
@@ -134,8 +134,8 @@ int    visitComb(int d, int ndx[d], void *data);
 int    visitSetPart(unsigned n, unsigned a[n], void *data);
 int    visitMig(int nmig, int *migndx, void *data);
 static void  unlink_child(Segment *child, Segment *parent);
-static int Segment_coalesceFinite(Segment *self, int dosing,
-                                  BranchTab *branchtab);
+static int Segment_coalesceFinite(Segment *self, int dosing, BranchTab *branchtab,
+                                  long unsigned *event_counter);
 static int Segment_coalesceInfinite(Segment *self, long double v, int dosing,
                                     BranchTab *branchtab);
 static void Segment_duplicate_nodes(Segment *old, PtrPtrMap *ppm);
@@ -942,8 +942,8 @@ static int Segment_equals_r(Segment *a, Segment *b) {
     return 1;
 }
 
-static int Segment_coalesceFinite(Segment *self, int dosing,
-                                  BranchTab *branchtab) {
+static int Segment_coalesceFinite(Segment *self, int dosing, BranchTab *branchtab,
+                                  long unsigned *event_counter) {
 
     assert(union_all_samples != 0);
 
@@ -1038,7 +1038,8 @@ static int Segment_coalesceFinite(Segment *self, int dosing,
             sd.prior = pr[k-1];
             sd.elen = elen[k-1];
             sd.lnconst = lnCoalConst(n, k);
-            sd.event = nextEvent();
+            sd.event = *event_counter;
+            *event_counter += 1;
             sd.outcome=0;
             status = traverseSetPartitions(n, k, visitSetPart, &sd);
             if(status)
@@ -1076,9 +1077,10 @@ static int Segment_coalesceFinite(Segment *self, int dosing,
                       .migrants = PtrLst_new(),
                       .natives = PtrLst_new(),
                       .a = NULL,
-                      .event = nextEvent(),
+                      .event = *event_counter,
                       .outcome = 0
         };
+        *event_counter += 1;
 
         // Loop over the number, k, of ancestors. This includes 0
         // because migration can produce empty sets (because everyone
@@ -1194,7 +1196,8 @@ static int Segment_coalesceInfinite(Segment *self, long double v,
     return status;
 }
 
-int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
+int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab,
+                     long unsigned *event_counter) {
 
     int status=0;
 
@@ -1203,12 +1206,12 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
     self->visited = 1;
 
     if(self->nchildren > 0) {
-        status = Segment_coalesce(self->child[0], dosing, branchtab);
+        status = Segment_coalesce(self->child[0], dosing, branchtab, event_counter);
         if(status)
             return status;
     }
     if(self->nchildren == 2 ) {
-        status = Segment_coalesce(self->child[1], dosing, branchtab);
+        status = Segment_coalesce(self->child[1], dosing, branchtab, event_counter);
         if(status)
             return status;
     }
@@ -1248,7 +1251,7 @@ int Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab) {
     if(self->end_i == -1) {
         status = Segment_coalesceInfinite(self, INFINITY, dosing, branchtab);
     }else{
-        status = Segment_coalesceFinite(self, dosing, branchtab);
+        status = Segment_coalesceFinite(self, dosing, branchtab, event_counter);
     }
 
     // Free IdSet objects of descendants

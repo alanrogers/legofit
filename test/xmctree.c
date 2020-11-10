@@ -8,6 +8,7 @@
  */
 
 #include "lblndx.h"
+#include "matcoal.h"
 #include "mctree.h"
 #include "misc.h"
 #include "parstore.h"
@@ -112,6 +113,7 @@ int main(int argc, char **argv) {
 
     MCTree_free(g);
     MCTree_free(g2);
+    MatCoal_freeExterns();
 
     unlink(fname);
     unitTstResult("MCTree", "OK");

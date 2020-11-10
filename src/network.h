@@ -21,7 +21,8 @@ EXTERN void       *(*Network_new)(const char *fname, Bounds bnd);
 EXTERN int         (*Network_nFree)(const void *self);
 EXTERN void        (*Network_brlen)(void *self, BranchTab *branchtab,
                                     gsl_rng *rng, unsigned long nreps,
-                                    int doSing);
+                                    int doSing,
+                                    long unsigned *event_counter);
 EXTERN void        (*Network_printParStore)(void *self, FILE *fp);
 EXTERN void        (*Network_printParStoreFree)(void *self, FILE *fp);
 EXTERN void        (*Network_randomize)(void *self, gsl_rng *rng);
@@ -41,7 +42,7 @@ EXTERN void        (*Node_print)(FILE * fp, void * vself, int indent);
 void Network_init(enum NetworkType type);
 void Network_patprob(void *self, BranchTab *branchtab,
                      gsl_rng *rng, unsigned long nreps,
-                     int doSing);
+                     int doSing, long unsigned *event_counter);
 
 #endif
 

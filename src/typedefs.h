@@ -80,6 +80,9 @@ typedef uint64_t tipId_t;
 #define POPNAMESIZE 30
 #define MAXSAMP ((int)(8*sizeof(tipId_t)))
 
+// silence compiler warning about unused function parameter
+#define UNUSED(x) (void)(x)
+
 enum NetworkType { STOCHASTIC, DETERMINISTIC };
 
 #endif

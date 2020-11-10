@@ -205,11 +205,12 @@ int main(int argc, char *argv[]) {
         Segment_print(stdout, abc, 0);
 
     BranchTab *bt = BranchTab_new();
-    
+
+    long unsigned event_counter = 0;
 
     Segment_prune(abc);
     Segment_unvisit(abc);
-    status = Segment_coalesce(abc, 1, bt);
+    status = Segment_coalesce(abc, 1, bt, &event_counter);
     if(status) {
         fprintf(stderr, "%s:%d: Segment_coalesce returned %d\n",
                 __FILE__,__LINE__,status);
@@ -218,7 +219,7 @@ int main(int argc, char *argv[]) {
 
     // Call it a second time
     Segment_unvisit(abc);
-    status = Segment_coalesce(abc, 1, bt);
+    status = Segment_coalesce(abc, 1, bt, &event_counter);
     if(status) {
         fprintf(stderr, "%s:%d: Segment_coalesce returned %d\n",
                 __FILE__,__LINE__,status);

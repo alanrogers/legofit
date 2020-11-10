@@ -464,7 +464,10 @@ int PopNode_mix(void * vchild, int mix_i, void * vintrogressor,
 }
 
 /// Coalesce gene tree within population tree.
-Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng) {
+Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng,
+                             long unsigned *event_counter) {
+
+    UNUSED(event_counter);
 
     // Early return if this node has been visited already.
     if(self->visited)
@@ -474,9 +477,9 @@ Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng) {
     // the current node begins with samples "inherited" from
     // children. 
     if(self->child[0])
-        (void) PopNode_coalesce(self->child[0], rng);
+        (void) PopNode_coalesce(self->child[0], rng, event_counter);
     if(self->child[1])
-        (void) PopNode_coalesce(self->child[1], rng);
+        (void) PopNode_coalesce(self->child[1], rng, event_counter);
 
     unsigned long i, j, k;
     double      x;
@@ -946,8 +949,10 @@ int main(int argc, char **argv) {
 
     assert(!PopNode_isClear(abc));
 
+    long unsigned event_counter = 0;
+
     PopNode_unvisit(abc);
-    Gene *root = PopNode_coalesce(abc, rng);
+    Gene *root = PopNode_coalesce(abc, rng, &event_counter);
     assert(root != NULL);
 
     assert(!PopNode_isClear(abc));

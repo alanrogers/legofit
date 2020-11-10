@@ -5,7 +5,8 @@
 #include <stdio.h>
 
 int      Segment_addChild(void * vparent, void * vchild);
-int      Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab);
+int      Segment_coalesce(Segment *self, int dosing, BranchTab *branchtab,
+                          long unsigned *event_counter);
 Segment *Segment_dup(Segment *old_root, PtrPtrMap *ppm);
 int      Segment_equals(Segment *a, Segment *b);
 int      Segment_feasible(const Segment * self, Bounds bnd, int verbose);

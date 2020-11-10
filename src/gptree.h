@@ -14,7 +14,7 @@ void        GPTree_getParams(void *vself, int n, double x[n]);
 void       *GPTree_new(const char *fname, Bounds bnd);
 int         GPTree_nFree(const void *vself);
 void        GPTree_brlen(void * vself, BranchTab * branchtab, gsl_rng * rng,
-                         unsigned long nreps, int doSing);
+                         unsigned long nreps, int doSing, long unsigned *event_counter);
 void        GPTree_patprob(void *vself, BranchTab *branchtab,
                             gsl_rng *rng, unsigned long nreps,
                             int doSing);

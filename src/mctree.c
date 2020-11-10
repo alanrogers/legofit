@@ -8,9 +8,6 @@
  * Systems Consortium License, which can be found in file "LICENSE".
  */
 
-// silence compiler warning about unused function parameter
-#define UNUSED(x) (void)(x)
-
 #include "branchtab.h"
 #include "lblndx.h"
 #include "matcoal.h"
@@ -311,7 +308,8 @@ void MCTree_initStateVec(void *self, int ndx, int n, double x[n],
 /// @param[in] doSing if doSing is non-zero, singleton site patterns
 /// will be tabulated.
 void MCTree_brlen(void * vself, BranchTab * branchtab, gsl_rng * rng,
-                  unsigned long nreps, int doSing) {
+                  unsigned long nreps, int doSing,
+                  long unsigned *event_counter) {
     UNUSED(rng);
     UNUSED(nreps);
     MCTree *self = vself;
@@ -325,7 +323,7 @@ void MCTree_brlen(void * vself, BranchTab * branchtab, gsl_rng * rng,
 
     // Use deterministic algorithm to calculate expected branch lengths
     // for each site pattern.
-    int status = Segment_coalesce(self->rootPop, doSing, branchtab);
+    int status = Segment_coalesce(self->rootPop, doSing, branchtab, event_counter);
     if(status) {
         fprintf(stderr,"%s:%d: Segment_coalesce returned status %d\n",
                 __FILE__, __LINE__, status);
