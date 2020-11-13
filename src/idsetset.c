@@ -34,8 +34,10 @@
 
 static int resize(IdSetSet *self, int dim);
 
-static const double sets_per_bucket = 0.7;
-static const double buckets_per_set = 1.0/sets_per_bucket;
+#define SETS_PER_BUCKET 0.7
+
+static const double sets_per_bucket = SETS_PER_BUCKET;
+static const double buckets_per_set = 1.0/SETS_PER_BUCKET;
 
 typedef struct El El;
 
