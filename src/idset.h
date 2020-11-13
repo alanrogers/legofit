@@ -24,7 +24,11 @@ void   IdSet_free(IdSet *self);
 int    IdSet_nIds(IdSet *self);
 long double IdSet_prob(IdSet *self);
 int    IdSet_cmp(const IdSet *left, const IdSet *right);
+#ifdef __clang__
 uint32_t IdSet_hash(const IdSet *self) __attribute__((no_sanitize("integer")));
+#else
+uint32_t IdSet_hash(const IdSet *self);
+#endif
 tipId_t IdSet_union(IdSet *self, int n, int *ndx);
 void   IdSet_partition(IdSet *self, unsigned k, tipId_t part[k],
                        unsigned n, unsigned a[n]);

@@ -49,8 +49,12 @@ EventLst   *EventLst_join(EventLst *left, EventLst *right,
                           int *mutually_exclusive);
 long double EventLst_prob(EventLst *head);
 int         EventLst_cmp(const EventLst *left, const EventLst *right);
+#ifdef __clang__
 uint32_t    EventLst_hash(const EventLst *self)
     __attribute__((no_sanitize("integer")));
+#else
+uint32_t    EventLst_hash(const EventLst *self);
+#endif
 void        EventLst_sanityCheck(const EventLst *self,
                                  const char *file, int lineno);
 

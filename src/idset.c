@@ -259,8 +259,13 @@ int IdSet_cmp(const IdSet *left, const IdSet *right) {
     return EventLst_cmp(left->evlst, right->evlst);
 }
 
+#ifdef __clang__
 uint32_t IdSet_hash(const IdSet *self)
-    __attribute__((no_sanitize("integer"))) {
+    __attribute__((no_sanitize("integer")))
+#else    
+uint32_t IdSet_hash(const IdSet *self)
+#endif    
+{
     uint32_t hash = 17;
     for(int i=0; i < self->nIds; ++i)
         hash = hash * 37 + uint32Hash(self->tid[i]);

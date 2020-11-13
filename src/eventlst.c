@@ -176,8 +176,12 @@ int EventLst_cmp(const EventLst *left, const EventLst *right) {
     return EventLst_cmp(left->next, right->next);
 }
 
+#ifdef __clang__
+uint32_t EventLst_hash(const EventLst *self) __attribute__((no_sanitize("integer")))
+#else    
 uint32_t EventLst_hash(const EventLst *self)
-    __attribute__((no_sanitize("integer"))) {
+#endif
+{    
     if(self==NULL)
         return 0;
     uint32_t hash = 17;
