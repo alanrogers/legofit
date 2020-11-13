@@ -23,7 +23,6 @@ warn := \
  -Wcast-qual \
  -Wmissing-declarations \
  -Wmissing-prototypes \
- -Wnested-externs \
  -Wpointer-arith \
  -Wstrict-prototypes \
  -Wno-unused-parameter \
