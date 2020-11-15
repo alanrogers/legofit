@@ -389,45 +389,45 @@ int main(int argc, char **argv) {
             strategy = strtol(optarg, NULL, 10);
             break;
         case 'S':
-        {
-            // Add a stage to simSched.
-            char b[20], *g, *r;
-            status = snprintf(b, sizeof b, "%s", optarg);
-            if(status >= sizeof b) {
-                fprintf(stderr, "%s:%d: buffer overflow reading arg %s\n",
-                        __FILE__, __LINE__, optarg);
-                exit(EXIT_FAILURE);
-            }
-            g = r = b;
+            {
+                // Add a stage to simSched.
+                char b[20], *g, *r;
+                status = snprintf(b, sizeof b, "%s", optarg);
+                if(status >= sizeof b) {
+                    fprintf(stderr, "%s:%d: buffer overflow reading arg %s\n",
+                            __FILE__, __LINE__, optarg);
+                    exit(EXIT_FAILURE);
+                }
+                g = r = b;
 
-            // Parse string like "123@456". g is for diffev generations
-            // and points to "123". r is for simulation replicates and
-            // points to "456". It is legal to omit the "@456" part,
-            // but only if -d or --deterministic is also used.
-            (void) strsep(&r, "@");
-            if(strlen(g) == 0)
-                usage();
-            long stageGen = strtol(g, NULL, 10);
+                // Parse string like "123@456". g is for diffev generations
+                // and points to "123". r is for simulation replicates and
+                // points to "456". It is legal to omit the "@456" part,
+                // but only if -d or --deterministic is also used.
+                (void) strsep(&r, "@");
+                if(strlen(g) == 0)
+                    usage();
+                long stageGen = strtol(g, NULL, 10);
 
-            long stageRep;
-            if(r == NULL || strlen(r) == 0) {
-                empty_reps = 1;
-                stageRep = 0;
-            }else{
-                stageRep = strtol(r, NULL, 10);
-                if(stageRep == 0)
+                long stageRep;
+                if(r == NULL || strlen(r) == 0) {
                     empty_reps = 1;
-            }
-            simreps = stageRep;
+                    stageRep = 0;
+                }else{
+                    stageRep = strtol(r, NULL, 10);
+                    if(stageRep == 0)
+                        empty_reps = 1;
+                }
+                simreps = stageRep;
 
-            if(stageGen < 0 || stageRep < 0) {
-                fprintf(stderr,"Argument to -S or --stage can't have"
-                        " negative integers: \"%s\" is illegal.\n",
-                        optarg);
-                exit(EXIT_FAILURE);
+                if(stageGen < 0 || stageRep < 0) {
+                    fprintf(stderr,"Argument to -S or --stage can't have"
+                            " negative integers: \"%s\" is illegal.\n",
+                            optarg);
+                    exit(EXIT_FAILURE);
+                }
+                SimSched_append(simSched, stageGen, stageRep);
             }
-            SimSched_append(simSched, stageGen, stageRep);
-        }
             break;
         case 'v':
             verbose = 1;
