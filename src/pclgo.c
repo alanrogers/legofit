@@ -54,6 +54,7 @@ Systems Consortium License, which can be found in file "LICENSE".
 #include "misc.h"
 #include "parstore.h"
 #include "gptree.h"
+#include "network.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -189,9 +190,10 @@ int main(int argc, char **argv){
         }
         assert(queue[i] == NULL); // check that queues are freed
     }
-
+    
     // Parse .lgo file in order to check agreement between free
     // variables in the .lgo file and those in the .legofit files.
+    Network_init(STOCHASTIC);
     {
         Bounds bnd = {
             .lo_twoN = 1.0,

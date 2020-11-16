@@ -1,11 +1,11 @@
 destination := $(HOME)/bin
 git_version := "$(shell git describe --dirty --always --tags)"
 global_destination := $(HOME)/group/bin
-opt := -DNDEBUG -O2  -finline-functions  # For full optimization
-#opt := -O0 -fno-inline-functions -rdynamic -DDEBUG     # For debugging
-#opt := -O2  -finline-functions  # Optimization + debugging
-#prof := -pg -rdynamic                    # For profiling under gcc
-#prof := --fprofile-generate               # For profiling under clang
+#opt := -DNDEBUG -O2  -finline-functions  # For full optimization
+opt := -O0 -g -fno-inline-functions -rdynamic -DDEBUG     # For debugging
+#opt := -O2  -g -finline-functions  # Optimization + debugging
+#prof := -pg -g -rdynamic                    # For profiling under gcc
+#prof := --fprofile-generate -g              # For profiling under clang
 prof :=
 incl := -I/usr/local/include -I/opt/local/include
 
@@ -46,7 +46,7 @@ ubsan =
 #    ubsan += -fsanitize=undefined -fno-sanitize-recover=undefined
 #endif
 
-CFLAGS := -g -std=gnu99 $(ubsan) $(warn) $(incl) $(opt) $(prof) \
+CFLAGS := -std=gnu99 $(ubsan) $(warn) $(incl) $(opt) $(prof) \
  -DGIT_VERSION=\"$(git_version)\"
 
 lib := -L/usr/local/lib -lgsl -lgslcblas -lpthread -lm
