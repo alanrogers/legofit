@@ -36,6 +36,7 @@ static int PopNode_nsamples(PopNode * self);
 static void PopNode_duplicate_nodes(PopNode * old, PtrPtrMap * ppm);
 static void unlink_child(PopNode * child, PopNode * parent);
 static int PopNode_equals_r(PopNode * a, PopNode * b);
+static void PopNode_print_r(PopNode *self, FILE * fp, int indent);
 
 struct PopNode {
     char *label;                // name of current segment
@@ -212,11 +213,21 @@ int PopNode_isClear(const PopNode * self) {
     return 1;
 }
 
-/// Print a PopNode and (recursively) its descendants.
-void PopNode_print(void *vself, FILE * fp, int indent) {
-    PopNode *self = vself;
-    stutter('|', indent, fp);
+/// Print a network of PopNodes.
+void PopNode_print(void *vroot, FILE * fp, int indent) {
+    PopNode *root = vroot;
+    PopNode_unvisit(root);
+    PopNode_print_r(root, fp, indent);
+}
 
+/// Print a PopNode and (recursively) its descendants.
+static void PopNode_print_r(PopNode *self, FILE * fp, int indent) {
+
+    if(self->visited)
+        return;
+    self->visited = 1;
+
+    stutter('|', indent, fp);
     fprintf(fp, "%s: twoN=%lg ntrval=(%lf,", self->label, self->twoN,
             self->start);
     fprintf(fp, "%lf)\n", self->end);
@@ -516,6 +527,7 @@ Gene *PopNode_coalesce(PopNode * self, gsl_rng * rng,
         fflush(stdout);
         fprintf(stderr, "ERROR:%s:%s:%d: start=%lf > %lf=end\n",
                 __FILE__, __func__, __LINE__, t, end);
+        PopNode_unvisit(self);
         PopNode_print(self, stderr, 0);
         exit(1);
     }

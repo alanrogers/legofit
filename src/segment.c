@@ -154,6 +154,7 @@ static void mv_to_waiting_room(Segment * self, PtrLst * src, int ipar,
 void Segment_print_d(Segment * self, const char *func, int line);
 #endif
 static int tipidcmp(const void *vx, const void *vy);
+static void Segment_print_r(Segment *self, FILE * fp, int indent);
 
 // Return index of self among children of parent
 static int self_ndx(Segment * self, Segment * parent) {
@@ -668,8 +669,16 @@ Segment *Segment_dup(Segment * old_root, PtrPtrMap * ppm) {
     return new_root;
 }
 
-void Segment_print(void *vself, FILE * fp, int indent) {
-    Segment *self = vself;
+void Segment_print(void *vroot, FILE * fp, int indent) {
+    Segment *root = vroot;
+    Segment_unvisit(root);
+    Segment_print_r(root, fp, indent);
+}
+
+static void Segment_print_r(Segment *self, FILE * fp, int indent) {
+    if(self->visited)
+        return;
+    self->visited = 1;
 
     stutter('|', indent, fp);
     fprintf(fp, "%s: twoN=%lg t=(%lf,", self->label, self->twoN, self->start);
