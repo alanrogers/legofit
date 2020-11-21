@@ -254,7 +254,7 @@ static void PopNode_print_r(PopNode *self, FILE * fp, int indent) {
     }
 
     for(int i = 0; i < self->nchildren; ++i)
-        PopNode_print(self->child[i], fp, indent + 1);
+        PopNode_print_r(self->child[i], fp, indent + 1);
 }
 
 /// Print a PopNode but not its descendants.

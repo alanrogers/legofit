@@ -706,7 +706,7 @@ static void Segment_print_r(Segment *self, FILE * fp, int indent) {
     }
 
     for(int i = 0; i < self->nchildren; ++i)
-        Segment_print(self->child[i], fp, indent + 1);
+        Segment_print_r(self->child[i], fp, indent + 1);
 }
 
 /// Visit a combination
