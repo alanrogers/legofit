@@ -2,6 +2,7 @@
 #  define ARR_SAMPNDX_H
 
 #  include "typedefs.h"
+#  include <stdio.h>
 #  include <stdlib.h>
 
 struct SampNdx {

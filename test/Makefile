@@ -1,5 +1,6 @@
 vpath %.c ../src
 
+git_version := "$(shell git describe --dirty --always --tags)"
 opt :=  -O0 -fno-inline-functions -DDEBUG
 prof :=
 incl := -I/usr/local/include -I/opt/local/include -I../src
@@ -48,7 +49,8 @@ else
     ubsan := -fsanitize=undefined -fsanitize=signed-integer-overflow
 endif
 
-CFLAGS := -g -std=gnu99 $(warn) $(ubsan) $(incl) $(opt) $(prof) $(osargs)
+CFLAGS := -g -std=gnu99 $(warn) $(ubsan) $(incl) $(opt) $(prof) $(osargs) \
+ -DGIT_VERSION=\"$(git_version)\"
 
 lib := -L/usr/local/lib -lgsl -lgslcblas -lpthread -lm
 

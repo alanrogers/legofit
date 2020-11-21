@@ -77,12 +77,12 @@ struct SetPartDat {
 // One segment of a population network. This version works
 // with MCTree.
 struct Segment {
+    char *label;                // name of current segment
     int nparents, nchildren, nsamples;
-    int visited;                // for traversal algorithm
     double twoN;                // ptr to current pop size
     double start, end;          // duration of this Segment
     double mix;                 // ptr to frac of pop derived from parent[1]
-    char *label;                // name of current segment
+    int visited;                // for traversal algorithm
 
     // indices into ParStore array
     int twoN_i, start_i, end_i, mix_i;
@@ -670,15 +670,13 @@ Segment *Segment_dup(Segment * old_root, PtrPtrMap * ppm) {
 
 void Segment_print(void *vself, FILE * fp, int indent) {
     Segment *self = vself;
-    for(int i = 0; i < indent; ++i)
-        putc('|', fp);
 
+    stutter('|', indent, fp);
     fprintf(fp, "%s: twoN=%lg t=(%lf,", self->label, self->twoN, self->start);
     fprintf(fp, "%lf)\n", self->end);
 
     if(self->nparents){
-        for(int i = 0; i < indent; ++i)
-            putc('|', fp);
+        stutter('|', indent, fp);
         fprintf(fp, "  parents:");
         for(int i=0; i < self->nparents; ++i)
             fprintf(fp, " %s", self->parent[i]->label);
@@ -686,16 +684,17 @@ void Segment_print(void *vself, FILE * fp, int indent) {
     }
 
     if(self->nchildren){
-        for(int i = 0; i < indent; ++i)
-            putc('|', fp);
+        stutter('|', indent, fp);
         fprintf(fp, "  children:");
         for(int i=0; i < self->nchildren; ++i)
             fprintf(fp, " %s", self->child[i]->label);
         putc('\n', fp);
     }
 
-    if(self->nsamples)
+    if(self->nsamples) {
+        stutter('|', indent, fp);
         fprintf(fp, "  nsamples=%d\n", self->nsamples);
+    }
 
     for(int i = 0; i < self->nchildren; ++i)
         Segment_print(self->child[i], fp, indent + 1);

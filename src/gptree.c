@@ -45,7 +45,10 @@ int         GPTree_equals(const GPTree *lhs, const GPTree *rhs);
 
 void GPTree_print(void *vself, FILE *fp) {
     GPTree *self = (GPTree *) vself;
+    fputs("Network:\n", fp);
     PopNode_print(self->rootPop, fp, 0);
+    fputs("Samples:\n", fp);
+    LblNdx_print(&self->lblndx, fp);
 }
 
 /// Initialize vector x. If ndx==0, simply copy the parameter vector

@@ -1,3 +1,4 @@
+
 /**
  * @file popnode.c
  * @author Alan R. Rogers
@@ -26,22 +27,23 @@
 #include <math.h>
 #include <gsl/gsl_randist.h>
 
-static void  PopNode_transferSample(PopNode * self, Gene * gene);
-static void  PopNode_printShallow(PopNode * self, FILE * fp);
-static void  PopNode_sanityCheck(PopNode * self, const char *file, int lineno);
-static void  PopNode_sanityFromLeaf(PopNode * self, const char *file, int line);
-static int   PopNode_nsamples(PopNode * self);
-static void  PopNode_duplicate_nodes(PopNode *old, PtrPtrMap *ppm);
-static void  unlink_child(PopNode *child, PopNode *parent);
-static int   PopNode_equals_r(PopNode *a, PopNode *b);
+static void PopNode_transferSample(PopNode * self, Gene * gene);
+static void PopNode_printShallow(PopNode * self, FILE * fp);
+static void PopNode_sanityCheck(PopNode * self, const char *file, int lineno);
+static void PopNode_sanityFromLeaf(PopNode * self, const char *file,
+                                   int line);
+static int PopNode_nsamples(PopNode * self);
+static void PopNode_duplicate_nodes(PopNode * old, PtrPtrMap * ppm);
+static void unlink_child(PopNode * child, PopNode * parent);
+static int PopNode_equals_r(PopNode * a, PopNode * b);
 
 struct PopNode {
-    int         visited; // has the coalescent visited this node yet?
-    int         nparents, nchildren, nsamples;
-    double      twoN;            // haploid pop size
-    double      start, end;      // duration of this PopNode
-    double      mix;             // frac of pop derived from parent[1]
-    char       *label;           // name of current segment
+    char *label;                // name of current segment
+    int nparents, nchildren, nsamples;
+    double twoN;                // haploid pop size
+    double start, end;          // duration of this PopNode
+    double mix;                 // frac of pop derived from parent[1]
+    int visited;                // has the coalescent visited this node yet?
 
     // indices into ParStore array
     int twoN_i, start_i, end_i, mix_i;
@@ -49,16 +51,16 @@ struct PopNode {
     struct PopNode *parent[2];
     struct PopNode *child[2];
 
-    Gene       *sample[MAXSAMP]; // not locally owned
+    Gene *sample[MAXSAMP];      // not locally owned
 };
 
-int PopNode_equals(PopNode *a, PopNode *b) {
+int PopNode_equals(PopNode * a, PopNode * b) {
     PopNode_unvisit(a);
     PopNode_unvisit(b);
     return PopNode_equals_r(a, b);
 }
 
-static int PopNode_equals_r(PopNode *a, PopNode *b) {
+static int PopNode_equals_r(PopNode * a, PopNode * b) {
     if(a->visited != b->visited)
         return 0;
     if(a->visited) {
@@ -68,7 +70,7 @@ static int PopNode_equals_r(PopNode *a, PopNode *b) {
         return 1;
     }
     a->visited = b->visited = 1;
-    
+
     if(a->nparents != b->nparents)
         return 0;
     if(a->nchildren != b->nchildren)
@@ -91,13 +93,12 @@ static int PopNode_equals_r(PopNode *a, PopNode *b) {
         return 0;
     if(a->end != b->end)
         return 0;
-    for(int i=0; i < a->nchildren; ++i) {
+    for(int i = 0; i < a->nchildren; ++i) {
         if(!PopNode_equals_r(a->child[i], b->child[i]))
             return 0;
     }
     return 1;
 }
-
 
 /// Check for errors in PopNode tree. Call this from each leaf node.
 static void PopNode_sanityFromLeaf(PopNode * self, const char *file, int line) {
@@ -151,7 +152,7 @@ static void PopNode_sanityFromLeaf(PopNode * self, const char *file, int line) {
 }
 
 /// Find root of population network, starting from given node.
-void *PopNode_root(void * vself) {
+void *PopNode_root(void *vself) {
     PopNode *self = vself, *r0, *r1;
     assert(self);
     switch (self->nparents) {
@@ -165,7 +166,8 @@ void *PopNode_root(void * vself) {
         r0 = PopNode_root(self->parent[0]);
         r1 = PopNode_root(self->parent[1]);
         if(r0 != r1) {
-            fprintf(stderr, "%s:%s:%d: Population network has multiple roots\n",
+            fprintf(stderr,
+                    "%s:%s:%d: Population network has multiple roots\n",
                     __FILE__, __func__, __LINE__);
             exit(EXIT_FAILURE);
         }
@@ -211,36 +213,34 @@ int PopNode_isClear(const PopNode * self) {
 }
 
 /// Print a PopNode and (recursively) its descendants.
-void PopNode_print(void * vself, FILE * fp, int indent) {
+void PopNode_print(void *vself, FILE * fp, int indent) {
     PopNode *self = vself;
-    for(int i = 0; i < indent; ++i)
-        putc('|', fp);
+    stutter('|', indent, fp);
 
     fprintf(fp, "%s: twoN=%lg ntrval=(%lf,", self->label, self->twoN,
             self->start);
     fprintf(fp, "%lf)\n", self->end);
 
-    if(self->nparents){
-        for(int i = 0; i < indent; ++i)
-            putc('|', fp);
+    if(self->nparents) {
+        stutter('|', indent, fp);
         fprintf(fp, "  parents:");
-        for(int i=0; i < self->nparents; ++i)
+        for(int i = 0; i < self->nparents; ++i)
             fprintf(fp, " %s", self->parent[i]->label);
         putc('\n', fp);
     }
 
-    if(self->nchildren){
-        for(int i = 0; i < indent; ++i)
-            putc('|', fp);
+    if(self->nchildren) {
+        stutter('|', indent, fp);
         fprintf(fp, "  children:");
-        for(int i=0; i < self->nchildren; ++i)
+        for(int i = 0; i < self->nchildren; ++i)
             fprintf(fp, " %s", self->child[i]->label);
         putc('\n', fp);
     }
 
-
-    if(self->nsamples)
+    if(self->nsamples) {
+        stutter('|', indent, fp);
         fprintf(fp, "  nsamples=%d\n", self->nsamples);
+    }
 
     for(int i = 0; i < self->nchildren; ++i)
         PopNode_print(self->child[i], fp, indent + 1);
@@ -285,7 +285,7 @@ static int PopNode_nsamples(PopNode * self) {
 }
 
 /// Set all "visited" flags to false.
-void PopNode_unvisit(PopNode *self) {
+void PopNode_unvisit(PopNode * self) {
     if(self->nchildren > 0)
         PopNode_unvisit(self->child[0]);
     if(self->nchildren > 1)
@@ -294,9 +294,8 @@ void PopNode_unvisit(PopNode *self) {
 }
 
 /// PopNode constructor
-void *PopNode_new(int twoN_i, int start_i, ParStore *ps,
-                  const char *label) {
-    PopNode    *self = malloc(sizeof(PopNode));
+void *PopNode_new(int twoN_i, int start_i, ParStore * ps, const char *label) {
+    PopNode *self = malloc(sizeof(PopNode));
     CHECKMEM(self);
 
     memset(self, 0, sizeof(*self));
@@ -316,7 +315,7 @@ void *PopNode_new(int twoN_i, int start_i, ParStore *ps,
     return self;
 }
 
-void PopNode_update(PopNode *self, ParStore *ps) {
+void PopNode_update(PopNode * self, ParStore * ps) {
     assert(self);
     self->twoN = ParStore_getVal(ps, self->twoN_i);
     self->start = ParStore_getVal(ps, self->start_i);
@@ -331,7 +330,7 @@ void PopNode_update(PopNode *self, ParStore *ps) {
 }
 
 /// Connect parent and child
-int PopNode_addChild(void * vparent, void * vchild) {
+int PopNode_addChild(void *vparent, void *vchild) {
     PopNode *parent = vparent;
     PopNode *child = vchild;
     if(parent->nchildren > 1) {
@@ -356,13 +355,12 @@ int PopNode_addChild(void * vparent, void * vchild) {
         child->end_i = parent->start_i;
         child->end = parent->start;
     } else if(child->end_i != parent->start_i) {
-            fprintf(stderr, "%s:%s:%d: Date mismatch.\n"
-                    "  child->end_i=%d != %d = parent->start_i\n",
-                    __FILE__, __func__, __LINE__,
-                    child->end_i, parent->start_i);
-            fprintf(stderr, "  child->end=%lg != %lg = parent->start\n",
-                    child->end, parent->start);
-            return DATE_MISMATCH;
+        fprintf(stderr, "%s:%s:%d: Date mismatch.\n"
+                "  child->end_i=%d != %d = parent->start_i\n",
+                __FILE__, __func__, __LINE__, child->end_i, parent->start_i);
+        fprintf(stderr, "  child->end=%lg != %lg = parent->start\n",
+                child->end, parent->start);
+        return DATE_MISMATCH;
     }
 
     parent->child[parent->nchildren] = child;
@@ -377,7 +375,7 @@ int PopNode_addChild(void * vparent, void * vchild) {
 /// Check sanity of PopNode
 static void PopNode_sanityCheck(PopNode * self, const char *file, int lineno) {
 #ifndef NDEBUG
-    int         i;
+    int i;
 
     REQUIRE(self != NULL, file, lineno);
 
@@ -395,7 +393,7 @@ void PopNode_newSample(PopNode * self, unsigned ndx) {
     assert(ndx < 8 * sizeof(tipId_t));
 
     static const tipId_t one = 1;
-    Gene       *gene = Gene_new(one << ndx);
+    Gene *gene = Gene_new(one << ndx);
     CHECKMEM(gene);
     self->sample[self->nsamples] = gene;
     ++self->nsamples;
@@ -421,19 +419,18 @@ static void PopNode_transferSample(PopNode * self, Gene * gene) {
 /// @param[in] mPtr pointer to the gene flow variable
 /// @param[inout] introgressor pointer to the introgressing parent
 /// @param[inout] native pointer to the native parent
-int PopNode_mix(void * vchild, int mix_i, void * vintrogressor,
-                void * vnative, ParStore *ps) {
-    PopNode *child = vchild, *introgressor = vintrogressor,
-        *native = vnative;
+int PopNode_mix(void *vchild, int mix_i, void *vintrogressor,
+                void *vnative, ParStore * ps) {
+    PopNode *child = vchild, *introgressor = vintrogressor, *native = vnative;
 
     if(introgressor->nchildren > 1) {
-        fprintf(stderr,"%s:%s:%d:"
+        fprintf(stderr, "%s:%s:%d:"
                 " Can't add child because introgressor already has %d.\n",
                 __FILE__, __func__, __LINE__, introgressor->nchildren);
         return TOO_MANY_CHILDREN;
     }
     if(native->nchildren > 1) {
-        fprintf(stderr,"%s:%s:%d:"
+        fprintf(stderr, "%s:%s:%d:"
                 " Can't add child because native parent already has %d.\n",
                 __FILE__, __func__, __LINE__, native->nchildren);
         return TOO_MANY_CHILDREN;
@@ -446,11 +443,11 @@ int PopNode_mix(void * vchild, int mix_i, void * vintrogressor,
     }
     if(child->end_i >= 0) {
         if(child->end_i != introgressor->start_i) {
-            fprintf(stderr,"%s:%s:%d: Date mismatch\n"
+            fprintf(stderr, "%s:%s:%d: Date mismatch\n"
                     "  child->end_i=%d != %d=introgressor->start_i\n",
                     __FILE__, __func__, __LINE__,
                     child->end_i, introgressor->start_i);
-            fprintf(stderr,"  child->end=%lg != %lg=introgressor->start\n",
+            fprintf(stderr, "  child->end=%lg != %lg=introgressor->start\n",
                     child->end, introgressor->start);
             return DATE_MISMATCH;
         }
@@ -492,8 +489,8 @@ int PopNode_mix(void * vchild, int mix_i, void * vintrogressor,
 }
 
 /// Coalesce gene tree within population tree.
-Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng,
-                             long unsigned *event_counter) {
+Gene *PopNode_coalesce(PopNode * self, gsl_rng * rng,
+                       long unsigned *event_counter) {
 
     UNUSED(event_counter);
 
@@ -510,16 +507,16 @@ Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng,
         (void) PopNode_coalesce(self->child[1], rng, event_counter);
 
     unsigned long i, j, k;
-    double      x;
-    double      end = self->end;
-    double      t = self->start;
+    double x;
+    double end = self->end;
+    double t = self->start;
 
 #ifndef NDEBUG
     if(t > end) {
         fflush(stdout);
         fprintf(stderr, "ERROR:%s:%s:%d: start=%lf > %lf=end\n",
                 __FILE__, __func__, __LINE__, t, end);
-        PopNode_print(stderr, self, 0);
+        PopNode_print(self, stderr, 0);
         exit(1);
     }
 #endif
@@ -528,8 +525,8 @@ Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng,
     // or we reach the end of the interval.
     while(self->nsamples > 1 && t < end) {
         {
-            int         n = self->nsamples;
-            double      mean = 2.0 * self->twoN / (n * (n - 1));
+            int n = self->nsamples;
+            double mean = 2.0 * self->twoN / (n * (n - 1));
             x = gsl_ran_exponential(rng, mean);
         }
 
@@ -576,7 +573,6 @@ Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng,
             Gene_addToBranch(self->sample[i], x);
         t = end;                // may be infinite
     }
-
     // If we have both samples and parents, then move samples to parents
     if(self->nsamples > 0 && self->nparents > 0) {
         assert(t == end);
@@ -611,8 +607,8 @@ Gene       *PopNode_coalesce(PopNode * self, gsl_rng * rng,
 }
 
 /// Remove child from parent
-static void unlink_child(PopNode *child, PopNode *parent) {
-    switch(parent->nchildren) {
+static void unlink_child(PopNode * child, PopNode * parent) {
+    switch (parent->nchildren) {
     case 1:
         assert(child == parent->child[0]);
         parent->child[0] = NULL;
@@ -629,8 +625,8 @@ static void unlink_child(PopNode *child, PopNode *parent) {
         parent->nchildren = 1;
         break;
     default:
-        fprintf(stderr,"%s:%d: illegal number of children: %d\n",
-                __FILE__,__LINE__, parent->nchildren);
+        fprintf(stderr, "%s:%d: illegal number of children: %d\n",
+                __FILE__, __LINE__, parent->nchildren);
         exit(EXIT_FAILURE);
     }
 }
@@ -653,7 +649,7 @@ void PopNode_free(PopNode * self) {
         unlink_child(self, self->parent[i]);
         self->nparents -= 1;
     }
-    
+
     free(self->label);
 
     free(self);
@@ -739,7 +735,7 @@ int PopNode_feasible(const PopNode * self, Bounds bnd, int verbose) {
 /// Duplicate a network of nodes, returning a pointer to the
 /// root of the duplicate network. On entry, ppm should be an empty
 /// hashmap.
-PopNode *PopNode_dup(PopNode *old_root, PtrPtrMap *ppm) {
+PopNode *PopNode_dup(PopNode * old_root, PtrPtrMap * ppm) {
     assert(old_root);
     assert(0 == PtrPtrMap_size(ppm));
     PopNode_clear(old_root);
@@ -754,15 +750,15 @@ PopNode *PopNode_dup(PopNode *old_root, PtrPtrMap *ppm) {
     void *old_nodes[nnodes];
     int status = PtrPtrMap_keys(ppm, nnodes, old_nodes);
     if(status) {
-        fprintf(stderr,"%s:%d: buffer overflow\n",__FILE__,__LINE__);
+        fprintf(stderr, "%s:%d: buffer overflow\n", __FILE__, __LINE__);
         exit(EXIT_FAILURE);
     }
 
-    PopNode *node, *new_root=NULL;
+    PopNode *node, *new_root = NULL;
 
     // Connect each node to its parents and children,
     // and identify the root of the duplicated network.
-    for(unsigned i=0; i < nnodes; ++i) {
+    for(unsigned i = 0; i < nnodes; ++i) {
         PopNode *old = old_nodes[i];
         PopNode *new = PtrPtrMap_get(ppm, old, &status);
         assert(status == 0);
@@ -772,7 +768,6 @@ PopNode *PopNode_dup(PopNode *old_root, PtrPtrMap *ppm) {
             assert(new_root == NULL);
             new_root = new;
         }
-
         // connect new node to its parents
         if(old->nparents > 0) {
             node = PtrPtrMap_get(ppm, old->parent[0], &status);
@@ -784,7 +779,6 @@ PopNode *PopNode_dup(PopNode *old_root, PtrPtrMap *ppm) {
             assert(status == 0);
             new->parent[1] = node;
         }
-
         // connect new node to its children
         if(old->nchildren > 0) {
             node = PtrPtrMap_get(ppm, old->child[0], &status);
@@ -805,29 +799,29 @@ PopNode *PopNode_dup(PopNode *old_root, PtrPtrMap *ppm) {
 /// the duplicates into a hash map (called ppm) in which the old
 /// node is the key and the new duplicate is the value associated
 /// with that key.
-static void PopNode_duplicate_nodes(PopNode *old, PtrPtrMap *ppm) {
+static void PopNode_duplicate_nodes(PopNode * old, PtrPtrMap * ppm) {
     assert(old);
     if(old->visited)
         return;
 
     if(old->nsamples > 0) {
-        fprintf(stderr,"%s:%d: Must call PopNode_clear before %s\n",
-                __FILE__,__LINE__,__func__);
+        fprintf(stderr, "%s:%d: Must call PopNode_clear before %s\n",
+                __FILE__, __LINE__, __func__);
         exit(EXIT_FAILURE);
     }
     PopNode *new = memdup(old, sizeof(*old));
     CHECKMEM(new);
     old->visited = 1;
-#ifndef NDEBUG    
+#ifndef NDEBUG
     int status = PtrPtrMap_insert(ppm, old, new);
-    assert(status==0);
+    assert(status == 0);
 #else
     (void) PtrPtrMap_insert(ppm, old, new);
-#endif    
+#endif
 
     new->label = strdup(old->label);
     CHECKMEM(new->label);
-    
+
     if(old->nchildren > 0)
         PopNode_duplicate_nodes(old->child[0], ppm);
     if(old->nchildren > 1)
@@ -867,28 +861,28 @@ int main(int argc, char **argv) {
 
     Param *par;
 
-    par = Param_new("zero", 0.0, 0.0, 0.0, TIME|FIXED, NULL);
+    par = Param_new("zero", 0.0, 0.0, 0.0, TIME | FIXED, NULL);
     PtrQueue_push(fixedQ, par);
 
-    par = Param_new("one", 1.0, 1.0, 1.0, TWON|FIXED, NULL);
+    par = Param_new("one", 1.0, 1.0, 1.0, TWON | FIXED, NULL);
     PtrQueue_push(fixedQ, par);
 
-    par = Param_new("Nab", 3.0, 0.0, 100.0, TWON|FREE, NULL);
+    par = Param_new("Nab", 3.0, 0.0, 100.0, TWON | FREE, NULL);
     PtrQueue_push(freeQ, par);
 
-    par = Param_new("Tab", 2.0, 0.0, 100.0, TIME|FREE, NULL);
+    par = Param_new("Tab", 2.0, 0.0, 100.0, TIME | FREE, NULL);
     PtrQueue_push(freeQ, par);
 
-    par = Param_new("Tmig", 1.0, 1.0, 1.0, TIME|FIXED, NULL);
+    par = Param_new("Tmig", 1.0, 1.0, 1.0, TIME | FIXED, NULL);
     PtrQueue_push(fixedQ, par);
 
-    par = Param_new("mix", 0.02, 0.02, 0.02, MIXFRAC|FIXED, NULL);
+    par = Param_new("mix", 0.02, 0.02, 0.02, MIXFRAC | FIXED, NULL);
     PtrQueue_push(fixedQ, par);
 
-    par = Param_new("Nabc", 3.0, 0.0, 100.0, TWON|FREE, NULL);
+    par = Param_new("Nabc", 3.0, 0.0, 100.0, TWON | FREE, NULL);
     PtrQueue_push(freeQ, par);
 
-    par = Param_new("Tabc", 4.0, -DBL_MAX, DBL_MAX, TIME|CONSTRAINED,
+    par = Param_new("Tabc", 4.0, -DBL_MAX, DBL_MAX, TIME | CONSTRAINED,
                     "Tab + Nab*Nabc");
     PtrQueue_push(constrQ, par);
 
@@ -906,31 +900,31 @@ int main(int argc, char **argv) {
 
     PopNode *a, *b, *b2, *c, *c2, *ab, *abc;
     int ni, ti, mi;
-    tipId_t     ida = 0;
-    tipId_t     idb = 1;
-    tipId_t     idc = 2;
-    Gene       *ga = Gene_new(ida);
-    Gene       *gb = Gene_new(idb);
-    Gene       *gc = Gene_new(idc);
+    tipId_t ida = 0;
+    tipId_t idb = 1;
+    tipId_t idc = 2;
+    Gene *ga = Gene_new(ida);
+    Gene *gb = Gene_new(idb);
+    Gene *gc = Gene_new(idc);
 
     ni = ParStore_getIndex(ps, "one");
     assert(ni >= 0);
     ti = ParStore_getIndex(ps, "zero");
     assert(ti >= 0);
 
-    a = PopNode_new(ni, ti, ps);
+    a = PopNode_new(ni, ti, ps, "a");
     assert(a);
 
-    b = PopNode_new(ni, ti, ps);
+    b = PopNode_new(ni, ti, ps, "b");
     assert(b);
 
-    c = PopNode_new(ni, ti, ps);
+    c = PopNode_new(ni, ti, ps, "c");
     assert(c);
-    
+
     ti = ParStore_getIndex(ps, "Tmig");
     assert(ti >= 0);
-    b2 = PopNode_new(ni, ti, ps);
-    c2 = PopNode_new(ni, ti, ps);
+    b2 = PopNode_new(ni, ti, ps, "b2");
+    c2 = PopNode_new(ni, ti, ps, "c2");
     assert(b2);
     assert(c2);
 
@@ -938,16 +932,16 @@ int main(int argc, char **argv) {
     assert(ni >= 0);
     ti = ParStore_getIndex(ps, "Tab");
     assert(ti >= 0);
-    ab = PopNode_new(ni, ti, ps);
+    ab = PopNode_new(ni, ti, ps, "ab");
     assert(ab);
 
     ni = ParStore_getIndex(ps, "Nabc");
     assert(ni >= 0);
     ti = ParStore_getIndex(ps, "Tabc");
     assert(ti >= 0);
-    abc = PopNode_new(ni, ti, ps);
+    abc = PopNode_new(ni, ti, ps, "abc");
     assert(abc);
-    
+
     status = PopNode_addChild(ab, a);
     assert(status == 0);
 
@@ -960,7 +954,7 @@ int main(int argc, char **argv) {
 
     status = PopNode_addChild(ab, b2);
     assert(status == 0);
-    
+
     status = PopNode_addChild(abc, ab);
     assert(status == 0);
 

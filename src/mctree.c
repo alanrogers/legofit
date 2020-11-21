@@ -109,7 +109,10 @@ int MCTree_feasible(const void * vself, int verbose) {
 
 void  MCTree_print(void * vself, FILE * fp) {
     MCTree *self = (MCTree *) vself;
+    fputs("Network:\n", fp);
     Segment_print(self->rootPop, fp, 0);
+    fputs("Samples:\n", fp);
+    LblNdx_print(&self->lblndx, fp);
 }
 
 /// Print a description of parameters.

@@ -5,23 +5,18 @@
 
 # `legosim`: coalescent simulations within a network of populations
 
-    #######################################
-    # legosim: site pattern probabilities #
-    #            version 1.89             #
-    #######################################
-    
-    # Program was compiled: Oct 22 2020 12:30:21
-    # Program was run: Thu Oct 22 13:04:35 2020
-    
-    # cmd: legosim -h
     usage: legosim [options] input_file_name
        where options may include:
+       -b or --branch_length
+          print branch lengths rather than probabilities
        -i <x> or --nItr <x>
           number of iterations in simulation
        -1 or --singletons
           Use singleton site patterns
        -d <x> or --deterministic <x>
           Deterministic algorithm, ignoring states with Pr <= x
+       --network
+          Print summary of population network and exit
        -U <x>
           Mutations per generation per haploid genome.
        -h or --help
@@ -29,55 +24,21 @@
        --version
           print version and exit
     Options -i, --nItr, and -U cannot be used with --deterministic.
+    Option -U cannot be used with -b or --branch_length.
 
 Here, "input_file" should be in @ref lgo ".lgo" format, which
 describes the history of population size, subdivision, and gene
-flow. The default output looks like this:
+flow. The output looks like this:
 
     #######################################
     # legosim: site pattern probabilities #
-    #            version 1.89             #
+    #   version 2.0.1-12-gf241700-dirty   #
     #######################################
     
-    # Program was compiled: Oct 22 2020 12:30:21
-    # Program was run: Thu Oct 22 13:06:00 2020
+    # Program was compiled: Nov 21 2020 10:15:39
+    # Program was run: Sat Nov 21 10:17:57 2020
     
-    # cmd: legosim -1 -i 10000 input.lgo
-    # input file                  : input.lgo
-    # algorithm                   : stochastic
-    # nreps                       : 10000
-    # not simulating mutations
-    # including singleton site patterns.
-    #       SitePat            Prob
-                  x    0.1561022758
-                  y    0.1481613681
-                  n    0.4023022625
-                x:y    0.2853347943
-                x:n    0.0000791958
-                y:n    0.0080201035
-
-Here, the "SitePat" column labels site patterns. For example, site
-pattern xy (denoted by "x:y" in this output) refers to nocleotide
-sites at which the derived allele is present in single haploid samples
-from X and Y but not in samples from other populations. The
-probability of this site pattern, under the model of history specified
-in file `input.lgo`, is given in the "Prob" column. These
-probabilities are estimated by coalescent simulation and are not
-exact. The more iterations (as specified by `-i` or `--iterations`) 
-the better the approximation will be. 
-
-Alternatively, one can use the `-d` or `--deterministic` option to use
-a highly accurate deterministic algorithm:
-
-    #######################################
-    # legosim: site pattern probabilities #
-    #            version 1.89             #
-    #######################################
-    
-    # Program was compiled: Oct 22 2020 12:30:21
-    # Program was run: Thu Oct 22 13:09:27 2020
-    
-    # cmd: legosim -1 -d 0 input.lgo
+    # cmd: ./legosim -1 -d 0 input.lgo
     # input file                  : input.lgo
     # algorithm                   : deterministic
     # ignoring probs <=           : 0
@@ -90,9 +51,19 @@ a highly accurate deterministic algorithm:
                 x:n    0.0000926157
                 y:n    0.0079712026
 
-In this example, I used the option `-d 0`, which says to use the
-deterministic algorithm, ignoring states whose probability is less
-than or equal to 0. This calculates probabilities very accurately.
+Here, the "SitePat" column labels site patterns. For example, site
+pattern xy (denoted by "x:y" in this output) refers to nocleotide
+sites at which the derived allele is present in single haploid samples
+from X and Y but not in samples from other populations. The
+probability of this site pattern, under the model of history specified
+in file `input.lgo`, is given in the "Prob" column. When the `-d` or
+`--deterministic` options are used, these probabilities are calculated
+by a deterministic algorithm. 
+
+In the example above, I used `-d 0`, which tells legosim to ignore
+only those states with probability 0. Thus, the answers will be
+extremely accurate. When neither `-d` nor `--deterministic` are used,
+the probabilities are estimated by coalescent simulation.
 
 The deterministic algorithm sums across all possible histories of the
 samples defined in the .lgo file. The number of histories increases
@@ -180,7 +151,7 @@ void usage(void) {
     tellopt("-1 or --singletons", "Use singleton site patterns");
     tellopt("-d <x> or --deterministic <x>",
             "Deterministic algorithm, ignoring states with Pr <= x");
-    tellopt("--debug", "Print summary of population network and exit");
+    tellopt("--network", "Print summary of population network and exit");
     tellopt("-U <x>", "Mutations per generation per haploid genome.");
     tellopt("-h or --help", "print this message");
     tellopt("--version", "print version and exit");
@@ -198,7 +169,7 @@ int main(int argc, char **argv) {
         /* {char *name, int has_arg, int *flag, int val} */
          {"branch_length", no_argument, 0, 'b'},
          {"deterministic", required_argument, 0, 'd'},
-         {"debug", no_argument, 0, 'D'},
+         {"network", no_argument, 0, 'n'},
          {"nItr", required_argument, 0, 'i'},
          {"mutations", required_argument, 0, 'U'},
          {"singletons", no_argument, 0, '1'},
@@ -219,7 +190,7 @@ int main(int argc, char **argv) {
     int         optndx;
     long        nreps = 100;
     int         deterministic = 0, stochastic = 0;
-    int         debug = 0;
+    int         show_network = 0;
     char        fname[200] = { '\0' };
 
     // Ignore IdSet objects with probabilities <= improbable.
@@ -238,7 +209,7 @@ int main(int argc, char **argv) {
     // command line arguments
     for(;;) {
         char *end;
-        i = getopt_long(argc, argv, "bd:Di:t:U:1h", myopts, &optndx);
+        i = getopt_long(argc, argv, "bd:ni:t:U:1h", myopts, &optndx);
         if(i == -1)
             break;
         switch (i) {
@@ -257,8 +228,8 @@ int main(int argc, char **argv) {
                 exit(EXIT_FAILURE);
             }
             break;
-        case 'D':
-            debug = 1;
+        case 'n':
+            show_network = 1;
             break;
         case 'e':
             break;
@@ -346,7 +317,7 @@ int main(int argc, char **argv) {
     void *network = Network_new(fname, bnd);
     LblNdx lblndx = Network_getLblNdx(network);
 
-    if(debug) {
+    if(show_network) {
         Network_print(network, stdout);
         return 0;
     }

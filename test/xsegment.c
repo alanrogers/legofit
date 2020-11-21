@@ -119,19 +119,19 @@ int main(int argc, char *argv[]) {
     ti = ParStore_getIndex(ps, "zero");
     assert(ti >= 0);
 
-    a = Segment_new(ni, ti, ps);
+    a = Segment_new(ni, ti, ps, "a");
     assert(a);
 
     ni = ParStore_getIndex(ps, "Nb");
     assert(ni >= 0);
 
-    b = Segment_new(ni, ti, ps);
+    b = Segment_new(ni, ti, ps, "b");
     assert(b);
 
     ni = ParStore_getIndex(ps, "Nc");
     assert(ni >= 0);
 
-    c = Segment_new(ni, ti, ps);
+    c = Segment_new(ni, ti, ps, "c");
     assert(c);
 
     union_all_samples = (1LU << 3) - 1;
@@ -143,9 +143,9 @@ int main(int argc, char *argv[]) {
     ti = ParStore_getIndex(ps, "Tmig");
     assert(ti >= 0);
     ni = ParStore_getIndex(ps, "Nb2");
-    b2 = Segment_new(ni, ti, ps);
+    b2 = Segment_new(ni, ti, ps, "b2");
     ni = ParStore_getIndex(ps, "Nc2");
-    c2 = Segment_new(ni, ti, ps);
+    c2 = Segment_new(ni, ti, ps, "c2");
     assert(b2);
     assert(c2);
 
@@ -153,14 +153,14 @@ int main(int argc, char *argv[]) {
     assert(ni >= 0);
     ti = ParStore_getIndex(ps, "Tab");
     assert(ti >= 0);
-    ab = Segment_new(ni, ti, ps);
+    ab = Segment_new(ni, ti, ps, "ab");
     assert(ab);
 
     ni = ParStore_getIndex(ps, "Nabc");
     assert(ni >= 0);
     ti = ParStore_getIndex(ps, "Tabc");
     assert(ti >= 0);
-    abc = Segment_new(ni, ti, ps);
+    abc = Segment_new(ni, ti, ps, "abc");
     assert(abc);
 
     status = Segment_addChild(ab, a);
@@ -202,7 +202,7 @@ int main(int argc, char *argv[]) {
     assert(Segment_equals(abc, duproot));
 
     if(verbose)
-        Segment_print(stdout, abc, 0);
+        Segment_print(abc, stdout, 0);
 
     BranchTab *bt = BranchTab_new();
 

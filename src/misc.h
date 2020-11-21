@@ -59,6 +59,7 @@ const char *mybasename(const char *name);
 int         legalName(const char *name);
 int         strnncopy(size_t n, char dst[n], size_t m, const char src[m]);
 void        collapse_whitespace(char * buff);
+void        stutter(char c, int n, FILE * fp);
 static inline double survival(double t, double twoN);
 
 #  define ERR(code, msg) do{                        \
