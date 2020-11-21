@@ -216,7 +216,7 @@ void PopNode_print(void * vself, FILE * fp, int indent) {
     for(int i = 0; i < indent; ++i)
         putc('|', fp);
 
-    fprintf(fp, "%s: twoN=%lf ntrval=(%lf,", self->label, self->twoN,
+    fprintf(fp, "%s: twoN=%lg ntrval=(%lf,", self->label, self->twoN,
             self->start);
     fprintf(fp, "%lf)\n", self->end);
 
@@ -237,6 +237,10 @@ void PopNode_print(void * vself, FILE * fp, int indent) {
             fprintf(fp, " %s", self->child[i]->label);
         putc('\n', fp);
     }
+
+
+    if(self->nsamples)
+        fprintf(fp, "  nsamples=%d\n", self->nsamples);
 
     for(int i = 0; i < self->nchildren; ++i)
         PopNode_print(self->child[i], fp, indent + 1);

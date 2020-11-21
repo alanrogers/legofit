@@ -673,8 +673,8 @@ void Segment_print(void *vself, FILE * fp, int indent) {
     for(int i = 0; i < indent; ++i)
         putc('|', fp);
 
-    fprintf(fp, "%s: twoN=%lf t=(%lf,", self->label, self->twoN, self->start);
-    fprintf(fp, "%lf)", self->end);
+    fprintf(fp, "%s: twoN=%lg t=(%lf,", self->label, self->twoN, self->start);
+    fprintf(fp, "%lf)\n", self->end);
 
     if(self->nparents){
         for(int i = 0; i < indent; ++i)
@@ -695,8 +695,7 @@ void Segment_print(void *vself, FILE * fp, int indent) {
     }
 
     if(self->nsamples)
-        fprintf(fp, "  nsamples=%d", self->nsamples);
-    putc('\n', fp);
+        fprintf(fp, "  nsamples=%d\n", self->nsamples);
 
     for(int i = 0; i < self->nchildren; ++i)
         Segment_print(self->child[i], fp, indent + 1);
