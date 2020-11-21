@@ -179,7 +179,8 @@ void usage(void) {
     tellopt("-i <x> or --nItr <x>", "number of iterations in simulation");
     tellopt("-1 or --singletons", "Use singleton site patterns");
     tellopt("-d <x> or --deterministic <x>",
-            "Deterministic algorithm, ignoring states with Pr <= x"); 
+            "Deterministic algorithm, ignoring states with Pr <= x");
+    tellopt("--debug", "Print summary of population network and exit");
     tellopt("-U <x>", "Mutations per generation per haploid genome.");
     tellopt("-h or --help", "print this message");
     tellopt("--version", "print version and exit");
@@ -197,6 +198,7 @@ int main(int argc, char **argv) {
         /* {char *name, int has_arg, int *flag, int val} */
          {"branch_length", no_argument, 0, 'b'},
          {"deterministic", required_argument, 0, 'd'},
+         {"debug", no_argument, 0, 'D'},
          {"nItr", required_argument, 0, 'i'},
          {"mutations", required_argument, 0, 'U'},
          {"singletons", no_argument, 0, '1'},
@@ -217,6 +219,7 @@ int main(int argc, char **argv) {
     int         optndx;
     long        nreps = 100;
     int         deterministic = 0, stochastic = 0;
+    int         debug = 0;
     char        fname[200] = { '\0' };
 
     // Ignore IdSet objects with probabilities <= improbable.
@@ -235,7 +238,7 @@ int main(int argc, char **argv) {
     // command line arguments
     for(;;) {
         char *end;
-        i = getopt_long(argc, argv, "bd:i:t:U:1h", myopts, &optndx);
+        i = getopt_long(argc, argv, "bd:Di:t:U:1h", myopts, &optndx);
         if(i == -1)
             break;
         switch (i) {
@@ -253,6 +256,9 @@ int main(int argc, char **argv) {
                 fprintf(stderr,"Can't parse %s as a long double\n", optarg);
                 exit(EXIT_FAILURE);
             }
+            break;
+        case 'D':
+            debug = 1;
             break;
         case 'e':
             break;
@@ -339,6 +345,11 @@ int main(int argc, char **argv) {
     };
     void *network = Network_new(fname, bnd);
     LblNdx lblndx = Network_getLblNdx(network);
+
+    if(debug) {
+        Network_print(network, stdout);
+        return 0;
+    }
 
     int dim = Network_nFree(network);
     double x[dim];

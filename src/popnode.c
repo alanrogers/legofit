@@ -41,6 +41,7 @@ struct PopNode {
     double      twoN;            // haploid pop size
     double      start, end;      // duration of this PopNode
     double      mix;             // frac of pop derived from parent[1]
+    char       *label;           // name of current segment
 
     // indices into ParStore array
     int twoN_i, start_i, end_i, mix_i;
@@ -210,15 +211,35 @@ int PopNode_isClear(const PopNode * self) {
 }
 
 /// Print a PopNode and (recursively) its descendants.
-void PopNode_print(FILE * fp, void * vself, int indent) {
+void PopNode_print(void * vself, FILE * fp, int indent) {
     PopNode *self = vself;
     for(int i = 0; i < indent; ++i)
-        fputs("   ", fp);
-    fprintf(fp, "%p twoN=%lf ntrval=(%lf,", self, self->twoN, self->start);
+        putc('|', fp);
+
+    fprintf(fp, "%s: twoN=%lf ntrval=(%lf,", self->label, self->twoN,
+            self->start);
     fprintf(fp, "%lf)\n", self->end);
 
+    if(self->nparents){
+        for(int i = 0; i < indent; ++i)
+            putc('|', fp);
+        fprintf(fp, "  parents:");
+        for(int i=0; i < self->nparents; ++i)
+            fprintf(fp, " %s", self->parent[i]->label);
+        putc('\n', fp);
+    }
+
+    if(self->nchildren){
+        for(int i = 0; i < indent; ++i)
+            putc('|', fp);
+        fprintf(fp, "  children:");
+        for(int i=0; i < self->nchildren; ++i)
+            fprintf(fp, " %s", self->child[i]->label);
+        putc('\n', fp);
+    }
+
     for(int i = 0; i < self->nchildren; ++i)
-        PopNode_print(fp, self->child[i], indent + 1);
+        PopNode_print(self->child[i], fp, indent + 1);
 }
 
 /// Print a PopNode but not its descendants.
@@ -269,7 +290,8 @@ void PopNode_unvisit(PopNode *self) {
 }
 
 /// PopNode constructor
-void *PopNode_new(int twoN_i, int start_i, ParStore *ps) {
+void *PopNode_new(int twoN_i, int start_i, ParStore *ps,
+                  const char *label) {
     PopNode    *self = malloc(sizeof(PopNode));
     CHECKMEM(self);
 
@@ -283,6 +305,8 @@ void *PopNode_new(int twoN_i, int start_i, ParStore *ps) {
     self->start = ParStore_getVal(ps, start_i);
     self->end = INFINITY;
     self->mix = 0.0;
+    self->label = strdup(label);
+    CHECKMEM(self->label);
 
     PopNode_sanityCheck(self, __FILE__, __LINE__);
     return self;
@@ -626,6 +650,8 @@ void PopNode_free(PopNode * self) {
         self->nparents -= 1;
     }
     
+    free(self->label);
+
     free(self);
 }
 
@@ -794,6 +820,10 @@ static void PopNode_duplicate_nodes(PopNode *old, PtrPtrMap *ppm) {
 #else
     (void) PtrPtrMap_insert(ppm, old, new);
 #endif    
+
+    new->label = strdup(old->label);
+    CHECKMEM(new->label);
+    
     if(old->nchildren > 0)
         PopNode_duplicate_nodes(old->child[0], ppm);
     if(old->nchildren > 1)

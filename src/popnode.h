@@ -16,9 +16,10 @@ void        PopNode_free(PopNode *self);
 int         PopNode_isClear(const PopNode *self);
 int         PopNode_mix(void * vchild, int mix_i, void * vintrogressor,
                         void * vnative, ParStore *ps);
-void       *PopNode_new(int twoN_i, int start_i, ParStore *ps);
+void       *PopNode_new(int twoN_i, int start_i, ParStore *ps,
+                        const char *label);
 void        PopNode_newSample(PopNode * self, unsigned ndx);
-void        PopNode_print(FILE * fp, void * vself, int indent);
+void        PopNode_print(void * vself, FILE * fp, int indent);
 void       *PopNode_root(void * vself);
 void        PopNode_update(PopNode *self, ParStore *ps);
 void        PopNode_unvisit(PopNode *self);

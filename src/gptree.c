@@ -43,6 +43,11 @@ struct GPTree {
 
 int         GPTree_equals(const GPTree *lhs, const GPTree *rhs);
 
+void GPTree_print(void *vself, FILE *fp) {
+    GPTree *self = (GPTree *) vself;
+    PopNode_print(self->rootPop, fp, 0);
+}
+
 /// Initialize vector x. If ndx==0, simply copy the parameter vector
 /// from the GPTree object. Otherwise, randomize the GPTree first.
 /// This ensures that differential evolution starts with a set of

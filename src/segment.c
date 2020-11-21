@@ -82,6 +82,7 @@ struct Segment {
     double twoN;                // ptr to current pop size
     double start, end;          // duration of this Segment
     double mix;                 // ptr to frac of pop derived from parent[1]
+    char *label;                // name of current segment
 
     // indices into ParStore array
     int twoN_i, start_i, end_i, mix_i;
@@ -192,7 +193,8 @@ static void unlink_child(Segment * child, Segment * parent) {
     }
 }
 
-void *Segment_new(int twoN_i, int start_i, ParStore * ps) {
+void *Segment_new(int twoN_i, int start_i, ParStore * ps,
+                  const char *label) {
 
     Segment *self = malloc(sizeof(*self));
     CHECKMEM(self);
@@ -208,6 +210,8 @@ void *Segment_new(int twoN_i, int start_i, ParStore * ps) {
     self->start = ParStore_getVal(ps, start_i);
     self->end = INFINITY;
     self->mix = 0.0;
+    self->label = strdup(label);
+    CHECKMEM(self->label);
 
     for(int i = 0; i <= MAXSAMP; ++i) {
         self->w[0][i] = IdSetSet_new(0);
@@ -244,6 +248,8 @@ void Segment_free(Segment * self) {
 
     if(self->d)
         free(self->d);
+
+    free(self->label);
 
     free(self);
 }
@@ -662,20 +668,38 @@ Segment *Segment_dup(Segment * old_root, PtrPtrMap * ppm) {
     return new_root;
 }
 
-void Segment_print(FILE * fp, void *vself, int indent) {
+void Segment_print(void *vself, FILE * fp, int indent) {
     Segment *self = vself;
     for(int i = 0; i < indent; ++i)
-        fputs("   ", fp);
-    fprintf(fp, "%p twoN=%lf t=(%lf,", self, self->twoN, self->start);
+        putc('|', fp);
+
+    fprintf(fp, "%s: twoN=%lf t=(%lf,", self->label, self->twoN, self->start);
     fprintf(fp, "%lf)", self->end);
-    if(self->nchildren)
-        fprintf(fp, " nchildren=%d", self->nchildren);
+
+    if(self->nparents){
+        for(int i = 0; i < indent; ++i)
+            putc('|', fp);
+        fprintf(fp, "  parents:");
+        for(int i=0; i < self->nparents; ++i)
+            fprintf(fp, " %s", self->parent[i]->label);
+        putc('\n', fp);
+    }
+
+    if(self->nchildren){
+        for(int i = 0; i < indent; ++i)
+            putc('|', fp);
+        fprintf(fp, "  children:");
+        for(int i=0; i < self->nchildren; ++i)
+            fprintf(fp, " %s", self->child[i]->label);
+        putc('\n', fp);
+    }
+
     if(self->nsamples)
-        fprintf(fp, " nsamples=%d", self->nsamples);
+        fprintf(fp, "  nsamples=%d", self->nsamples);
     putc('\n', fp);
 
     for(int i = 0; i < self->nchildren; ++i)
-        Segment_print(fp, self->child[i], indent + 1);
+        Segment_print(self->child[i], fp, indent + 1);
 }
 
 /// Visit a combination
@@ -878,6 +902,10 @@ static void Segment_duplicate_nodes(Segment * old, PtrPtrMap * ppm) {
 #else
     (void) PtrPtrMap_insert(ppm, old, new);
 #endif
+
+    new->label = strdup(old->label);
+    CHECKMEM(new->label);
+    
     if(old->nchildren > 0)
         Segment_duplicate_nodes(old->child[0], ppm);
     if(old->nchildren > 1)

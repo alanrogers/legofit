@@ -107,6 +107,11 @@ int MCTree_feasible(const void * vself, int verbose) {
     return Segment_feasible(self->rootPop, self->bnd, verbose);
 }
 
+void  MCTree_print(void * vself, FILE * fp) {
+    MCTree *self = (MCTree *) vself;
+    Segment_print(self->rootPop, fp, 0);
+}
+
 /// Print a description of parameters.
 void MCTree_printParStore(void * vself, FILE * fp) {
     MCTree *self = vself;

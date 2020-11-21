@@ -408,7 +408,7 @@ void parseSegment(char *next, StrPtrMap * popmap, SampNdx * sndx,
     }
 
     assert(strlen(popName) > 0);
-    void *thisNode = Node_new(twoN_i, start_i, parstore);
+    void *thisNode = Node_new(twoN_i, start_i, parstore, popName);
     if(0 != StrPtrMap_insert(popmap, popName, thisNode)) {
         fprintf(stderr, "%s:%d: duplicate \"segment %s\"\n",
                 __FILE__, __LINE__, popName);
@@ -922,7 +922,7 @@ int main(int argc, char **argv) {
     }
 
     if(verbose) {
-        Node_print(stdout, root, 0);
+        Node_print(root, stdout, 0);
         unsigned i;
         for(i = 0; i < LblNdx_size(&lndx); ++i)
             printf("%2u %s\n", i, LblNdx_lbl(&lndx, i));

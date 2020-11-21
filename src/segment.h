@@ -11,11 +11,12 @@ Segment *Segment_dup(Segment *old_root, PtrPtrMap *ppm);
 int      Segment_equals(Segment *a, Segment *b);
 int      Segment_feasible(const Segment * self, Bounds bnd, int verbose);
 void     Segment_free(Segment *self);
-void    *Segment_new(int twoN_i, int start_i, ParStore *ps);
+void    *Segment_new(int twoN_i, int start_i, ParStore *ps,
+                     const char *label);
 void     Segment_newSample(Segment * self, unsigned ndx);
 int      Segment_mix(void * vchild, int mix_i, void * vintrogressor,
                      void * vnative, ParStore *ps);
-void     Segment_print(FILE * fp, void * self, int indent);
+void     Segment_print(void * self, FILE * fp, int indent);
 void     Segment_prune(Segment *self);
 void    *Segment_root(void * vself);
 void     Segment_sanityCheck(Segment * self, const char *file, int lineno);
