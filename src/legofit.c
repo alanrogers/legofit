@@ -747,6 +747,14 @@ int main(int argc, char **argv) {
     fflush(stdout);
 
     DEStatus destat = diffev(dim, estimate, &cost, &yspread, dep, rng);
+    if(destat == NoFinitePoints) {
+        fprintf(stderr,"%s:%d:"
+                "No initial DiffEv points have finite values.\n"
+                "Try the stochastic model (no -d option) with a large"
+                " number of iterations.\n",
+                __FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
 
     // Get mean site pattern branch lengths
     if(Network_setParams(network, dim, estimate)) {

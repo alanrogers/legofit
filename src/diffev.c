@@ -716,12 +716,8 @@ DEStatus diffev(int dim, double estimate[dim], double *loCost, double *yspread,
                 imin = i;
             }
         }
-        if(!isfinite(cmin)) {
-            fprintf(stderr,"%s:%d:"
-                    " No initial DiffEv points have finite values.\n",
-                    __FILE__,__LINE__);
-            exit(EXIT_FAILURE);
-        }
+        if(!isfinite(cmin))
+            return NoFinitePoints;
         assert(imin < INT_MAX);
         assert(cmin < HUGE_VAL);
         assignd(dim, best, (*pold)[imin]);    // best ever
