@@ -718,12 +718,8 @@ DEStatus diffev(int dim, double estimate[dim], double *loCost, double *yspread,
         }
         if(!isfinite(cmin)) {
             fprintf(stderr,"%s:%d:"
-                    " No initial points have finite values.\n"
-                    " Try increasing simulation replicates in stage %d.\n"
-                    " Current value: simReps=%ld\n"
-                    " See -S argument of legofit.\n",
-                    __FILE__,__LINE__, stage,
-                    SimSched_getSimReps(simSched));
+                    " No initial DiffEv points have finite values.\n",
+                    __FILE__,__LINE__);
             exit(EXIT_FAILURE);
         }
         assert(imin < INT_MAX);

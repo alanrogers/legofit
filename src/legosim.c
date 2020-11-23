@@ -293,9 +293,13 @@ int main(int argc, char **argv) {
         Network_init(STOCHASTIC);
 
     printf("# input file                  : %s\n", fname);
-    if(deterministic) {
+    if(show_network) {
+        // no output
+    }else if(deterministic) {
         printf("# algorithm                   : %s\n", "deterministic");
         printf("# ignoring probs <=           : %Lg\n", improbable);
+        printf("# %s singleton site patterns.\n",
+               (doSing ? "including" : "excluding"));
     }else {
         printf("# algorithm                   : %s\n", "stochastic");
         printf("# nreps                       : %lu\n", nreps);
@@ -303,10 +307,10 @@ int main(int argc, char **argv) {
             printf("# mutations per haploid genome: %lf\n", U);
         else
             printf("# not simulating mutations\n");
+        printf("# %s singleton site patterns.\n",
+               (doSing ? "including" : "excluding"));
     }
 
-    printf("# %s singleton site patterns.\n",
-           (doSing ? "including" : "excluding"));
 
     Bounds bnd = {
             .lo_twoN = lo_twoN,
