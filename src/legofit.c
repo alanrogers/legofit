@@ -751,7 +751,8 @@ int main(int argc, char **argv) {
         fprintf(stderr,"%s:%d:"
                 "No initial DiffEv points have finite values.\n"
                 "Try the stochastic model (no -d option) with a large"
-                " number of iterations.\n",
+                " number of iterations.\n"
+                "With the deterministic model, reduce the argument of -d\n",
                 __FILE__,__LINE__);
         exit(EXIT_FAILURE);
     }
