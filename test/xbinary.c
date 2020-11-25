@@ -200,6 +200,17 @@ int main(int argc, char **argv) {
 
     unitTstResult("next_power_of_2", "OK");
 
+    for(unsigned u=1; u < 10; ++u) {
+        tipId_t maxtid = max_tipId(u);
+        if(verbose) {
+            printf("bits(%u) = ", u);
+            printBits(sizeof(tipId_t), &maxtid, stdout);
+            putchar('\n');
+        }
+        assert(maxtid == (2u << (u-1)) - 1);
+    }
+    unitTstResult("max_tipId", "OK");
+
     unitTstResult("binary", "OK");
     
     return 0;

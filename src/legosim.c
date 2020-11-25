@@ -336,7 +336,8 @@ int main(int argc, char **argv) {
     gsl_rng_set(rng, rngseed);
     rngseed += 1;  // wraps to 0 at ULONG_MAX
 
-    BranchTab *bt = get_brlen(network, nreps, doSing, rng);
+    BranchTab *bt = get_brlen(network, nreps, doSing,
+                              0, 0.0, rng);
     if(!U && !print_brlen)
         BranchTab_normalize(bt);
 

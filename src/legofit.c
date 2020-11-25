@@ -6,38 +6,54 @@ of separations and of episodes of gene flow, and levels of gene flow.
 
 # `legofit`: estimate population history from site pattern data
 
+    ########################################
+    # legofit: estimate population history #
+    #    version 2.0.2-5-g1571a5c-dirty    #
+    ########################################
+    
+    # Program was compiled: Nov 24 2020 18:22:41
+    # Program was run: Tue Nov 24 18:22:55 2020
+    
+    # cmd: ./legofit -h
     usage: legofit [options] input.lgo sitepat.txt
        where file input.lgo describes population history,
        and file sitepat.txt contains site pattern frequencies.
     Options may include:
+       -1 or --singletons
+          Use singleton site patterns
+       -c or --clic
+          write output files needed by clic
+       -d <x> or --deterministic <x>
+          Deterministic algorithm, ignoring states with Pr <= x
+       -e or --epsilon
+          add a small value to each site pattern prob to prevent numerical 
+          problems
+       -F <x> or --scaleFactor <x>
+          set DE scale factor
+       -h or --help
+          print this message
+       -p <x> or --ptsPerDim <x>
+          number of DE points per free var
+       -s <x> or --strategy <x>
+          set DE strategy
+       -S <g>@<r> or --stage <g>@<r>
+          add stage with <g> generations and <r> simulation reps. The "@<r>"
+          portion can be omitted if -d or --deterministic are used.
+       --stateIn <filename>
+          read initial state from new-style file. Option may be repeated.
+       --stateOut <filename>
+          write final state to file
        -T <x> or --tol <x>
           termination criterion
        -t <x> or --threads <x>
           number of threads (default is auto)
-       -e or --estimate
-          estimate site pattern probabilities by simulation
-       -F <x> or --scaleFactor <x>
-          set DE scale factor
-       -x <x> or --crossover <x>
-          set DE crossover probability
-       -s <x> or --strategy <x>
-          set DE strategy
-       -S <g>@<r> or --stage <g>@<r>
-          add stage with <g> generations and <r> simulation reps
-       -p <x> or --ptsPerDim <x>
-          number of DE points per free var
-       --stateIn <filename>
-          read initial state of optimizer from file. Option may be repeated.
-       --stateOut <filename>
-          write final state of optimizer to file
-       -1 or --singletons
-          Use singleton site patterns
        -v or --verbose
           verbose output
        --version
           Print version and exit
-       -h or --help
-          print this message
+       -x <x> or --crossover <x>
+          set DE crossover probability
+
 
 Two arguments are required:
 
@@ -251,7 +267,9 @@ void usage(void) {
     tellopt("-1 or --singletons", "Use singleton site patterns");
     tellopt("-c or --clic", "write output files needed by clic"); 
     tellopt("-d <x> or --deterministic <x>",
-            "Deterministic algorithm, ignoring states with Pr <= x"); 
+            "Deterministic algorithm, ignoring states with Pr <= x");
+    tellopt("-e or --epsilon", "add a small value to each site pattern prob"
+            " to prevent numerical problems");
     tellopt("-F <x> or --scaleFactor <x>", "set DE scale factor");
     tellopt("-h or --help", "print this message");
     tellopt("-p <x> or --ptsPerDim <x>", "number of DE points per free var");
@@ -283,6 +301,7 @@ int main(int argc, char **argv) {
         /* {char *name, int has_arg, int *flag, int val} */
         {"clic", no_argument, 0, 'c'},
         {"deterministic", required_argument, 0, 'd'},
+        {"epsilon", no_argument, 0, 'e'},
         {"threads", required_argument, 0, 't'},
         {"crossover", required_argument, 0, 'x'},
         {"scaleFactor", required_argument, 0, 'F'},
@@ -310,6 +329,7 @@ int main(int argc, char **argv) {
     int doSing = 0;             // nonzero means use singleton site patterns
     int write_clic_pts = 0;
     int status, optndx;
+    double min_brlen = 0.0;
     long simreps = 1000000;
     char lgofname[200] = { '\0' };
     char patfname[200] = { '\0' };
@@ -351,7 +371,8 @@ int main(int argc, char **argv) {
     // command line arguments
     for(;;) {
         char *end;
-        i = getopt_long(argc, argv, "cd:T:t:F:p:s:S:a:vx:1h", myopts, &optndx);
+        i = getopt_long(argc, argv, "cd:eT:t:F:p:s:S:a:vx:1h", myopts,
+                        &optndx);
         if(i == -1)
             break;
         switch (i) {
@@ -366,6 +387,9 @@ int main(int argc, char **argv) {
                         "Can't parse %s as a long double.\n\n", optarg);
                 usage();
             }
+            break;
+        case 'e':
+            min_brlen = DBL_EPSILON;
             break;
         case ':':
         case '?':
@@ -539,6 +563,10 @@ int main(int argc, char **argv) {
     void *network = Network_new(lgofname, bnd);
     LblNdx lblndx = Network_getLblNdx(network);
 
+    unsigned nsamples = LblNdx_size(&lblndx);
+
+    fprintf(stderr, "%s:%d: nsamples=%u:\n", __FILE__,__LINE__,nsamples);
+
     gsl_rng *rng = gsl_rng_alloc(gsl_rng_taus);
     gsl_rng_set(rng, rngseed);
     rngseed += 1;
@@ -699,6 +727,8 @@ int main(int argc, char **argv) {
         .network = network,
         .nThreads = nThreads,
         .doSing = doSing,
+        .nsamples = nsamples,
+        .min_brlen = min_brlen,
         .simSched = simSched
     };
 
@@ -750,9 +780,7 @@ int main(int argc, char **argv) {
     if(destat == NoFinitePoints) {
         fprintf(stderr,"%s:%d:"
                 "No initial DiffEv points have finite values.\n"
-                "Try the stochastic model (no -d option) with a large"
-                " number of iterations.\n"
-                "With the deterministic model, reduce the argument of -d\n",
+                "Try the --epsilon option.\n",
                 __FILE__,__LINE__);
         exit(EXIT_FAILURE);
     }
@@ -763,7 +791,9 @@ int main(int argc, char **argv) {
                 __FILE__, __LINE__);
         exit(EXIT_FAILURE);
     }
-    BranchTab *bt = get_brlen(network, simreps, doSing, rng);
+
+    BranchTab *bt = get_brlen(network, simreps, doSing, nsamples,
+                              min_brlen, rng);
     //    BranchTab_print(bt, stdout);
 
     const char *whyDEstopped;

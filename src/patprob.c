@@ -1,7 +1,7 @@
 /**
  * @file patprob.c
  * @author Alan R. Rogers
- * @brief Run simulations to estimate site pattern probabilities.
+ * @brief Calculate site pattern probabilities.
  *
  * @copyright Copyright (c) 2016, Alan R. Rogers
  * <rogers@anthro.utah.edu>. This file is released under the Internet
@@ -47,7 +47,6 @@ static int tfunc(void *varg, void *tdata) {
     gsl_rng   *rng = (gsl_rng *) tdata;
 
     assert(Network_feasible(arg->network, 0));
-    arg->event_counter = 0;
     Network_brlen(arg->network, arg->branchtab, rng, arg->nreps,
                   arg->doSing, &arg->event_counter);
 
@@ -80,12 +79,23 @@ static void ThreadArg_free(ThreadArg * self) {
 /// Estimate branch lengths. Function returns a pointer to a
 /// newly-allocated object of type BranchTab, which contains all the
 /// observed site patterns and their mean branch lengths.
-BranchTab *get_brlen(const void *network, long nreps,
-                     int doSing, gsl_rng *rng) {
+BranchTab *get_brlen(const void *network, long nreps, int doSing,
+                     unsigned nsamples, double min_brlen,
+                     gsl_rng *rng) {
 
     ThreadArg *tharg;
 
     tharg = ThreadArg_new(network, nreps, doSing);
+
+    // Add min_brlen to every entry of branchtab. Exclude maxtid,
+    // which is the site pattern in which the derived allele is
+    // present in all samples. We aren't counting that.
+    if(min_brlen > 0.0) {
+        tipId_t tipid, maxtid = max_tipId(nsamples);
+        for(tipid=1u; tipid < maxtid; ++tipid)
+            BranchTab_add(tharg->branchtab, tipid, min_brlen);
+    }
+
     tfunc(tharg, rng);
 
     BranchTab *rval = BranchTab_dup(tharg->branchtab);

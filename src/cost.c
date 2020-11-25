@@ -45,7 +45,8 @@ double costFun(int dim, double x[dim], void *jdata, void *tdata) {
     if(!Network_feasible(cp->network, 0))
         return HUGE_VAL;
 
-    BranchTab  *prob = get_brlen(cp->network, nreps, cp->doSing, rng);
+    BranchTab  *prob = get_brlen(cp->network, nreps, cp->doSing,
+                                 cp->nsamples, cp->min_brlen, rng);
     BranchTab_normalize(prob);
 #if COST==KL_COST
     double cost = BranchTab_KLdiverg(cp->obs, prob);

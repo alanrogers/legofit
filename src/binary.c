@@ -72,6 +72,15 @@ int nlz64(uint64_t x) {
     return n;
 }
 
+// Maximum tipId_t value as a function of the number, n, of samples. This
+// returns 2^n - 1 without ever forming 2^n.
+tipId_t max_tipId(unsigned n) {
+    tipId_t m = 0;
+    m = ~m;
+    m >>= (8*sizeof(tipId_t)) - n;
+    return m;
+}
+
 /// Number of leading zeroes in tipId_t variable.
 int nlz(tipId_t x) {
 #if TIPID_SIZE==32    
