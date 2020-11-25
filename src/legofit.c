@@ -565,8 +565,6 @@ int main(int argc, char **argv) {
 
     unsigned nsamples = LblNdx_size(&lblndx);
 
-    fprintf(stderr, "%s:%d: nsamples=%u:\n", __FILE__,__LINE__,nsamples);
-
     gsl_rng *rng = gsl_rng_alloc(gsl_rng_taus);
     gsl_rng_set(rng, rngseed);
     rngseed += 1;
