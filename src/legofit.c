@@ -639,6 +639,7 @@ int main(int argc, char **argv) {
     }else {
         printf("# algorithm          : %s\n", "stochastic");
     }
+    printf("# Branch length floor: %lg\n", min_brlen);
     printf("# DE strategy        : %d\n", strategy);
     printf("#    F               : %lg\n", F);
     printf("#    CR              : %lg\n", CR);
