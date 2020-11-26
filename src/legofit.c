@@ -628,9 +628,12 @@ int main(int argc, char **argv) {
     }
     assert(state);
 
-    if(nThreads == 0)
-        nThreads = ceil(0.75 * getNumCores());
-    if(nThreads > npts)
+    if(nThreads == 0) {
+        if(deterministic)
+            nThreads = ceil(0.5 * getNumCores());
+        else
+            nThreads = ceil(0.75 * getNumCores());
+    }if(nThreads > npts)
         nThreads = npts;
 
     if(deterministic) {
