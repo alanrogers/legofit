@@ -45,7 +45,6 @@ int main(void) {
     tipId_t ac_id = a_id | c_id;
     tipId_t bc_id = b_id | c_id;
     tipId_t abc_id = a_id | b_id | c_id;
-    tipId_t not_there = unity << 3;
 
     LblNdx lblndx;
     LblNdx_init(&lblndx);
@@ -72,7 +71,6 @@ int main(void) {
     assert(5.0 == BranchTab_get(bt, ac_id));
     assert(6.0 == BranchTab_get(bt, bc_id));
     assert(7.0 == BranchTab_get(bt, abc_id));
-    assert(isnan(BranchTab_get(bt, not_there)));
 
     assert(BranchTab_hasSingletons(bt));
 

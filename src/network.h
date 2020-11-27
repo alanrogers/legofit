@@ -18,6 +18,7 @@ EXTERN LblNdx      (*Network_getLblNdx)(void *self);
 EXTERN const char *(*Network_getNameFree)(void * self, int i);
 EXTERN void        (*Network_getParams)(void *self, int n, double x[n]);
 EXTERN void       *(*Network_new)(const char *fname, Bounds bnd);
+EXTERN unsigned    (*Network_nsamples)(const void *self);
 EXTERN int         (*Network_nFree)(const void *self);
 EXTERN void        (*Network_brlen)(void *self, BranchTab *branchtab,
                                     gsl_rng *rng, unsigned long nreps,

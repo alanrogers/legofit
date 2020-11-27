@@ -393,13 +393,15 @@ int main(int argc, char **argv) {
                         Mapping_lhs(mapping[imapping]));
     }
 
+    unsigned nsamples = LblNdx_size(&lndx2);
+
     // Each pass through the loop calculates residuals for a pair
     // of files: a data file and a legofit file.
     for(i=0; i<nDataFiles; ++i) {
         StrDbl strdbl;
 
         // Convert queues to BranchTab objects
-        BranchTab *resid = BranchTab_new();
+        BranchTab *resid = BranchTab_new(nsamples);
         while(data_queue[i] != NULL) {
             data_queue[i] = StrDblQueue_pop(data_queue[i], &strdbl);
             tid = LblNdx_getTipId(&lndx, strdbl.str);
@@ -410,7 +412,7 @@ int main(int argc, char **argv) {
             }
             BranchTab_add(resid, tid, strdbl.val);
         }
-        BranchTab *fitted = BranchTab_new();
+        BranchTab *fitted = BranchTab_new(nsamples);
         while(nLegoFiles && (lego_queue[i] != NULL)) {
             lego_queue[i] = StrDblQueue_pop(lego_queue[i], &strdbl);
             tid = LblNdx_getTipId(&lndx, strdbl.str);
@@ -516,6 +518,11 @@ int main(int argc, char **argv) {
         char lbl[100];
         patLbl(sizeof(lbl), lbl, pat[i], &lndx2);
         printf("%-10s", lbl);
+        double max = HUGE_VAL;
+        for(j=0; j < nDataFiles; ++j)
+            max = fmin(max, mat[i*nDataFiles + j]);
+        if(max == 0.0)
+            continue;
         for(j=0; j < nDataFiles; ++j) 
             printf(" %13.10lf", mat[i*nDataFiles + j]);
         putchar('\n');

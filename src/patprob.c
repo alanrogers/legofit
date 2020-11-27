@@ -64,7 +64,7 @@ static ThreadArg *ThreadArg_new(const void *network, unsigned nreps,
     a->doSing = doSing;
     a->network = Network_dup(network);
     assert(Network_feasible(a->network, 0));
-    a->branchtab = BranchTab_new();
+    a->branchtab = BranchTab_new(Network_nsamples(network));
 
     return a;
 }
@@ -80,19 +80,16 @@ static void ThreadArg_free(ThreadArg * self) {
 /// newly-allocated object of type BranchTab, which contains all the
 /// observed site patterns and their mean branch lengths.
 BranchTab *get_brlen(const void *network, long nreps, int doSing,
-                     unsigned nsamples, double min_brlen,
-                     gsl_rng *rng) {
+                     double min_brlen, gsl_rng *rng) {
 
     ThreadArg *tharg;
 
     tharg = ThreadArg_new(network, nreps, doSing);
 
-    // Add min_brlen to every entry of branchtab. Exclude maxtid,
-    // which is the site pattern in which the derived allele is
-    // present in all samples. We aren't counting that.
+    // Add min_brlen to every entry of branchtab.
     if(min_brlen > 0.0) {
-        tipId_t tipid, maxtid = max_tipId(nsamples);
-        for(tipid=1u; tipid < maxtid; ++tipid)
+        tipId_t maxtid = BranchTab_size(tharg->branchtab);
+        for(tipId_t tipid=1u; tipid <= maxtid; ++tipid)
             BranchTab_add(tharg->branchtab, tipid, min_brlen);
     }
 

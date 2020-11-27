@@ -17,240 +17,122 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-/// Dimension of hash table. Must be a power of 2
-#define BT_DIM 128u
-
-/// Make sure BT_DIM is a power of 2
-#if (BT_DIM==0u || (BT_DIM & (BT_DIM-1u)))
-# error BT_DIM must be a power of 2
-#endif
-
-/// A single element of hash table
-typedef struct BTLink {
-    struct BTLink  *next;
-    tipId_t         key;
-    long double          value;
-} BTLink;
-
-/// Hash table for branch lengths.
-struct BranchTab {
-#ifndef NDEBUG
-    int frozen;   // nonzero => no further changes allowed
-#endif
-    BTLink         *tab[BT_DIM];
-};
-
-BTLink     *BTLink_new(tipId_t key, long double value);
-BTLink     *BTLink_add(BTLink * self, tipId_t key, long double value);
-long double BTLink_get(BTLink * self, tipId_t key);
-int         BTLink_hasSingletons(BTLink * self);
-void        BTLink_free(BTLink * self);
-void        BTLink_printShallow(const BTLink * self, FILE *fp);
-void        BTLink_print(const BTLink * self, FILE *fp);
-BTLink     *BTLink_dup(const BTLink *self);
-int         BTLink_equals(const BTLink *lhs, const BTLink *rhs);
 static void make_map(size_t n, tipId_t map[n], tipId_t collapse);
 static void make_rm_map(size_t n, tipId_t map[n], tipId_t remove);
 static tipId_t remap_bits(size_t n, tipId_t map[n], tipId_t old);
 
-#if TIPID_SIZE==32
-static inline uint32_t tipIdHash(uint32_t key);
-#elif TIPID_SIZE==64
-static inline uint32_t tipIdHash(uint64_t key);
+struct BranchTab {
+#ifndef NDEBUG
+    int frozen;   // nonzero => no further changes allowed
 #endif
+    unsigned dim;
+    unsigned nsamples;
+    long double *tab; // zeroth entry is not used.
+};
 
-#if TIPID_SIZE==32
-static inline uint32_t tipIdHash( uint32_t key) {
-    return uint32Hash(key);
-}
-#elif TIPID_SIZE==64
-static inline uint64_t tipIdHash( uint64_t key) {
-    return uint64Hash(key);
-}
-#else
-#error "Can't compile tipIdHash function. See branchtab.c"
-#endif
-
-/// Constructor of class BTLink
-BTLink         *BTLink_new(tipId_t key, long double value) {
-    BTLink         *new = malloc(sizeof(*new));
-    CHECKMEM(new);
-
-    new->next = NULL;
-    new->key = key;
-    new->value = value;
-    return new;
-}
-
-/// Duplicate linked list.
-BTLink     *BTLink_dup(const BTLink *old) {
-    if(old == NULL)
-        return NULL;
-
-    BTLink *new = malloc(sizeof(*new));
-    CHECKMEM(new);
-    new->key = old->key;
-    new->value = old->value;
-    new->next = BTLink_dup(old->next);
-    return new;
-}
-
-/// Return 1 if the two linked lists are equal, or 0 otherwise.
-int  BTLink_equals(const BTLink *lhs, const BTLink *rhs) {
-    if(lhs==NULL && rhs==NULL)
-        return 1;
-    if(lhs==NULL || rhs==NULL)
-        return 0;
-    if(lhs->key!=rhs->key
-       || lhs->value!=rhs->value)
-        return 0;
-    return BTLink_equals(lhs->next, rhs->next);
-}
-
-/// Destructor for BTLink
-void BTLink_free(BTLink * self) {
-    if(self == NULL)
-        return;
-    BTLink_free(self->next);
-    free(self);
-}
-
-/// Add a value to a BTLink object. On return, self->value
-/// equals the old value plus the new one.
-BTLink *BTLink_add(BTLink * self, tipId_t key, long double value) {
-    if(self == NULL || key < self->key) {
-        BTLink *new = BTLink_new(key, value);
-        new->next = self;
-        return new;
-    } else if(key > self->key) {
-        self->next = BTLink_add(self->next, key, value);
-        return self;
+/// Create a new BranchTab with room for site patterns associated with
+/// data in which the number of samples is "nsamples".
+BranchTab    *BranchTab_new(unsigned nsamples) {
+    if(nsamples < 2) {
+        fprintf(stderr,"%s:%s:%d: nsamples=%u; must be > 1.\n",
+                __FILE__,__func__,__LINE__, nsamples);
+        exit(EXIT_FAILURE);
     }
-    assert(key == self->key);
-    self->value += value;
-    return self;
-}
-
-/// Return value corresponding to key, or nan if no value is found.
-long double BTLink_get(BTLink * self, tipId_t key) {
-    if(self == NULL || key < self->key)
-        return nanl("");
-    else if(key > self->key)
-        return BTLink_get(self->next, key);
-    assert(key == self->key);
-    return self->value;
-}
-
-/// Return 1 if linked list contains keys for singletone site patterns.
-int BTLink_hasSingletons(BTLink * self) {
-    if(self == NULL)
-        return 0;
-    if(isPow2(self->key))
-        return 1;
-    return BTLink_hasSingletons(self->next);
-}
-
-void BTLink_printShallow(const BTLink * self, FILE *fp) {
-    if(self == NULL)
-        return;
-    fprintf(fp, " [%lo, %Lf]", (unsigned long) self->key, self->value);
-}
-
-void BTLink_print(const BTLink * self, FILE *fp) {
-    if(self == NULL)
-        return;
-    BTLink_printShallow(self, fp);
-    BTLink_print(self->next, fp);
-}
-
-BranchTab    *BranchTab_new(void) {
     BranchTab    *new = malloc(sizeof(*new));
     CHECKMEM(new);
-    memset(new, 0, sizeof(*new));
+
+#ifndef NDEBUG
+    new->frozen = 0;
+#endif
+
+    new->nsamples = nsamples;
+
+    // Leave room for the site pattern in which all samples carry the
+    // derived allele. This isn't ordinarily used, but can be produced
+    // by BranchTab_collapse.
+    new->dim = (1u << nsamples);
+    
+    new->tab = malloc(new->dim * sizeof(new->tab[0]));
+    CHECKMEM(new->tab);
+
+    memset(new->tab, 0, new->dim * sizeof(new->tab[0]));
+    
     return new;
 }
 
 BranchTab    *BranchTab_dup(const BranchTab *old) {
-    BranchTab *new = BranchTab_new();
+    BranchTab *new = BranchTab_new(old->nsamples);
+    CHECKMEM(new);
 
 #ifndef NDEBUG
     new->frozen = old->frozen;
 #endif
 
-    int i;
-    for(i=0; i < BT_DIM; ++i)
-        new->tab[i] = BTLink_dup(old->tab[i]);
+    new->nsamples = old->nsamples;
+    new->dim = old->dim;
+    new->tab = malloc(new->dim * sizeof(new->tab[0]));
+    CHECKMEM(new->tab);
+
+    memcpy(new->tab, old->tab, new->dim * sizeof(new->tab[0]));
 
     return new;
 }
 
 /// Return 1 if two BranchTab objects are equal; 0 otherwise.
 int BranchTab_equals(const BranchTab *lhs, const BranchTab *rhs) {
-    int i;
-
-    for(i=0; i < BT_DIM; ++i) {
-        if(!BTLink_equals(lhs->tab[i], rhs->tab[i]))
-            return 0;
-    }
 #ifndef NDEBUG
     if(lhs->frozen != rhs->frozen)
         return 0;
 #endif
+
+    if(lhs->dim != rhs->dim)
+        return 0;
+
+    if(lhs->nsamples != rhs->nsamples)
+        return 0;
+
+    if(memcmp(lhs->tab, rhs->tab, lhs->dim * sizeof(lhs->tab[0])))
+        return 0;
     return 1;
 }
 
 /// Destructor for BranchTab.
 void BranchTab_free(BranchTab * self) {
-    int i;
-    for(i=0; i < BT_DIM; ++i)
-        BTLink_free(self->tab[i]);
+    free(self->tab);
     free(self);
 }
 
 /// Return 1 if BranchTab includes singleton site patterns
 int BranchTab_hasSingletons(BranchTab * self) {
-    int i;
-    for(i=0; i < BT_DIM; ++i) {
-        if(BTLink_hasSingletons(self->tab[i]))
+    for(int i=1; i < self->dim; i <<= 1) {
+        if(self->tab[i] != 0.0)
             return 1;
     }
     return 0;
 }
 
-/// Return value corresponding to key, or nan if no value is found.
+/// Return value corresponding to key.
 long double BranchTab_get(BranchTab * self, tipId_t key) {
-    unsigned h = tipIdHash(key) & (BT_DIM-1u);
-    assert(h < BT_DIM);
-    assert(self);
-    return BTLink_get(self->tab[h], key);
+    assert(key < self->dim);
+    assert(key > 0);
+    return self->tab[key];
 }
 
 /// Add a value to table. If key already exists, new value is added to
 /// old one.
 void BranchTab_add(BranchTab * self, tipId_t key, long double value) {
     assert(!self->frozen);
-    if(key==0) {
-        fprintf(stderr,"%s:%s:%d: key mustn't equal 0\n",
-                __FILE__,__func__,__LINE__);
-        exit(EXIT_FAILURE);
-    }
-    unsigned h = tipIdHash(key) & (BT_DIM-1u);
-    assert(h < BT_DIM);
-    assert(self);
-    self->tab[h] = BTLink_add(self->tab[h], key, value);
+    assert(key > 0);
+    if(key >= self->dim)
+        fprintf(stderr,"%s:%d: key=o%o >= dim=o%o\n",
+                __FILE__,__LINE__,key,self->dim);
+    assert(key < self->dim);
+    self->tab[key] += value;
 }
 
 /// Return the number of elements in the BranchTab.
 unsigned BranchTab_size(BranchTab * self) {
-    unsigned    i;
-    unsigned    size = 0;
-
-    for(i = 0; i < BT_DIM; ++i) {
-        BTLink *el;
-        for(el = self->tab[i]; el; el = el->next)
-            ++size;
-    }
-    return size;
+    return self->dim-1; // exclude self->tab[0]
 }
 
 /// Divide all values by denom. Return 0 on success, or 1 on failure.
@@ -261,130 +143,92 @@ int BranchTab_divideBy(BranchTab *self, long double denom) {
 #endif
 
     // divide by denom
-    unsigned i;
-    for(i = 0; i < BT_DIM; ++i) {
-        BTLink *el;
-        for(el = self->tab[i]; el; el = el->next)
-            el->value /= denom;
-    }
+    for(unsigned i = 1; i < self->dim; ++i)
+        self->tab[i] /= denom;
 
     return 0;
 }
 
 /// Print a BranchTab to standard output.
 void BranchTab_print(const BranchTab *self, FILE *fp) {
-    unsigned i;
-    for(i=0; i < BT_DIM; ++i) {
-        if(self->tab[i]) {
-            fprintf(fp, "%2u:", i);
-            BTLink_print(self->tab[i], fp);
-            putc('\n', fp);
-        }
-    }
+    for(unsigned i=1; i < self->dim; ++i)
+        fprintf(fp, "%u -> %Lg\n", i, self->tab[i]);
 }
 
 /// Add each entry in table rhs to table lhs
 void BranchTab_plusEquals(BranchTab *lhs, BranchTab *rhs) {
-    assert(!lhs->frozen && !rhs->frozen);
-    int i;
-    for(i=0; i<BT_DIM; ++i) {
-        BTLink *link;
-        for(link=rhs->tab[i]; link!=NULL; link=link->next)
-            BranchTab_add(lhs, link->key, link->value);
-    }
+    assert(!lhs->frozen);
+    assert(lhs->dim == rhs->dim);
+    for(unsigned i=1; i < lhs->dim; ++i)
+        lhs->tab[i] += rhs->tab[i];
 }
 
-/// Subtract each entry in table rhs to table lhs
+/// Subtract each entry in table rhs from table lhs
 void BranchTab_minusEquals(BranchTab *lhs, BranchTab *rhs) {
-    assert(!lhs->frozen && !rhs->frozen);
-    int i;
-    for(i=0; i<BT_DIM; ++i) {
-        BTLink *link;
-        for(link=rhs->tab[i]; link!=NULL; link=link->next) {
-            long double x = BranchTab_get(lhs, link->key);
-            if(isnan(x)) {
-                fprintf(stderr,"%s:%s:%d: incompatible arguments\n",
-                        __FILE__,__func__,__LINE__);
-                exit(EXIT_FAILURE);
-            }
-            BranchTab_add(lhs, link->key, -link->value);
-        }
-    }
+    assert(!lhs->frozen);
+    assert(lhs->dim == rhs->dim);
+    for(unsigned i=1; i < lhs->dim; ++i)
+        lhs->tab[i] -= rhs->tab[i];
 }
 
-/// Fill arrays key, value, and square with values in BranchTab.
-/// On return, key[i] is the id of the i'th site pattern, value[i] is
-/// the total branch length associated with that site pattern, and
-/// sumsqr[i] is the corresponding sum of squared branch lengths.
+/// Fill arrays key and value with values in BranchTab.  On return,
+/// key[i] is the id of the i'th site pattern, and value[i] is the
+/// total branch length associated with that site pattern.
 void BranchTab_toArrays(BranchTab *self, unsigned n, tipId_t key[n],
                         long double value[n]) {
-    int i, j=0;
-    for(i=0; i<BT_DIM; ++i) {
-        BTLink *link;
-        for(link=self->tab[i]; link!=NULL; link=link->next) {
-            if(j >= n)
-                eprintf("%s:%s:%d: buffer overflow\n",
-                        __FILE__,__func__,__LINE__);
-            key[j] = link->key;
-            value[j] = link->value;
-            ++j;
-        }
+    assert(n >= self->dim);
+    unsigned i;
+    for(i=1; i < self->dim; ++i) {
+        key[i-1] = i;
+        value[i-1] = self->tab[i];
     }
 }
 
 /// Map two or more populations into a single population.
 BranchTab *BranchTab_collapse(BranchTab *old, tipId_t collapse) {
-    int n = 8 * sizeof(tipId_t); // number of bits
+    int newsamp = old->nsamples - num1bits(collapse) + 1;
 
     // Make map, an array whose i'th entry is an unsigned integer
     // with one bit on and the rest off. The on bit indicates the
     // position in the new id of the i'th bit in the old id.
-    tipId_t map[n];
-    make_map(n, map, collapse);
+    tipId_t map[old->nsamples];
+    make_map(old->nsamples, map, collapse);
 
     // Create a new BranchTab
-    BranchTab *new = BranchTab_new();
-    for(int i=0; i < BT_DIM; ++i) {
-        BTLink *el;
-        for(el = old->tab[i]; el; el = el->next)
-            BranchTab_add(new, remap_bits(n, map, el->key), el->value);
+    BranchTab *new = BranchTab_new(newsamp);
+
+    for(unsigned i=1; i < old->dim; ++i) {
+        BranchTab_add(new, remap_bits(old->nsamples, map, i), old->tab[i]);
     }
     return new;
 }
 
 /// Remove populations
 BranchTab *BranchTab_rmPops(BranchTab *old, tipId_t remove) {
-    int n = 8 * sizeof(tipId_t); // number of bits
+    int newsamp = old->nsamples - num1bits(remove);
 
     // Make map, an array whose i'th entry is an unsigned integer
     // with one bit on and the rest off. The on bit indicates the
     // position in the new id of the i'th bit in the old id.
-    tipId_t map[n];
-    make_rm_map(n, map, remove);
+    tipId_t map[old->nsamples];
+    make_rm_map(old->nsamples, map, remove);
 
     // Create a new BranchTab
-    BranchTab *new = BranchTab_new();
-    for(int i=0; i < BT_DIM; ++i) {
-        BTLink *el;
-        for(el = old->tab[i]; el; el = el->next) {
-            tipId_t id = remap_bits(n, map, el->key);
-            if(id)
-                BranchTab_add(new, id, el->value);
-        }
+    BranchTab *new = BranchTab_new(newsamp);
+    for(unsigned i=1; i < old->dim; ++i) {
+        tipId_t id = remap_bits(old->nsamples, map, i);
+        if(id)
+            BranchTab_add(new, id, old->tab[i]);
     }
     return new;
 }
 
 /// Return sum of values in BranchTab.
 long double BranchTab_sum(const BranchTab *self) {
-    unsigned i;
-    long double s=0.0;
+    long double s=0;
 
-    for(i = 0; i < BT_DIM; ++i) {
-        BTLink *el;
-        for(el = self->tab[i]; el; el = el->next)
-            s += el->value;
-    }
+    for(unsigned i = 1; i < self->dim; ++i)
+        s += self->tab[i];
 
     return s;
 }
@@ -392,32 +236,27 @@ long double BranchTab_sum(const BranchTab *self) {
 /// Return negative of sum of p*ln(p)
 long double BranchTab_entropy(const BranchTab *self) {
     assert(Dbl_near(1.0, BranchTab_sum(self)));
-    unsigned i;
     long double entropy=0.0;
 
-    for(i = 0; i < BT_DIM; ++i) {
-        BTLink *el;
-        for(el = self->tab[i]; el; el = el->next)
-            entropy -= el->value * logl(el->value);
+    for(unsigned i = 1; i < self->dim; ++i) {
+        long double x = self->tab[i];
+        entropy -= x * logl(x);
     }
 
     return entropy;
 }
 
-/// Divide all values by their sum. Return 0
-/// on success, or 1 on failure.
+/// Divide all values by their sum. Return 0 on success, or 1 on
+/// failure.
 int BranchTab_normalize(BranchTab *self) {
-    unsigned i;
     long double s = BranchTab_sum(self);
 
     if(s==0)
         return 1;
 
     // divide by sum
-    for(i = 0; i < BT_DIM; ++i) {
-        BTLink *el;
-        for(el = self->tab[i]; el; el = el->next)
-            el->value /= s;
+    for(unsigned i = 1; i < self->dim; ++i) {
+        self->tab[i] /= s;
     }
 
     return 0;
@@ -430,101 +269,48 @@ int BranchTab_normalize(BranchTab *self) {
 long double BranchTab_KLdiverg(const BranchTab *obs, const BranchTab *expt) {
     assert(LDbl_near(1.0L, BranchTab_sum(obs)));
     assert(LDbl_near(1.0L, BranchTab_sum(expt)));
+    assert(obs->dim == expt->dim);
 
-    int i;
     long double kl=0.0;
     long double p;  // observed frequency
     long double q;  // frequency under model
-    for(i=0; i < BT_DIM; ++i) {
-        BTLink *o, *e;
-        o = obs->tab[i];
-        e = expt->tab[i];
-        while(o && e) {
+    for(unsigned i=1; i < obs->dim; ++i) {
+        p = obs->tab[i];
+        q = expt->tab[i];
 
-            // Set p and q; advance o and/or e.
-            if(o->key < e->key) {
-                p = o->value;
-                q = 0.0;
-                o = o->next;
-            }else if(o->key > e->key) {
-                p = 0.0;
-                q = e->value;
-                e = e->next;
-            }else {
-                assert(o->key == e->key);
-                p = o->value;
-                q = e->value;
-                e = e->next;
-                o = o->next;
-            }
-
-            // Use p and q to add a term to kl.
-            if(p == 0.0) {
-                // Do nothing: p*log(p/q) -> 0 as p->0, regardless of
-                // q. This is because p*log(p/q) is the log of
-                // (p/q)**p, which equals 1 if p=0, no matter the value
-                // of q.
-            }else{
-                if(q==0.0)
-                    return HUGE_VAL;
-                kl += p*logl(p/q);
-            }
-        }
-        while(o) { // e->value is q=0: fail unless p=0
-            p = o->value;
-            if(p != 0.0)
+        // Use p and q to add a term to kl.
+        if(p == 0.0) {
+            // Do nothing: p*log(p/q) -> 0 as p->0, regardless of
+            // q. This is because p*log(p/q) is the log of
+            // (p/q)**p, which equals 1 if p=0, no matter the value
+            // of q.
+        }else{
+            if(q==0.0)
                 return HUGE_VAL;
-            o = o->next;
+            kl += p*logl(p/q);
         }
-        // Any remaining cases have p=0, so contribution to kl is 0.
     }
     return kl;
 }
 
 /// Negative log likelihood. Multinomial model.
 /// lnL is sum across site patterns of x*log(p), where x is an
-/// observed site pattern count and p its probability. Normalize
-/// expt before calling this function.
+/// observed site pattern count and p its probability.
 long double BranchTab_negLnL(const BranchTab *obs, const BranchTab *expt) {
     assert(LDbl_near(1.0L, BranchTab_sum(expt)));
+    assert(obs->dim == expt->dim);
 
-    int i;
     long double lnL=0.0;
     long double x;  // observed count
     long double p;  // probability under model
-    for(i=0; i < BT_DIM; ++i) {
-        BTLink *o, *e;  // observed and expected
-        o = obs->tab[i];
-        e = expt->tab[i];
-        while(o && e) {
-            if(o->key < e->key) {
-                x = o->value;
-                p = 0.0;
-                o = o->next;
-            }else if(o->key > e->key) {
-                x = 0.0;
-                p = e->value;
-                e = e->next;
-            }else {
-                assert(o->key == e->key);
-                x = o->value;
-                p = e->value;
-                e = e->next;
-                o = o->next;
-            }
-            if(p == 0.0) {
-                if(x != 0.0)
-                    return HUGE_VAL;  // blows up
-            }else
-                lnL += x*logl(p);
-        }
-        while(o) { // e->value is p=0
-            x = o->value;
+    for(unsigned i=0; i < obs->dim; ++i) {
+        x = obs->tab[i];
+        p = expt->tab[i];
+        if(p == 0.0) {
             if(x != 0.0)
-                return HUGE_VAL; // blows up
-            o = o->next;
-        }
-        // Any remaining cases have x=0, so contribution to lnL is 0.
+                return HUGE_VAL;  // blows up
+        }else
+            lnL += x*logl(p);
     }
     return -lnL;
 }
@@ -539,6 +325,11 @@ long double BranchTab_negLnL(const BranchTab *obs, const BranchTab *expt) {
 // minumum bit and are off in collapse are shifted right by "shift"
 // places, where shift is one less than the number of on bits in
 // collapse that are to the right of the bit in question.
+//
+// On entry, n equals the number of samples, map is an array of n
+// tipId_t values, and collapse is an integer whose "on" bits
+// represent the set of samples that will be collapsed into a single
+// sample. 
 static void make_map(size_t n, tipId_t map[n], tipId_t collapse) {
     int i, shift=0;
     tipId_t min = n, bit = 1u;
@@ -570,7 +361,6 @@ static void make_rm_map(size_t n, tipId_t map[n], tipId_t remove) {
 // the bits should be rearranged. Function returns the remapped
 // value of "old".
 static tipId_t remap_bits(size_t n, tipId_t map[n], tipId_t old) {
-    assert(n == 8*sizeof(tipId_t));
     tipId_t new = 0u, bit=1u;
     for(int i=0; i<n; ++i, bit <<= 1)
         if( old & bit )
@@ -599,35 +389,31 @@ int main(int argc, char **argv) {
         verbose = 1;
     }
 
-    BranchTab *bt = BranchTab_new();
+    unsigned nsamples = 5;
+    unsigned maxtid = low_bits_on(nsamples) - 1;
+    BranchTab *bt = BranchTab_new(nsamples);
     CHECKMEM(bt);
-    assert(0 == BranchTab_size(bt));
+    assert(low_bits_on(nsamples) == BranchTab_size(bt));
 
-    tipId_t key[25];
-    long double  val[25];
+    tipId_t key[maxtid];
+    long double  val[maxtid];
 
     int i;
-    for(i=0; i < 25; ++i) {
-        key[i] = i+1;
-        val[i] = (long double) key[i];
-        BranchTab_add(bt, key[i], val[i]);
-        assert(i+1 == BranchTab_size(bt));
+    for(i=1; i <= maxtid ; ++i) {
+        key[i-1] = i;
+        val[i-1] = (long double) i;
+        BranchTab_add(bt, key[i-1], val[i-1]);
     }
-    for(i=0; i < 25; ++i) {
-        key[i] = i+1;
-        val[i] = (long double) key[i];
-        BranchTab_add(bt, key[i], val[i]);
-    }
-
     assert(BranchTab_hasSingletons(bt));
 
-    for(i=0; i < 25; ++i) {
-        assert(2*val[i] == BranchTab_get(bt, key[i]));
+    for(i=0; i < maxtid; ++i) {
+        assert(val[i] == BranchTab_get(bt, key[i]));
     }
 
     long double x = BranchTab_sum(bt);
     if(verbose)
         printf("BranchTab_sum: %Lg\n", x);
+    assert(x == maxtid*((maxtid+1)/2.0L));
     assert(0 == BranchTab_normalize(bt));
     assert(LDbl_near(1.0, BranchTab_sum(bt)));
     x = BranchTab_entropy(bt);
@@ -645,7 +431,7 @@ int main(int argc, char **argv) {
 
     // Test  _plusEquals, _minusEquals, and _dup
     BranchTab_minusEquals(bt, bt2);
-    for(i=0; i<25; ++i)
+    for(i=0; i<maxtid; ++i)
         assert(0.0 == BranchTab_get(bt, key[i]));
 
     BranchTab_free(bt2);

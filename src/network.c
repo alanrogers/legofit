@@ -45,6 +45,7 @@ void Network_init(enum NetworkType type) {
         Network_getNameFree = GPTree_getNameFree;
         Network_getParams = GPTree_getParams;
         Network_new = GPTree_new;
+        Network_nsamples = GPTree_nsamples;
         Network_nFree = GPTree_nFree;
         Network_brlen = GPTree_brlen;
         Network_print = GPTree_print;
@@ -68,6 +69,7 @@ void Network_init(enum NetworkType type) {
         Network_getNameFree = MCTree_getNameFree;
         Network_getParams = MCTree_getParams;
         Network_new = MCTree_new;
+        Network_nsamples = MCTree_nsamples;
         Network_nFree = MCTree_nFree;
         Network_brlen = MCTree_brlen;
         Network_print = MCTree_print;

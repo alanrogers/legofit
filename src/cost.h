@@ -13,7 +13,6 @@ typedef struct CostPar {
     void      *network;  // model of population history
     int        nThreads; // number of threads to use
     int        doSing;   // nonzero => use singleton site patterns
-    unsigned   nsamples; // number of samples
     double     min_brlen; // minimum branch length per site pattern
     SimSched   *simSched;
 } CostPar;

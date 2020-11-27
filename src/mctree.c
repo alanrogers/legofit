@@ -133,6 +133,12 @@ LblNdx MCTree_getLblNdx(void * vself) {
     return ((MCTree *) vself)->lblndx;
 }
 
+/// Return number of samples in network.
+unsigned MCTree_nsamples(const void *vself) {
+    const MCTree *self = vself;
+    return LblNdx_size(&self->lblndx);
+}
+
 /// Duplicate a MCTree object
 void *MCTree_dup(const void * vold) {
     const MCTree *old = vold;

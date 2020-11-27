@@ -4,7 +4,7 @@
 #include "typedefs.h"
 #include <stdio.h>
 
-BranchTab    *BranchTab_new(void);
+BranchTab    *BranchTab_new(unsigned nsamples);
 void          BranchTab_free(BranchTab * self);
 long double   BranchTab_get(BranchTab * self, tipId_t tipid);
 int           BranchTab_hasSingletons(BranchTab * self);

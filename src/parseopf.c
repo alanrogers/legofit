@@ -20,7 +20,7 @@
 BranchTab *parseOpf(const char *fname, const LblNdx *lblndx) {
     FILE *fp = efopen(fname, "r");
 
-    BranchTab *self = BranchTab_new();
+    BranchTab *self = BranchTab_new(LblNdx_size(lblndx));
     CHECKMEM(self);
 
     int         ntokens;

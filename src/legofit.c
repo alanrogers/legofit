@@ -236,6 +236,7 @@ Systems Consortium License, which can be found in file "LICENSE".
 
 extern pthread_mutex_t seedLock;
 extern unsigned long rngseed;
+extern tipId_t union_all_samples;
 extern volatile sig_atomic_t sigstat;
 
 void usage(void);
@@ -563,8 +564,6 @@ int main(int argc, char **argv) {
     void *network = Network_new(lgofname, bnd);
     LblNdx lblndx = Network_getLblNdx(network);
 
-    unsigned nsamples = LblNdx_size(&lblndx);
-
     gsl_rng *rng = gsl_rng_alloc(gsl_rng_taus);
     gsl_rng_set(rng, rngseed);
     rngseed += 1;
@@ -729,7 +728,6 @@ int main(int argc, char **argv) {
         .network = network,
         .nThreads = nThreads,
         .doSing = doSing,
-        .nsamples = nsamples,
         .min_brlen = min_brlen,
         .simSched = simSched
     };
@@ -794,8 +792,9 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
-    BranchTab *bt = get_brlen(network, simreps, doSing, nsamples,
-                              min_brlen, rng);
+    BranchTab *bt = get_brlen(network, simreps, doSing, min_brlen, rng);
+    if(!doSing)
+        assert(!BranchTab_hasSingletons(bt));
     //    BranchTab_print(bt, stdout);
 
     const char *whyDEstopped;
@@ -834,9 +833,12 @@ int main(int argc, char **argv) {
     orderpat(npat, ord, pat);
 
     printf("#%14s %10s\n", "SitePat", "BranchLen");
-    char buff[100];
+    char buff[100], buff2[100];
     for(j = 0; j < npat; ++j) {
-        char buff2[100];
+        if(!doSing && isPow2(pat[ord[j]]))
+           continue;
+        if(pat[ord[j]] == union_all_samples)
+            continue;
         snprintf(buff2, sizeof(buff2), "%s",
                  patLbl(sizeof(buff), buff, pat[ord[j]], &lblndx));
         printf("%15s %10.7Lf\n", buff2, brlen[ord[j]]);

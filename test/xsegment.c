@@ -136,6 +136,8 @@ int main(int argc, char *argv[]) {
 
     union_all_samples = (1LU << 3) - 1;
 
+    unsigned nsamples = 3;
+    
     Segment_newSample(a, 0);
     Segment_newSample(b, 1);
     Segment_newSample(c, 2);
@@ -204,7 +206,7 @@ int main(int argc, char *argv[]) {
     if(verbose)
         Segment_print(abc, stdout, 0);
 
-    BranchTab *bt = BranchTab_new();
+    BranchTab *bt = BranchTab_new(nsamples);
 
     long unsigned event_counter = 0;
 

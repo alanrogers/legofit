@@ -25,7 +25,7 @@ int         nlz64(uint64_t x);
 int         no_shared_bits(int n, tipId_t *tid);
 static inline int isPow2(tipId_t x);
 tipId_t     next_power_of_2(tipId_t x);
-tipId_t     max_tipId(unsigned n);
+tipId_t     low_bits_on(unsigned n);
 
 static inline int isPow2(tipId_t x) {
     return (x > 0 && !(x & (x - 1)));

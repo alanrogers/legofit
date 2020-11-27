@@ -347,6 +347,11 @@ LblNdx GPTree_getLblNdx(void * vself) {
     return ((GPTree *) vself)->lblndx;
 }
 
+unsigned GPTree_nsamples(const void *vself) {
+    const GPTree *self = vself;
+    return LblNdx_size(&self->lblndx);
+}
+
 /// Are parameters within the feasible region?
 int GPTree_feasible(const void * vself, int verbose) {
     const GPTree *self = vself;

@@ -12,9 +12,11 @@ LblNdx      GPTree_getLblNdx(void *vself);
 const char *GPTree_getNameFree(void * vself, int i);
 void        GPTree_getParams(void *vself, int n, double x[n]);
 void       *GPTree_new(const char *fname, Bounds bnd);
+unsigned    GPTree_nsamples(const void *vself);
 int         GPTree_nFree(const void *vself);
 void        GPTree_brlen(void * vself, BranchTab * branchtab, gsl_rng * rng,
-                         unsigned long nreps, int doSing, long unsigned *event_counter);
+                         unsigned long nreps, int doSing,
+                         long unsigned *event_counter);
 void        GPTree_patprob(void *vself, BranchTab *branchtab,
                             gsl_rng *rng, unsigned long nreps,
                             int doSing);

@@ -139,6 +139,7 @@ Systems Consortium License, which can be found in file "LICENSE".
 
 extern pthread_mutex_t seedLock;
 extern unsigned long rngseed;
+extern tipId_t union_all_samples;
 
 void        usage(void);
 
@@ -336,8 +337,11 @@ int main(int argc, char **argv) {
     gsl_rng_set(rng, rngseed);
     rngseed += 1;  // wraps to 0 at ULONG_MAX
 
-    BranchTab *bt = get_brlen(network, nreps, doSing,
-                              0, 0.0, rng);
+    BranchTab *bt = get_brlen(network, nreps, doSing, 0.0, rng);
+
+    if(!doSing)
+        assert(!BranchTab_hasSingletons(bt));
+
     if(!U && !print_brlen)
         BranchTab_normalize(bt);
 
@@ -365,9 +369,12 @@ int main(int argc, char **argv) {
     else
         printf("#%14s %15s\n", "SitePat", "Prob");
         
-    char        buff[1000];
+    char        buff[1000], buff2[1000];
     for(j = 0; j < npat; ++j) {
-        char        buff2[1000];
+        if(!doSing && isPow2(pat[ord[j]]))
+           continue;
+        if(pat[ord[j]] == union_all_samples)
+            continue;
         snprintf(buff2, sizeof(buff2), "%s",
                  patLbl(sizeof(buff), buff, pat[ord[j]], &lblndx));
         if(U) {

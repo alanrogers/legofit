@@ -747,7 +747,7 @@ PtrPair mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, Bounds * bnd) {
 
     // site pattern representing the union of all samples
     unsigned nsamples = SampNdx_size(sndx);
-    union_all_samples = (1LU << nsamples) - 1;
+    union_all_samples = (1u << nsamples) - 1;
     
     StrPtrMap_free(popmap);
     StrPtrMap_free(parmap);
