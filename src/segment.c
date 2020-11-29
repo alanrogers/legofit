@@ -11,8 +11,6 @@
 
 //#define VERBOSE
 
-extern long double improbable;
-
 #include "binary.h"
 #include "branchtab.h"
 #include "comb.h"
@@ -30,7 +28,9 @@ extern long double improbable;
 #include <string.h>
 
 // Site pattern representing the union of all samples.
-tipId_t union_all_samples = 0;
+extern tipId_t union_all_samples;
+
+extern long double improbable;
 
 typedef struct MigDat MigDat;
 typedef struct CombDat CombDat;

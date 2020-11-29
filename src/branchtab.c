@@ -123,9 +123,11 @@ long double BranchTab_get(BranchTab * self, tipId_t key) {
 void BranchTab_add(BranchTab * self, tipId_t key, long double value) {
     assert(!self->frozen);
     assert(key > 0);
-    if(key >= self->dim)
-        fprintf(stderr,"%s:%d: key=o%o >= dim=o%o\n",
-                __FILE__,__LINE__,key,self->dim);
+    if(key >= self->dim) {
+        fprintf(stderr,"%s:%d: key=o%o >= dim=o%o; nsamples=%u\n",
+                __FILE__,__LINE__,key,self->dim,self->nsamples);
+        exit(EXIT_FAILURE);
+    }
     assert(key < self->dim);
     self->tab[key] += value;
 }
