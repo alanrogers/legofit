@@ -17,10 +17,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-static void make_map(size_t n, tipId_t map[n], tipId_t collapse);
-static void make_rm_map(size_t n, tipId_t map[n], tipId_t remove);
-static tipId_t remap_bits(size_t n, tipId_t map[n], tipId_t old);
-
 struct BranchTab {
 #ifndef NDEBUG
     int frozen;   // nonzero => no further changes allowed
@@ -123,11 +119,13 @@ long double BranchTab_get(BranchTab * self, tipId_t key) {
 void BranchTab_add(BranchTab * self, tipId_t key, long double value) {
     assert(!self->frozen);
     assert(key > 0);
+#ifndef NDEBUG    
     if(key >= self->dim) {
         fprintf(stderr,"%s:%d: key=o%o >= dim=o%o; nsamples=%u\n",
                 __FILE__,__LINE__,key,self->dim,self->nsamples);
         exit(EXIT_FAILURE);
     }
+#endif    
     assert(key < self->dim);
     self->tab[key] += value;
 }
@@ -135,6 +133,18 @@ void BranchTab_add(BranchTab * self, tipId_t key, long double value) {
 /// Return the number of elements in the BranchTab.
 unsigned BranchTab_size(BranchTab * self) {
     return self->dim-1; // exclude self->tab[0]
+}
+
+void BranchTab_sanityCheck(BranchTab *self, const char *file, int line) {
+#ifndef NDEBUG
+    REQUIRE(self->nsamples > 1, file, line);
+    REQUIRE(self->dim == (1u << self->nsamples), file, line);
+    REQUIRE(self->tab != NULL, file, line);
+    REQUIRE(self->tab[0] == 0, file, line);
+    for(unsigned i=0; i < self->dim; ++i)
+        REQUIRE( nlz(self->tab[i]) >= 8*sizeof(tipId_t) - self->nsamples,
+                 file, line);
+#endif    
 }
 
 /// Divide all values by denom. Return 0 on success, or 1 on failure.
@@ -178,7 +188,7 @@ void BranchTab_minusEquals(BranchTab *lhs, BranchTab *rhs) {
 /// total branch length associated with that site pattern.
 void BranchTab_toArrays(BranchTab *self, unsigned n, tipId_t key[n],
                         long double value[n]) {
-    assert(n >= self->dim);
+    assert(n >= self->dim-1);
     unsigned i;
     for(i=1; i < self->dim; ++i) {
         key[i-1] = i;
@@ -187,33 +197,19 @@ void BranchTab_toArrays(BranchTab *self, unsigned n, tipId_t key[n],
 }
 
 /// Map two or more populations into a single population.
-BranchTab *BranchTab_collapse(BranchTab *old, tipId_t collapse) {
-    int newsamp = old->nsamples - num1bits(collapse) + 1;
-
-    // Make map, an array whose i'th entry is an unsigned integer
-    // with one bit on and the rest off. The on bit indicates the
-    // position in the new id of the i'th bit in the old id.
-    tipId_t map[old->nsamples];
-    make_map(old->nsamples, map, collapse);
-
+BranchTab *BranchTab_collapse(BranchTab *old, unsigned newsamp, tipId_t *map) {
     // Create a new BranchTab
     BranchTab *new = BranchTab_new(newsamp);
 
     for(unsigned i=1; i < old->dim; ++i) {
-        BranchTab_add(new, remap_bits(old->nsamples, map, i), old->tab[i]);
+        tipId_t tid = remap_bits(old->nsamples, map, i);
+        BranchTab_add(new, tid, old->tab[i]);
     }
     return new;
 }
 
 /// Remove populations
-BranchTab *BranchTab_rmPops(BranchTab *old, tipId_t remove) {
-    int newsamp = old->nsamples - num1bits(remove);
-
-    // Make map, an array whose i'th entry is an unsigned integer
-    // with one bit on and the rest off. The on bit indicates the
-    // position in the new id of the i'th bit in the old id.
-    tipId_t map[old->nsamples];
-    make_rm_map(old->nsamples, map, remove);
+BranchTab *BranchTab_rmPops(BranchTab *old, unsigned newsamp, tipId_t *map) {
 
     // Create a new BranchTab
     BranchTab *new = BranchTab_new(newsamp);
@@ -317,27 +313,33 @@ long double BranchTab_negLnL(const BranchTab *obs, const BranchTab *expt) {
     return -lnL;
 }
 
-// Make map, an array whose i'th entry is an unsigned integer with one
-// bit on and the rest off. The on bit indicates the position in the
-// new id of the i'th bit in the old id.
-//
-// All bits equal to 1 in collapse are mapped to the minimum bit in
-// collapse. All bits with positions below that of this mininum bit
-// are mapped to their original position. Bits that are above the
-// minumum bit and are off in collapse are shifted right by "shift"
-// places, where shift is one less than the number of on bits in
-// collapse that are to the right of the bit in question.
-//
-// On entry, n equals the number of samples, map is an array of n
-// tipId_t values, and collapse is an integer whose "on" bits
-// represent the set of samples that will be collapsed into a single
-// sample. 
-static void make_map(size_t n, tipId_t map[n], tipId_t collapse) {
+/// Make map, an array whose i'th entry is an unsigned integer with one
+/// bit on and the rest off. The on bit indicates the position in the
+/// new id of the i'th bit in the old id.
+///
+/// All bits equal to 1 in collapse are mapped to the minimum bit in
+/// collapse. All bits with positions below that of this mininum bit
+/// are mapped to their original position. Bits that are above the
+/// minumum bit and are off in collapse are shifted right by "shift"
+/// places, where shift is one less than the number of on bits in
+/// collapse that are to the right of the bit in question.
+///
+/// On entry, n equals the number of samples, map is an array of n
+/// tipId_t values, and collapse is an integer whose "on" bits
+/// represent the set of samples that will be collapsed into a single
+/// sample. 
+void make_collapse_map(size_t n, tipId_t map[n], tipId_t collapse) {
+    unsigned maxbit = 8*sizeof(tipId_t) - nlz(collapse);
+    if(maxbit > n) {
+        fprintf(stderr,"%s:%s:%d: maxbit (=%u) cannot exceed n (=%zu)\n",
+                __FILE__,__func__,__LINE__, maxbit, n);
+        exit(EXIT_FAILURE);
+    }
     int i, shift=0;
-    tipId_t min = n, bit = 1u;
+    tipId_t min = 0, bit = 1u;
     for(i=0; i < n; ++i, bit <<= 1) {
         if( collapse & bit ) {
-            if(min == n) {
+            if(min == 0) {
                 min = bit;
             }else
                 ++shift;
@@ -347,7 +349,25 @@ static void make_map(size_t n, tipId_t map[n], tipId_t collapse) {
     }
 }
 
-static void make_rm_map(size_t n, tipId_t map[n], tipId_t remove) {
+/// Make map, an array whose i'th entry is an unsigned integer with one
+/// bit on and the rest off. The on bit indicates the position in the
+/// new id of the i'th bit in the old id.
+///
+/// All samples corresponding to an "on" bit in "remove" are deleted.
+/// Other samples (those not removed) have their bits right-shifted
+/// by a number of positions equal to the number of lower-order
+/// populations that have been removed.
+///
+/// On entry, n equals the number of samples, map is an array of n
+/// tipId_t values, and remove is an integer whose "on" bits
+/// represent the set of samples that will be removed.
+void make_rm_map(size_t n, tipId_t map[n], tipId_t remove) {
+    unsigned maxbit = 8*sizeof(tipId_t) - nlz(remove);
+    if(maxbit > n) {
+        fprintf(stderr,"%s:%s:%d: maxbit (=%u) cannot exceed n (=%zu)\n",
+                __FILE__,__func__,__LINE__, maxbit, n);
+        exit(EXIT_FAILURE);
+    }
     int i, shift=0;
     tipId_t bit = 1u;
     for(i=0; i < n; ++i, bit <<= 1) {
@@ -362,7 +382,7 @@ static void make_rm_map(size_t n, tipId_t map[n], tipId_t remove) {
 // Remap the bits in a tipId_t variable. Array "map" specifies how
 // the bits should be rearranged. Function returns the remapped
 // value of "old".
-static tipId_t remap_bits(size_t n, tipId_t map[n], tipId_t old) {
+tipId_t remap_bits(size_t n, tipId_t map[n], tipId_t old) {
     tipId_t new = 0u, bit=1u;
     for(int i=0; i<n; ++i, bit <<= 1)
         if( old & bit )
@@ -447,16 +467,16 @@ int main(int argc, char **argv) {
     assert(LDbl_near(BranchTab_sum(bt), BranchTab_sum(bt2)));
     unitTstResult("BranchTab_collapse", "OK");
     
-    // test make_map and remap_bits
+    // test make_collapse_map and remap_bits
     size_t n = 8*sizeof(tipId_t);
     tipId_t map[n];
     tipId_t id1, id2, id3;
     id1 = 04444;
     id2 = 033333;
-    make_map(n, map, id1);
+    make_collapse_map(n, map, id1);
     id3 = remap_bits(n, map, id2);
     if(verbose) {
-        printf("After make_map and remap_bits...\n");
+        printf("After make_collapse_map and remap_bits...\n");
         puts("id1: ");
         printBits(sizeof(id1), &id1, stdout);
         puts("id2: ");
@@ -472,7 +492,7 @@ int main(int argc, char **argv) {
     assert(0400 == remap_bits(n, map, 02000));
     assert(02000 == remap_bits(n, map, 020000));
     assert(03773 == remap_bits(n, map, id2));
-    unitTstResult("make_map", "OK");
+    unitTstResult("make_collapse_map", "OK");
     unitTstResult("remap_bits", "OK");
 
     // test make_rm_map

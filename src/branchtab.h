@@ -31,6 +31,12 @@ long double   BranchTab_KLdiverg(const BranchTab *obs, const BranchTab *expt);
 long double   BranchTab_negLnL(const BranchTab *obs, const BranchTab *expt);
 long double   BranchTab_poissonCost(const BranchTab *obs, const BranchTab *expt,
                                     long double u, long nnuc, long double n);
-BranchTab    *BranchTab_collapse(BranchTab *old, tipId_t collapse);
-BranchTab    *BranchTab_rmPops(BranchTab *old, tipId_t remove);
+BranchTab    *BranchTab_collapse(BranchTab *old, unsigned newsamp,
+                                 tipId_t *map);
+BranchTab    *BranchTab_rmPops(BranchTab *old, unsigned newsamp, tipId_t *map);
+void          BranchTab_sanityCheck(BranchTab *self, const char *file,
+                                    int line);
+void          make_collapse_map(size_t n, tipId_t map[n], tipId_t collapse);
+void          make_rm_map(size_t n, tipId_t map[n], tipId_t remove);
+tipId_t       remap_bits(size_t n, tipId_t map[n], tipId_t old);
 #endif

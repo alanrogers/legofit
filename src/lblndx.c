@@ -160,8 +160,8 @@ char       *patLbl(size_t n, char buff[n], tipId_t tid, const LblNdx * lblndx) {
 
     if(TIPID_SIZE - nlz(tid) > lblndx->n) {
         fprintf(stderr,"%s:%d: LblNdx only allows for %d bits;"
-                " tid has %d.\n",
-                __FILE__,__LINE__, lblndx->n,
+                " tid = o%o has %d.\n",
+                __FILE__,__LINE__, lblndx->n, tid,
                 TIPID_SIZE - nlz(tid));
         exit(EXIT_FAILURE);
     }
