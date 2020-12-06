@@ -197,7 +197,15 @@ void BranchTab_toArrays(BranchTab *self, unsigned n, tipId_t key[n],
 }
 
 /// Map two or more populations into a single population.
-BranchTab *BranchTab_collapse(BranchTab *old, unsigned newsamp, tipId_t *map) {
+BranchTab *BranchTab_collapse(BranchTab *old, tipId_t collapse) {
+    int newsamp = old->nsamples - num1bits(collapse) + 1;
+
+    // Make map, an array whose i'th entry is an unsigned integer
+    // with one bit on and the rest off. The on bit indicates the
+    // position in the new id of the i'th bit in the old id.
+    tipId_t map[old->nsamples];
+    make_collapse_map(old->nsamples, map, collapse);    
+    
     // Create a new BranchTab
     BranchTab *new = BranchTab_new(newsamp);
 
@@ -209,14 +217,22 @@ BranchTab *BranchTab_collapse(BranchTab *old, unsigned newsamp, tipId_t *map) {
 }
 
 /// Remove populations
-BranchTab *BranchTab_rmPops(BranchTab *old, unsigned newsamp, tipId_t *map) {
+BranchTab *BranchTab_rmPops(BranchTab *old, tipId_t remove) {
+    int newsamp = old->nsamples - num1bits(remove);
 
+    // Make map, an array whose i'th entry is an unsigned integer
+    // with one bit on and the rest off. The on bit indicates the
+    // position in the new id of the i'th bit in the old id.
+    tipId_t map[old->nsamples];
+    make_rm_map(old->nsamples, map, remove);
+    
     // Create a new BranchTab
     BranchTab *new = BranchTab_new(newsamp);
+    CHECKMEM(new);
     for(unsigned i=1; i < old->dim; ++i) {
-        tipId_t id = remap_bits(old->nsamples, map, i);
+        tipId_t tid = remap_bits(old->nsamples, map, i);
         if(id)
-            BranchTab_add(new, id, old->tab[i]);
+            BranchTab_add(new, tid, old->tab[i]);
     }
     return new;
 }
