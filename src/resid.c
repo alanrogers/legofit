@@ -417,9 +417,6 @@ int main(int argc, char **argv) {
                 DIE("can't normalize empty BranchTab");
 
             // Calculate residuals for current pair of files.
-            // This only happens if nLegoFiles > 0. Otherwise
-            // obs_bt[i] contains site pattern frequencies, not
-            // residuals.
             BranchTab_minusEquals(obs_bt[i], lego_bt[i]);
         }
     }
@@ -465,8 +462,10 @@ int main(int argc, char **argv) {
     putchar('\n');
 
     for(i = 0; i < npat; ++i) {
-        if(pat[i] == union_all_samples)
+        if(pat[i] == union_all_samples) {
+            assert(0.0 == mat[i * nDataFiles + j]);
             continue;
+        }
 
         char lbl[100];
         patLbl(sizeof(lbl), lbl, pat[i], &lndx);
