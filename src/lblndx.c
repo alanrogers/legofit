@@ -9,6 +9,7 @@
 #include "error.h"
 #include "lblndx.h"
 #include "misc.h"
+#include "strdblqueue.h"
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
@@ -51,7 +52,7 @@ unsigned LblNdx_size(const LblNdx * self) {
     return self->n;
 }
 
-void        LblNdx_sanityCheck(const LblNdx *self, const char *file, int line) {
+void  LblNdx_sanityCheck(const LblNdx *self, const char *file, int line) {
 #ifndef NDEBUG
     REQUIRE(self, file, line);
     REQUIRE(self->n < MAXSAMP, file, line);
@@ -334,6 +335,48 @@ int LblNdx_rmPops(LblNdx *self, tipId_t remove) {
             strcpy(self->lbl[j], self->lbl[i]);
     }
     self->n -= num1bits(remove);
+    return 0;
+}
+
+/**
+ * Initialize a pre-allocated LblNdx from a StrDblQueue. On input,
+ * each entry of the StrDblQueue refers to a single site pattern.  The
+ * string in each entry should be of form "a:b:c", where the colons
+ * separate fields, and each field is the label of a sample.  On
+ * return, lndx containes all these labels, indexed in their order of
+ * appearance with the queue.
+ */
+int LblNdx_from_StrDblQueue(LblNdx *lndx, StrDblQueue *queue) {
+    int status = 0;
+    memset(lndx, 0, sizeof(LblNdx));
+    for(StrDblQueue *sdq = queue; sdq; sdq = sdq->next) {
+        char *s = sdq->strdbl.str;
+        while(1) {
+            char *colon = strchr(s, ':');
+            int len;
+            tipId_t tid;
+            if(colon == NULL) {
+                tid = LblNdx_getTipId(lndx, s);
+                if(tid == 0)
+                    LblNdx_addSamples(lndx, 1u, s);
+                break;
+            }
+            // The tokens in s are separated by colons. Copy
+            // token into a NULL-terminated string that can
+            // be passed to LblNdx_addSamples.
+            char buff[100];
+            len = colon - s;
+            status = strnncopy(sizeof(buff), buff, len, s);
+            if(status)
+                return BUFFER_OVERFLOW;
+            // Add label unless it's already there.
+            tid = LblNdx_getTipId(lndx, s);
+            if(tid == 0)
+                LblNdx_addSamples(lndx, 1u, buff);
+            s = colon + 1;
+        }
+    }
+    LblNdx_sanityCheck(lndx, __FILE__, __LINE__);
     return 0;
 }
 

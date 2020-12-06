@@ -10,7 +10,6 @@
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_blas.h>
 
-typedef struct StrDblQueue StrDblQueue;
 typedef struct StrDbl StrDbl;
 
 struct StrDbl {

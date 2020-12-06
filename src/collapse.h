@@ -9,7 +9,8 @@ struct LblNdxBranchTab {
     BranchTab *branchtab;
 };
 
-LblNdxBranchTab removePops(LblNdx lndx, BranchTab *bt, char *deleteStr);
-LblNdxBranchTab collapsePops(LblNdx lndx, BranchTab *bt, char *collapseStr,
-                         const char *lbl);
+LblNdxBranchTab removePops(LblNdx lndx, BranchTab *bt, const char *deleteStr);
+LblNdxBranchTab collapsePops(LblNdx lndx, BranchTab *bt,
+                             const char *collapseStr,
+                             const char *lbl);
 #endif

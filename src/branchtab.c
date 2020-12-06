@@ -231,7 +231,7 @@ BranchTab *BranchTab_rmPops(BranchTab *old, tipId_t remove) {
     CHECKMEM(new);
     for(unsigned i=1; i < old->dim; ++i) {
         tipId_t tid = remap_bits(old->nsamples, map, i);
-        if(id)
+        if(tid)
             BranchTab_add(new, tid, old->tab[i]);
     }
     return new;
