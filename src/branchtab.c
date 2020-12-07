@@ -29,11 +29,6 @@ struct BranchTab {
 /// Create a new BranchTab with room for site patterns associated with
 /// data in which the number of samples is "nsamples".
 BranchTab    *BranchTab_new(unsigned nsamples) {
-    if(nsamples < 2) {
-        fprintf(stderr,"%s:%s:%d: nsamples=%u; must be > 1.\n",
-                __FILE__,__func__,__LINE__, nsamples);
-        exit(EXIT_FAILURE);
-    }
     BranchTab    *new = malloc(sizeof(*new));
     CHECKMEM(new);
 

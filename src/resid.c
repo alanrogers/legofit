@@ -463,7 +463,7 @@ int main(int argc, char **argv) {
 
     for(i = 0; i < npat; ++i) {
         if(pat[i] == union_all_samples) {
-            assert(0.0 == mat[i * nDataFiles + j]);
+            assert(Dbl_near(mat[i * nDataFiles + j], 0.0));
             continue;
         }
 

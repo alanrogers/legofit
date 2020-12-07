@@ -109,7 +109,9 @@ static inline double survival(double t, double twoN);
 /// Return 1 if the relative difference between x and y is less than or
 /// equal to 8*DBL_EPSILON.
 static inline int Dbl_near(double x, double y) {
-    return fabs(x - y) <= fmax(fabs(x), fabs(y)) * 8.0 * DBL_EPSILON;
+    double tol = fmax(fabs(x), fabs(y)) * 8.0 * DBL_EPSILON;
+    tol = fmax(tol, DBL_EPSILON);
+    return fabs(x - y) <= tol;
 }
 
 /// Return 1 if x==y, 0 otherwise. Unlike the standard comparison,
