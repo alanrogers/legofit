@@ -108,13 +108,13 @@ int main(int argc, char **argv){
         break;
     case 2:
         if(strncmp(argv[1], "-v", 2) != 0) {
-            fprintf(stderr, "usage: xstrdblstck [-v]\n");
+            fprintf(stderr, "usage: xstrdblqueue [-v]\n");
             exit(EXIT_FAILURE);
         }
         verbose = 1;
         break;
     default:
-        fprintf(stderr, "usage: xstrdblstck [-v]\n");
+        fprintf(stderr, "usage: xstrdblqueue [-v]\n");
         exit(EXIT_FAILURE);
     }
 

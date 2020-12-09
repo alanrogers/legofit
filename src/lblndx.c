@@ -511,9 +511,32 @@ int main(int argc, char **argv) {
     status = LblNdx_rmPops(&lndx2, remove);
     assert(status == EDOM);
     unitTstResult("LblNdx_rmPops", "OK");
-    
-    unitTstResult("LblNdx", "OK");
 
+    StrDblQueue *stq = NULL;
+    stq = StrDblQueue_push(stq, "x", 1.0);
+    stq = StrDblQueue_push(stq, "y", 1.0);
+    stq = StrDblQueue_push(stq, "z", 1.0);
+    stq = StrDblQueue_push(stq, "x:y", 1.0);
+    stq = StrDblQueue_push(stq, "x:z", 1.0);
+    stq = StrDblQueue_push(stq, "y:z", 1.0);
+    stq = StrDblQueue_push(stq, "x:y:z", 1.0);
+
+    memset(&lndx, 0, sizeof(LblNdx));
+    status = LblNdx_from_StrDblQueue(&lndx, stq);
+
+    assert(3 == LblNdx_size(&lndx));
+    assert( strcmp("x", LblNdx_lbl(&lndx, 0)) == 0);
+    assert( strcmp("y", LblNdx_lbl(&lndx, 1)) == 0);
+    assert( strcmp("z", LblNdx_lbl(&lndx, 2)) == 0);
+
+    assert(1u == LblNdx_getTipId(&lndx, "x") );
+    assert(2u == LblNdx_getTipId(&lndx, "y") );
+    assert(4u == LblNdx_getTipId(&lndx, "z") );
+    
+    unitTstResult("LblNdx_from_StrDblQueue", "OK");
+
+    unitTstResult("LblNdx", "OK");
+    
     return 0;
 }
 #endif

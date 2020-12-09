@@ -338,7 +338,7 @@ xbranchtab : $(XBRANCHTAB)
 xlblndx.o : lblndx.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/lblndx.c
 
-XLBLNDX := xlblndx.o misc.o binary.o
+XLBLNDX := xlblndx.o misc.o binary.o strdblqueue.o
 xlblndx : $(XLBLNDX)
 	$(CC) $(CFLAGS) -o $@ $(XLBLNDX) $(lib)
 
