@@ -10,7 +10,7 @@ tests := xbinary xboot xbranchtab xcomb xdafreader \
   xjobqueue xlblndx xlinereader xmctree xmisc xmpfrmatcoal \
   xparam xparse xparseopf xparstore xpointbuff xpopnode xptrlst xptrptrmap \
   xptrqueue xptru32map \
-  xptrvec xsegment \
+  xptrvec xresid xsegment \
   xstrptrmap xrafreader xrational xscrmreader xsampndx xsetpart \
   xsimsched xstate xstrdblqueue xstrint xtinyexpr xtokenizer \
   xu64u64map xu64i64map xuintqueue xmatcoal \
@@ -97,6 +97,7 @@ test : $(tests)
 	-./xptrvec
 	-./xrafreader
 	-./xrational
+	-./xresid
 	-./xsampndx
 	-./xscrmreader
 	-./xsegment
@@ -240,6 +241,13 @@ xbooma.o : booma.c
 XBOOMA := xbooma.o misc.o strdblqueue.o strint.o tokenizer.o
 xbooma : $(XBOOMA)
 	$(CC) $(CFLAGS) -o $@ $(XBOOMA) $(lib)
+
+xresid.o : resid.c
+	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/resid.c
+
+XRESID := xresid.o misc.o strdblqueue.o branchtab.o lblndx.o binary.o
+xresid : $(XRESID)
+	$(CC) $(CFLAGS) -o $@ $(XRESID) $(lib)
 
 xscrmreader.o : scrmreader.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/scrmreader.c

@@ -78,7 +78,6 @@ void usage(void);
 int Mapping_size(Mapping * self);
 Mapping *Mapping_new(const char *lhs, const char *rhs);
 void Mapping_free(Mapping * self);
-void Mapping_push(Mapping * self, const char *str);
 const char *Mapping_lhs(Mapping * self);
 const char *Mapping_rhs(Mapping * self);
 void Mapping_print(Mapping * self, FILE * fp);
@@ -167,6 +166,73 @@ void usage(void) {
     exit(EXIT_FAILURE);
 }
 
+/*
+ * This file has two main functions. The first compiles if "TEST" is
+ * defined provides a unit test for the functions in this file. The
+ * second "main" compiles if "TEST" is not defined it produces the booma
+ * executable.
+ */
+#ifdef TEST
+#  ifdef NDEBUG
+#    error "Unit tests must be compiled without -DNDEBUG flag"
+#  endif
+/* Main function for testing the functions in this file. */
+int main(int argc, char **argv) {
+    int verbose = 0;
+    if(argc > 1) {
+        if(argc != 2 || 0 != strcmp(argv[1], "-v")) {
+            fprintf(stderr, "usage: xresid [-v]\n");
+            exit(EXIT_FAILURE);
+        }
+        verbose = 1;
+    }
+
+    Mapping *m = Mapping_new("x", "a:b:c");
+    CHECKMEM(m);
+
+    assert(Mapping_size(m) == 3);
+    assert( strcmp("x", Mapping_lhs(m)) == 0);
+    assert( strcmp("a:b:c", Mapping_rhs(m)) == 0);
+
+    if(verbose)
+        Mapping_print(m, stdout);
+
+    unitTstResult("Mapping", "OK");
+
+    StrDblQueue *stq = NULL;
+    stq = StrDblQueue_push(stq, "x", 1.0);
+    stq = StrDblQueue_push(stq, "y", 2.0);
+    stq = StrDblQueue_push(stq, "z", 3.0);
+    stq = StrDblQueue_push(stq, "x:y", 4.0);
+    stq = StrDblQueue_push(stq, "x:z", 5.0);
+    stq = StrDblQueue_push(stq, "y:z", 6.0);
+    stq = StrDblQueue_push(stq, "x:y:z", 7.0);
+
+    LblNdx lndx;
+    memset(&lndx, 0, sizeof(LblNdx));
+
+    int status = LblNdx_from_StrDblQueue(&lndx, stq);
+    assert(status == 0);
+
+    BranchTab *bt = makeBranchTab(stq, &lndx);
+    CHECKMEM(bt);
+    BranchTab_sanityCheck(bt, __FILE__,__LINE__);
+
+    assert(BranchTab_size(bt) == 7);
+    assert(1.0L == BranchTab_get(bt, 1u));
+    assert(2.0L == BranchTab_get(bt, 2u));
+    assert(3.0L == BranchTab_get(bt, 4u));
+    assert(4.0L == BranchTab_get(bt, 3u));
+    assert(5.0L == BranchTab_get(bt, 5u));
+    assert(6.0L == BranchTab_get(bt, 6u));
+    assert(7.0L == BranchTab_get(bt, 7u));
+
+    unitTstResult("makeBranchTab", "OK");
+
+    return 0;
+}
+#else
+/* Main function for the resid executable. */
 int main(int argc, char **argv) {
 
     time_t currtime = time(NULL);
@@ -482,3 +548,4 @@ int main(int argc, char **argv) {
 
     return 0;
 }
+#endif
