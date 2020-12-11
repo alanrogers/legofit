@@ -137,7 +137,7 @@ xcomb : $(XCOMB)
 XSEGMENT := xsegment.o misc.o segment.o idset.o branchtab.o eventlst.o \
     parstore.o param.o ptrlst.o ptrptrmap.o ptrqueue.o idsetset.o strint.o \
     tinyexpr.o dtnorm.o binary.o setpart.o u64u64map.o matcoal.o comb.o \
-    rational.o strptrmap.o lblndx.o u64i64map.o
+    rational.o strptrmap.o lblndx.o u64i64map.o externs.o
 xsegment : $(XSEGMENT)
 	$(CC) $(CFLAGS) -o $@ $(XSEGMENT) $(lib)
 
@@ -272,7 +272,7 @@ xparse.o : parse.c
 
 XPARSE := xparse.o misc.o tokenizer.o gptree.o lblndx.o \
        branchtab.o network.o parstore.o popnode.o binary.o gene.o \
-       dprintf.o dtnorm.o tinyexpr.o param.o \
+       dprintf.o dtnorm.o externs.o tinyexpr.o param.o \
        sampndx.o strptrmap.o ptrptrmap.o ptrqueue.o strint.o \
        error.o segment.o ptrvec.o comb.o setpart.o \
        ptrlst.o u64u64map.o eventlst.o idset.o matcoal.o \
@@ -313,7 +313,7 @@ xgptree.o : gptree.c
 
 XGPTREE := xgptree.o misc.o branchtab.o parstore.o lblndx.o \
         tokenizer.o strptrmap.o gene.o param.o popnode.o binary.o \
-        dprintf.o dtnorm.o parse.o tinyexpr.o sampndx.o \
+        dprintf.o dtnorm.o externs.o parse.o tinyexpr.o sampndx.o \
         network.o ptrptrmap.o ptrqueue.o strint.o error.o segment.o \
         idset.o matcoal.o ptrlst.o ptrvec.o comb.o setpart.o rational.o \
         u64u64map.o eventlst.o idsetset.o mctree.o u64i64map.o
@@ -323,7 +323,7 @@ xgptree : $(XGPTREE)
 XMCTREE := xmctree.o mctree.o segment.o parstore.o lblndx.o sampndx.o misc.o \
     idset.o matcoal.o network.o param.o ptrlst.o ptrptrmap.o ptrqueue.o \
     ptrvec.o strint.o strptrmap.o binary.o comb.o setpart.o tinyexpr.o \
-    parse.o dtnorm.o eventlst.o u64u64map.o rational.o popnode.o \
+    externs.o parse.o dtnorm.o eventlst.o u64u64map.o rational.o popnode.o \
     error.o gptree.o gene.o branchtab.o dprintf.o idsetset.o u64i64map.o
 xmctree : $(XMCTREE)
 	$(CC) $(CFLAGS) -o $@ $(XMCTREE) $(lib)

@@ -78,7 +78,7 @@
 #include <string.h>
 
 // Site pattern representing the union of all samples.
-tipId_t union_all_samples = 0;
+extern tipId_t union_all_samples;
 
 /// Abort if token is missing
 # define CHECK_TOKEN(tok, orig) {                                  \
