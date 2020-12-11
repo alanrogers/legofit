@@ -191,7 +191,9 @@ void BranchTab_toArrays(BranchTab *self, unsigned n, tipId_t key[n],
     }
 }
 
-/// Map two or more populations into a single population.
+/// Return a pointer to a newly-allocated BranchTab, which is like "old",
+/// except that two or more of the populations in "old" are mapped into
+/// a single population in the new BranchTab.
 BranchTab *BranchTab_collapse(BranchTab *old, tipId_t collapse) {
     int newsamp = old->nsamples - num1bits(collapse) + 1;
 
@@ -211,7 +213,9 @@ BranchTab *BranchTab_collapse(BranchTab *old, tipId_t collapse) {
     return new;
 }
 
-/// Remove populations
+/// Return pointer to newly-allocated BranchTab, which is like
+/// old, except that it lacks the populations indicated by the
+/// bits in "remove".
 BranchTab *BranchTab_rmPops(BranchTab *old, tipId_t remove) {
     int newsamp = old->nsamples - num1bits(remove);
 

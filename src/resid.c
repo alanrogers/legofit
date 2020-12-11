@@ -54,7 +54,7 @@ files. For example,
 
 This would generate a column for each pair of .opf/.legofit files.
 
-@copyright Copyright (c) 2019, Alan R. Rogers
+@copyright Copyright (c) 2020, Alan R. Rogers
 <rogers@anthro.utah.edu>. This file is released under the Internet
 Systems Consortium License, which can be found in file "LICENSE".
 */
@@ -63,15 +63,20 @@ Systems Consortium License, which can be found in file "LICENSE".
 #include "strdblqueue.h"
 #include "misc.h"
 #include "branchtab.h"
-#include "collapse.h"
 #include <strings.h>
 #include <time.h>
+
+typedef struct Mapping Mapping;
+typedef struct LblNdxBranchTab LblNdxBranchTab;
 
 struct Mapping {
     char *lhs, *rhs;
 };
 
-typedef struct Mapping Mapping;
+struct LblNdxBranchTab {
+    LblNdx lndx;
+    BranchTab *branchtab;
+};
 
 // Function prototypes
 void usage(void);
@@ -82,6 +87,10 @@ const char *Mapping_lhs(Mapping * self);
 const char *Mapping_rhs(Mapping * self);
 void Mapping_print(Mapping * self, FILE * fp);
 BranchTab *makeBranchTab(StrDblQueue *queue, LblNdx *lndx);
+LblNdxBranchTab removePops(LblNdx lndx, BranchTab *bt, const char *deleteStr);
+LblNdxBranchTab collapsePops(LblNdx lndx, BranchTab *bt,
+                             const char *collapseStr,
+                             const char *lbl);
 
 Mapping *Mapping_new(const char *lhs, const char *rhs) {
     Mapping *self = malloc(sizeof(Mapping));
@@ -120,17 +129,15 @@ void Mapping_print(Mapping * self, FILE * fp) {
 /// Construct a BranchTab from a StrDblQueue. The LblNdx translates
 /// site patterns from string representation to integer
 /// representation.  Function returns a newly-allocated BranchTab.
-/// If queue is NULL, function returns NULL. This function empties
-/// the queue, which should therefore be set to NULL on return and not
-/// freed.
+/// If queue is NULL, function returns NULL.
 BranchTab *makeBranchTab(StrDblQueue *queue, LblNdx *lndx) {
     if(queue == NULL)
         return NULL;
     unsigned nsamples = LblNdx_size(lndx);
     BranchTab *new = BranchTab_new(nsamples);
-    while(queue != NULL) {
-        StrDbl strdbl;
-        queue = StrDblQueue_pop(queue, &strdbl);
+    StrDblQueue *stq;
+    for(stq=queue; stq; stq = stq->next) {
+        StrDbl strdbl = stq->strdbl;
         tipId_t tid = LblNdx_getTipId(lndx, strdbl.str);
         if(tid == 0) {
             fprintf(stderr, "%s:%d: site pattern string (%s)"
@@ -143,6 +150,87 @@ BranchTab *makeBranchTab(StrDblQueue *queue, LblNdx *lndx) {
         BranchTab_add(new, tid, strdbl.val);
     }
     return new;
+}
+
+LblNdxBranchTab removePops(LblNdx lndx, BranchTab *bt, const char *deleteStr) {
+    LblNdxBranchTab rval = {
+                            .lndx = lndx,
+                            .branchtab = NULL
+    };
+
+    if(deleteStr == NULL) {
+        fprintf(stderr,"%s:%d: NULL deleteStr\n",__FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
+
+    // Parse deleteStr to create an integer, whose "on" bits
+    // indicate the populations to be deleted.
+    tipId_t bits = LblNdx_getTipId(&lndx, deleteStr);
+    if(bits == 0) {
+        fprintf(stderr, "%s:%s:%d: delete string (%s) includes"
+                " unknown labels.\n",
+                __FILE__, __func__, __LINE__, deleteStr);
+        fprintf(stderr,"Known labels:\n");
+        LblNdx_print(&lndx, stderr);
+        exit(EXIT_FAILURE);
+    }
+
+    // Create a new LblNdx object within rval, which lacks the
+    // populations we are removing.
+    int status = LblNdx_rmPops(&(rval.lndx), bits);
+    if(status) {
+        fprintf(stderr,"%s:%d: can't remove a population that"
+                " doesn't exist.\n",
+                __FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
+
+    // Create a new BranchTab w/i rval, which lack deleted populations.
+    rval.branchtab = BranchTab_rmPops(bt, bits);
+
+    return rval;
+}
+
+LblNdxBranchTab collapsePops(LblNdx lndx, BranchTab *bt,
+                             const char *collapseStr,
+                             const char *lbl) {
+    LblNdxBranchTab rval = {
+                            .lndx = lndx,
+                            .branchtab = NULL
+    };
+
+    if(collapseStr == NULL || lbl==NULL) {
+        fprintf(stderr,"%s:%d: NULL deleteStr\n",__FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
+
+    // Parse collapsedStr to create an integer, whose "on" bits
+    // indicate the populations to be collapsed into a single
+    // population.
+    tipId_t bits = LblNdx_getTipId(&lndx, collapseStr);
+    if(bits == 0) {
+        fprintf(stderr, "%s:%s%d: collapse string (%s) includes"
+                " unknown labels.\n",
+                __FILE__, __func__, __LINE__, collapseStr);
+        fprintf(stderr,"Known labels:\n");
+        LblNdx_print(&lndx, stderr);
+        exit(EXIT_FAILURE);
+    }
+
+    // Create a new LblNdx object within rval, with several populations
+    // collapsed into one.
+    int status = LblNdx_collapse(&(rval.lndx), bits, lbl);
+    if(status) {
+        fprintf(stderr,"%s:%d: string %s has a population that"
+                " doesn't exist.\n",
+                __FILE__,__LINE__, collapseStr);
+        exit(EXIT_FAILURE);
+    }
+
+    // Create a new BranchTab w/i rval, which lack deleted populations.
+    rval.branchtab = BranchTab_collapse(bt, bits);
+
+    return rval;
 }
 
 //vars
@@ -197,6 +285,8 @@ int main(int argc, char **argv) {
     if(verbose)
         Mapping_print(m, stdout);
 
+    Mapping_free(m);
+
     unitTstResult("Mapping", "OK");
 
     StrDblQueue *stq = NULL;
@@ -216,6 +306,7 @@ int main(int argc, char **argv) {
 
     BranchTab *bt = makeBranchTab(stq, &lndx);
     CHECKMEM(bt);
+    stq = StrDblQueue_free(stq);
     BranchTab_sanityCheck(bt, __FILE__,__LINE__);
 
     assert(BranchTab_size(bt) == 7);
@@ -227,7 +318,67 @@ int main(int argc, char **argv) {
     assert(6.0L == BranchTab_get(bt, 6u));
     assert(7.0L == BranchTab_get(bt, 7u));
 
+    BranchTab_free(bt);
+    bt = NULL;
+
     unitTstResult("makeBranchTab", "OK");
+
+    stq = StrDblQueue_free(stq);
+    stq = StrDblQueue_push(stq, "x", 1.0);
+    stq = StrDblQueue_push(stq, "y", 2.0);
+    stq = StrDblQueue_push(stq, "z", 3.0);
+    stq = StrDblQueue_push(stq, "x:y", 4.0);
+    stq = StrDblQueue_push(stq, "x:z", 5.0);
+    stq = StrDblQueue_push(stq, "y:z", 6.0);
+    stq = StrDblQueue_push(stq, "x:y:z", 7.0);
+
+    memset(&lndx, 0, sizeof(LblNdx));
+
+    status = LblNdx_from_StrDblQueue(&lndx, stq);
+    assert(status == 0);
+
+    bt = makeBranchTab(stq, &lndx);
+    CHECKMEM(bt);
+    stq = StrDblQueue_free(stq);
+
+    LblNdxBranchTab lnbt = removePops(lndx, bt, "x");
+    assert(LblNdx_size(&lnbt.lndx) == 2);
+    assert( strcmp("y", LblNdx_lbl(&lnbt.lndx, 0)) == 0);
+    assert( strcmp("z", LblNdx_lbl(&lnbt.lndx, 1)) == 0);
+    assert( BranchTab_size(lnbt.branchtab) == 3);
+
+    // 13.0 = 6.0 + 7.0; "y:z" + "x:y:z"
+    assert( BranchTab_get(lnbt.branchtab, 3u) == 13.0L);
+
+    BranchTab_free(lnbt.branchtab);
+    
+    unitTstResult("removePops", "OK");
+
+    lnbt = collapsePops(lndx, bt, "x:y", "a");
+    assert(LblNdx_size(&lnbt.lndx) == 2);
+    assert( strcmp("a", LblNdx_lbl(&lnbt.lndx, 0)) == 0);
+    assert( strcmp("z", LblNdx_lbl(&lnbt.lndx, 1)) == 0);
+    assert( BranchTab_size(lnbt.branchtab) == 3);
+
+    if(verbose)
+        BranchTab_print(lnbt.branchtab, stdout);
+
+    // "x" + "y" + "x:y"
+    assert( BranchTab_get(lnbt.branchtab, 1u) == 7.0L);
+
+    // "z"
+    assert( BranchTab_get(lnbt.branchtab, 2u) == 3.0L);
+    
+    // This is the sum of everything except "x", "y", "z", and "x:y",
+    // patterns whose values sum to 10, as shown in the preceding two
+    // lines. The sum of everything is 1+2+...+7 = 28.  Subtracting 10
+    // from this gives 18.
+    assert( BranchTab_get(lnbt.branchtab, 3u) == 18.0L);
+    
+    BranchTab_free(lnbt.branchtab);
+    BranchTab_free(bt);
+
+    unitTstResult("collapsePops", "OK");
 
     return 0;
 }
@@ -326,13 +477,10 @@ int main(int argc, char **argv) {
         if(argv[i][0] == '-') {
             if(strcmp(argv[i], "-L") == 0) {
                 state = LEGO;
-                continue;
             } else if(strcmp(argv[i], "-D") == 0) {
                 state = DELETE;
-                continue;
             } else if(strcmp(argv[i], "-M") == 0) {
                 state = REMAP;
-                continue;
             } else if(strcmp(argv[i], "-h") == 0 ||
                       strcmp(argv[i], "--help") == 0) {
                 usage();
@@ -340,6 +488,7 @@ int main(int argc, char **argv) {
                 fprintf(stderr, "unknown flag argument: %s\n", argv[i]);
                 usage();
             }
+            continue;
         }
         switch (state) {
         case DATA:
@@ -420,11 +569,11 @@ int main(int argc, char **argv) {
     BranchTab *obs_bt[nDataFiles], *lego_bt[nDataFiles];
     for(i = 0; i < nDataFiles; ++i) {
         obs_bt[i] = makeBranchTab(data_queue[i], &lblndx);
-        data_queue[i] = NULL;
+        data_queue[i] = StrDblQueue_free(data_queue[i]);
 
         if(nLegoFiles) {
             lego_bt[i] = makeBranchTab(lego_queue[i], &lblndx);
-            lego_queue[i] = NULL;
+            lego_queue[i] = StrDblQueue_free(lego_queue[i]);
         }else
             lego_bt[i] = NULL;
     }
@@ -451,8 +600,8 @@ int main(int argc, char **argv) {
             lndx = lnbt.lndx;
         }
 
-        // Apply remappings in sequence. Each remapping changes lndx
-        // and obs_bt[i].
+        // Apply remappings in sequence. Each remapping changes lndx,
+        // obs_bt[i], and (if nLegoFiles > 0) lego_bt[i].
         for(imapping = 0; imapping < nmapping; ++imapping) {
             const char *rhs = Mapping_rhs(mapping[imapping]);
             const char *lhs = Mapping_lhs(mapping[imapping]);
@@ -545,6 +694,16 @@ int main(int argc, char **argv) {
     free(datafname);
     if(legofname)
         free(legofname);
+
+    for(i=0; i < nDataFiles; ++i) {
+        BranchTab_free(obs_bt[i]);
+        if(nLegoFiles)
+            BranchTab_free(lego_bt[i]);
+    }
+    if(deleteStr)
+        free(deleteStr);
+    for(imapping = 0; imapping < nmapping; ++imapping)
+        Mapping_free(mapping[imapping]);
 
     return 0;
 }

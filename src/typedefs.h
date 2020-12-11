@@ -19,7 +19,6 @@ typedef struct History History;
 typedef struct IdSet IdSet;
 typedef struct IdSetSet IdSetSet;
 typedef struct LblNdx LblNdx;
-typedef struct LblNdxBranchTab LblNdxBranchTab;
 typedef struct LineReader LineReader;
 typedef struct MCTree MCTree;
 typedef struct NameList NameList;

@@ -98,7 +98,7 @@ clic : $(CLIC)
 	$(CC) $(CFLAGS) -o $@ $(CLIC) $(lib)
 
 RESID := resid.o misc.o strdblqueue.o branchtab.o lblndx.o binary.o \
-  tokenizer.o collapse.o
+  tokenizer.o
 resid : $(RESID)
 	$(CC) $(CFLAGS) -o $@ $(RESID) $(lib)
 
