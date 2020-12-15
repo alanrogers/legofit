@@ -337,7 +337,8 @@ void MCTree_brlen(void * vself, BranchTab * branchtab, gsl_rng * rng,
 
     // Use deterministic algorithm to calculate expected branch lengths
     // for each site pattern.
-    int status = Segment_coalesce(self->rootPop, doSing, branchtab, event_counter);
+    int status = Segment_coalesce(self->rootPop, doSing, branchtab,
+                                  event_counter);
     if(status) {
         fprintf(stderr,"%s:%d: Segment_coalesce returned status %d\n",
                 __FILE__, __LINE__, status);

@@ -53,8 +53,11 @@ int main(int argc, char **argv) {
     EventLst_sanityCheck(mo3, __FILE__,__LINE__);
     if(verbose) {
         EventLst_print(mo[0], stdout);
+        putchar('\n');
         EventLst_print(mo[1], stdout);
+        putchar('\n');
         EventLst_print(mo3, stdout);
+        putchar('\n');
     }
 
     assert(0 == EventLst_cmp(mo[0], mo3));

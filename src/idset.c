@@ -155,8 +155,10 @@ IdSet *IdSet_join(IdSet *left, IdSet *right, int nsamples,
 #endif    
     
     long double pr = EventLst_prob(evlst);
-    if(mutually_exclusive || pr <= improbable)
+    if(mutually_exclusive || pr <= improbable) {
+        EventLst_free(evlst);
         return NULL;
+    }
 
     int nIds = left->nIds + right->nIds + nsamples;
     

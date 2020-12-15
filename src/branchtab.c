@@ -61,9 +61,6 @@ BranchTab    *BranchTab_dup(const BranchTab *old) {
 
     new->nsamples = old->nsamples;
     new->dim = old->dim;
-    new->tab = malloc(new->dim * sizeof(new->tab[0]));
-    CHECKMEM(new->tab);
-
     memcpy(new->tab, old->tab, new->dim * sizeof(new->tab[0]));
 
     return new;

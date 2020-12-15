@@ -1,4 +1,3 @@
-
 /**
  * @file segment.c
  * @author Alan R. Rogers
@@ -1155,8 +1154,9 @@ static int Segment_coalesceFinite(Segment * self, int dosing,
         PtrLst_free(msd.natives);
     }
 
-    for(i = 0; i < self->dim; ++i)
+    for(i = 0; i < self->dim; ++i) {
         PtrLst_free(a[i]);
+    }
 
     return status;
 }
