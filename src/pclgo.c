@@ -98,7 +98,7 @@ void parseError(char *p, char *buff, const char *file, int line) {
 int main(int argc, char **argv){
     int i, j;
     int ncases=0;
-    int digits = 8;
+    int digits = 16;
     double minFracVar = 0.0;
     const char *letters = "abcdefghijklmnopqrstuvwxyz"
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
