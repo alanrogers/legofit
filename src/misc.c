@@ -1,4 +1,3 @@
-
 /**
  * @file misc.c
  * @author Alan R. Rogers
