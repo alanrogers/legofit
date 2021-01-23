@@ -88,8 +88,8 @@ SimReader *SimReader_new(FILE *fp) {
             ok = 0;
     }
     if(!ok) {
-        fprintf(stderr,"%s:%d: 1st line of input should look like"
-                " \"npops = <positive integer>\"\n",
+        fprintf(stderr,"%s:%d: 1st line of input should look like\n"
+                "   \"npops = <positive integer>\"\n",
                 __FILE__,__LINE__);
         Tokenizer_print(self->tkz, stderr);
         exit(EXIT_FAILURE);
