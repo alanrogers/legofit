@@ -1,11 +1,4 @@
 destination := $(HOME)/bin
-<<<<<<< HEAD
-global_destination := $(HOME)/group/bin
-opt := -DNDEBUG -O3  -finline-functions  # For full optimization
-#opt := -O0 -fno-inline-functions -rdynamic -DDEBUG     # For debugging
-#opt := -O3  -finline-functions  # Optimization + debugging
-#prof := -pg -rdynamic                    # For profiling
-=======
 git_version := "$(shell git describe --dirty --always --tags)"
 global_destination := $(HOME)/grp1/bin
 opt := -DNDEBUG -O2  -finline-functions  # For full optimization
@@ -13,7 +6,6 @@ opt := -DNDEBUG -O2  -finline-functions  # For full optimization
 #opt := -O2  -g -finline-functions  # Optimization + debugging
 #prof := -pg -g -rdynamic                    # For profiling under gcc
 #prof := --fprofile-generate -g              # For profiling under clang
->>>>>>> devlp
 prof :=
 incl := -I/usr/local/include -I/opt/local/include
 
@@ -63,16 +55,6 @@ lib := -L/usr/local/lib -lgsl -lgslcblas -lpthread -lm
 
 all : $(targets)
 
-<<<<<<< HEAD
-LINEAGES := lineages.o misc.o lblndx.o binary.o
-lineages : $(lineages)
-	$(CC) $(CFLAGS) -o $@ $(LINEAGES) $(lib)
-
-LEGOSIM := legosim.o addrparmap.o patprob.o gptree.o binary.o jobqueue.o \
-  misc.o parse.o branchtab.o popnodetab.o lblndx.o tokenizer.o param.o \
-  parstore.o popnode.o gene.o dprintf.o rngseed.o dtnorm.o tinyexpr.o \
-  strparmap.o
-=======
 test : $(tests)
 	-./xbinary
 	-./xzeroin
@@ -84,7 +66,7 @@ LEGOSIM := legosim.o binary.o branchtab.o dprintf.o dtnorm.o \
    strptrmap.o tinyexpr.o tokenizer.o ptrptrmap.o ptrqueue.o strint.o \
    segment.o idset.o idsetset.o matcoal.o ptrlst.o comb.o \
    setpart.o rational.o u64u64map.o mctree.o u64i64map.o
->>>>>>> devlp
+
 legosim : $(LEGOSIM)
 	$(CC) $(CFLAGS) -o $@ $(LEGOSIM) $(lib)
 

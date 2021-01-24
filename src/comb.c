@@ -8,18 +8,12 @@
 */
 #include "comb.h"
 #include "misc.h"
-<<<<<<< HEAD
-=======
 #include "u64i64map.h"
->>>>>>> devlp
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
 #include <math.h>
-<<<<<<< HEAD
-=======
 #include <pthread.h>
->>>>>>> devlp
 
 typedef struct MCdat MCdat;
 
@@ -308,38 +302,6 @@ long multinom(int k, int x[k]) {
     return (long) floor(exp(ans) + 0.5);
 }
 
-<<<<<<< HEAD
-/**
- * Binomial coefficient. Return n!/(x! * (n-x)!), the number of ways
- * of choosing x items out of n.
- *
- * @param[in] n total number of items
- *
- * @param[in] x number to choose out of n.
- */
-long binom(long n, long x) {
-    long double ans = lgammal( (long double) (n+1));
-    ans -= lgammal( (long double) (x+1));
-    ans -= lgammal( (long double) (n-x+1));
-
-    return (long) floorl(expl(ans) + 0.5);
-}
-
-/**
- * Natural log of binomial coefficient. Return log(n!/(x! * (n-x)!)),
- * the log of the number of ways of choosing x items out of n.
- *
- * @param[in] n total number of items
- *
- * @param[in] x number to choose out of n.
- */
-long double lbinom(long n, long x) {
-    long double ans = lgammal( (long double) (n+1));
-    ans -= lgammal( (long double) (x+1));
-    ans -= lgammal( (long double) (n-x+1));
-
-    return ans;
-=======
 // So we don't have to calculate the same value more than once.
 static pthread_mutex_t map_lock = PTHREAD_MUTEX_INITIALIZER;
 static U64I64Map *map=NULL;
@@ -426,5 +388,4 @@ void binom_free(void) {
     status = pthread_mutex_unlock(&map_lock);
     if(status)
         ERR(status, "unlock");
->>>>>>> devlp
 }

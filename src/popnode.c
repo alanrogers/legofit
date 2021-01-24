@@ -1,4 +1,3 @@
-
 /**
  * @file popnode.c
  * @author Alan R. Rogers
@@ -731,11 +730,7 @@ int PopNode_feasible(const PopNode * self, Bounds bnd, int verbose) {
         if(self->mix < 0.0 || self->mix > 1.0) {
             if(verbose)
                 fprintf(stderr, "%s FAIL: mix=%lg not in [0, 1]\n",
-<<<<<<< HEAD
-                        __func__, *self->mix);
-=======
                         __func__, self->mix);
->>>>>>> devlp
             return 0;
         }
     }
