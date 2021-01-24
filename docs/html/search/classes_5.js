@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['flat',['Flat',['../struct_flat.html',1,'']]],
-  ['foo',['foo',['../structfoo.html',1,'']]]
+  ['gene',['Gene',['../struct_gene.html',1,'']]],
+  ['gptree',['GPTree',['../struct_g_p_tree.html',1,'']]]
 ];

@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['pnt_5fdim',['PNT_DIM',['../popnodetab_8c.html#a74ae2948e0abac81b1a14bc7a59a9328',1,'popnodetab.c']]],
-  ['prarray',['PRARRAY',['../diffev_8c.html#a09a46fc6e785c0e8a87afdb3cc6e98f2',1,'diffev.c']]]
+  ['order_5ferror',['ORDER_ERROR',['../parse_8c.html#a2f861c80cfb67bd8d136e7c0da74584e',1,'parse.c']]]
 ];

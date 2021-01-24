@@ -71,7 +71,6 @@ $(function() {
 <div class="textblock"><code>#include &quot;binary.h&quot;</code><br />
 <code>#include &lt;stdio.h&gt;</code><br />
 <code>#include &lt;stdlib.h&gt;</code><br />
-<code>#include &lt;stdint.h&gt;</code><br />
 <code>#include &lt;assert.h&gt;</code><br />
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
@@ -85,13 +84,12 @@ Functions</h2></td></tr>
 <tr class="memitem:a14b1e0d0cd943411ea28651d50668358"><td class="memItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="binary_8c.html#a14b1e0d0cd943411ea28651d50668358">rev64</a> (uint64_t x)</td></tr>
 <tr class="memdesc:a14b1e0d0cd943411ea28651d50668358"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reverse bits in a 64-bit integer.  <a href="#a14b1e0d0cd943411ea28651d50668358">More...</a><br /></td></tr>
 <tr class="separator:a14b1e0d0cd943411ea28651d50668358"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1c7a9ad1581e4ab048f9573846729bf3"><td class="memItemLeft" align="right" valign="top"><a id="a1c7a9ad1581e4ab048f9573846729bf3"></a>
-tipId_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="binary_8c.html#a1c7a9ad1581e4ab048f9573846729bf3">reverseBits</a> (tipId_t x)</td></tr>
-<tr class="memdesc:a1c7a9ad1581e4ab048f9573846729bf3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return x after reversing the order of the bits. <br /></td></tr>
-<tr class="separator:a1c7a9ad1581e4ab048f9573846729bf3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8144558e58ef020b7a63d77e6332a604"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="binary_8c.html#a8144558e58ef020b7a63d77e6332a604">nlz64</a> (uint64_t x)</td></tr>
 <tr class="memdesc:a8144558e58ef020b7a63d77e6332a604"><td class="mdescLeft">&#160;</td><td class="mdescRight">Number of leading zeroes in 64-bit unsigned integer.  <a href="#a8144558e58ef020b7a63d77e6332a604">More...</a><br /></td></tr>
 <tr class="separator:a8144558e58ef020b7a63d77e6332a604"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adf4a99fa2d77280e46146c69e26dccd3"><td class="memItemLeft" align="right" valign="top"><a id="adf4a99fa2d77280e46146c69e26dccd3"></a>
+tipId_t&#160;</td><td class="memItemRight" valign="bottom"><b>low_bits_on</b> (unsigned n)</td></tr>
+<tr class="separator:adf4a99fa2d77280e46146c69e26dccd3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae8b6bd67751933e8ee84a473b1c84dab"><td class="memItemLeft" align="right" valign="top"><a id="ae8b6bd67751933e8ee84a473b1c84dab"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="binary_8c.html#ae8b6bd67751933e8ee84a473b1c84dab">nlz</a> (tipId_t x)</td></tr>
 <tr class="memdesc:ae8b6bd67751933e8ee84a473b1c84dab"><td class="mdescLeft">&#160;</td><td class="mdescRight">Number of leading zeroes in tipId_t variable. <br /></td></tr>
@@ -108,13 +106,20 @@ int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="binar
 <tr class="memitem:aea4c70d81dee1ba2d8299ef82ba32108"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="binary_8c.html#aea4c70d81dee1ba2d8299ef82ba32108">num1bits</a> (tipId_t x)</td></tr>
 <tr class="memdesc:aea4c70d81dee1ba2d8299ef82ba32108"><td class="mdescLeft">&#160;</td><td class="mdescRight">Count the number of 1 bits in x.  <a href="#aea4c70d81dee1ba2d8299ef82ba32108">More...</a><br /></td></tr>
 <tr class="separator:aea4c70d81dee1ba2d8299ef82ba32108"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9e9c88817c95bbbbe4ff39d1d4817214"><td class="memItemLeft" align="right" valign="top"><a id="a9e9c88817c95bbbbe4ff39d1d4817214"></a>
+tipId_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="binary_8c.html#a9e9c88817c95bbbbe4ff39d1d4817214">next_power_of_2</a> (tipId_t x)</td></tr>
+<tr class="memdesc:a9e9c88817c95bbbbe4ff39d1d4817214"><td class="mdescLeft">&#160;</td><td class="mdescRight">Round up to the next largest power of 2. <br /></td></tr>
+<tr class="separator:a9e9c88817c95bbbbe4ff39d1d4817214"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aef8711b21ce2bcd47c876d89d16a6e9c"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="binary_8c.html#aef8711b21ce2bcd47c876d89d16a6e9c">uint32Hash</a> (uint32_t key)</td></tr>
-<tr class="memdesc:aef8711b21ce2bcd47c876d89d16a6e9c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Hash function for a 32-bit integer.  <a href="#aef8711b21ce2bcd47c876d89d16a6e9c">More...</a><br /></td></tr>
+<tr class="memdesc:aef8711b21ce2bcd47c876d89d16a6e9c"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="struct_hash.html">Hash</a> function for a 32-bit integer.  <a href="#aef8711b21ce2bcd47c876d89d16a6e9c">More...</a><br /></td></tr>
 <tr class="separator:aef8711b21ce2bcd47c876d89d16a6e9c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9836fabea00c2cc251e78463b4de94d5"><td class="memItemLeft" align="right" valign="top"><a id="a9836fabea00c2cc251e78463b4de94d5"></a>
 uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="binary_8c.html#a9836fabea00c2cc251e78463b4de94d5">uint64Hash</a> (uint64_t key)</td></tr>
-<tr class="memdesc:a9836fabea00c2cc251e78463b4de94d5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Hash function for a 64-bit integer. <br /></td></tr>
+<tr class="memdesc:a9836fabea00c2cc251e78463b4de94d5"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="struct_hash.html">Hash</a> function for a 64-bit integer. <br /></td></tr>
 <tr class="separator:a9836fabea00c2cc251e78463b4de94d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a49099f6c8f423c13efee5dbb8ced4549"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="binary_8c.html#a49099f6c8f423c13efee5dbb8ced4549">no_shared_bits</a> (int n, tipId_t *tid)</td></tr>
+<tr class="memdesc:a49099f6c8f423c13efee5dbb8ced4549"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return 1 if the values in array share no bits; 0 otherwise.  <a href="#a49099f6c8f423c13efee5dbb8ced4549">More...</a><br /></td></tr>
+<tr class="separator:a49099f6c8f423c13efee5dbb8ced4549"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Functions for fiddling with bits. </p>
@@ -182,7 +187,7 @@ uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="
 </div><div class="memdoc">
 
 <p>Number of leading zeroes in 32-bit unsigned integer. </p>
-<p>From p 99 of Hacker's Delight, 2nd edition </p>
+<p>From p 99 of Hacker's Delight, 2nd edition. </p>
 
 </div>
 </div>
@@ -207,6 +212,39 @@ uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="
 
 </div>
 </div>
+<a id="a49099f6c8f423c13efee5dbb8ced4549"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a49099f6c8f423c13efee5dbb8ced4549">&#9670;&nbsp;</a></span>no_shared_bits()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int no_shared_bits </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>n</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">tipId_t *&#160;</td>
+          <td class="paramname"><em>tid</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Return 1 if the values in array share no bits; 0 otherwise. </p>
+<p>Returns 1 if n==0. </p>
+
+<p class="reference">Referenced by <a class="el" href="segment_8c.html#a33e350a85ba0945c826ab2a66ce25777">Segment_sanityCheck()</a>.</p>
+
+</div>
+</div>
 <a id="aea4c70d81dee1ba2d8299ef82ba32108"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aea4c70d81dee1ba2d8299ef82ba32108">&#9670;&nbsp;</a></span>num1bits()</h2>
 
@@ -225,6 +263,8 @@ uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="
 
 <p>Count the number of 1 bits in x. </p>
 <p>From p 85 of Hacker's Delight, 2nd Edn, by Henry S. Warren, Jr. This algorithm is fast when the number of 1 bits is small, and it makes no assumption about the number of bits in x. </p><dl class="section return"><dt>Returns</dt><dd>the number of bits. </dd></dl>
+
+<p class="reference">Referenced by <a class="el" href="branchtab_8c.html#a9c3b7d4a8751c13418e21cfd81245c60">BranchTab_collapse()</a>, and <a class="el" href="branchtab_8c.html#a8a4c2e88378dfc52fc752d627f505ea1">BranchTab_rmPops()</a>.</p>
 
 </div>
 </div>
@@ -360,15 +400,15 @@ uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="
       </table>
 </div><div class="memdoc">
 
-<p>Hash function for a 32-bit integer. </p>
-<p>From Thomas Wang's 1997 article: <a href="https://gist.github.com/badboy/6267743">https://gist.github.com/badboy/6267743</a> </p>
+<p><a class="el" href="struct_hash.html">Hash</a> function for a 32-bit integer. </p>
+<p>From Thomas Wang's 1997 article: <a href="https://gist.github.com/badboy/6267743">https://gist.github.com/badboy/6267743</a> This generates integer overflows, presumably by design. </p>
 
 </div>
 </div>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Aug 11 2020 16:08:15 for Legofit by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat Jan 23 2021 18:27:15 for Legofit by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.13
 </small></address>

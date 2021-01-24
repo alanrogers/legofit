@@ -67,15 +67,15 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 
-<p>Run simulations to estimate site pattern probabilities.  
+<p>Calculate site pattern probabilities.  
 <a href="#details">More...</a></p>
 <div class="textblock"><code>#include &quot;patprob.h&quot;</code><br />
 <code>#include &quot;misc.h&quot;</code><br />
+<code>#include &quot;network.h&quot;</code><br />
 <code>#include &quot;branchtab.h&quot;</code><br />
 <code>#include &quot;parse.h&quot;</code><br />
 <code>#include &quot;parstore.h&quot;</code><br />
 <code>#include &quot;binary.h&quot;</code><br />
-<code>#include &quot;gptree.h&quot;</code><br />
 <code>#include &lt;stdlib.h&gt;</code><br />
 <code>#include &lt;string.h&gt;</code><br />
 <code>#include &lt;sys/types.h&gt;</code><br />
@@ -86,44 +86,44 @@ $(function() {
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Data Structures</h2></td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_sim_arg.html">SimArg</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Data structure used by each thread.  <a href="struct_sim_arg.html#details">More...</a><br /></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_thread_arg.html">ThreadArg</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Data structure used by each thread.  <a href="struct_thread_arg.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:aa6004b4ca70edb8cc7fcb5725d027a4b"><td class="memItemLeft" align="right" valign="top"><a id="aa6004b4ca70edb8cc7fcb5725d027a4b"></a>
-<a class="el" href="struct_sim_arg.html">SimArg</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="patprob_8c.html#aa6004b4ca70edb8cc7fcb5725d027a4b">SimArg_new</a> (const <a class="el" href="struct_g_p_tree.html">GPTree</a> *gptree, unsigned nreps, int doSing)</td></tr>
-<tr class="memdesc:aa6004b4ca70edb8cc7fcb5725d027a4b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct a new <a class="el" href="struct_sim_arg.html" title="Data structure used by each thread. ">SimArg</a> by copying a template. <br /></td></tr>
-<tr class="separator:aa6004b4ca70edb8cc7fcb5725d027a4b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a115dde3edcd7b48896057aefcc09f151"><td class="memItemLeft" align="right" valign="top"><a id="a115dde3edcd7b48896057aefcc09f151"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="patprob_8c.html#a115dde3edcd7b48896057aefcc09f151">SimArg_free</a> (<a class="el" href="struct_sim_arg.html">SimArg</a> *self)</td></tr>
-<tr class="memdesc:a115dde3edcd7b48896057aefcc09f151"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="struct_sim_arg.html" title="Data structure used by each thread. ">SimArg</a> destructor. <br /></td></tr>
-<tr class="separator:a115dde3edcd7b48896057aefcc09f151"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a88ff2a5a85e7fe282d6e06522343b732"><td class="memItemLeft" align="right" valign="top"><a id="a88ff2a5a85e7fe282d6e06522343b732"></a>
-int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="patprob_8c.html#a88ff2a5a85e7fe282d6e06522343b732">simfun</a> (void *varg, void *tdata)</td></tr>
-<tr class="memdesc:a88ff2a5a85e7fe282d6e06522343b732"><td class="mdescLeft">&#160;</td><td class="mdescRight">function run by each thread <br /></td></tr>
-<tr class="separator:a88ff2a5a85e7fe282d6e06522343b732"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4089d326e829890b5ea6430cbc5a3853"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_branch_tab.html">BranchTab</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="patprob_8c.html#a4089d326e829890b5ea6430cbc5a3853">patprob</a> (const <a class="el" href="struct_g_p_tree.html">GPTree</a> *gptree, long nreps, int doSing, gsl_rng *rng)</td></tr>
-<tr class="memdesc:a4089d326e829890b5ea6430cbc5a3853"><td class="mdescLeft">&#160;</td><td class="mdescRight">Run simulations to estimate site pattern probabilities.  <a href="#a4089d326e829890b5ea6430cbc5a3853">More...</a><br /></td></tr>
-<tr class="separator:a4089d326e829890b5ea6430cbc5a3853"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8300b1dbaf7ed6df559bbd496f840813"><td class="memItemLeft" align="right" valign="top"><a id="a8300b1dbaf7ed6df559bbd496f840813"></a>
+static <a class="el" href="struct_thread_arg.html">ThreadArg</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="patprob_8c.html#a8300b1dbaf7ed6df559bbd496f840813">ThreadArg_new</a> (const void *network, unsigned nreps, int doSing)</td></tr>
+<tr class="memdesc:a8300b1dbaf7ed6df559bbd496f840813"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct a new <a class="el" href="struct_thread_arg.html" title="Data structure used by each thread. ">ThreadArg</a> by copying a template. <br /></td></tr>
+<tr class="separator:a8300b1dbaf7ed6df559bbd496f840813"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9c8bf3e7e6f173bc50b13e83a47c0db9"><td class="memItemLeft" align="right" valign="top"><a id="a9c8bf3e7e6f173bc50b13e83a47c0db9"></a>
+static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="patprob_8c.html#a9c8bf3e7e6f173bc50b13e83a47c0db9">ThreadArg_free</a> (<a class="el" href="struct_thread_arg.html">ThreadArg</a> *self)</td></tr>
+<tr class="memdesc:a9c8bf3e7e6f173bc50b13e83a47c0db9"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="struct_thread_arg.html" title="Data structure used by each thread. ">ThreadArg</a> destructor. <br /></td></tr>
+<tr class="separator:a9c8bf3e7e6f173bc50b13e83a47c0db9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a10139d9991f3955dda430149f937a9cd"><td class="memItemLeft" align="right" valign="top"><a id="a10139d9991f3955dda430149f937a9cd"></a>
+static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="patprob_8c.html#a10139d9991f3955dda430149f937a9cd">tfunc</a> (void *varg, void *tdata)</td></tr>
+<tr class="memdesc:a10139d9991f3955dda430149f937a9cd"><td class="mdescLeft">&#160;</td><td class="mdescRight">function run by each thread <br /></td></tr>
+<tr class="separator:a10139d9991f3955dda430149f937a9cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ade7620d8ae5b169eaf1a57bd0b03e814"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_branch_tab.html">BranchTab</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="patprob_8c.html#ade7620d8ae5b169eaf1a57bd0b03e814">get_brlen</a> (const void *network, long nreps, int doSing, double min_brlen, gsl_rng *rng)</td></tr>
+<tr class="memdesc:ade7620d8ae5b169eaf1a57bd0b03e814"><td class="mdescLeft">&#160;</td><td class="mdescRight">Estimate branch lengths.  <a href="#ade7620d8ae5b169eaf1a57bd0b03e814">More...</a><br /></td></tr>
+<tr class="separator:ade7620d8ae5b169eaf1a57bd0b03e814"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Run simulations to estimate site pattern probabilities. </p>
+<div class="textblock"><p>Calculate site pattern probabilities. </p>
 <dl class="section author"><dt>Author</dt><dd>Alan R. Rogers </dd></dl>
 <dl class="section copyright"><dt>Copyright</dt><dd>Copyright (c) 2016, Alan R. Rogers <a href="#" onclick="location.href='mai'+'lto:'+'rog'+'er'+'s@a'+'nt'+'hro'+'.u'+'tah'+'.e'+'du'; return false;">roger<span style="display: none;">.nosp@m.</span>s@an<span style="display: none;">.nosp@m.</span>thro.<span style="display: none;">.nosp@m.</span>utah<span style="display: none;">.nosp@m.</span>.edu</a>. This file is released under the Internet Systems Consortium License, which can be found in file "LICENSE". </dd></dl>
 </div><h2 class="groupheader">Function Documentation</h2>
-<a id="a4089d326e829890b5ea6430cbc5a3853"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4089d326e829890b5ea6430cbc5a3853">&#9670;&nbsp;</a></span>patprob()</h2>
+<a id="ade7620d8ae5b169eaf1a57bd0b03e814"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ade7620d8ae5b169eaf1a57bd0b03e814">&#9670;&nbsp;</a></span>get_brlen()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="struct_branch_tab.html">BranchTab</a>* patprob </td>
+          <td class="memname"><a class="el" href="struct_branch_tab.html">BranchTab</a>* get_brlen </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="struct_g_p_tree.html">GPTree</a> *&#160;</td>
-          <td class="paramname"><em>gptree</em>, </td>
+          <td class="paramtype">const void *&#160;</td>
+          <td class="paramname"><em>network</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -140,6 +140,12 @@ int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="patpr
         <tr>
           <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>min_brlen</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">gsl_rng *&#160;</td>
           <td class="paramname"><em>rng</em>&#160;</td>
         </tr>
@@ -151,17 +157,17 @@ int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="patpr
       </table>
 </div><div class="memdoc">
 
-<p>Run simulations to estimate site pattern probabilities. </p>
-<p>On return, pat[i] identifies the i'th pattern, and prob[i] estimates its probability. Function returns a pointer to a newly-allocated object of type <a class="el" href="struct_branch_tab.html" title="Hash table for branch lengths. ">BranchTab</a>, which contains all the observed site patterns and their summed branch lengths. </p>
+<p>Estimate branch lengths. </p>
+<p>Function returns a pointer to a newly-allocated object of type <a class="el" href="struct_branch_tab.html" title="Hash table for branch lengths. ">BranchTab</a>, which contains all the observed site patterns and their mean branch lengths. </p>
 
-<p class="reference">References <a class="el" href="patprob_8c.html#aa6004b4ca70edb8cc7fcb5725d027a4b">SimArg_new()</a>, and <a class="el" href="patprob_8c.html#a88ff2a5a85e7fe282d6e06522343b732">simfun()</a>.</p>
+<p class="reference">References <a class="el" href="branchtab_8c.html#a1030ad7fe89b2f3ef4e3eae2a032642c">BranchTab_add()</a>, <a class="el" href="branchtab_8c.html#af43c5f9f118645e356d54c02f49156ba">BranchTab_size()</a>, <a class="el" href="patprob_8c.html#a10139d9991f3955dda430149f937a9cd">tfunc()</a>, and <a class="el" href="patprob_8c.html#a8300b1dbaf7ed6df559bbd496f840813">ThreadArg_new()</a>.</p>
 
 </div>
 </div>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Aug 11 2020 16:08:15 for Legofit by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat Jan 23 2021 18:27:15 for Legofit by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.13
 </small></address>

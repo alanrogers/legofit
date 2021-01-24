@@ -71,29 +71,51 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Data Fields</h2></td></tr>
-<tr class="memitem:a75596ae65c5f14f15f9ac99af41e2a63"><td class="memItemLeft" align="right" valign="top"><a id="a75596ae65c5f14f15f9ac99af41e2a63"></a>
-struct <a class="el" href="struct_el.html">El</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_el.html#a75596ae65c5f14f15f9ac99af41e2a63">next</a></td></tr>
-<tr class="memdesc:a75596ae65c5f14f15f9ac99af41e2a63"><td class="mdescLeft">&#160;</td><td class="mdescRight">ptr to next item in list <br /></td></tr>
-<tr class="separator:a75596ae65c5f14f15f9ac99af41e2a63"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acc8d70ed752b2d27a1b271fa5c835c16"><td class="memItemLeft" align="right" valign="top">struct <a class="el" href="struct_el.html">El</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_el.html#acc8d70ed752b2d27a1b271fa5c835c16">next</a></td></tr>
+<tr class="memdesc:acc8d70ed752b2d27a1b271fa5c835c16"><td class="mdescLeft">&#160;</td><td class="mdescRight">next item in list  <a href="#acc8d70ed752b2d27a1b271fa5c835c16">More...</a><br /></td></tr>
+<tr class="separator:acc8d70ed752b2d27a1b271fa5c835c16"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab144b4d61eef564c86709399c9c9321c"><td class="memItemLeft" align="right" valign="top"><a id="ab144b4d61eef564c86709399c9c9321c"></a>
+<a class="el" href="struct_id_set.html">IdSet</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>idset</b></td></tr>
+<tr class="separator:ab144b4d61eef564c86709399c9c9321c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeb5db42323d40a3cfe957e7930b31c4c"><td class="memItemLeft" align="right" valign="top"><a id="aeb5db42323d40a3cfe957e7930b31c4c"></a>
+void *&#160;</td><td class="memItemRight" valign="bottom"><b>ptr</b></td></tr>
+<tr class="separator:aeb5db42323d40a3cfe957e7930b31c4c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac312401226d7c3488be35523ec2cabf6"><td class="memItemLeft" align="right" valign="top"><a id="ac312401226d7c3488be35523ec2cabf6"></a>
-char&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_el.html#ac312401226d7c3488be35523ec2cabf6">key</a> [KEYSIZE]</td></tr>
-<tr class="memdesc:ac312401226d7c3488be35523ec2cabf6"><td class="mdescLeft">&#160;</td><td class="mdescRight">name of <a class="el" href="struct_pop_node.html">PopNode</a> <br /></td></tr>
+char&#160;</td><td class="memItemRight" valign="bottom"><b>key</b> [KEYSIZE]</td></tr>
 <tr class="separator:ac312401226d7c3488be35523ec2cabf6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab96346cbd2721bdc8dc7a99d3f1c0bc1"><td class="memItemLeft" align="right" valign="top"><a id="ab96346cbd2721bdc8dc7a99d3f1c0bc1"></a>
-<a class="el" href="struct_pop_node.html">PopNode</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_el.html#ab96346cbd2721bdc8dc7a99d3f1c0bc1">node</a></td></tr>
-<tr class="memdesc:ab96346cbd2721bdc8dc7a99d3f1c0bc1"><td class="mdescLeft">&#160;</td><td class="mdescRight">ptr to <a class="el" href="struct_pop_node.html">PopNode</a>; not locally owned <br /></td></tr>
-<tr class="separator:ab96346cbd2721bdc8dc7a99d3f1c0bc1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>A single key-value pair, with a pointer to the next one. </p>
 <p>Within each bin of the hash table, key-value pairs are stored in a sorted linked list. </p>
-</div><hr/>The documentation for this struct was generated from the following file:<ul>
-<li><a class="el" href="popnodetab_8c.html">popnodetab.c</a></li>
+</div><h2 class="groupheader">Field Documentation</h2>
+<a id="acc8d70ed752b2d27a1b271fa5c835c16"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acc8d70ed752b2d27a1b271fa5c835c16">&#9670;&nbsp;</a></span>next</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">struct <a class="el" href="struct_el.html">El</a> * El::next</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>next item in list </p>
+<p>ptr to next item in list </p>
+
+<p class="reference">Referenced by <a class="el" href="strptrmap_8c.html#afc45d5547135790a038fdb213dd674a1">El_free()</a>, <a class="el" href="idsetset_8c.html#a4aa6a294f3cb1954dfbaa119b90f83a8">El_free_deep()</a>, and <a class="el" href="idsetset_8c.html#afeb9560fa6556eb8f0470bd233ea020f">El_free_shallow()</a>.</p>
+
+</div>
+</div>
+<hr/>The documentation for this struct was generated from the following files:<ul>
+<li><a class="el" href="idsetset_8c.html">idsetset.c</a></li>
+<li><a class="el" href="ptrqueue_8c.html">ptrqueue.c</a></li>
+<li><a class="el" href="strptrmap_8c.html">strptrmap.c</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Aug 11 2020 16:08:15 for Legofit by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat Jan 23 2021 18:27:15 for Legofit by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.13
 </small></address>

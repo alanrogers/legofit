@@ -67,20 +67,23 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><code>#include &quot;branchtab.h&quot;</code><br />
+<code>#include &quot;comb.h&quot;</code><br />
 <code>#include &quot;cost.h&quot;</code><br />
 <code>#include &quot;diffev.h&quot;</code><br />
-<code>#include &quot;gptree.h&quot;</code><br />
 <code>#include &quot;lblndx.h&quot;</code><br />
+<code>#include &quot;matcoal.h&quot;</code><br />
+<code>#include &quot;network.h&quot;</code><br />
+<code>#include &quot;parseopf.h&quot;</code><br />
 <code>#include &quot;parstore.h&quot;</code><br />
 <code>#include &quot;patprob.h&quot;</code><br />
+<code>#include &quot;pointbuff.h&quot;</code><br />
 <code>#include &quot;simsched.h&quot;</code><br />
 <code>#include &quot;state.h&quot;</code><br />
-<code>#include &quot;pointbuff.h&quot;</code><br />
 <code>#include &lt;assert.h&gt;</code><br />
-<code>#include &lt;libgen.h&gt;</code><br />
 <code>#include &lt;float.h&gt;</code><br />
 <code>#include &lt;getopt.h&gt;</code><br />
 <code>#include &lt;gsl/gsl_sf_gamma.h&gt;</code><br />
+<code>#include &lt;libgen.h&gt;</code><br />
 <code>#include &lt;limits.h&gt;</code><br />
 <code>#include &lt;math.h&gt;</code><br />
 <code>#include &lt;pthread.h&gt;</code><br />
@@ -114,6 +117,9 @@ pthread_mutex_t&#160;</td><td class="memItemRight" valign="bottom"><b>seedLock</
 <tr class="memitem:a650e5dbfd1d32986abe823c5b0671663"><td class="memItemLeft" align="right" valign="top"><a id="a650e5dbfd1d32986abe823c5b0671663"></a>
 unsigned long&#160;</td><td class="memItemRight" valign="bottom"><b>rngseed</b></td></tr>
 <tr class="separator:a650e5dbfd1d32986abe823c5b0671663"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a29dc007556112a006bfe3e7bf362146a"><td class="memItemLeft" align="right" valign="top"><a id="a29dc007556112a006bfe3e7bf362146a"></a>
+tipId_t&#160;</td><td class="memItemRight" valign="bottom"><b>union_all_samples</b></td></tr>
+<tr class="separator:a29dc007556112a006bfe3e7bf362146a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a280fe1d6631c87be61538209d3e5587e"><td class="memItemLeft" align="right" valign="top"><a id="a280fe1d6631c87be61538209d3e5587e"></a>
 volatile sig_atomic_t&#160;</td><td class="memItemRight" valign="bottom"><b>sigstat</b></td></tr>
 <tr class="separator:a280fe1d6631c87be61538209d3e5587e"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -121,7 +127,7 @@ volatile sig_atomic_t&#160;</td><td class="memItemRight" valign="bottom"><b>sigs
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Aug 11 2020 16:08:15 for Legofit by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat Jan 23 2021 18:27:15 for Legofit by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.13
 </small></address>

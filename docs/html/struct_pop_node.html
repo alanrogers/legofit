@@ -68,6 +68,9 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Data Fields</h2></td></tr>
+<tr class="memitem:a686b35a5c16f4f1c22bd0693dd5f7b44"><td class="memItemLeft" align="right" valign="top"><a id="a686b35a5c16f4f1c22bd0693dd5f7b44"></a>
+char *&#160;</td><td class="memItemRight" valign="bottom"><b>label</b></td></tr>
+<tr class="separator:a686b35a5c16f4f1c22bd0693dd5f7b44"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a10fe07eb6320161799baa405e90bdb1a"><td class="memItemLeft" align="right" valign="top"><a id="a10fe07eb6320161799baa405e90bdb1a"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>nparents</b></td></tr>
 <tr class="separator:a10fe07eb6320161799baa405e90bdb1a"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -77,18 +80,33 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>nchildren</b></td></tr
 <tr class="memitem:a2c010adae7f08cdc045e24a565537808"><td class="memItemLeft" align="right" valign="top"><a id="a2c010adae7f08cdc045e24a565537808"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>nsamples</b></td></tr>
 <tr class="separator:a2c010adae7f08cdc045e24a565537808"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a27864f6984032780208954a96d6ececf"><td class="memItemLeft" align="right" valign="top"><a id="a27864f6984032780208954a96d6ececf"></a>
-double *&#160;</td><td class="memItemRight" valign="bottom"><b>twoN</b></td></tr>
-<tr class="separator:a27864f6984032780208954a96d6ececf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab01fcc04671096278e2024fd548f0166"><td class="memItemLeft" align="right" valign="top"><a id="ab01fcc04671096278e2024fd548f0166"></a>
-double *&#160;</td><td class="memItemRight" valign="bottom"><b>start</b></td></tr>
-<tr class="separator:ab01fcc04671096278e2024fd548f0166"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad2882143b74057435026e4b7a8b9beff"><td class="memItemLeft" align="right" valign="top"><a id="ad2882143b74057435026e4b7a8b9beff"></a>
-double *&#160;</td><td class="memItemRight" valign="bottom"><b>end</b></td></tr>
-<tr class="separator:ad2882143b74057435026e4b7a8b9beff"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a134a019c745efbe3af7cedaee5eaaea7"><td class="memItemLeft" align="right" valign="top"><a id="a134a019c745efbe3af7cedaee5eaaea7"></a>
-double *&#160;</td><td class="memItemRight" valign="bottom"><b>mix</b></td></tr>
-<tr class="separator:a134a019c745efbe3af7cedaee5eaaea7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aba22e6f855e1204bd764ff5c9ecb9639"><td class="memItemLeft" align="right" valign="top"><a id="aba22e6f855e1204bd764ff5c9ecb9639"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>twoN</b></td></tr>
+<tr class="separator:aba22e6f855e1204bd764ff5c9ecb9639"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3ed341145b272810bcb434e1066ae5a0"><td class="memItemLeft" align="right" valign="top"><a id="a3ed341145b272810bcb434e1066ae5a0"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>start</b></td></tr>
+<tr class="separator:a3ed341145b272810bcb434e1066ae5a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1f2afba11f348fa6c1929d05592be923"><td class="memItemLeft" align="right" valign="top"><a id="a1f2afba11f348fa6c1929d05592be923"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>end</b></td></tr>
+<tr class="separator:a1f2afba11f348fa6c1929d05592be923"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a91de09cf0068727319c03b3dde2020be"><td class="memItemLeft" align="right" valign="top"><a id="a91de09cf0068727319c03b3dde2020be"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>mix</b></td></tr>
+<tr class="separator:a91de09cf0068727319c03b3dde2020be"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3ebce3faaec251fc0d9fc3239105fe80"><td class="memItemLeft" align="right" valign="top"><a id="a3ebce3faaec251fc0d9fc3239105fe80"></a>
+int&#160;</td><td class="memItemRight" valign="bottom"><b>visited</b></td></tr>
+<tr class="separator:a3ebce3faaec251fc0d9fc3239105fe80"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af86c34269d16fff1dcc0bfd689b795cd"><td class="memItemLeft" align="right" valign="top"><a id="af86c34269d16fff1dcc0bfd689b795cd"></a>
+int&#160;</td><td class="memItemRight" valign="bottom"><b>twoN_i</b></td></tr>
+<tr class="separator:af86c34269d16fff1dcc0bfd689b795cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a47c0e3bbd4bd6380a8637c15cd71252b"><td class="memItemLeft" align="right" valign="top"><a id="a47c0e3bbd4bd6380a8637c15cd71252b"></a>
+int&#160;</td><td class="memItemRight" valign="bottom"><b>start_i</b></td></tr>
+<tr class="separator:a47c0e3bbd4bd6380a8637c15cd71252b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a66ce0155355ef42baa96cf358d0aed84"><td class="memItemLeft" align="right" valign="top"><a id="a66ce0155355ef42baa96cf358d0aed84"></a>
+int&#160;</td><td class="memItemRight" valign="bottom"><b>end_i</b></td></tr>
+<tr class="separator:a66ce0155355ef42baa96cf358d0aed84"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad07fbfcaed6fbd705b6e64e28f8136d7"><td class="memItemLeft" align="right" valign="top"><a id="ad07fbfcaed6fbd705b6e64e28f8136d7"></a>
+int&#160;</td><td class="memItemRight" valign="bottom"><b>mix_i</b></td></tr>
+<tr class="separator:ad07fbfcaed6fbd705b6e64e28f8136d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aadc5cc9b7b0fe5a83a46ccc39e8f35f3"><td class="memItemLeft" align="right" valign="top"><a id="aadc5cc9b7b0fe5a83a46ccc39e8f35f3"></a>
 struct <a class="el" href="struct_pop_node.html">PopNode</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>parent</b> [2]</td></tr>
 <tr class="separator:aadc5cc9b7b0fe5a83a46ccc39e8f35f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -98,23 +116,14 @@ struct <a class="el" href="struct_pop_node.html">PopNode</a> *&#160;</td><td cla
 <tr class="memitem:a6212978df986c292db15f2f0070b19bb"><td class="memItemLeft" align="right" valign="top"><a id="a6212978df986c292db15f2f0070b19bb"></a>
 <a class="el" href="struct_gene.html">Gene</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>sample</b> [MAXSAMP]</td></tr>
 <tr class="separator:a6212978df986c292db15f2f0070b19bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9d3d65ee133d204930dee47e149cc940"><td class="memItemLeft" align="right" valign="top"><a id="a9d3d65ee133d204930dee47e149cc940"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>twoNfree</b></td></tr>
-<tr class="separator:a9d3d65ee133d204930dee47e149cc940"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af58917c2822c78dcf7928621c831e8a6"><td class="memItemLeft" align="right" valign="top"><a id="af58917c2822c78dcf7928621c831e8a6"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>startFree</b></td></tr>
-<tr class="separator:af58917c2822c78dcf7928621c831e8a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2a45af43f48244d1caf510a39d435f80"><td class="memItemLeft" align="right" valign="top"><a id="a2a45af43f48244d1caf510a39d435f80"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>mixFree</b></td></tr>
-<tr class="separator:a2a45af43f48244d1caf510a39d435f80"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <hr/>The documentation for this struct was generated from the following file:<ul>
-<li><a class="el" href="popnode_8h_source.html">popnode.h</a></li>
+<li><a class="el" href="popnode_8c.html">popnode.c</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Aug 11 2020 16:08:15 for Legofit by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat Jan 23 2021 18:27:15 for Legofit by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.13
 </small></address>

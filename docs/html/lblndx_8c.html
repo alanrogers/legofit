@@ -71,6 +71,7 @@ $(function() {
 <div class="textblock"><code>#include &quot;error.h&quot;</code><br />
 <code>#include &quot;lblndx.h&quot;</code><br />
 <code>#include &quot;misc.h&quot;</code><br />
+<code>#include &quot;strdblqueue.h&quot;</code><br />
 <code>#include &lt;stdio.h&gt;</code><br />
 <code>#include &lt;string.h&gt;</code><br />
 <code>#include &lt;assert.h&gt;</code><br />
@@ -133,6 +134,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="lbln
 <tr class="memitem:ad756dc2fb246bd04302d756306daa127"><td class="memItemLeft" align="right" valign="top"><a id="ad756dc2fb246bd04302d756306daa127"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>LblNdx_rmPops</b> (<a class="el" href="struct_lbl_ndx.html">LblNdx</a> *self, tipId_t remove)</td></tr>
 <tr class="separator:ad756dc2fb246bd04302d756306daa127"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa95112159e87c26b78bf623f595895cd"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="lblndx_8c.html#aa95112159e87c26b78bf623f595895cd">LblNdx_from_StrDblQueue</a> (<a class="el" href="struct_lbl_ndx.html">LblNdx</a> *lndx, <a class="el" href="struct_str_dbl_queue.html">StrDblQueue</a> *queue)</td></tr>
+<tr class="memdesc:aa95112159e87c26b78bf623f595895cd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize a pre-allocated <a class="el" href="struct_lbl_ndx.html">LblNdx</a> from a <a class="el" href="struct_str_dbl_queue.html">StrDblQueue</a>.  <a href="#aa95112159e87c26b78bf623f595895cd">More...</a><br /></td></tr>
+<tr class="separator:aa95112159e87c26b78bf623f595895cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>An index of sample labels. </p>
@@ -248,7 +252,7 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>LblNdx_rmPops</b> (<a 
 <p>Add samples for a single population. </p>
 <p>Should be called once for each sampled population. </p>
 
-<p class="reference">Referenced by <a class="el" href="parse_8c.html#aaf7f0f56cf9afc4be7e85eb76616580a">parseSegment()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="lblndx_8c.html#aa95112159e87c26b78bf623f595895cd">LblNdx_from_StrDblQueue()</a>, and <a class="el" href="parse_8c.html#a623fb8cce15a3da9e220172c1cf6f1af">parseSegment()</a>.</p>
 
 </div>
 </div>
@@ -289,6 +293,39 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>LblNdx_rmPops</b> (<a 
 
 </div>
 </div>
+<a id="aa95112159e87c26b78bf623f595895cd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa95112159e87c26b78bf623f595895cd">&#9670;&nbsp;</a></span>LblNdx_from_StrDblQueue()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int LblNdx_from_StrDblQueue </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_lbl_ndx.html">LblNdx</a> *&#160;</td>
+          <td class="paramname"><em>lndx</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="struct_str_dbl_queue.html">StrDblQueue</a> *&#160;</td>
+          <td class="paramname"><em>queue</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Initialize a pre-allocated <a class="el" href="struct_lbl_ndx.html">LblNdx</a> from a <a class="el" href="struct_str_dbl_queue.html">StrDblQueue</a>. </p>
+<p>On input, each entry of the <a class="el" href="struct_str_dbl_queue.html">StrDblQueue</a> refers to a single site pattern. The string in each entry should be of form "a:b:c", where the colons separate fields, and each field is the label of a sample. On return, lndx containes all these labels, indexed in their order of appearance with the queue. </p>
+
+<p class="reference">References <a class="el" href="lblndx_8c.html#a1c29b9b02edd6f2ef227a668eb6c6b49">LblNdx_addSamples()</a>, and <a class="el" href="lblndx_8c.html#af3a2db1736ac1395e194fcac94697790">LblNdx_getTipId()</a>.</p>
+
+</div>
+</div>
 <a id="af3a2db1736ac1395e194fcac94697790"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#af3a2db1736ac1395e194fcac94697790">&#9670;&nbsp;</a></span>LblNdx_getTipId()</h2>
 
@@ -317,6 +354,8 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>LblNdx_rmPops</b> (<a 
 
 <p>Reverse lookup. </p>
 <p>Return tipId_t value corresponding to label, which may be composite. The parts of a composite label are delimited by the ':' character. If label (or any of its parts) is not present in <a class="el" href="struct_lbl_ndx.html">LblNdx</a>, return 0. </p>
+
+<p class="reference">Referenced by <a class="el" href="lblndx_8c.html#aa95112159e87c26b78bf623f595895cd">LblNdx_from_StrDblQueue()</a>, and <a class="el" href="resid_8c.html#af60e08041086546340a2c688d705990a">makeBranchTab()</a>.</p>
 
 </div>
 </div>
@@ -403,7 +442,7 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>LblNdx_rmPops</b> (<a 
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Aug 11 2020 16:08:15 for Legofit by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat Jan 23 2021 18:27:15 for Legofit by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.13
 </small></address>

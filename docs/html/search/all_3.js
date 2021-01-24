@@ -23,5 +23,6 @@ var searchData=
   ['dprintf_2ec',['dprintf.c',['../dprintf_8c.html',1,'']]],
   ['dtexp',['dtexp',['../dtnorm_8c.html#af77d27f81f6e5160396845196780adcd',1,'dtnorm.c']]],
   ['dtnorm',['dtnorm',['../dtnorm_8c.html#ab0582c4a75ba2af7fbd45b984f5f349a',1,'dtnorm.c']]],
-  ['dtnorm_2ec',['dtnorm.c',['../dtnorm_8c.html',1,'']]]
+  ['dtnorm_2ec',['dtnorm.c',['../dtnorm_8c.html',1,'']]],
+  ['duplicate_5fpar',['DUPLICATE_PAR',['../parse_8c.html#ab0745c365ff58c0169c992f13179ccfe',1,'DUPLICATE_PAR():&#160;parse.c'],['../parstore_8c.html#a1dc81639090613bd608e5c38613e255a',1,'DUPLICATE_PAR():&#160;parstore.c']]]
 ];

@@ -70,15 +70,18 @@ $(function() {
 
 <p>Methods for simulating gene genealogies within a given tree of populations, and allowing populations to mix and also to split.  
 <a href="#details">More...</a></p>
-<div class="textblock"><code>#include &quot;gptree.h&quot;</code><br />
-<code>#include &quot;gene.h&quot;</code><br />
+<div class="textblock"><code>#include &quot;gene.h&quot;</code><br />
+<code>#include &quot;gptree.h&quot;</code><br />
 <code>#include &quot;lblndx.h&quot;</code><br />
 <code>#include &quot;parse.h&quot;</code><br />
+<code>#include &quot;param.h&quot;</code><br />
 <code>#include &quot;parstore.h&quot;</code><br />
-<code>#include &lt;string.h&gt;</code><br />
+<code>#include &quot;ptrptrmap.h&quot;</code><br />
+<code>#include &quot;sampndx.h&quot;</code><br />
 <code>#include &lt;errno.h&gt;</code><br />
-<code>#include &lt;unistd.h&gt;</code><br />
 <code>#include &lt;gsl/gsl_rng.h&gt;</code><br />
+<code>#include &lt;string.h&gt;</code><br />
+<code>#include &lt;unistd.h&gt;</code><br />
 <code>#include &lt;pthread.h&gt;</code><br />
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
@@ -89,67 +92,72 @@ Data Structures</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a9b11dcbe7725c5bd86b1c0f01e54544d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="gptree_8c.html#a9b11dcbe7725c5bd86b1c0f01e54544d">initStateVec</a> (int ndx, <a class="el" href="struct_g_p_tree.html">GPTree</a> *gpt, int n, double x[n], gsl_rng *rng)</td></tr>
-<tr class="memdesc:a9b11dcbe7725c5bd86b1c0f01e54544d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize vector x.  <a href="#a9b11dcbe7725c5bd86b1c0f01e54544d">More...</a><br /></td></tr>
-<tr class="separator:a9b11dcbe7725c5bd86b1c0f01e54544d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a90a87c564e43f802c84a4bd105b1aafc"><td class="memItemLeft" align="right" valign="top"><a id="a90a87c564e43f802c84a4bd105b1aafc"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="gptree_8c.html#a90a87c564e43f802c84a4bd105b1aafc">GPTree_printParStore</a> (<a class="el" href="struct_g_p_tree.html">GPTree</a> *self, FILE *fp)</td></tr>
-<tr class="memdesc:a90a87c564e43f802c84a4bd105b1aafc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Print a description of parameters. <br /></td></tr>
-<tr class="separator:a90a87c564e43f802c84a4bd105b1aafc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a410a7065c08f01cbb1312a660a0db6e8"><td class="memItemLeft" align="right" valign="top"><a id="a410a7065c08f01cbb1312a660a0db6e8"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="gptree_8c.html#a410a7065c08f01cbb1312a660a0db6e8">GPTree_printParStoreFree</a> (<a class="el" href="struct_g_p_tree.html">GPTree</a> *self, FILE *fp)</td></tr>
-<tr class="memdesc:a410a7065c08f01cbb1312a660a0db6e8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Print a description of free parameters. <br /></td></tr>
-<tr class="separator:a410a7065c08f01cbb1312a660a0db6e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa01c3bfc560bd85c7c38dfcab23867ca"><td class="memItemLeft" align="right" valign="top"><a id="aa01c3bfc560bd85c7c38dfcab23867ca"></a>
-const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="gptree_8c.html#aa01c3bfc560bd85c7c38dfcab23867ca">GPTree_getNameFree</a> (<a class="el" href="struct_g_p_tree.html">GPTree</a> *self, int i)</td></tr>
-<tr class="memdesc:aa01c3bfc560bd85c7c38dfcab23867ca"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return pointer to name of i'th free parameter. <br /></td></tr>
-<tr class="separator:aa01c3bfc560bd85c7c38dfcab23867ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4e31b205f2bed373438aa1cba23cf148"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="gptree_8c.html#a4e31b205f2bed373438aa1cba23cf148">GPTree_randomize</a> (<a class="el" href="struct_g_p_tree.html">GPTree</a> *self, gsl_rng *rng)</td></tr>
-<tr class="memdesc:a4e31b205f2bed373438aa1cba23cf148"><td class="mdescLeft">&#160;</td><td class="mdescRight">Randomly perturb all free parameters while maintaining inequality constraints.  <a href="#a4e31b205f2bed373438aa1cba23cf148">More...</a><br /></td></tr>
-<tr class="separator:a4e31b205f2bed373438aa1cba23cf148"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7f53e43841ac7a1f231720bcc6688caa"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="gptree_8c.html#a7f53e43841ac7a1f231720bcc6688caa">GPTree_setParams</a> (<a class="el" href="struct_g_p_tree.html">GPTree</a> *self, int n, double x[n])</td></tr>
-<tr class="memdesc:a7f53e43841ac7a1f231720bcc6688caa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set free parameters from an array.  <a href="#a7f53e43841ac7a1f231720bcc6688caa">More...</a><br /></td></tr>
-<tr class="separator:a7f53e43841ac7a1f231720bcc6688caa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a949842c50a0f4497f98c39924c054baf"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="gptree_8c.html#a949842c50a0f4497f98c39924c054baf">GPTree_getParams</a> (<a class="el" href="struct_g_p_tree.html">GPTree</a> *self, int n, double x[n])</td></tr>
-<tr class="memdesc:a949842c50a0f4497f98c39924c054baf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy free parameters from <a class="el" href="struct_g_p_tree.html" title="GPTree stands for Gene-Population tree. ">GPTree</a> into an array.  <a href="#a949842c50a0f4497f98c39924c054baf">More...</a><br /></td></tr>
-<tr class="separator:a949842c50a0f4497f98c39924c054baf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5de8dd36eb89b73160e2743008983f98"><td class="memItemLeft" align="right" valign="top"><a id="a5de8dd36eb89b73160e2743008983f98"></a>
-int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="gptree_8c.html#a5de8dd36eb89b73160e2743008983f98">GPTree_nFree</a> (const <a class="el" href="struct_g_p_tree.html">GPTree</a> *self)</td></tr>
-<tr class="memdesc:a5de8dd36eb89b73160e2743008983f98"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return number of free parameters. <br /></td></tr>
-<tr class="separator:a5de8dd36eb89b73160e2743008983f98"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a050fc67d9685821966f63d637fd0d021"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="gptree_8c.html#a050fc67d9685821966f63d637fd0d021">GPTree_simulate</a> (<a class="el" href="struct_g_p_tree.html">GPTree</a> *self, <a class="el" href="struct_branch_tab.html">BranchTab</a> *branchtab, gsl_rng *rng, unsigned long nreps, int doSing)</td></tr>
-<tr class="memdesc:a050fc67d9685821966f63d637fd0d021"><td class="mdescLeft">&#160;</td><td class="mdescRight">Build a gene tree by coalescent simulation and then tabulate branch lengths associated with each site pattern.  <a href="#a050fc67d9685821966f63d637fd0d021">More...</a><br /></td></tr>
-<tr class="separator:a050fc67d9685821966f63d637fd0d021"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae5af677600280c92025347233baa38af"><td class="memItemLeft" align="right" valign="top"><a id="ae5af677600280c92025347233baa38af"></a>
-<a class="el" href="struct_g_p_tree.html">GPTree</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="gptree_8c.html#ae5af677600280c92025347233baa38af">GPTree_new</a> (const char *fname, <a class="el" href="struct_bounds.html">Bounds</a> bnd)</td></tr>
-<tr class="memdesc:ae5af677600280c92025347233baa38af"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="struct_g_p_tree.html" title="GPTree stands for Gene-Population tree. ">GPTree</a> constructor. <br /></td></tr>
-<tr class="separator:ae5af677600280c92025347233baa38af"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab01a171cd94348aa6b9ada2a2983016d"><td class="memItemLeft" align="right" valign="top"><a id="ab01a171cd94348aa6b9ada2a2983016d"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="gptree_8c.html#ab01a171cd94348aa6b9ada2a2983016d">GPTree_free</a> (<a class="el" href="struct_g_p_tree.html">GPTree</a> *self)</td></tr>
-<tr class="memdesc:ab01a171cd94348aa6b9ada2a2983016d"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="struct_g_p_tree.html" title="GPTree stands for Gene-Population tree. ">GPTree</a> destructor. <br /></td></tr>
-<tr class="separator:ab01a171cd94348aa6b9ada2a2983016d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2b9d203ac68779115e4f3328fd7da161"><td class="memItemLeft" align="right" valign="top"><a id="a2b9d203ac68779115e4f3328fd7da161"></a>
-<a class="el" href="struct_g_p_tree.html">GPTree</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="gptree_8c.html#a2b9d203ac68779115e4f3328fd7da161">GPTree_dup</a> (const <a class="el" href="struct_g_p_tree.html">GPTree</a> *old)</td></tr>
-<tr class="memdesc:a2b9d203ac68779115e4f3328fd7da161"><td class="mdescLeft">&#160;</td><td class="mdescRight">Duplicate a <a class="el" href="struct_g_p_tree.html" title="GPTree stands for Gene-Population tree. ">GPTree</a> object. <br /></td></tr>
-<tr class="separator:a2b9d203ac68779115e4f3328fd7da161"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac3924c14acb1f54bd9eeb221d05748de"><td class="memItemLeft" align="right" valign="top"><a id="ac3924c14acb1f54bd9eeb221d05748de"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>GPTree_sanityCheck</b> (<a class="el" href="struct_g_p_tree.html">GPTree</a> *self, const char *file, int line)</td></tr>
-<tr class="separator:ac3924c14acb1f54bd9eeb221d05748de"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a688976234f7a89a9730a7d594a536451"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="gptree_8c.html#a688976234f7a89a9730a7d594a536451">GPTree_equals</a> (const <a class="el" href="struct_g_p_tree.html">GPTree</a> *lhs, const <a class="el" href="struct_g_p_tree.html">GPTree</a> *rhs)</td></tr>
 <tr class="memdesc:a688976234f7a89a9730a7d594a536451"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return 1 if two <a class="el" href="struct_g_p_tree.html" title="GPTree stands for Gene-Population tree. ">GPTree</a> objects are equal, 0 if they differ.  <a href="#a688976234f7a89a9730a7d594a536451">More...</a><br /></td></tr>
 <tr class="separator:a688976234f7a89a9730a7d594a536451"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2236a39fa0a52a47d8ad6c50e7518d8f"><td class="memItemLeft" align="right" valign="top"><a id="a2236a39fa0a52a47d8ad6c50e7518d8f"></a>
-<a class="el" href="struct_lbl_ndx.html">LblNdx</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="gptree_8c.html#a2236a39fa0a52a47d8ad6c50e7518d8f">GPTree_getLblNdx</a> (<a class="el" href="struct_g_p_tree.html">GPTree</a> *self)</td></tr>
-<tr class="memdesc:a2236a39fa0a52a47d8ad6c50e7518d8f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the <a class="el" href="struct_lbl_ndx.html">LblNdx</a> object from a <a class="el" href="struct_g_p_tree.html" title="GPTree stands for Gene-Population tree. ">GPTree</a>. <br /></td></tr>
-<tr class="separator:a2236a39fa0a52a47d8ad6c50e7518d8f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac5e507f0e34c22166e6642755d874f38"><td class="memItemLeft" align="right" valign="top"><a id="ac5e507f0e34c22166e6642755d874f38"></a>
-unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="gptree_8c.html#ac5e507f0e34c22166e6642755d874f38">GPTree_nsamples</a> (<a class="el" href="struct_g_p_tree.html">GPTree</a> *self)</td></tr>
-<tr class="memdesc:ac5e507f0e34c22166e6642755d874f38"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return number of samples. <br /></td></tr>
-<tr class="separator:ac5e507f0e34c22166e6642755d874f38"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a10af655e171dc8786cd9891229573607"><td class="memItemLeft" align="right" valign="top"><a id="a10af655e171dc8786cd9891229573607"></a>
-int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="gptree_8c.html#a10af655e171dc8786cd9891229573607">GPTree_feasible</a> (const <a class="el" href="struct_g_p_tree.html">GPTree</a> *self, int verbose)</td></tr>
-<tr class="memdesc:a10af655e171dc8786cd9891229573607"><td class="mdescLeft">&#160;</td><td class="mdescRight">Are parameters within the feasible region? <br /></td></tr>
-<tr class="separator:a10af655e171dc8786cd9891229573607"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a57c634810e3ddc9dae43bf0d71cd1cc4"><td class="memItemLeft" align="right" valign="top"><a id="a57c634810e3ddc9dae43bf0d71cd1cc4"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>GPTree_print</b> (void *vself, FILE *fp)</td></tr>
+<tr class="separator:a57c634810e3ddc9dae43bf0d71cd1cc4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a76ab4e9a17731b3f389bff50b4e68586"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="gptree_8c.html#a76ab4e9a17731b3f389bff50b4e68586">GPTree_initStateVec</a> (void *gpt, int ndx, int n, double x[n], gsl_rng *rng)</td></tr>
+<tr class="memdesc:a76ab4e9a17731b3f389bff50b4e68586"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize vector x.  <a href="#a76ab4e9a17731b3f389bff50b4e68586">More...</a><br /></td></tr>
+<tr class="separator:a76ab4e9a17731b3f389bff50b4e68586"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abd88078d819072137eeda67cb89ce93b"><td class="memItemLeft" align="right" valign="top"><a id="abd88078d819072137eeda67cb89ce93b"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="gptree_8c.html#abd88078d819072137eeda67cb89ce93b">GPTree_printParStore</a> (void *vself, FILE *fp)</td></tr>
+<tr class="memdesc:abd88078d819072137eeda67cb89ce93b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Print a description of parameters. <br /></td></tr>
+<tr class="separator:abd88078d819072137eeda67cb89ce93b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a92c7cc1f039fa04da7cfbb20e44c2127"><td class="memItemLeft" align="right" valign="top"><a id="a92c7cc1f039fa04da7cfbb20e44c2127"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="gptree_8c.html#a92c7cc1f039fa04da7cfbb20e44c2127">GPTree_printParStoreFree</a> (void *vself, FILE *fp)</td></tr>
+<tr class="memdesc:a92c7cc1f039fa04da7cfbb20e44c2127"><td class="mdescLeft">&#160;</td><td class="mdescRight">Print a description of free parameters. <br /></td></tr>
+<tr class="separator:a92c7cc1f039fa04da7cfbb20e44c2127"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a479c03138910fd45a42f80c1d2b9e6d5"><td class="memItemLeft" align="right" valign="top"><a id="a479c03138910fd45a42f80c1d2b9e6d5"></a>
+const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="gptree_8c.html#a479c03138910fd45a42f80c1d2b9e6d5">GPTree_getNameFree</a> (void *self, int i)</td></tr>
+<tr class="memdesc:a479c03138910fd45a42f80c1d2b9e6d5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return pointer to name of i'th free parameter. <br /></td></tr>
+<tr class="separator:a479c03138910fd45a42f80c1d2b9e6d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa9fe015f6f6df48b8da4c32a6e9ea88d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="gptree_8c.html#aa9fe015f6f6df48b8da4c32a6e9ea88d">GPTree_randomize</a> (void *vself, gsl_rng *rng)</td></tr>
+<tr class="memdesc:aa9fe015f6f6df48b8da4c32a6e9ea88d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Randomly perturb all free parameters while maintaining inequality constraints.  <a href="#aa9fe015f6f6df48b8da4c32a6e9ea88d">More...</a><br /></td></tr>
+<tr class="separator:aa9fe015f6f6df48b8da4c32a6e9ea88d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af461ab6db85c445ff7db01aa7d9278a2"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="gptree_8c.html#af461ab6db85c445ff7db01aa7d9278a2">GPTree_setParams</a> (void *vself, int n, double x[n])</td></tr>
+<tr class="memdesc:af461ab6db85c445ff7db01aa7d9278a2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set free parameters from an array.  <a href="#af461ab6db85c445ff7db01aa7d9278a2">More...</a><br /></td></tr>
+<tr class="separator:af461ab6db85c445ff7db01aa7d9278a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1b95e749a70e930d3d02e9609ed5e100"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="gptree_8c.html#a1b95e749a70e930d3d02e9609ed5e100">GPTree_getParams</a> (void *self, int n, double x[n])</td></tr>
+<tr class="memdesc:a1b95e749a70e930d3d02e9609ed5e100"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy free parameters from <a class="el" href="struct_g_p_tree.html" title="GPTree stands for Gene-Population tree. ">GPTree</a> into an array.  <a href="#a1b95e749a70e930d3d02e9609ed5e100">More...</a><br /></td></tr>
+<tr class="separator:a1b95e749a70e930d3d02e9609ed5e100"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad765d787c507ebe84ed1ff85d929dd58"><td class="memItemLeft" align="right" valign="top"><a id="ad765d787c507ebe84ed1ff85d929dd58"></a>
+int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="gptree_8c.html#ad765d787c507ebe84ed1ff85d929dd58">GPTree_nFree</a> (const void *self)</td></tr>
+<tr class="memdesc:ad765d787c507ebe84ed1ff85d929dd58"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return number of free parameters. <br /></td></tr>
+<tr class="separator:ad765d787c507ebe84ed1ff85d929dd58"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:addd6f7c1c90dead3f7ffe6ae8332806a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="gptree_8c.html#addd6f7c1c90dead3f7ffe6ae8332806a">GPTree_brlen</a> (void *vself, <a class="el" href="struct_branch_tab.html">BranchTab</a> *branchtab, gsl_rng *rng, unsigned long nreps, int doSing, long unsigned *event_counter)</td></tr>
+<tr class="memdesc:addd6f7c1c90dead3f7ffe6ae8332806a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Use coalescent simulation to estimate the mean branch length associated with each site pattern.  <a href="#addd6f7c1c90dead3f7ffe6ae8332806a">More...</a><br /></td></tr>
+<tr class="separator:addd6f7c1c90dead3f7ffe6ae8332806a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afecc6c16eac184535526d3ce5e673a65"><td class="memItemLeft" align="right" valign="top"><a id="afecc6c16eac184535526d3ce5e673a65"></a>
+void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="gptree_8c.html#afecc6c16eac184535526d3ce5e673a65">GPTree_new</a> (const char *fname, <a class="el" href="struct_bounds.html">Bounds</a> bnd)</td></tr>
+<tr class="memdesc:afecc6c16eac184535526d3ce5e673a65"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="struct_g_p_tree.html" title="GPTree stands for Gene-Population tree. ">GPTree</a> constructor. <br /></td></tr>
+<tr class="separator:afecc6c16eac184535526d3ce5e673a65"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1fcd8c699993242f63c022be856c4b71"><td class="memItemLeft" align="right" valign="top"><a id="a1fcd8c699993242f63c022be856c4b71"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="gptree_8c.html#a1fcd8c699993242f63c022be856c4b71">GPTree_free</a> (void *vself)</td></tr>
+<tr class="memdesc:a1fcd8c699993242f63c022be856c4b71"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="struct_g_p_tree.html" title="GPTree stands for Gene-Population tree. ">GPTree</a> destructor. <br /></td></tr>
+<tr class="separator:a1fcd8c699993242f63c022be856c4b71"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4443a3b37ba314db76a7263e24125e2c"><td class="memItemLeft" align="right" valign="top"><a id="a4443a3b37ba314db76a7263e24125e2c"></a>
+void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="gptree_8c.html#a4443a3b37ba314db76a7263e24125e2c">GPTree_dup</a> (const void *vold)</td></tr>
+<tr class="memdesc:a4443a3b37ba314db76a7263e24125e2c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Duplicate a <a class="el" href="struct_g_p_tree.html" title="GPTree stands for Gene-Population tree. ">GPTree</a> object. <br /></td></tr>
+<tr class="separator:a4443a3b37ba314db76a7263e24125e2c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aca60c3d386e1be5d0f4141531de4ab86"><td class="memItemLeft" align="right" valign="top"><a id="aca60c3d386e1be5d0f4141531de4ab86"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>GPTree_sanityCheck</b> (void *vself, const char *file, int line)</td></tr>
+<tr class="separator:aca60c3d386e1be5d0f4141531de4ab86"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab15529177de0508e2c2f01bae1aea20f"><td class="memItemLeft" align="right" valign="top"><a id="ab15529177de0508e2c2f01bae1aea20f"></a>
+<a class="el" href="struct_lbl_ndx.html">LblNdx</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="gptree_8c.html#ab15529177de0508e2c2f01bae1aea20f">GPTree_getLblNdx</a> (void *vself)</td></tr>
+<tr class="memdesc:ab15529177de0508e2c2f01bae1aea20f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the <a class="el" href="struct_lbl_ndx.html">LblNdx</a> object from a <a class="el" href="struct_g_p_tree.html" title="GPTree stands for Gene-Population tree. ">GPTree</a>. <br /></td></tr>
+<tr class="separator:ab15529177de0508e2c2f01bae1aea20f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa2a372f37a2da709b534d1e19214b94e"><td class="memItemLeft" align="right" valign="top"><a id="aa2a372f37a2da709b534d1e19214b94e"></a>
+unsigned&#160;</td><td class="memItemRight" valign="bottom"><b>GPTree_nsamples</b> (const void *vself)</td></tr>
+<tr class="separator:aa2a372f37a2da709b534d1e19214b94e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a938a73d9247d75a69f33a0e50ecce429"><td class="memItemLeft" align="right" valign="top"><a id="a938a73d9247d75a69f33a0e50ecce429"></a>
+int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="gptree_8c.html#a938a73d9247d75a69f33a0e50ecce429">GPTree_feasible</a> (const void *vself, int verbose)</td></tr>
+<tr class="memdesc:a938a73d9247d75a69f33a0e50ecce429"><td class="mdescLeft">&#160;</td><td class="mdescRight">Are parameters within the feasible region? <br /></td></tr>
+<tr class="separator:a938a73d9247d75a69f33a0e50ecce429"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a287cb8f61840c9cb295a4e2e85b38bf5"><td class="memItemLeft" align="right" valign="top"><a id="a287cb8f61840c9cb295a4e2e85b38bf5"></a>
+unsigned&#160;</td><td class="memItemRight" valign="bottom"><b>GPTree_nSamples</b> (void *vself)</td></tr>
+<tr class="separator:a287cb8f61840c9cb295a4e2e85b38bf5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
 Variables</h2></td></tr>
@@ -162,6 +170,72 @@ pthread_mutex_t&#160;</td><td class="memItemRight" valign="bottom"><b>outputLock
 <dl class="section author"><dt>Author</dt><dd>Alan R. Rogers </dd></dl>
 <dl class="section copyright"><dt>Copyright</dt><dd>Copyright (c) 2016, Alan R. Rogers <a href="#" onclick="location.href='mai'+'lto:'+'rog'+'er'+'s@a'+'nt'+'hro'+'.u'+'tah'+'.e'+'du'; return false;">roger<span style="display: none;">.nosp@m.</span>s@an<span style="display: none;">.nosp@m.</span>thro.<span style="display: none;">.nosp@m.</span>utah<span style="display: none;">.nosp@m.</span>.edu</a>. This file is released under the Internet Systems Consortium License, which can be found in file "LICENSE". </dd></dl>
 </div><h2 class="groupheader">Function Documentation</h2>
+<a id="addd6f7c1c90dead3f7ffe6ae8332806a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#addd6f7c1c90dead3f7ffe6ae8332806a">&#9670;&nbsp;</a></span>GPTree_brlen()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void GPTree_brlen </td>
+          <td>(</td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>vself</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="struct_branch_tab.html">BranchTab</a> *&#160;</td>
+          <td class="paramname"><em>branchtab</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">gsl_rng *&#160;</td>
+          <td class="paramname"><em>rng</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned long&#160;</td>
+          <td class="paramname"><em>nreps</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>doSing</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">long unsigned *&#160;</td>
+          <td class="paramname"><em>event_counter</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Use coalescent simulation to estimate the mean branch length associated with each site pattern. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir"></td><td class="paramname">self</td><td><a class="el" href="struct_g_p_tree.html" title="GPTree stands for Gene-Population tree. ">GPTree</a> object </td></tr>
+    <tr><td class="paramdir">[out]</td><td class="paramname">branchtab</td><td><a class="el" href="struct_branch_tab.html" title="Hash table for branch lengths. ">BranchTab</a> object, which will tabulate branch lengths from this simulations. </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">rng</td><td>GSL random number generator </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">nreps</td><td>number of replicate gene trees to simulate </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">doSing</td><td>if doSing is non-zero, singleton site patterns will be tabulated. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p class="reference">References <a class="el" href="popnode_8c.html#ad8c995115fea8e4eaaf2d9b2af3e6e1f">PopNode_clear()</a>.</p>
+
+</div>
+</div>
 <a id="a688976234f7a89a9730a7d594a536451"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a688976234f7a89a9730a7d594a536451">&#9670;&nbsp;</a></span>GPTree_equals()</h2>
 
@@ -189,14 +263,12 @@ pthread_mutex_t&#160;</td><td class="memItemRight" valign="bottom"><b>outputLock
 </div><div class="memdoc">
 
 <p>Return 1 if two <a class="el" href="struct_g_p_tree.html" title="GPTree stands for Gene-Population tree. ">GPTree</a> objects are equal, 0 if they differ. </p>
-<p>Abort with an error if the <a class="el" href="struct_g_p_tree.html" title="GPTree stands for Gene-Population tree. ">GPTree</a> pointers are different but one or more of the internal pointers is the same. Does not access rootPop or rootGene. </p>
-
-<p class="reference">References <a class="el" href="parstore_8c.html#a175b222acc407edbebaf953c99ea361c">Bounds_equals()</a>, <a class="el" href="misc_8c.html#a1f2415ec1f22a3a73f7702c0143d9402">eprintf()</a>, <a class="el" href="lblndx_8c.html#ad68053591cd0050be7616cb37af74c00">LblNdx_equals()</a>, <a class="el" href="parstore_8c.html#a8a55cd5161d051edc5bb06bb19a2a439">ParStore_equals()</a>, and <a class="el" href="popnode_8c.html#aef67024f7444caedcd299ffec5037932">SampNdx_equals()</a>.</p>
+<p>Abort with an error if the <a class="el" href="struct_g_p_tree.html" title="GPTree stands for Gene-Population tree. ">GPTree</a> pointers are different but one or more of the internal pointers is the same. Does not access rootPop or rootGene. Used for testing GPTree_dup. </p>
 
 </div>
 </div>
-<a id="a949842c50a0f4497f98c39924c054baf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a949842c50a0f4497f98c39924c054baf">&#9670;&nbsp;</a></span>GPTree_getParams()</h2>
+<a id="a1b95e749a70e930d3d02e9609ed5e100"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1b95e749a70e930d3d02e9609ed5e100">&#9670;&nbsp;</a></span>GPTree_getParams()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -204,7 +276,7 @@ pthread_mutex_t&#160;</td><td class="memItemRight" valign="bottom"><b>outputLock
         <tr>
           <td class="memname">void GPTree_getParams </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="struct_g_p_tree.html">GPTree</a> *&#160;</td>
+          <td class="paramtype">void *&#160;</td>
           <td class="paramname"><em>self</em>, </td>
         </tr>
         <tr>
@@ -236,162 +308,27 @@ pthread_mutex_t&#160;</td><td class="memItemRight" valign="bottom"><b>outputLock
   </dd>
 </dl>
 
+<p class="reference">Referenced by <a class="el" href="network_8c.html#a44de0e0866afde2df0d43d28be945369">Network_init()</a>.</p>
+
 </div>
 </div>
-<a id="a4e31b205f2bed373438aa1cba23cf148"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4e31b205f2bed373438aa1cba23cf148">&#9670;&nbsp;</a></span>GPTree_randomize()</h2>
+<a id="a76ab4e9a17731b3f389bff50b4e68586"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a76ab4e9a17731b3f389bff50b4e68586">&#9670;&nbsp;</a></span>GPTree_initStateVec()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void GPTree_randomize </td>
+          <td class="memname">void GPTree_initStateVec </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="struct_g_p_tree.html">GPTree</a> *&#160;</td>
-          <td class="paramname"><em>self</em>, </td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>gpt</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">gsl_rng *&#160;</td>
-          <td class="paramname"><em>rng</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Randomly perturb all free parameters while maintaining inequality constraints. </p>
-
-<p class="reference">References <a class="el" href="parstore_8c.html#a5977ae9c7fb03b06aadc303ff75f62bd">ParStore_randomize()</a>.</p>
-
-</div>
-</div>
-<a id="a7f53e43841ac7a1f231720bcc6688caa"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7f53e43841ac7a1f231720bcc6688caa">&#9670;&nbsp;</a></span>GPTree_setParams()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int GPTree_setParams </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="struct_g_p_tree.html">GPTree</a> *&#160;</td>
-          <td class="paramname"><em>self</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>n</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">double&#160;</td>
-          <td class="paramname"><em>x</em>[n]&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Set free parameters from an array. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">n</td><td>number of parameters in array, which should equal the number of free parameters in the <a class="el" href="struct_g_p_tree.html" title="GPTree stands for Gene-Population tree. ">GPTree</a>. </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">x</td><td>array of parameter values. </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<a id="a050fc67d9685821966f63d637fd0d021"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a050fc67d9685821966f63d637fd0d021">&#9670;&nbsp;</a></span>GPTree_simulate()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void GPTree_simulate </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="struct_g_p_tree.html">GPTree</a> *&#160;</td>
-          <td class="paramname"><em>self</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="struct_branch_tab.html">BranchTab</a> *&#160;</td>
-          <td class="paramname"><em>branchtab</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">gsl_rng *&#160;</td>
-          <td class="paramname"><em>rng</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">unsigned long&#160;</td>
-          <td class="paramname"><em>nreps</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>doSing</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Build a gene tree by coalescent simulation and then tabulate branch lengths associated with each site pattern. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir"></td><td class="paramname">self</td><td><a class="el" href="struct_g_p_tree.html" title="GPTree stands for Gene-Population tree. ">GPTree</a> object </td></tr>
-    <tr><td class="paramdir">[out]</td><td class="paramname">branchtab</td><td><a class="el" href="struct_branch_tab.html" title="Hash table for branch lengths. ">BranchTab</a> object, which will tabulate branch lengths from this (and other) simulations. </td></tr>
-    <tr><td class="paramdir">[in,out]</td><td class="paramname">rng</td><td>GSL random number generator </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">nreps</td><td>number of replicate gene trees to simulate </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">doSing</td><td>if doSing is non-zero, singleton site patterns will be tabulated. </td></tr>
-  </table>
-  </dd>
-</dl>
-
-<p class="reference">References <a class="el" href="gene_8c.html#a54fa9c6b188673338d42720cab0147bd">Gene_free()</a>, <a class="el" href="gene_8c.html#a40b822d945d39d06b424a5064db6a8bd">Gene_tabulate()</a>, <a class="el" href="parstore_8c.html#a5371514d00f55922e6c1cfbe5ddcd89d">ParStore_constrain()</a>, <a class="el" href="popnode_8c.html#ad8c995115fea8e4eaaf2d9b2af3e6e1f">PopNode_clear()</a>, <a class="el" href="popnode_8c.html#a097d416b733c640e4cbfcd7caf446bf3">PopNode_coalesce()</a>, and <a class="el" href="popnode_8c.html#adc307f239dcf3390dca6b966c0d9b84e">SampNdx_populateTree()</a>.</p>
-
-<p class="reference">Referenced by <a class="el" href="patprob_8c.html#a88ff2a5a85e7fe282d6e06522343b732">simfun()</a>.</p>
-
-</div>
-</div>
-<a id="a9b11dcbe7725c5bd86b1c0f01e54544d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9b11dcbe7725c5bd86b1c0f01e54544d">&#9670;&nbsp;</a></span>initStateVec()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void initStateVec </td>
-          <td>(</td>
           <td class="paramtype">int&#160;</td>
           <td class="paramname"><em>ndx</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="struct_g_p_tree.html">GPTree</a> *&#160;</td>
-          <td class="paramname"><em>gpt</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -424,10 +361,84 @@ pthread_mutex_t&#160;</td><td class="memItemRight" valign="bottom"><b>outputLock
 
 </div>
 </div>
+<a id="aa9fe015f6f6df48b8da4c32a6e9ea88d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa9fe015f6f6df48b8da4c32a6e9ea88d">&#9670;&nbsp;</a></span>GPTree_randomize()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void GPTree_randomize </td>
+          <td>(</td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>vself</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">gsl_rng *&#160;</td>
+          <td class="paramname"><em>rng</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Randomly perturb all free parameters while maintaining inequality constraints. </p>
+
+</div>
+</div>
+<a id="af461ab6db85c445ff7db01aa7d9278a2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af461ab6db85c445ff7db01aa7d9278a2">&#9670;&nbsp;</a></span>GPTree_setParams()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int GPTree_setParams </td>
+          <td>(</td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>vself</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>n</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>x</em>[n]&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Set free parameters from an array. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">n</td><td>number of parameters in array, which should equal the number of free parameters in the <a class="el" href="struct_g_p_tree.html" title="GPTree stands for Gene-Population tree. ">GPTree</a>. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">x</td><td>array of parameter values. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>0 on success, 1 if values of x violate boundary constraints. </dd></dl>
+
+</div>
+</div>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Aug 11 2020 16:08:15 for Legofit by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat Jan 23 2021 18:27:15 for Legofit by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.13
 </small></address>

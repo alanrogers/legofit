@@ -63,7 +63,7 @@ $(function() {
 <h1><a class="el" href="legotree_8py.html">legotree.py</a>: Draw phylogenetic trees from lgo input files </h1>
 <p>Legotree constructs a tree from legofit input files. Legotree is implemented in python and requires python packages numpy and matplotlib.</p>
 <p>Legotree is run with the command</p>
-<p>legotree input.lgo</p>
+<p>legotree &ndash;lgo input.lgo</p>
 <div class="image">
 <img src="figure_1.png" alt="figure_1.png"/>
 </div>
@@ -72,29 +72,29 @@ $(function() {
 <div class="image">
 <img src="figure_2.png" alt="figure_2.png"/>
 </div>
-<p>The text on the tree can be adjusted with "text_size"</p>
-<p>legotree input.lgo &ndash;gentime 25 &ndash;text_size 18</p>
+<p>The text on the tree can be adjusted with "textsize"</p>
+<p>legotree input.lgo &ndash;gentime 25 &ndash;textsize 18</p>
 <div class="image">
 <img src="figure_3.png" alt="figure_3.png"/>
 </div>
 <p>If modelling populations with deep ancestry, you may want to scale the tree so recent history events are more apparent visually. You can do this with the "shrink" command. When this option is used, the labels are moved from the y-axis onto the tree. This option is off by default.</p>
-<p>legotree input.lgo &ndash;gentime 25 &ndash;text_size 18 &ndash;shrink True</p>
+<p>legotree input.lgo &ndash;gentime 25 &ndash;textsize 18 &ndash;shrink True</p>
 <p>Additionally you can use the &ndash;method flag to specify the type of shrink. By default this is set to "log" and will take the natural log of the time in generations or years. Setting &ndash;method to "long" will shrink long branches near the root of the tree only.</p>
 <div class="image">
 <img src="figure_4.png" alt="figure_4.png"/>
 </div>
 <p>By default legotree will include any admixture events you include in the lgo file. Sometimes you may want to include admixture events in your lgo file that have an admixture value of 0. If you would like to omit those admixture events from your tree you can use the option "allmix," which is on by default.</p>
-<p>legotree input.lgo &ndash;gentime 25 &ndash;text_size 18 &ndash;shrink True &ndash;allmix False</p>
+<p>legotree input.lgo &ndash;gentime 25 &ndash;textsize 18 &ndash;shrink True &ndash;allmix False</p>
 <div class="image">
 <img src="figure_5.png" alt="figure_5.png"/>
 </div>
 <p>Finally, legotree displays the tree rather than saving it as a file. This allows you to manipulate the size of the figure before saving. If you wish to save directly, you can turn the "show" option to a file name.</p>
-<p>legotree input.lgo &ndash;gentime 25 &ndash;text_size 18 &ndash;shrink True &ndash;allmix False &ndash;show outputtree.png</p>
+<p>legotree input.lgo &ndash;gentime 25 &ndash;textsize 18 &ndash;shrink True &ndash;allmix False &ndash;show outputtree.png</p>
 <p>Any questions or bug reports can be sent to <a href="#" onclick="location.href='mai'+'lto:'+'nat'+'ha'+'n.h'+'ar'+'ris'+'@a'+'nth'+'ro'+'.ut'+'ah'+'.ed'+'u'; return false;">natha<span style="display: none;">.nosp@m.</span>n.ha<span style="display: none;">.nosp@m.</span>rris@<span style="display: none;">.nosp@m.</span>anth<span style="display: none;">.nosp@m.</span>ro.ut<span style="display: none;">.nosp@m.</span>ah.e<span style="display: none;">.nosp@m.</span>du</a> </p>
 </div></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Aug 11 2020 16:08:15 for Legofit by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat Jan 23 2021 18:27:15 for Legofit by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.13
 </small></address>

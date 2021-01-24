@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['check_5ftoken',['CHECK_TOKEN',['../parse_8c.html#a1ba28ca67412f721be296d7a7af9cded',1,'parse.c']]]
+  ['duplicate_5fpar',['DUPLICATE_PAR',['../parse_8c.html#ab0745c365ff58c0169c992f13179ccfe',1,'DUPLICATE_PAR():&#160;parse.c'],['../parstore_8c.html#a1dc81639090613bd608e5c38613e255a',1,'DUPLICATE_PAR():&#160;parstore.c']]]
 ];

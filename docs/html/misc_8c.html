@@ -72,7 +72,6 @@ $(function() {
 <div class="textblock"><code>#include &quot;misc.h&quot;</code><br />
 <code>#include &quot;binary.h&quot;</code><br />
 <code>#include &quot;lblndx.h&quot;</code><br />
-<code>#include &quot;version.h&quot;</code><br />
 <code>#include &quot;error.h&quot;</code><br />
 <code>#include &lt;assert.h&gt;</code><br />
 <code>#include &lt;ctype.h&gt;</code><br />
@@ -152,10 +151,10 @@ void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="mi
 double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="misc_8c.html#a0dbba82f621c09d08228c35291e0bdf8">KLdiverg</a> (int n, const double o[n], const double e[n])</td></tr>
 <tr class="memdesc:a0dbba82f621c09d08228c35291e0bdf8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return Kullback-Leibler divergence of o relative to e. <br /></td></tr>
 <tr class="separator:a0dbba82f621c09d08228c35291e0bdf8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6eb7f0997c5844094fe6ee60b8eaac0c"><td class="memItemLeft" align="right" valign="top"><a id="a6eb7f0997c5844094fe6ee60b8eaac0c"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="misc_8c.html#a6eb7f0997c5844094fe6ee60b8eaac0c">sum_double</a> (int n, const double x[n])</td></tr>
-<tr class="memdesc:a6eb7f0997c5844094fe6ee60b8eaac0c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sum an array of doubles. Unwrapped loop. <br /></td></tr>
-<tr class="separator:a6eb7f0997c5844094fe6ee60b8eaac0c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8eac6094380c2f05c423696cea5c4986"><td class="memItemLeft" align="right" valign="top"><a id="a8eac6094380c2f05c423696cea5c4986"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="misc_8c.html#a8eac6094380c2f05c423696cea5c4986">sumDbl</a> (int n, const double x[n])</td></tr>
+<tr class="memdesc:a8eac6094380c2f05c423696cea5c4986"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sum an array of doubles. <br /></td></tr>
+<tr class="separator:a8eac6094380c2f05c423696cea5c4986"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2dfe91aee70b669f89ecec619eef1aa8"><td class="memItemLeft" align="right" valign="top"><a id="a2dfe91aee70b669f89ecec619eef1aa8"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="misc_8c.html#a2dfe91aee70b669f89ecec619eef1aa8">reflect</a> (double x, double lo, double hi)</td></tr>
 <tr class="memdesc:a2dfe91aee70b669f89ecec619eef1aa8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fold x back and forth across the boundaries "lo" and "hi" to obtain a value y such that lo &lt;= y &lt;= hi. <br /></td></tr>
@@ -164,10 +163,10 @@ double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="mi
 char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="misc_8c.html#a92ebec183869f6f334f2df76f3a2c279">strlowercase</a> (char *s)</td></tr>
 <tr class="memdesc:a92ebec183869f6f334f2df76f3a2c279"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convert NULL-terminated string to lower case. <br /></td></tr>
 <tr class="separator:a92ebec183869f6f334f2df76f3a2c279"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5bdcacb4916d5a48c559d3e030eeb18f"><td class="memItemLeft" align="right" valign="top"><a id="a5bdcacb4916d5a48c559d3e030eeb18f"></a>
-unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="misc_8c.html#a5bdcacb4916d5a48c559d3e030eeb18f">strhash</a> (const char *ss)</td></tr>
-<tr class="memdesc:a5bdcacb4916d5a48c559d3e030eeb18f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Hash a character string. <br /></td></tr>
-<tr class="separator:a5bdcacb4916d5a48c559d3e030eeb18f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac2acd6d687d246dce65de53955860033"><td class="memItemLeft" align="right" valign="top"><a id="ac2acd6d687d246dce65de53955860033"></a>
+unsigned long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="misc_8c.html#ac2acd6d687d246dce65de53955860033">strhash</a> (const char *ss)</td></tr>
+<tr class="memdesc:ac2acd6d687d246dce65de53955860033"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="struct_hash.html">Hash</a> a character string. <br /></td></tr>
+<tr class="separator:ac2acd6d687d246dce65de53955860033"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae2604a1414994a8066b52290cbb75c6c"><td class="memItemLeft" align="right" valign="top"><a id="ae2604a1414994a8066b52290cbb75c6c"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="misc_8c.html#ae2604a1414994a8066b52290cbb75c6c">stripchr</a> (char *s, int c)</td></tr>
 <tr class="memdesc:ae2604a1414994a8066b52290cbb75c6c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove character c from string s. Return length of string. <br /></td></tr>
@@ -218,6 +217,16 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>strnncopy</b> (size_t 
 <tr class="memitem:a8a4ca5ffd824410d5c9fdd0fc7da6d0b"><td class="memItemLeft" align="right" valign="top"><a id="a8a4ca5ffd824410d5c9fdd0fc7da6d0b"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>strchrcnt</b> (const char *s, int c)</td></tr>
 <tr class="separator:a8a4ca5ffd824410d5c9fdd0fc7da6d0b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8faf5cdf8a231e1e16a21ddb5299c8ca"><td class="memItemLeft" align="right" valign="top"><a id="a8faf5cdf8a231e1e16a21ddb5299c8ca"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>collapse_whitespace</b> (char *buff)</td></tr>
+<tr class="separator:a8faf5cdf8a231e1e16a21ddb5299c8ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af33f46b2dc9a2a79fd524f578b99dc21"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="misc_8c.html#af33f46b2dc9a2a79fd524f578b99dc21">LDbl_near</a> (long double x, long double y)</td></tr>
+<tr class="memdesc:af33f46b2dc9a2a79fd524f578b99dc21"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return 1 if the relative difference between x and y is less than or equal to 8*LDBL_EPSILON.  <a href="#af33f46b2dc9a2a79fd524f578b99dc21">More...</a><br /></td></tr>
+<tr class="separator:af33f46b2dc9a2a79fd524f578b99dc21"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac9f293330b36d1804a41296150cf4739"><td class="memItemLeft" align="right" valign="top"><a id="ac9f293330b36d1804a41296150cf4739"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="misc_8c.html#ac9f293330b36d1804a41296150cf4739">stutter</a> (char c, int n, FILE *fp)</td></tr>
+<tr class="memdesc:ac9f293330b36d1804a41296150cf4739"><td class="mdescLeft">&#160;</td><td class="mdescRight">Print character c n times on output fp. <br /></td></tr>
+<tr class="separator:ac9f293330b36d1804a41296150cf4739"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Functions that didn't seem to belong anywhere else. </p>
@@ -472,8 +481,6 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>strchrcnt</b> (const c
 <p>eprintf: print error message and exit. </p>
 <p>This function is dangerous, because unlike ordinary printf, it doesn't detect mismatches in the type and number of arguments. </p>
 
-<p class="reference">Referenced by <a class="el" href="gptree_8c.html#a688976234f7a89a9730a7d594a536451">GPTree_equals()</a>, and <a class="el" href="popnode_8c.html#a2f44cc2e60e06964d0fa7f43545b7ade">NodeStore_alloc()</a>.</p>
-
 </div>
 </div>
 <a id="a5a3f5acac3215b5caf3ea59f061b927c"></a>
@@ -494,6 +501,38 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>strchrcnt</b> (const c
 
 <p>An almost platform-independent function that returns the number of CPU cores on the current machine. </p>
 <p>Source: <a href="http://stackoverflow.com/questions/150355/">http://stackoverflow.com/questions/150355/</a> programmatically-find-the-number-of-cores-on-a-machine. If I understand the webpage correctly, this code was written by Dirk-Jan Kroon. </p>
+
+</div>
+</div>
+<a id="af33f46b2dc9a2a79fd524f578b99dc21"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af33f46b2dc9a2a79fd524f578b99dc21">&#9670;&nbsp;</a></span>LDbl_near()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int LDbl_near </td>
+          <td>(</td>
+          <td class="paramtype">long double&#160;</td>
+          <td class="paramname"><em>x</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">long double&#160;</td>
+          <td class="paramname"><em>y</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Return 1 if the relative difference between x and y is less than or equal to 8*LDBL_EPSILON. </p>
+
+<p class="reference">Referenced by <a class="el" href="branchtab_8c.html#a67a5bbd10344c48096bae7a59f591344">BranchTab_KLdiverg()</a>, and <a class="el" href="branchtab_8c.html#a5eef8d5462b09e66d3d39e9eb29fe80b">BranchTab_negLnL()</a>.</p>
 
 </div>
 </div>
@@ -638,7 +677,7 @@ char *token, *ptr = buff;
 token = nextWhitesepToken(&amp;ptr);
 </pre><p>On return, token is NULL if no tokens are found. Otherwise, it points to the next token in the string, and *str is either NULL (if the end of the string has been reached) or points to the character immediately following the token. </p>
 
-<p class="reference">Referenced by <a class="el" href="parse_8c.html#af0c365f8ca3def04d05c614325464e4a">countSegments()</a>, <a class="el" href="parse_8c.html#a04716734d499522a286cb4f711b3ba28">parseDerive()</a>, <a class="el" href="parse_8c.html#ae3cf747128367505be3378b957eef868">parseMix()</a>, <a class="el" href="parse_8c.html#a8f2104d710701aa4c0106100cb680c70">parseParam()</a>, and <a class="el" href="parse_8c.html#aaf7f0f56cf9afc4be7e85eb76616580a">parseSegment()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="parse_8c.html#af0c365f8ca3def04d05c614325464e4a">countSegments()</a>, <a class="el" href="parse_8c.html#a14ac82bcb39c235bddaf023039f55e62">parseDerive()</a>, <a class="el" href="parse_8c.html#ab0097fe309c5a78dd50f5f344a7d0aaa">parseMix()</a>, <a class="el" href="parse_8c.html#a1216d1779603bd478418ce114d955759">parseParam()</a>, and <a class="el" href="parse_8c.html#a623fb8cce15a3da9e220172c1cf6f1af">parseSegment()</a>.</p>
 
 </div>
 </div>
@@ -906,7 +945,7 @@ token = nextWhitesepToken(&amp;ptr);
 <p>Remove white space from beginning and end of a string. </p>
 <p>Return pointer to stripped string, which lies within the memory buffer passed as input. </p>
 
-<p class="reference">Referenced by <a class="el" href="parse_8c.html#a04716734d499522a286cb4f711b3ba28">parseDerive()</a>, <a class="el" href="parse_8c.html#ae3cf747128367505be3378b957eef868">parseMix()</a>, and <a class="el" href="parse_8c.html#aaf7f0f56cf9afc4be7e85eb76616580a">parseSegment()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="parse_8c.html#a14ac82bcb39c235bddaf023039f55e62">parseDerive()</a>, <a class="el" href="parse_8c.html#ab0097fe309c5a78dd50f5f344a7d0aaa">parseMix()</a>, and <a class="el" href="parse_8c.html#a623fb8cce15a3da9e220172c1cf6f1af">parseSegment()</a>.</p>
 
 </div>
 </div>
@@ -1062,7 +1101,7 @@ token = nextWhitesepToken(&amp;ptr);
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Aug 11 2020 16:08:15 for Legofit by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat Jan 23 2021 18:27:15 for Legofit by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.13
 </small></address>

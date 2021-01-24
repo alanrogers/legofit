@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['bt_5fdim',['BT_DIM',['../branchtab_8c.html#a874880c3cc6e3ba5a0ea09d78dd2fde2',1,'branchtab.c']]]
+  ['check_5ftoken',['CHECK_TOKEN',['../parse_8c.html#a1ba28ca67412f721be296d7a7af9cded',1,'parse.c']]]
 ];
