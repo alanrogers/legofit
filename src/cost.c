@@ -17,14 +17,14 @@
 extern pthread_mutex_t outputLock;
 #endif
 
-#include "cost.h"
-#include "simsched.h"
-#include "gptree.h"
 #include "branchtab.h"
-#include "patprob.h"
+#include "cost.h"
 #include "misc.h"
-#include <math.h>
+#include "network.h"
+#include "patprob.h"
+#include "simsched.h"
 #include <gsl/gsl_rng.h>
+#include <math.h>
 
 /// Calculate cost.
 /// @param[in] dim dimension of x
@@ -40,28 +40,18 @@ double costFun(int dim, double x[dim], void *jdata, void *tdata) {
     long nreps = SimSched_getSimReps(cp->simSched);
     DPRINTF(("%s:%d: nreps=%ld\n",__FILE__,__LINE__,nreps));
 
-	if(GPTree_setParams(cp->gptree, dim, x))
+    if(Network_setParams(cp->network, dim, x))
         return HUGE_VAL;
-	if(!GPTree_feasible(cp->gptree, 0))
-		return HUGE_VAL;
+    if(!Network_feasible(cp->network, 0))
+        return HUGE_VAL;
 
-    BranchTab  *prob = patprob(cp->gptree, nreps, cp->doSing, rng);
-    BranchTab_divideBy(prob, nreps);
-#if COST==KL_COST
+    BranchTab  *prob = get_brlen(cp->network, nreps, cp->doSing,
+                                 cp->min_brlen, rng);
     BranchTab_normalize(prob);
+#if COST==KL_COST
     double cost = BranchTab_KLdiverg(cp->obs, prob);
 #elif COST==LNL_COST
-    BranchTab_normalize(prob);
     double cost = BranchTab_negLnL(cp->obs, prob);
-#elif COST==CHISQR_COST
-    double cost = BranchTab_chiSqCost(cp->obs, prob, cp->u, cp->nnuc,
-                                      nreps);
-#elif COST==SMPLCHISQR_COST
-    double cost = BranchTab_smplChiSqCost(cp->obs, prob, cp->u, cp->nnuc,
-                                      nreps);
-#elif COST==POISSON_COST
-    double cost = BranchTab_poissonCost(cp->obs, prob, cp->u, cp->nnuc,
-                                        nreps);
 #else
 # error "Unknown cost method"
 #endif
@@ -81,8 +71,8 @@ void * CostPar_dup(const void * arg) {
     CHECKMEM(new);
     new->obs = BranchTab_dup(old->obs);
     CHECKMEM(new->obs);
-    new->gptree = GPTree_dup(old->gptree);
-    CHECKMEM(new->gptree);
+    new->network = Network_dup(old->network);
+    CHECKMEM(new->network);
     new->simSched = old->simSched;
     CHECKMEM(new->simSched);
     return new;
@@ -92,7 +82,7 @@ void * CostPar_dup(const void * arg) {
 void CostPar_free(void *arg) {
     CostPar *self = (CostPar *) arg;
     BranchTab_free(self->obs);
-    GPTree_free(self->gptree);
+    Network_free(self->network);
     if(self)
         free(self);
 }

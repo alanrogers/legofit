@@ -325,7 +325,7 @@ int DAFReader_multiNext(int n, DAFReader * r[n]) {
         maxp = fmax(maxp, p);
     }
     if(maxp == 0.0 || minp == 1.0)
-        return NO_ANCESTRAL_ALLELE;
+        return MONOMORPHIC_SITE;
 
     if(!DAFReader_allelesMatch(n, r))
         return ALLELE_MISMATCH;

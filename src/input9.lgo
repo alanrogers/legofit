@@ -1,0 +1,51 @@
+# We start with 2 samples in segment a at time 0. After ln(2) units of
+# coalescent time, there is a probability 0.5 that these have
+# coalesced to a single lineage. Then each lineages migrates to
+# segment s with probability 1/2 and immediately migrates back. The
+# migration should have no effect, so the expected branch lengths are
+# those of a single randomly-mating population of size twoN=1. Both
+# branch lengths should equal 1.
+#
+# The expected length of the interval during which there are two lines of
+# descent in segment "a" is obtained from Eqn 2 of mclego/main.tex. This
+# equation has
+#
+#    m = B^{-1} (x(v) - x(0))
+#
+# Here, v = ln(2), x(0) = 1, and x(v) = 0.5 as explained above. B^{-1}
+# is a 1X1 matrix, i.e. a scalar, whose single entry is -\beta_2 =
+# -2*1/2 = -1. Thus, m = 0.5. This should be the contribution to
+# branchtab for site patterns a.0 and a.1 during segment "a".
+#
+# The contributions should be 0 in segments b and s, because they have
+# length 0.
+#
+# Segment c is infinite, so the branchlengh should be 1
+# there. However, this is weighted by the probability (0.5) that both
+# lineages survive segment "a" without coalescing. In addition, there
+# are 4 migration outcomes that must be tracked separately: (1) both
+# lineages to to "b", (2) both go to "s", (3) "0" to "b" and "1" to
+# "s", (4) "0" to "s" and "1" to "b". Each of these migration outcomes
+# has the same probability, 0.25.
+#
+# Thus, in segment "c" there should be 4 contributions to branchtab,
+# one for each migration outcome. Each of these should equal
+# 0.5*0.25*1 = 1/8. The four contributions sum to 1/2, which adds to
+# the 1/2 from segment "a". Thus, lineages a.0 and a.1 should each end
+# up with branchlength 1.
+
+time constrained Tc = log(2)
+time constrained Tm = log(2)
+time fixed    zero = 0
+twoN fixed    twoNa = 1
+twoN fixed    twoNc = 1
+twoN fixed    twoNs = 1
+mixFrac fixed m = 0.5
+segment a  t=zero twoN=twoNa  samples=2
+segment b  t=Tm  twoN=twoNa
+segment s  t=Tm  twoN=twoNs
+segment c  t=Tc  twoN=twoNc
+mix     a  from b + m * s
+derive  b  from c
+derive  s  from c
+

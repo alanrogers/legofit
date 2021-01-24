@@ -83,6 +83,7 @@ void NameList_free(NameList *self) {
     if(self == NULL)
         return;
     NameList_free(self->next);
+    free(self->name);
     free(self);
 }
 
@@ -309,8 +310,10 @@ State *State_read(const char *fname, int npar, const char * const *name) {
         }
     }
 
-    for(j=0; j < npar; ++j)
-        State_setName(self, j, name[j]);
+    if(self->filetype == OLD) {
+        for(j=0; j < npar; ++j)
+            State_setName(self, j, name[j]);
+    }
 
     fclose(fp);
     fp = NULL;
@@ -329,6 +332,17 @@ State *State_read(const char *fname, int npar, const char * const *name) {
 int State_setName(State *self, int ndx, const char *name) {
     assert(ndx < self->npar);
     assert(ndx >= 0);
+    if(self->name[ndx] != NULL) {
+#ifndef NDEBUG
+        dostacktrace(__FILE__,__LINE__,stderr);
+#endif        
+        fprintf(stderr,"%s:%s:%d: param name %d is already set.\n",
+                __FILE__,__func__,__LINE__,
+                ndx);
+        fprintf(stderr, "   old_name=%s new_name=%s\n",
+                self->name[ndx], name);
+        exit(EXIT_FAILURE);
+    }
 
     self->name[ndx] = strdup(name);
     if(self->name[ndx] == NULL) {
@@ -404,7 +418,8 @@ int State_print(State *self, FILE *fp) {
 }
 
 // name is an array of npar char pointers
-State *State_readList(NameList *list, int npts, int npar, const char * const *name) {
+State *State_readList(NameList *list, int npts, int npar,
+                      const char * const *name) {
     int nstates = NameList_size(list);
     if(nstates==0)
         return NULL;

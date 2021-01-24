@@ -1,0 +1,21 @@
+# We start with two samples in segment a at time 0. Segment a
+# has a huge population and length 0, so no coalescent events happen.
+# Then each lineage in "a" migrates to "b" or "s" with equal probability.
+# Segments "b" and "s" are also huge, with 0 length, so once again
+# no coalescent events happen. Then "b" and "s" join to form "c", which
+# has infinite length and twoN=1. The lengths of the two branches
+# should each equal 1.
+time fixed  zero = 0
+twoN fixed  one = 1
+twoN fixed  big = 1e9
+time free   Tc = 0
+time fixed  Tm = 0
+mixFrac free   m = 0.5
+segment s    t=Tm   twoN=big
+segment a    t=zero twoN=big samples=2
+segment b    t=Tm   twoN=big
+segment c    t=Tc   twoN=one
+mix    a  from b + m * s
+derive b  from c
+derive s  from c
+

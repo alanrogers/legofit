@@ -1,4 +1,10 @@
-/*
+/**
+ * This version of tinyexpr has been modified from Lewis Van Winkle's original. 
+ * The revised version uses hash tables to map names to functions and to
+ * variables.
+ * 
+ * Alan Rogers
+ *
  * TINYEXPR - Tiny recursive descent parser and evaluation engine in C
  *
  * Copyright (c) 2015, 2016 Lewis Van Winkle
@@ -27,6 +33,7 @@
 
 #define TE_NAT_LOG
 
+#include "strptrmap.h"
 #include <stdio.h>
 
 typedef struct te_expr {
@@ -52,35 +59,32 @@ enum {
 };
 
 typedef struct te_variable {
-    // name is not freed by te_variable_free
-    const char *name;
-    
     void *address;
     int type;
     void *context;
-    struct te_variable *next;
 } te_variable;
 
-te_variable *te_variable_push(te_variable *self, const char *name, void *address);
-void te_variable_free(te_variable *self);
+te_variable *te_variable_new(void *address);
+void te_free_variables(StrPtrMap *pars);
 
-/* Parses the input expression, evaluates it, and frees it. */
-
-/* Returns NaN on error. */
+/** 
+ * Parses the input expression, evaluates it, and frees it.
+ * Returns NaN on error. */
 double te_interp(const char *expression, int *error);
 
-/* Parses the input expression and binds variables. */
+/** Parses the input expression and binds variables.
+ * Returns NULL on error. 
+ */
+te_expr *te_compile(const char *expression, StrPtrMap * varmap,
+                    int *error);
 
-/* Returns NULL on error. */
-te_expr *te_compile(const char *expression, const te_variable * variables, int *error);
-
-/* Evaluates the expression. */
+/** Evaluates the expression. */
 double te_eval(const te_expr * n);
 
-/* Prints debugging information on the syntax tree. */
+/** Prints debugging information on the syntax tree. */
 void te_print(const te_expr * n, FILE * fp);
 
-/*
+/**
  * Fill array "ptr" with pointers to the variables on which this
  * expression depends. Return the number of dependent variables, which
  * should be less than or equal to len. Abort if len is smaller than
@@ -88,8 +92,11 @@ void te_print(const te_expr * n, FILE * fp);
  */ 
 int te_dependencies(const te_expr *self, int len, const double *ptr[len]);
 
-/* Frees the expression. */
+/** Frees the expression. */
 /* This is safe to call on NULL pointers. */
 void te_free(te_expr * n);
+
+/** Free hash table used for function names. */
+void te_free_func_map(void);
 
 #endif /*__TINYEXPR_H__*/

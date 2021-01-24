@@ -9,14 +9,11 @@ struct ThreadData {
 
 /// Parameters of cost function--that which is minimized.
 typedef struct CostPar {
-    BranchTab *obs;       // observed site pattern frequencies; normalized
-    GPTree     *gptree;   // model of population history
-    int         nThreads; // number of threads to use
-    int         doSing;   // nonzero => use singleton site patterns
-#if COST==CHISQR_COST || COST==SMPLCHISQR_COST || COST==POISSON_COST
-    double      u;        // mutation rate per generation
-    long        nnuc;     // number of nucleotide sites in genome
-#endif
+    BranchTab *obs;      // observed site pattern frequencies; normalized
+    void      *network;  // model of population history
+    int        nThreads; // number of threads to use
+    int        doSing;   // nonzero => use singleton site patterns
+    double     min_brlen; // minimum branch length per site pattern
     SimSched   *simSched;
 } CostPar;
 

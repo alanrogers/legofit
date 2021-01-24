@@ -160,7 +160,7 @@ for i in range(len(prob1)):
         print "*",
     print
 
-fmt = "%%%ds %%%ds %%%ds %%9.6f" % (widpat, wid1, wid2)
+fmt = "%%%ds %%%ds %%%ds %%9.6g" % (widpat, wid1, wid2)
 print fmt % ("", "", "", KLsum),
 
 

@@ -1,16 +1,15 @@
 /**
-@file binary.c
-@brief Functions for fiddling with bits.
+   @file binary.c
+   @brief Functions for fiddling with bits.
 
-@copyright Copyright (c) 2016, Alan R. Rogers 
-<rogers@anthro.utah.edu>. This file is released under the Internet
-Systems Consortium License, which can be found in file "LICENSE".
+   @copyright Copyright (c) 2016, Alan R. Rogers 
+   <rogers@anthro.utah.edu>. This file is released under the Internet
+   Systems Consortium License, which can be found in file "LICENSE".
 */
 
 #include "binary.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
 #include <assert.h>
 
 static int nlz32(uint32_t x);
@@ -44,19 +43,8 @@ uint64_t rev64(uint64_t x) {
     return x;
 }
 
-/// Return x after reversing the order of the bits.
-tipId_t reverseBits(tipId_t x) {
-#if TIPID_SIZE==32
-    return rev32(x);
-#elif TIPID_SIZE==64    
-    return rev64(x);
-#else
-#   error "unsupported tipId_t size"
-#endif    
-}
-
 /// Number of leading zeroes in 32-bit unsigned integer.  From p 99 of
-/// Hacker's Delight, 2nd edition
+/// Hacker's Delight, 2nd edition.
 static int nlz32(uint32_t x) {
     if(x == 0)
         return 32;
@@ -84,6 +72,15 @@ int nlz64(uint64_t x) {
     return n;
 }
 
+// Return an unsigned integer with the n low-order bits on. This
+// returns 2^n - 1 without ever forming 2^n.
+tipId_t low_bits_on(unsigned n) {
+    tipId_t m = 0;
+    m = ~m;
+    m >>= (8*sizeof(tipId_t)) - n;
+    return m;
+}
+
 /// Number of leading zeroes in tipId_t variable.
 int nlz(tipId_t x) {
 #if TIPID_SIZE==32    
@@ -103,9 +100,11 @@ void printBits(size_t size, void const * const ptr, FILE *fp) {
     size_t i, j;
 
     i = size;
-    while(i-- > 0) {
+    while(i > 0) {
+        i -= 1;
         j=8;
-        while(j-- > 0) {
+        while(j > 0) {
+            j -= 1;
             byte = b[i] & (1<<j);
             byte >>= j;
             fprintf(fp, "%u", (unsigned) byte);
@@ -177,26 +176,66 @@ int num1bits(tipId_t x) {
     return n;
 }
 
+/// Round up to the next largest power of 2.
+tipId_t next_power_of_2(tipId_t x) {
+    if(x == 0)
+        return 1;
+    if( (x & (x-1)) == 0 )
+        return x; // x is already a power of 2
+
+    // Turn off all bits except the highest.
+    do {
+        x &= x-1;
+    }while(x & (x-1));
+
+    // Shift the highest bit one position to the left.
+    return x << 1;
+}
+
 /// Hash function for a 32-bit integer. From Thomas Wang's 1997
 /// article: 
 /// https://gist.github.com/badboy/6267743
-uint32_t uint32Hash( uint32_t key) {
-   key = (key+0x7ed55d16) + (key<<12);
-   key = (key^0xc761c23c) ^ (key>>19);
-   key = (key+0x165667b1) + (key<<5);
-   key = (key+0xd3a2646c) ^ (key<<9);
-   key = (key+0xfd7046c5) + (key<<3);
-   key = (key^0xb55a4f09) ^ (key>>16);
-   return key;
+/// This generates integer overflows, presumably by design.
+#ifdef __clang__
+uint32_t uint32Hash( uint32_t key ) __attribute__((no_sanitize("integer")))
+#else
+    uint32_t uint32Hash( uint32_t key )
+#endif
+{    
+    key = (key+0x7ed55d16) + (key<<12);
+    key = (key^0xc761c23c) ^ (key>>19);
+    key = (key+0x165667b1) + (key<<5);
+    key = (key+0xd3a2646c) ^ (key<<9);
+    key = (key+0xfd7046c5) + (key<<3);
+    key = (key^0xb55a4f09) ^ (key>>16);
+    return key;
 }
 
 /// Hash function for a 64-bit integer.
-uint32_t uint64Hash(uint64_t key) {
-  key = (~key) + (key << 18);
-  key = key ^ (key >> 31);
-  key = key * 21;
-  key = key ^ (key >> 11);
-  key = key + (key << 6);
-  key = key ^ (key >> 22);
-  return (uint32_t) key;
+#ifdef __clang__
+uint32_t uint64Hash(uint64_t key) __attribute__((no_sanitize("integer")))
+#else
+uint32_t uint64Hash(uint64_t key)
+#endif
+{    
+    key = (~key) + (key << 18);
+    key = key ^ (key >> 31);
+    key = key * 21;
+    key = key ^ (key >> 11);
+    key = key + (key << 6);
+    key = key ^ (key >> 22);
+    return (uint32_t) key;
 }
+
+/// Return 1 if the values in array share no bits; 0 otherwise.
+/// Returns 1 if n==0.
+int no_shared_bits(int n, tipId_t *tid) {
+    tipId_t u = 0; // union of prior tipId_t values
+    for(int i=0; i < n; ++i) {
+        if(u & tid[i])
+            return 0;
+        u |= tid[i];
+    }
+    return 1;
+}
+

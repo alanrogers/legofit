@@ -104,6 +104,7 @@ int main(int argc, char **argv) {
     }
     fclose(fp);
 
+    State_free(s);
     State_free(s2);
 
     // read old-type file

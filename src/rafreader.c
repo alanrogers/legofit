@@ -118,10 +118,10 @@ int iscomment(const char *s) {
 }
 
 /// Read the next site and set derived allele frequency (daf) within
-/// each reader.
-/// @return 0 on success, or else EOF, NO_ANCESTRAL_ALLELE,
-/// BUFFER_OVERFLOW, BAD_RAF_INPUT, BAD_SORT, or an errno code for
-/// failure to parse a floating-point number.
+/// each reader.  @return 0 on success, or else EOF,
+/// NO_ANCESTRAL_ALLELE, BUFFER_OVERFLOW, BAD_RAF_INPUT, BAD_SORT,
+/// MONOMORPHIC_SITE, or an errno code for failure to parse a
+/// floating-point number.
 int RAFReader_next(RAFReader * self) {
     int ntokens;
     int status;
@@ -381,7 +381,7 @@ int RAFReader_findDaf(int n, RAFReader * r[n]) {
         maxp = fmax(maxp, p);
     }
     if(maxp == 0.0 || minp == 1.0)
-        return NO_ANCESTRAL_ALLELE;
+        return MONOMORPHIC_SITE;
 
     // Make sure REF and ALT are consistent across readers
     if((status = RAFReader_alleleCheck(n, r)))

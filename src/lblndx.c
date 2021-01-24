@@ -9,6 +9,7 @@
 #include "error.h"
 #include "lblndx.h"
 #include "misc.h"
+#include "strdblqueue.h"
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
@@ -51,7 +52,7 @@ unsigned LblNdx_size(const LblNdx * self) {
     return self->n;
 }
 
-void        LblNdx_sanityCheck(const LblNdx *self, const char *file, int line) {
+void  LblNdx_sanityCheck(const LblNdx *self, const char *file, int line) {
 #ifndef NDEBUG
     REQUIRE(self, file, line);
     REQUIRE(self->n < MAXSAMP, file, line);
@@ -160,8 +161,8 @@ char       *patLbl(size_t n, char buff[n], tipId_t tid, const LblNdx * lblndx) {
 
     if(TIPID_SIZE - nlz(tid) > lblndx->n) {
         fprintf(stderr,"%s:%d: LblNdx only allows for %d bits;"
-                " tid has %d.\n",
-                __FILE__,__LINE__, lblndx->n,
+                " tid = o%o has %d.\n",
+                __FILE__,__LINE__, lblndx->n, tid,
                 TIPID_SIZE - nlz(tid));
         exit(EXIT_FAILURE);
     }
@@ -337,6 +338,48 @@ int LblNdx_rmPops(LblNdx *self, tipId_t remove) {
     return 0;
 }
 
+/**
+ * Initialize a pre-allocated LblNdx from a StrDblQueue. On input,
+ * each entry of the StrDblQueue refers to a single site pattern.  The
+ * string in each entry should be of form "a:b:c", where the colons
+ * separate fields, and each field is the label of a sample.  On
+ * return, lndx containes all these labels, indexed in their order of
+ * appearance with the queue.
+ */
+int LblNdx_from_StrDblQueue(LblNdx *lndx, StrDblQueue *queue) {
+    int status = 0;
+    memset(lndx, 0, sizeof(LblNdx));
+    for(StrDblQueue *sdq = queue; sdq; sdq = sdq->next) {
+        char *s = sdq->strdbl.str;
+        while(1) {
+            char *colon = strchr(s, ':');
+            int len;
+            tipId_t tid;
+            if(colon == NULL) {
+                tid = LblNdx_getTipId(lndx, s);
+                if(tid == 0)
+                    LblNdx_addSamples(lndx, 1u, s);
+                break;
+            }
+            // The tokens in s are separated by colons. Copy
+            // token into a NULL-terminated string that can
+            // be passed to LblNdx_addSamples.
+            char buff[100];
+            len = colon - s;
+            status = strnncopy(sizeof(buff), buff, len, s);
+            if(status)
+                return BUFFER_OVERFLOW;
+            // Add label unless it's already there.
+            tid = LblNdx_getTipId(lndx, s);
+            if(tid == 0)
+                LblNdx_addSamples(lndx, 1u, buff);
+            s = colon + 1;
+        }
+    }
+    LblNdx_sanityCheck(lndx, __FILE__, __LINE__);
+    return 0;
+}
+
 #ifdef TEST
 
 #  include <string.h>
@@ -468,9 +511,32 @@ int main(int argc, char **argv) {
     status = LblNdx_rmPops(&lndx2, remove);
     assert(status == EDOM);
     unitTstResult("LblNdx_rmPops", "OK");
-    
-    unitTstResult("LblNdx", "OK");
 
+    StrDblQueue *stq = NULL;
+    stq = StrDblQueue_push(stq, "x", 1.0);
+    stq = StrDblQueue_push(stq, "y", 1.0);
+    stq = StrDblQueue_push(stq, "z", 1.0);
+    stq = StrDblQueue_push(stq, "x:y", 1.0);
+    stq = StrDblQueue_push(stq, "x:z", 1.0);
+    stq = StrDblQueue_push(stq, "y:z", 1.0);
+    stq = StrDblQueue_push(stq, "x:y:z", 1.0);
+
+    memset(&lndx, 0, sizeof(LblNdx));
+    status = LblNdx_from_StrDblQueue(&lndx, stq);
+
+    assert(3 == LblNdx_size(&lndx));
+    assert( strcmp("x", LblNdx_lbl(&lndx, 0)) == 0);
+    assert( strcmp("y", LblNdx_lbl(&lndx, 1)) == 0);
+    assert( strcmp("z", LblNdx_lbl(&lndx, 2)) == 0);
+
+    assert(1u == LblNdx_getTipId(&lndx, "x") );
+    assert(2u == LblNdx_getTipId(&lndx, "y") );
+    assert(4u == LblNdx_getTipId(&lndx, "z") );
+    
+    unitTstResult("LblNdx_from_StrDblQueue", "OK");
+
+    unitTstResult("LblNdx", "OK");
+    
     return 0;
 }
 #endif

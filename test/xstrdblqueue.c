@@ -103,18 +103,18 @@ int main(int argc, char **argv){
 
     bool verbose = 0;
 
-	  switch (argc) {
+    switch (argc) {
     case 1:
         break;
     case 2:
         if(strncmp(argv[1], "-v", 2) != 0) {
-            fprintf(stderr, "usage: xstrdblstck [-v]\n");
+            fprintf(stderr, "usage: xstrdblqueue [-v]\n");
             exit(EXIT_FAILURE);
         }
         verbose = 1;
         break;
     default:
-        fprintf(stderr, "usage: xstrdblstck [-v]\n");
+        fprintf(stderr, "usage: xstrdblqueue [-v]\n");
         exit(EXIT_FAILURE);
     }
 
@@ -237,6 +237,13 @@ int main(int argc, char **argv){
     a = StrDblQueue_push(a, "y", 3.0);
     b = StrDblQueue_push(b, "y", 4.0);
     assert(1.0 == StrDblQueue_msd(a,b));
+
+    a = StrDblQueue_free(a);
+    b = StrDblQueue_free(b);
+    c = StrDblQueue_free(c);
+    d = StrDblQueue_free(d);
+    e = StrDblQueue_free(e);
+    f = StrDblQueue_free(f);
 
     unitTstResult("StrDblQueue", "OK");
 

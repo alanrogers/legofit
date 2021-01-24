@@ -385,6 +385,10 @@ int main(int argc, char **argv) {
                 __FILE__,__LINE__);
         exit(1);
     }
+    Tokenizer_free(tkz);
+    tkz = NULL;
+    free(nsamples);
+    nsamples = NULL;
     unitTstResult("countSamples", "OK");
 
     // test readuntil

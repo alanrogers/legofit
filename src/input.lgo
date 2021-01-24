@@ -18,7 +18,7 @@ segment n     t=Tn     twoN=twoNn    samples=1  # Neanderthal
 segment y2    t=Tn     twoN=one               # pre-mig eurasia
 segment xy    t=Txy    twoN=twoNxy              # early modern
 segment xyn   t=Txyn   twoN=twoNn               # ancestral
-mix    y  from y2 + mN * n      # y is a mixture of y2 and n
+mix    y  from y2 + mN * n
 derive x  from xy               # x is child of xy
 derive y2 from xy               # y2 is child of xy
 derive xy from xyn              # xy is child of xyn

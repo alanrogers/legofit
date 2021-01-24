@@ -60,19 +60,25 @@
  * Systems Consortium License, which can be found in file "LICENSE".
  */
 
-#include "popnodetab.h"
+#include "error.h"
 #include "lblndx.h"
 #include "misc.h"
+#include "network.h"
+#include "param.h"
 #include "parse.h"
 #include "parstore.h"
-#include "popnode.h"
-#include "error.h"
+#include "ptrqueue.h"
+#include "sampndx.h"
+#include "strptrmap.h"
 #include <assert.h>
 #include <ctype.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
+
+// Site pattern representing the union of all samples.
+extern tipId_t union_all_samples;
 
 /// Abort if token is missing
 # define CHECK_TOKEN(tok, orig) {                                  \
@@ -93,19 +99,39 @@
         exit(EXIT_FAILURE);                                     \
     }while(0)
 
+/// Abort with an error message about duplicate parameter definition
+#define DUPLICATE_PAR(x,orig) do{                                  \
+        fprintf(stderr,"%s:%d: Duplicate parameter def: \"%s\"\n", \
+                __FILE__,__LINE__, (x));                           \
+        fprintf(stderr,"  input: %s\n", (orig));                   \
+        exit(EXIT_FAILURE);                                        \
+    }while(0)
+
+/// Input statements out of order
+#define ORDER_ERROR(word) do{                                           \
+        fprintf(stderr,"%s:%d: Order error at \"%s\" in .lgo file.\n",  \
+                __FILE__,__LINE__, (word));                             \
+        fprintf(stderr,"Parameter definitions should come first\n"      \
+                "   (twoN, time, mixFrac, and param),\n"                \
+                "   then \"segment\" statements, and finally \"mix\"\n" \
+                "   and \"derive\" statements.\n");                     \
+        exit(EXIT_FAILURE);                                             \
+    }while(0)
+
 int getDbl(double *x, char **next, const char *orig);
 int getULong(unsigned long *x, char **next, const char *orig);
 int getRange(double x[2], char **next, const char *orig);
-void parseParam(char *next, unsigned type, ParStore * parstore,
+void parseParam(char *next, unsigned type, StrPtrMap *parmap,
+                PtrQueue *fixedQ, PtrQueue *freeQ, PtrQueue *constrQ,
                 Bounds * bnd, const char *orig);
-void parseSegment(char *next, PopNodeTab * poptbl, SampNdx * sndx,
+void parseSegment(char *next, StrPtrMap * popmap, SampNdx * sndx,
                   LblNdx * lndx, ParStore * parstore,
-                  NodeStore * ns, const char *orig);
-void parseDerive(char *next, PopNodeTab * poptbl, ParStore * parstore,
+                  const char *orig);
+void parseDerive(char *next, StrPtrMap * popmap, ParStore * parstore,
                  const char *orig);
-void parseMix(char *next, PopNodeTab * poptbl, ParStore * parstore,
+void parseMix(char *next, StrPtrMap * popmap, ParStore * parstore,
               const char *orig);
-int get_one_line(size_t n, char buff[n], FILE * fp);
+static int get_one_line(size_t n, char buff[n], FILE * fp);
 
 /// Interpret token i as a double.
 /// @param[out] x points to variable into which double value will be
@@ -181,9 +207,10 @@ int getRange(double x[2], char **next, const char *orig) {
 /// @param[out] parstore structure that maintains info about
 /// parameters
 /// @param[in] bnd the bounds of each type of parameter
-/// @parem[in] orig original input line
-void parseParam(char *next, unsigned ptype,
-                ParStore * parstore, Bounds * bnd, const char *orig) {
+/// @param[in] orig original input line
+void parseParam(char *next, unsigned ptype, StrPtrMap *parmap,
+                PtrQueue *fixedQ, PtrQueue *freeQ, PtrQueue *constrQ,
+                Bounds * bnd, const char *orig) {
     // Read type of parameter
     {
         char *tok = nextWhitesepToken(&next);
@@ -244,11 +271,20 @@ void parseParam(char *next, unsigned ptype,
         }
     }
 
-    // Allocate and initialize parameter in ParStore
+    // Allocate and initialize parameter in queue
+    Param *par;
     if(ptype & FIXED) {
-        ParStore_addFixedPar(parstore, value, name, ptype);
+        par = Param_new(name, value, value, value, ptype, NULL);
+        PtrQueue_push(fixedQ, par);
+        status = StrPtrMap_insert(parmap, name, par);
+        if(status)
+            DUPLICATE_PAR(name, orig);
     }else if(ptype & CONSTRAINED) {
-        ParStore_addConstrainedPar(parstore, formula, name, ptype);
+        par = Param_new(name, value, -DBL_MAX, DBL_MAX, ptype, formula);
+        PtrQueue_push(constrQ, par);
+        status = StrPtrMap_insert(parmap, name, par);
+        if(status)
+            DUPLICATE_PAR(name, orig);
     }else if(ptype & FREE) {
         double lo, hi;
         if(gotRange) {
@@ -270,27 +306,28 @@ void parseParam(char *next, unsigned ptype,
             }else
                 DIE("This shouldn't happen");
         }
-        ParStore_addFreePar(parstore, value, lo, hi, name, ptype);
+        par = Param_new(name, value, lo, hi, ptype, NULL);
+        PtrQueue_push(freeQ, par);
+        status = StrPtrMap_insert(parmap, name, par);
+        if(status)
+            DUPLICATE_PAR(name, orig);
     }else
         DIE("This shouldn't happen");
 }
 
 /// Parse a line describing a segment of the population tree
 /// @param[inout] next pointer to unparsed portion of input line
-/// @param[inout] poptbl associates names of segments
+/// @param[inout] popmap associates names of segments
 /// with pointers to them.
 /// @param[inout] sndx associates the index of each
-/// sample with the PopNode object to which it belongs.
+/// sample with the node to which it belongs.
 /// @param[inout] lndx associated index of each sample with its name
 /// @param[out] parstore structure that maintains info about
 /// parameters
-/// @param[inout] ns allocates PopNode objects
-void parseSegment(char *next, PopNodeTab * poptbl, SampNdx * sndx,
-                  LblNdx * lndx, ParStore * parstore, NodeStore * ns,
-                  const char *orig) {
+void parseSegment(char *next, StrPtrMap * popmap, SampNdx * sndx,
+                  LblNdx * lndx, ParStore * parstore, const char *orig) {
     char *popName, *tok;
-    double *tPtr, *twoNptr;
-    unsigned ttype, twoNtype;
+    int start_i, twoN_i;
     unsigned long nsamples = 0;
 
     // Read name of segment
@@ -308,8 +345,8 @@ void parseSegment(char *next, PopNodeTab * poptbl, SampNdx * sndx,
     }
     tok = nextWhitesepToken(&next);
     CHECK_TOKEN(tok, orig);
-    tPtr = ParStore_findPtr(parstore, &ttype, tok);
-    if(NULL == tPtr) {
+    start_i = ParStore_getIndex(parstore, tok);
+    if(start_i < 0) {
         fprintf(stderr, "%s:%s:%d: Parameter \"%s\" is undefined\n",
                 __FILE__, __func__, __LINE__, tok);
         fprintf(stderr, "input: %s\n", orig);
@@ -327,13 +364,14 @@ void parseSegment(char *next, PopNodeTab * poptbl, SampNdx * sndx,
     tok = nextWhitesepToken(&next);
     CHECK_TOKEN(tok, orig);
     tok = stripWhiteSpace(tok);
-    twoNptr = ParStore_findPtr(parstore, &twoNtype, tok);
-    if(NULL == twoNptr) {
+    twoN_i = ParStore_getIndex(parstore, tok);
+    if(twoN_i < 0) {
         fprintf(stderr, "%s:%s:%dParameter \"%s\" is undefined\n",
                 __FILE__, __func__, __LINE__, tok);
         fprintf(stderr, "input: %s\n", orig);
         exit(EXIT_FAILURE);
     }
+
     // Read (optional) number of samples
     if(next) {
         tok = strsep(&next, "=");
@@ -370,9 +408,8 @@ void parseSegment(char *next, PopNodeTab * poptbl, SampNdx * sndx,
     }
 
     assert(strlen(popName) > 0);
-    PopNode *thisNode = PopNode_new(twoNptr, twoNtype & FREE,
-                                    tPtr, ttype & FREE, ns);
-    if(0 != PopNodeTab_insert(poptbl, popName, thisNode)) {
+    void *thisNode = Node_new(twoN_i, start_i, parstore, popName);
+    if(0 != StrPtrMap_insert(popmap, popName, thisNode)) {
         fprintf(stderr, "%s:%d: duplicate \"segment %s\"\n",
                 __FILE__, __LINE__, popName);
         fprintf(stderr, "input: %s\n", orig);
@@ -385,9 +422,9 @@ void parseSegment(char *next, PopNodeTab * poptbl, SampNdx * sndx,
 /// Parse a line of input describing a parent-offspring relationship
 /// between two nodes.
 /// @param[in] next unparsed portion of input line
-/// @param[inout] poptbl associates names of segments
+/// @param[inout] popmap associates names of segments
 /// with pointers to them.
-void parseDerive(char *next, PopNodeTab * poptbl, ParStore * parstore,
+void parseDerive(char *next, StrPtrMap * popmap, ParStore * parstore,
                  const char *orig) {
     char *childName, *parName, *tok;
 
@@ -418,7 +455,7 @@ void parseDerive(char *next, PopNodeTab * poptbl, ParStore * parstore,
     }
 
     assert(strlen(childName) > 0);
-    PopNode *childNode = PopNodeTab_get(poptbl, childName);
+    void *childNode = StrPtrMap_get(popmap, childName);
     if(childNode == NULL) {
         fprintf(stderr, "%s:%d: child segment \"%s\" undefined\n",
                 __FILE__, __LINE__, childName);
@@ -427,50 +464,32 @@ void parseDerive(char *next, PopNodeTab * poptbl, ParStore * parstore,
     }
 
     assert(strlen(parName) > 0);
-    PopNode *parNode = PopNodeTab_get(poptbl, parName);
+    void *parNode = StrPtrMap_get(popmap, parName);
     if(parNode == NULL) {
         fprintf(stderr, "%s:%d: parent segment \"%s\" undefined\n",
                 __FILE__, __LINE__, parName);
         fprintf(stderr, "input: %s\n", orig);
         exit(EXIT_FAILURE);
     }
-    int status = PopNode_addChild(parNode, childNode);
-    switch(status){
-    case 0:
-        break;
-    case TOO_MANY_PARENTS:
-        fprintf(stderr,"%s:%d: node has too many parents\n",
-                __FILE__,__LINE__);
-        fprintf(stderr, " Input: %s\n", orig);
-        exit(EXIT_FAILURE);
-    case TOO_MANY_CHILDREN:
-        fprintf(stderr,"%s:%d: node has too many children\n",
-                __FILE__,__LINE__);
-        fprintf(stderr, " Input: %s\n", orig);
-        exit(EXIT_FAILURE);
-    case DATE_MISMATCH:
-        fprintf(stderr,"%s:%d: date mismatch\n",__FILE__,__LINE__);
-        fprintf(stderr, " Input: %s\n", orig);
-        exit(EXIT_FAILURE);
-    default:
-        fprintf(stderr,"%s:%d: unknown error (%d)\n",
-                __FILE__,__LINE__,status);
-        fprintf(stderr, " Input: %s\n", orig);
+    int status = Node_addChild(parNode, childNode);
+    if(status) {
+        char buff[200];
+        mystrerror_r(status, buff, sizeof(buff));
+        fprintf(stderr,"%s:%d: %s\n", __FILE__,__LINE__,buff);
         exit(EXIT_FAILURE);
     }
 }
 
 /// Parse a line of input describing gene flow.
 /// @param[inout] next unparsed portion of input line
-/// @param[inout] poptbl associates names of segments
+/// @param[inout] popmap associates names of segments
 /// with pointers to them.
 /// @param[out] parstore structure that maintains info about
 /// parameters
-void parseMix(char *next, PopNodeTab * poptbl, ParStore * parstore,
+void parseMix(char *next, StrPtrMap * popmap, ParStore * parstore,
               const char *orig) {
     char *childName, *parName[2], *tok;
-    double *mPtr;
-    unsigned mtype;
+    int mix_i;
 
     // Read name of child
     childName = nextWhitesepToken(&next);
@@ -490,12 +509,12 @@ void parseMix(char *next, PopNodeTab * poptbl, ParStore * parstore,
     CHECK_TOKEN(parName[0], orig);
     parName[0] = stripWhiteSpace(parName[0]);
 
-    // Read mixture fraction, mPtr
+    // Read mixture fraction
     tok = strsep(&next, "*");
     CHECK_TOKEN(tok, orig);
     tok = stripWhiteSpace(tok);
-    mPtr = ParStore_findPtr(parstore, &mtype, tok);
-    if(NULL == mPtr) {
+    mix_i = ParStore_getIndex(parstore, tok);
+    if(mix_i < 0) {
         fprintf(stderr, "%s:%s:%d: Parameter \"%s\" is undefined\n",
                 __FILE__, __func__, __LINE__, tok);
         fprintf(stderr, "input: %s\n", orig);
@@ -513,7 +532,7 @@ void parseMix(char *next, PopNodeTab * poptbl, ParStore * parstore,
     }
 
     assert(strlen(childName) > 0);
-    PopNode *childNode = PopNodeTab_get(poptbl, childName);
+    void *childNode = StrPtrMap_get(popmap, childName);
     if(childNode == NULL) {
         fprintf(stderr, "%s:%d: child segment \"%s\" undefined\n",
                 __FILE__, __LINE__, childName);
@@ -522,7 +541,7 @@ void parseMix(char *next, PopNodeTab * poptbl, ParStore * parstore,
     }
 
     assert(strlen(parName[0]) > 0);
-    PopNode *parNode0 = PopNodeTab_get(poptbl, parName[0]);
+    void *parNode0 = StrPtrMap_get(popmap, parName[0]);
     if(parNode0 == NULL) {
         fprintf(stderr, "%s:%d: parent segment \"%s\" undefined\n",
                 __FILE__, __LINE__, parName[0]);
@@ -531,7 +550,7 @@ void parseMix(char *next, PopNodeTab * poptbl, ParStore * parstore,
     }
 
     assert(strlen(parName[1]) > 0);
-    PopNode *parNode1 = PopNodeTab_get(poptbl, parName[1]);
+    void *parNode1 = StrPtrMap_get(popmap, parName[1]);
     if(parNode1 == NULL) {
         fprintf(stderr, "%s:%d: parent segment \"%s\" undefined\n",
                 __FILE__, __LINE__, parName[1]);
@@ -539,8 +558,8 @@ void parseMix(char *next, PopNodeTab * poptbl, ParStore * parstore,
         exit(EXIT_FAILURE);
     }
 
-    int status = PopNode_mix(childNode, mPtr, mtype & FREE, parNode1,
-                             parNode0);
+    int status = Node_mix(childNode, mix_i, parNode1, parNode0,
+                          parstore);
     switch(status){
     case 0:
         break;
@@ -567,11 +586,11 @@ void parseMix(char *next, PopNodeTab * poptbl, ParStore * parstore,
 }
 
 // Read a line into buff, skipping blank lines; strip comments and
-// trailing whitespace.  Return 0 on success; 1 on EOF.
-int get_one_line(size_t n, char buff[n], FILE * fp) {
+// trailing whitespace.  Return 0 on success; EOF on end of file.
+static int get_one_line(size_t n, char buff[n], FILE * fp) {
     do{
         if(fgets(buff, n, fp) == NULL)
-            return 1;
+            return EOF;
 
         if(!strchr(buff, '\n') && !feof(fp)) {
             fprintf(stderr, "%s:%d: buffer overflow. buff size: %zu\n",
@@ -597,21 +616,27 @@ int get_one_line(size_t n, char buff[n], FILE * fp) {
 /// Parse an input file in .lgo format
 /// @param[inout] fp input file pointer
 /// @param[inout] sndx associates the index of each
-/// sample with the PopNode object to which it belongs.
+/// sample with the node to which it belongs.
 /// @param[inout] lndx associated index of each sample with its name
 /// @param[out] parstore structure that maintains info about
 /// parameters
 /// @param[in] bnd the bounds of each type of parameter
-/// @param[inout] ns allocates PopNode objects
-PopNode *mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, ParStore * parstore,
-                Bounds * bnd, NodeStore * ns) {
+PtrPair mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, Bounds * bnd) {  
     char orig[500], buff[500], buff2[500];
     char *token, *next;
+    ParStore *parstore = NULL;
 
-    PopNodeTab *poptbl = PopNodeTab_new();
+    StrPtrMap *popmap = StrPtrMap_new();
+    StrPtrMap *parmap = StrPtrMap_new();
+
+    // Queues for fixed parameters, free ones, and constrained ones.
+    // Used during parsing. NULL after that.
+    PtrQueue *fixedQ = PtrQueue_new();
+    PtrQueue *freeQ = PtrQueue_new();
+    PtrQueue *constrQ = PtrQueue_new();
 
     while(1) {
-        if(1 == get_one_line(sizeof(buff), buff, fp))
+        if(EOF == get_one_line(sizeof(buff), buff, fp))
             break;
 
         // If line ends with a binary operator ("+-*/"), then append
@@ -625,7 +650,7 @@ PopNode *mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, ParStore * parstore,
             if(end>buff && strchr("+-*/", *(end-1)) == NULL)
                 break;
             // line empty or ends with binary operator: append next line
-            if(1 == get_one_line(sizeof(buff2), buff2, fp)) {
+            if(EOF == get_one_line(sizeof(buff2), buff2, fp)) {
                 fprintf(stderr, "%s:%d: unexpected end of file\n",
                         __FILE__, __LINE__);
                 fprintf(stderr,"  prev line: \"%s\"\n", buff);
@@ -641,6 +666,8 @@ PopNode *mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, ParStore * parstore,
             strcat(buff, buff2);
         }
 
+        collapse_whitespace(buff);
+
         snprintf(orig, sizeof orig, "%s", buff);
 
         // Get first whitespace-separated token
@@ -649,36 +676,86 @@ PopNode *mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, ParStore * parstore,
         if(token == NULL)
             continue;
 
-        if(0 == strcmp(token, "twoN"))
-            parseParam(next, TWON, parstore, bnd, orig);
-        else if(0 == strcmp(token, "time"))
-            parseParam(next, TIME, parstore, bnd, orig);
-        else if(0 == strcmp(token, "mixFrac"))
-            parseParam(next, MIXFRAC, parstore, bnd, orig);
-        else if(0 == strcmp(token, "param"))
-            parseParam(next, ARBITRARY, parstore, bnd, orig);
-        else if(0 == strcmp(token, "segment"))
-            parseSegment(next, poptbl, sndx, lndx, parstore, ns, orig);
-        else if(0 == strcmp(token, "mix"))
-            parseMix(next, poptbl, parstore, orig);
-        else if(0 == strcmp(token, "derive"))
-            parseDerive(next, poptbl, parstore, orig);
+        if(0 == strcmp(token, "twoN")) {
+            if(parstore != NULL)
+               ORDER_ERROR("twoN");
+            parseParam(next, TWON, parmap, fixedQ, freeQ, constrQ, bnd, orig);
+        }else if(0 == strcmp(token, "time")) {
+            if(parstore != NULL)
+               ORDER_ERROR("time");
+            parseParam(next, TIME, parmap, fixedQ, freeQ, constrQ, bnd, orig);
+        }else if(0 == strcmp(token, "mixFrac")) {
+            if(parstore != NULL)
+               ORDER_ERROR("mixFrac");
+            parseParam(next, MIXFRAC, parmap, fixedQ, freeQ, constrQ, bnd,
+                       orig); 
+        }else if(0 == strcmp(token, "param")) {
+            if(parstore != NULL)
+               ORDER_ERROR("param");
+            parseParam(next, ARBITRARY, parmap, fixedQ, freeQ, constrQ, bnd,
+                       orig);
+        }else if(0 == strcmp(token, "segment")) {
+            if(parstore==NULL) {
+                // 1st segment: allocate parstore and free
+                // fixedQ, freeQ, and constrQ.
+                assert(fixedQ != NULL);
+                parstore = ParStore_new(fixedQ, freeQ, constrQ);
+                CHECKMEM(parstore);
+                PtrQueue_free(fixedQ);
+                PtrQueue_free(freeQ);
+                PtrQueue_free(constrQ);
+                fixedQ = freeQ = constrQ = NULL;
+            }
+            parseSegment(next, popmap, sndx, lndx, parstore, orig);
+        } else if(0 == strcmp(token, "mix")) {
+            if(parstore == NULL)
+               ORDER_ERROR("mix");
+            parseMix(next, popmap, parstore, orig);
+        }else if(0 == strcmp(token, "derive")) {
+            if(parstore == NULL)
+               ORDER_ERROR("derive");
+            parseDerive(next, popmap, parstore, orig);
+        }
         else
             ILLEGAL_INPUT(token, orig);
     }
 
-    // Make sure the tree of populations has a single root. This
-    // code iterates through all the nodes in the PopNodeTab, and
-    // searches from each node back to the root. If all is well,
-    // these searches all find the same root. Otherwise, it aborts
-    // with an error.
-    PopNode *root = PopNodeTab_check_and_root(poptbl, __FILE__, __LINE__);
-    PopNodeTab_free(poptbl);
+    // Make sure the tree of populations has a single root. This code
+    // iterates through all the nodes, and searches from each node
+    // back to the root. If all is well, these searches all find the
+    // same root. Otherwise, abort with an error.
+    void *root = NULL;
+    {
+        /// Check the sanity of each node and make sure there is only one
+        /// root.
+        unsigned long n = StrPtrMap_size(popmap);
+        void *nodes[n];
+        void *curr;
+        StrPtrMap_ptrArray(popmap, n, nodes);
+        for(unsigned long j=0; j < n; ++j) {
+            curr = Node_root(nodes[j]);
+            if(root == NULL)
+                root = curr;
+            else if (root != curr) {
+                fprintf(stderr,
+                        "%s:%d: Pop tree has multiple roots.\n",
+                        __FILE__, __LINE__);
+                exit(EXIT_FAILURE);
+            }
+        }
+    }
 
-    // Make sure no constrained parameter depends on a constrained parameter
-    // that is defined later in the .lgo file.
-    ParStore_chkDependencies(parstore);
-    return root;
+    // site pattern representing the union of all samples
+    unsigned nsamples = SampNdx_size(sndx);
+    union_all_samples = (1u << nsamples) - 1;
+    
+    StrPtrMap_free(popmap);
+    StrPtrMap_free(parmap);
+
+    assert(root);
+    assert(parstore);
+    PtrPair ptrpair = {root, parstore};
+    return ptrpair;
 }
 
 /// Count the number of "segment" statements in input file.
@@ -752,7 +829,9 @@ const char *tstInput =
     "segment abc t=Tabc   twoN=twoNabc\n"
     "mix    b  from bb + Mc * c\n"
     "derive a  from ab\n"
-    "derive bb from ab\n" "derive ab from abc\n" "derive c  from abc\n";
+    "derive bb from ab\n"
+    "derive ab from abc\n"
+    "derive c  from abc\n";
 int main(int argc, char **argv) {
 
     int verbose = 0;
@@ -765,6 +844,7 @@ int main(int argc, char **argv) {
         verbose = 1;
     }
 
+    Network_init(STOCHASTIC);
     const char *tstFname = "mktree-tmp.lgo";
     FILE *fp = fopen(tstFname, "w");
     fputs(tstInput, fp);
@@ -817,7 +897,6 @@ int main(int argc, char **argv) {
     SampNdx_init(&sndx);
     LblNdx lndx;
     LblNdx_init(&lndx);
-    ParStore *parstore = ParStore_new();    // parameters
     Bounds bnd = {
         .lo_twoN = 0.0,
         .hi_twoN = 1e7,
@@ -826,24 +905,24 @@ int main(int argc, char **argv) {
     };
 
     int nseg = countSegments(fp);
-    fprintf(stderr, "nseg=%d\n", nseg);
     assert(6 == nseg);
     unitTstResult("countSegments", "OK");
 
     rewind(fp);
 
-    PopNode nodeVec[nseg];
-    PopNode *root = NULL;
+    PopNode *root;
+    ParStore *parstore;
 
     {
-        NodeStore *ns = NodeStore_new(nseg, nodeVec);
-        root = mktree(fp, &sndx, &lndx, parstore, &bnd, ns);
+        PtrPair pp = mktree(fp, &sndx, &lndx, &bnd);
+        root = pp.a;
+        parstore = pp.b;
         assert(root != NULL);
-        NodeStore_free(ns);
+        assert(parstore != NULL);
     }
 
     if(verbose) {
-        PopNode_print(stdout, root, 0);
+        Node_print(root, stdout, 0);
         unsigned i;
         for(i = 0; i < LblNdx_size(&lndx); ++i)
             printf("%2u %s\n", i, LblNdx_lbl(&lndx, i));
@@ -855,9 +934,12 @@ int main(int argc, char **argv) {
                ParStore_nConstrained(parstore));
     }
 
-    unitTstResult("mktree", "needs more testing");
-
+    PopNode_free(root);
+    assert(parstore);
     ParStore_free(parstore);
+
+    unitTstResult("mktree", "OK");
+
     fclose(fp);
     unlink(tstFname);
     return 0;

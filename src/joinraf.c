@@ -22,7 +22,6 @@ Systems Consortium License, which can be found in file "LICENSE".
 #include "rafreader.h"
 #include "error.h"
 #include "typedefs.h"
-#include "version.h"
 #include <ctype.h>
 #include <errno.h>
 #include <getopt.h>
@@ -68,7 +67,7 @@ int main(int argc, char **argv) {
 
     RAFReader  *r[n];
 
-    printf("# joinraf version %s\n", VERSION);
+    printf("# joinraf version %s\n", GIT_VERSION);
 
     // Each argument should be the name of an input file.
     printf("# Input files:\n");

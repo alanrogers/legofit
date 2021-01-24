@@ -93,7 +93,6 @@ Systems Consortium License, which can be found in file "LICENSE".
 #include "misc.h"
 #include "scrmreader.h"
 #include "typedefs.h"
-#include "version.h"
 #include "error.h"
 #include <ctype.h>
 #include <errno.h>
@@ -220,7 +219,7 @@ int main(int argc, char **argv) {
             usage();
             break;
         case 'V':
-            printf("scrmpat version %s\n", VERSION);
+            printf("scrmpat version %s\n", GIT_VERSION);
             return 0;
         case 'F':
             logFixed = 1;
@@ -268,7 +267,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    printf("# scrmpat version %s\n", VERSION);
+    printf("# scrmpat version %s\n", GIT_VERSION);
     printf("# Population labels:");
     for(i = 0; i < n; ++i)
         printf(" %s", poplbl[i]);

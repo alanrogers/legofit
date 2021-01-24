@@ -1,10 +1,11 @@
 #include <stdio.h>
-#include "binary.h"
-int main(void) {
-    const uint32_t unity = 1u;
-    uint32_t pat;
+#include <stdlib.h>
 
-    pat = ~0u;
-    printBits(sizeof pat, &pat, stdout);
+int main(void) {
+    double x = strtod("123.456", NULL);
+
+    printf("%g\n", x);
     return 0;
 }
+
+

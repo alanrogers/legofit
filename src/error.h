@@ -5,6 +5,7 @@
 
 // Number from 1000 to avoid conflict with errno
 enum {NO_ANCESTRAL_ALLELE=1000,
+      MONOMORPHIC_SITE,
       REF_MISMATCH,
       ALLELE_MISMATCH,
       MULTIPLE_ALT,

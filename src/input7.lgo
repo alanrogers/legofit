@@ -1,0 +1,6 @@
+time fixed    zero=0
+time fixed       T=1
+twoN fixed     one=1
+segment x     t=zero   twoN=one    samples=3
+segment x2    t=T      twoN=one
+derive x from x2

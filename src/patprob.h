@@ -4,6 +4,6 @@
 #include "typedefs.h"
 #include <gsl/gsl_rng.h>
 
-BranchTab *patprob(const GPTree *gptree, long nreps, int doSing,
-                   gsl_rng *rng);
+BranchTab *get_brlen(const void *network, long nreps, int doSing,
+                     double min_brlen, gsl_rng *rng);
 #endif

@@ -1,4 +1,10 @@
-/*
+/**
+ * This version of tinyexpr has been modified from Lewis Van Winkle's original. 
+ * The revised version uses hash tables to map names to functions and to
+ * variables.
+ * 
+ * Alan Rogers
+ *
  * TINYEXPR - Tiny recursive descent parser and evaluation engine in C
  *
  * Copyright (c) 2015, 2016 Lewis Van Winkle
@@ -34,9 +40,10 @@ For a^b^c = a^(b^c) and -a^b = -(a^b) uncomment the next line.*/
 For log = base 10 log do nothing
 For log = natural log uncomment the next line. */
 
-/* #define TE_NAT_LOG */
+#define TE_NAT_LOG
 
 #include "tinyexpr.h"
+#include "misc.h"
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
@@ -44,6 +51,7 @@ For log = natural log uncomment the next line. */
 #include <limits.h>
 #include <errno.h>
 #include <ctype.h>
+#include <pthread.h>
 
 #ifndef NAN
 #define NAN (0.0/0.0)
@@ -73,7 +81,7 @@ typedef struct state {
     };
     void       *context;
 
-    const te_variable *lookup;
+    StrPtrMap *lookup;
 } state;
 
 #define TYPE_MASK(TYPE) ((TYPE)&0x0000001F)
@@ -88,47 +96,34 @@ void te_free_parameters(te_expr * n);
 void next_token(state * s);
 static double pi(void);
 static double e(void);
-te_variable *te_variable_new(const char *name, void *address);
+static te_variable *new_func(void *address, int type, void *context);
+static void init_func_map(void);
+int string_copy(int dlen, char dest[dlen], int slen, const char src[slen]);
 
-te_variable *te_variable_new(const char *name, void *address) {
+te_variable *te_variable_new(void *address) {
     te_variable *self = malloc(sizeof(te_variable));
     if(self==NULL)
         return NULL;
     memset(self, 0, sizeof(te_variable));
-
-    // This pointer is not freed by te_variable_free. The resulting memory
-    // leak is not important, unless te_variable_new is called many times.
-    self->name = strdup(name);
-    
     self->address = address;
+    self->type = TE_VARIABLE;
     return self;
 }
 
-// Push new variable onto end of list.
-te_variable *te_variable_push(te_variable *self, const char *name, void *address) {
-    if(self == NULL)
-        return te_variable_new(name, address);
-    self->next = te_variable_push(self->next, name, address);
-    return self;
-}
+// Free all variables and the hash map that holds them.
+void te_free_variables(StrPtrMap *pars) {
 
-// Free linked list.
-void te_variable_free(te_variable *self) {
-    if(self==NULL)
-        return;
-    te_variable_free(self->next);
-    /* Not freeing self->name.
-     * This variable sometimes points to character constants, which
-     * cannot be freed. In other cases, it points to strings generated
-     * by strdup, which ought to be freed. I'm not doing so, and this
-     * constitutes a memory leak. But the number of these leaked strings
-     * is never large, at least in legofit.
-     *
-     * free((char *) self->name);
-     */
-    free(self);
+    unsigned len = StrPtrMap_size(pars);
+    if(len > 0) {
+        void *v[len];
+        StrPtrMap_ptrArray(pars, len, v);
+        for(unsigned i=0; i<len; ++i) {
+            te_variable *var = v[i];
+            free(var);
+        }
+    }
+    StrPtrMap_free(pars);
 }
-
 
 static te_expr *new_expr(const int type, const te_expr * parameters[]) {
     const int   arity = ARITY(type);
@@ -222,72 +217,138 @@ static double npr(double n, double r) {
     return ncr(n, r) * fac(r);
 }
 
-static const te_variable functions[] = {
-    /* must be in alphabetical order */
-    {"abs", fabs, TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"acos", acos, TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"asin", asin, TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"atan", atan, TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"atan2", atan2, TE_FUNCTION2 | TE_FLAG_PURE, 0},
-    {"ceil", ceil, TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"cos", cos, TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"cosh", cosh, TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"e", e, TE_FUNCTION0 | TE_FLAG_PURE, 0},
-    {"exp", exp, TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"fac", fac, TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"floor", floor, TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"ln", log, TE_FUNCTION1 | TE_FLAG_PURE, 0},
-#ifdef TE_NAT_LOG
-    {"log", log, TE_FUNCTION1 | TE_FLAG_PURE, 0},
-#else
-    {"log", log10, TE_FUNCTION1 | TE_FLAG_PURE, 0},
-#endif
-    {"log10", log10, TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"ncr", ncr, TE_FUNCTION2 | TE_FLAG_PURE, 0},
-    {"npr", npr, TE_FUNCTION2 | TE_FLAG_PURE, 0},
-    {"pi", pi, TE_FUNCTION0 | TE_FLAG_PURE, 0},
-    {"pow", pow, TE_FUNCTION2 | TE_FLAG_PURE, 0},
-    {"sin", sin, TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"sinh", sinh, TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"sqrt", sqrt, TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"tan", tan, TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"tanh", tanh, TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {0, 0, 0, 0}
-};
+static pthread_mutex_t func_map_lock = PTHREAD_MUTEX_INITIALIZER;
+static StrPtrMap *func_map=NULL;
 
-static const te_variable *find_builtin(const char *name, int len) {
-    int         imin = 0;
-    int         imax = sizeof(functions) / sizeof(te_variable) - 2;
+/// Free func_map
+void te_free_func_map(void) {
+    int status = pthread_mutex_lock(&func_map_lock);
+    if(status)
+        ERR(status, "lock");
 
-    /*Binary search. */
-    while(imax >= imin) {
-        const int   i = (imin + ((imax - imin) / 2));
-        int         c = strncmp(name, functions[i].name, len);
-        if(!c)
-            c = '\0' - functions[i].name[len];
-        if(c == 0) {
-            return functions + i;
-        } else if(c > 0) {
-            imin = i + 1;
-        } else {
-            imax = i - 1;
+    unsigned len = StrPtrMap_size(func_map);
+    if(len > 0) {
+        void *v[len];
+        StrPtrMap_ptrArray(func_map, len, v);
+        for(unsigned i=0; i<len; ++i) {
+            te_variable *var = v[i];
+            free(var);
         }
     }
+    StrPtrMap_free(func_map);
 
-    return 0;
+    status = pthread_mutex_unlock(&func_map_lock);
+    if(status)
+        ERR(status, "unlock");
+
+    func_map = NULL;
 }
 
-static const te_variable *find_lookup(const state * s, const char *name,
-                                      int len) {
-    const te_variable *var;
-    if(!s->lookup)
-        return 0;
+/// Initialize func_map; abort on failure.
+static void init_func_map(void) {
+    int status = pthread_mutex_lock(&func_map_lock);
+    if(status)
+        ERR(status, "lock");
 
-    for(var = s->lookup; var; var = var->next) {
-        if(strncmp(name, var->name, len) == 0 && var->name[len] == '\0')
-            return var;
+    func_map =  StrPtrMap_new();
+    if(func_map == NULL) {
+        fprintf(stderr,"%s:%d: can't allocate func_map\n",
+                __FILE__,__LINE__);
+        exit(EXIT_FAILURE);
     }
-    return NULL;
+
+    status = 0;
+
+    status |= StrPtrMap_insert(func_map, "abs",
+                               new_func(fabs, TE_FUNCTION1 | TE_FLAG_PURE, 0));
+    status |= StrPtrMap_insert(func_map, "acos",
+                               new_func(acos, TE_FUNCTION1 | TE_FLAG_PURE, 0));
+    status |= StrPtrMap_insert(func_map, "asin",
+                               new_func(asin, TE_FUNCTION1 | TE_FLAG_PURE, 0));
+    status |= StrPtrMap_insert(func_map, "atan",
+                               new_func(atan, TE_FUNCTION1 | TE_FLAG_PURE, 0));
+    status |= StrPtrMap_insert(func_map, "atan2",
+                               new_func(atan2, TE_FUNCTION2 | TE_FLAG_PURE, 0));
+    status |= StrPtrMap_insert(func_map, "ceil",
+                               new_func(ceil, TE_FUNCTION1 | TE_FLAG_PURE, 0));
+    status |= StrPtrMap_insert(func_map, "cos",
+                               new_func(cos, TE_FUNCTION1 | TE_FLAG_PURE, 0));
+    status |= StrPtrMap_insert(func_map, "cosh",
+                               new_func(cosh, TE_FUNCTION1 | TE_FLAG_PURE, 0));
+    status |= StrPtrMap_insert(func_map, "e",
+                               new_func(e, TE_FUNCTION0 | TE_FLAG_PURE, 0));
+    status |= StrPtrMap_insert(func_map, "exp",
+                               new_func(exp, TE_FUNCTION1 | TE_FLAG_PURE, 0));
+    status |= StrPtrMap_insert(func_map, "fac",
+                               new_func(fac, TE_FUNCTION1 | TE_FLAG_PURE, 0));
+    status |= StrPtrMap_insert(func_map, "floor",
+                               new_func(floor, TE_FUNCTION1 | TE_FLAG_PURE, 0));
+    status |= StrPtrMap_insert(func_map, "ln",
+                               new_func(log, TE_FUNCTION1 | TE_FLAG_PURE, 0));
+#ifdef TE_NAT_LOG
+    status |= StrPtrMap_insert(func_map, "log",
+                               new_func(log, TE_FUNCTION1 | TE_FLAG_PURE, 0));
+#else
+    status |= StrPtrMap_insert(func_map, "log",
+                               new_func(log10, TE_FUNCTION1 | TE_FLAG_PURE, 0));
+#endif
+    status |= StrPtrMap_insert(func_map, "log10",
+                               new_func(log10, TE_FUNCTION1 | TE_FLAG_PURE, 0));
+    status |= StrPtrMap_insert(func_map, "ncr",
+                               new_func(ncr, TE_FUNCTION2 | TE_FLAG_PURE, 0));
+    status |= StrPtrMap_insert(func_map, "npr",
+                               new_func(npr, TE_FUNCTION2 | TE_FLAG_PURE, 0));
+    status |= StrPtrMap_insert(func_map, "pi",
+                               new_func(pi, TE_FUNCTION0 | TE_FLAG_PURE, 0));
+    status |= StrPtrMap_insert(func_map, "pow",
+                               new_func(pow, TE_FUNCTION2 | TE_FLAG_PURE, 0));
+    status |= StrPtrMap_insert(func_map, "sin",
+                               new_func(sin, TE_FUNCTION1 | TE_FLAG_PURE, 0));
+    status |= StrPtrMap_insert(func_map, "sinh",
+                               new_func(sinh, TE_FUNCTION1 | TE_FLAG_PURE, 0));
+    status |= StrPtrMap_insert(func_map, "sqrt",
+                               new_func(sqrt, TE_FUNCTION1 | TE_FLAG_PURE, 0));
+    status |= StrPtrMap_insert(func_map, "tan",
+                               new_func(tan, TE_FUNCTION1 | TE_FLAG_PURE, 0));
+    status |= StrPtrMap_insert(func_map, "tanh",
+                               new_func(tanh, TE_FUNCTION1 | TE_FLAG_PURE, 0));
+    if(status) {
+        fprintf(stderr,"%s:%s:%d: can't initialize func_map\n",
+                __FILE__,__func__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
+
+    status = pthread_mutex_unlock(&func_map_lock);
+    if(status)
+        ERR(status, "unlock");
+}
+
+static te_variable *new_func(void *address, int type,
+                                 void *context) {
+    te_variable *new = malloc(sizeof(te_variable));
+    if(new == NULL)
+        return NULL;
+    new->address = address;
+    new->type = type;
+    new->context = context;
+    return new;
+}
+
+static const te_variable *find_builtin(const char *name) {
+    if(func_map == NULL)
+        init_func_map();
+
+    int status = pthread_mutex_lock(&func_map_lock);
+    if(status)
+        ERR(status, "lock");
+
+    te_variable *rval = StrPtrMap_get(func_map, name);
+
+    status = pthread_mutex_unlock(&func_map_lock);
+    if(status)
+        ERR(status, "unlock");
+
+    return rval;
 }
 
 static double add(double a, double b) {
@@ -310,8 +371,22 @@ static double comma(double a, double b) {
     return b;
 }
 
+/// Copy slen bytes from src into dest, and add a terminating '\0' character.
+/// Return 0 on success, 1 on bufferflow.
+int string_copy(int dlen, char dest[dlen], int slen, const char src[slen]) {
+    if(dlen < slen + 1)
+        return 1;
+    int i;
+    for(i=0; i < slen; ++i)
+        dest[i] = src[i];
+    dest[i] = '\0';
+    return 0;
+}
+
 void next_token(state * s) {
     s->type = TOK_NULL;
+
+    char name[100];
 
     do {
 
@@ -338,11 +413,16 @@ void next_token(state * s) {
                 start = s->next;
                 while(isalnum(*s->next) || *s->next == '_')
                     s->next++;
-
-                const te_variable *var =
-                    find_lookup(s, start, s->next - start);
+                int status = string_copy(sizeof(name), name,
+                                         s->next-start, start);
+                if(status) {
+                    fprintf(stderr,"%s:%d: buffer overflow\n",
+                            __FILE__,__LINE__);
+                    exit(EXIT_FAILURE);
+                }
+                const te_variable *var = StrPtrMap_get(s->lookup, name);
                 if(!var)
-                    var = find_builtin(start, s->next - start);
+                    var = find_builtin(name);
 
                 if(!var) {
                     s->type = TOK_ERROR;
@@ -780,11 +860,11 @@ static void optimize(te_expr * n) {
     }
 }
 
-te_expr    *te_compile(const char *expression, const te_variable * variables,
-                       int *error) {
+te_expr *te_compile(const char *expression, StrPtrMap * varmap,
+                    int *error) {
     state       s;
     s.start = s.next = expression;
-    s.lookup = variables;
+    s.lookup = varmap;
 
     next_token(&s);
     te_expr    *root = list(&s);

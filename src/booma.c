@@ -354,6 +354,7 @@ ModSelCrit *ModSelCrit_new(const char *fname) {
         }
         ++line;
     }
+    Tokenizer_free(tkz);
     assert(line == msc->dim);
     fclose(fp);
     return msc;
@@ -427,8 +428,10 @@ double ModSelCrit_badness(ModSelCrit * self, int ndx) {
     return self->c[ndx];
 }
 
-/// ModPar constructor. Argument is the name of a file in the format
-/// produced by flatfile.py.
+/// ModPar constructor. First argument is the name of a file in the
+/// format produced by flatfile.py. Second argument is the address
+/// of a ParNameLst. On return, this list will contain the names
+/// of parameters in the input file.
 ModPar *ModPar_new(const char *fname, ParNameLst ** namelist) {
     FILE *fp = fopen(fname, "r");
     if(fp == NULL) {
@@ -491,8 +494,6 @@ ModPar *ModPar_new(const char *fname, ParNameLst ** namelist) {
     self->nrows = nrows;
     self->par = malloc(nrows * ncols * sizeof(double));
     CHECKMEM(self->par);
-    self->fname = malloc(nrows * sizeof(char *));
-    CHECKMEM(self->fname);
     rewind(fp);
 
     // 2nd pass puts parameter values into array
@@ -555,6 +556,7 @@ ModPar *ModPar_new(const char *fname, ParNameLst ** namelist) {
         }
     }
     assert(i == nrows);
+    Tokenizer_free(tkz);
 
     return self;
 }
@@ -746,8 +748,13 @@ int main(int argc, char **argv) {
     ModSelCrit *msc = ModSelCrit_new(mscFile);
     ModSelCrit *msc2 = ModSelCrit_new(mscFile);
     assert(ModSelCrit_compare(msc, msc2, MSC_BEPE) == 0);
+
+    // Change file name in msc2 to verify that ModelSelCrit_compare
+    // will detect the difference.
     msc2->fname[0][0] += 1;
+    fprintf(stderr,"Next line should report inconsistent file names:\n");
     assert(ModSelCrit_compare(msc, msc2, MSC_BEPE) != 0);
+    
     assert(ModSelCrit_dim(msc) == 2);
     assert(ModSelCrit_badness(msc, 0) == 0.01);
     assert(ModSelCrit_badness(msc, 1) == 0.02);
@@ -801,6 +808,9 @@ int main(int argc, char **argv) {
     assert(ModPar_value(mp, 0, "par2") == 2.0);
     assert(ModPar_value(mp, 1, "par1") == 3.0);
     assert(ModPar_value(mp, 1, "par2") == 4.0);
+
+    ModPar_free(mp);
+    ParNameLst_free(pnl);
     remove(flatFile);
     unitTstResult("ModPar", "OK");
     return 0;

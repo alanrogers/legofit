@@ -716,16 +716,8 @@ DEStatus diffev(int dim, double estimate[dim], double *loCost, double *yspread,
                 imin = i;
             }
         }
-        if(!isfinite(cmin)) {
-            fprintf(stderr,"%s:%d:"
-                    " No initial points have finite values.\n"
-                    " Try increasing simulation replicates in stage %d.\n"
-                    " Current value: simReps=%ld\n"
-                    " See -S argument of legofit.\n",
-                    __FILE__,__LINE__, stage,
-                    SimSched_getSimReps(simSched));
-            exit(EXIT_FAILURE);
-        }
+        if(!isfinite(cmin))
+            return NoFinitePoints;
         assert(imin < INT_MAX);
         assert(cmin < HUGE_VAL);
         assignd(dim, best, (*pold)[imin]);    // best ever
@@ -794,7 +786,7 @@ DEStatus diffev(int dim, double estimate[dim], double *loCost, double *yspread,
                 // display after every refresh generations
                 fflush(stdout);
                 fprintf(stderr,
-                        "%d:%d cost=%1.10lg yspread=%lf\n",
+                        "%d:%d cost=%1.10lg yspread=%lg\n",
                         stage, gen, cmin, *yspread);
                 fprintf(stderr, "   Best params:");
                 for(j = 0; j < dim; j++) {

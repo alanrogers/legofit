@@ -8,10 +8,18 @@
 */
 #include "comb.h"
 #include "misc.h"
+<<<<<<< HEAD
+=======
+#include "u64i64map.h"
+>>>>>>> devlp
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
 #include <math.h>
+<<<<<<< HEAD
+=======
+#include <pthread.h>
+>>>>>>> devlp
 
 typedef struct MCdat MCdat;
 
@@ -300,6 +308,7 @@ long multinom(int k, int x[k]) {
     return (long) floor(exp(ans) + 0.5);
 }
 
+<<<<<<< HEAD
 /**
  * Binomial coefficient. Return n!/(x! * (n-x)!), the number of ways
  * of choosing x items out of n.
@@ -330,4 +339,92 @@ long double lbinom(long n, long x) {
     ans -= lgammal( (long double) (n-x+1));
 
     return ans;
+=======
+// So we don't have to calculate the same value more than once.
+static pthread_mutex_t map_lock = PTHREAD_MUTEX_INITIALIZER;
+static U64I64Map *map=NULL;
+
+static int64_t binom_r(int32_t n, int32_t x);
+
+/// Binomial coefficient.
+int64_t binom(int32_t n, int32_t x) {
+    int lockstat = pthread_mutex_lock(&map_lock);
+    if(lockstat)
+        ERR(lockstat, "lock");
+
+    if(map == NULL) {
+        // allocate hash table on first call
+        map = U64I64Map_new(512);
+        CHECKMEM(map);
+    }
+
+    uint64_t value = binom_r(n, x);
+
+    lockstat = pthread_mutex_unlock(&map_lock);
+    if(lockstat)
+        ERR(lockstat, "unlock");
+
+    return value;
+}
+
+static int64_t binom_r(int32_t n, int32_t x) {
+    int status;
+    uint64_t key;
+    int64_t value;
+
+    if(x == 0 || n == x)
+        return 1LL;
+
+    if(n == 0) // n==0 && x != 0
+        return 0LL;
+
+    if(x < 0)
+        return 0LL;
+
+    // Construct a 64-bit key from two 32-bit arguments.
+    key = (uint32_t) n;
+    key <<= 32;
+    key |= (uint32_t) x;
+
+    value = U64I64Map_get(map, key, &status);
+    if(status == 0)
+            return value;
+
+    if(n > 0) {
+        value = binom_r(n-1, x-1) + binom_r(n-1, x);
+    }else{
+        long double v = 1.0;
+        while(x > 0) {
+            v *= n / (long double) x;
+            --n;
+            --x;
+        }
+        value = (int64_t) floorl(v + 0.5);
+    }
+
+    status = U64I64Map_insert(map, key, value);
+    if(status) {
+        fprintf(stderr,"%s:%d: inserted duplicated value\n",
+                __FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
+
+    return value;
+}
+
+/// Free the hash map used to store binom values.
+void binom_free(void) {
+    int status = pthread_mutex_lock(&map_lock);
+    if(status)
+        ERR(status, "lock");
+
+    if(map) {
+        U64I64Map_free(map);
+        map = NULL;
+    }
+
+    status = pthread_mutex_unlock(&map_lock);
+    if(status)
+        ERR(status, "unlock");
+>>>>>>> devlp
 }

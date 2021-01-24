@@ -54,6 +54,7 @@ Systems Consortium License, which can be found in file "LICENSE".
 #include "misc.h"
 #include "parstore.h"
 #include "gptree.h"
+#include "network.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -69,7 +70,6 @@ Systems Consortium License, which can be found in file "LICENSE".
 void usage(void);
 void parseError(char *p, char *buff, const char *file, int line);
 char *lastNonwhite(char *s);
-static int get_one_line(size_t n, char buff[n], FILE * fp);
 
 const char *usageMsg =
      "Usage: pclgo [options] <file.lgo> <rep1.legofit> <rep2.legofit> ...\n"
@@ -98,7 +98,7 @@ void parseError(char *p, char *buff, const char *file, int line) {
 int main(int argc, char **argv){
     int i, j;
     int ncases=0;
-    int digits = 8;
+    int digits = 16;
     double minFracVar = 0.0;
     const char *letters = "abcdefghijklmnopqrstuvwxyz"
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -190,9 +190,10 @@ int main(int argc, char **argv){
         }
         assert(queue[i] == NULL); // check that queues are freed
     }
-
+    
     // Parse .lgo file in order to check agreement between free
     // variables in the .lgo file and those in the .legofit files.
+    Network_init(STOCHASTIC);
     {
         Bounds bnd = {
             .lo_twoN = 1.0,

@@ -1,14 +1,24 @@
 destination := $(HOME)/bin
+<<<<<<< HEAD
 global_destination := $(HOME)/group/bin
 opt := -DNDEBUG -O3  -finline-functions  # For full optimization
 #opt := -O0 -fno-inline-functions -rdynamic -DDEBUG     # For debugging
 #opt := -O3  -finline-functions  # Optimization + debugging
 #prof := -pg -rdynamic                    # For profiling
+=======
+git_version := "$(shell git describe --dirty --always --tags)"
+global_destination := $(HOME)/grp1/bin
+opt := -DNDEBUG -O2  -finline-functions  # For full optimization
+#opt := -O0 -g -fno-inline-functions -rdynamic -DDEBUG     # For debugging
+#opt := -O2  -g -finline-functions  # Optimization + debugging
+#prof := -pg -g -rdynamic                    # For profiling under gcc
+#prof := --fprofile-generate -g              # For profiling under clang
+>>>>>>> devlp
 prof :=
 incl := -I/usr/local/include -I/opt/local/include
 
 targets := legosim legofit tabpat sitepat scrmpat daf raf numcores \
-     joinraf raf2daf bepe booma maub pclgo resid simpat ms2sim clic rafdaf
+     joinraf raf2daf bepe booma pclgo resid simpat ms2sim clic rafdaf
 pytargets := diverg.py bootci.py flatfile.py axt2raf.py flatpat.py legotree.py
 
 CC := gcc
@@ -20,16 +30,31 @@ warn := \
  -Wcast-qual \
  -Wmissing-declarations \
  -Wmissing-prototypes \
- -Wnested-externs \
  -Wpointer-arith \
  -Wstrict-prototypes \
  -Wno-unused-parameter \
  -Wno-unused-function \
  -Wshadow \
- -Wundef \
  -Wwrite-strings
 
-CFLAGS := -g -std=gnu99 $(warn) $(incl) $(opt) $(prof)
+# MacOS only
+ifeq ($(shell uname -s), Darwin)
+  warn +=  -Wno-nullability-completeness
+endif
+
+# Abort on integer overflow or underflow
+ubsan =
+#ifeq ($(shell uname -s), Darwin)
+#    # clang syntax
+#    ubsan += -fsanitize=undefined,integer \
+#              -fno-sanitize-recover=undefined,integer
+#else
+#    # gcc syntax
+#    ubsan += -fsanitize=undefined -fno-sanitize-recover=undefined
+#endif
+
+CFLAGS := -std=gnu99 $(ubsan) $(warn) $(incl) $(opt) $(prof) \
+ -DGIT_VERSION=\"$(git_version)\"
 
 lib := -L/usr/local/lib -lgsl -lgslcblas -lpthread -lm
 
@@ -38,6 +63,7 @@ lib := -L/usr/local/lib -lgsl -lgslcblas -lpthread -lm
 
 all : $(targets)
 
+<<<<<<< HEAD
 LINEAGES := lineages.o misc.o lblndx.o binary.o
 lineages : $(lineages)
 	$(CC) $(CFLAGS) -o $@ $(LINEAGES) $(lib)
@@ -46,19 +72,38 @@ LEGOSIM := legosim.o addrparmap.o patprob.o gptree.o binary.o jobqueue.o \
   misc.o parse.o branchtab.o popnodetab.o lblndx.o tokenizer.o param.o \
   parstore.o popnode.o gene.o dprintf.o rngseed.o dtnorm.o tinyexpr.o \
   strparmap.o
+=======
+test : $(tests)
+	-./xbinary
+	-./xzeroin
+	@echo "ALL UNIT TESTS WERE COMPLETED."
+
+LEGOSIM := legosim.o binary.o branchtab.o dprintf.o dtnorm.o \
+   error.o externs.o eventlst.o gene.o gptree.o jobqueue.o lblndx.o network.o \
+   misc.o param.o parse.o parstore.o patprob.o popnode.o rngseed.o sampndx.o \
+   strptrmap.o tinyexpr.o tokenizer.o ptrptrmap.o ptrqueue.o strint.o \
+   segment.o idset.o idsetset.o matcoal.o ptrlst.o comb.o \
+   setpart.o rational.o u64u64map.o mctree.o u64i64map.o
+>>>>>>> devlp
 legosim : $(LEGOSIM)
 	$(CC) $(CFLAGS) -o $@ $(LEGOSIM) $(lib)
 
-LEGOFIT := legofit.o addrparmap.o patprob.o gptree.o binary.o jobqueue.o \
-  misc.o parse.o branchtab.o popnodetab.o lblndx.o tokenizer.o parstore.o \
-  popnode.o gene.o cost.o diffev.o dprintf.o rngseed.o simsched.o dtnorm.o \
-  tinyexpr.o state.o strparmap.o param.o pointbuff.o
+LEGOFIT := legofit.o binary.o branchtab.o cost.o diffev.o \
+   dprintf.o dtnorm.o error.o externs.o gene.o gptree.o jobqueue.o lblndx.o \
+   misc.o network.o param.o parse.o parseopf.o parstore.o patprob.o \
+   pointbuff.o popnode.o rngseed.o sampndx.o simsched.o state.o \
+   strptrmap.o tinyexpr.o tokenizer.o ptrptrmap.o ptrqueue.o strint.o \
+   mctree.o matcoal.o segment.o eventlst.o idset.o idsetset.o ptrlst.o \
+   rational.o comb.o u64i64map.o setpart.o u64u64map.o
 legofit : $(LEGOFIT)
 	$(CC) $(CFLAGS) -o $@ $(LEGOFIT) $(lib)
 
 PCLGO := pclgo.o misc.o strdblqueue.o gptree.o parstore.o param.o popnode.o \
-  gene.o addrparmap.o branchtab.o lblndx.o strparmap.o dtnorm.o dprintf.o \
-  tinyexpr.o tokenizer.o parse.o binary.o popnodetab.o
+  gene.o branchtab.o lblndx.o dtnorm.o dprintf.o externs.o \
+  tinyexpr.o tokenizer.o parse.o binary.o strptrmap.o sampndx.o network.o \
+  error.o ptrptrmap.o ptrqueue.o strint.o mctree.o segment.o eventlst.o \
+  idsetset.o matcoal.o ptrlst.o comb.o idset.o u64i64map.o rational.o \
+  setpart.o u64u64map.o
 pclgo : $(PCLGO)
 	$(CC) $(CFLAGS) -o $@ $(PCLGO) $(lib)
 
@@ -133,6 +178,12 @@ zeroin.o : zeroin.h
 TRY := try.o binary.o
 try : $(TRY)
 	$(CC) $(CFLAGS) -o $@ $(TRY) $(lib)
+
+ptrptrmap.o : ptrptrmap.c ptrptrmap.h hashmap.h hashmap.src
+
+ptru32map.o : ptru32map.c ptru32map.h hashmap.h hashmap.src
+
+u64u64map.o : u64u64map.c u64u64map.h hashmap.h hashmap.src
 
 # Make dependencies file
 depend : *.c *.h

@@ -20,7 +20,11 @@ typedef enum   DEStatus DEStatus;
 //  ReachedGoal: DE stopped because yspread <= ytol
 //  FinishedIterations: DE stopped after completing all iterations
 //  Interrupted: DE stopped on a signal (SIGINT or SIGTERM)
-enum DEStatus {ReachedGoal, FinishedIterations, Interrupted, Running};
+enum DEStatus {ReachedGoal,
+               FinishedIterations,
+               Interrupted,
+               Running,
+               NoFinitePoints};
 
 struct DiffEvPar {
     int         dim, ptsPerDim, refresh, strategy, nthreads, verbose;

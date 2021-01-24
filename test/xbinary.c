@@ -187,6 +187,35 @@ int main(int argc, char **argv) {
     
     unitTstResult("nlz", "OK");
 
+    assert(1 == next_power_of_2(0));
+    assert(1 == next_power_of_2(1));
+    assert(2 == next_power_of_2(2));
+    assert(4 == next_power_of_2(3));
+    assert(4 == next_power_of_2(4));
+    assert(8 == next_power_of_2(5));
+    assert(8 == next_power_of_2(6));
+    assert(8 == next_power_of_2(7));
+    assert(8 == next_power_of_2(8));
+    assert(16 == next_power_of_2(9));
+
+    unitTstResult("next_power_of_2", "OK");
+
+    unsigned twopwr = 1;
+    for(unsigned u=1; u < 10; ++u) {
+        twopwr *= 2;
+        tipId_t maxtid = low_bits_on(u);
+        if(verbose) {
+            printf("bits(%u) = ", u);
+            printBits(sizeof(tipId_t), &maxtid, stdout);
+            putchar('\n');
+        }
+        assert(maxtid == (1u << u) - 1);
+        assert(maxtid == twopwr - 1);
+    }
+    
+    unitTstResult("low_bits_on", "OK");
+
     unitTstResult("binary", "OK");
+    
     return 0;
 }

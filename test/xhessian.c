@@ -45,7 +45,7 @@ int main(int argc, char **argv) {
     gsl_rng_set(rng, time(NULL));
     double sigma=0.01;
 
-	switch (argc) {
+    switch (argc) {
     case 1:
         break;
     case 2:
@@ -62,10 +62,8 @@ int main(int argc, char **argv) {
 
     double tru[nterms];
     int offset[dim];
-    for(i=0; i<=dim; ++i) {
+    for(i=0; i<dim; ++i)
         offset[i] = (i*(i+1))/2;
-        tru[1+i] = 0.0;
-    }
 
     for(j=0; j<dim; ++j) {
         for(k=j; k<dim; ++k)
@@ -93,8 +91,9 @@ int main(int argc, char **argv) {
             for(j=0; j<dim; ++j)
                 dat[j] = gsl_ran_flat(rng, -1.0, 1.0);
         }
-        fprintf(fp, "%0.18g", quadsurf(dim, dat, offset, nterms,
-                                       tru, rng, sigma));
+        double qs = quadsurf(dim, dat, offset, nterms,
+                             tru, rng, sigma);
+        fprintf(fp, "%0.18g", qs);
         for(j=0; j<dim; ++j)
             fprintf(fp, " %0.18g", dat[j]);
         putc('\n', fp);

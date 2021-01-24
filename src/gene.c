@@ -131,10 +131,10 @@ int main(void) {
     assert(g5->rchild == g4);
     assert(g5->branch == 0.0);
 
-    BranchTab *bt = BranchTab_new();
+    unsigned nsamples = 3;
+    BranchTab *bt = BranchTab_new(nsamples);
     Gene_tabulate(g5, bt, 0);
 
-    assert(BranchTab_size(bt) == 1);
     assert(2.0 == BranchTab_get(bt, (id1|id2)));
 
     Gene_free(g5);

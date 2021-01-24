@@ -6,36 +6,54 @@ of separations and of episodes of gene flow, and levels of gene flow.
 
 # `legofit`: estimate population history from site pattern data
 
+    ########################################
+    # legofit: estimate population history #
+    #    version 2.0.2-5-g1571a5c-dirty    #
+    ########################################
+    
+    # Program was compiled: Nov 24 2020 18:22:41
+    # Program was run: Tue Nov 24 18:22:55 2020
+    
+    # cmd: ./legofit -h
     usage: legofit [options] input.lgo sitepat.txt
        where file input.lgo describes population history,
        and file sitepat.txt contains site pattern frequencies.
     Options may include:
+       -1 or --singletons
+          Use singleton site patterns
+       -c or --clic
+          write output files needed by clic
+       -d <x> or --deterministic <x>
+          Deterministic algorithm, ignoring states with Pr <= x
+       -e or --epsilon
+          add a small value to each site pattern prob to prevent numerical 
+          problems
+       -F <x> or --scaleFactor <x>
+          set DE scale factor
+       -h or --help
+          print this message
+       -p <x> or --ptsPerDim <x>
+          number of DE points per free var
+       -s <x> or --strategy <x>
+          set DE strategy
+       -S <g>@<r> or --stage <g>@<r>
+          add stage with <g> generations and <r> simulation reps. The "@<r>"
+          portion can be omitted if -d or --deterministic are used.
+       --stateIn <filename>
+          read initial state from new-style file. Option may be repeated.
+       --stateOut <filename>
+          write final state to file
        -T <x> or --tol <x>
           termination criterion
        -t <x> or --threads <x>
           number of threads (default is auto)
-       -F <x> or --scaleFactor <x>
-          set DE scale factor
-       -x <x> or --crossover <x>
-          set DE crossover probability
-       -s <x> or --strategy <x>
-          set DE strategy
-       -S <g>@<r> or --stage <g>@<r>
-          add stage with <g> generations and <r> simulation reps
-       -p <x> or --ptsPerDim <x>
-          number of DE points per free var
-       --stateIn <filename>
-          read initial state of optimizer from file. Option may be repeated.
-       --stateOut <filename>
-          write final state of optimizer to file
-       -1 or --singletons
-          Use singleton site patterns
        -v or --verbose
           verbose output
        --version
           Print version and exit
-       -h or --help
-          print this message
+       -x <x> or --crossover <x>
+          set DE crossover probability
+
 
 Two arguments are required:
 
@@ -47,18 +65,24 @@ Two arguments are required:
 Legofit estimates the values of all the parameters that are declared
 as "free" in the .lgo file. It does this by minimizing a "cost
 function", which measures the difference between observed and expected
-values. Currently, the cost function is the negative of composite
-likelihood.  Other options are available via compile-time option (see
-`typedefs.h`). I don't yet know which cost function is best.
+values. Currently, the cost function is the KL divergence. Minimizing
+this is equivalent to maximizing a composite likelihood function based
+on the multinomial distribution.
 
-Expected counts are estimated by computer simulation, and optimization
-is done using the "differential evolution" (DE) algorithm.  The DE
-algorithm maintains a swarm of points, each at a different set of
-parameter values. The objective function is evaluated at these points
-in a multithreaded job queue, so the program runs fastest on a machine
-with lots of cores. You can set the number of threads using the `-t`
-argument. By default, the program uses 3/4 as many threads as there
-are processors on the machine---usually the number of hypercores.
+Site pattern frequencies are estimated either by computer simulation
+(the stochastic algorithm) or by a newer deterministic algorithm. The
+stochastic algorithm is the default. The `-d` or `--deterministic`
+arguments invoke the deterministic algorithm. Optimization is done
+using the "differential evolution" (DE) algorithm.  The DE algorithm
+maintains a swarm of points, each at a different set of parameter
+values. The objective function is evaluated at these points in a
+multithreaded job queue, so the program runs fastest on a machine with
+lots of cores. You can set the number of threads using the `-t`
+argument. By default, the stochastic algorithm uses 3/4 as many
+threads as there are processors on the machine, and the deterministic
+algorithm uses 1/2 as many threads as there are processors. If the
+deterministic algorithm is using too much memory, reduce the number of
+threads. 
 
 The DE algorithm can be tuned via command line arguments `-F`, `-x`,
 `-s`, and `-p`. Details regarding these choices can be found in
@@ -66,23 +90,29 @@ The DE algorithm can be tuned via command line arguments `-F`, `-x`,
 by Price, Storn, and Lampinen. We've had good results with `-s 2`, `-F
 0.3`, and `-x 0.8`, so these became the defaults as of version 1.15.
 
-During the first few hundred generations of the DE algorithm, the
-swarm of points adapts to the objective function. During this initial
-phase, high accuracy is not required, so it can speed things up to use
-low resolution in function evaluations. This is the purpose of the
-`-S` argument, which adds a "stage" to the simulation schedule. For
+If you are using the stochastic algorithm, it is a good idea to use
+several `-S` arguments to create a "simulation schedule".  During the
+first few hundred generations of the DE algorithm, the swarm of points
+adapts to the objective function. During this initial phase, high
+accuracy is not required, so it can speed things up to use low
+resolution in function evaluations. This is the purpose of the `-S`
+argument, which adds a "stage" to the simulation schedule. For
 example, `-S 1000@10000` adds a stage of 1000 DE generations, in each
 of which 10000 simulation replicates are used to evaluate each
 objective function. The `-S` argument can be given several times to
 set up a simulation schedule with several stages. The algorithm is
-allowed to converge only during the final stage. I am currently using
-a 2-stage schedule: `-S 1000@10000 -S `1000@2000000`.
+allowed to converge only during the final stage.
+
+With the deterministic algorithm, there is no point in using more than
+one `-S` argument, and you don't need to specify the number of
+iterations. The argument `-S 5000` would allow `legofit` to use as
+many as 5000 generations of differential evolution.
 
 By default, the initial swarm of points consists of one point
 representing the parameter values in the .lgo file, plus other points
 scattered randomly throughout the feasible region of parameter
 space. The total number of points defaults to 10 times the number of free
-parameters. To change this number, see the --ptsPerDim option.
+parameters. To change this number, see the `--ptsPerDim` option.
 
 The initial swarm of points can also be specified using the
 `--stateIn` option. This reads a file specifying the initial state of
@@ -163,14 +193,9 @@ set by "-S" or "--stage".
 
 If the algorithm fails to converge, there are several options. First,
 you can use "-S" or "--stage" to increase the maximum number of DE
-generations. For example, if the last stage is "-S 2000@2000000", you
-are allowing 2000 DE generations, in each of which each cost function
-value is estimated with 2000000 iterations. To double the allowed
-number of DE generations, change this to "-S 4000@2000000".
-
-Second, you can relax the tolerance. By default, this is 1e-4. It is
-reported in the legofit output. To double this value, use "-T 2e-4" or
-"--tol 2e-4".
+generations. Second, you can relax the tolerance. By default, this is
+1e-4. It is reported in the legofit output. To double this value, use
+"-T 2e-4" or "--tol 2e-4".
 
 Legofit handles three types of signal: SIGINT, SIGTERM, and
 SIGUSR1. If legofit is running in the foreground, the first of these
@@ -183,26 +208,29 @@ response to SIGUSR1, Legofit will wait until the end of the current DE
 generation and then write to stderr a summary of the state of the
 optimizer.
 
-@copyright Copyright (c) 2016, 2017, 2018, Alan R. Rogers
+@copyright Copyright (c) 2016, 2017, 2018, 2021. Alan R. Rogers
 <rogers@anthro.utah.edu>. This file is released under the Internet
 Systems Consortium License, which can be found in file "LICENSE".
 **/
 
 #include "branchtab.h"
+#include "comb.h"
 #include "cost.h"
 #include "diffev.h"
-#include "gptree.h"
 #include "lblndx.h"
+#include "matcoal.h"
+#include "network.h"
+#include "parseopf.h"
 #include "parstore.h"
 #include "patprob.h"
+#include "pointbuff.h"
 #include "simsched.h"
 #include "state.h"
-#include "pointbuff.h"
 #include <assert.h>
-#include <libgen.h>
 #include <float.h>
 #include <getopt.h>
 #include <gsl/gsl_sf_gamma.h>
+#include <libgen.h>
 #include <limits.h>
 #include <math.h>
 #include <pthread.h>
@@ -215,6 +243,7 @@ Systems Consortium License, which can be found in file "LICENSE".
 
 extern pthread_mutex_t seedLock;
 extern unsigned long rngseed;
+extern tipId_t union_all_samples;
 extern volatile sig_atomic_t sigstat;
 
 void usage(void);
@@ -228,7 +257,7 @@ void *ThreadState_new(void *notused) {
 
     pthread_mutex_lock(&seedLock);
     gsl_rng_set(rng, rngseed);
-    rngseed = (rngseed == ULONG_MAX ? 0 : rngseed + 1);
+    rngseed += 1; // wraps to 0 at ULONG_MAX
     pthread_mutex_unlock(&seedLock);
 
     return rng;
@@ -239,37 +268,33 @@ void ThreadState_free(void *rng) {
 }
 
 void usage(void) {
-#if COST==KL_COST || COST==LNL_COST
     fprintf(stderr, "usage: legofit [options] input.lgo sitepat.txt\n");
     fprintf(stderr, "   where file input.lgo describes population history,\n"
             "   and file sitepat.txt contains site pattern frequencies.\n");
-#else
-    fprintf(stderr, "usage: legofit [options] -u <mut_rate>"
-            " -n <genome_size> input.lgo sitepat.txt\n");
-    fprintf(stderr,
-            "   where <mut_rate> is the mutation rate per nucleotide\n"
-            "   site per generation, <genome_size> is the number of\n"
-            "   nucleotides per haploid genome, file input.lgo describes\n"
-            "   population history, and file sitepat.txt contains site\n"
-            "   pattern frequencies.\n");
-#endif
     fprintf(stderr, "Options may include:\n");
-    tellopt("-T <x> or --tol <x>", "termination criterion");
-    tellopt("-t <x> or --threads <x>", "number of threads (default is auto)");
+    tellopt("-1 or --singletons", "Use singleton site patterns");
+    tellopt("-c or --clic", "write output files needed by clic"); 
+    tellopt("-d <x> or --deterministic <x>",
+            "Deterministic algorithm, ignoring states with Pr <= x");
+    tellopt("-e or --epsilon", "add a small value to each site pattern prob"
+            " to prevent numerical problems");
     tellopt("-F <x> or --scaleFactor <x>", "set DE scale factor");
-    tellopt("-x <x> or --crossover <x>", "set DE crossover probability");
+    tellopt("-h or --help", "print this message");
+    tellopt("-p <x> or --ptsPerDim <x>", "number of DE points per free var");
     tellopt("-s <x> or --strategy <x>", "set DE strategy");
     tellopt("-S <g>@<r> or --stage <g>@<r>",
-            "add stage with <g> generations and <r> simulation reps");
-    tellopt("-p <x> or --ptsPerDim <x>", "number of DE points per free var");
+            "add stage with <g> generations and <r> simulation reps."
+            " The \"@<r>\"\n"
+            "      portion can be omitted if -d or --deterministic are used.");
     tellopt("--stateIn <filename>",
             "read initial state from new-style file. Option may be repeated.");
     tellopt("--stateOut <filename>",
             "write final state to file");
-    tellopt("-1 or --singletons", "Use singleton site patterns");
+    tellopt("-T <x> or --tol <x>", "termination criterion");
+    tellopt("-t <x> or --threads <x>", "number of threads (default is auto)");
     tellopt("-v or --verbose", "verbose output");
     tellopt("--version", "Print version and exit");
-    tellopt("-h or --help", "print this message");
+    tellopt("-x <x> or --crossover <x>", "set DE crossover probability");
     exit(1);
 }
 
@@ -282,6 +307,9 @@ int main(int argc, char **argv) {
 
     static struct option myopts[] = {
         /* {char *name, int has_arg, int *flag, int val} */
+        {"clic", no_argument, 0, 'c'},
+        {"deterministic", required_argument, 0, 'd'},
+        {"epsilon", no_argument, 0, 'e'},
         {"threads", required_argument, 0, 't'},
         {"crossover", required_argument, 0, 'x'},
         {"scaleFactor", required_argument, 0, 'F'},
@@ -289,10 +317,6 @@ int main(int argc, char **argv) {
         {"stage", required_argument, 0, 'S'},
         {"tol", required_argument, 0, 'T'},
         {"ptsPerDim", required_argument, 0, 'p'},
-#if COST!=KL_COST && COST!=LNL_COST
-        {"mutRate", required_argument, 0, 'u'},
-        {"genomeSize", required_argument, 0, 'n'},
-#endif
         {"singletons", no_argument, 0, '1'},
         {"stateIn", required_argument, 0, 'z'},
         {"stateOut", required_argument, 0, 'y'},
@@ -311,7 +335,9 @@ int main(int argc, char **argv) {
     double lo_t = 0.0, hi_t = 1e7;  // t bounds
     int nThreads = 0;           // total number of threads
     int doSing = 0;             // nonzero means use singleton site patterns
+    int write_clic_pts = 0;
     int status, optndx;
+    double min_brlen = 0.0;
     long simreps = 1000000;
     char lgofname[200] = { '\0' };
     char patfname[200] = { '\0' };
@@ -322,15 +348,20 @@ int main(int argc, char **argv) {
     // DiffEv parameters
     double F = 0.3;
     double CR = 0.8;
-#if COST!=KL_COST && COST!=LNL_COST
-    double u = 0.0;             // mutation rate per site per generation
-    long nnuc = 0;              // number of nucleotides per haploid genome
-#endif
-    double ytol = 3e-5;         // stop when yspread <= ytol
+    double ytol = -1.0;         // stop when yspread <= ytol
+    double ytol_default_stochastic = 3e-5;
+    double ytol_default_deterministic = 1e-10;
     int strategy = 2;
     int ptsPerDim = 10;
     int verbose = 0;
+    int deterministic = 0;
+    int empty_reps = 0;
     SimSched *simSched = SimSched_new();
+
+    // Ignore IdSet objects with probabilities <= improbable.
+    extern long double improbable;
+
+    assert(SimSched_nStages(simSched) == 0);
 
 #if defined(__DATE__) && defined(__TIME__)
     printf("# Program was compiled: %s %s\n", __DATE__, __TIME__);
@@ -347,15 +378,27 @@ int main(int argc, char **argv) {
 
     // command line arguments
     for(;;) {
-#if COST==KL_COST || COST==LNL_COST
-        i = getopt_long(argc, argv, "T:t:F:p:s:S:a:vx:1h", myopts, &optndx);
-#else
-        i = getopt_long(argc, argv, "T:t:F:p:s:S:a:vx:u:n:1h",
-                        myopts, &optndx);
-#endif
+        char *end;
+        i = getopt_long(argc, argv, "cd:eT:t:F:p:s:S:a:vx:1h", myopts,
+                        &optndx);
         if(i == -1)
             break;
         switch (i) {
+        case 'c':
+            write_clic_pts = 1;
+            break;
+        case 'd':
+            deterministic = 1;
+            improbable = strtold(optarg, &end);
+            if(*end != '\0') {
+                fprintf(stderr,"\nIllegal argument to -d or --deterministic.\n"
+                        "Can't parse %s as a long double.\n\n", optarg);
+                usage();
+            }
+            break;
+        case 'e':
+            min_brlen = DBL_EPSILON;
+            break;
         case ':':
         case '?':
             usage();
@@ -378,24 +421,45 @@ int main(int argc, char **argv) {
             strategy = strtol(optarg, NULL, 10);
             break;
         case 'S':
-        {
-            // Add a stage to simSched.
-            char b[20], *g, *r;
-            status = snprintf(b, sizeof b, "%s", optarg);
-            if(status >= sizeof b) {
-                fprintf(stderr, "%s:%d: buffer overflow reading arg %s\n",
-                        __FILE__, __LINE__, optarg);
-                exit(EXIT_FAILURE);
+            {
+                // Add a stage to simSched.
+                char b[20], *g, *r;
+                status = snprintf(b, sizeof b, "%s", optarg);
+                if(status >= sizeof b) {
+                    fprintf(stderr, "%s:%d: buffer overflow reading arg %s\n",
+                            __FILE__, __LINE__, optarg);
+                    exit(EXIT_FAILURE);
+                }
+                g = r = b;
+
+                // Parse string like "123@456". g is for diffev generations
+                // and points to "123". r is for simulation replicates and
+                // points to "456". It is legal to omit the "@456" part,
+                // but only if -d or --deterministic is also used.
+                (void) strsep(&r, "@");
+                if(strlen(g) == 0)
+                    usage();
+                long stageGen = strtol(g, NULL, 10);
+
+                long stageRep;
+                if(r == NULL || strlen(r) == 0) {
+                    empty_reps = 1;
+                    stageRep = 0;
+                }else{
+                    stageRep = strtol(r, NULL, 10);
+                    if(stageRep == 0)
+                        empty_reps = 1;
+                }
+                simreps = stageRep;
+
+                if(stageGen < 0 || stageRep < 0) {
+                    fprintf(stderr,"Argument to -S or --stage can't have"
+                            " negative integers: \"%s\" is illegal.\n",
+                            optarg);
+                    exit(EXIT_FAILURE);
+                }
+                SimSched_append(simSched, stageGen, stageRep);
             }
-            g = r = b;
-            (void) strsep(&r, "@");
-            if(r == NULL || strlen(r) == 0 || strlen(g) == 0)
-                usage();
-            long stageGen = strtol(g, NULL, 10);
-            long stageRep = strtol(r, NULL, 10);
-            simreps = stageRep;
-            SimSched_append(simSched, stageGen, stageRep);
-        }
             break;
         case 'v':
             verbose = 1;
@@ -408,14 +472,6 @@ int main(int argc, char **argv) {
         case 'x':
             CR = strtod(optarg, 0);
             break;
-#if COST!=KL_COST && COST!=LNL_COST
-        case 'u':
-            u = strtod(optarg, 0);
-            break;
-        case 'n':
-            nnuc = strtol(optarg, NULL, 10);
-            break;
-#endif
         case 'y':
             status =
                 snprintf(stateOutName, sizeof(stateOutName), "%s", optarg);
@@ -456,31 +512,51 @@ int main(int argc, char **argv) {
         fprintf(stderr, "Command line must specify 2 input files.\n");
         usage();
     }
-#if COST!=KL_COST && COST!=LNL_COST
-    if(u == 0.0) {
-        fprintf(stderr, "Use -u to set mutation rate per generation.\n");
-        usage();
-    }
-
-    if(nnuc == 0) {
-        fprintf(stderr,
-                "Use -n to set # of nucleotides per haploid genome.\n");
-        usage();
-    }
-#endif
 
     snprintf(lgofname, sizeof(lgofname), "%s", argv[optind]);
     assert(lgofname[0] != '\0');
     snprintf(patfname, sizeof(patfname), "%s", argv[optind + 1]);
     assert(patfname[0] != '\0');
 
-    // Default simulation schedule.
-    // Stage 1: 200 DE generations of 1000 simulation replicates
-    // Stage 2: 100 generations of 10000 replicates
-    if(0 == SimSched_nStages(simSched)) {
-        SimSched_append(simSched, 200, 1000);
-        SimSched_append(simSched, 100, 10000);
-        SimSched_append(simSched, 1000, simreps);
+    if(!deterministic && empty_reps) {
+        fprintf(stderr,"\nAt least one -S or --stage argument specified"
+                " zero simulation replicates. In\n"
+                "other words, there was no \"@\" or there was no positive"
+                " integer after the \"@\".\n"
+                "This is only legal when -d or --deterministic is also"
+                " used.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if(deterministic) {
+        Network_init(DETERMINISTIC);
+
+        if(ytol < 0.0)
+            ytol = ytol_default_deterministic;
+
+        if(0 == SimSched_nStages(simSched)) {
+            // Default simulation schedule.
+            // 1000 generations of 1 replicate
+            SimSched_append(simSched, 1000, 1);
+        }else if(1 < SimSched_nStages(simSched)) {
+            fprintf(stderr,"\nDon't use the -S or --stage argument"
+                    " more than once when using -d or --deterministic\n");
+            exit(EXIT_FAILURE);
+        }
+    }else{
+        Network_init(STOCHASTIC);
+
+        if(ytol < 0.0)
+            ytol = ytol_default_stochastic;
+
+        if(0 == SimSched_nStages(simSched)) {
+            // Default simulation schedule.
+            // Stage 1: 200 DE generations of 1000 simulation replicates
+            // Stage 2: 100 generations of 10000 replicates
+            SimSched_append(simSched, 200, 1000);
+            SimSched_append(simSched, 100, 10000);
+            SimSched_append(simSched, 1000, simreps);
+        }
     }
 
     SimSched_print(simSched, stdout);
@@ -492,14 +568,14 @@ int main(int argc, char **argv) {
         .hi_t = hi_t
     };
 
-    GPTree *gptree = GPTree_new(lgofname, bnd);
-    LblNdx lblndx = GPTree_getLblNdx(gptree);
+    void *network = Network_new(lgofname, bnd);
+    LblNdx lblndx = Network_getLblNdx(network);
 
     gsl_rng *rng = gsl_rng_alloc(gsl_rng_taus);
     gsl_rng_set(rng, rngseed);
-    rngseed = (rngseed == ULONG_MAX ? 0 : rngseed + 1);
+    rngseed += 1;
 
-    int dim = GPTree_nFree(gptree); // number of free parameters
+    int dim = Network_nFree(network); // number of free parameters
     if(dim == 0) {
         fprintf(stderr, "Error@%s:%d: no free parameters\n",
                 __FILE__, __LINE__);
@@ -509,7 +585,7 @@ int main(int argc, char **argv) {
 
     char *parnames[dim];
     for(i=0; i<dim; ++i) {
-        parnames[i] = strdup(GPTree_getNameFree(gptree, i));
+        parnames[i] = strdup(Network_getNameFree(network, i));
         CHECKMEM(parnames[i]);
     }
 
@@ -530,13 +606,18 @@ int main(int argc, char **argv) {
         // values specified in .lgo file.
         double x[dim];
         State_getVector(state, 0, dim, x);
-        GPTree_setParams(gptree, dim, x);
-        if(!GPTree_feasible(gptree, 1)) {
+        if(Network_setParams(network, dim, x)) {
+            fprintf(stderr, "%s:%d: free params violate constraints\n",
+                    __FILE__, __LINE__);
+            exit(EXIT_FAILURE);
+        }
+        
+        if(!Network_feasible(network, 1)) {
             fflush(stdout);
             dostacktrace(__FILE__, __LINE__, stderr);
             fprintf(stderr, "%s:%s:%d: stateIn points not feasible\n", __FILE__,
                     __func__,__LINE__);
-            GPTree_printParStore(gptree, stderr);
+            Network_printParStore(network, stderr);
             exit(EXIT_FAILURE);
         }
   } else {
@@ -544,20 +625,30 @@ int main(int argc, char **argv) {
         state = State_new(npts, dim);
         CHECKMEM(state);
         for(i = 0; i < dim; ++i)
-            State_setName(state, i, GPTree_getNameFree(gptree, i));
+            State_setName(state, i, Network_getNameFree(network, i));
         for(i = 0; i < npts; ++i) {
             double x[dim];
-            initStateVec(i, gptree, dim, x, rng);
+            Network_initStateVec(network, i, dim, x, rng);
             State_setVector(state, i, dim, x);
         }
     }
     assert(state);
 
-    if(nThreads == 0)
-        nThreads = ceil(0.75 * getNumCores());
-    if(nThreads > npts)
+    if(nThreads == 0) {
+        if(deterministic)
+            nThreads = ceil(0.5 * getNumCores());
+        else
+            nThreads = ceil(0.75 * getNumCores());
+    }if(nThreads > npts)
         nThreads = npts;
 
+    if(deterministic) {
+        printf("# algorithm          : %s\n", "deterministic");
+        printf("# ignoring probs <=  : %Lg\n", improbable);
+    }else {
+        printf("# algorithm          : %s\n", "stochastic");
+    }
+    printf("# Branch length floor: %lg\n", min_brlen);
     printf("# DE strategy        : %d\n", strategy);
     printf("#    F               : %lg\n", F);
     printf("#    CR              : %lg\n", CR);
@@ -574,30 +665,20 @@ int main(int argc, char **argv) {
     }
     if(stateOut)
         printf("# output state file  : %s\n", stateOutName);
-#if COST!=KL_COST && COST!=LNL_COST
-    printf("# mut_rate/generation: %lg\n", u);
-    printf("# nucleotides/genome : %ld\n", nnuc);
-#endif
     printf("# %s singleton site patterns.\n",
            (doSing ? "Including" : "Excluding"));
 #if COST==KL_COST
     printf("# cost function      : %s\n", "KL");
 #elif COST==LNL_COST
     printf("# cost function      : %s\n", "negLnL");
-#elif COST==CHISQR_COST
-    printf("# cost function      : %s\n", "ChiSqr");
-#elif COST==SMPLCHISQR_COST
-    printf("# cost function      : %s\n", "SmplChiSqr");
-#elif COST==POISSON_COST
-    printf("# cost function      : %s\n", "Poisson");
 #else
 # error "Unknown cost function"
 #endif
 
     // Construct name for output file to which we will write
     // points for use in estimating Hessian matrix.
-    char ptsfname[200];
-    {
+    char ptsfname[200] = {0};
+    if(write_clic_pts){
         char a[200], b[200];
         strcpy(a, basename(lgofname));
         strcpy(b, basename(patfname));
@@ -623,11 +704,11 @@ int main(int argc, char **argv) {
                 ++version;
             }
         }
+        printf("# pts output file    : %s\n", ptsfname);
     }
-    printf("# pts output file    : %s\n", ptsfname);
 
     // Observed site pattern frequencies
-    BranchTab *rawObs = BranchTab_parse(patfname, &lblndx);
+    BranchTab *rawObs = parseOpf(patfname, &lblndx);
     if(doSing) {
         if(!BranchTab_hasSingletons(rawObs)) {
             fprintf(stderr, "%s:%d: Command line includes singletons "
@@ -646,20 +727,15 @@ int main(int argc, char **argv) {
         }
     }
     BranchTab *obs = BranchTab_dup(rawObs);
-#if COST==KL_COST
     BranchTab_normalize(obs);
-#endif
 
     // parameters for cost function
     CostPar costPar = {
         .obs = obs,
-        .gptree = gptree,
+        .network = network,
         .nThreads = nThreads,
         .doSing = doSing,
-#if COST!=KL_COST && COST!=LNL_COST
-        .u = u,
-        .nnuc = nnuc,
-#endif
+        .min_brlen = min_brlen,
         .simSched = simSched
     };
 
@@ -701,22 +777,31 @@ int main(int argc, char **argv) {
     double cost, yspread;
 
     printf("Initial parameter values\n");
-    GPTree_printParStore(gptree, stdout);
+    Network_printParStore(network, stdout);
 
     // Flush just before diffev so output file will be as complete as
     // possible while diffev is running.
     fflush(stdout);
 
     DEStatus destat = diffev(dim, estimate, &cost, &yspread, dep, rng);
+    if(destat == NoFinitePoints) {
+        fprintf(stderr,"%s:%d:"
+                "No initial DiffEv points have finite values.\n"
+                "Try the --epsilon option.\n",
+                __FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
 
     // Get mean site pattern branch lengths
-    if(GPTree_setParams(gptree, dim, estimate)) {
+    if(Network_setParams(network, dim, estimate)) {
         fprintf(stderr, "%s:%d: free params violate constraints\n",
                 __FILE__, __LINE__);
         exit(EXIT_FAILURE);
     }
-    BranchTab *bt = patprob(gptree, simreps, doSing, rng);
-    BranchTab_divideBy(bt, (double) simreps);
+
+    BranchTab *bt = get_brlen(network, simreps, doSing, min_brlen, rng);
+    if(!doSing)
+        assert(!BranchTab_hasSingletons(bt));
     //    BranchTab_print(bt, stdout);
 
     const char *whyDEstopped;
@@ -742,26 +827,28 @@ int main(int argc, char **argv) {
     putchar('\n');
 
     printf("Fitted parameter values\n");
-    GPTree_printParStoreFree(gptree, stdout);
+    Network_printParStoreFree(network, stdout);
 
     // Put site patterns and branch lengths into arrays.
     unsigned npat = BranchTab_size(bt);
     tipId_t pat[npat];
-    double brlen[npat];
-    double sqr[npat];
-    BranchTab_toArrays(bt, npat, pat, brlen, sqr);
+    long double brlen[npat];
+    BranchTab_toArrays(bt, npat, pat, brlen);
 
     // Determine order for printing lines of output
     unsigned ord[npat];
     orderpat(npat, ord, pat);
 
     printf("#%14s %10s\n", "SitePat", "BranchLen");
-    char buff[100];
+    char buff[100], buff2[100];
     for(j = 0; j < npat; ++j) {
-        char buff2[100];
+        if(!doSing && isPow2(pat[ord[j]]))
+           continue;
+        if(pat[ord[j]] == union_all_samples)
+            continue;
         snprintf(buff2, sizeof(buff2), "%s",
                  patLbl(sizeof(buff), buff, pat[ord[j]], &lblndx));
-        printf("%15s %10.7lf\n", buff2, brlen[ord[j]]);
+        printf("%15s %10.7Lf\n", buff2, brlen[ord[j]]);
     }
 
     if(stateOut) {
@@ -769,90 +856,93 @@ int main(int argc, char **argv) {
         fclose(stateOut);
     }
 
-#if COST==KL_COST || COST==LNL_COST
-    double S = BranchTab_sum(rawObs); // sum of site pattern counts
-    double entropy = BranchTab_entropy(obs); // -sum p ln(p)
-    if(nQuadPts != PointBuff_size(dep.pb)) {
-        fprintf(stderr,"Warning@%s:%d: expecting %u points; got %u\n",
-                __FILE__,__LINE__, nQuadPts, PointBuff_size(dep.pb));
-        nQuadPts = PointBuff_size(dep.pb);
-    }
+    if(write_clic_pts) {
 
-    assert( access( ptsfname, F_OK ) == -1 );
-
-    FILE *qfp = fopen(ptsfname, "w");
-    if(qfp == NULL) {
-        fprintf(stderr,"%s:%d: can't write file %s: using stdout\n",
-                __FILE__,__LINE__,ptsfname);
-        qfp = stdout;
-    }
-
-    // First line contains dimensions. Each row contains dim+1 values:
-    // first lnL, then dim parameter values.
-    fprintf(qfp, "%u %d\n", nQuadPts, dim);
-
-    // header
-    fprintf(qfp, "%s", "lnL");
-    for(i=0; i < dim; ++i)
-        fprintf(qfp, " %s", GPTree_getNameFree(gptree, i));
-    putc('\n', qfp);
-
-    double lnL;
-
-    // print estimate first
-#  if COST==KL_COST
-    lnL = -S*(cost + entropy);
-#  else
-    lnL = -cost;
-#  endif
-    fprintf(qfp, "%0.18lg", lnL);
-    for(i=0; i < dim; ++i)
-        fprintf(qfp, " %0.18lg", estimate[i]);
-    putc('\n', qfp);
-
-    // print contents of PointBuff, omitting any that exactly
-    // equal the point estimate
-    while(0 != PointBuff_size(dep.pb)) {
-        double c, par[dim];
-        c = PointBuff_pop(dep.pb, dim, par);
-
-        // Is current point the estimate? If so, skip it.
-        int is_estimate=1;
-        if(c != cost)
-            is_estimate=0;
-        for(i=0; is_estimate && i < dim; ++i) {
-            if(par[i] != estimate[i])
-                is_estimate = 0;
+        double S = BranchTab_sum(rawObs); // sum of site pattern counts
+        double entropy = BranchTab_entropy(obs); // -sum p ln(p)
+        if(nQuadPts != PointBuff_size(dep.pb)) {
+            fprintf(stderr,"Warning@%s:%d: expecting %u points; got %u\n",
+                    __FILE__,__LINE__, nQuadPts, PointBuff_size(dep.pb));
+            nQuadPts = PointBuff_size(dep.pb);
         }
-        if(is_estimate)
-            continue;
 
-#  if COST==KL_COST
-        lnL = -S*(c + entropy); // Kullback-Leibler cost function
-#  else
-        lnL = -c;               // negLnL cost function
-#  endif
+        assert( access( ptsfname, F_OK ) == -1 );
+
+        FILE *qfp = fopen(ptsfname, "w");
+        if(qfp == NULL) {
+            fprintf(stderr,"%s:%d: can't write file %s: using stdout\n",
+                    __FILE__,__LINE__,ptsfname);
+            qfp = stdout;
+        }
+
+        // First line contains dimensions. Each row contains dim+1 values:
+        // first lnL, then dim parameter values.
+        fprintf(qfp, "%u %d\n", nQuadPts, dim);
+
+        // header
+        fprintf(qfp, "%s", "lnL");
+        for(i=0; i < dim; ++i)
+            fprintf(qfp, " %s", Network_getNameFree(network, i));
+        putc('\n', qfp);
+
+        double lnL;
+
+        // print estimate first
+#if COST==KL_COST
+        lnL = -S*(cost + entropy);
+#else
+        lnL = -cost;
+#endif
         fprintf(qfp, "%0.18lg", lnL);
         for(i=0; i < dim; ++i)
-            fprintf(qfp, " %0.18lg", par[i]);
+            fprintf(qfp, " %0.18lg", estimate[i]);
         putc('\n', qfp);
-    }
-    if(qfp != stdout) {
-        fclose(qfp);
-        fprintf(stderr,"%d points written to file %s\n",
-                nQuadPts, ptsfname);
-    }
+
+        // print contents of PointBuff, omitting any that exactly
+        // equal the point estimate
+        while(0 != PointBuff_size(dep.pb)) {
+            double c, par[dim];
+            c = PointBuff_pop(dep.pb, dim, par);
+
+            // Is current point the estimate? If so, skip it.
+            int is_estimate=1;
+            if(c != cost)
+                is_estimate=0;
+            for(i=0; is_estimate && i < dim; ++i) {
+                if(par[i] != estimate[i])
+                    is_estimate = 0;
+            }
+            if(is_estimate)
+                continue;
+
+#if COST==KL_COST
+            lnL = -S*(c + entropy); // Kullback-Leibler cost function
+#else
+            lnL = -c;               // negLnL cost function
 #endif
+            fprintf(qfp, "%0.18lg", lnL);
+            for(i=0; i < dim; ++i)
+                fprintf(qfp, " %0.18lg", par[i]);
+            putc('\n', qfp);
+        }
+        if(qfp != stdout) {
+            fclose(qfp);
+            fprintf(stderr,"%d points written to file %s\n",
+                    nQuadPts, ptsfname);
+        }
+    }
 
     PointBuff_free(dep.pb);
     BranchTab_free(bt);
     BranchTab_free(rawObs);
     BranchTab_free(obs);
     gsl_rng_free(rng);
-    GPTree_sanityCheck(gptree, __FILE__, __LINE__);
-    GPTree_free(gptree);
+    Network_sanityCheck(network, __FILE__, __LINE__);
+    Network_free(network);
     SimSched_free(simSched);
     State_free(state);
+    binom_free();
+    MatCoal_freeExterns();
     for(i=0; i<dim; ++i)
         free(parnames[i]);
 

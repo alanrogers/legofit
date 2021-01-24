@@ -9,7 +9,6 @@
 #include "misc.h"
 #include "binary.h"
 #include "lblndx.h"
-#include "version.h"
 #include "error.h"
 #include <assert.h>
 #include <ctype.h>
@@ -40,8 +39,8 @@
 /// Call like this: "dostacktrace(__FILE__, __LINE__)"
 void dostacktrace(const char *file, int line, FILE * ofp) {
 #ifndef NDEBUG
-    void       *callstack[CALLSTACK_SIZE];
-    int         nsymbols = backtrace(callstack, CALLSTACK_SIZE);
+    void *callstack[CALLSTACK_SIZE];
+    int nsymbols = backtrace(callstack, CALLSTACK_SIZE);
 
     fprintf(ofp, "backtrace depth: %d\n", nsymbols);
     fprintf(ofp, "dostacktrace called from %s:%d:\n", file, line);
@@ -74,9 +73,9 @@ int getNumCores(void) {
     GetSystemInfo(&sysinfo);
     return sysinfo.dwNumberOfProcessors;
 #elif defined(MACOS)
-    int         nm[2];
-    size_t      len = 4;
-    uint32_t    count;
+    int nm[2];
+    size_t len = 4;
+    uint32_t count;
 
     nm[0] = CTL_HW;
     nm[1] = HW_AVAILCPU;
@@ -100,7 +99,7 @@ int getNumCores(void) {
 /// printf, it doesn't detect mismatches in the type and number
 /// of arguments.
 void eprintf(const char *fmt, ...) {
-    va_list     args;
+    va_list args;
 
     fflush(stdout);
 
@@ -119,14 +118,14 @@ void eprintf(const char *fmt, ...) {
 /// working directory, whether or not "name" is an absolute pathname.
 FILE *efopen(const char *restrict name, const char *restrict mode) {
     FILE *fp = fopen(name, mode);
-    if(fp==NULL) {
+    if(fp == NULL) {
         char cwd[PATH_MAX], *p;
         p = getcwd(cwd, sizeof(cwd));
         if(NULL == p) {
             fprintf(stderr, "%s:%d: can't open file \"%s.\"\n",
                     __FILE__, __LINE__, name);
-        }else{
-            fprintf(stderr,"%s:%d: can't open file \"%s.\"\n"
+        } else {
+            fprintf(stderr, "%s:%d: can't open file \"%s.\"\n"
                     "   in directory \"%s\".\n",
                     __FILE__, __LINE__, name, cwd);
         }
@@ -135,51 +134,50 @@ FILE *efopen(const char *restrict name, const char *restrict mode) {
     return fp;
 }
 
-
 /**
  * Uniform perturbation on log scale. Log10 of new value in range
  * (log10(x)-w, log10(x)+w)
  */
-double perturb_ratio_w(double x, double w, gsl_rng *rng) {
-	assert(x >= 0.0);
-	if(x == 0.0)
-		return x;
+double perturb_ratio_w(double x, double w, gsl_rng * rng) {
+    assert(x >= 0.0);
+    if(x == 0.0)
+        return x;
 
     double lgx = log10(x);
-    return pow(10.0, gsl_ran_flat(rng, lgx-w, lgx+w));
+    return pow(10.0, gsl_ran_flat(rng, lgx - w, lgx + w));
 }
 
 /**
  * Uniform perturbation on log scale. New value in range (0.1*x, 10*x).
  */
-double perturb_ratio(double x, gsl_rng *rng) {
-	return perturb_ratio_w(x, 1.0, rng);
+double perturb_ratio(double x, gsl_rng * rng) {
+    return perturb_ratio_w(x, 1.0, rng);
 }
 
 /**
  * Uniform perturbation within interval. New value in range (lo, hi).
  */
 long double perturb_interval(long double x, long double lo, long double hi,
-                             gsl_rng *rng) {
+                             gsl_rng * rng) {
     if(!(lo <= x)) {
         fflush(stdout);
-        fprintf(stderr,"%s:%s:%d: lo=%Lf must be <= x=%Lf\n",
+        fprintf(stderr, "%s:%s:%d: lo=%Lf must be <= x=%Lf\n",
                 __FILE__, __func__, __LINE__, lo, x);
         exit(1);
     }
     if(!(x < hi)) {
         fflush(stdout);
-        fprintf(stderr,"%s:%s:%d: x=%Lf must be < hi=%Lf\n",
+        fprintf(stderr, "%s:%s:%d: x=%Lf must be < hi=%Lf\n",
                 __FILE__, __func__, __LINE__, x, hi);
         exit(1);
     }
     long double c_hi = hi - 2 * DBL_EPSILON;
     long double c_lo = lo + 2 * DBL_EPSILON;
     assert(c_lo < c_hi);
-	long double rval = gsl_ran_flat(rng, c_lo, c_hi);
-	assert(rval > c_lo);
-	assert(rval < c_hi);
-	return rval;
+    long double rval = gsl_ran_flat(rng, c_lo, c_hi);
+    assert(rval > c_lo);
+    assert(rval < c_hi);
+    return rval;
 }
 
 /**
@@ -298,7 +296,7 @@ void unitTstResult(const char *facility, const char *result) {
 int strCountSetChunks(const char *str, const char *sep) {
     assert(str);
     assert(sep);
-    int         nchunks = 0, i;
+    int nchunks = 0, i;
 
     while(*str != '\0') {
         i = strcspn(str, sep);  /* skip chars not in set */
@@ -313,10 +311,10 @@ int strCountSetChunks(const char *str, const char *sep) {
 }
 
 /// duplicate memory block
-void       *memdup(const void *p, size_t n) {
+void *memdup(const void *p, size_t n) {
     assert(p);
     assert(n > 0);
-    void       *q;
+    void *q;
 
     q = malloc(n);
     CHECKMEM(q);
@@ -378,33 +376,27 @@ int compareDoubles(const void *void_x, const void *void_y) {
 /// Return Kullback-Leibler divergence of o relative to e.
 double KLdiverg(int n, const double o[n], const double e[n]) {
     int i;
-    double kl=0.0;
-    assert(Dbl_near(1.0, sum_double(n, o)));
-    assert(Dbl_near(1.0, sum_double(n, e)));
+    double kl = 0.0;
+    assert(Dbl_near(1.0, sumDbl(n, o)));
+    assert(Dbl_near(1.0, sumDbl(n, e)));
     for(i = 0; i < n; ++i) {
-        if(o[i]==0.0 && e[i]==0.0)
+        if(o[i] == 0.0 && e[i] == 0.0)
             continue;
         double q = o[i];
         double p = e[i];
-        kl += p*log(p/q);
+        kl += p * log(p / q);
     }
     return kl;
 }
 
-/// Sum an array of doubles. Unwrapped loop.
-double sum_double(int n, const double x[n]) {
-    register double rval;
-    register int i, m;
+/// Sum an array of doubles.
+double sumDbl(int n, const double x[n]) {
+    register long double rval = 0.0;
 
     assert(n >= 0);
 
-    rval = 0.0;
-    m = n % 5;
-    for(i = 0; i < m; ++i)
+    for(register int i = 0; i < n; ++i)
         rval += x[i];
-
-    for(i = m; i < n; i += 5)
-        rval += x[i] + x[i + 1] + x[i + 2] + x[i + 3] + x[i + 4];
 
     return rval;
 }
@@ -418,7 +410,7 @@ double reflect(double x, double lo, double hi) {
     x -= lo;
     hi -= lo;
 
-    double      z = fabs(fmod(x, 2.0 * hi));
+    double z = fabs(fmod(x, 2.0 * hi));
 
     /*    printf("initially z=%lg\n", z); */
 
@@ -433,7 +425,7 @@ double reflect(double x, double lo, double hi) {
 }
 
 /// Convert NULL-terminated string to lower case
-char       *strlowercase(char *s) {
+char *strlowercase(char *s) {
     char *p;
 
     for(p = s; *p != '\0'; ++p)
@@ -442,7 +434,11 @@ char       *strlowercase(char *s) {
 }
 
 /// Hash a character string
-unsigned strhash(const char *ss) {
+#ifdef __clang__
+unsigned long strhash(const char *ss) __attribute__ ((no_sanitize("integer"))) {
+#else
+unsigned long strhash(const char *ss) {
+#endif
     unsigned long hashval;
     int c;
     const unsigned char *s = (const unsigned char *) ss;
@@ -450,7 +446,7 @@ unsigned strhash(const char *ss) {
     // djb2
     hashval = 5381;
     while((c = *s++))
-        hashval = ((hashval << 5) + hashval) +  c;
+        hashval = ((hashval << 5) + hashval) + c;
 
     return hashval;
 }
@@ -462,10 +458,10 @@ int stripchr(char *s, int c) {
     while(*q != '\0') {
         if(*q == c)
             ++q;
-        else if(p==q) {
+        else if(p == q) {
             ++p;
             ++q;
-        }else
+        } else
             *p++ = *q++;
     }
     *p = '\0';
@@ -478,30 +474,30 @@ int stripchr(char *s, int c) {
 char *stripWhiteSpace(char *buff) {
     char *s, *t;
     s = buff;
-    while(*s!='\0' && isspace(*s))
+    while(*s != '\0' && isspace(*s))
         ++s;
     if(*s == '\0')
         return s;
-    t = s+1;
+    t = s + 1;
     while(*t != '\0')
         ++t;
-    while(isspace(*(t-1)))
+    while(isspace(*(t - 1)))
         --t;
     *t = '\0';
     return s;
 }
 
-char* stripInternalWhiteSpace(char* buff) {
-  char* str = buff;
-  int x = 0;
-  for(int i = 0; buff[i]; ++i){
-    if(!(buff[i] == ' ')){
-      str[x] = str[i];
-      ++x;
+char *stripInternalWhiteSpace(char *buff) {
+    char *str = buff;
+    int x = 0;
+    for(int i = 0; buff[i]; ++i) {
+        if(!(buff[i] == ' ')) {
+            str[x] = str[i];
+            ++x;
+        }
     }
-  }
-  str[x] = '\0';
-  return str;
+    str[x] = '\0';
+    return str;
 }
 
 /**
@@ -522,9 +518,9 @@ char* stripInternalWhiteSpace(char* buff) {
  */
 char *nextWhitesepToken(char **str) {
     char *token;
-    do{
+    do {
         token = strsep(str, " \t\n");
-    }while(token!=NULL && *token=='\0');
+    } while(token != NULL && *token == '\0');
     return token;
 }
 
@@ -535,11 +531,11 @@ char *nextWhitesepToken(char **str) {
 /// n.
 int tokenize(int dim, char *token[dim], char *s, const char *delim) {
     char *t;
-    int n=0;
-    while((t=strsep(&s, delim)) != NULL) {
+    int n = 0;
+    while((t = strsep(&s, delim)) != NULL) {
         if(n >= dim) {
-            fprintf(stderr,"%s:%d: too many alleles; max is %d\n",
-                    __FILE__,__LINE__, dim);
+            fprintf(stderr, "%s:%d: too many alleles; max is %d\n",
+                    __FILE__, __LINE__, dim);
             exit(1);
         }
         token[n] = t;
@@ -549,7 +545,7 @@ int tokenize(int dim, char *token[dim], char *s, const char *delim) {
 }
 
 /// In string s, replace instances of character a with character b.
-void        strReplaceChr(char *s, int a, int b) {
+void strReplaceChr(char *s, int a, int b) {
     while(*s != '\0') {
         if(*s == a)
             *s = b;
@@ -564,13 +560,13 @@ void        strReplaceChr(char *s, int a, int b) {
 double parseDbl(char *token) {
     char *leftover;
     double x;
-    errno=0;
+    errno = 0;
     x = strtod(token, &leftover);
     if(errno) {
         // strtod detected a problem
         return 0.0;
     }
-    if(leftover==token) {
+    if(leftover == token) {
         // token not interpretable as a float
         errno = EINVAL;
         return 0.0;
@@ -587,12 +583,12 @@ double parseDbl(char *token) {
 
 /// Truncate string to n characters (plus terminating '\0') by
 /// removing characters from the left.
-char * strltrunc(char *s, int n) {
+char *strltrunc(char *s, int n) {
     int w = strlen(s);
     if(w <= n)
         return s;
 
-    char *u = s, *v = s + (w-n);
+    char *u = s, *v = s + (w - n);
     while(*v)
         *u++ = *v++;
     *u = '\0';
@@ -602,20 +598,20 @@ char * strltrunc(char *s, int n) {
 void hdr(const char *msg) {
     int i, wid, len1, len2, status;
     char version[100], buff[100];
-    status = snprintf(version, sizeof(version), "version %s", VERSION);
+    status = snprintf(version, sizeof(version), "version %s", GIT_VERSION);
     if(status >= sizeof(version)) {
-        fprintf(stderr,"%s:%d: buffer overflow\n",__FILE__,__LINE__);
+        fprintf(stderr, "%s:%d: buffer overflow\n", __FILE__, __LINE__);
         exit(EXIT_FAILURE);
     }
     len1 = strlen(msg);
     len2 = strlen(version);
     wid = 2 + (len1 > len2 ? len1 : len2);
-    for(i=0; i < 2 + wid; ++i)
+    for(i = 0; i < 2 + wid; ++i)
         putchar('#');
     putchar('\n');
     printf("#%s#\n", strcenter(msg, wid, buff, sizeof(buff)));
     printf("#%s#\n", strcenter(version, wid, buff, sizeof(buff)));
-    for(i=0; i < 2 + wid; ++i)
+    for(i = 0; i < 2 + wid; ++i)
         putchar('#');
     putchar('\n');
     putchar('\n');
@@ -626,9 +622,8 @@ void hdr(const char *msg) {
  * is written into the character string "buff", whose size is
  * "buffsize".
  */
-char       *strcenter(const char *text, unsigned width,
-                      char *buff, size_t buffsize) {
-    int         i, j, lpad = 0, rpad = 0, txtwid;
+char *strcenter(const char *text, unsigned width, char *buff, size_t buffsize) {
+    int i, j, lpad = 0, rpad = 0, txtwid;
 
     txtwid = strlen(text);
     if(txtwid >= buffsize) {
@@ -656,16 +651,16 @@ char       *strcenter(const char *text, unsigned width,
  */
 int removeZeroes(int dim, unsigned x[dim]) {
     int i, j;
-    i=j=0;
+    i = j = 0;
     while(i < dim) {
         if(x[j] > 0) {
             // ++ or  0+
             ++i;
             ++j;
-        }else if(x[i]==0 && x[j]==0) {
+        } else if(x[i] == 0 && x[j] == 0) {
             // 00
             ++i;
-        }else if(x[i] > 0 && x[j] == 0) {
+        } else if(x[i] > 0 && x[j] == 0) {
             // +0
             assert(i > j);
             x[j] = x[i];
@@ -674,14 +669,14 @@ int removeZeroes(int dim, unsigned x[dim]) {
             ++j;
         }
     }
-    while(j<dim && x[j]>0)
+    while(j < dim && x[j] > 0)
         ++j;
     return j;
 }
 
 /// Read a line of input into buff.
 /// Return EOF or BUFFER_OVERFLOW on failure; 0 on success.
-int readline(int dim, char buff[dim], FILE *fp) {
+int readline(int dim, char buff[dim], FILE * fp) {
     if(fgets(buff, dim, fp) == NULL)
         return EOF;
 
@@ -709,7 +704,7 @@ const char *mybasename(const char *pathname) {
     const char *p = rindex(pathname, '/');
     if(p == NULL)
         return pathname;
-    return p+1;
+    return p + 1;
 }
 
 /// Return nonzero if name is legal; zero otherwise. Legal
@@ -730,12 +725,12 @@ int legalName(const char *name) {
 // terminated with '\0'. If dst is too small to hold null-terminated
 // string, return BUFFER_OVERFLOW. Otherwise, return 0.
 int strnncopy(size_t n, char dst[n], size_t m, const char src[m]) {
-    if(n==0)
+    if(n == 0)
         return BUFFER_OVERFLOW;
     int i;
-    for(i=0; i < m; ++i) {
+    for(i = 0; i < m; ++i) {
         if(i >= n) {
-            dst[n-1] = '\0';
+            dst[n - 1] = '\0';
             return BUFFER_OVERFLOW;
         }
         dst[i] = src[i];
@@ -743,7 +738,7 @@ int strnncopy(size_t n, char dst[n], size_t m, const char src[m]) {
             return 0;
     }
     if(i >= n) {
-        dst[n-1] = '\0';
+        dst[n - 1] = '\0';
         return BUFFER_OVERFLOW;
     }
     dst[i] = '\0';
@@ -756,11 +751,51 @@ int strchrcnt(const char *s, int c) {
     if(c == '\0')
         return 1;
     char *p = strchr(s, c);
-    int n=0;
+    int n = 0;
     while(p != NULL) {
         ++n;
-        s = p+1;
+        s = p + 1;
         p = strchr(s, c);
     }
     return n;
+}
+
+// Replace multiple whitespace characters with a single space
+// in buff.
+void collapse_whitespace(char *buff) {
+    char *w, *r;
+    int nsp = 0;
+    w = r = buff;
+    while(*r != '\0') {
+        if(isspace(*r)) {
+            if(nsp == 0) {
+                if(r > w)
+                    *w = ' ';
+                ++w;
+            }
+            ++r;
+            ++nsp;
+        } else {
+            nsp = 0;
+            if(r > w)
+                *w = *r;
+            ++r;
+            ++w;
+        }
+    }
+    *w = '\0';
+}
+
+/// Return 1 if the relative difference between x and y is less than or
+/// equal to 8*LDBL_EPSILON.
+int LDbl_near(long double x, long double y) {
+    long double tol = fmaxl(fabsl(x), fabsl(y)) * 8.0 * DBL_EPSILON;
+    tol = fmaxl(tol, DBL_EPSILON);
+    return fabsl(x - y) <= tol;
+}
+
+/// Print character c n times on output fp.
+void stutter(char c, int n, FILE * fp) {
+    for(int i=0; i<n; ++i)
+        putc(c, fp);
 }
