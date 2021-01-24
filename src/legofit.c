@@ -65,18 +65,24 @@ Two arguments are required:
 Legofit estimates the values of all the parameters that are declared
 as "free" in the .lgo file. It does this by minimizing a "cost
 function", which measures the difference between observed and expected
-values. Currently, the cost function is the negative of composite
-likelihood.  Other options are available via compile-time option (see
-`typedefs.h`). I don't yet know which cost function is best.
+values. Currently, the cost function is the KL divergence. Minimizing
+this is equivalent to maximizing a composite likelihood function based
+on the multinomial distribution.
 
-Expected counts are estimated by computer simulation, and optimization
-is done using the "differential evolution" (DE) algorithm.  The DE
-algorithm maintains a swarm of points, each at a different set of
-parameter values. The objective function is evaluated at these points
-in a multithreaded job queue, so the program runs fastest on a machine
-with lots of cores. You can set the number of threads using the `-t`
-argument. By default, the program uses 3/4 as many threads as there
-are processors on the machine---usually the number of hypercores.
+Site pattern frequencies are estimated either by computer simulation
+(the stochastic algorithm) or by a newer deterministic algorithm. The
+stochastic algorithm is the default. The `-d` or `--deterministic`
+arguments invoke the deterministic algorithm. Optimization is done
+using the "differential evolution" (DE) algorithm.  The DE algorithm
+maintains a swarm of points, each at a different set of parameter
+values. The objective function is evaluated at these points in a
+multithreaded job queue, so the program runs fastest on a machine with
+lots of cores. You can set the number of threads using the `-t`
+argument. By default, the stochastic algorithm uses 3/4 as many
+threads as there are processors on the machine, and the deterministic
+algorithm uses 1/2 as many threads as there are processors. If the
+deterministic algorithm is using too much memory, reduce the number of
+threads. 
 
 The DE algorithm can be tuned via command line arguments `-F`, `-x`,
 `-s`, and `-p`. Details regarding these choices can be found in
@@ -84,23 +90,29 @@ The DE algorithm can be tuned via command line arguments `-F`, `-x`,
 by Price, Storn, and Lampinen. We've had good results with `-s 2`, `-F
 0.3`, and `-x 0.8`, so these became the defaults as of version 1.15.
 
-During the first few hundred generations of the DE algorithm, the
-swarm of points adapts to the objective function. During this initial
-phase, high accuracy is not required, so it can speed things up to use
-low resolution in function evaluations. This is the purpose of the
-`-S` argument, which adds a "stage" to the simulation schedule. For
+If you are using the stochastic algorithm, it is a good idea to use
+several `-S` arguments to create a "simulation schedule".  During the
+first few hundred generations of the DE algorithm, the swarm of points
+adapts to the objective function. During this initial phase, high
+accuracy is not required, so it can speed things up to use low
+resolution in function evaluations. This is the purpose of the `-S`
+argument, which adds a "stage" to the simulation schedule. For
 example, `-S 1000@10000` adds a stage of 1000 DE generations, in each
 of which 10000 simulation replicates are used to evaluate each
 objective function. The `-S` argument can be given several times to
 set up a simulation schedule with several stages. The algorithm is
-allowed to converge only during the final stage. I am currently using
-a 2-stage schedule: `-S 1000@10000 -S `1000@2000000`.
+allowed to converge only during the final stage.
+
+With the deterministic algorithm, there is no point in using more than
+one `-S` argument, and you don't need to specify the number of
+iterations. The argument `-S 5000` would allow `legofit` to use as
+many as 5000 generations of differential evolution.
 
 By default, the initial swarm of points consists of one point
 representing the parameter values in the .lgo file, plus other points
 scattered randomly throughout the feasible region of parameter
 space. The total number of points defaults to 10 times the number of free
-parameters. To change this number, see the --ptsPerDim option.
+parameters. To change this number, see the `--ptsPerDim` option.
 
 The initial swarm of points can also be specified using the
 `--stateIn` option. This reads a file specifying the initial state of
@@ -181,14 +193,9 @@ set by "-S" or "--stage".
 
 If the algorithm fails to converge, there are several options. First,
 you can use "-S" or "--stage" to increase the maximum number of DE
-generations. For example, if the last stage is "-S 2000@2000000", you
-are allowing 2000 DE generations, in each of which each cost function
-value is estimated with 2000000 iterations. To double the allowed
-number of DE generations, change this to "-S 4000@2000000".
-
-Second, you can relax the tolerance. By default, this is 1e-4. It is
-reported in the legofit output. To double this value, use "-T 2e-4" or
-"--tol 2e-4".
+generations. Second, you can relax the tolerance. By default, this is
+1e-4. It is reported in the legofit output. To double this value, use
+"-T 2e-4" or "--tol 2e-4".
 
 Legofit handles three types of signal: SIGINT, SIGTERM, and
 SIGUSR1. If legofit is running in the foreground, the first of these
@@ -201,7 +208,7 @@ response to SIGUSR1, Legofit will wait until the end of the current DE
 generation and then write to stderr a summary of the state of the
 optimizer.
 
-@copyright Copyright (c) 2016, 2017, 2018, Alan R. Rogers
+@copyright Copyright (c) 2016, 2017, 2018, 2021. Alan R. Rogers
 <rogers@anthro.utah.edu>. This file is released under the Internet
 Systems Consortium License, which can be found in file "LICENSE".
 **/

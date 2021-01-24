@@ -585,6 +585,13 @@ format is described above. Then, you can execute `legosim` by typing:
 
     legosim -i 10000 my_input_file.lgo
 
+This uses the stochastic algorithm, which estimates site pattern
+frequencies by computer simulation. Alternatively,
+
+    legosim -d 0 my_input_file.lgo
+
+would use the deterministic algorithm.
+
 See the @ref legosim "legosim" documentation for details.
 
 ## Simulating site patterns
@@ -623,8 +630,8 @@ estimated. Details are above.
 
 Finally, @ref legofit "legofit" will estimate parameters. This program
 may take several hours to run, depending on the size of the analysis
-and the number of simulation replicates used to approximate the
-objective function.
+and on whether you are using the stochastic algorithm or the
+deterministic one.
 
 To generate a bootstrap confidence interval, use the `--bootreps`
 option of @ref tabpat "tabpat" or @ref sitepat "sitepat". This will
@@ -678,6 +685,12 @@ A typical legofit analysis involves several stages:
 legofit -1 --tol 3e-5 -S 5000@10000 -S 1000@100000 -S 1000@1000000 \
 --stateOut a1boot2.state a.lgo boot2.opf > a1boot2.legofit
 </pre>
+for the stochastic algorithm, or like this:
+<pre class="fragment">
+legofit -1 -d 0--tol 3e-6 -S 5000 \
+--stateOut a1boot2.state a.lgo boot2.opf > a1boot2.legofit
+</pre>
+for the deterministic one.
 Here `boot2.opf` is the data file for bootstrap replicate 2. This
    will generate two output files: a1boot2.legofit will contain the
    estimates from bootstrap replicate 2 in stage 1 of the
@@ -709,10 +722,6 @@ analysis. Legofit is then able to choose among local optima.
    construct a new file--let's call it b.lgo--in which all free
    variables are principal components. Repeat stages 1 and 2 for this
    new .lgo file.
-
-4. You may want to repeat stage 3 several times with different values
-   of the `--tol` parameter. You can then use @ref bepe "bepe" and
-   @ref booma "booma" to choose among a.lgo, b.lgo, and so on.
 
 I mentioned above that some variables do not affect site pattern
 frequencies. As an example, consider the case in which there is a
@@ -774,6 +783,28 @@ corresponding site patterns.
 To avoid this bias, it is best to work with complete genomes rather
 than just the variant sites. Alternatively, one could call variant
 sites jointly using all genomes to be included in the analysis.
+
+## Bias arising from identifiability problems
+
+It is often the case that many sets of parameter values imply the same
+site pattern frequencies. Ideally this merely broadens confidence
+intervals and does not introduce bias. It can, however, introduce
+bias. For this reason, one should always check for bias after a model
+has been fit. To do so, create a `fitted.lgo` file that has the same
+structure as the initial `.lgo` file used in your analysis, but with
+all free parameters set equal to their fitted values. Then use
+`legosim` to simulate several data sets. The following bash command
+generates 50 simulated data sets:
+<pre class="fragment">
+for i in {0..49}
+do
+    ofile=sim${i}.opf
+    legosim -1 -i 2000000 -U 18 fitted.lgo > $ofile
+	done
+</pre>
+Then analyze these as though they were real data. If the resulting
+estimates are scattered around the fitted parameter value, then there
+is no substantial bias.	
 
 [ms]: http://home.uchicago.edu/rhudson1/source/mksamples.html
 
