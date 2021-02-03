@@ -186,7 +186,7 @@ int main(int argc, char **argv) {
     time_t      currtime = time(NULL);
     unsigned long pid = (unsigned long) getpid();
     double      lo_twoN = 0.0, hi_twoN = DBL_MAX;  // twoN bounds
-    double      lo_t = 0.0, hi_t = 1e6;        // t bounds
+    double      lo_t = 0.0, hi_t = DBL_MAX;        // t bounds
     double      U=0.0;          // mutations pre gen per haploid genome
     int         optndx;
     long        nreps = 100;

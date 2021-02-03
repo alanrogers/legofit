@@ -331,8 +331,8 @@ int main(int argc, char **argv) {
     int i, j;
     time_t currtime = time(NULL);
     unsigned long pid = (unsigned long) getpid();
-    double lo_twoN = 1.0, hi_twoN = 1e7;    // twoN bounds
-    double lo_t = 0.0, hi_t = 1e7;  // t bounds
+    double lo_twoN = 1.0, hi_twoN = DBL_MAX;    // twoN bounds
+    double lo_t = 0.0, hi_t = DBL_MAX;  // t bounds
     int nThreads = 0;           // total number of threads
     int doSing = 0;             // nonzero means use singleton site patterns
     int write_clic_pts = 0;
