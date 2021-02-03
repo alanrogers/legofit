@@ -108,14 +108,13 @@ double Param_getTrialValue(const Param *self, gsl_rng *rng) {
 
     // trial value
     if(self->type & TWON) {
-        stdev = 2.0 * self->value;
+        stdev = self->value == 0 ? 1.0 : 2.0 * self->value;
         trial = dtnorm(self->value, stdev, self->low, self->high, rng);
     }else if( self->type & TIME ) {
-        if(isfinite(self->low) && isfinite(self->high))
-            trial = gsl_ran_flat(rng, self->low, self->high);
-        else if(isfinite(self->low))
-            trial = self->low + gsl_ran_exponential(rng, 100.0);
-        else {
+        if(isfinite(self->low)) {
+            stdev = self->value == 0 ? 1.0 : 2.0 * self->value;
+            trial = dtnorm(self->value, stdev, self->low, self->high, rng);
+        }else {
             assert( !isfinite(self->low) );
             fprintf(stderr, "%s:%s:%d: non-finite lower bound of TIME"
                     " parameter\n", __FILE__,__func__,__LINE__);
