@@ -61,8 +61,8 @@ $(function() {
 <div class="header">
   <div class="summary">
 <a href="#nested-classes">Data Structures</a> &#124;
-<a href="#typedef-members">Typedefs</a> &#124;
-<a href="#func-members">Functions</a>  </div>
+<a href="#func-members">Functions</a> &#124;
+<a href="#var-members">Variables</a>  </div>
   <div class="headertitle">
 <div class="title">comb.c File Reference</div>  </div>
 </div><!--header-->
@@ -84,12 +84,6 @@ Data Structures</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_m_cdat.html">MCdat</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
-Typedefs</h2></td></tr>
-<tr class="memitem:a23ace366a3bfeea3c8b6505f964a29e6"><td class="memItemLeft" align="right" valign="top"><a id="a23ace366a3bfeea3c8b6505f964a29e6"></a>
-typedef typedef&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD=======# 13 &quot;/Users/rogers/src/legofit/src/comb.c&quot; 2 &gt;&gt;&gt;&gt;&gt;&gt; devlp&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD=======&gt; devlp struct <a class="el" href="struct_m_cdat.html">MCdat</a>&#160;</td><td class="memItemRight" valign="bottom"><b>MCdat</b></td></tr>
-<tr class="separator:a23ace366a3bfeea3c8b6505f964a29e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:a5fe80ae4e6da4263f5053a5ad62985e3"><td class="memItemLeft" align="right" valign="top"><a id="a5fe80ae4e6da4263f5053a5ad62985e3"></a>
@@ -110,6 +104,26 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>traverseComb</b> (int 
 <tr class="memitem:ada69c01d885a612ba822a1396496503d"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="comb_8c.html#ada69c01d885a612ba822a1396496503d">multinom</a> (int k, int x[k])</td></tr>
 <tr class="memdesc:ada69c01d885a612ba822a1396496503d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return N!/(prod x[i]!), the number of ways of allocating N = sum(x[i]) balls among k boxes, with x[i] balls in the ith box.  <a href="#ada69c01d885a612ba822a1396496503d">More...</a><br /></td></tr>
 <tr class="separator:ada69c01d885a612ba822a1396496503d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a483d82346e26ea26f0ec87d705c49289"><td class="memItemLeft" align="right" valign="top"><a id="a483d82346e26ea26f0ec87d705c49289"></a>
+static int64_t&#160;</td><td class="memItemRight" valign="bottom"><b>binom_r</b> (int32_t n, int32_t x)</td></tr>
+<tr class="separator:a483d82346e26ea26f0ec87d705c49289"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac40c682df4a8ec48ef9dd364642eb181"><td class="memItemLeft" align="right" valign="top"><a id="ac40c682df4a8ec48ef9dd364642eb181"></a>
+int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="comb_8c.html#ac40c682df4a8ec48ef9dd364642eb181">binom</a> (int32_t n, int32_t x)</td></tr>
+<tr class="memdesc:ac40c682df4a8ec48ef9dd364642eb181"><td class="mdescLeft">&#160;</td><td class="mdescRight">Binomial coefficient. <br /></td></tr>
+<tr class="separator:ac40c682df4a8ec48ef9dd364642eb181"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acc76c7628d41a4a5f90fa3c1ddfbb982"><td class="memItemLeft" align="right" valign="top"><a id="acc76c7628d41a4a5f90fa3c1ddfbb982"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="comb_8c.html#acc76c7628d41a4a5f90fa3c1ddfbb982">binom_free</a> (void)</td></tr>
+<tr class="memdesc:acc76c7628d41a4a5f90fa3c1ddfbb982"><td class="mdescLeft">&#160;</td><td class="mdescRight">Free the hash map used to store binom values. <br /></td></tr>
+<tr class="separator:acc76c7628d41a4a5f90fa3c1ddfbb982"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
+Variables</h2></td></tr>
+<tr class="memitem:a68a07d397b711b6e3b90634cf68f89da"><td class="memItemLeft" align="right" valign="top"><a id="a68a07d397b711b6e3b90634cf68f89da"></a>
+static pthread_mutex_t&#160;</td><td class="memItemRight" valign="bottom"><b>map_lock</b> = PTHREAD_MUTEX_INITIALIZER</td></tr>
+<tr class="separator:a68a07d397b711b6e3b90634cf68f89da"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af0cd5839c47f17d90f54319d04fbcccc"><td class="memItemLeft" align="right" valign="top"><a id="af0cd5839c47f17d90f54319d04fbcccc"></a>
+static U64I64Map *&#160;</td><td class="memItemRight" valign="bottom"><b>map</b> =NULL</td></tr>
+<tr class="separator:af0cd5839c47f17d90f54319d04fbcccc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Combinations. </p>
@@ -207,7 +221,7 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>traverseComb</b> (int 
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sat Jan 23 2021 18:27:15 for Legofit by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Tue Feb 23 2021 12:21:57 for Legofit by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.13
 </small></address>

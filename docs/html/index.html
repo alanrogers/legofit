@@ -260,7 +260,7 @@ Model selection</h1>
 <h2>Predicting site pattern counts from assumptions about history</h2>
 <p>For this purpose, you want to use the program <a class="el" href="legosim.html">legosim</a>. The first step is create a file in <a class="el" href="index.html#lgo">.lgo</a> format, which describes the history of population size, subdivision, and gene flow. This format is described above. Then, you can execute <code>legosim</code> by typing: </p><pre class="fragment">legosim -i 10000 my_input_file.lgo
 </pre><p>This uses the stochastic algorithm, which estimates site pattern frequencies by computer simulation. Alternatively, </p><pre class="fragment">legosim -d 0 my_input_file.lgo
-</pre><p>would use the deterministic algorithm.</p>
+</pre><p>would use the deterministic algorithm. See the <a class="el" href="legosim.html">legosim</a> documentation for details about this algorithm.</p>
 <p>See the <a class="el" href="legosim.html">legosim</a> documentation for details.</p>
 <h2>Simulating site patterns</h2>
 <p>The package provides support for tabulating site patterns from several coalescent simulators. To study the output of <a href="http://home.uchicago.edu/rhudson1/source/mksamples.html">ms</a>, pipe the results through <a class="el" href="ms2sim.html">ms2sim</a> and then <a class="el" href="simpat.html">simpat</a>. For <a href="https://scrm.github.io">scrm</a>, use the <code>-transpose-segsites</code> option, and pipe the output through <a class="el" href="scrmpat.html">scrmpat</a>. The authors of <a href="https://github.com/tskit-dev/msprime">msprime</a> recommend running their software within a Python script. Within such a script, it is easy to generate output in the form required by <a class="el" href="simpat.html">simpat</a>.</p>
@@ -269,7 +269,7 @@ Model selection</h1>
 <p>This involves several programs. The first step is to generate input files in ".daf" or ".raf" format, as described above. You will need one .daf or .raf file for each population. For .raf, you will in addition need a .raf file for an outgroup population. See the documentation of <a class="el" href="daf.html">daf</a> and <a class="el" href="raf.html">raf</a> for details.</p>
 <p>The next task is to tabulate site pattern counts. For details, see <a class="el" href="tabpat.html">tabpat</a> or <a class="el" href="sitepat.html">sitepat</a>. Either of these programs will generate a small text file, with one row for each site pattern. If there are 4 populations in the analysis, there will be 10 site patterns.</p>
 <p>You will also need a .lgo file, which describes the model of history you wish to explore. It also specifies which parameters will be estimated. Details are above.</p>
-<p>Finally, <a class="el" href="legofit.html">legofit</a> will estimate parameters. This program may take several hours to run, depending on the size of the analysis and on whether you are using the stochastic algorithm or the deterministic one.</p>
+<p>Finally, <a class="el" href="legofit.html">legofit</a> will estimate parameters. This program may take several hours to run, depending on the size of the analysis and on whether you are using the default stochastic algorithm or the deterministic one, which is invoked by the command-line option <code>-d 0</code>.</p>
 <p>To generate a bootstrap confidence interval, use the <code>--bootreps</code> option of <a class="el" href="tabpat.html">tabpat</a> or <a class="el" href="sitepat.html">sitepat</a>. This will generate not only the primary output (written to standard output), but also an additional output file for each bootstrap replicate. For example, <code>--bootreps 50</code> would generate 51 output files: 1 for the normal output, and 1 for each bootstrap replicate.</p>
 <p>These files should each be analyzed with a separate run of <code>legofit</code>. If you have access to a compute cluster, these jobs can be run in parallel.</p>
 <p>You might be tempted to parallelize these legofit jobs on a single computer, using multiple threads of execution. Don't do it. A single legofit job makes use of all available threads, so nothing is gained by launching simultaneous legofit jobs on a single computer. Unless you have access to a compute cluster, legofit jobs should be run sequentially. As each job can take several hours, a full bootstrap may take several days.</p>
@@ -281,7 +281,7 @@ Model selection</h1>
 legofit -1 --tol 3e-5 -S 5000@10000 -S 1000@100000 -S 1000@1000000 \
 --stateOut a1boot2.state a.lgo boot2.opf &gt; a1boot2.legofit
 </pre> for the stochastic algorithm, or like this: <pre class="fragment">
-legofit -1 -d 0--tol 3e-6 -S 5000 \
+legofit -1 -d 0 --tol 3e-6 -S 5000 \
 --stateOut a1boot2.state a.lgo boot2.opf &gt; a1boot2.legofit
 </pre> for the deterministic one. Here <code>boot2.opf</code> is the data file for bootstrap replicate 2. This will generate two output files: a1boot2.legofit will contain the estimates from bootstrap replicate 2 in stage 1 of the analysis. a1boot2.state is the corresponding state file.</li>
 <li>In a complex model, there may be multiple local optima. If so, the various .legofit files may be scattered among these optima. To address this problem, restart legofit for each data file, using the <code>--stateIn</code> option multiple times. For example: <pre class="fragment">
@@ -316,7 +316,7 @@ do
 </div></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sat Jan 23 2021 18:27:15 for Legofit by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Tue Feb 23 2021 12:21:57 for Legofit by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.13
 </small></address>
