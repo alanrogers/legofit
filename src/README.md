@@ -687,7 +687,7 @@ legofit -1 --tol 3e-5 -S 5000@10000 -S 1000@100000 -S 1000@1000000 \
 </pre>
 for the stochastic algorithm, or like this:
 <pre class="fragment">
-legofit -1 -d 0--tol 3e-6 -S 5000 \
+legofit -1 -d 0 --tol 3e-6 -S 5000 \
 --stateOut a1boot2.state a.lgo boot2.opf > a1boot2.legofit
 </pre>
 for the deterministic one.
