@@ -590,7 +590,8 @@ frequencies by computer simulation. Alternatively,
 
     legosim -d 0 my_input_file.lgo
 
-would use the deterministic algorithm.
+would use the deterministic algorithm. See the @ref legosim "legosim"
+documentation for details about this algorithm.
 
 See the @ref legosim "legosim" documentation for details.
 
@@ -630,8 +631,8 @@ estimated. Details are above.
 
 Finally, @ref legofit "legofit" will estimate parameters. This program
 may take several hours to run, depending on the size of the analysis
-and on whether you are using the stochastic algorithm or the
-deterministic one.
+and on whether you are using the default stochastic algorithm or the
+deterministic one, which is invoked by the command-line option `-d 0`.
 
 To generate a bootstrap confidence interval, use the `--bootreps`
 option of @ref tabpat "tabpat" or @ref sitepat "sitepat". This will
