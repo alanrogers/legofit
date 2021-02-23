@@ -1,7 +1,7 @@
 var searchData=
 [
   ['make_5fcollapse_5fmap',['make_collapse_map',['../branchtab_8c.html#a74a9991e9cf8eb1c0efde9cf3a356b89',1,'branchtab.c']]],
-  ['make_5frm_5fmap',['make_rm_map',['../branchtab_8c.html#a44299d268d95783f4e4ecdb7997b97fa',1,'branchtab.c']]],
+  ['make_5frm_5fmap',['make_rm_map',['../branchtab_8c.html#ac0f412872f934af699f2e3ef927d599b',1,'branchtab.c']]],
   ['makebranchtab',['makeBranchTab',['../resid_8c.html#af60e08041086546340a2c688d705990a',1,'resid.c']]],
   ['memdup',['memdup',['../misc_8c.html#a0289f2f0a4cc23bb8741b455e40e9920',1,'misc.c']]],
   ['migrate',['migrate',['../segment_8c.html#a4b205e228f0a4a7c699ad9c4786031e5',1,'segment.c']]],

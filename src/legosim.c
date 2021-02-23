@@ -72,7 +72,11 @@ larger models, it is not feasible to use `-d 0`. However, one can
 still use the deterministic algorithm to obtain an approximate answer,
 using an argument such as `-d 1e-6`. This tells legosim to use the
 deterministic algorithm while ignoring states whose probability is
-less than or equal to 1e-6.
+less than or equal to 1e-6. Nonzero arguments to `-d` will introduce
+bias, and it is not yet clear that such arguments are useful. At
+present, I recommend against using `-d` with a nonzero argument.  If
+the model is so complex that `-d 0` is not feasible, then omit this
+argument to use the default stochastic algorithm.
 
 To simulate site pattern counts across an entire genome, use the `-U`
 option, whose argument give the expected number of mutations per
@@ -186,7 +190,7 @@ int main(int argc, char **argv) {
     time_t      currtime = time(NULL);
     unsigned long pid = (unsigned long) getpid();
     double      lo_twoN = 0.0, hi_twoN = DBL_MAX;  // twoN bounds
-    double      lo_t = 0.0, hi_t = 1e6;        // t bounds
+    double      lo_t = 0.0, hi_t = DBL_MAX;        // t bounds
     double      U=0.0;          // mutations pre gen per haploid genome
     int         optndx;
     long        nreps = 100;

@@ -20,6 +20,7 @@
 #include <math.h>
 #include <assert.h>
 #include <string.h>
+#include <float.h>
 
 #include "dtnorm.h"
 
@@ -154,6 +155,11 @@ int main(int argc, char **argv) {
     test(nreps, mu, sigma, mu+a*sigma, mu+b*sigma, rng, verbose);
     a = 2.8;
     b = a + 2.0;
+    test(nreps, mu, sigma, mu+a*sigma, mu+b*sigma, rng, verbose);
+
+    // What happens if b = DBL_MAX?
+    a = 0.0;
+    b = DBL_MAX;
     test(nreps, mu, sigma, mu+a*sigma, mu+b*sigma, rng, verbose);
 
     printf("dtnorm OK\n");

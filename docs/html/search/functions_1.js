@@ -1,5 +1,7 @@
 var searchData=
 [
+  ['binom',['binom',['../comb_8c.html#ac40c682df4a8ec48ef9dd364642eb181',1,'comb.c']]],
+  ['binom_5ffree',['binom_free',['../comb_8c.html#acc76c7628d41a4a5f90fa3c1ddfbb982',1,'comb.c']]],
   ['boot_5fadd',['Boot_add',['../boot_8c.html#aab1384a1fc638dddcf4cbe6b689a6284',1,'Boot_add(Boot *self, int chr, long snpndx, int pat, double z):&#160;boot.c'],['../boot_8h.html#aab1384a1fc638dddcf4cbe6b689a6284',1,'Boot_add(Boot *self, int chr, long snpndx, int pat, double z):&#160;boot.c']]],
   ['boot_5faggregate',['Boot_aggregate',['../boot_8c.html#ab33573e57f0626755fc5e348b1524cd5',1,'Boot_aggregate(Boot *self, int rep, int npat, double count[npat]):&#160;boot.c'],['../boot_8h.html#ab33573e57f0626755fc5e348b1524cd5',1,'Boot_aggregate(Boot *self, int rep, int npat, double count[npat]):&#160;boot.c']]],
   ['boot_5ffree',['Boot_free',['../boot_8c.html#a4dcd644fae0e8edc1ba29988e6b61300',1,'Boot_free(Boot *self):&#160;boot.c'],['../boot_8h.html#a4dcd644fae0e8edc1ba29988e6b61300',1,'Boot_free(Boot *self):&#160;boot.c']]],

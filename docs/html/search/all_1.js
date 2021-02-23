@@ -2,6 +2,8 @@ var searchData=
 [
   ['bepe_2ec',['bepe.c',['../bepe_8c.html',1,'']]],
   ['binary_2ec',['binary.c',['../binary_8c.html',1,'']]],
+  ['binom',['binom',['../comb_8c.html#ac40c682df4a8ec48ef9dd364642eb181',1,'comb.c']]],
+  ['binom_5ffree',['binom_free',['../comb_8c.html#acc76c7628d41a4a5f90fa3c1ddfbb982',1,'comb.c']]],
   ['blocksize',['blocksize',['../struct_boot.html#a26f257420993aa8115fdcb609da9620b',1,'Boot']]],
   ['booma_2ec',['booma.c',['../booma_8c.html',1,'']]],
   ['boot',['Boot',['../struct_boot.html',1,'']]],
@@ -37,6 +39,5 @@ var searchData=
   ['branchtab_5frmpops',['BranchTab_rmPops',['../branchtab_8c.html#a8a4c2e88378dfc52fc752d627f505ea1',1,'branchtab.c']]],
   ['branchtab_5fsize',['BranchTab_size',['../branchtab_8c.html#af43c5f9f118645e356d54c02f49156ba',1,'branchtab.c']]],
   ['branchtab_5fsum',['BranchTab_sum',['../branchtab_8c.html#a8c1f606d61d5e9fbc1593a88be68c616',1,'branchtab.c']]],
-  ['branchtab_5ftoarrays',['BranchTab_toArrays',['../branchtab_8c.html#aecd460c4e4b77e895dc1c13e47455737',1,'branchtab.c']]],
-  ['btlink',['BTLink',['../struct_b_t_link.html',1,'']]]
+  ['branchtab_5ftoarrays',['BranchTab_toArrays',['../branchtab_8c.html#aecd460c4e4b77e895dc1c13e47455737',1,'branchtab.c']]]
 ];

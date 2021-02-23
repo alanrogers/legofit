@@ -72,17 +72,31 @@ on the multinomial distribution.
 Site pattern frequencies are estimated either by computer simulation
 (the stochastic algorithm) or by a newer deterministic algorithm. The
 stochastic algorithm is the default. The `-d` or `--deterministic`
-arguments invoke the deterministic algorithm. Optimization is done
-using the "differential evolution" (DE) algorithm.  The DE algorithm
-maintains a swarm of points, each at a different set of parameter
-values. The objective function is evaluated at these points in a
-multithreaded job queue, so the program runs fastest on a machine with
-lots of cores. You can set the number of threads using the `-t`
-argument. By default, the stochastic algorithm uses 3/4 as many
-threads as there are processors on the machine, and the deterministic
-algorithm uses 1/2 as many threads as there are processors. If the
-deterministic algorithm is using too much memory, reduce the number of
-threads. 
+arguments invoke the deterministic algorithm. 
+
+The deterministic algorithm sums across all possible histories of the
+samples defined in the .lgo file. The number of histories increases
+rapidly with sample size and with the number of migration events. For
+larger models, it is not feasible to use `-d 0`. However, one can
+still use the deterministic algorithm to obtain an approximate answer,
+using an argument such as `-d 1e-6`. This tells legosim to use the
+deterministic algorithm while ignoring states whose probability is
+less than or equal to 1e-6. Nonzero arguments to `-d` will introduce
+bias, and it is not yet clear that such arguments are useful. At
+present, I recommend against using `-d` with a nonzero argument. If
+the model is so complex that `-d 0` is not feasible, then omit this
+argument to use the default stochastic algorithm.
+
+Optimization is done using the "differential evolution" (DE)
+algorithm.  The DE algorithm maintains a swarm of points, each at a
+different set of parameter values. The objective function is evaluated
+at these points in a multithreaded job queue, so the program runs
+fastest on a machine with lots of cores. You can set the number of
+threads using the `-t` argument. By default, the stochastic algorithm
+uses 3/4 as many threads as there are processors on the machine, and
+the deterministic algorithm uses 1/2 as many threads as there are
+processors. If the deterministic algorithm is using too much memory,
+reduce the number of threads.
 
 The DE algorithm can be tuned via command line arguments `-F`, `-x`,
 `-s`, and `-p`. Details regarding these choices can be found in
@@ -331,8 +345,8 @@ int main(int argc, char **argv) {
     int i, j;
     time_t currtime = time(NULL);
     unsigned long pid = (unsigned long) getpid();
-    double lo_twoN = 1.0, hi_twoN = 1e7;    // twoN bounds
-    double lo_t = 0.0, hi_t = 1e7;  // t bounds
+    double lo_twoN = 1.0, hi_twoN = DBL_MAX;    // twoN bounds
+    double lo_t = 0.0, hi_t = DBL_MAX;  // t bounds
     int nThreads = 0;           // total number of threads
     int doSing = 0;             // nonzero means use singleton site patterns
     int write_clic_pts = 0;

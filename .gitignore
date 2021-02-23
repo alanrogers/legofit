@@ -40,6 +40,7 @@ xdafreader
 xdiffev
 xdtnorm
 xerror
+xeventlst
 xgene
 xgetlinetok
 xgptree
@@ -95,6 +96,7 @@ xterm
 xtinyexpr
 xtokenizer
 xuintqueue
+xu64i64map
 xu64u64map
 xwraparound
 

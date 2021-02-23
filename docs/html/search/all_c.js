@@ -1,7 +1,7 @@
 var searchData=
 [
   ['make_5fcollapse_5fmap',['make_collapse_map',['../branchtab_8c.html#a74a9991e9cf8eb1c0efde9cf3a356b89',1,'branchtab.c']]],
-  ['make_5frm_5fmap',['make_rm_map',['../branchtab_8c.html#a44299d268d95783f4e4ecdb7997b97fa',1,'branchtab.c']]],
+  ['make_5frm_5fmap',['make_rm_map',['../branchtab_8c.html#ac0f412872f934af699f2e3ef927d599b',1,'branchtab.c']]],
   ['makebranchtab',['makeBranchTab',['../resid_8c.html#af60e08041086546340a2c688d705990a',1,'resid.c']]],
   ['mapping',['Mapping',['../struct_mapping.html',1,'']]],
   ['matcoal',['MatCoal',['../struct_mat_coal.html',1,'']]],

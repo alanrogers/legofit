@@ -622,7 +622,7 @@ static int get_one_line(size_t n, char buff[n], FILE * fp) {
 /// parameters
 /// @param[in] bnd the bounds of each type of parameter
 PtrPair mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, Bounds * bnd) {  
-    char orig[500], buff[500], buff2[500];
+    char orig[2048], buff[2048], buff2[2048];
     char *token, *next;
     ParStore *parstore = NULL;
 
