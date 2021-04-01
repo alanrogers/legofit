@@ -484,6 +484,7 @@ int main(int argc, char **argv) {
             case EOF:
                 done=1;
                 continue;
+            case MONOMORPHIC_SITE:
             case REF_MISMATCH:
             case MULTIPLE_ALT:
             case NO_ANCESTRAL_ALLELE:

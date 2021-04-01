@@ -440,14 +440,15 @@ int main(int argc, char **argv) {
             case EOF:
                 done=1;
                 continue;
+            case MONOMORPHIC_SITE:
             case ALLELE_MISMATCH:
             case NO_ANCESTRAL_ALLELE:
                 continue;
             default:
                 // something wrong
                 mystrerror_r(status, errbuff, sizeof errbuff);
-                fprintf(stderr,"%s:%d: input error (%s)\n",
-                        __FILE__,__LINE__, errbuff);
+                fprintf(stderr,"%s:%d: input error %d: %s\n",
+                        __FILE__,__LINE__, status, errbuff);
                 exit(EXIT_FAILURE);
             }
 
