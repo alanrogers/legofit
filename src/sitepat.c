@@ -285,7 +285,7 @@ int main(int argc, char **argv) {
     long        blocksize = 500;
     StrInt     *strint = StrInt_new();
     char        bootfname[FILENAMESIZE] = { '\0' };
-    char        errbuff[100] = { '\0' };
+    char        errbuff[1024] = { '\0' };
     const char *logfname = "sitepat.log";
     int         logMismatch = 0, logAA = 0;
     FILE       *logfile = NULL;
