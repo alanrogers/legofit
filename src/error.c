@@ -50,7 +50,7 @@ int mystrerror_r(int errnum, char *buff, size_t len) {
         status = strerror_r(errnum, buff, len);
     }
     if(rval>=len || status!=0) {
-        buff[len-1] = '\0\;
+        buff[len-1] = '\0';
         fprintf(stderr,"%s:%s:%d: buffer overflow\n",
                 __FILE__,__func__,__LINE__);
         return 1;
