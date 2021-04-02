@@ -4,8 +4,6 @@
 @brief Estimate parameters describing population sizes, the times
 of separations and of episodes of gene flow, and levels of gene flow.
 
-This is a silly change.
-
 # `legofit`: estimate population history from site pattern data
 
     ########################################
