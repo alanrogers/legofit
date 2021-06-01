@@ -190,7 +190,7 @@ generatePatterns(int bit, int npops, Stack * stk, tipId_t pat, int doSing) {
 int main(int argc, char **argv) {
     int         i, j, status, optndx, done;
     int         doSing = 1;     // nonzero means use singleton site patterns
-    char        errbuff[100] = { '\0' };
+    char        errbuff[1024] = { '\0' };
     FILE       *ifp = stdin;
 
     static struct option myopts[] = {

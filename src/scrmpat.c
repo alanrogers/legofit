@@ -191,7 +191,7 @@ generatePatterns(int bit, int npops, Stack * stk, tipId_t pat, int doSing) {
 int main(int argc, char **argv) {
     int         i, j, status, optndx, done;
     int         doSing = 1;     // nonzero means use singleton site patterns
-    char        errbuff[100] = { '\0' };
+    char        errbuff[1024] = { '\0' };
     const char *logfname = "scrmpat.log";
     int         logFixed = 0, logAll = 0;
     FILE       *logfile = NULL;

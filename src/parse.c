@@ -473,7 +473,7 @@ void parseDerive(char *next, StrPtrMap * popmap, ParStore * parstore,
     }
     int status = Node_addChild(parNode, childNode);
     if(status) {
-        char buff[200];
+        char buff[1024];
         mystrerror_r(status, buff, sizeof(buff));
         fprintf(stderr,"%s:%d: %s\n", __FILE__,__LINE__,buff);
         exit(EXIT_FAILURE);

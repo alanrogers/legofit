@@ -65,7 +65,7 @@ static void usage(void) {
 
 int main(int argc, char **argv) {
     int         i, j, status, optndx, done;
-    char        errbuff[100] = { '\0' };
+    char        errbuff[1024] = { '\0' };
     const char *logfname = "raf2daf.log";
     int         logMismatch = 0, logAA = 0;
     FILE       *logfile = NULL;

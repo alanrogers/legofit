@@ -52,7 +52,7 @@ static void usage(void) {
 
 int main(int argc, char **argv) {
     int         i, status, done;
-    char        errbuff[100] = { '\0' };
+    char        errbuff[1024] = { '\0' };
 
     // Each command line argument is an input file name
     int         n = argc - 1;  // number of input files

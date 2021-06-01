@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 
+// Returns 0 on success, 1 on buffer overflow.
 int mystrerror_r(int errnum, char *buff, size_t len) {
     int status=0, rval=0;
 
@@ -49,9 +50,10 @@ int mystrerror_r(int errnum, char *buff, size_t len) {
         status = strerror_r(errnum, buff, len);
     }
     if(rval>=len || status!=0) {
+        buff[len-1] = '\0';
         fprintf(stderr,"%s:%s:%d: buffer overflow\n",
                 __FILE__,__func__,__LINE__);
-        exit(EXIT_FAILURE);
+        return 1;
     }
 
     return 0;

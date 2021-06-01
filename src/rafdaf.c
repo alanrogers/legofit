@@ -81,7 +81,7 @@ int main(int argc, char **argv) {
         {"version", no_argument, 0, 'V'},
         {NULL, 0, NULL, 0}
     };
-    char errbuff[100] = { '\0' };
+    char errbuff[1024] = { '\0' };
 
     // command line arguments
     for(;;) {

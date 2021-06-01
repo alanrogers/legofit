@@ -212,7 +212,7 @@ int DAFReader_next(DAFReader * self) {
     if(end==token)
         errno = EINVAL;
     if(errno) {
-        char err_buff[50];
+        char err_buff[500];
         strerror_r(errno, err_buff, sizeof(err_buff));
         fprintf(stderr,"%s:%d: Bad float \"%s\" (%s); chr=%s pos=%lu\n",
                 __FILE__,__LINE__, token, err_buff, self->chr, self->nucpos);
