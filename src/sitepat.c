@@ -480,7 +480,7 @@ int main(int argc, char **argv) {
                 status = RAFReader_findDaf(n, r);
             switch(status) {
             case 0:
-                break;
+                break; // good site
             case EOF:
                 done=1;
                 continue;
@@ -488,7 +488,7 @@ int main(int argc, char **argv) {
             case REF_MISMATCH:
             case MULTIPLE_ALT:
             case NO_ANCESTRAL_ALLELE:
-                continue;
+                continue; // ignore these sites
             default:
                 // something wrong.
                 mystrerror_r(status, errbuff, sizeof errbuff);
