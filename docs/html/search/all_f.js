@@ -33,7 +33,6 @@ var searchData=
   ['parstore_5fprintconstrained',['ParStore_printConstrained',['../parstore_8c.html#ae4b74d3c495e316da21ce234cb74bc17',1,'parstore.c']]],
   ['parstore_5fprintfree',['ParStore_printFree',['../parstore_8c.html#a5a37dfa038ece2371b03618e964276a0',1,'parstore.c']]],
   ['parstore_5fsetfreeparams',['ParStore_setFreeParams',['../parstore_8c.html#a5bedb425de7e03796b505d6de00817bc',1,'parstore.c']]],
-  ['partitions',['Partitions',['../struct_partitions.html',1,'']]],
   ['patlbl',['patLbl',['../lblndx_8c.html#a440e2d4adcc5b85cd75651754f2f9c44',1,'lblndx.c']]],
   ['patprob_2ec',['patprob.c',['../patprob_8c.html',1,'']]],
   ['pclgo_2ec',['pclgo.c',['../pclgo_8c.html',1,'']]],

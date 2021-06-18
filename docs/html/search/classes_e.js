@@ -9,7 +9,7 @@ var searchData=
   ['simsched',['SimSched',['../struct_sim_sched.html',1,'']]],
   ['stack',['Stack',['../struct_stack.html',1,'']]],
   ['stage',['Stage',['../struct_stage.html',1,'']]],
-  ['state',['state',['../structstate.html',1,'state'],['../struct_state.html',1,'State']]],
+  ['state',['State',['../struct_state.html',1,'State'],['../structstate.html',1,'state']]],
   ['strdbl',['StrDbl',['../struct_str_dbl.html',1,'']]],
   ['strdblqueue',['StrDblQueue',['../struct_str_dbl_queue.html',1,'']]],
   ['strint',['StrInt',['../struct_str_int.html',1,'']]],

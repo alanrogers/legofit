@@ -60,7 +60,7 @@ var searchData=
   ['stage_5fgetsimreps',['Stage_getSimReps',['../simsched_8c.html#aab126fbb15b021fd5cd6f70ca261b0aa',1,'simsched.c']]],
   ['stage_5fpophead',['Stage_popHead',['../simsched_8c.html#a3b7ec2628abf6a00a8a5b222dc429705',1,'simsched.c']]],
   ['start',['start',['../struct_boot.html#ac54bba1f1c56ac4d6f19b9dbcd39e9d0',1,'Boot']]],
-  ['state',['state',['../structstate.html',1,'state'],['../struct_state.html',1,'State']]],
+  ['state',['State',['../struct_state.html',1,'State'],['../structstate.html',1,'state']]],
   ['state_2ec',['state.c',['../state_8c.html',1,'']]],
   ['state_5fsetname',['State_setName',['../state_8c.html#aeebfa36c65ff8b5901031f136b20deb9',1,'state.c']]],
   ['stratde_5fbest_5f1_5fbin',['stratDE_best_1_bin',['../diffev_8c.html#a3b5e719fd0d74772de6d3879b3928ced',1,'diffev.c']]],
