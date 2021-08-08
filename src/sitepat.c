@@ -18,7 +18,7 @@ replicate into a separate file.
        Final label must be "outgroup". Writes to standard output.
 
        If input file name ends with .gz, input is decompressed using
-       gunzip. Maximum number of input files: 64 plus outgroup. Minimum is
+       gunzip. Maximum number of input files: 32 plus outgroup. Minimum is
        2 plus outgroup.
 
     Options may include:
@@ -204,8 +204,9 @@ const char *useMsg =
 /// Print usage message and die.
 static void usage(void) {
     fputs(useMsg, stderr);
-    fprintf(stderr, " Maximum number of input files: %lu plus outgroup.\n",
-            8 * sizeof(bits_t));
+    putc('\n', stderr);
+    fprintf(stderr, "   Maximum number of input files: %lu plus outgroup.\n",
+            8 * sizeof(tipId_t));
     fputs("\nOptions may include:\n", stderr);
     tellopt("-f <name> or --bootfile <name>",
             "Bootstrap output file basename. Def: sitepat.boot.");
