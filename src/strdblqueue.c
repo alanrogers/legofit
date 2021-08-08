@@ -7,6 +7,7 @@
  * Systems Consortium License, which can be found in file "LICENSE".
  */
 
+#include "branchtab.h"
 #include "hessian.h"
 #include "misc.h"
 #include "strdblqueue.h"
@@ -15,7 +16,7 @@
 #include <ctype.h>
 #include <errno.h>
 
-static int isSitePatHdr(const char *s);
+static int is_sitepat(const char *s);
 
 // Push a value onto the tail of the queue. Return pointer to new
 // head. Example:
@@ -174,7 +175,7 @@ StrDblQueue *StrDblQueue_parseLegofit(const char *fname) {
 
 /// Return 1 if string begins with '#', then any number of whitespace
 /// characters, then "SitePat". Return 0 otherwise.
-static int isSitePatHdr(const char *s) {
+static int is_sitepat(const char *s) {
     if(*s++ != '#')
         return 0;
     while(isspace(*s))
@@ -184,9 +185,9 @@ static int isSitePatHdr(const char *s) {
     return 0;
 }
 
-// Parse a data file. Return an object of type
-// StrDblQueue, which contains the site pattern names and their
-// frequencies.
+/// Parse a data file as produced either by sitepat, tabpat, legosim,
+/// or legofit. Return an object of type StrDblQueue, which contains
+/// site pattern names and frequencies.
 StrDblQueue *StrDblQueue_parseSitePat(const char *fname) {
     FILE *fp = fopen(fname, "r");
     if(fp==NULL) {
@@ -206,8 +207,12 @@ StrDblQueue *StrDblQueue_parseSitePat(const char *fname) {
                     __FILE__, __LINE__, sizeof(buff));
             exit(EXIT_FAILURE);
         }
+
+        // Skip lines up to and including the one that begins with
+        // "# SitePat". If there are no such lines, function returns
+        // NULL.
         if(!got_sitepat) {
-            if(isSitePatHdr(buff))
+            if(is_sitepat(buff))
                 got_sitepat=true;
             continue;
         }

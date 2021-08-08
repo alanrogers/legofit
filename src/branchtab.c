@@ -272,6 +272,32 @@ int BranchTab_normalize(BranchTab *self) {
     return 0;
 }
 
+/// Construct a BranchTab from a StrDblQueue. The LblNdx translates
+/// site patterns from string representation to integer
+/// representation.  Function returns a newly-allocated BranchTab.
+/// If queue is NULL, function returns NULL.
+BranchTab *BranchTab_from_StrDblQueue(StrDblQueue *queue, LblNdx *lndx) {
+    if(queue == NULL)
+        return NULL;
+    unsigned nsamples = LblNdx_size(lndx);
+    BranchTab *new = BranchTab_new(nsamples);
+    StrDblQueue *stq;
+    for(stq=queue; stq; stq = stq->next) {
+        StrDbl strdbl = stq->strdbl;
+        tipId_t tid = LblNdx_getTipId(lndx, strdbl.str);
+        if(tid == 0) {
+            fprintf(stderr, "%s:%d: site pattern string (%s)"
+                    " contains unknown label.\n",
+                    __FILE__, __LINE__, strdbl.str);
+            fprintf(stderr, "Known labels (with indices):\n");
+            LblNdx_print(lndx, stderr);
+            exit(EXIT_FAILURE);
+        }
+        BranchTab_add(new, tid, strdbl.val);
+    }
+    return new;
+}
+
 /// Calculate KL divergence from two BranchTab objects, which
 /// should be normalized before entering this function. Use
 /// BranchTab_normalize to normalize. Function returns HUGE_VAL if there

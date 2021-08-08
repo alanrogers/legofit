@@ -300,7 +300,7 @@ xpopnode.o : ../src/popnode.c
 
 XPOPNODE := xpopnode.o dtnorm.o misc.o gene.o parstore.o tinyexpr.o \
    param.o branchtab.o ptrptrmap.o ptrqueue.o strint.o \
-   binary.o strptrmap.o
+   binary.o strptrmap.o lblndx.o
 xpopnode : $(XPOPNODE)
 	$(CC) $(CFLAGS) -o $@ $(XPOPNODE) $(lib)
 
@@ -339,7 +339,7 @@ xparstore : $(XPARSTORE)
 xbrtab.o : branchtab.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/branchtab.c
 
-XBRANCHTAB := xbrtab.o misc.o binary.o 
+XBRANCHTAB := xbrtab.o misc.o binary.o lblndx.o strdblqueue.o
 xbranchtab : $(XBRANCHTAB)
 	$(CC) $(CFLAGS) -o $@ $(XBRANCHTAB) $(lib)
 

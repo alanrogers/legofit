@@ -35,6 +35,7 @@ BranchTab    *BranchTab_collapse(BranchTab *old, tipId_t collapse);
 BranchTab    *BranchTab_rmPops(BranchTab *old, tipId_t remove);
 void          BranchTab_sanityCheck(BranchTab *self, const char *file,
                                     int line);
+BranchTab    *BranchTab_from_StrDblQueue(StrDblQueue *queue, LblNdx *lndx);
 void          make_collapse_map(size_t n, tipId_t map[n], tipId_t collapse);
 void          make_rm_map(size_t n, tipId_t map[n], tipId_t remove);
 tipId_t       remap_bits(size_t n, tipId_t map[n], tipId_t old);
