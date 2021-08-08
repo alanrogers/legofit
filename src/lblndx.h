@@ -12,7 +12,7 @@ struct LblNdx {
 
 void        LblNdx_init(LblNdx * self);
 void        LblNdx_addSamples(LblNdx * self, unsigned nsamples,
-							   const char *lbl);
+                              const char *lbl);
 const char *LblNdx_lbl(const LblNdx * self, unsigned i);
 unsigned    LblNdx_size(const LblNdx * self);
 void        LblNdx_sanityCheck(const LblNdx *self, const char *file, int line);

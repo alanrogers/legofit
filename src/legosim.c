@@ -214,7 +214,7 @@ int main(int argc, char **argv) {
     // command line arguments
     for(;;) {
         char *end;
-        i = getopt_long(argc, argv, "bd:ni:t:U:1h", myopts, &optndx);
+        i = getopt_long(argc, argv, "bd:ni:U:1h", myopts, &optndx);
         if(i == -1)
             break;
         switch (i) {
