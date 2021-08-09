@@ -381,7 +381,7 @@ int main(int argc, char **argv) {
 
     unsigned long nsites = 0, nfixed=0, nbadaa = 0, nbadref=0, nmultalt=0;
 
-    char chr[128] = { '\0' };
+    char currchr[128] = { '\0' };
     FILE *ofp = NULL;
 
     // Iterate through raf files
@@ -462,13 +462,13 @@ int main(int argc, char **argv) {
             // i.
             pr += z * cond_pr[i];
         }
-        if(0 != strcmp(chr, r[0]->chr)) {
+        if(0 != strcmp(currchr, r[0]->chr)) {
             // New chromosome. Open new output file
-            if(chr[0] != '\0') {
+            if(ofp != NULL)
                 fclose(ofp);
-            }
-            status = snprintf(chr, sizeof chr, "%s", r[0]->chr);
-            if(status >= sizeof chr) {
+
+            status = snprintf(currchr, sizeof currchr, "%s", r[0]->chr);
+            if(status >= sizeof currchr) {
                 fprintf(stderr,"%s:%d: buffer overflow\n",__FILE__,__LINE__);
                 exit(EXIT_FAILURE);
             }
