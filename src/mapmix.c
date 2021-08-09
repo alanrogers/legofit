@@ -40,6 +40,7 @@ static void Stack_free(Stack * stk);
 static void Stack_push(Stack * self, tipId_t x);
 static void generatePatterns(int bit, int npops, Stack * stk, tipId_t pat,
                              int doSing);
+static FILE *openOutput(const char *chr);
 
 const char *useMsg =
     "\nUsage: mapmix --admix <fraction> --zero <a.legosim>"
@@ -52,7 +53,9 @@ const char *useMsg =
     "   that this admixture fraction is set to 1, <x> and <y> are arbitrary\n"
     "   labels, and <in_i> are input files in raf format. Labels may not\n"
     "   include the character \":\". Final label must be \"outgroup\".\n"
-    "   Writes to standard output.\n"
+    "   Writes to a series of files with names like 1.mapmix, X.mapmix,\n"
+    "   etc, where \"1\" and \"X\" are the names of chromosomes. If these\n"
+    "   files already exist, the program aborts.\n"
     "\n"
     "   If <in_i> file name ends with .gz, input is decompressed using\n"
     "   gunzip.\n";
@@ -69,6 +72,32 @@ static void usage(void) {
     tellopt("-h or --help", "Print this message");
     exit(1);
 }
+
+/// Open a file named <chr>.mapmax for output, or abort if that file
+/// already exists or cannot be opened for writing. Return pointer to
+/// opened file.
+static FILE *openOutput(const char *chr) {
+    int status;
+    char fname[256];
+    status = snprintf(fname, sizeof fname, "%s.mapmix", chr);
+    if(status >= sizeof fname) {
+        fprintf(stderr,"%s:%d: buffer overflow\n",__FILE__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
+    if( access(fname, F_OK) != -1 ) {
+        fprintf(stderr,"%s:%d: ERR: output file %s already exists.\n",
+                __FILE__,__LINE__, fname);
+        exit(EXIT_FAILURE);
+    }
+    FILE *fp = fopen(fname, "w");
+    if(fp == NULL) {
+        fprintf(stderr,"%s:%d: ERR: can't open file %s for writing.\n",
+                __FILE__,__LINE__, fname);
+        exit(EXIT_FAILURE);
+    }
+    return fp;
+}
+
 
 /// This stack is local to this file. It provides a bounds-controlled
 /// interface to an external array, which is passed as an argument, buff,
@@ -351,10 +380,12 @@ int main(int argc, char **argv) {
 
     unsigned long nsites = 0, nfixed=0, nbadaa = 0, nbadref=0, nmultalt=0;
 
+    char chr[128] = { '\0' };
+    FILE *ofp = NULL;
+
     // Iterate through raf files
     RAFReader_clearChromosomes(n, r);
     done=0;
-    printf("#%s\t%s\t%s\n", "chr", "nucpos", "admix");
     while( !done ) {
         status = RAFReader_multiNext(n, r);
         if(status==0)
@@ -430,8 +461,23 @@ int main(int argc, char **argv) {
             // i.
             pr += z * cond_pr[i];
         }
-        printf("%s\t%lu\t%0.18g\n",r[0]->chr, r[0]->nucpos, pr);
+        if(0 != strcmp(chr, r[0]->chr)) {
+            // New chromosome. Open new output file
+            if(chr[0] != '\0')
+                free(ofp);
+            status = snprintf(chr, sizeof chr, "%s", r[0]->chr);
+            if(status >= sizeof chr) {
+                fprintf(stderr,"%s:%d: buffer overflow\n",__FILE__,__LINE__);
+                exit(EXIT_FAILURE);
+            }
+            ofp = openOutput(r[0]->chr);
+            fprintf(ofp, "#%s\t%s\n", "pos", "admix");
+        }
+        
+        fprintf(ofp, "%s\t%lu\t%0.18g\n",r[0]->chr, r[0]->nucpos, pr);
     }
+    if(ofp != NULL)
+        fclose(ofp);
     fprintf(stderr, "# Aligned sites                  : %lu\n", nsites);
     if(nbadref)
         fprintf(stderr, "# Disagreements about ref allele : %lu\n", nbadref);
