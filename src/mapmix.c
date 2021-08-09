@@ -354,6 +354,7 @@ int main(int argc, char **argv) {
     // Iterate through raf files
     RAFReader_clearChromosomes(n, r);
     done=0;
+    printf("#%s\t%s\t%s\n", "chr", "nucpos", "admix");
     while( !done ) {
         status = RAFReader_multiNext(n, r);
         if(status==0)
