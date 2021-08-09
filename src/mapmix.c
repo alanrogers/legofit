@@ -181,7 +181,7 @@ int main(int argc, char **argv) {
                 StrDblQueue_print(queue[0], stderr);
                 exit(EXIT_FAILURE);
             }
-            lgosim_bt[i] = BranchTab_from_StrDblQueue(queue[0], lgosim_lndx);
+            lgosim_bt[0] = BranchTab_from_StrDblQueue(queue[0], lgosim_lndx);
             break;
         case 'o':
             lgosim[1] = optarg;
@@ -195,7 +195,7 @@ int main(int argc, char **argv) {
                 StrDblQueue_print(queue[1], stderr);
                 exit(EXIT_FAILURE);
             }
-            lgosim_bt[i] = BranchTab_from_StrDblQueue(queue[1], lgosim_lndx+1);
+            lgosim_bt[1] = BranchTab_from_StrDblQueue(queue[1], lgosim_lndx+1);
             break;
         case 'V':
             printf("sitepat version %s\n", GIT_VERSION);
