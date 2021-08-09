@@ -1,8 +1,8 @@
 destination := $(HOME)/bin
 git_version := "$(shell git describe --dirty --always --tags)"
 global_destination := $(HOME)/grp1/bin
-opt := -DNDEBUG -O2  -finline-functions  # For full optimization
-#opt := -O0 -g -fno-inline-functions -rdynamic -DDEBUG     # For debugging
+#opt := -DNDEBUG -O2  -finline-functions  # For full optimization
+opt := -O0 -g -fno-inline-functions -rdynamic -DDEBUG     # For debugging
 #opt := -O2  -g -finline-functions  # Optimization + debugging
 #prof := -pg -g -rdynamic                    # For profiling under gcc
 #prof := --fprofile-generate -g              # For profiling under clang
@@ -10,7 +10,8 @@ prof :=
 incl := -I/usr/local/include -I/opt/local/include
 
 targets := legosim legofit tabpat sitepat scrmpat daf raf numcores \
-     joinraf raf2daf bepe booma pclgo resid simpat ms2sim clic rafdaf
+     joinraf raf2daf bepe booma pclgo resid simpat ms2sim clic rafdaf \
+     mapmix
 pytargets := diverg.py bootci.py flatfile.py axt2raf.py flatpat.py legotree.py
 
 CC := gcc
@@ -88,6 +89,11 @@ PCLGO := pclgo.o misc.o strdblqueue.o gptree.o parstore.o param.o popnode.o \
   setpart.o u64u64map.o
 pclgo : $(PCLGO)
 	$(CC) $(CFLAGS) -o $@ $(PCLGO) $(lib)
+
+MAPMIX := mapmix.o strdblqueue.o branchtab.o misc.o lblndx.o rafreader.o \
+  error.o binary.o tokenizer.o
+mapmix : $(MAPMIX)
+	$(CC) $(CFLAGS) -o $@ $(MAPMIX) $(lib)
 
 BEPE := bepe.o misc.o strdblqueue.o
 bepe : $(BEPE)

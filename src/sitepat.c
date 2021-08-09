@@ -630,7 +630,7 @@ int main(int argc, char **argv) {
                 for(j = 0; j < m; ++j)
                     fprintf(stderr, "   %d: p=%lf q=%lf\n", j, p[j], q[j]);
             }
-            assert(0 == (pattern & 1));
+            assert(0 == pattern);
             patCount[i] += z;
             if(bootreps > 0) {
                 assert(snpndx >= 0);
