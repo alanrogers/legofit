@@ -464,8 +464,9 @@ int main(int argc, char **argv) {
         }
         if(0 != strcmp(chr, r[0]->chr)) {
             // New chromosome. Open new output file
-            if(chr[0] != '\0')
-                free(ofp);
+            if(chr[0] != '\0') {
+                fclose(ofp);
+            }
             status = snprintf(chr, sizeof chr, "%s", r[0]->chr);
             if(status >= sizeof chr) {
                 fprintf(stderr,"%s:%d: buffer overflow\n",__FILE__,__LINE__);
