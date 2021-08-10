@@ -394,6 +394,7 @@ int main(int argc, char **argv) {
                  patLbl(sizeof(buff), buff, pat[j], &lndx));
         printf("%15s %15.10lf\n", buff2, cond_pr[j]);
     }
+    fflush(stdout);
 
     unsigned long nsites = 0, nfixed=0, nbadaa = 0, nbadref=0, nmultalt=0;
 
