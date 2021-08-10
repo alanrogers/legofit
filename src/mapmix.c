@@ -473,7 +473,7 @@ int main(int argc, char **argv) {
                 exit(EXIT_FAILURE);
             }
             ofp = openOutput(r[0]->chr);
-            fprintf(ofp, "#%s\t%s\n", "pos", "admix");
+            fprintf(ofp, "%s\t%s\n", "pos", "admix");
         }
         
         fprintf(ofp, "%lu\t%0.18g\n", r[0]->nucpos, pr);
