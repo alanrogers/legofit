@@ -379,6 +379,22 @@ int main(int argc, char **argv) {
         cond_pr[i] = joint_pr1 / (joint_pr0 + joint_pr1);
     }
 
+    tipId_t union_all_samples = low_bits_on(m);
+    char buff[1000], buff2[1000];
+
+    printf("# admix is conditional prob of admixture"
+           " given site pattern.\n");
+    printf("%15s %15s\n", "SitePat", "admix");
+    for(j = 0; j < npat; ++j) {
+        if(!doSing && isPow2(pat[j]))
+           continue;
+        if(pat[j] == union_all_samples)
+            continue;
+        snprintf(buff2, sizeof(buff2), "%s",
+                 patLbl(sizeof(buff), buff, pat[j], &lndx));
+        printf("%15s %15.10lf\n", buff2, cond_pr[j]);
+    }
+
     unsigned long nsites = 0, nfixed=0, nbadaa = 0, nbadref=0, nmultalt=0;
 
     char currchr[128] = { '\0' };
