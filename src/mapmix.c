@@ -401,6 +401,9 @@ int main(int argc, char **argv) {
     char currchr[128] = { '\0' };
     FILE *ofp = NULL;
 
+    long double sum=0.0;
+    long nprinted = 0;
+
     // Iterate through raf files
     RAFReader_clearChromosomes(n, r);
     done=0;
@@ -492,11 +495,16 @@ int main(int argc, char **argv) {
             ofp = openOutput(r[0]->chr);
             fprintf(ofp, "%s\t%s\n", "pos", "admix");
         }
+        sum += pr;
+        ++nprinted;
         
         fprintf(ofp, "%lu\t%0.18g\n", r[0]->nucpos, pr);
     }
     if(ofp != NULL)
         fclose(ofp);
+
+    printf("Mean posterior probability of admixture: %Lf\n", sum/nprinted);
+
     fprintf(stderr, "# Aligned sites                  : %lu\n", nsites);
     if(nbadref)
         fprintf(stderr, "# Disagreements about ref allele : %lu\n", nbadref);
