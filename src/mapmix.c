@@ -503,6 +503,7 @@ int main(int argc, char **argv) {
     if(ofp != NULL)
         fclose(ofp);
 
+    printf("Mean prior probability of admixture: %lf\n", admix);
     printf("Mean posterior probability of admixture: %Lf\n", sum/nprinted);
 
     fprintf(stderr, "# Aligned sites                  : %lu\n", nsites);
