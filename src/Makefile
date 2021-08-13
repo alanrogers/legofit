@@ -11,7 +11,7 @@ incl := -I/usr/local/include -I/opt/local/include
 
 targets := legosim legofit tabpat sitepat scrmpat daf raf numcores \
      joinraf raf2daf bepe booma pclgo resid simpat ms2sim clic rafdaf \
-     mapmix
+     mapmix pripos
 pytargets := diverg.py bootci.py flatfile.py axt2raf.py flatpat.py legotree.py
 
 CC := gcc
@@ -94,6 +94,10 @@ MAPMIX := mapmix.o strdblqueue.o branchtab.o misc.o lblndx.o rafreader.o \
   error.o binary.o tokenizer.o
 mapmix : $(MAPMIX)
 	$(CC) $(CFLAGS) -o $@ $(MAPMIX) $(lib)
+
+PRIPOS := pripos.o strdblqueue.o branchtab.o lblndx.o binary.o misc.o
+pripos : $(PRIPOS)
+	$(CC) $(CFLAGS) -o $@ $(PRIPOS) $(lib)
 
 BEPE := bepe.o misc.o strdblqueue.o
 bepe : $(BEPE)

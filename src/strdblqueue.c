@@ -135,7 +135,7 @@ StrDblQueue *StrDblQueue_parseLegofit(const char *fname) {
         if(fgets(buff, sizeof buff, fp) == NULL) {
             break;
         }
-        if(strchr(buff, '\n') == NULL && !feof(stdin)) {
+        if(strchr(buff, '\n') == NULL && !feof(fp)) {
             fprintf(stderr, "%s:%d: Buffer overflow. size=%zu\n",
                     __FILE__, __LINE__, sizeof(buff));
             exit(EXIT_FAILURE);
@@ -169,7 +169,11 @@ StrDblQueue *StrDblQueue_parseLegofit(const char *fname) {
         }
         queue=StrDblQueue_push(queue, name, value);
     }
-    assert(StrDblQueue_length(queue) > 0);
+    if(0 == StrDblQueue_length(queue)) {
+        fprintf(stderr,"%s:%s:%d: can't parse file %s\n",
+                __FILE__,__func__,__LINE__, fname);
+        exit(EXIT_FAILURE);
+    }
     return queue;
 }
 
@@ -202,9 +206,12 @@ StrDblQueue *StrDblQueue_parseSitePat(const char *fname) {
         if(fgets(buff, sizeof buff, fp) == NULL) {
             break;
         }
-        if(strchr(buff, '\n') == NULL && !feof(stdin)) {
-            fprintf(stderr, "%s:%d: Buffer overflow. size=%zu\n",
-                    __FILE__, __LINE__, sizeof(buff));
+        if(strchr(buff, '\n') == NULL && !feof(fp)) {
+            fprintf(stderr, "%s:%s:%d: Buffer overflow. size=%zu\n"
+                    "buff=%s\n",
+                    __FILE__, __func__, __LINE__, sizeof(buff),
+                    buff);
+            
             exit(EXIT_FAILURE);
         }
 
@@ -224,6 +231,11 @@ StrDblQueue *StrDblQueue_parseSitePat(const char *fname) {
             continue;
         name = stripWhiteSpace(name);
         queue=StrDblQueue_push(queue, name, strtod(valstr, NULL) );
+    }
+    if(0 == StrDblQueue_length(queue)) {
+        fprintf(stderr,"%s:%s:%d: can't parse file %s\n",
+                __FILE__,__func__,__LINE__, fname);
+        exit(EXIT_FAILURE);
     }
     return queue;
 }
