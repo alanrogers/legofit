@@ -653,7 +653,7 @@ int main(int argc, char **argv) {
     if(nbadaa)
         printf("# Undetermined ancestral allele  : %lu\n", nbadaa);
     printf("# Sites used                     : %lu\n",
-           nsites - nbadaa - nbadref - nmultalt);
+           nsites - nbadref - nmultalt - nfixed - nbadaa);
 
     // boottab[i][j] is the count of the j'th site pattern
     // in the i'th bootstrap replicate.

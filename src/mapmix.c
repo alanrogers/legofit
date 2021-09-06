@@ -514,7 +514,7 @@ int main(int argc, char **argv) {
     if(nbadaa)
         fprintf(stderr, "# Undetermined ancestral allele  : %lu\n", nbadaa);
     fprintf(stderr, "# Sites used                     : %lu\n",
-            nsites - nbadaa - nbadref - nmultalt);
+            nsites - nbadref - nmultalt - nfixed - nbadaa);
 
     for(i = 0; i < n; ++i)
         RAFReader_free(r[i]);
