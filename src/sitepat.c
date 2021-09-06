@@ -18,7 +18,7 @@ replicate into a separate file.
        Final label must be "outgroup". Writes to standard output.
 
        If input file name ends with .gz, input is decompressed using
-       gunzip. Maximum number of input files: 64 plus outgroup. Minimum is
+       gunzip. Maximum number of input files: 32 plus outgroup. Minimum is
        2 plus outgroup.
 
     Options may include:
@@ -204,8 +204,9 @@ const char *useMsg =
 /// Print usage message and die.
 static void usage(void) {
     fputs(useMsg, stderr);
-    fprintf(stderr, " Maximum number of input files: %lu plus outgroup.\n",
-            8 * sizeof(bits_t));
+    putc('\n', stderr);
+    fprintf(stderr, "   Maximum number of input files: %lu plus outgroup.\n",
+            8 * sizeof(tipId_t));
     fputs("\nOptions may include:\n", stderr);
     tellopt("-f <name> or --bootfile <name>",
             "Bootstrap output file basename. Def: sitepat.boot.");
@@ -629,7 +630,7 @@ int main(int argc, char **argv) {
                 for(j = 0; j < m; ++j)
                     fprintf(stderr, "   %d: p=%lf q=%lf\n", j, p[j], q[j]);
             }
-            assert(0 == (pattern & 1));
+            assert(0 == pattern);
             patCount[i] += z;
             if(bootreps > 0) {
                 assert(snpndx >= 0);
@@ -652,7 +653,7 @@ int main(int argc, char **argv) {
     if(nbadaa)
         printf("# Undetermined ancestral allele  : %lu\n", nbadaa);
     printf("# Sites used                     : %lu\n",
-           nsites - nbadaa - nbadref - nmultalt);
+           nsites - nbadref - nmultalt - nfixed - nbadaa);
 
     // boottab[i][j] is the count of the j'th site pattern
     // in the i'th bootstrap replicate.
