@@ -106,8 +106,7 @@ long double BranchTab_get(BranchTab * self, tipId_t key) {
     return self->tab[key];
 }
 
-/// Add a value to table. If key already exists, new value is added to
-/// old one.
+/// Add a value to table.
 void BranchTab_add(BranchTab * self, tipId_t key, long double value) {
     assert(!self->frozen);
     assert(key > 0);
