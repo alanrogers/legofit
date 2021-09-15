@@ -10,7 +10,7 @@ Input file should consist of tab-separated columns:
 3. reference allele
 4. alternate alleles
 5. genotype in format "0/1" or "0|1", where 0 represents
-a copy of the reference allele and 1 a copy of the derived
+a copy of the reference allele and 1 a copy of the alternate
 allele.
 6. etc for as many columns as there are genotypes.
 
