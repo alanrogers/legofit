@@ -437,7 +437,7 @@ int main(int argc, char **argv) {
            (doSing ? "Including" : "Excluding"));
     printf("# Number of site patterns: %lu\n", npat);
     tipId_t     pat[npat];
-    double      patCount[npat];
+    long double patCount[npat];
     int         lblsize = 100;
     char        lblbuff[lblsize];
     memset(patCount, 0, sizeof(patCount));
@@ -693,13 +693,13 @@ int main(int argc, char **argv) {
             fclose(fp);
         }
     }
-    // print labels and binary representation of site patterns
+    // print labels and Expected counts of site patterns
     printf("# %13s %20s", "SitePat", "E[count]");
     if(bootreps > 0)
         printf(" %15s %15s", "low", "high");
     putchar('\n');
     for(i = 0; i < npat; ++i) {
-        printf("%15s %20.7lf",
+        printf("%15s %20.7Lf",
                patLbl(lblsize, lblbuff, pat[i], &lndx), patCount[i]);
         if(bootreps > 0) {
             double      lowBnd, highBnd;
