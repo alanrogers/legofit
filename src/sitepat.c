@@ -510,6 +510,8 @@ int main(int argc, char **argv) {
                 ++nsnp[nchr - 1];
         }
 
+        fprintf(stderr,"Finished 1st pass, rewinding\n");
+
         for(i = 0; i < n; ++i) {
             status = RAFReader_rewind(r[i]);
             if(status) {
