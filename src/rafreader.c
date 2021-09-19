@@ -83,6 +83,11 @@ void RAFReader_popen(RAFReader *self) {
     // osx, linux, or unix
     self->fp = popen(cmd, "r");
 #endif
+    if(self->fp == NULL) {
+        fprintf(stderr,"%s:%s:%d: can't open pipe with cmd %s\n",
+                __FILE__,__func__,__LINE__, cmd);
+        exit(EXIT_FAILURE);
+    }
 }
 
 /// Clear all chromosome names
