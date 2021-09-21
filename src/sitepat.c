@@ -176,8 +176,6 @@ Systems Consortium License, which can be found in file "LICENSE".
 #include <string.h>
 #include <time.h>
 
-#define MAXCHR 24               // maximum number of chromosomes
-
 typedef struct Stack Stack;
 
 /// Treat a vector of tipId_t values as a push-down stack.
@@ -516,7 +514,9 @@ int main(int argc, char **argv) {
             if(diff != 0) {
                 StrInt_insert(strint, chr, nchr);
                 if(nchr >= nsnp_size) {
-                    nsnp_size *= 2;
+                    do{
+                        nsnp_size *= 2;
+                    }while(nchr >= nsnp_size);
                     status = LongVec_resize(nsnp, nsnp_size);
                     if(status) {
                         fprintf(stderr,"%s:%d: can't resize vector.\n",
