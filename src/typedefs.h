@@ -20,6 +20,7 @@ typedef struct IdSet IdSet;
 typedef struct IdSetSet IdSetSet;
 typedef struct LblNdx LblNdx;
 typedef struct LineReader LineReader;
+typedef struct LongVec LongVec;
 typedef struct MCTree MCTree;
 typedef struct NameList NameList;
 typedef struct Network Network;

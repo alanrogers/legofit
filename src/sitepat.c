@@ -161,6 +161,7 @@ Systems Consortium License, which can be found in file "LICENSE".
 #include "binary.h"
 #include "boot.h"
 #include "rafreader.h"
+#include "longvec.h"
 #include "misc.h"
 #include "strint.h"
 #include "error.h"
@@ -205,14 +206,24 @@ const char *useMsg =
 static void usage(void) {
     fputs(useMsg, stderr);
     putc('\n', stderr);
+    int status;
+    char buff[500];
     fprintf(stderr, "   Maximum number of input files: %lu plus outgroup.\n",
             8 * sizeof(tipId_t));
     fputs("\nOptions may include:\n", stderr);
     tellopt("-f <name> or --bootfile <name>",
             "Bootstrap output file basename. Def: sitepat.boot.");
     tellopt("-r <x> or --bootreps <x>", "# of bootstrap replicates. Def: 0");
-    tellopt("-b <x> or --blocksize <x>",
-            "# of SNPs per block in moving-blocks bootstrap. Def: 0.");
+
+    status = snprintf(buff, sizeof buff,
+                      "# of SNPs per block in moving-blocks bootstrap."
+                      " Def: %d.", DEF_BOOT_BLOCK_SIZE);
+    if(status >= sizeof buff) {
+        fprintf(stderr, "%s:%d: buffer overflow\n", __FILE__, __LINE__);
+        exit(EXIT_FAILURE);
+    }
+    tellopt("-b <x> or --blocksize <x>", buff);
+
     tellopt("-1 or --singletons", "Use singleton site patterns");
     tellopt("-m or --logMismatch", "Log REF mismatches to sitepat.log");
     tellopt("-A or --logAA", "Log sites with uncallable ancestral allele");
@@ -283,7 +294,7 @@ int main(int argc, char **argv) {
     int         doSing = 0;     // nonzero means use singleton site patterns
     long        bootreps = 0;
     double      conf = 0.95;    // confidence level
-    long        blocksize = 500;
+    long        blocksize = DEF_BOOT_BLOCK_SIZE;
     StrInt     *strint = StrInt_new();
     char        bootfname[FILENAMESIZE] = { '\0' };
     char        errbuff[1024] = { '\0' };
@@ -462,8 +473,8 @@ int main(int argc, char **argv) {
     Boot       *boot = NULL;
     int         nchr = 0;
     char        prev[RAFSTRSIZE], chr[RAFSTRSIZE] = { '\0' };
-    long        nsnp[MAXCHR];
-    memset(nsnp, 0, sizeof nsnp);
+    int         nsnp_size = 32;
+    LongVec*    nsnp = LongVec_new(nsnp_size); 
 
     // Read the data to get dimensions: number of chromosomes and
     // number of snps per chromosome. Then use these dimensions to
@@ -504,10 +515,19 @@ int main(int argc, char **argv) {
             int         diff = strcmp(prev, chr);
             if(diff != 0) {
                 StrInt_insert(strint, chr, nchr);
-                nsnp[nchr] = 1;
+                if(nchr >= nsnp_size) {
+                    nsnp_size *= 2;
+                    status = LongVec_resize(nsnp, nsnp_size);
+                    if(status) {
+                        fprintf(stderr,"%s:%d: can't resize vector.\n",
+                                __FILE__,__LINE__);
+                        exit(EXIT_FAILURE);
+                    }
+                }
+                LongVec_set(nsnp, nchr, 1);
                 ++nchr;
             } else
-                ++nsnp[nchr - 1];
+                LongVec_plusEquals(nsnp, nchr-1, 1);
         }
 
         fprintf(stderr,"Finished 1st pass, rewinding\n");
@@ -521,10 +541,15 @@ int main(int argc, char **argv) {
             }
         }
 
+        // turn nsnp into a simple array
+        long static_nsnp[nchr];
+        for(i=0; i < nchr; ++i)
+            static_nsnp[i] = LongVec_get(nsnp, i);
+
         // Allocate Boot structure
         gsl_rng    *rng = gsl_rng_alloc(gsl_rng_taus);
         gsl_rng_set(rng, (unsigned long) time(NULL));
-        boot = Boot_new(nchr, nsnp, bootreps, npat, blocksize, rng);
+        boot = Boot_new(nchr, static_nsnp, bootreps, npat, blocksize, rng);
         gsl_rng_free(rng);
         CHECKMEM(boot);
     }
@@ -598,7 +623,7 @@ int main(int argc, char **argv) {
                 ++snpndx;
 
 #ifndef NDEBUG
-            assert(snpndx < nsnp[chrndx]);
+            assert(snpndx < LongVec_get(nsnp, chrndx));
 #endif
         }
 
@@ -645,6 +670,7 @@ int main(int argc, char **argv) {
             Boot_sanityCheck(boot, __FILE__, __LINE__);
 #endif
     }
+    printf("# Chromosomes or scaffolds       : %d\n", nchr);
     printf("# Aligned sites                  : %lu\n", nsites);
     if(nbadref)
         printf("# Disagreements about ref allele : %lu\n", nbadref);
@@ -712,6 +738,8 @@ int main(int argc, char **argv) {
         }
         putchar('\n');
     }
+
+    LongVec_free(nsnp);
 
     for(i = 0; i < n; ++i)
         RAFReader_free(r[i]);

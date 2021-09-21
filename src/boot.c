@@ -5,6 +5,21 @@
  * @copyright Copyright (c) 2016, Alan R. Rogers
  * <rogers@anthro.utah.edu>. This file is released under the Internet
  * Systems Consortium License, which can be found in file "LICENSE".
+ *
+ * This bootstrap treats all nucleotides as a single array, ignoring
+ * the distinction between chromosomes. Thus, blocks may span
+ * chromosomes. This should not cause problems with high-quality
+ * genomes, in which chromosomes are known. When a block spans two
+ * chromosomes, the sites within the block are less correlated within
+ * that block, but this doesn't violate any assumption.
+ *
+ * I'm more worried about genomes that consist of many small
+ * contigs. With such genomes, nucleotides in different contigs may be
+ * tightly linked, and these linked contigs may end up in different
+ * blocks. This violates the assumption (of the moving-blocks
+ * bootstrap) that observations in different blocks are only weakly
+ * correlated. I'm not sure what effect this will have, but I fear it
+ * will make the confidence intervals too narrow.
  */
 #include "boot.h"
 #include "misc.h"
