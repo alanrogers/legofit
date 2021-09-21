@@ -12,6 +12,8 @@
 #  include "typedefs.h"
 #  include <gsl/gsl_rng.h>
 
+#define DEF_BOOT_BLOCK_SIZE 500
+
 Boot       *Boot_new(int nchr, long nsnp[nchr], long nrep, int npat,
                      long blocksize, gsl_rng * rng);
 void        Boot_free(Boot * self);

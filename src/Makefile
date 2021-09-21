@@ -116,12 +116,12 @@ BOOMA := booma.o misc.o strdblqueue.o strint.o tokenizer.o
 booma : $(BOOMA)
 	$(CC) $(CFLAGS) -o $@ $(BOOMA) $(lib)
 
-TABPAT := tabpat.o misc.o binary.o lblndx.o dafreader.o \
+TABPAT := tabpat.o misc.o binary.o lblndx.o dafreader.o longvec.o \
   tokenizer.o strint.o boot.o error.o
 tabpat : $(TABPAT)
 	$(CC) $(CFLAGS) -o $@ $(TABPAT) $(lib)
 
-SITEPAT := sitepat.o misc.o binary.o lblndx.o rafreader.o \
+SITEPAT := sitepat.o misc.o binary.o lblndx.o rafreader.o longvec.o \
   tokenizer.o strint.o boot.o error.o
 sitepat : $(SITEPAT)
 	$(CC) $(CFLAGS) -o $@ $(SITEPAT) $(lib)
