@@ -308,7 +308,9 @@ pthread_mutex_t&#160;</td><td class="memItemRight" valign="bottom"><b>outputLock
   </dd>
 </dl>
 
-<p class="reference">Referenced by <a class="el" href="network_8c.html#a44de0e0866afde2df0d43d28be945369">Network_init()</a>.</p>
+<p class="reference">References <a class="el" href="parstore_8c.html#a8a89f24274d3e5a91e1812b91d6dd272">ParStore_getFreeParams()</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="gptree_8c.html#a76ab4e9a17731b3f389bff50b4e68586">GPTree_initStateVec()</a>, and <a class="el" href="network_8c.html#a44de0e0866afde2df0d43d28be945369">Network_init()</a>.</p>
 
 </div>
 </div>
@@ -359,6 +361,8 @@ pthread_mutex_t&#160;</td><td class="memItemRight" valign="bottom"><b>outputLock
 <p>Initialize vector x. </p>
 <p>If ndx==0, simply copy the parameter vector from the <a class="el" href="struct_g_p_tree.html" title="GPTree stands for Gene-Population tree. ">GPTree</a> object. Otherwise, randomize the <a class="el" href="struct_g_p_tree.html" title="GPTree stands for Gene-Population tree. ">GPTree</a> first. This ensures that differential evolution starts with a set of points, one of which is the same as the values in the input file. This allows you to improve on existing estimates without starting from scratch each time. </p>
 
+<p class="reference">References <a class="el" href="gptree_8c.html#a4443a3b37ba314db76a7263e24125e2c">GPTree_dup()</a>, <a class="el" href="gptree_8c.html#a1fcd8c699993242f63c022be856c4b71">GPTree_free()</a>, <a class="el" href="gptree_8c.html#a1b95e749a70e930d3d02e9609ed5e100">GPTree_getParams()</a>, and <a class="el" href="gptree_8c.html#aa9fe015f6f6df48b8da4c32a6e9ea88d">GPTree_randomize()</a>.</p>
+
 </div>
 </div>
 <a id="aa9fe015f6f6df48b8da4c32a6e9ea88d"></a>
@@ -388,6 +392,8 @@ pthread_mutex_t&#160;</td><td class="memItemRight" valign="bottom"><b>outputLock
 </div><div class="memdoc">
 
 <p>Randomly perturb all free parameters while maintaining inequality constraints. </p>
+
+<p class="reference">Referenced by <a class="el" href="gptree_8c.html#a76ab4e9a17731b3f389bff50b4e68586">GPTree_initStateVec()</a>.</p>
 
 </div>
 </div>
@@ -433,12 +439,14 @@ pthread_mutex_t&#160;</td><td class="memItemRight" valign="bottom"><b>outputLock
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>0 on success, 1 if values of x violate boundary constraints. </dd></dl>
 
+<p class="reference">References <a class="el" href="parstore_8c.html#ac341693f22a61522758ea519d83e13ec">ParStore_nFree()</a>, and <a class="el" href="parstore_8c.html#a5bedb425de7e03796b505d6de00817bc">ParStore_setFreeParams()</a>.</p>
+
 </div>
 </div>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Sep 15 2021 12:05:18 for Legofit by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Mon Oct 18 2021 14:46:36 for Legofit by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.13
 </small></address>

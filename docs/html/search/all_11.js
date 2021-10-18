@@ -10,7 +10,6 @@ var searchData=
   ['sampndx_5fptrslegal',['SampNdx_ptrsLegal',['../sampndx_8c.html#aab4edb5d9432a10fcf490ca3c4e53776',1,'sampndx.c']]],
   ['sampndx_5fremapptrs',['SampNdx_remapPtrs',['../sampndx_8c.html#a8f3b5befb4999cb0a4f970488155e750',1,'sampndx.c']]],
   ['sampndx_5fsanitycheck',['SampNdx_sanityCheck',['../sampndx_8c.html#a7b0a85b6108243f1def413bf93d56521',1,'sampndx.c']]],
-  ['sca',['sca',['../legotree_8py.html#a68fdac4470f0715f206ec89fe665f5a1',1,'legotree']]],
   ['scrmpat_2ec',['scrmpat.c',['../scrmpat_8c.html',1,'']]],
   ['scrmreader',['ScrmReader',['../struct_scrm_reader.html',1,'']]],
   ['scrmreader_2ec',['scrmreader.c',['../scrmreader_8c.html',1,'']]],
