@@ -34,7 +34,6 @@ al. Biometrics, 53(2):603-618).
   counts.
 * @ref legosim "legosim" predicts site pattern counts from
 assumptions about population history.
-* @ref legotree "legotree.py" makes a graph from a .lgo file.
 * @ref ms2sim "ms2sim" reads the output of the [ms][] coalescent
   simulator and rewrites it in "sim" format, which can be piped to
   @ref simpat "simpat" to tabulate site pattern frequencies.
