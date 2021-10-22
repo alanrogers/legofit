@@ -670,7 +670,8 @@ int main(int argc, char **argv) {
             Boot_sanityCheck(boot, __FILE__, __LINE__);
 #endif
     }
-    printf("# Chromosomes or scaffolds       : %d\n", nchr);
+    if(nchr > 0)
+        printf("# Chromosomes or scaffolds       : %d\n", nchr);
     printf("# Aligned sites                  : %lu\n", nsites);
     if(nbadref)
         printf("# Disagreements about ref allele : %lu\n", nbadref);
