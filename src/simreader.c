@@ -27,8 +27,6 @@ struct SimReader {
 
     // number of fields in input data
     int nfields;
-
-    long start_data; // position in file of beginning of data
 };
 
 // destructor doesn't free self->fp
@@ -153,8 +151,6 @@ SimReader *SimReader_new(FILE *fp) {
     for(i=0; i < self->sampleDim; ++i)  // others are haploid genotypes
         self->nfields += self->nsamples[i];
 
-    self->start_data = ftell(self->fp);
-
     return self;
 
  new_fail:
@@ -175,19 +171,6 @@ SimReader *SimReader_new(FILE *fp) {
         Tokenizer_free(self->tkz);
     free(self);
     return NULL;
-}
-
-// Rewind input to beginning of data and reset chr. Doesn't work
-// if input is stdin.
-int SimReader_rewind(SimReader *self) {
-    assert(self->fp != stdin);
-    errno = 0;
-    fseek(self->fp, self->start_data, SEEK_SET);
-    if(errno)
-        return errno;
-
-    self->chr = -1;
-    return 0;
 }
 
 // Move SimReader to next nucleotide site.
@@ -364,23 +347,6 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
     assert(1 == SimReader_chr(r));
-    assert(1.0 == SimReader_daf(r, 0));
-    assert(0.0 == SimReader_daf(r, 1));
-    assert(0.0 == SimReader_daf(r, 2));
-    assert(0.0 == SimReader_daf(r, 3));
-
-    status = SimReader_rewind(r);
-    if(status) {
-        fprintf(stderr,"%s:%d: SimReader_rewind returned %d\n",
-                __FILE__,__LINE__,status);
-    }
-
-    status = SimReader_next(r);
-    if(status) {
-        fprintf(stderr,"%s:%d: SimReader_next returned %d\n",
-                __FILE__,__LINE__,status);
-    }
-    assert(0 == SimReader_chr(r));
     assert(1.0 == SimReader_daf(r, 0));
     assert(0.0 == SimReader_daf(r, 1));
     assert(0.0 == SimReader_daf(r, 2));
