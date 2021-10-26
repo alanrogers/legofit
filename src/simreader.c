@@ -2,6 +2,47 @@
 @file simreader.c
 @page simreader
 @brief Interface to output files produced by ms2sim and msprime.
+
+There are two versions of the input format. In version 1, the top of
+the input looked like this:
+
+    npops = 4
+    pop sampsize
+    x 1
+    y 1
+    n 1
+    d 1
+    0 0 0 1 1 
+    0 0 0 1 0
+
+In version 2, it looks like this:
+
+    nchromosomes = 10
+    chrlen = 2000000
+    npops = 5
+    pop sampsize
+    x 1
+    y 1
+    n 1
+    d 1
+    s 1
+    0 345.7722022796852 0 0 0 1 0 
+    0 377.99065190067955 1 0 0 0 0 
+    0 407.9258238758751 0 0 0 0 1 
+
+Version 2 has 2 lines at the top, giving the number of chromosomes and
+the length in basepairs of each chromosome. In the lines of data that
+follow the header, the 2nd field has the nucleotide position of the
+current site.
+
+The SimReader_new function distinguishes between these formats by
+examining the first character string in the file. If that string is
+"npops", we are reading format 1. If it's "nchromosomes", we're in
+format 2.
+
+If the input data are in format 2, the function SimReader_pos returns
+the position of the current site. If the input is format 1, this
+function returns -1.
 */
 
 #include "simreader.h"
@@ -14,6 +55,9 @@
 #include <stdlib.h>
 
 struct SimReader {
+    int input_format; // 1 or 2
+    int nchromosomes;
+    int chr_len; // length of chromosome in basepairs.
     int sampleDim;
     unsigned *nsamples;
     char **lbl;
@@ -21,9 +65,12 @@ struct SimReader {
     Tokenizer *tkz;
     FILE *fp;  // not locally owned
 
-    // Independent replicates in scrm output appear as separate
+    // Independent replicates in output appear as separate
     // chromosomes, which are labelled by integers.
     int chr;
+
+    // Nucleotide position within current chromosome
+    double pos;
 
     // number of fields in input data
     int nfields;
@@ -52,6 +99,7 @@ SimReader *SimReader_new(FILE *fp) {
     memset(self, 0, sizeof(SimReader));
 
     self->chr = -1;
+    self->pos = -1.0;
     self->fp = fp;
     assert(fp != NULL);
 
@@ -73,25 +121,59 @@ SimReader *SimReader_new(FILE *fp) {
         goto new_fail;
     }
 
-    int ok=1, ntokens;
+    int ntokens;
 
-    // number of populations
+    // parse header
     Tokenizer_split(self->tkz, buff, "=");
     ntokens = Tokenizer_strip(self->tkz, " \n");
-    if(ntokens != 2 || 0!=strcmp("npops", Tokenizer_token(self->tkz, 0)))
-        ok = 0;
-    if(ok) {
+    if(ntokens != 2)
+        goto bad_header;
+
+    if( 0 == strcmp("nchromosomes", Tokenizer_token(self->tkz, 0)) ) {
+        self->input_format = 2;
+
+        // set nchromosomes
+        self->nchromosomes = strtol(Tokenizer_token(self->tkz, 1), NULL, 10);
+        if(self->nchromosomes <= 0)
+            goto bad_header; 
+
+        // set chr_len
+        status = readline(sizeof(buff), buff, self->fp);
+        if(status)
+            goto bad_header;
+        Tokenizer_split(self->tkz, buff, "=");
+        ntokens = Tokenizer_strip(self->tkz, " \n");
+        if(ntokens != 2)
+            goto bad_header;
+        if( 0 != strcmp("chrlen", Tokenizer_token(self->tkz, 0)) )
+            goto bad_header;
+        self->chr_len = strtol(Tokenizer_token(self->tkz, 1), NULL, 10);
+        if(self->chr_len <= 0)
+            goto bad_header; 
+
+        // set sampleDim
+        status = readline(sizeof(buff), buff, self->fp);
+        if(status)
+            goto bad_header;
+        Tokenizer_split(self->tkz, buff, "=");
+        ntokens = Tokenizer_strip(self->tkz, " \n");
+        if(ntokens != 2)
+            goto bad_header;
+        if( 0 != strcmp("npops", Tokenizer_token(self->tkz, 0)) )
+            goto bad_header;
         self->sampleDim = strtol(Tokenizer_token(self->tkz, 1), NULL, 10);
         if(self->sampleDim <= 0)
-            ok = 0;
-    }
-    if(!ok) {
-        fprintf(stderr,"%s:%d: 1st line of input should look like\n"
-                "   \"npops = <positive integer>\"\n",
-                __FILE__,__LINE__);
-        Tokenizer_print(self->tkz, stderr);
-        exit(EXIT_FAILURE);
-    }
+            goto bad_header; 
+        
+    }else if( 0 == strcmp("npops", Tokenizer_token(self->tkz, 0)) ) {
+        self->input_format = 1;
+
+        // set sampleDim
+        self->sampleDim = strtol(Tokenizer_token(self->tkz, 1), NULL, 10);
+        if(self->sampleDim <= 0)
+            goto bad_header;
+    }else
+        goto bad_header;
 
     self->nsamples = malloc(self->sampleDim * sizeof(self->nsamples[0]));
     CHECKMEM(self->nsamples);
@@ -99,7 +181,7 @@ SimReader *SimReader_new(FILE *fp) {
     CHECKMEM(self->lbl);
     memset(self->lbl, 0, self->sampleDim * sizeof(self->lbl[0]));
 
-    // header
+    // read population labels and sample sizes
     status = readline(sizeof(buff), buff, self->fp);
     if(status)
         goto new_fail;
@@ -148,10 +230,21 @@ SimReader *SimReader_new(FILE *fp) {
 
     // number of fields in each line of input data.
     self->nfields = 1; // first field is chromosome
+    if(self->input_format == 2)
+        self->nfields += 1; // 2nd field is position in format 2
     for(i=0; i < self->sampleDim; ++i)  // others are haploid genotypes
         self->nfields += self->nsamples[i];
 
     return self;
+
+ bad_header:    
+    fprintf(stderr,"%s:%d: bad input header\n",
+            __FILE__,__LINE__);
+    Tokenizer_print(self->tkz, stderr);
+    if(self->tkz)
+        Tokenizer_free(self->tkz);
+    free(self);
+    return NULL;
 
  new_fail:
     if(self==NULL)
@@ -194,10 +287,20 @@ int SimReader_next(SimReader *self) {
     // current chromosome
     self->chr = strtol(Tokenizer_token(self->tkz, 0), NULL, 10);
 
+    int start; // index of first field of genotypes
+
+    // set start index of genotypes and (format 2) nucleotide position
+    if(self->input_format == 1) {
+        start=1;   // skip chr, in position 0
+    }else{
+        assert(self->input_format == 2);
+        start=2;   // skip chr and pos
+        self->pos = strtod(Tokenizer_token(self->tkz, 1), NULL);
+    }
+
     // calculate derived allele frequency w/i each pop
     double nderived;
     int pop, i;
-    int start=1;   // skip column containing chromosome
     char *token, *end;
     for(pop=0; pop < self->sampleDim; ++pop) {
         nderived = 0.0;
@@ -223,8 +326,14 @@ int SimReader_next(SimReader *self) {
 }
 
 // Return current chromosome.
-unsigned SimReader_chr(SimReader *self) {
+unsigned SimReader_chr(const SimReader *self) {
     return self->chr;
+}
+
+// Return current nucleotide position if input data are in format 2.
+// Return -1.0 if input is format 1.
+double SimReader_pos(const SimReader *self) {
+    return self->pos;
 }
 
 // Return number of populations.

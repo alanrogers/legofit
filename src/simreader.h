@@ -14,7 +14,10 @@ void SimReader_free(SimReader *self);
 int SimReader_next(SimReader *self);
 
 // Return current chromosome.
-unsigned SimReader_chr(SimReader *self);
+unsigned SimReader_chr(const SimReader *self);
+
+// Return current nucleotide position
+double SimReader_pos(const SimReader *self);
 
 // Return the dimension of the array of samples
 int SimReader_sampleDim(SimReader *self);
