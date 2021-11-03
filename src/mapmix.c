@@ -74,7 +74,7 @@ static void usage(void) {
     exit(1);
 }
 
-/// Open a file named <chr>.mapmax for output, or abort if that file
+/// Open a file named <chr>.mapmix for output, or abort if that file
 /// already exists or cannot be opened for writing. Return pointer to
 /// opened file.
 static FILE *openOutput(const char *chr) {

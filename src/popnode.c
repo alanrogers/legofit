@@ -71,28 +71,20 @@ static int PopNode_equals_r(PopNode * a, PopNode * b) {
     }
     a->visited = b->visited = 1;
 
-    if(a->nparents != b->nparents)
+    if(a->nparents != b->nparents
+       || a->nchildren != b->nchildren
+       || a->twoN != b->twoN
+       || a->start != b->start
+       || a->end != b->end
+       || a->mix != b->mix
+       || a->twoN_i != b->twoN_i
+       || a->start_i != b->start_i
+       || a->end_i != b->end_i
+       || a->mix_i != b->mix_i
+       || a->end_i != b->end_i) {
         return 0;
-    if(a->nchildren != b->nchildren)
-        return 0;
-    if(a->twoN != b->twoN)
-        return 0;
-    if(a->start != b->start)
-        return 0;
-    if(a->end != b->end)
-        return 0;
-    if(a->mix != b->mix)
-        return 0;
-    if(a->twoN_i != b->twoN_i)
-        return 0;
-    if(a->start_i != b->start_i)
-        return 0;
-    if(a->end_i != b->end_i)
-        return 0;
-    if(a->mix_i != b->mix_i)
-        return 0;
-    if(a->end != b->end)
-        return 0;
+    }
+
     for(int i = 0; i < a->nchildren; ++i) {
         if(!PopNode_equals_r(a->child[i], b->child[i]))
             return 0;
