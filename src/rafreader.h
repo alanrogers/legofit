@@ -41,6 +41,12 @@ static inline const char *RAFReader_chr(RAFReader *self);
 static inline unsigned long RAFReader_nucpos(RAFReader *self);
 static inline const char *RAFReader_ref(RAFReader *self);
 static inline const char *RAFReader_alt(RAFReader *self);
+static inline const char *RAFReader_fname(RAFReader *self);
+
+/// Return const pointer to file name
+static inline const char *RAFReader_fname(RAFReader *self) {
+    return self->fname;
+}    
 
 /// Return const pointer to label of current chromosome.
 static inline const char *RAFReader_chr(RAFReader *self) {
