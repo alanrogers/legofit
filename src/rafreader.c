@@ -142,7 +142,7 @@ int RAFReader_next(RAFReader * self) {
         }
         if(iscomment(buff))
             continue;
-        // fprintf(stderr, "%12s: %s", self->fname, buff);
+        //fprintf(stderr, "%12s: %s", self->fname, buff);
         Tokenizer_split(self->tkz, buff, "\t");
         ntokens = Tokenizer_strip(self->tkz, " \n");
         if( ntokens == 5) {
@@ -190,12 +190,12 @@ int RAFReader_next(RAFReader * self) {
     self->nucpos = strtoul(Tokenizer_token(self->tkz, 1), NULL, 10);
     if(prevnucpos == self->nucpos) {
         fprintf(stderr, "%s:%s:%d:"
-                " Duplicate line in raf file. chr=%s pos=%lu\n",
+                " Duplicate line in raf file. chr=%s nucpos=%lu\n",
                 __FILE__, __func__, __LINE__, self->chr, self->nucpos);
         return BAD_SORT;
-    } else if(prevnucpos > self->nucpos) {
+    } else if(prevnucpos > (long long) self->nucpos) {
         fprintf(stderr, "%s:%d: positions missorted chr=%s "
-                "prev=%ll curr=%lu\n",
+                "prevnucpos=%lld curr nucpos=%lu\n",
                 __FILE__, __LINE__, self->chr, prevnucpos, self->nucpos);
         return BAD_SORT;
     }
