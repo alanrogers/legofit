@@ -320,6 +320,11 @@ int main(int argc, char **argv) {
     }
 
     printf("# mapmix version %s\n", GIT_VERSION);
+
+    char *dirname = getcwd(NULL, 0);
+    printf("# curr dir: %s\n", dirname);
+    free(dirname);
+
     printf("# Population labels:\n");
     for(i = 0; i < n; ++i)
         printf("#  %s=%s\n", poplbl[i], fname[i]);

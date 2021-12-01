@@ -97,6 +97,7 @@ Systems Consortium License, which can be found in file "LICENSE".
 #include "misc.h"
 #include <strings.h>
 #include <time.h>
+#include <unistd.h>
 
 // Function prototypes
 void usage(void);
@@ -126,6 +127,9 @@ int main(int argc, char **argv) {
     printf("# Program was compiled: %s %s\n", __DATE__, __TIME__);
 #endif
     printf("# Program was run: %s", ctime(&currtime));
+    char *dirname = getcwd(NULL, 0);
+    printf("# current directory: %s\n", dirname);
+    free(dirname);
 
     int i, j;
     int nfiles=0, nLegoFiles=0;

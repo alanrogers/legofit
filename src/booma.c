@@ -103,6 +103,7 @@ Systems Consortium License, which can be found in file "LICENSE".
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <unistd.h>
 
 #define LINESIZE 65536
 
@@ -829,6 +830,9 @@ int main(int argc, char **argv) {
     for(i = 0; i < argc; ++i)
         printf(" %s", argv[i]);
     putchar('\n');
+    char *dirname = getcwd(NULL, 0);
+    printf("# current directory: %s\n", dirname);
+    free(dirname);
     fflush(stdout);
 
     {

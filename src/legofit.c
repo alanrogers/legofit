@@ -386,7 +386,10 @@ int main(int argc, char **argv) {
     for(i = 0; i < argc; ++i)
         printf(" %s", argv[i]);
     putchar('\n');
+    char *dirname = getcwd(NULL, 0);
+    printf("# current directory: %s\n", dirname);
     fflush(stdout);
+    free(dirname);
 
     rngseed = currtime ^ pid;
 
