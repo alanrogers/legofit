@@ -211,7 +211,7 @@ int main(int argc, char **argv) {
         printf(" %s", argv[i]);
     putchar('\n');
     char *dirname = getcwd(NULL, 0);
-    printf("# current directory: %s\n", dirname);
+    printf("# curr dir: %s\n", dirname);
     free(dirname);
 
     // command line arguments

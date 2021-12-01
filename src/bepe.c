@@ -128,7 +128,7 @@ int main(int argc, char **argv) {
 #endif
     printf("# Program was run: %s", ctime(&currtime));
     char *dirname = getcwd(NULL, 0);
-    printf("# current directory: %s\n", dirname);
+    printf("# curr dir: %s\n", dirname);
     free(dirname);
 
     int i, j;
