@@ -365,7 +365,7 @@ int main(int argc, char **argv) {
 #if defined(__DATE__) && defined(__TIME__)
     printf("# Program was compiled: %s %s\n", __DATE__, __TIME__);
 #endif
-    printf("# Program was run: %s\n", ctime(&currtime));
+    printf("# Program was run: %s", ctime(&currtime));
     fflush(stdout);
 
     enum input_state { DATA, LEGO, DELETE, REMAP };
