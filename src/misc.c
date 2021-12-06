@@ -613,8 +613,7 @@ void hdr(const char *msg) {
     printf("#%s#\n", strcenter(version, wid, buff, sizeof(buff)));
     for(i = 0; i < 2 + wid; ++i)
         putchar('#');
-    putchar('\n');
-    putchar('\n');
+    fputs("\n#\n", stdout);
 }
 
 /**

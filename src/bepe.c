@@ -182,7 +182,7 @@ int main(int argc, char **argv) {
     }
     assert(j==nfiles);
 
-    putchar('\n');
+    puts("#");
 
     // Read data and legofit files into an arrays of queues
     StrDblQueue *data_queue[nfiles], *lego_queue[nfiles];
