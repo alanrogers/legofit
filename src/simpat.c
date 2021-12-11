@@ -228,7 +228,7 @@ int main(int argc, char **argv) {
         break;
     case 1:
         {
-            char *fname = argv[optind + 1];
+            char *fname = argv[optind];
             ifp = fopen(fname, "r");
             if(ifp==NULL) {
                 fprintf(stderr,"%s:%d: can't open %s for input.\n",
