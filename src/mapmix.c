@@ -320,6 +320,10 @@ int main(int argc, char **argv) {
     }
 
     printf("# mapmix version %s\n", GIT_VERSION);
+    printf("# cmd: mapmix");
+    for(i=1; i < argc; ++i)
+        printf(" %s", argv[i]);
+    putchar('\n');
 
     char *dirname = getcwd(NULL, 0);
     printf("# curr dir: %s\n", dirname);
