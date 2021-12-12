@@ -170,6 +170,12 @@ int main(int argc, char **argv) {
     BranchTab   *lgosim_bt[2] = {NULL, NULL};
     LblNdx      lgosim_lndx[2];
 
+    printf("# mapmix version %s\n", GIT_VERSION);
+    printf("# cmd: mapmix");
+    for(i=1; i < argc; ++i)
+        printf(" %s", argv[i]);
+    putchar('\n');
+
     static struct option myopts[] = {
         // {char *name, int has_arg, int *flag, int val}
         {"admix", required_argument, 0, 'a'},
@@ -318,12 +324,6 @@ int main(int argc, char **argv) {
                 __FILE__,__LINE__);
         exit(EXIT_FAILURE);
     }
-
-    printf("# mapmix version %s\n", GIT_VERSION);
-    printf("# cmd: mapmix");
-    for(i=1; i < argc; ++i)
-        printf(" %s", argv[i]);
-    putchar('\n');
 
     char *dirname = getcwd(NULL, 0);
     printf("# curr dir: %s\n", dirname);
