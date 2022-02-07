@@ -9,7 +9,6 @@
 #include "idsetset.h"
 #include "idset.h"
 #include "misc.h"
-#include "event.h"
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>

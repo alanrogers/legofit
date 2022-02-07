@@ -550,7 +550,7 @@ int main(int argc, char **argv) {
     long double mean_pr = 0;
     for(i=0; i<npat; ++i)
         mean_pr += patfrq[i] * cond_pr[i];
-    printf("Check mean post pr of admixture: %Lf\n", mean_pr);
+    printf("# Check mean post pr of admixture: %Lf\n", mean_pr);
 
     // Determine order for printing lines of output
     unsigned ord[npat];
