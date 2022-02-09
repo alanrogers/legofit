@@ -274,7 +274,7 @@ int main(int argc, char **argv) {
         gtype = strsep(&next, "\t");    // field 5
 
         while(gtype != NULL) {
-            if(strlen(gtype != 3)) {
+            if(strlen(gtype) != 3) {
                 fprintf(stderr,"%s:%d: Bad genotype: %s\n",
                         __FILE__, __LINE__, gtype);
                 fprintf(stderr,
