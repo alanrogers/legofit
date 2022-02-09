@@ -224,7 +224,7 @@ int main(int argc, char **argv) {
 
         while(gtype != NULL) {
             if(strlen(gtype) != 3) {
-                fprintf(stderr, "%s:%d: Bad genotype: %s\n",
+                fprintf(stderr, "%s:%d: Bad genotype: \"%s\"\n",
                         __FILE__, __LINE__, gtype);
                 fprintf(stderr,
                         "  chr=%s pos=%s ref=%s alt=%s gtype=%s\n",
@@ -243,7 +243,7 @@ int main(int argc, char **argv) {
                 ++n;
                 break;
             default:
-                fprintf(stderr, "%s:%d: Bad genotype: %s\n",
+                fprintf(stderr, "%s:%d: Bad genotype: \"%s\"\n",
                         __FILE__, __LINE__, gtype);
                 fprintf(stderr,
                         "  chr=%s pos=%s ref=%s alt=%s gtype=%s\n",
