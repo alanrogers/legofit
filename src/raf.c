@@ -223,6 +223,7 @@ int main(int argc, char **argv) {
         gtype = strsep(&next, "\t");    // field 4
 
         while(gtype != NULL) {
+            gtype = stripWhiteSpace(gtype);
             if(strlen(gtype) != 3) {
                 fprintf(stderr, "%s:%d: Bad genotype: \"%s\"\n",
                         __FILE__, __LINE__, gtype);
