@@ -279,7 +279,8 @@ int main(int argc, char **argv){
 
     // Singular value decomposition.
     int status;
-    gsl_matrix *V = gsl_matrix_alloc(npar, npar); // eigenvectors
+    gsl_matrix *V =
+        gsl_matrix_alloc(npar, npar); // eigenvectors
     if(V==NULL)
         DIE("bad gsl_matrix_alloc");
     // s holds singular values
@@ -301,6 +302,7 @@ int main(int argc, char **argv){
         exit(EXIT_FAILURE);
     }
 
+#define SVD_JACOBI    
 #ifdef SVD_JACOBI
     const char *svdname = "gsl_linalg_SV_decomp_jacobi";
     status = gsl_linalg_SV_decomp_jacobi(U, V, s);
