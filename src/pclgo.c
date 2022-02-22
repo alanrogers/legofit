@@ -266,7 +266,7 @@ int main(int argc, char **argv){
     }
 
     for(j=0; j < npar; ++j)
-        fprintf(stderr,"%2d: mean=%lg, sd=%lg\n", j, mean[j], sd[j]);
+        fprintf(stderr,"%10s: mean=%lg, sd=%lg\n", parname[j], mean[j], sd[j]);
 
     // Rescale data matrix
     for(i=0; i < ncases; ++i) {
