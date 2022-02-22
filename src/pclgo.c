@@ -168,9 +168,7 @@ int main(int argc, char **argv){
                         " files %s and %s\n", __FILE__,__LINE__,
                         repfname[0], repfname[i]);
                 exit(EXIT_FAILURE);
-            }else
-                fprintf(stderr,"%s:%d: parameter names match in file %d\n",
-                        __FILE__,__LINE__,i);
+            }
         }
     }
 
@@ -268,7 +266,7 @@ int main(int argc, char **argv){
     }
 
     for(j=0; j < npar; ++j)
-        fprintf(stderr,"%2d: mean=%lf, sd=%lf\n", j, mean[j], sd[j]);
+        fprintf(stderr,"%2d: mean=%lg, sd=%lg\n", j, mean[j], sd[j]);
 
     // Rescale data matrix
     for(i=0; i < ncases; ++i) {
