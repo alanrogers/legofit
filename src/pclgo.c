@@ -302,7 +302,7 @@ int main(int argc, char **argv){
         exit(EXIT_FAILURE);
     }
 
-#define SVD_MOD
+    //#define SVD_MOD
 #ifdef SVD_JACOBI
     const char *svdname = "gsl_linalg_SV_decomp_jacobi";
     status = gsl_linalg_SV_decomp_jacobi(U, V, s);
