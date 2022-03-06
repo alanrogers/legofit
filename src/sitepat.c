@@ -471,6 +471,11 @@ int main(int argc, char **argv) {
     Boot       *boot = NULL;
     int         nchr = 0;
     char        prev[RAFSTRSIZE], chr[RAFSTRSIZE] = { '\0' };
+
+    // nsnp is an array whose i'th entry is the number of snps on the
+    // i'th chromosome. It's in an array that can be resized, so that
+    // this code will work with genomes that have large numbers of
+    // chromosomes or scaffolds.
     int         nsnp_size = 32;
     LongVec*    nsnp = LongVec_new(nsnp_size); 
 
