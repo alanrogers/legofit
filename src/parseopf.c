@@ -51,7 +51,7 @@ BranchTab *parseOpf(const char *fname, const LblNdx *lblndx) {
             fprintf(stderr,"%s:%s:%d: can't find id for label %s\n",
                     __FILE__,__func__,__LINE__, tok);
             fprintf(stderr,"Either there is no \"segment %s\" in the"
-                    ".lgo file, or that segment has\n"
+                    " .lgo file, or that segment has\n"
                     "no samples.\n", tok);
             exit(EXIT_FAILURE);
         }
