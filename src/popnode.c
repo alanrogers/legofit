@@ -542,8 +542,8 @@ Gene *PopNode_coalesce(PopNode * self, gsl_rng * rng,
             // choose a random pair to join
             i = gsl_rng_uniform_int(rng, self->nsamples);
             j = gsl_rng_uniform_int(rng, self->nsamples - 1);
-            if(j >= i)
-                ++j;
+            if(j == i)
+                j = self->nsamples - 1;
             if(j < i) {
                 k = i;
                 i = j;
