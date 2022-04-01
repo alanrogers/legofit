@@ -199,9 +199,9 @@ int main(int argc, char **argv){
     {
         Bounds bnd = {
             .lo_twoN = 1.0,
-            .hi_twoN = 1e7,
+            .hi_twoN = 1e8,
             .lo_t = 0,
-            .hi_t = 1e7
+            .hi_t = 1e8
         };
         GPTree *gptree = GPTree_new(lgofname, bnd);
         if(gptree==NULL)

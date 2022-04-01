@@ -509,29 +509,17 @@ Gene *PopNode_coalesce(PopNode * self, gsl_rng * rng,
         (void) PopNode_coalesce(self->child[1], rng, event_counter);
 
     unsigned long i, j, k;
-    double x;
+    int n;
+    double x, mean;
     double end = self->end;
     double t = self->start;
-
-#ifndef NDEBUG
-    if(t > end) {
-        fflush(stdout);
-        fprintf(stderr, "ERROR:%s:%s:%d: start=%lf > %lf=end\n",
-                __FILE__, __func__, __LINE__, t, end);
-        PopNode_unvisit(self);
-        PopNode_print(self, stderr, 0);
-        exit(1);
-    }
-#endif
 
     // Coalescent loop continues until only one sample is left
     // or we reach the end of the interval.
     while(self->nsamples > 1 && t < end) {
-        {
-            int n = self->nsamples;
-            double mean = 2.0 * self->twoN / (n * (n - 1));
-            x = gsl_ran_exponential(rng, mean);
-        }
+        n = self->nsamples;
+        mean = 2.0 * self->twoN / (n * (n - 1));
+        x = gsl_ran_exponential(rng, mean);
 
         if(t + x < end) {
             // coalescent event within interval
