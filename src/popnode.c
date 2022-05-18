@@ -71,7 +71,8 @@ static int PopNode_equals_r(PopNode * a, PopNode * b) {
     }
     a->visited = b->visited = 1;
 
-    if(a->nparents != b->nparents
+    if(strcmp(a->label, b->label) != 0
+       || a->nparents != b->nparents
        || a->nchildren != b->nchildren
        || a->twoN != b->twoN
        || a->start != b->start
