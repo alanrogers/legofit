@@ -10,6 +10,9 @@ int mystrerror_r(int errnum, char *buff, size_t len) {
     case NO_ANCESTRAL_ALLELE:
         rval = snprintf(buff, len, "No ancestral allele");
         break;
+    case MONOMORPHIC_SITE:
+        rval = snprintf(buff, len, "Monomorphic site");
+        break;
     case REF_MISMATCH:
         rval = snprintf(buff, len, "Inconsistent REF alleles");
         break;
