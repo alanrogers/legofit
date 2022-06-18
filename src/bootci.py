@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 ###
 #@file bootci.py
 #@page bootci
