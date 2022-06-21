@@ -364,7 +364,7 @@ int main(int argc, char **argv) {
     double CR = 0.8;
     double ytol = -1.0;         // stop when yspread <= ytol
     double ytol_default_stochastic = 3e-5;
-    double ytol_default_deterministic = 1e-10;
+    double ytol_default_deterministic = 3e-6;
     int strategy = 2;
     int ptsPerDim = 10;
     int verbose = 0;
