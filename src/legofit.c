@@ -207,9 +207,9 @@ set by "-S" or "--stage".
 
 If the algorithm fails to converge, there are several options. First,
 you can use "-S" or "--stage" to increase the maximum number of DE
-generations. Second, you can relax the tolerance. By default, this is
-1e-4. It is reported in the legofit output. To double this value, use
-"-T 2e-4" or "--tol 2e-4".
+generations. Second, you can relax the tolerance. It is reported in
+the legofit output. To change this value to 2e-6, use "-T 2e-6" or
+"--tol 2e-6".
 
 Legofit handles three types of signal: SIGINT, SIGTERM, and
 SIGUSR1. If legofit is running in the foreground, the first of these
