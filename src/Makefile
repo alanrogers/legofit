@@ -10,12 +10,8 @@ prof :=
 incl := -I/usr/local/include -I/opt/local/include
 
 targets := legosim legofit tabpat sitepat scrmpat daf raf numcores \
-<<<<<<< HEAD
-     joinraf raf2daf bepe booma pclgo resid simpat ms2sim clic rafdaf
-=======
      joinraf raf2daf bepe booma pclgo resid simpat ms2sim clic rafdaf \
      mapmix pripos
->>>>>>> devlp
 pytargets := diverg.py bootci.py flatfile.py axt2raf.py flatpat.py
 
 CC := gcc
