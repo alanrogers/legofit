@@ -7,7 +7,7 @@ incl := -I/usr/local/include -I/opt/local/include -I../src
 tests := xbinary xboot xbranchtab xcomb xdafreader \
   xdiffev \
   xdtnorm xerror xeventlst xgene xgptree xhessian xidset xidsetset xintpart \
-  xjobqueue xlblndx xlinereader xmctree xmisc xmpfrmatcoal \
+  xjobqueue xlblndx xlinereader xlongvec xmctree xmisc xmpfrmatcoal \
   xparam xparse xparseopf xparstore xpointbuff xpopnode xptrlst xptrptrmap \
   xptrqueue xptru32map \
   xptrvec xresid xsegment \
@@ -78,6 +78,7 @@ test : $(tests)
 	-./xjobqueue
 	-./xlblndx
 	-./xlinereader
+	-./xlongvec
 	-./xmatcoal
 	-./xmctree
 	-./xeventlst
@@ -160,6 +161,10 @@ xptrqueue : $(XPTRQUEUE)
 XPTRVEC := xptrvec.o ptrvec.o misc.o
 xptrvec : $(XPTRVEC)
 	$(CC) $(CFLAGS) -o $@ $(XPTRVEC) $(lib)
+
+XLONGVEC := xlongvec.o longvec.o misc.o
+xlongvec : $(XLONGVEC)
+	$(CC) $(CFLAGS) -o $@ $(XLONGVEC) $(lib)
 
 XEVENTLST := xeventlst.o eventlst.o misc.o binary.o
 xeventlst : $(XEVENTLST)
@@ -300,7 +305,7 @@ xpopnode.o : ../src/popnode.c
 
 XPOPNODE := xpopnode.o dtnorm.o misc.o gene.o parstore.o tinyexpr.o \
    param.o branchtab.o ptrptrmap.o ptrqueue.o strint.o \
-   binary.o strptrmap.o
+   binary.o strptrmap.o lblndx.o
 xpopnode : $(XPOPNODE)
 	$(CC) $(CFLAGS) -o $@ $(XPOPNODE) $(lib)
 
@@ -339,7 +344,7 @@ xparstore : $(XPARSTORE)
 xbrtab.o : branchtab.c
 	$(CC) $(CFLAGS) -c -DTEST -o $@ ../src/branchtab.c
 
-XBRANCHTAB := xbrtab.o misc.o binary.o 
+XBRANCHTAB := xbrtab.o misc.o binary.o lblndx.o strdblqueue.o
 xbranchtab : $(XBRANCHTAB)
 	$(CC) $(CFLAGS) -o $@ $(XBRANCHTAB) $(lib)
 

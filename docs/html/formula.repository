@@ -1,18 +1,17 @@
-\form#0:$\mu L$
-\form#1:$\mu$
-\form#2:$L$
-\form#3:$\mu L b$
-\form#4:$b$
-\form#5:$2^K - K - 2$
-\form#6:$K=4$
-\form#7:$p_{iX}$
-\form#8:$p_{iY}$
-\form#9:$p_{iN}$
-\form#10:$z_i = p_{iX}p_{iY}(1-p_{iN})$
-\form#11:$I_{xy} = \sum_i z_i$
-\form#12:$w_i$
-\form#13:$\theta$
-\form#14:$w_{i}$
-\form#15:$i$
-\form#16:$w_{ij}$
-\form#17:$2^K - 2$
+\_form#0:$w_i$
+\_form#1:$\theta$
+\_form#2:$w_{i}$
+\_form#3:$i$
+\_form#4:$\mu L$
+\_form#5:$\mu$
+\_form#6:$L$
+\_form#7:$\mu L b$
+\_form#8:$b$
+\_form#9:$2^K - 2$
+\_form#10:$K=4$
+\_form#11:$p_{iX}$
+\_form#12:$p_{iY}$
+\_form#13:$p_{iN}$
+\_form#14:$z_i =
+p_{iX}p_{iY}(1-p_{iN})$
+\_form#15:$I_{xy} = \sum_i z_i$

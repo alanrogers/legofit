@@ -223,7 +223,16 @@ int main(int argc, char **argv) {
         gtype = strsep(&next, "\t");    // field 4
 
         while(gtype != NULL) {
-            //# gtype is a string like "0|1" or "0/1".
+            gtype = stripWhiteSpace(gtype);
+            if(strlen(gtype) != 3) {
+                fprintf(stderr, "%s:%d: Bad genotype: \"%s\"\n",
+                        __FILE__, __LINE__, gtype);
+                fprintf(stderr,
+                        "  chr=%s pos=%s ref=%s alt=%s gtype=%s\n",
+                        chr, pos, ref[0], alt[0], gtype);
+                exit(EXIT_FAILURE);
+            }
+            // gtype is a string like "0|1" or "0/1".
             switch (gtype[0]) {
             case '.':
                 break;
@@ -235,7 +244,7 @@ int main(int argc, char **argv) {
                 ++n;
                 break;
             default:
-                fprintf(stderr, "%s:%d: Bad genotype: %s\n",
+                fprintf(stderr, "%s:%d: Bad genotype: \"%s\"\n",
                         __FILE__, __LINE__, gtype);
                 fprintf(stderr,
                         "  chr=%s pos=%s ref=%s alt=%s gtype=%s\n",

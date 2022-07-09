@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
 ###
 #@file flatpat.py
@@ -12,7 +12,7 @@ from math import log
 import sys
 
 def usage():
-    print "usage: flatpat.py inputfile1 [inputfile2 ...]"
+    print("usage: flatpat.py inputfile1 [inputfile2 ...]")
     exit(1)
 
 # Return a tuple containing a list of site pattern labels for the
@@ -60,18 +60,17 @@ for fname in sys.argv[1:]:
     assert len(lblvec) == len(frqvec)
     if first:
         for lbl in lblvec:
-            print lbl,
-        print
+            print(lbl, end=' ')
+        print()
         first = False
         lblvec0 = [lbl for lbl in lblvec]
     else:
         if lblvec != lblvec0:
-            print >> sys.stderr, \
-                "Pattern label mismatch in file \"%s\"" % fname
+            print("Pattern label mismatch in file \"%s\"" % fname, file=sys.stderr)
             sys.exit(1)
     for frq in frqvec:
-        print frq,
-    print
+        print(frq, end=' ')
+    print()
 
 
     

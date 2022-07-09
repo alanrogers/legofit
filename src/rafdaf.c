@@ -153,6 +153,7 @@ int main(int argc, char **argv) {
             }
 
     unsigned long nsites = 0, nbadaa = 0, nbadref=0, nmultalt=0;
+    unsigned long nmonomorphic = 0;
 
     // Header
     printf("chr pos");
@@ -174,6 +175,9 @@ int main(int argc, char **argv) {
         case EOF:
             done=1;
             continue;
+        case MONOMORPHIC_SITE:
+            ++nsites;
+            ++nmonomorphic;
         case REF_MISMATCH:
             ++nsites;
             ++nbadref;
@@ -201,6 +205,9 @@ int main(int argc, char **argv) {
         putchar('\n');
     }
     fprintf(stderr, "# Aligned sites                  : %lu\n", nsites);
+    if(nmonomorphic)
+        fprintf(stderr,"# Monomorphic sites              : %lu\n",
+                nmonomorphic);
     if(nbadref)
         fprintf(stderr,"# Disagreements about ref allele : %lu\n", nbadref);
     if(nmultalt)

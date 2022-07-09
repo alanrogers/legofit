@@ -71,28 +71,21 @@ static int PopNode_equals_r(PopNode * a, PopNode * b) {
     }
     a->visited = b->visited = 1;
 
-    if(a->nparents != b->nparents)
+    if(strcmp(a->label, b->label) != 0
+       || a->nparents != b->nparents
+       || a->nchildren != b->nchildren
+       || a->twoN != b->twoN
+       || a->start != b->start
+       || a->end != b->end
+       || a->mix != b->mix
+       || a->twoN_i != b->twoN_i
+       || a->start_i != b->start_i
+       || a->end_i != b->end_i
+       || a->mix_i != b->mix_i
+       || a->end_i != b->end_i) {
         return 0;
-    if(a->nchildren != b->nchildren)
-        return 0;
-    if(a->twoN != b->twoN)
-        return 0;
-    if(a->start != b->start)
-        return 0;
-    if(a->end != b->end)
-        return 0;
-    if(a->mix != b->mix)
-        return 0;
-    if(a->twoN_i != b->twoN_i)
-        return 0;
-    if(a->start_i != b->start_i)
-        return 0;
-    if(a->end_i != b->end_i)
-        return 0;
-    if(a->mix_i != b->mix_i)
-        return 0;
-    if(a->end != b->end)
-        return 0;
+    }
+
     for(int i = 0; i < a->nchildren; ++i) {
         if(!PopNode_equals_r(a->child[i], b->child[i]))
             return 0;
@@ -517,29 +510,17 @@ Gene *PopNode_coalesce(PopNode * self, gsl_rng * rng,
         (void) PopNode_coalesce(self->child[1], rng, event_counter);
 
     unsigned long i, j, k;
-    double x;
+    int n;
+    double x, mean;
     double end = self->end;
     double t = self->start;
-
-#ifndef NDEBUG
-    if(t > end) {
-        fflush(stdout);
-        fprintf(stderr, "ERROR:%s:%s:%d: start=%lf > %lf=end\n",
-                __FILE__, __func__, __LINE__, t, end);
-        PopNode_unvisit(self);
-        PopNode_print(self, stderr, 0);
-        exit(1);
-    }
-#endif
 
     // Coalescent loop continues until only one sample is left
     // or we reach the end of the interval.
     while(self->nsamples > 1 && t < end) {
-        {
-            int n = self->nsamples;
-            double mean = 2.0 * self->twoN / (n * (n - 1));
-            x = gsl_ran_exponential(rng, mean);
-        }
+        n = self->nsamples;
+        mean = 2.0 * self->twoN / (n * (n - 1));
+        x = gsl_ran_exponential(rng, mean);
 
         if(t + x < end) {
             // coalescent event within interval
@@ -550,8 +531,8 @@ Gene *PopNode_coalesce(PopNode * self, gsl_rng * rng,
             // choose a random pair to join
             i = gsl_rng_uniform_int(rng, self->nsamples);
             j = gsl_rng_uniform_int(rng, self->nsamples - 1);
-            if(j >= i)
-                ++j;
+            if(j == i)
+                j = self->nsamples - 1;
             if(j < i) {
                 k = i;
                 i = j;

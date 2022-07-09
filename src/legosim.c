@@ -204,17 +204,20 @@ int main(int argc, char **argv) {
 #if defined(__DATE__) && defined(__TIME__)
     printf("# Program was compiled: %s %s\n", __DATE__, __TIME__);
 #endif
-    printf("# Program was run: %s\n", ctime(&currtime));
-
+    printf("# Program was run: %s", ctime(&currtime));
+    puts("#");
     printf("# cmd:");
     for(i = 0; i < argc; ++i)
         printf(" %s", argv[i]);
     putchar('\n');
+    char *dirname = getcwd(NULL, 0);
+    printf("# curr dir: %s\n", dirname);
+    free(dirname);
 
     // command line arguments
     for(;;) {
         char *end;
-        i = getopt_long(argc, argv, "bd:ni:t:U:1h", myopts, &optndx);
+        i = getopt_long(argc, argv, "bd:ni:U:1h", myopts, &optndx);
         if(i == -1)
             break;
         switch (i) {
@@ -364,7 +367,7 @@ int main(int argc, char **argv) {
     if(deterministic && improbable > 0 && print_brlen)
         fprintf(stderr, "\n# Warning: E[brlen] may be biased downward"
                 " because the argument to -d\n"
-                "# or --deterministic was > 0.\n\n");
+                "# or --deterministic was > 0.\n#\n");
 
     if(U)
         printf("#%14s %15s\n", "SitePat", "Count");

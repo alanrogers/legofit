@@ -20,7 +20,7 @@ are provided, columns are labeled with their names, after stripping
 suffixes and leading pathnames. Otherwise, column labels are based on
 the names of data files.
 
-Optionally, the used can specify a colon-separated list of population 
+Optionally, the user can specify a colon-separated list of population 
 labels to delete from the output:
 
    resid data.opf -D x:y
@@ -86,7 +86,6 @@ void Mapping_free(Mapping * self);
 const char *Mapping_lhs(Mapping * self);
 const char *Mapping_rhs(Mapping * self);
 void Mapping_print(Mapping * self, FILE * fp);
-BranchTab *makeBranchTab(StrDblQueue *queue, LblNdx *lndx);
 LblNdxBranchTab removePops(LblNdx lndx, BranchTab *bt, const char *deleteStr);
 LblNdxBranchTab collapsePops(LblNdx lndx, BranchTab *bt,
                              const char *collapseStr,
@@ -124,32 +123,6 @@ const char *Mapping_rhs(Mapping * self) {
 
 void Mapping_print(Mapping * self, FILE * fp) {
     fprintf(fp, "# merging %s -> %s\n", self->rhs, self->lhs);
-}
-
-/// Construct a BranchTab from a StrDblQueue. The LblNdx translates
-/// site patterns from string representation to integer
-/// representation.  Function returns a newly-allocated BranchTab.
-/// If queue is NULL, function returns NULL.
-BranchTab *makeBranchTab(StrDblQueue *queue, LblNdx *lndx) {
-    if(queue == NULL)
-        return NULL;
-    unsigned nsamples = LblNdx_size(lndx);
-    BranchTab *new = BranchTab_new(nsamples);
-    StrDblQueue *stq;
-    for(stq=queue; stq; stq = stq->next) {
-        StrDbl strdbl = stq->strdbl;
-        tipId_t tid = LblNdx_getTipId(lndx, strdbl.str);
-        if(tid == 0) {
-            fprintf(stderr, "%s:%d: site pattern string (%s)"
-                    " contains unknown label.\n",
-                    __FILE__, __LINE__, strdbl.str);
-            fprintf(stderr, "Known labels (with indices):\n");
-            LblNdx_print(lndx, stderr);
-            exit(EXIT_FAILURE);
-        }
-        BranchTab_add(new, tid, strdbl.val);
-    }
-    return new;
 }
 
 LblNdxBranchTab removePops(LblNdx lndx, BranchTab *bt, const char *deleteStr) {
@@ -304,7 +277,7 @@ int main(int argc, char **argv) {
     int status = LblNdx_from_StrDblQueue(&lndx, stq);
     assert(status == 0);
 
-    BranchTab *bt = makeBranchTab(stq, &lndx);
+    BranchTab *bt = BranchTab_from_StrDblQueue(stq, &lndx);
     CHECKMEM(bt);
     stq = StrDblQueue_free(stq);
     BranchTab_sanityCheck(bt, __FILE__,__LINE__);
@@ -321,7 +294,7 @@ int main(int argc, char **argv) {
     BranchTab_free(bt);
     bt = NULL;
 
-    unitTstResult("makeBranchTab", "OK");
+    unitTstResult("BranchTab_from_StrDblQueue", "OK");
 
     stq = StrDblQueue_free(stq);
     stq = StrDblQueue_push(stq, "x", 1.0);
@@ -337,7 +310,7 @@ int main(int argc, char **argv) {
     status = LblNdx_from_StrDblQueue(&lndx, stq);
     assert(status == 0);
 
-    bt = makeBranchTab(stq, &lndx);
+    bt = BranchTab_from_StrDblQueue(stq, &lndx);
     CHECKMEM(bt);
     stq = StrDblQueue_free(stq);
 
@@ -392,7 +365,7 @@ int main(int argc, char **argv) {
 #if defined(__DATE__) && defined(__TIME__)
     printf("# Program was compiled: %s %s\n", __DATE__, __TIME__);
 #endif
-    printf("# Program was run: %s\n", ctime(&currtime));
+    printf("# Program was run: %s", ctime(&currtime));
     fflush(stdout);
 
     enum input_state { DATA, LEGO, DELETE, REMAP };
@@ -500,20 +473,20 @@ int main(int argc, char **argv) {
             legofname[ilego++] = argv[i];
             break;
         case REMAP:
-        {
-            // parse string of form a=b:c:d
-            char *next = argv[i];
-            char *token = strsep(&next, "=");
-            if(NULL == strchr(next, ':')) {
-                fprintf(stderr, "%s:%d remapping (%s) in wrong format.\n"
-                        "Expecting 2 or more labels separated by ':'"
-                        " characters.\n", __FILE__, __LINE__, next);
-                exit(EXIT_FAILURE);
+            {
+                // parse string of form a=b:c:d
+                char *next = argv[i];
+                char *token = strsep(&next, "=");
+                if(NULL == strchr(next, ':')) {
+                    fprintf(stderr, "%s:%d remapping (%s) in wrong format.\n"
+                            "Expecting 2 or more labels separated by ':'"
+                            " characters.\n", __FILE__, __LINE__, next);
+                    exit(EXIT_FAILURE);
+                }
+                mapping[imapping] = Mapping_new(token, next);
+                CHECKMEM(mapping[imapping]);
+                ++imapping;
             }
-            mapping[imapping] = Mapping_new(token, next);
-            CHECKMEM(mapping[imapping]);
-            ++imapping;
-        }
             break;
         default:
             fprintf(stderr, "%s:%d: unknown state\n", __FILE__, __LINE__);
@@ -568,11 +541,11 @@ int main(int argc, char **argv) {
     // Free the queues.
     BranchTab *obs_bt[nDataFiles], *lego_bt[nDataFiles];
     for(i = 0; i < nDataFiles; ++i) {
-        obs_bt[i] = makeBranchTab(data_queue[i], &lblndx);
+        obs_bt[i] = BranchTab_from_StrDblQueue(data_queue[i], &lblndx);
         data_queue[i] = StrDblQueue_free(data_queue[i]);
 
         if(nLegoFiles) {
-            lego_bt[i] = makeBranchTab(lego_queue[i], &lblndx);
+            lego_bt[i] = BranchTab_from_StrDblQueue(lego_queue[i], &lblndx);
             lego_queue[i] = StrDblQueue_free(lego_queue[i]);
         }else
             lego_bt[i] = NULL;

@@ -10,7 +10,12 @@ prof :=
 incl := -I/usr/local/include -I/opt/local/include
 
 targets := legosim legofit tabpat sitepat scrmpat daf raf numcores \
+<<<<<<< HEAD
      joinraf raf2daf bepe booma pclgo resid simpat ms2sim clic rafdaf
+=======
+     joinraf raf2daf bepe booma pclgo resid simpat ms2sim clic rafdaf \
+     mapmix pripos
+>>>>>>> devlp
 pytargets := diverg.py bootci.py flatfile.py axt2raf.py flatpat.py
 
 CC := gcc
@@ -89,6 +94,15 @@ PCLGO := pclgo.o misc.o strdblqueue.o gptree.o parstore.o param.o popnode.o \
 pclgo : $(PCLGO)
 	$(CC) $(CFLAGS) -o $@ $(PCLGO) $(lib)
 
+MAPMIX := mapmix.o strdblqueue.o branchtab.o misc.o lblndx.o rafreader.o \
+  error.o binary.o tokenizer.o
+mapmix : $(MAPMIX)
+	$(CC) $(CFLAGS) -o $@ $(MAPMIX) $(lib)
+
+PRIPOS := pripos.o strdblqueue.o branchtab.o lblndx.o binary.o misc.o
+pripos : $(PRIPOS)
+	$(CC) $(CFLAGS) -o $@ $(PRIPOS) $(lib)
+
 BEPE := bepe.o misc.o strdblqueue.o
 bepe : $(BEPE)
 	$(CC) $(CFLAGS) -o $@ $(BEPE) $(lib)
@@ -106,12 +120,12 @@ BOOMA := booma.o misc.o strdblqueue.o strint.o tokenizer.o
 booma : $(BOOMA)
 	$(CC) $(CFLAGS) -o $@ $(BOOMA) $(lib)
 
-TABPAT := tabpat.o misc.o binary.o lblndx.o dafreader.o \
+TABPAT := tabpat.o misc.o binary.o lblndx.o dafreader.o longvec.o \
   tokenizer.o strint.o boot.o error.o
 tabpat : $(TABPAT)
 	$(CC) $(CFLAGS) -o $@ $(TABPAT) $(lib)
 
-SITEPAT := sitepat.o misc.o binary.o lblndx.o rafreader.o \
+SITEPAT := sitepat.o misc.o binary.o lblndx.o rafreader.o longvec.o \
   tokenizer.o strint.o boot.o error.o
 sitepat : $(SITEPAT)
 	$(CC) $(CFLAGS) -o $@ $(SITEPAT) $(lib)

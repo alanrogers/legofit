@@ -207,9 +207,9 @@ set by "-S" or "--stage".
 
 If the algorithm fails to converge, there are several options. First,
 you can use "-S" or "--stage" to increase the maximum number of DE
-generations. Second, you can relax the tolerance. By default, this is
-1e-4. It is reported in the legofit output. To double this value, use
-"-T 2e-4" or "--tol 2e-4".
+generations. Second, you can relax the tolerance. It is reported in
+the legofit output. To change this value to 2e-6, use "-T 2e-6" or
+"--tol 2e-6".
 
 Legofit handles three types of signal: SIGINT, SIGTERM, and
 SIGUSR1. If legofit is running in the foreground, the first of these
@@ -364,7 +364,7 @@ int main(int argc, char **argv) {
     double CR = 0.8;
     double ytol = -1.0;         // stop when yspread <= ytol
     double ytol_default_stochastic = 3e-5;
-    double ytol_default_deterministic = 1e-10;
+    double ytol_default_deterministic = 3e-6;
     int strategy = 2;
     int ptsPerDim = 10;
     int verbose = 0;
@@ -380,13 +380,17 @@ int main(int argc, char **argv) {
 #if defined(__DATE__) && defined(__TIME__)
     printf("# Program was compiled: %s %s\n", __DATE__, __TIME__);
 #endif
-    printf("# Program was run: %s\n", ctime(&currtime));
+    printf("# Program was run: %s", ctime(&currtime));
+    puts("#");
 
     printf("# cmd:");
     for(i = 0; i < argc; ++i)
         printf(" %s", argv[i]);
     putchar('\n');
+    char *dirname = getcwd(NULL, 0);
+    printf("# curr dir: %s\n", dirname);
     fflush(stdout);
+    free(dirname);
 
     rngseed = currtime ^ pid;
 

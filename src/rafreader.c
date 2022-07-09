@@ -83,6 +83,11 @@ void RAFReader_popen(RAFReader *self) {
     // osx, linux, or unix
     self->fp = popen(cmd, "r");
 #endif
+    if(self->fp == NULL) {
+        fprintf(stderr,"%s:%s:%d: can't open pipe with cmd %s\n",
+                __FILE__,__func__,__LINE__, cmd);
+        exit(EXIT_FAILURE);
+    }
 }
 
 /// Clear all chromosome names
@@ -126,21 +131,18 @@ int RAFReader_next(RAFReader * self) {
     int ntokens;
     int status;
     char buff[1024];
-    long unsigned prevnucpos = 0UL;
+    long long prevnucpos = -1;
 
     // Find a line of input
     while(1) {
         if(fgets(buff, sizeof(buff), self->fp) == NULL)
             return EOF;
         if(NULL == strchr(buff, '\n') && !feof(self->fp)) {
-#ifdef NDEBUG
-            fprintf(stderr, "%s:%d: Buffer overflow. size=%zu\n",
-                    __FILE__, __LINE__, sizeof(buff));
-#endif
             return BUFFER_OVERFLOW;
         }
         if(iscomment(buff))
             continue;
+        //fprintf(stderr, "%12s: %s", self->fname, buff);
         Tokenizer_split(self->tkz, buff, "\t");
         ntokens = Tokenizer_strip(self->tkz, " \n");
         if( ntokens == 5) {
@@ -155,13 +157,9 @@ int RAFReader_next(RAFReader * self) {
             break;
     }
 
-    if(ntokens != 5) {
-#ifdef NDEBUG
-        fprintf(stderr, "%s:%d: Each line of .raf file must have 5 tokens,"
-                " but current line has %d.\n", __FILE__, __LINE__, ntokens);
-#endif
+    // Each line of input must have 5 tokens
+    if(ntokens != 5) 
         return BAD_RAF_INPUT;
-    }
 
     ++self->snpid;
 
@@ -172,42 +170,33 @@ int RAFReader_next(RAFReader * self) {
     status = snprintf(self->chr, sizeof self->chr, "%s",
                       Tokenizer_token(self->tkz, 0));
     if(status >= sizeof self->chr) {
-#ifdef NDEBUG
-        fprintf(stderr, "%s:%d: chromosome name too long: %s\n",
-                __FILE__, __LINE__, Tokenizer_token(self->tkz, 0));
-#endif
         return BUFFER_OVERFLOW;
     }
     int diff = strcmp(prev, self->chr);
     if(diff > 0) {
-#ifdef NDEBUG
         fprintf(stderr, "%s:%s:%d: Chromosomes missorted in input.\n",
                 __FILE__, __func__, __LINE__);
         fprintf(stderr, "          \"%s\" precedes \"%s\".\n",
                 prev, self->chr);
         Tokenizer_print(self->tkz, stderr);
-#endif
         return BAD_SORT;
     } else if(diff < 0) {
         // new chromosome
-        prevnucpos = 0UL;
+        prevnucpos = -1;
     } else
         prevnucpos = self->nucpos;
 
     // Nucleotide position
     self->nucpos = strtoul(Tokenizer_token(self->tkz, 1), NULL, 10);
     if(prevnucpos == self->nucpos) {
-#ifdef NDEBUG
-        fprintf(stderr, "%s:%d: Duplicate line in raf file. chr=%s pos=%lu\n",
-                __FILE__, __LINE__, self->chr, self->nucpos);
-#endif
+        fprintf(stderr, "%s:%s:%d:"
+                " Duplicate line in raf file. chr=%s nucpos=%lu\n",
+                __FILE__, __func__, __LINE__, self->chr, self->nucpos);
         return BAD_SORT;
-    } else if(prevnucpos > self->nucpos) {
-#ifdef NDEBUG
+    } else if(prevnucpos > (long long) self->nucpos) {
         fprintf(stderr, "%s:%d: positions missorted chr=%s "
-                "prev=%lu curr=%lu\n",
+                "prevnucpos=%lld curr nucpos=%lu\n",
                 __FILE__, __LINE__, self->chr, prevnucpos, self->nucpos);
-#endif
         return BAD_SORT;
     }
     // Reference allele

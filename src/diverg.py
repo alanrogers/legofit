@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
 ###
 #@file diverg.py
@@ -60,10 +60,10 @@ from math import log
 import sys
 
 def usage():
-    print "usage: diverg.py inputfile1 [inputfile2]"
-    print "       Input file name \"-\" means standard input."
-    print "       At most one input may be \"-\"."
-    print "       If only 1 file is given, print normalized frequencies"
+    print("usage: diverg.py inputfile1 [inputfile2]")
+    print("       Input file name \"-\" means standard input.")
+    print("       At most one input may be \"-\".")
+    print("       If only 1 file is given, print normalized frequencies")
     exit(1)
 
 def openInput(fname):
@@ -110,8 +110,8 @@ if dokl:
         prob2.append(float(line[1]))
 
     if len(pat1) != len(pat2):
-        print "Input files must have the same number of patterns,"
-        print "but file1 has %d and file2 has %d" % (len(pat1), len(pat2))
+        print("Input files must have the same number of patterns,")
+        print("but file1 has %d and file2 has %d" % (len(pat1), len(pat2)))
         exit(1)
 
 # Find field widths
@@ -124,8 +124,8 @@ widpat=7
 if dokl:
     for i in range(len(pat1)):
         if pat1[i] != pat2[i]:
-            print "Mismatch in %d'th pattern." % i
-            print "  pat1=%s pat2=%s" % (pat1[i], pat2[i])
+            print("Mismatch in %d'th pattern." % i)
+            print("  pat1=%s pat2=%s" % (pat1[i], pat2[i]))
             exit(1)
         widpat = max(widpat, len(pat1[i]), len(pat2[i]))
 else:
@@ -141,26 +141,26 @@ if dokl:
 
 if not dokl:
     fmt = "%%%ds %%%ds" % (widpat, wid1)
-    print fmt % ("SitePat", fname1)
+    print(fmt % ("SitePat", fname1))
     fmt = "%%%ds %%%d.5f" % (widpat, wid1)
     for i in range(len(prob1)):
-        print fmt % (pat1[i], prob1[i])
+        print(fmt % (pat1[i], prob1[i]))
     exit(0)
 
 fmt = "%%%ds %%%ds %%%ds %%7s" % (widpat, wid1, wid2)
-print fmt % ("SitePat", fname1, fname2, "KL")
+print(fmt % ("SitePat", fname1, fname2, "KL"))
 fmt = "%%%ds %%%d.5f %%%d.5f %%7.4f" % (widpat, wid1, wid2)
 
 KLsum = 0.0
 for i in range(len(prob1)):
     kl = prob2[i]*log(prob2[i]/prob1[i])  # Kullback-Leibler divergence
     KLsum += kl
-    print fmt % (pat1[i], prob1[i], prob2[i], kl),
+    print(fmt % (pat1[i], prob1[i], prob2[i], kl), end=' ')
     if abs(kl) >= 0.01:
-        print "*",
-    print
+        print("*", end=' ')
+    print()
 
 fmt = "%%%ds %%%ds %%%ds %%9.6g" % (widpat, wid1, wid2)
-print fmt % ("", "", "", KLsum),
+print(fmt % ("", "", "", KLsum), end=' ')
 
 

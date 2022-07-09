@@ -135,6 +135,7 @@ Systems Consortium License, which can be found in file "LICENSE".
 #include "binary.h"
 #include "boot.h"
 #include "dafreader.h"
+#include "longvec.h"
 #include "misc.h"
 #include "strint.h"
 #include "typedefs.h"
@@ -148,8 +149,6 @@ Systems Consortium License, which can be found in file "LICENSE".
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-
-#define MAXCHR 24               // maximum number of chromosomes
 
 typedef struct Stack Stack;
 
@@ -393,7 +392,7 @@ int main(int argc, char **argv) {
            (doSing ? "Including" : "Excluding"));
     printf("# Number of site patterns: %lu\n", npat);
     tipId_t     pat[npat];
-    double      patCount[npat];
+    long double patCount[npat];
     int         lblsize = 100;
     char        lblbuff[lblsize];
     memset(patCount, 0, sizeof(patCount));
@@ -419,8 +418,8 @@ int main(int argc, char **argv) {
     Boot       *boot = NULL;
     int         nchr = 0;
     char        prev[DAFSTRSIZE], chr[DAFSTRSIZE] = { '\0' };
-    long        nsnp[MAXCHR];
-    memset(nsnp, 0, sizeof nsnp);
+    int         nsnp_size = 32;
+    LongVec*    nsnp = LongVec_new(nsnp_size); 
 
     // Read the data to get dimensions: number of chromosomes and
     // number of snps per chromosome. Then use these dimensions to
@@ -458,15 +457,21 @@ int main(int argc, char **argv) {
             int         diff = strcmp(prev, chr);
             if(diff != 0) {
                 StrInt_insert(strint, chr, nchr);
-                if(nchr >= MAXCHR) {
-                    fprintf(stderr,"%s:%d: too many chromosomes. max=%d\n",
-                            __FILE__,__LINE__, MAXCHR);
-                    exit(EXIT_FAILURE);
+                if(nchr >= nsnp_size) {
+                    do{
+                        nsnp_size *= 2;
+                    }while(nchr >= nsnp_size);
+                    status = LongVec_resize(nsnp, nsnp_size);
+                    if(status) {
+                        fprintf(stderr,"%s:%d: can't resize vector.\n",
+                                __FILE__,__LINE__);
+                        exit(EXIT_FAILURE);
+                    }
                 }
-                nsnp[nchr] = 1;
+                LongVec_set(nsnp, nchr, 1);
                 ++nchr;
             } else
-                ++nsnp[nchr - 1];
+                LongVec_plusEquals(nsnp, nchr-1, 1);
         }
 
         for(i = 0; i < n; ++i) {
@@ -480,10 +485,15 @@ int main(int argc, char **argv) {
             }
         }
 
+        // turn nsnp into a simple array
+        long static_nsnp[nchr];
+        for(i=0; i < nchr; ++i)
+            static_nsnp[i] = LongVec_get(nsnp, i);
+
         // Allocate Boot structure
         gsl_rng    *rng = gsl_rng_alloc(gsl_rng_taus);
         gsl_rng_set(rng, (unsigned long) time(NULL));
-        boot = Boot_new(nchr, nsnp, bootreps, npat, blocksize, rng);
+        boot = Boot_new(nchr, static_nsnp, bootreps, npat, blocksize, rng);
         gsl_rng_free(rng);
         CHECKMEM(boot);
     }
@@ -540,7 +550,7 @@ int main(int argc, char **argv) {
                 ++snpndx;
 
 #ifndef NDEBUG
-            assert(snpndx < nsnp[chrndx]);
+            assert(snpndx < LongVec_get(nsnp, chrndx));
 #endif
         }
         // p and q are frequencies of derived and ancestral alleles
@@ -643,7 +653,7 @@ int main(int argc, char **argv) {
         printf(" %15s %15s", "low", "high");
     putchar('\n');
     for(i = 0; i < npat; ++i) {
-        printf("%15s %20.7lf",
+        printf("%15s %20.7Lf",
                patLbl(lblsize, lblbuff, pat[i], &lndx), patCount[i]);
         if(bootreps > 0) {
             double      lowBnd, highBnd;
@@ -654,6 +664,8 @@ int main(int argc, char **argv) {
         }
         putchar('\n');
     }
+
+    LongVec_free(nsnp);
 
     for(i = 0; i < n; ++i)
         DAFReader_free(r[i]);

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 ###
 #@file bootci.py
 #@page bootci
@@ -79,7 +79,7 @@ import datetime
 # Print usage message and abort
 def usage(msg1):
     if len(msg1) > 0:
-        print >> sys.stderr, msg1
+        print(msg1, file=sys.stderr)
     msg = \
         """
 usage: bootci.py [options] [input.flat]
@@ -100,7 +100,7 @@ Options may include:
 
 The program writes to standard output.
 """
-    print >> sys.stderr, msg
+    print(msg, file=sys.stderr)
     exit(1)
 
 # Parse a flat file. Return (parnames, est, boot), where
@@ -131,8 +131,8 @@ def parseflat(ifile):
             continue
 
         if len(line) != npar:
-            print "npar=%d linelen=%d" % (npar, len(line))
-            print line
+            print("npar=%d linelen=%d" % (npar, len(line)))
+            print(line)
         assert len(line) == npar
 
         # line after header contains parameter estimates for real data
@@ -195,9 +195,9 @@ if fname == None:
 else:
     ifile = open(fname, "r")
 
-print "# bootci.py run at: %s" % datetime.datetime.now()
-print "# input:", fname
-print "# %s: %0.3f" % ("confidence", conf)
+print("# bootci.py run at: %s" % datetime.datetime.now())
+print("# input:", fname)
+print("# %s: %0.3f" % ("confidence", conf))
 
 parnames, estimates, boot = parseflat(ifile)
 if ifile != sys.stdin:
@@ -212,16 +212,16 @@ assert npar == len(boot)
 tailProb = (1.0 - conf)/2.0
 
 if lbl:
-    print "%10s %15s %15s %15s %s" % ("par", "est", "low", "high", "lbl")
+    print("%10s %15s %15s %15s %s" % ("par", "est", "low", "high", "lbl"))
 else:
-    print "%10s %15s %15s %15s" % ("par", "est", "low", "high")
+    print("%10s %15s %15s %15s" % ("par", "est", "low", "high"))
 for i in range(npar):
     v = sorted(boot[i])
     lowBnd = interpolate(tailProb, v)
     highBnd = interpolate(1.0-tailProb, v)
     if lbl:
-        print "%10s %15.8f %15.8f %15.8f %s" % \
-            (parnames[i], estimates[i], lowBnd, highBnd, lbl)
+        print("%10s %15.8f %15.8f %15.8f %s" % \
+            (parnames[i], estimates[i], lowBnd, highBnd, lbl))
     else:
-        print "%10s %15.8f %15.8f %15.8f" % \
-            (parnames[i], estimates[i], lowBnd, highBnd)
+        print("%10s %15.8f %15.8f %15.8f" % \
+            (parnames[i], estimates[i], lowBnd, highBnd))

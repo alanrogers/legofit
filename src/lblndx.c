@@ -343,7 +343,7 @@ int LblNdx_rmPops(LblNdx *self, tipId_t remove) {
  * each entry of the StrDblQueue refers to a single site pattern.  The
  * string in each entry should be of form "a:b:c", where the colons
  * separate fields, and each field is the label of a sample.  On
- * return, lndx containes all these labels, indexed in their order of
+ * return, lndx contains all these labels, indexed in their order of
  * appearance with the queue.
  */
 int LblNdx_from_StrDblQueue(LblNdx *lndx, StrDblQueue *queue) {

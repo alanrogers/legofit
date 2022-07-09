@@ -10,15 +10,14 @@ SimReader *SimReader_new(FILE *fp);
 // destructor
 void SimReader_free(SimReader *self);
 
-// Rewind input and reset chr and nucpos. Doesn't work
-// if input is stdin.
-int SimReader_rewind(SimReader *self);
-
 // Move SimReader to next nucleotide site.
 int SimReader_next(SimReader *self);
 
 // Return current chromosome.
-unsigned SimReader_chr(SimReader *self);
+unsigned SimReader_chr(const SimReader *self);
+
+// Return current nucleotide position
+double SimReader_pos(const SimReader *self);
 
 // Return the dimension of the array of samples
 int SimReader_sampleDim(SimReader *self);

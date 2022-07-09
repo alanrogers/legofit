@@ -132,6 +132,8 @@ int main(int argc, char **argv){
     if(ncases < 2)
         usage();
 
+    fprintf(stderr,"pclgo: %d input files\n", ncases);
+
     // 2nd pass builds array of bootstrap filenames
     ncases -= 1;   // counts number of bootstrap files
     const char *lgofname = NULL;
@@ -197,9 +199,9 @@ int main(int argc, char **argv){
     {
         Bounds bnd = {
             .lo_twoN = 1.0,
-            .hi_twoN = 1e7,
+            .hi_twoN = 1e8,
             .lo_t = 0,
-            .hi_t = 1e7
+            .hi_t = 1e8
         };
         GPTree *gptree = GPTree_new(lgofname, bnd);
         if(gptree==NULL)
@@ -237,8 +239,14 @@ int main(int argc, char **argv){
         for(j=0; j<npar; ++j)
             mean[j] += gsl_matrix_get(datmat, i, j);
     }
-    for(j=0; j<npar; ++j)
+    for(j=0; j<npar; ++j) {
         mean[j] /= ncases;
+        if( !isfinite(mean[j]) ) {
+            fprintf(stderr,"%s:%d: mean[%d] is not finite\n",
+                    __FILE__,__LINE__, j);
+            exit(EXIT_FAILURE);
+        }
+    }
 
     // Calculate standard deviations
     for(i=0; i < ncases; ++i) {
@@ -248,8 +256,17 @@ int main(int argc, char **argv){
             sd[j] += x*x;
         }
     }
-    for(j=0; j<npar; ++j)
+    for(j=0; j<npar; ++j) {
         sd[j] = sqrt(sd[j]/(ncases-1));
+        if( !isfinite(sd[j]) ) {
+            fprintf(stderr,"%s:%d: sd[%d] is not finite\n",
+                    __FILE__,__LINE__, j);
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    for(j=0; j < npar; ++j)
+        fprintf(stderr,"%10s: mean=%lg, sd=%lg\n", parname[j], mean[j], sd[j]);
 
     // Rescale data matrix
     for(i=0; i < ncases; ++i) {
@@ -262,7 +279,8 @@ int main(int argc, char **argv){
 
     // Singular value decomposition.
     int status;
-    gsl_matrix *V = gsl_matrix_alloc(npar, npar); // eigenvectors
+    gsl_matrix *V =
+        gsl_matrix_alloc(npar, npar); // eigenvectors
     if(V==NULL)
         DIE("bad gsl_matrix_alloc");
     // s holds singular values
@@ -284,6 +302,7 @@ int main(int argc, char **argv){
         exit(EXIT_FAILURE);
     }
 
+    //#define SVD_MOD
 #ifdef SVD_JACOBI
     const char *svdname = "gsl_linalg_SV_decomp_jacobi";
     status = gsl_linalg_SV_decomp_jacobi(U, V, s);
@@ -325,8 +344,19 @@ int main(int argc, char **argv){
     double trace=0.0;   // sum of eigenvalues
     for(i=0; i < npar; ++i) {
         x = gsl_vector_get(s, i);
+        if( !isfinite(x) ) {
+            fprintf(stderr,"%s:%d: %lf = singular value %d is not finite\n",
+                    __FILE__,__LINE__, x, i);
+            exit(EXIT_FAILURE);
+        }
         fracvar[i] = (x*x)/(ncases-1);
         trace += fracvar[i];
+    }
+
+    if( !(trace > 0.0) ) {
+        fprintf(stderr,"%s:%d: trace (=%lg) is not positive.\n",
+                __FILE__,__LINE__, trace);
+            exit(EXIT_FAILURE);
     }
     int nkeep=0;
     for(i=0; i < npar; ++i) {
