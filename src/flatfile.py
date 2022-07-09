@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 ###
 #@file flatfile.py
 #@page flatfile
@@ -48,7 +48,7 @@ import datetime
 # Print usage message and abort
 def usage(msg1):
     if len(msg1) > 0:
-        print >> sys.stderr, msg1
+        print(msg1, file=sys.stderr)
     msg = \
         """
 usage: flatfile.py [options] <file1> <file2> ...
@@ -61,7 +61,7 @@ Options may include:
 
 The program writes to standard output.
 """
-    print >> sys.stderr, msg
+    print(msg, file=sys.stderr)
     exit(1)
 
 # Parse legofit output file.  Return a map relating parameter names to
@@ -118,11 +118,11 @@ while(True):
 if len(fnames) < 1:
     usage("Command line must list at least 1 input file")
 
-print "# flatfile.py run at: %s" % datetime.datetime.now()
-print "# input files:",
+print("# flatfile.py run at: %s" % datetime.datetime.now())
+print("# input files:", end=' ')
 for i in range(len(fnames)):
-    print fnames[i],
-print
+    print(fnames[i], end=' ')
+print()
 
 allmaps = []  # allmaps[i] is the dictionary for file i
 allnames = set([]) # set of all parameter names
@@ -131,7 +131,7 @@ allnames = set([]) # set of all parameter names
 for name in fnames:
     estmap = parselegofit(name)
     if len(estmap) == 0:
-        print >> sys.stderr, "ERR: file %s has no parameters" % name
+        print("ERR: file %s has no parameters" % name, file=sys.stderr)
         sys.exit(1)
     allmaps.append(estmap)
     allnames |= set(estmap.keys())
@@ -155,28 +155,28 @@ for i in range(nfile):
 if transpose:
     nrows = npar
     ncols = len(fnames)
-    print "param",
+    print("param", end=' ')
     for j in range(ncols):
-        print fnames[j],
-    print
+        print(fnames[j], end=' ')
+    print()
     for i in range(nrows):
-        print allnames[i],
+        print(allnames[i], end=' ')
         for j in range(ncols):
             if mat[j][i] == None:
-                print "NA",
+                print("NA", end=' ')
             else:
-                print mat[j][i],
-        print
+                print(mat[j][i], end=' ')
+        print()
 else:
     for name in allnames:
-        print "%s" % name,
-    print
+        print("%s" % name, end=' ')
+    print()
 
     for row in mat:
         for val in row:
             if val == None:
-                print "NA",
+                print("NA", end=' ')
             else:
-                print "%s" % val,
-        print
+                print("%s" % val, end=' ')
+        print()
 

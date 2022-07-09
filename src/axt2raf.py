@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 ###
 #@file axt2raf.py
@@ -52,7 +52,7 @@ standard input. Input should be in axt format.
 Writes to standard output.
 """
     sys.stdout.flush()
-    print >> sys.stderr, msg
+    print(msg, file=sys.stderr)
     exit(1)
 
 class Alignment:
@@ -90,11 +90,10 @@ class Alignment:
         # lengths of seqA and seqB should match
         if lenA != lenB:
             sys.stdout.flush()
-            print >> sys.stderr, \
-                "length mismatch in alignment %d" \
-                % self.alignment
-            print >> sys.stderr, "lenA=%d but lenB=%d" \
-                % (lenA, lenB)
+            print("length mismatch in alignment %d" \
+                % self.alignment, file=sys.stderr)
+            print("lenA=%d but lenB=%d" \
+                % (lenA, lenB), file=sys.stderr)
             exit(1)
 
         # After omitting gaps, length of seqA should match header
@@ -102,11 +101,10 @@ class Alignment:
         netA = lenA - sA.count("-")
         if netA != self.length:
             sys.stdout.flush()
-            print >> sys.stderr, \
-                "non-gap length mismatch: seqA and header in alignment %d" \
-                % self.alignment
-            print >> sys.stderr, "header=%d but netA=%d" \
-                % (self.end - self.start, netA)
+            print("non-gap length mismatch: seqA and header in alignment %d" \
+                % self.alignment, file=sys.stderr)
+            print("header=%d but netA=%d" \
+                % (self.end - self.start, netA), file=sys.stderr)
             exit(1)
 
         # After omitting gaps, length of seqB should match header
@@ -115,11 +113,10 @@ class Alignment:
         endB = int(line[6])+1     # end, seq B
         if netB != endB - startB:
             sys.stdout.flush()
-            print >> sys.stderr, \
-                "non-gap length mismatch: seqB and header in alignment %d" \
-                % self.alignment
-            print >> sys.stderr, "header=%d but netB=%d" \
-                % (endB - startB, netA)
+            print("non-gap length mismatch: seqB and header in alignment %d" \
+                % self.alignment, file=sys.stderr)
+            print("header=%d but netB=%d" \
+                % (endB - startB, netA), file=sys.stderr)
             exit(1)
 
         strand = line[7]
@@ -172,8 +169,8 @@ class Alignment:
         for i in range(len(self.ref)):
             # omit deletions and missing values
             if self.alt[i] not in "-n" and self.ref[i] not in "-n":
-                print "%s\t%d\t%s\t%s\t%f" % (self.chr, pos, self.ref[i],\
-                                                  self.alt[i], self.raf[i])
+                print("%s\t%d\t%s\t%s\t%f" % (self.chr, pos, self.ref[i],\
+                                                  self.alt[i], self.raf[i]))
             pos += 1
         self.initialized = False
         return self
@@ -181,15 +178,15 @@ class Alignment:
     # Define "+=" operator, which merges two alignments
     def __iadd__(self, other):
         if not self.initialized:
-            raise ValueError, "lhs Alignment not initialized"
+            raise ValueError("lhs Alignment not initialized")
         if not other.initialized:
-            raise ValueError, "rhs Alignment not initialized"
+            raise ValueError("rhs Alignment not initialized")
         if self.chr != other.chr:
-            raise ValueError, "Chromosomes don't match"
+            raise ValueError("Chromosomes don't match")
         if self.start > other.start:
-            raise ValueError, "Start position of lhs exceeds rhs"
+            raise ValueError("Start position of lhs exceeds rhs")
         if other.start > self.end:
-            raise ValueError, "Alignments don't overlap"
+            raise ValueError("Alignments don't overlap")
         if other.start == self.end:
             self.s += other.s
             self.end = other.end
@@ -239,7 +236,7 @@ while i < len(sys.argv):
             f=open(sys.argv[i])
         except:
             sys.stdout.flush()
-            print >> sys.stderr, "Can't open input file \"%s\"" % sys.argv[i]
+            print("Can't open input file \"%s\"" % sys.argv[i], file=sys.stderr)
             exit(1)
     i += 1
 
@@ -249,10 +246,10 @@ b = Alignment()
 a.read(f)
 if a.initialized == False:
     sys.stdout.flush()
-    print >> sys.stderr, "Can't read 1st alignment"
+    print("Can't read 1st alignment", file=sys.stderr)
     exit(1)
 
-print "#%s\t%s\t%s\t%s\t%s" % ("chr", "pos", "ref", "alt", "raf")
+print("#%s\t%s\t%s\t%s\t%s" % ("chr", "pos", "ref", "alt", "raf"))
 while True:
     b.read(f)
     if b.initialized == False:
@@ -260,15 +257,13 @@ while True:
     if a.chr > b.chr:
         # chromosomes missorted
         sys.stdout.flush()
-        print >> sys.stderr, \
-            "Chromosomes missorted: %s > %s" % (a.chr, b.chr)
+        print("Chromosomes missorted: %s > %s" % (a.chr, b.chr), file=sys.stderr)
         exit(1)
     elif a.chr == b.chr:
         # same chromosome
         if a.start > b.start:
             sys.stdout.flush()
-            print >> sys.stderr, \
-                "Start positions missorted: %d > %d" % (a.start, b.start)
+            print("Start positions missorted: %d > %d" % (a.start, b.start), file=sys.stderr)
             exit(1)
         if overlap(a, b):
             # alignments overlap, so merge b into a; don't print
