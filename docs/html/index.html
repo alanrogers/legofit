@@ -82,30 +82,10 @@ Introduction</h1>
 <li><a class="el" href="flatfile.html">flatfile.py</a> reads a list of legofit output files and writes a flat file with a row for each legofit file and a column for each parameter.</li>
 <li><a class="el" href="flatpat.html">flatpat.py</a> reads a list of files containing site pattern frequencies. These may include the output of tabulation programs such as sitepat, scrmpat, and simpat, or the output of legofit or legosim. Writes a flat file with a column for each site pattern and a row for each input file.</li>
 <li><a class="el" href="joinraf.html">joinraf</a> joins several raf files line by line to make a new raf file.</li>
-<li><a class="el" href="legofit.html">legofit</a> estimates parameters from site pattern counts. &lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD</li>
-<li><a class="el" href="legosim.html">legosim</a> predicts site pattern counts from assumptions about population history. </li>
-</ul>
-<h1><a class="anchor" id="autotoc_md22"></a>
-* @ref ms2sim "ms2sim" reads the output of the &lt;a href="http://home.uchicago.edu/rhudson1/source/mksamples.html" &gt;ms&lt;/a&gt; coalescent</h1>
-<ul>
+<li><a class="el" href="legofit.html">legofit</a> estimates parameters from site pattern counts.</li>
 <li><a class="el" href="legosim.html">legosim</a> predicts site pattern counts from assumptions about population history.</li>
 <li>legotree.py makes a graph from a .lgo file.</li>
-<li><a class="el" href="ms2sim.html">ms2sim</a> reads the output of the <a href="http://home.uchicago.edu/rhudson1/source/mksamples.html">ms</a> coalescent <blockquote class="doxtable">
-<blockquote class="doxtable">
-<blockquote class="doxtable">
-<blockquote class="doxtable">
-<blockquote class="doxtable">
-<blockquote class="doxtable">
-<blockquote class="doxtable">
-<p >&zwj;devlp simulator and rewrites it in "sim" format, which can be piped to <a class="el" href="simpat.html">simpat</a> to tabulate site pattern frequencies. </p>
-</blockquote>
-</blockquote>
-</blockquote>
-</blockquote>
-</blockquote>
-</blockquote>
-</blockquote>
-</li>
+<li><a class="el" href="ms2sim.html">ms2sim</a> reads the output of the ms coalescent simulator and rewrites it in "sim" format, which can be piped to <a class="el" href="simpat.html">simpat</a> to tabulate site pattern frequencies.</li>
 <li><a class="el" href="pclgo.html">pclgo</a> reads legofit output files produced from simulation or bootstrap replicates and re-expresses free variables in terms of principal components.</li>
 <li><a class="el" href="index.html#raf">raf</a> writes genetic data into the ".raf" format, which is used by <a class="el" href="sitepat.html">sitepat</a>.</li>
 <li><a class="el" href="rafdaf.html">rafdaf</a> reads several ".raf" files and writes derived allele frequencies for each position in the genome.</li>
@@ -168,7 +148,7 @@ Sort order</h1>
 <p >If you are using the bash shell, which is now available on Windows as well as Linux and macOS, you can ensure a consistent order by executing the following command: </p><pre class="fragment">export LC_ALL=C
 </pre><p> Do this before executing <code>bepe</code>, <code>clic</code>, or <code><a class="el" href="flatfile_8py.html">flatfile.py</a></code>. Or put the command into the <code>.profile</code> file (or equivalent) in your home directory.</p>
 <p >Under the C shell (<code>csh</code> or <code>tcsh</code>), the command would be: </p><pre class="fragment">setenv LC_ALL C
-</pre> <h1><a class="anchor" id="autotoc_md23"></a>
+</pre> <h1><a class="anchor" id="autotoc_md22"></a>
 Genetic input data</h1>
 <p >Before doing data analysis with <code>legofit</code>, you must generate data files in one of two formats: "daf" (for derived allele frequency), or "raf" (for reference allele frequency). The first of these alternatives requires input data in which the ancestral allele has been previously called. The second ("raf") does not. Instead, the program <a class="el" href="sitepat.html">sitepat</a> uses an outgroup sequence to call ancestral alleles on the fly.</p>
 <h2><a class="anchor" id="daf"></a>
@@ -284,19 +264,19 @@ Model selection</h1>
 <li><a class="el" href="clic.html">clic</a>, implements the "composite likelihood information
   criterion" (Varin and Vidoni, 2005).</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md24"></a>
+<h1><a class="anchor" id="autotoc_md23"></a>
 Using the package</h1>
-<h2><a class="anchor" id="autotoc_md25"></a>
+<h2><a class="anchor" id="autotoc_md24"></a>
 Predicting site pattern counts from assumptions about history</h2>
 <p >For this purpose, you want to use the program <a class="el" href="legosim.html">legosim</a>. The first step is create a file in <a class="el" href="index.html#lgo">.lgo</a> format, which describes the history of population size, subdivision, and gene flow. This format is described above. Then, you can execute <code>legosim</code> by typing: </p><pre class="fragment">legosim -i 10000 my_input_file.lgo
 </pre><p> This uses the stochastic algorithm, which estimates site pattern frequencies by computer simulation. Alternatively, </p><pre class="fragment">legosim -d 0 my_input_file.lgo
 </pre><p> would use the deterministic algorithm. See the <a class="el" href="legosim.html">legosim</a> documentation for details about this algorithm.</p>
 <p >See the <a class="el" href="legosim.html">legosim</a> documentation for details.</p>
-<h2><a class="anchor" id="autotoc_md26"></a>
+<h2><a class="anchor" id="autotoc_md25"></a>
 Simulating site patterns</h2>
 <p >The package provides support for tabulating site patterns from several coalescent simulators. To study the output of <a href="http://home.uchicago.edu/rhudson1/source/mksamples.html">ms</a>, pipe the results through <a class="el" href="ms2sim.html">ms2sim</a> and then <a class="el" href="simpat.html">simpat</a>. For <a href="https://scrm.github.io">scrm</a>, use the <code>-transpose-segsites</code> option, and pipe the output through <a class="el" href="scrmpat.html">scrmpat</a>. The authors of <a href="https://github.com/tskit-dev/msprime">msprime</a> recommend running their software within a Python script. Within such a script, it is easy to generate output in the form required by <a class="el" href="simpat.html">simpat</a>.</p>
 <p >For less sophisticated simulations, use the <code>-U</code> option of <a class="el" href="legosim.html">legosim</a>. This assumes free recombination between nucleotide sites and generates site pattern frequencies with unrealistically narrow sampling distributions.</p>
-<h2><a class="anchor" id="autotoc_md27"></a>
+<h2><a class="anchor" id="autotoc_md26"></a>
 Estimating parameters from genetic data</h2>
 <p >This involves several programs. The first step is to generate input files in ".daf" or ".raf" format, as described above. You will need one .daf or .raf file for each population. For .raf, you will in addition need a .raf file for an outgroup population. See the documentation of <a class="el" href="index.html#daf">daf</a> and <a class="el" href="index.html#raf">raf</a> for details.</p>
 <p >The next task is to tabulate site pattern counts. For details, see <a class="el" href="tabpat.html">tabpat</a> or <a class="el" href="sitepat.html">sitepat</a>. Either of these programs will generate a small text file, with one row for each site pattern. If there are 4 populations in the analysis, there will be 10 site patterns.</p>
@@ -328,20 +308,20 @@ legofit -1 --tol 2e-5 -S 1000@2000000 a.lgo boot2.opf \
 <li>Use pclgo to re-express the free variables of a.lgo in terms of principal components. Optionally, you can use the <code>--tol</code> argument of pclgo to reduce the dimension of the parameter space. See the <a class="el" href="pclgo.html">pclgo</a> page for instructions on using this program to construct a new file&ndash;let's call it b.lgo&ndash;in which all free variables are principal components. Repeat stages 1 and 2 for this new .lgo file.</li>
 </ol>
 <p >I mentioned above that some variables do not affect site pattern frequencies. As an example, consider the case in which there is a single modern sample from population Y, a single ancient sample from Z, and there is gene flow from Z into Y. If the gene flow is more recent than the ancient sample, its timing will not affect site pattern frequencies. The time of admixture should therefore be declared as a fixed variable with an arbitrary value in the .lgo file.</p>
-<h2><a class="anchor" id="autotoc_md28"></a>
+<h2><a class="anchor" id="autotoc_md27"></a>
 Sort order of site patterns</h2>
 <p >The sort order of site patterns is determined by the order of command line arguments to <a class="el" href="tabpat.html">tabpat</a> and <a class="el" href="sitepat.html">sitepat</a>, and by the order in which segments are defined in the .lgo file. For example, if "x" precedes "y", then we get a site pattern labeled "xy" rather than "yx". These inputs should be ordered consistently in tabpat, sitepat, and .lgo, for otherwise it will be hard to compare observed site pattern frequencies with those predicted by <a class="el" href="legosim.html">legosim</a> or <a class="el" href="legofit.html">legofit</a>. I recommend arranging them in the order that populations labels appear in your figures.</p>
-<h1><a class="anchor" id="autotoc_md29"></a>
+<h1><a class="anchor" id="autotoc_md28"></a>
 Bias in &lt;tt&gt;legofit&lt;/tt&gt;</h1>
-<h2><a class="anchor" id="autotoc_md30"></a>
+<h2><a class="anchor" id="autotoc_md29"></a>
 Biases arising from constraints</h2>
 <p >Biases arise in <code>legofit</code> because of the constraint that a child population cannot be older than its parent. If the parent's age is fixed, then it represents an inequality constraint on the age of the child. If the child is only slightly younger than the parent, the optimizer has problems. It will propose new values for the child's age. Those that increase the child's age will be rejected if they violate the inequality constraint. Those that decrease the child's age do not encounter this constraint. Consequently, the optimizer is more likely to move away from the constraint rather than toward it. This biases estimates away from the constraint, whenever the true value is close to the constraint.</p>
 <p >The magnitude of this bias depends on the spread of the sampling distribution of the child's age. If that sampling distribution is wide, then the DE algorithm will tend to take large steps and will encounter the boundary constraint sooner. This generates a large bias. If the sampling distribution is narrow, the bias is small.</p>
-<h2><a class="anchor" id="autotoc_md31"></a>
+<h2><a class="anchor" id="autotoc_md30"></a>
 Bias arising from selection of variant sites</h2>
 <p >Genetic data are often restricted to sites that are polymorphic within some group of samples. For example, the 1000-Genomes Project distributes files containing genotypes that are polymorphic within modern humans. These data do not include sites at which the derived allele is present only in Neanderthals and/or Denisovans. An analysis using such data would be biased, because it would undercount the corresponding site patterns.</p>
 <p >To avoid this bias, it is best to work with complete genomes rather than just the variant sites. Alternatively, one could call variant sites jointly using all genomes to be included in the analysis.</p>
-<h2><a class="anchor" id="autotoc_md32"></a>
+<h2><a class="anchor" id="autotoc_md31"></a>
 Bias arising from identifiability problems</h2>
 <p >It is often the case that many sets of parameter values imply the same site pattern frequencies. Ideally this merely broadens confidence intervals and does not introduce bias. It can, however, introduce bias. For this reason, one should always check for bias after a model has been fit. To do so, create a <code>fitted.lgo</code> file that has the same structure as the initial <code>.lgo</code> file used in your analysis, but with all free parameters set equal to their fitted values. Then use <code>legosim</code> to simulate several data sets. The following bash command generates 50 simulated data sets: </p><pre class="fragment">
 for i in {0..49}
@@ -354,7 +334,7 @@ do
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Jul 20 2022 12:45:12 for Legofit by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.4
+Generated on Wed Jul 20 2022 14:43:56 for Legofit by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.4
 </small></address>
 </body>
 </html>
