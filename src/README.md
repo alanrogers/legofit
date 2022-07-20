@@ -6,56 +6,77 @@ Legofit is a computer package that uses counts of nucleotide site
 patterns to estimate the history of population size, subdivision, and
 gene flow. The package consists of the following programs
 
-* @ref axt2raf "axt2raf" reads an axt file and writes a file in raf
+- @ref axt2raf "axt2raf" reads an axt file and writes a file in raf
   format. 
-* @ref bepe "bepe" calculates the "bootstrap estimate of prediction
-  error (Efron and Tibshirani, 1993).
-* @ref booma "booma" does bootstrap model averaging (Buckland et
-al. Biometrics, 53(2):603-618).
-* @ref clic "clic" calculates the "composite likelihood information
+
+- @ref bepe "bepe" calculates the "bootstrap estimate of prediction
+  error" (Efron and Tibshirani, 1993).
+
+- @ref booma "booma" does bootstrap model averaging (Buckland et
+  al. Biometrics, 53(2):603-618).
+
+- @ref clic "clic" calculates the "composite likelihood information
   criterion" (Varin and Vidoni, 2005).
-* @ref bootci "bootci.py" reads a flat file to generate bootstrap
+
+- @ref bootci "bootci.py" reads a flat file to generate bootstrap
   confidence intervals.
-* @ref daf "daf" writes genetic data into the ".daf" format,
+
+- @ref daf "daf" writes genetic data into the ".daf" format,
   which is used by @ref tabpat "tabpat".
-* @ref diverg "diverg.py" compares two distributions of site
+
+- @ref diverg "diverg.py" compares two distributions of site
   pattern frequencies, using the Kullback-Leibler (KL) divergence.
-* @ref flatfile "flatfile.py" reads a list of legofit output
+
+- @ref flatfile "flatfile.py" reads a list of legofit output
   files and writes a flat file with a row for each legofit file and a
   column for each parameter.
-* @ref flatpat "flatpat.py" reads a list of files containing site
+
+- @ref flatpat "flatpat.py" reads a list of files containing site
   pattern frequencies. These may include the output of tabulation
   programs such as sitepat, scrmpat, and simpat, or the output of
   legofit or legosim. Writes a flat file with a column for each site
   pattern and a row for each input file.
-* @ref joinraf "joinraf" joins several raf files line by line to make a
+
+- @ref joinraf "joinraf" joins several raf files line by line to make a
   new raf file.
-* @ref legofit "legofit" estimates parameters from site pattern
+
+- @ref legofit "legofit" estimates parameters from site pattern
   counts.
-* @ref legosim "legosim" predicts site pattern counts from
-assumptions about population history.
-* @ref legotree "legotree.py" makes a graph from a .lgo file.
-* @ref ms2sim "ms2sim" reads the output of the [ms][] coalescent
+
+- @ref legosim "legosim" predicts site pattern counts from
+  assumptions about population history.
+
+- @ref legotree "legotree.py" makes a graph from a .lgo file.
+
+- @ref ms2sim "ms2sim" reads the output of the [ms][] coalescent
   simulator and rewrites it in "sim" format, which can be piped to
   @ref simpat "simpat" to tabulate site pattern frequencies.
-* @ref pclgo "pclgo" reads legofit output files produced from
+
+- @ref pclgo "pclgo" reads legofit output files produced from
   simulation or bootstrap replicates and re-expresses free variables
   in terms of principal components.
-* @ref raf "raf" writes genetic data into the ".raf" format,
+
+- @ref raf "raf" writes genetic data into the ".raf" format,
   which is used by @ref sitepat "sitepat".
-* @ref rafdaf "rafdaf" reads several ".raf" files and writes derived
+
+- @ref rafdaf "rafdaf" reads several ".raf" files and writes derived
   allele frequencies for each position in the genome.
-* @ref resid "resid" prints site pattern frequencies or residuals,
+
+- @ref resid "resid" prints site pattern frequencies or residuals,
   optionally deleting some population labels and/or mapping multiple 
   population labels into single labels.
-* @ref scrmpat "scrmpat" tabulates site patterns from output generated
+
+- @ref scrmpat "scrmpat" tabulates site patterns from output generated
   by the [scrm][] coalescent simulator.
-* @ref simpat "simpat" tabulates site patterns from the output of
+
+- @ref simpat "simpat" tabulates site patterns from the output of
   `ms2sim` or [msprime][].
-* @ref sitepat "sitepat" reads ".raf" files for several
+
+- @ref sitepat "sitepat" reads ".raf" files for several
   populations, tabulates "nucleotide site patterns" (explained below),
   and generates moving-blocks bootstrap replicates.
-* @ref tabpat "tabpat" reads ".daf" files for several
+
+- @ref tabpat "tabpat" reads ".daf" files for several
   populations, tabulates "nucleotide site patterns" (explained below),
   and generates moving-blocks bootstrap replicates.
 
@@ -244,7 +265,7 @@ programs @ref raf "raf" and @ref sitepat "sitepat". Nonetheless, we
 retain @ref daf "daf" and @ref tabpat "tabpat" for backwards
 compatibility.
 
-The suffix "daf" stands for "derived allele frequency. See the @ref
+The suffix "daf" stands for "derived allele frequency". See the @ref
 daf "daf" command for instructions on translating from "vcf" or "bcf"
 format into "daf".
 
@@ -569,9 +590,10 @@ that is best at predicting new observations.
 
 The legofit package provides two methods of model selection:
 
-* @ref bepe "bepe", implements the "bootstrap estimate of prediction
+- @ref bepe "bepe", implements the "bootstrap estimate of prediction
   accuracy" (Efron and Tibshirani, 1993, sec. 17.6).
-* @ref clic "clic", implements the "composite likelihood information
+
+- @ref clic "clic", implements the "composite likelihood information
   criterion" (Varin and Vidoni, 2005).
 
 # Using the package

@@ -72,83 +72,34 @@ Introduction</h1>
 <ul>
 <li><a class="el" href="axt2raf.html">axt2raf</a> reads an axt file and writes a file in raf format.</li>
 <li><a class="el" href="bepe.html">bepe</a> calculates the "bootstrap estimate of prediction
-  error (Efron and Tibshirani, 1993).
-* @ref booma "booma" does bootstrap model averaging (Buckland et
-al. Biometrics, 53(2):603-618).
-* @ref clic "clic" calculates the "composite likelihood information criterion" (Varin and Vidoni, 2005).
-* @ref bootci "<a class="el" href="bootci_8py.html">bootci.py</a>" reads a flat file to generate bootstrap
-  confidence intervals.
-* @ref daf "daf" writes genetic data into the ".daf" format,
-  which is used by @ref tabpat "tabpat".
-* @ref diverg "<a class="el" href="diverg_8py.html">diverg.py</a>" compares two distributions of site
-  pattern frequencies, using the Kullback-Leibler (KL) divergence.
-* @ref flatfile "<a class="el" href="flatfile_8py.html">flatfile.py</a>" reads a list of legofit output
-  files and writes a flat file with a row for each legofit file and a
-  column for each parameter.
-* @ref flatpat "<a class="el" href="flatpat_8py.html">flatpat.py</a>" reads a list of files containing site
-  pattern frequencies. These may include the output of tabulation
-  programs such as sitepat, scrmpat, and simpat, or the output of
-  legofit or legosim. Writes a flat file with a column for each site
-  pattern and a row for each input file.
-* @ref joinraf "joinraf" joins several raf files line by line to make a
-  new raf file.
-* @ref legofit "legofit" estimates parameters from site pattern
-  counts.
-* @ref legosim "legosim" predicts site pattern counts from
-assumptions about population history.
-* @ref legotree "legotree.py" makes a graph from a .lgo file.
-* @ref ms2sim "ms2sim" reads the output of the &lt;a href="<a href="http://home.uchicago.edu/rhudson1/source/mksamples.html">http://home.uchicago.edu/rhudson1/source/mksamples.html</a>" &gt;ms&lt;/a&gt; coalescent
-  simulator and rewrites it in "sim" format, which can be piped to
-  @ref simpat "simpat" to tabulate site pattern frequencies.
-* @ref pclgo "pclgo" reads legofit output files produced from
-  simulation or bootstrap replicates and re-expresses free variables
-  in terms of principal components.
-* @ref raf "raf" writes genetic data into the ".raf" format,
-  which is used by @ref sitepat "sitepat".
-* @ref rafdaf "rafdaf" reads several ".raf" files and writes derived
-  allele frequencies for each position in the genome.
-* @ref resid "resid" prints site pattern frequencies or residuals,
-  optionally deleting some population labels and/or mapping multiple 
-  population labels into single labels.
-* @ref scrmpat "scrmpat" tabulates site patterns from output generated
-  by the &lt;a href="<a href="https://scrm.github.io">https://scrm.github.io</a>" &gt;scrm&lt;/a&gt; coalescent simulator.
-* @ref simpat "simpat" tabulates site patterns from the output of
-  &lt;tt&gt;ms2sim&lt;/tt&gt; or &lt;a href="<a href="https://github.com/tskit-dev/msprime">https://github.com/tskit-dev/msprime</a>" &gt;msprime&lt;/a&gt;.
-* @ref sitepat "sitepat" reads ".raf" files for several
-  populations, tabulates "nucleotide site patterns" (explained below),
-  and generates moving-blocks bootstrap replicates.
-* @ref tabpat "tabpat" reads ".daf" files for several
-  populations, tabulates "nucleotide site patterns" (explained below),
-  and generates moving-blocks bootstrap replicates.
-
-@section sitepattern Nucleotide site patterns
-
-These programs all operate on "nucleotide site patterns", which are
-summary statistics not influenced by recent population size but rich
-in information about ancestral populations. This section will define
-site patterns and explain how legofit tabulates their counts, and
-estimates expectations.
-
-Consider a sample consisting of one haploid genome drawn from each of
-3 populations, &lt;em&gt;X&lt;/em&gt;, &lt;em&gt;Y&lt;/em&gt;, and &lt;em&gt;Z&lt;/em&gt;. Suppose that, at a given nucleotide
-site, the derived allele is present in the genomes from &lt;em&gt;X&lt;/em&gt; and &lt;em&gt;Y&lt;/em&gt;
-but not that from &lt;em&gt;Z&lt;/em&gt;. If so, then this nucleotide position will be
-said to exhibit the "*xy* site pattern." We ignore cases in which the
-derived allele is present in none of the samples or in all of them.
-By default (without the &lt;tt&gt;-1&lt;/tt&gt; argument of @ref legosim "legosim" and @ref
-legofit "legofit"), we also ignore "singleton site patterns"&amp;mdash;those in
-which the derived allele appears only once. In other words, we
-consider only polymorphic, non-singleton site patterns. For the
-special case of the 3-population sample just described, there are only
-3 such site patterns: &lt;em&gt;xy&lt;/em&gt;, &lt;em&gt;xz&lt;/em&gt;, and &lt;em&gt;yz&lt;/em&gt;.
-
-In the general case, with samples from &lt;em&gt;K&lt;/em&gt; populations, the number of
-site patterns (including singletons) is \_form#9. For example,
-there are 14 site patterns in a sample involving \_form#10
-populations. The table below shows data from a sample involving 4
-populations, &lt;em&gt;X&lt;/em&gt;, &lt;em&gt;Y&lt;/em&gt;, &lt;em&gt;N&lt;/em&gt;, and &lt;em&gt;D&lt;/em&gt;.
-@verbatim 
-SitePat     E[count]
+  error" (Efron and Tibshirani, 1993).</li>
+<li><a class="el" href="booma.html">booma</a> does bootstrap model averaging (Buckland et al. Biometrics, 53(2):603-618).</li>
+<li><a class="el" href="clic.html">clic</a> calculates the "composite likelihood information
+  criterion" (Varin and Vidoni, 2005).</li>
+<li><a class="el" href="bootci.html">bootci.py</a> reads a flat file to generate bootstrap confidence intervals.</li>
+<li><a class="el" href="index.html#daf">daf</a> writes genetic data into the ".daf" format, which is used by <a class="el" href="tabpat.html">tabpat</a>.</li>
+<li><a class="el" href="diverg.html">diverg.py</a> compares two distributions of site pattern frequencies, using the Kullback-Leibler (KL) divergence.</li>
+<li><a class="el" href="flatfile.html">flatfile.py</a> reads a list of legofit output files and writes a flat file with a row for each legofit file and a column for each parameter.</li>
+<li><a class="el" href="flatpat.html">flatpat.py</a> reads a list of files containing site pattern frequencies. These may include the output of tabulation programs such as sitepat, scrmpat, and simpat, or the output of legofit or legosim. Writes a flat file with a column for each site pattern and a row for each input file.</li>
+<li><a class="el" href="joinraf.html">joinraf</a> joins several raf files line by line to make a new raf file.</li>
+<li><a class="el" href="legofit.html">legofit</a> estimates parameters from site pattern counts.</li>
+<li><a class="el" href="legosim.html">legosim</a> predicts site pattern counts from assumptions about population history.</li>
+<li>legotree.py makes a graph from a .lgo file.</li>
+<li><a class="el" href="ms2sim.html">ms2sim</a> reads the output of the <a href="http://home.uchicago.edu/rhudson1/source/mksamples.html">ms</a> coalescent simulator and rewrites it in "sim" format, which can be piped to <a class="el" href="simpat.html">simpat</a> to tabulate site pattern frequencies.</li>
+<li><a class="el" href="pclgo.html">pclgo</a> reads legofit output files produced from simulation or bootstrap replicates and re-expresses free variables in terms of principal components.</li>
+<li><a class="el" href="index.html#raf">raf</a> writes genetic data into the ".raf" format, which is used by <a class="el" href="sitepat.html">sitepat</a>.</li>
+<li><a class="el" href="rafdaf.html">rafdaf</a> reads several ".raf" files and writes derived allele frequencies for each position in the genome.</li>
+<li><a class="el" href="resid.html">resid</a> prints site pattern frequencies or residuals, optionally deleting some population labels and/or mapping multiple population labels into single labels.</li>
+<li><a class="el" href="scrmpat.html">scrmpat</a> tabulates site patterns from output generated by the <a href="https://scrm.github.io">scrm</a> coalescent simulator.</li>
+<li><a class="el" href="simpat.html">simpat</a> tabulates site patterns from the output of <code>ms2sim</code> or <a href="https://github.com/tskit-dev/msprime">msprime</a>.</li>
+<li><a class="el" href="sitepat.html">sitepat</a> reads ".raf" files for several populations, tabulates "nucleotide site patterns" (explained below), and generates moving-blocks bootstrap replicates.</li>
+<li><a class="el" href="tabpat.html">tabpat</a> reads ".daf" files for several populations, tabulates "nucleotide site patterns" (explained below), and generates moving-blocks bootstrap replicates.</li>
+</ul>
+<h1><a class="anchor" id="sitepattern"></a>
+Nucleotide site patterns</h1>
+<p >These programs all operate on "nucleotide site patterns", which are summary statistics not influenced by recent population size but rich in information about ancestral populations. This section will define site patterns and explain how legofit tabulates their counts, and estimates expectations.</p>
+<p >Consider a sample consisting of one haploid genome drawn from each of 3 populations, <em>X</em>, <em>Y</em>, and <em>Z</em>. Suppose that, at a given nucleotide site, the derived allele is present in the genomes from <em>X</em> and <em>Y</em> but not that from <em>Z</em>. If so, then this nucleotide position will be said to exhibit the "*xy* site pattern." We ignore cases in which the derived allele is present in none of the samples or in all of them. By default (without the <code>-1</code> argument of <a class="el" href="legosim.html">legosim</a> and <a class="el" href="legofit.html">legofit</a>), we also ignore "singleton site patterns"&mdash;those in which the derived allele appears only once. In other words, we consider only polymorphic, non-singleton site patterns. For the special case of the 3-population sample just described, there are only 3 such site patterns: <em>xy</em>, <em>xz</em>, and <em>yz</em>.</p>
+<p >In the general case, with samples from <em>K</em> populations, the number of site patterns (including singletons) is <img class="formulaInl" alt="$2^K - 2$" src="form_9.png"/>. For example, there are 14 site patterns in a sample involving <img class="formulaInl" alt="$K=4$" src="form_10.png"/> populations. The table below shows data from a sample involving 4 populations, <em>X</em>, <em>Y</em>, <em>N</em>, and <em>D</em>. </p><pre class="fragment">SitePat     E[count]
       x   528808.000
       y   518558.875
       n   529267.375
@@ -163,150 +114,47 @@ SitePat     E[count]
   x:y:d    91739.375
   x:n:d    89563.375
   y:n:d    91388.250
-@endverbatim
-The &lt;tt&gt;E[count]&lt;/tt&gt; column shows numbers that can be thought of loosely as
-counts of site patterns in a genome-wide sample.
-
-These number cannot really be counts, because they aren't
-integers. This reflects the fact that our sample includes more than
-one haploid genome from each population, and a given SNP may
-contribute to several site patterns. The contribution to a given site
-pattern is the probability that a sub-sample, consisting of one
-haploid genome drawn at random from the larger sample of each
-population, would exhibit this site pattern. For example, suppose we
-have samples from three populations, &lt;em&gt;X&lt;/em&gt;, &lt;em&gt;Y&lt;/em&gt;, and &lt;em&gt;N&lt;/em&gt;, and let
- \_form#11, \_form#12, and \_form#13 represent the frequencies
-of the derived allele at SNP &lt;em&gt;i&lt;/em&gt; in these three samples. Then site
-pattern &lt;em&gt;xy&lt;/em&gt; occurs at SNP &lt;em&gt;i&lt;/em&gt; with probability \_form#14@_fakenl (Patterson et al 2010, Science,
-328(5979):S129).  Aggregating over SNPs, \_form#15
-summarizes the information in the data about this site pattern. These
-are the numbers that appear in the 2nd column of the table above.
-
-Tables such as the one above are generated by programs @ref tabpat
-"tabpat", @ref sitepat "sitepat", @ref scrmpat "scrmpat", and @ref
-simpat "simpat".
-
-@section installation Installation and testing
-
-The package is available at &lt;a href="<a href="https://github.com/alanrogers/legofit">https://github.com/alanrogers/legofit</a>" title="GitHub" &gt;github&lt;/a&gt;. Before compiling, you must
-install two libraries: &lt;tt&gt;pthreads&lt;/tt&gt; and &lt;a href="<a href="http://www.gnu.org/software/gsl">http://www.gnu.org/software/gsl</a>" &gt;gsl&lt;/a&gt;. You will need not only
-the libraries themselves but also several header files, such as
-&lt;tt&gt;pthread.h&lt;/tt&gt;. I didn't need to install &lt;tt&gt;pthreads&lt;/tt&gt;, because it came
-bundled with the Gnu C compiler. But the gsl was an extra. Under
-ubuntu Linux, you can install it like this:
-@verbatim 
-sudo apt-get install libgsl0-dev
-@endverbatim
-On the mac, using homebrew, the command is
-@verbatim 
-brew install gsl
-@endverbatim
-By default, the executable files will be copied into a directory named
-&lt;tt&gt;bin&lt;/tt&gt; in your home directory. If you want them to go somewhere else,
-edit the first non-comment line of src/Makefile.
-
-Then
-
-1. cd into the src directory.
-2. Type "make".
-3. Type "make install".
-
-This will try to place the executables into directory "bin" in the
-user's home directory. Make sure this directory appears in your
-PATH, so that the shell can find it.
-
-There is also a facility for installing a "global" version of the code
-for other users. The first step (under unix-like operating systems) is
-to set up a "soft link" to the directory just above the target bin
-directory. Then type "sudo make ginstall". You'll need administrative
-privileges. For example, to install the software in &lt;tt&gt;/usr/local/bin&lt;/tt&gt;:
-@verbatim 
-cd                     # move into home directory
+</pre><p> The <code>E[count]</code> column shows numbers that can be thought of loosely as counts of site patterns in a genome-wide sample.</p>
+<p >These number cannot really be counts, because they aren't integers. This reflects the fact that our sample includes more than one haploid genome from each population, and a given SNP may contribute to several site patterns. The contribution to a given site pattern is the probability that a sub-sample, consisting of one haploid genome drawn at random from the larger sample of each population, would exhibit this site pattern. For example, suppose we have samples from three populations, <em>X</em>, <em>Y</em>, and <em>N</em>, and let <img class="formulaInl" alt="$p_{iX}$" src="form_11.png"/>, <img class="formulaInl" alt="$p_{iY}$" src="form_12.png"/>, and <img class="formulaInl" alt="$p_{iN}$" src="form_13.png"/> represent the frequencies of the derived allele at SNP <em>i</em> in these three samples. Then site pattern <em>xy</em> occurs at SNP <em>i</em> with probability <img class="formulaInl" alt="$z_i =
+p_{iX}p_{iY}(1-p_{iN})$" src="form_14.png"/> (Patterson et al 2010, Science, 328(5979):S129). Aggregating over SNPs, <img class="formulaInl" alt="$I_{xy} = \sum_i z_i$" src="form_15.png"/> summarizes the information in the data about this site pattern. These are the numbers that appear in the 2nd column of the table above.</p>
+<p >Tables such as the one above are generated by programs <a class="el" href="tabpat.html">tabpat</a>, <a class="el" href="sitepat.html">sitepat</a>, <a class="el" href="scrmpat.html">scrmpat</a>, and <a class="el" href="simpat.html">simpat</a>.</p>
+<h1><a class="anchor" id="installation"></a>
+Installation and testing</h1>
+<p >The package is available at <a href="https://github.com/alanrogers/legofit" title="GitHub">github</a>. Before compiling, you must install two libraries: <code>pthreads</code> and <a href="http://www.gnu.org/software/gsl">gsl</a>. You will need not only the libraries themselves but also several header files, such as <code>pthread.h</code>. I didn't need to install <code>pthreads</code>, because it came bundled with the Gnu C compiler. But the gsl was an extra. Under ubuntu Linux, you can install it like this: </p><pre class="fragment">sudo apt-get install libgsl0-dev
+</pre><p> On the mac, using homebrew, the command is </p><pre class="fragment">brew install gsl
+</pre><p> By default, the executable files will be copied into a directory named <code>bin</code> in your home directory. If you want them to go somewhere else, edit the first non-comment line of src/Makefile.</p>
+<p >Then</p>
+<ol type="1">
+<li>cd into the src directory.</li>
+<li>Type "make".</li>
+<li>Type "make install".</li>
+</ol>
+<p >This will try to place the executables into directory "bin" in the user's home directory. Make sure this directory appears in your PATH, so that the shell can find it.</p>
+<p >There is also a facility for installing a "global" version of the code for other users. The first step (under unix-like operating systems) is to set up a "soft link" to the directory just above the target bin directory. Then type "sudo make ginstall". You'll need administrative privileges. For example, to install the software in <code>/usr/local/bin</code>: </p><pre class="fragment">cd                     # move into home directory
 ln -s /usr/local group # now "group" points to `/usr/local`
-@endverbatim
-Then &lt;tt&gt;cd&lt;/tt&gt; back into the &lt;tt&gt;legofit&lt;/tt&gt; directory and type
-@verbatim 
-sudo make ginstall     # install into /usr/local/bin
-@endverbatim
-This installation will work under unix-like operating systems, such as
-linux and Apple's osx. I'm told that it also compiles under
-Windows. If you use Windows, I suggest running Legofit under the
-Windows Linux Subsystem.
-
-The directory &lt;tt&gt;test&lt;/tt&gt; contains a unit test for many of the .c files in
-directory &lt;tt&gt;src&lt;/tt&gt;. Within this directory, type
-
-1. make xboot
-2. ./xboot
-
-to test the source file &lt;tt&gt;boot.c&lt;/tt&gt;.  To run all unit tests, type
-"make". This will take awhile, as some of the unit tests are slow.
-
-@section sortorder Sort order
-
-Several programs&amp;ndash;&lt;tt&gt;bepe&lt;/tt&gt;, &lt;tt&gt;clic&lt;/tt&gt;, and &lt;tt&gt;flatfile.py&lt;/tt&gt;&amp;ndash;take lists of
-files on the command line. These lists are most easily generated using
-wildcard expansions, such as
-@verbatim 
-flatfile.py foo*.legofit
-@endverbatim
-Here "foo*.legofit" will expand into a list of file names from the
-current directory. It is important that these lists be in a consistent
-order, so that &lt;tt&gt;booma&lt;/tt&gt; can integrate multiple files created by &lt;tt&gt;bepe&lt;/tt&gt;,
-&lt;tt&gt;clic&lt;/tt&gt;, and &lt;tt&gt;flatfile.py&lt;/tt&gt;.
-
-Unfortunately, the order of files in a wild-card expansion depends on
-the locale settings of the local machine. If these differ, files
-generated on one machine will not be compatible with those generated
-on another. &lt;tt&gt;booma&lt;/tt&gt; can check the consistency of files generated with
-&lt;tt&gt;bepe&lt;/tt&gt; and &lt;tt&gt;clic&lt;/tt&gt;, but no automatic check is possible with files
-generated by &lt;tt&gt;flatfile.py&lt;/tt&gt;.
-
-If you are using the bash shell, which is now available on Windows as
-well as Linux and macOS, you can ensure a consistent order by
-executing the following command:
-@verbatim 
-export LC_ALL=C
-@endverbatim
-Do this before executing &lt;tt&gt;bepe&lt;/tt&gt;, &lt;tt&gt;clic&lt;/tt&gt;, or &lt;tt&gt;flatfile.py&lt;/tt&gt;. Or put the
-command into the &lt;tt&gt;.profile&lt;/tt&gt; file (or equivalent) in your home
-directory.
-
-Under the C shell (&lt;tt&gt;csh&lt;/tt&gt; or &lt;tt&gt;tcsh&lt;/tt&gt;), the command would be:
-@verbatim 
-setenv LC_ALL C
-@endverbatim
-@section autotoc_md22 Genetic input data
-
-Before doing data analysis with &lt;tt&gt;legofit&lt;/tt&gt;, you must generate data
-files in one of two formats: "daf" (for derived allele frequency), or
-"raf" (for reference allele frequency). The first of these
-alternatives requires input data in which the ancestral allele has
-been previously called. The second ("raf") does not. Instead, the
-program @ref sitepat "sitepat" uses an outgroup sequence to call
-ancestral alleles on the fly.
-
-@subsection daf daf format
-
-This was the only input data format in early versions of the legofit
-package. We began moving away from it when we realized that, under
-certain circumstances, it can introduce bias. To understand why,
-suppose we have data from 4 populations, A, B, C, and D. Suppose
-further that D has received gene flow from an unobserved population,
-which is distantly related to the 4 observed populations. This gene
-flow will introduce derived alleles into D, but at these sites A, B,
-and C will be fixed for the ancestral allele. If ancestral allele
-calls are based only on A, B, and C, then no ancestral allele calls
-will be available for sites at which derived alleles have been
-introduced into D. The gene flow into D will therefore be
-undetectable. To avoid such problems, it is best to call ancestral
-alleles during the process of tabulating site patterns, using the
-programs @ref raf "raf" and @ref sitepat "sitepat". Nonetheless, we
-retain @ref daf "daf" and @ref tabpat "tabpat" for backwards
-compatibility.
-
-The suffix "daf" stands for "derived allele frequency. See the <a class="el" href="index.html#daf">daf</a> command for instructions on translating from "vcf" or "bcf" format into "daf".</li>
-</ul>
+</pre><p> Then <code>cd</code> back into the <code>legofit</code> directory and type </p><pre class="fragment">sudo make ginstall     # install into /usr/local/bin
+</pre><p> This installation will work under unix-like operating systems, such as linux and Apple's osx. I'm told that it also compiles under Windows. If you use Windows, I suggest running Legofit under the Windows Linux Subsystem.</p>
+<p >The directory <code>test</code> contains a unit test for many of the .c files in directory <code>src</code>. Within this directory, type</p>
+<ol type="1">
+<li>make xboot</li>
+<li>./xboot</li>
+</ol>
+<p >to test the source file <code><a class="el" href="boot_8c.html" title="Functions for a moving blocks bootstrap.">boot.c</a></code>. To run all unit tests, type "make". This will take awhile, as some of the unit tests are slow.</p>
+<h1><a class="anchor" id="sortorder"></a>
+Sort order</h1>
+<p >Several programs&ndash;<code>bepe</code>, <code>clic</code>, and <code><a class="el" href="flatfile_8py.html">flatfile.py</a></code>&ndash;take lists of files on the command line. These lists are most easily generated using wildcard expansions, such as </p><pre class="fragment">flatfile.py foo*.legofit
+</pre><p> Here "foo*.legofit" will expand into a list of file names from the current directory. It is important that these lists be in a consistent order, so that <code>booma</code> can integrate multiple files created by <code>bepe</code>, <code>clic</code>, and <code><a class="el" href="flatfile_8py.html">flatfile.py</a></code>.</p>
+<p >Unfortunately, the order of files in a wild-card expansion depends on the locale settings of the local machine. If these differ, files generated on one machine will not be compatible with those generated on another. <code>booma</code> can check the consistency of files generated with <code>bepe</code> and <code>clic</code>, but no automatic check is possible with files generated by <code><a class="el" href="flatfile_8py.html">flatfile.py</a></code>.</p>
+<p >If you are using the bash shell, which is now available on Windows as well as Linux and macOS, you can ensure a consistent order by executing the following command: </p><pre class="fragment">export LC_ALL=C
+</pre><p> Do this before executing <code>bepe</code>, <code>clic</code>, or <code><a class="el" href="flatfile_8py.html">flatfile.py</a></code>. Or put the command into the <code>.profile</code> file (or equivalent) in your home directory.</p>
+<p >Under the C shell (<code>csh</code> or <code>tcsh</code>), the command would be: </p><pre class="fragment">setenv LC_ALL C
+</pre> <h1><a class="anchor" id="autotoc_md22"></a>
+Genetic input data</h1>
+<p >Before doing data analysis with <code>legofit</code>, you must generate data files in one of two formats: "daf" (for derived allele frequency), or "raf" (for reference allele frequency). The first of these alternatives requires input data in which the ancestral allele has been previously called. The second ("raf") does not. Instead, the program <a class="el" href="sitepat.html">sitepat</a> uses an outgroup sequence to call ancestral alleles on the fly.</p>
+<h2><a class="anchor" id="daf"></a>
+daf format</h2>
+<p >This was the only input data format in early versions of the legofit package. We began moving away from it when we realized that, under certain circumstances, it can introduce bias. To understand why, suppose we have data from 4 populations, A, B, C, and D. Suppose further that D has received gene flow from an unobserved population, which is distantly related to the 4 observed populations. This gene flow will introduce derived alleles into D, but at these sites A, B, and C will be fixed for the ancestral allele. If ancestral allele calls are based only on A, B, and C, then no ancestral allele calls will be available for sites at which derived alleles have been introduced into D. The gene flow into D will therefore be undetectable. To avoid such problems, it is best to call ancestral alleles during the process of tabulating site patterns, using the programs <a class="el" href="index.html#raf">raf</a> and <a class="el" href="sitepat.html">sitepat</a>. Nonetheless, we retain <a class="el" href="index.html#daf">daf</a> and <a class="el" href="tabpat.html">tabpat</a> for backwards compatibility.</p>
+<p >The suffix "daf" stands for "derived allele frequency". See the <a class="el" href="index.html#daf">daf</a> command for instructions on translating from "vcf" or "bcf" format into "daf".</p>
 <p >The "daf" file is simple and looks like this: </p><pre class="fragment">#chr        pos aa da                  daf
    1     752566  g  a 0.835294117647058854
    1     754192  a  g 0.858823529411764652
@@ -486,7 +334,7 @@ do
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Jun 21 2022 11:33:04 for Legofit by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.4
+Generated on Wed Jul 20 2022 12:00:51 for Legofit by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.4
 </small></address>
 </body>
 </html>
