@@ -766,7 +766,7 @@ observed site pattern frequencies with those predicted by @ref legosim
 "legosim" or @ref legofit "legofit". I recommend arranging them in the
 order that populations labels appear in your figures.
 
-# Bias in `legofit`
+# Bias in legofit
 
 ## Biases arising from constraints
 
@@ -808,21 +808,11 @@ It is often the case that many sets of parameter values imply the same
 site pattern frequencies. Ideally this merely broadens confidence
 intervals and does not introduce bias. It can, however, introduce
 bias. For this reason, one should always check for bias after a model
-has been fit. To do so, create a `fitted.lgo` file that has the same
-structure as the initial `.lgo` file used in your analysis, but with
-all free parameters set equal to their fitted values. Then use
-`legosim` to simulate several data sets. The following bash command
-generates 50 simulated data sets:
-<pre class="fragment">
-for i in {0..49}
-do
-    ofile=sim${i}.opf
-    legosim -1 -i 2000000 -U 18 fitted.lgo > $ofile
-	done
-</pre>
-Then analyze these as though they were real data. If the resulting
-estimates are scattered around the fitted parameter value, then there
-is no substantial bias.	
+has been fit. To check for bias, I use [msprime][] to simulate 50 data
+sets, using the model of history implied by the fitted parameter
+values. Then analyze these as though they were real data. If the
+resulting estimates are scattered around the fitted parameter value,
+then there is no substantial bias.
 
 [ms]: http://home.uchicago.edu/rhudson1/source/mksamples.html
 
