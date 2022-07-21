@@ -312,7 +312,7 @@ legofit -1 --tol 2e-5 -S 1000@2000000 a.lgo boot2.opf \
 Sort order of site patterns</h2>
 <p >The sort order of site patterns is determined by the order of command line arguments to <a class="el" href="tabpat.html">tabpat</a> and <a class="el" href="sitepat.html">sitepat</a>, and by the order in which segments are defined in the .lgo file. For example, if "x" precedes "y", then we get a site pattern labeled "xy" rather than "yx". These inputs should be ordered consistently in tabpat, sitepat, and .lgo, for otherwise it will be hard to compare observed site pattern frequencies with those predicted by <a class="el" href="legosim.html">legosim</a> or <a class="el" href="legofit.html">legofit</a>. I recommend arranging them in the order that populations labels appear in your figures.</p>
 <h1><a class="anchor" id="autotoc_md28"></a>
-Bias in &lt;tt&gt;legofit&lt;/tt&gt;</h1>
+Bias in legofit</h1>
 <h2><a class="anchor" id="autotoc_md29"></a>
 Biases arising from constraints</h2>
 <p >Biases arise in <code>legofit</code> because of the constraint that a child population cannot be older than its parent. If the parent's age is fixed, then it represents an inequality constraint on the age of the child. If the child is only slightly younger than the parent, the optimizer has problems. It will propose new values for the child's age. Those that increase the child's age will be rejected if they violate the inequality constraint. Those that decrease the child's age do not encounter this constraint. Consequently, the optimizer is more likely to move away from the constraint rather than toward it. This biases estimates away from the constraint, whenever the true value is close to the constraint.</p>
@@ -323,18 +323,12 @@ Bias arising from selection of variant sites</h2>
 <p >To avoid this bias, it is best to work with complete genomes rather than just the variant sites. Alternatively, one could call variant sites jointly using all genomes to be included in the analysis.</p>
 <h2><a class="anchor" id="autotoc_md31"></a>
 Bias arising from identifiability problems</h2>
-<p >It is often the case that many sets of parameter values imply the same site pattern frequencies. Ideally this merely broadens confidence intervals and does not introduce bias. It can, however, introduce bias. For this reason, one should always check for bias after a model has been fit. To do so, create a <code>fitted.lgo</code> file that has the same structure as the initial <code>.lgo</code> file used in your analysis, but with all free parameters set equal to their fitted values. Then use <code>legosim</code> to simulate several data sets. The following bash command generates 50 simulated data sets: </p><pre class="fragment">
-for i in {0..49}
-do
-    ofile=sim${i}.opf
-    legosim -1 -i 2000000 -U 18 fitted.lgo &gt; $ofile
-    done
-</pre><p> Then analyze these as though they were real data. If the resulting estimates are scattered around the fitted parameter value, then there is no substantial bias. </p>
+<p >It is often the case that many sets of parameter values imply the same site pattern frequencies. Ideally this merely broadens confidence intervals and does not introduce bias. It can, however, introduce bias. For this reason, one should always check for bias after a model has been fit. To check for bias, I use <a href="https://github.com/tskit-dev/msprime">msprime</a> to simulate 50 data sets, using the model of history implied by the fitted parameter values. Then analyze these as though they were real data. If the resulting estimates are scattered around the fitted parameter value, then there is no substantial bias. </p>
 </div></div><!-- PageDoc -->
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Jul 20 2022 14:43:56 for Legofit by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.4
+Generated on Thu Jul 21 2022 10:42:15 for Legofit by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.4
 </small></address>
 </body>
 </html>
