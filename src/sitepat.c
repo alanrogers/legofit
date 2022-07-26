@@ -204,11 +204,10 @@ const char *useMsg =
 static void usage(void) {
     fputs(useMsg, stderr);
     putc('\n', stderr);
-<<<<<<< HEAD
-=======
+
     int status;
     char buff[500];
->>>>>>> devlp
+
     fprintf(stderr, "   Maximum number of input files: %lu plus outgroup.\n",
             8 * sizeof(tipId_t));
     fputs("\nOptions may include:\n", stderr);
