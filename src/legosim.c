@@ -3,7 +3,7 @@
 @page legosim
 @brief Generate site patterns by coalescent simulation
 
-# `legosim`: coalescent simulations within a network of populations
+# legosim: coalescent simulations within a network of populations
 
     usage: legosim [options] input_file_name
        where options may include:
