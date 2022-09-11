@@ -113,6 +113,11 @@ int main(int argc, char **argv){
     StrDblQueue *queue[nfiles];
     for(i=0; i < nfiles; ++i) {
         queue[i] = StrDblQueue_parseLegofit(legofname[i]);
+        if( queue[i] == NULL ) {
+            fprintf(stderr,"%s:%d: can't parse \"%s\" as legofit output.\n",
+                    __FILE__,__LINE__, legofname[i]);
+            exit(EXIT_FAILURE);
+        }
         if(queue[i] == NULL) {
             fprintf(stderr,"%s:%d: could not parse legofit file \"%s\"\n",
                     __FILE__,__LINE__, legofname[i]);

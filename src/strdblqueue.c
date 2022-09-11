@@ -126,7 +126,7 @@ StrDblQueue *StrDblQueue_parseLegofit(const char *fname) {
     if(fp==NULL) {
         fprintf(stderr,"%s:%d: can't read file \"%s\"\n",
                 __FILE__,__LINE__,fname);
-        exit(EXIT_FAILURE);
+        goto err_exit;
     }
     char buff[2000];
     int got_fitted=0;
@@ -138,7 +138,7 @@ StrDblQueue *StrDblQueue_parseLegofit(const char *fname) {
         if(strchr(buff, '\n') == NULL && !feof(fp)) {
             fprintf(stderr, "%s:%d: Buffer overflow. size=%zu\n",
                     __FILE__, __LINE__, sizeof(buff));
-            exit(EXIT_FAILURE);
+            goto err_exit;
         }
         if(!got_fitted) {
             if(strncmp("Fitted", buff, 6) == 0)
@@ -161,20 +161,25 @@ StrDblQueue *StrDblQueue_parseLegofit(const char *fname) {
         if(errno) {
             fprintf(stderr, "%s:%d: bad float: %s (%s)\n",
                     __FILE__,__LINE__, valstr, strerror(errno));
-            exit(EXIT_FAILURE);
+            goto err_exit;
         }else if(end == valstr) {
             fprintf(stderr, "%s:%d: bad float: %s\n",
                     __FILE__,__LINE__, valstr);
-            exit(EXIT_FAILURE);
+            goto err_exit;
         }
         queue=StrDblQueue_push(queue, name, value);
     }
     if(0 == StrDblQueue_length(queue)) {
         fprintf(stderr,"%s:%s:%d: can't parse file %s\n",
                 __FILE__,__func__,__LINE__, fname);
-        exit(EXIT_FAILURE);
+        goto err_exit;
     }
+    fclose(fp);
     return queue;
+
+ err_exit:
+    fclose(fp);
+    return NULL;
 }
 
 /// Return 1 if string begins with '#', then any number of whitespace
