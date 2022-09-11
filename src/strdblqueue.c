@@ -120,7 +120,8 @@ int StrDblQueue_compare(StrDblQueue *lhs, StrDblQueue *rhs) {
 
 // Parse a legofit output file. Return an object of type
 // StrDblQueue, which contains the number of parameters, their names,
-// and their values.
+// and their values. If the input file can't be parsed, the function prints
+// an error message and returns NULL.
 StrDblQueue *StrDblQueue_parseLegofit(const char *fname) {
     FILE *fp = fopen(fname, "r");
     if(fp==NULL) {
@@ -170,8 +171,9 @@ StrDblQueue *StrDblQueue_parseLegofit(const char *fname) {
         queue=StrDblQueue_push(queue, name, value);
     }
     if(0 == StrDblQueue_length(queue)) {
-        fprintf(stderr,"%s:%s:%d: can't parse file %s\n",
-                __FILE__,__func__,__LINE__, fname);
+        fprintf(stderr,
+                "%s:%s:%d: didn't find any \"variable = value\" statements.\n",
+                __FILE__,__func__,__LINE__);
         goto err_exit;
     }
     fclose(fp);
