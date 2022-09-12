@@ -129,8 +129,9 @@ StrDblQueue *StrDblQueue_parseLegofit(const char *fname) {
                 __FILE__,__LINE__,fname);
         goto err_exit;
     }
-    char buff[10000];
     StrDblQueue *queue=NULL;
+    char buff[10000];
+
     while(1) {
         if(fgets(buff, sizeof buff, fp) == NULL) {
             break;
