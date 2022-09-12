@@ -130,7 +130,6 @@ StrDblQueue *StrDblQueue_parseLegofit(const char *fname) {
         goto err_exit;
     }
     char buff[10000];
-    int got_fitted=0;
     StrDblQueue *queue=NULL;
     while(1) {
         if(fgets(buff, sizeof buff, fp) == NULL) {
@@ -140,16 +139,6 @@ StrDblQueue *StrDblQueue_parseLegofit(const char *fname) {
             fprintf(stderr, "%s:%d: Buffer overflow. size=%zu\n",
                     __FILE__, __LINE__, sizeof(buff));
             goto err_exit;
-        }
-        if(!got_fitted) {
-            if(strncmp("Fitted", buff, 6) == 0)
-                got_fitted=1;
-            continue;
-        }else if(got_fitted) {
-            if(NULL != strstr(buff, "Constrained")) {
-                got_fitted = 0;
-                continue;
-            }
         }
         char *end, *valstr = buff;
         char *name = strsep(&valstr, "=");
