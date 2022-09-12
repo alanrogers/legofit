@@ -129,7 +129,7 @@ StrDblQueue *StrDblQueue_parseLegofit(const char *fname) {
                 __FILE__,__LINE__,fname);
         goto err_exit;
     }
-    char buff[2000];
+    char buff[10000];
     int got_fitted=0;
     StrDblQueue *queue=NULL;
     while(1) {
@@ -206,7 +206,7 @@ StrDblQueue *StrDblQueue_parseSitePat(const char *fname) {
                 __FILE__,__LINE__,fname);
         exit(EXIT_FAILURE);
     }
-    char buff[2000];
+    char buff[10000];
     bool got_sitepat = false;
     StrDblQueue *queue=NULL;
     while(1) {
