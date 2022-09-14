@@ -142,10 +142,8 @@ StrDblQueue *StrDblQueue_parseLegofit(const char *fname) {
                     __FILE__, __LINE__, sizeof(buff));
             goto err_exit;
         }
-        if(buff[0] == '#')
-            continue;
         stripchr(buff, '\n');
-        if(strlen(buff) == 0)
+        if(strlen(buff) == 0 || buff[0] == '#')
             continue;
         if(!got_fitted) {
             if(strncmp("Fitted", buff, 6) == 0)
