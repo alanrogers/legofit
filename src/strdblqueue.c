@@ -118,10 +118,10 @@ int StrDblQueue_compare(StrDblQueue *lhs, StrDblQueue *rhs) {
     return 0;
 }
 
-// Parse a legofit output file. Return an object of type
-// StrDblQueue, which contains the number of parameters, their names,
-// and their values. If the input file can't be parsed, the function prints
-// an error message and returns NULL.
+// Parse a legofit output file. Return an object of type StrDblQueue,
+// which contains the number of parameters, their names, and their
+// values. If the input file can't be parsed, the function prints an
+// error message and returns NULL.
 StrDblQueue *StrDblQueue_parseLegofit(const char *fname) {
     FILE *fp = fopen(fname, "r");
     if(fp==NULL) {
@@ -130,6 +130,7 @@ StrDblQueue *StrDblQueue_parseLegofit(const char *fname) {
         goto err_exit;
     }
     StrDblQueue *queue=NULL;
+    int got_fitted=0;
     char buff[10000];
 
     while(1) {
@@ -140,6 +141,21 @@ StrDblQueue *StrDblQueue_parseLegofit(const char *fname) {
             fprintf(stderr, "%s:%d: Buffer overflow. size=%zu\n",
                     __FILE__, __LINE__, sizeof(buff));
             goto err_exit;
+        }
+        if(buff[0] == '#')
+            continue;
+        stripchr(buff, '\n');
+        if(strlen(buff) == 0)
+            continue;
+        if(!got_fitted) {
+            if(strncmp("Fitted", buff, 6) == 0)
+                got_fitted=1;
+            continue;
+        }else if(got_fitted) {
+            if(NULL != strstr(buff, "Constrained")) {
+                got_fitted = 0;
+                continue;
+            }
         }
         char *end, *valstr = buff;
         char *name = strsep(&valstr, "=");
@@ -156,6 +172,7 @@ StrDblQueue *StrDblQueue_parseLegofit(const char *fname) {
         }else if(end == valstr) {
             fprintf(stderr, "%s:%d: bad float: %s\n",
                     __FILE__,__LINE__, valstr);
+            fprintf(stderr,"    var name: %s\n", name);
             goto err_exit;
         }
         queue=StrDblQueue_push(queue, name, value);
