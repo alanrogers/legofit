@@ -118,19 +118,21 @@ int StrDblQueue_compare(StrDblQueue *lhs, StrDblQueue *rhs) {
     return 0;
 }
 
-// Parse a legofit output file. Return an object of type
-// StrDblQueue, which contains the number of parameters, their names,
-// and their values.
+// Parse a legofit output file. Return an object of type StrDblQueue,
+// which contains the number of parameters, their names, and their
+// values. If the input file can't be parsed, the function prints an
+// error message and returns NULL.
 StrDblQueue *StrDblQueue_parseLegofit(const char *fname) {
     FILE *fp = fopen(fname, "r");
     if(fp==NULL) {
         fprintf(stderr,"%s:%d: can't read file \"%s\"\n",
                 __FILE__,__LINE__,fname);
-        exit(EXIT_FAILURE);
+        goto err_exit;
     }
-    char buff[2000];
-    int got_fitted=0;
     StrDblQueue *queue=NULL;
+    int got_fitted=0;
+    char buff[10000];
+
     while(1) {
         if(fgets(buff, sizeof buff, fp) == NULL) {
             break;
@@ -138,8 +140,11 @@ StrDblQueue *StrDblQueue_parseLegofit(const char *fname) {
         if(strchr(buff, '\n') == NULL && !feof(fp)) {
             fprintf(stderr, "%s:%d: Buffer overflow. size=%zu\n",
                     __FILE__, __LINE__, sizeof(buff));
-            exit(EXIT_FAILURE);
+            goto err_exit;
         }
+        stripchr(buff, '\n');
+        if(strlen(buff) == 0 || buff[0] == '#')
+            continue;
         if(!got_fitted) {
             if(strncmp("Fitted", buff, 6) == 0)
                 got_fitted=1;
@@ -161,20 +166,27 @@ StrDblQueue *StrDblQueue_parseLegofit(const char *fname) {
         if(errno) {
             fprintf(stderr, "%s:%d: bad float: %s (%s)\n",
                     __FILE__,__LINE__, valstr, strerror(errno));
-            exit(EXIT_FAILURE);
+            goto err_exit;
         }else if(end == valstr) {
             fprintf(stderr, "%s:%d: bad float: %s\n",
                     __FILE__,__LINE__, valstr);
-            exit(EXIT_FAILURE);
+            fprintf(stderr,"    var name: %s\n", name);
+            goto err_exit;
         }
         queue=StrDblQueue_push(queue, name, value);
     }
     if(0 == StrDblQueue_length(queue)) {
-        fprintf(stderr,"%s:%s:%d: can't parse file %s\n",
-                __FILE__,__func__,__LINE__, fname);
-        exit(EXIT_FAILURE);
+        fprintf(stderr,
+                "%s:%s:%d: didn't find any \"variable = value\" statements.\n",
+                __FILE__,__func__,__LINE__);
+        goto err_exit;
     }
+    fclose(fp);
     return queue;
+
+ err_exit:
+    fclose(fp);
+    return NULL;
 }
 
 /// Return 1 if string begins with '#', then any number of whitespace
@@ -199,7 +211,7 @@ StrDblQueue *StrDblQueue_parseSitePat(const char *fname) {
                 __FILE__,__LINE__,fname);
         exit(EXIT_FAILURE);
     }
-    char buff[2000];
+    char buff[10000];
     bool got_sitepat = false;
     StrDblQueue *queue=NULL;
     while(1) {

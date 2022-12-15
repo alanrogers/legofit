@@ -168,13 +168,19 @@ static void Stack_push(Stack * self, tipId_t x) {
 /// stack.
 static void
 generatePatterns(int bit, int npops, Stack * stk, tipId_t pat, int doSing) {
-    assert(sizeof(tipId_t) < sizeof(unsigned long long));
+    if(npops >= 8*sizeof(tipId_t)) {
+        fprintf(stderr,"%s:%s:%d: %d is too many populations: max is %lu\n",
+                __FILE__,__func__,__LINE__,
+                npops, 8*sizeof(tipId_t) - 1);
+        exit(EXIT_FAILURE);
+    }
+    const tipId_t unity = 1;
     if(bit == npops) {
         // Recursion stops here. If current pattern is
         // legal, then push it onto the stack. Then return.
 
         // Exclude patterns with all bits on, or all bits off.
-        if(pat == 0 || pat == (1ULL << npops) - 1ULL)
+        if(pat == 0 || pat == (unity << npops) - 1ULL)
             return;
         // Exclude singleton patterns unless "doSing" is true.
         if(!doSing && isPow2(pat))
@@ -249,6 +255,7 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
     int n = SimReader_sampleDim(r);
+    printf("!! sampleDir = %d\n", n);
 
     printf("# simpat version %s\n", GIT_VERSION);
 
@@ -359,7 +366,7 @@ int main(int argc, char **argv) {
     LblNdx_init(&lndx);
     for(i=0; i < SimReader_sampleDim(r); ++i) {
         LblNdx_addSamples(&lndx,
-                          SimReader_nsamples(r, i),
+                          1,
                           SimReader_lbl(r, i));
     }
 

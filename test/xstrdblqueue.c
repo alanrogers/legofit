@@ -147,7 +147,19 @@ int main(int argc, char **argv){
     assert(StrDblQueue_length(a) == 0);
 
     c = StrDblQueue_parseLegofit("s1boot0.legofit");
+    if(c == NULL) {
+        fprintf(stderr,"%s:%d: can't parse \"%s\" as legofit output.\n",
+                __FILE__,__LINE__, "s1boot0.legofit");
+        unitTstResult("StrDblQueue", "FAILED");
+        exit(EXIT_FAILURE);
+    }
     d = StrDblQueue_parseLegofit("s1boot0.legofit");
+    if(c == NULL) {
+        fprintf(stderr,"%s:%d: can't parse \"%s\" as legofit output.\n",
+                __FILE__,__LINE__, "s1boot0.legofit");
+        unitTstResult("StrDblQueue", "FAILED");
+        exit(EXIT_FAILURE);
+    }
 
     assert(StrDblQueue_compare(c,d) == 0);
 

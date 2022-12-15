@@ -546,6 +546,7 @@ int tokenize(int dim, char *token[dim], char *s, const char *delim) {
 
 /// In string s, replace instances of character a with character b.
 void strReplaceChr(char *s, int a, int b) {
+    assert(s != NULL);
     while(*s != '\0') {
         if(*s == a)
             *s = b;

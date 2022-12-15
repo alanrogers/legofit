@@ -264,7 +264,6 @@ int main(int argc, char **argv) {
         {"logAll", no_argument, 0, 'a'},
         {"help", no_argument, 0, 'h'},
         {"version", no_argument, 0, 'V'},
-//        {"threads", required_argument, 0, 't'},
         {NULL, 0, NULL, 0}
     };
 

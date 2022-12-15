@@ -282,9 +282,15 @@ void ThreadState_free(void *rng) {
 }
 
 void usage(void) {
-    fprintf(stderr, "usage: legofit [options] input.lgo sitepat.txt\n");
-    fprintf(stderr, "   where file input.lgo describes population history,\n"
-            "   and file sitepat.txt contains site pattern frequencies.\n");
+    fprintf(stderr, "usage: legofit [options] --threads <x>"
+            " <input.lgo> <data.txt>\n");
+    fputs("   where file <input.lgo> describes population history,\n"
+          "   file <data.txt> contains site pattern frequencies.\n"
+          "   \"--threads <x>\" may be abbreviated as \"-t <x>\" and\n"
+          "   specifies the number of parallel threads. \"--threads 0\"\n"
+          "   means to use as many threads as needed. This may\n"
+          "   inconvenience other users on a shared machine.\n",
+          stderr);
     fprintf(stderr, "Options may include:\n");
     tellopt("-1 or --singletons", "Use singleton site patterns");
     tellopt("-c or --clic", "write output files needed by clic"); 
@@ -305,7 +311,6 @@ void usage(void) {
     tellopt("--stateOut <filename>",
             "write final state to file");
     tellopt("-T <x> or --tol <x>", "termination criterion");
-    tellopt("-t <x> or --threads <x>", "number of threads (default is auto)");
     tellopt("-v or --verbose", "verbose output");
     tellopt("--version", "Print version and exit");
     tellopt("-x <x> or --crossover <x>", "set DE crossover probability");
@@ -347,7 +352,7 @@ int main(int argc, char **argv) {
     unsigned long pid = (unsigned long) getpid();
     double lo_twoN = 1.0, hi_twoN = DBL_MAX;    // twoN bounds
     double lo_t = 0.0, hi_t = DBL_MAX;  // t bounds
-    int nThreads = 0;           // total number of threads
+    int nThreads = -1;          // total number of threads
     int doSing = 0;             // nonzero means use singleton site patterns
     int write_clic_pts = 0;
     int status, optndx;
@@ -423,8 +428,8 @@ int main(int argc, char **argv) {
             break;
         case 't':
             nThreads = strtol(optarg, NULL, 10);
-            if(nThreads <= 0) {
-                fprintf(stderr,"%s:%d: number of threads must be positive\n",
+            if(nThreads < 0) {
+                fprintf(stderr,"%s:%d: number of threads must be >= 0\n",
                         __FILE__,__LINE__);
                 usage();
             }
@@ -652,12 +657,25 @@ int main(int argc, char **argv) {
     }
     assert(state);
 
+    if(nThreads == -1) {
+        // User failed to use --threads argument.
+        fputs(
+        "# Warning: new scripts should use the --threads or -t argument.\n"
+        "# Default uses as many threads as possible and may inconvenience\n"
+        "# other users on a shared machine.\n", stderr);
+        nThreads = 0;
+    }
+
     if(nThreads == 0) {
         if(deterministic)
             nThreads = ceil(0.5 * getNumCores());
         else
             nThreads = ceil(0.75 * getNumCores());
-    }if(nThreads > npts)
+    }
+
+    // There's no point in using more threads than there are points in
+    // the DE swarm.
+    if(nThreads > npts)
         nThreads = npts;
 
     if(deterministic) {

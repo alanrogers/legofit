@@ -66,14 +66,14 @@ int main(int argc, char **argv) {
     const int   buffsize = 16384;
     char        buff[buffsize];
 
-    // Keep track of the number of sites at which the number
-    // of reference or alternate alleles differs from 0
+    // Keep track of the number of sites at which various types of
+    // problem arise.
     long int         zeroref = 0, zeroalt = 0, zerogtype = 0;
     long int         missref = 0;
     long int         multref = 0, multalt = 0;
     long int         indelref=0, indelalt=0;
     long int         nbad = 0, ngood = 0;
-    int         ok;             // is current line acceptable
+    int         ok;             // is current line acceptable?
     long unsigned lastnucpos = 0, nucpos;
     char        lastchr[100] = { '\0' };
 
