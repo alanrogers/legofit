@@ -255,7 +255,6 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
     int n = SimReader_sampleDim(r);
-    printf("!! sampleDir = %d\n", n);
 
     printf("# simpat version %s\n", GIT_VERSION);
 
