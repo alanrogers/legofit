@@ -660,9 +660,10 @@ int main(int argc, char **argv) {
     if(nThreads == -1) {
         // User failed to use --threads argument.
         fputs(
-        "# Warning: new scripts should use the --threads or -t argument.\n"
-        "# Default uses as many threads as possible and may inconvenience\n"
-        "# other users on a shared machine.\n", stderr);
+        "# Warning: Default uses as many threads as possible and may"
+        " inconvenience\n"
+        "# other users on a shared machine. To avoid this, use\n"
+        " legofit options -t or --threads.\n", stderr);
         nThreads = 0;
     }
 
