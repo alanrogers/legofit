@@ -663,7 +663,8 @@ int main(int argc, char **argv) {
         "# Warning: Default uses as many threads as possible and may"
         " inconvenience\n"
         "# other users on a shared machine. To avoid this, use\n"
-        " legofit options -t or --threads.\n", stderr);
+        " legofit options -t or --threads.\n"
+        "# To silence this warning use -t 0.\n", stderr);
         nThreads = 0;
     }
 

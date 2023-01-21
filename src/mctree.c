@@ -316,7 +316,7 @@ void MCTree_initStateVec(void *self, int ndx, int n, double x[n],
 /// Calculate the probability of each site pattern.
 /// @param self MCTree object
 /// @param[out] branchtab BranchTab object, which will tabulate branch
-/// lengths from this simulations.
+/// lengths.
 /// @param[inout] rng GSL random number generator (NOT USED)
 /// @param[in] nreps number of replicate gene trees to simulate (NOT USED)
 /// @param[in] doSing if doSing is non-zero, singleton site patterns
