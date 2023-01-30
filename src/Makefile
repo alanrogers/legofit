@@ -35,6 +35,11 @@ ifeq ($(shell uname -s), Darwin)
   warn +=  -Wno-nullability-completeness
 endif
 
+# Linux only
+ifeq ($(shell uname -s), Linux)
+  warn +=  -Wno-alloc-size-larger-than
+endif
+
 # Abort on integer overflow or underflow
 ubsan =
 #ifeq ($(shell uname -s), Darwin)
