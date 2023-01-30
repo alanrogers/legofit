@@ -1489,8 +1489,8 @@ IdSetSet **get_descendants2(int dim0, IdSetSet ** w0,
         return NULL;
 
     if(n < 0) {
-        fprintf(stderr,"%s:%d: this shouldn't happen.\n",
-                __FILE__,__LINE__);
+        fprintf(stderr,"%s:%d: this shouldn't happen. n=%d\n",
+                __FILE__,__LINE__, n);
         exit(EXIT_FAILURE);
     }
 
