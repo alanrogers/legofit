@@ -1051,8 +1051,14 @@ static int Segment_coalesceFinite(Segment * self, int dosing,
         // Loop over number, k, of ancestors.  Include k=1, because
         // this is a finite segment.
         for(k = 1; k <= n; ++k) {
-            if(pr[k - 1] <= improbable)
-                continue;       // skip improbable states
+            // Commenting out this test for a small probability. Removing
+            // this test will allow improbable events to contribute to site
+            // pattern frequences. (This happens w/i visitSetPart.) However
+            // the improbable events will not propogate farther up the network,
+            // because of a similar test within visitSetPart.
+            //
+            //if(pr[k - 1] <= improbable)
+            //    continue;       // skip improbable states
             sd.a = a[k];
             sd.nparts = k;
             sd.prior = pr[k - 1];
@@ -1597,11 +1603,17 @@ static void mv_idsets_to_parent(Segment * self, int ipar, PtrLst ** a) {
         IdSet *id;
         while((id = PtrLst_pop(a[i])) != NULL) {
 
+            // Ignore improbable events to increase speed.
             if(IdSet_prob(id) <= improbable) {
                 IdSet_free(id);
                 continue;
             }
 
+            // The bottleneck in this program occurs when IdSet lists
+            // from left and right children are merged. The following
+            // line generates these lists, and the test just above
+            // makes it possible to limit the size of the lists, thus
+            // increasing execution speed.
             status = IdSetSet_add(w, id);
             if(status)
                 ERR(status, "bad return from IdSetSet_add");
