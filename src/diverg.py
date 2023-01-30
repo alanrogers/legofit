@@ -161,6 +161,6 @@ for i in range(len(prob1)):
     print()
 
 fmt = "%%%ds %%%ds %%%ds %%9.6g" % (widpat, wid1, wid2)
-print(fmt % ("", "", "", KLsum), end=' ')
+print(fmt % ("", "", "", KLsum))
 
 
