@@ -29,13 +29,23 @@ void LblNdx_init(LblNdx * self) {
 /// each sampled population.
 void LblNdx_addSamples(LblNdx * self, unsigned nsamples, const char *lbl) {
     unsigned    i;
+    int status;
     if(self->n + nsamples >= MAXSAMP)
         eprintf("%s:%s:%d: too many samples\n", __FILE__, __func__, __LINE__);
     for(i = 0; i < nsamples; ++i) {
-        if(nsamples == 1)
-            snprintf(self->lbl[self->n], POPNAMESIZE, "%s", lbl);
-        else
-            snprintf(self->lbl[self->n], POPNAMESIZE, "%s.%u", lbl, i);
+        if(nsamples == 1) {
+            status = snprintf(self->lbl[self->n], POPNAMESIZE, "%s", lbl);
+            if(status >= POPNAMESIZE) {
+                fprintf(stderr, "%s:%d: buffer overflow\n", __FILE__, __LINE__);
+                exit(EXIT_FAILURE);
+            }
+        }else {
+            status = snprintf(self->lbl[self->n], POPNAMESIZE, "%s.%u", lbl, i);
+            if(status >= POPNAMESIZE) {
+                fprintf(stderr, "%s:%d: buffer overflow\n", __FILE__, __LINE__);
+                exit(EXIT_FAILURE);
+            }
+        }
         self->n += 1;
     }
     LblNdx_sanityCheck(self, __FILE__, __LINE__);
