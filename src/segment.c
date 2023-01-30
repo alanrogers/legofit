@@ -1488,7 +1488,7 @@ IdSetSet **get_descendants2(int dim0, IdSetSet ** w0,
     if(n == 0)
         return NULL;
 
-    IdSetSet **dss = malloc(n * sizeof(dss[0]));
+    IdSetSet **dss = malloc(n * sizeof(IdSetSet *));
 
     // Convert lists of descendants into IdSetSet objects and
     // install in dss. Also free the entries of d[i].
