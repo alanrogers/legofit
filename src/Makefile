@@ -1,4 +1,4 @@
-destination := $(HOME)/bin
+estination := $(HOME)/bin
 git_version := "$(shell git describe --dirty --always --tags)"
 global_destination := $(HOME)/grp1/bin
 opt := -DNDEBUG -O2  -finline-functions  # For full optimization
@@ -33,11 +33,6 @@ warn := \
 # MacOS only
 ifeq ($(shell uname -s), Darwin)
   warn +=  -Wno-nullability-completeness
-endif
-
-# Linux only
-ifeq ($(shell uname -s), Linux)
-  warn +=  -Wno-alloc-size-larger-than
 endif
 
 # Abort on integer overflow or underflow
