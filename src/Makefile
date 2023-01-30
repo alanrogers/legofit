@@ -1,4 +1,4 @@
-estination := $(HOME)/bin
+destination := $(HOME)/bin
 git_version := "$(shell git describe --dirty --always --tags)"
 global_destination := $(HOME)/grp1/bin
 opt := -DNDEBUG -O2  -finline-functions  # For full optimization
