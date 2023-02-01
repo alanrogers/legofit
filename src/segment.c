@@ -30,7 +30,7 @@
 // Site pattern representing the union of all samples.
 extern tipId_t union_all_samples;
 
-extern long double improbable;
+extern long double improbable, pr_ignored;
 
 typedef struct MigDat MigDat;
 typedef struct CombDat CombDat;
@@ -793,8 +793,10 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
         IdSet *ancestors = IdSet_new(k, sitepat, evlst);
 
         // Ignore improbable IdSets
-        if(IdSet_prob(ancestors) <= improbable) {
+        long double pr = IdSet_prob(ancestors);
+        if(pr <= improbable) {
             IdSet_free(ancestors);
+            pr_ignored += pr;
             continue;
         }
 #ifndef NDEBUG
@@ -859,6 +861,7 @@ static void migrate(PtrLst * migrants, PtrLst * natives, PtrLst * sets,
                     int nnat, int *natndx, MigDat * mdat) {
 
     IdSet *set;
+    long double pr;
 
     PtrLst_rewind(sets);
     while((set = PtrLst_next(sets)) != NULL) {
@@ -875,9 +878,11 @@ static void migrate(PtrLst * migrants, PtrLst * natives, PtrLst * sets,
         IdSet_addEvent(nat, mdat->event, mdat->outcome, mdat->mig_pr);
 
         // Ignore improbable IdSets
-        if(IdSet_prob(mig) <= improbable) {
+        pr = IdSet_prob(mig);
+        if(pr <= improbable) {
             IdSet_free(mig);
             IdSet_free(nat);
+            pr_ignored += pr;
             continue;
         }
 #ifndef NDEBUG
@@ -1058,8 +1063,10 @@ static int Segment_coalesceFinite(Segment * self, int dosing,
             // the improbable events will not propogate farther up the network,
             // because of a similar test within visitSetPart.
             //
-            //if(pr[k - 1] <= improbable)
+            //if(pr[k - 1] <= improbable) {
+            //    pr_ignored += pr[k - 1];
             //    continue;       // skip improbable states
+            //}
             sd.a = a[k];
             sd.nparts = k;
             sd.prior = pr[k - 1];
@@ -1598,6 +1605,7 @@ static void mv_idsets_to_parent(Segment * self, int ipar, PtrLst ** a) {
     assert(ipar < self->nparents);
     int iself = self_ndx(self, self->parent[ipar]);
     int status;
+    long double pr;
 
     assert(self == self->parent[ipar]->child[iself]);
 
@@ -1618,8 +1626,10 @@ static void mv_idsets_to_parent(Segment * self, int ipar, PtrLst ** a) {
         while((id = PtrLst_pop(a[i])) != NULL) {
 
             // Ignore improbable events to increase speed.
-            if(IdSet_prob(id) <= improbable) {
+            pr = IdSet_prob(id);
+            if(pr <= improbable) {
                 IdSet_free(id);
+                pr_ignored += pr;
                 continue;
             }
 
@@ -1658,8 +1668,10 @@ static void mv_to_waiting_room(Segment * self, PtrLst * src, int ipar,
     IdSet *id;
     while((id = PtrLst_pop(src)) != NULL) {
 
-        if(IdSet_prob(id) <= improbable) {
+        long double pr = IdSet_prob(id);
+        if(pr <= improbable) {
             IdSet_free(id);
+            pr_ignored += pr;
             continue;
         }
 
