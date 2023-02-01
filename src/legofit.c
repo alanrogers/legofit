@@ -82,10 +82,18 @@ still use the deterministic algorithm to obtain an approximate answer,
 using an argument such as `-d 1e-6`. This tells legosim to use the
 deterministic algorithm while ignoring states whose probability is
 less than or equal to 1e-6. Nonzero arguments to `-d` will introduce
-bias, and it is not yet clear that such arguments are useful. At
-present, I recommend against using `-d` with a nonzero argument. If
-the model is so complex that `-d 0` is not feasible, then omit this
-argument to use the default stochastic algorithm.
+bias. To evaluate the magnitude of this bias, compare the results to
+those obtained using the stochastic algorithm or (where feasible) the
+deterministic one with `-d 0`.
+
+When the deterministic algorithm is used, legosim and legofit print a
+line of output that looks like this:
+
+    # Summed probability of ignored improbable events: 3.515617e-04
+
+This "summed probability" can exceed 1, because it sums across several
+probability distributions. Nonetheless, when it is small, that is an
+indication that we have not ignored much of any of these distributions.
 
 Optimization is done using the "differential evolution" (DE)
 algorithm.  The DE algorithm maintains a swarm of points, each at a
@@ -378,7 +386,7 @@ int main(int argc, char **argv) {
     SimSched *simSched = SimSched_new();
 
     // Ignore IdSet objects with probabilities <= improbable.
-    extern long double improbable;
+    extern long double improbable, pr_ignored;
 
     assert(SimSched_nStages(simSched) == 0);
 
@@ -984,6 +992,9 @@ int main(int argc, char **argv) {
     for(i=0; i<dim; ++i)
         free(parnames[i]);
 
+    if(deterministic)
+        printf("# Summed probability of ignored improbable events: %Le\n",
+               pr_ignored);
     fprintf(stderr, "legofit is finished\n");
 
     return 0;

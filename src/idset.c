@@ -17,6 +17,9 @@
 // Exclude IdSet objects whose probability is <= improbable.
 long double improbable = 0.0L;
 
+// The total probability of events ignored because they were improbable.
+long double pr_ignored = 0.0L;
+
 // A set of tipId_t values.
 struct IdSet {
     int nIds; // number of Ids in this set
@@ -153,10 +156,16 @@ IdSet *IdSet_join(IdSet *left, IdSet *right, int nsamples,
 #ifndef NDEBUG    
     EventLst_sanityCheck(evlst, __FILE__, __LINE__);
 #endif    
-    
-    long double pr = EventLst_prob(evlst);
-    if(mutually_exclusive || pr <= improbable) {
+
+    if(mutually_exclusive) {
         EventLst_free(evlst);
+        return NULL;
+    }
+
+    long double pr = EventLst_prob(evlst);
+    if( pr <= improbable) {
+        EventLst_free(evlst);
+        pr_ignored += pr;
         return NULL;
     }
 
