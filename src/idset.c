@@ -163,7 +163,7 @@ IdSet *IdSet_join(IdSet *left, IdSet *right, int nsamples,
     }
 
     long double pr = EventLst_prob(evlst);
-    if( pr < improbable) {
+    if( pr <= improbable) {
         EventLst_free(evlst);
         pr_ignored += pr;
         return NULL;
