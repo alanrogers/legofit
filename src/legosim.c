@@ -77,8 +77,8 @@ bias. To evaluate the magnitude of this bias, compare the results to
 those obtained using the stochastic algorithm or (where feasible) the
 deterministic one with `-d 0`.
 
-When the deterministic algorithm is used, legosim and legofit print a
-line of output that looks like this:
+When the deterministic algorithm is used, legosim prints a line of
+output that looks like this:
 
     # Summed probability of ignored improbable events: 3.515617e-04
 
