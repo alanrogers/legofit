@@ -45,7 +45,9 @@ const char *useMsg =
     "   fraction is set to 0, <b.legosim> is like <a.legosim> except\n"
     "   that this admixture fraction is set to 1, and <obs.opf>\n"
     "   is a file of observed site pattern frequencies, as generated\n"
-    "   by sitepat.\n";
+    "   by sitepat.\n\n"
+    "Function calculates the conditional probability of admixture for\n"
+    "each site pattern and the mean posterior probability of admixture.\n";
 
 /// Print usage message and die.
 static void usage(void) {
