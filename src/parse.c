@@ -604,7 +604,8 @@ static int get_one_line(size_t n, char buff[n], FILE * fp) {
             *s = '\0';
 
         // strip trailing whitespace
-        for(s = buff; *s != '\0'; ++s) ;
+        for(s = buff; *s != '\0'; ++s)
+            ;
         while(s > buff && isspace(*(s - 1)))
             --s;
         *s = '\0';
@@ -629,7 +630,7 @@ PtrPair mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, Bounds * bnd) {
     StrPtrMap *popmap = StrPtrMap_new();
     StrPtrMap *parmap = StrPtrMap_new();
 
-    // Queues for fixed parameters, free ones, and constrained ones.
+    // Queues for fixed, free, and constrained parameters.
     // Used during parsing. NULL after that.
     PtrQueue *fixedQ = PtrQueue_new();
     PtrQueue *freeQ = PtrQueue_new();
@@ -747,7 +748,7 @@ PtrPair mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, Bounds * bnd) {
 
     // site pattern representing the union of all samples
     unsigned nsamples = SampNdx_size(sndx);
-    union_all_samples = (1u << nsamples) - 1;
+    union_all_samples = low_bits_on(nsamples);
     
     StrPtrMap_free(popmap);
     StrPtrMap_free(parmap);
@@ -761,7 +762,7 @@ PtrPair mktree(FILE * fp, SampNdx * sndx, LblNdx * lndx, Bounds * bnd) {
 /// Count the number of "segment" statements in input file.
 int countSegments(FILE * fp) {
     int nseg = 0;
-    char orig[500], buff[500];
+    char orig[2048], buff[2048];
     char *tok, *next;
 
     while(1) {
@@ -772,7 +773,7 @@ int countSegments(FILE * fp) {
         if(!strchr(buff, '\n') && !feof(fp)) {
             fprintf(stderr, "ERR@%s:%d: input buffer overflow."
                     " buff size: %zu\n", __FILE__, __LINE__, sizeof(buff));
-            fprintf(stderr, "input: %s\n", orig);
+            fprintf(stderr, "input line: %s\n", buff);
             exit(EXIT_FAILURE);
         }
         // strip trailing comments

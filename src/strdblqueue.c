@@ -62,22 +62,6 @@ StrDblQueue *StrDblQueue_pop(StrDblQueue *self, StrDbl *strdbl) {
     return next;
 }
 
-// //get a strdbl
-// // NOTE: This is inefficient, we should work on making this faster
-//
-// StrDbl *StrDblQueue_get(StrDblQueue *self, StrDbl *strdbl, int index) {
-//     if(self==NULL)
-//         return NULL;
-//
-//     StrDblQueue *temp;
-//
-//     for (int i = 0; i < index; i++)
-//       temp = temp->next;
-//
-//     strdbl = &(temp->strdbl);
-//     return strdbl;
-// }
-
 int StrDblQueue_length(StrDblQueue *self) {
     if(self==NULL)
         return 0;
@@ -121,8 +105,10 @@ int StrDblQueue_compare(StrDblQueue *lhs, StrDblQueue *rhs) {
 // Parse a legofit output file. Return an object of type StrDblQueue,
 // which contains the number of parameters, their names, and their
 // values. If the input file can't be parsed, the function prints an
-// error message and returns NULL.
-StrDblQueue *StrDblQueue_parseLegofit(const char *fname) {
+// error message and returns NULL. If freeonly is nonzero, the returned
+// queue will contain only free parameter values. Otherwise (if
+// freeonly==0) it will contain all parameters.
+StrDblQueue *StrDblQueue_parseLegofit(const char *fname, int freeonly) {
     FILE *fp = fopen(fname, "r");
     if(fp==NULL) {
         fprintf(stderr,"%s:%d: can't read file \"%s\"\n",
@@ -150,7 +136,7 @@ StrDblQueue *StrDblQueue_parseLegofit(const char *fname) {
                 got_fitted=1;
             continue;
         }else if(got_fitted) {
-            if(NULL != strstr(buff, "Constrained")) {
+            if(freeonly && NULL != strstr(buff, "Constrained")) {
                 got_fitted = 0;
                 continue;
             }

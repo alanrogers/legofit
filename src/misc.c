@@ -433,22 +433,22 @@ char *strlowercase(char *s) {
     return s;
 }
 
-/// Hash a character string
+/// Hash a character string using algorithm of Daniel J. Boorstein
 #ifdef __clang__
 unsigned long strhash(const char *ss) __attribute__ ((no_sanitize("integer"))) {
 #else
 unsigned long strhash(const char *ss) {
 #endif
-    unsigned long hashval;
+    unsigned long hash;
     int c;
     const unsigned char *s = (const unsigned char *) ss;
 
-    // djb2
-    hashval = 5381;
+    // djb2 algorithm
+    hash = 5381;
     while((c = *s++))
-        hashval = ((hashval << 5) + hashval) + c;
+        hash = ((hash << 5) + hash) + c; // hash*33 + c, but faster
 
-    return hashval;
+    return hash;
 }
 
 /// Remove character c from string s. Return length of string.
@@ -787,7 +787,7 @@ void collapse_whitespace(char *buff) {
 }
 
 /// Return 1 if the relative difference between x and y is less than or
-/// equal to 8*LDBL_EPSILON.
+/// equal to 8*DBL_EPSILON.
 int LDbl_near(long double x, long double y) {
     long double tol = fmaxl(fabsl(x), fabsl(y)) * 8.0 * DBL_EPSILON;
     tol = fmaxl(tol, DBL_EPSILON);

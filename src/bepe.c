@@ -130,6 +130,7 @@ int main(int argc, char **argv) {
     char *dirname = getcwd(NULL, 0);
     printf("# curr dir: %s\n", dirname);
     free(dirname);
+    dirname = NULL;
 
     int i, j;
     int nfiles=0, nLegoFiles=0;
@@ -159,7 +160,10 @@ int main(int argc, char **argv) {
     }
 
     if(nfiles < 3) {
-        fprintf(stderr,"nfiles=%d; need at least 3\n", nfiles);
+        fprintf(stderr,
+                "Only %d data files listed on cmd line."
+                " Need at least 3 and the\n"
+                "same number of .legofit files.\n", nfiles);
         usage();
     }
 

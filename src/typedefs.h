@@ -44,6 +44,8 @@ typedef struct SplitLst SplitLst;
 typedef struct State State;
 typedef struct Stirling2 Stirling2;
 typedef struct StrDblQueue StrDblQueue;
+typedef struct StrDblMap StrDblMap;
+typedef struct StrStrMap StrStrMap;
 typedef struct StrInt StrInt;
 typedef struct StrParMap StrParMap;
 typedef struct StrPtrMap StrPtrMap;

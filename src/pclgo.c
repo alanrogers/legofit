@@ -161,7 +161,7 @@ int main(int argc, char **argv){
     // Read bootstrap files into an array of FIFO queues
     StrDblQueue *queue[ncases];
     for(i=0; i < ncases; ++i) {
-        queue[i] = StrDblQueue_parseLegofit(repfname[i]);
+        queue[i] = StrDblQueue_parseLegofit(repfname[i], 1);
         if( queue[i] == NULL ) {
             fprintf(stderr,"%s:%d: can't parse legofit file \"%s\".\n",
                     __FILE__,__LINE__, repfname[i]);
