@@ -77,8 +77,8 @@ bias. To evaluate the magnitude of this bias, compare the results to
 those obtained using the stochastic algorithm or (where feasible) the
 deterministic one with `-d 0`.
 
-When the deterministic algorithm is used, legosim and legofit print a
-line of output that looks like this:
+When the deterministic algorithm is used, legosim prints a line of
+output that looks like this:
 
     # Summed probability of ignored improbable events: 3.515617e-04
 
@@ -360,6 +360,10 @@ int main(int argc, char **argv) {
     if(!U && !print_brlen)
         BranchTab_normalize(bt);
 
+    if(deterministic)
+        printf("# Summed probability of ignored improbable events: %Le\n",
+               pr_ignored);
+
     // Put site patterns and branch lengths into arrays.
     unsigned npat = BranchTab_size(bt);
     tipId_t pat[npat];
@@ -399,10 +403,6 @@ int main(int argc, char **argv) {
         }else
             printf("%15s %15.10Lf\n", buff2, elen[ord[j]]);
     }
-
-    if(deterministic)
-        printf("# Summed probability of ignored improbable events: %Le\n",
-               pr_ignored);
 
     gsl_rng_free(rng);
     BranchTab_free(bt);

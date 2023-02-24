@@ -22,18 +22,11 @@
 
 int main(int argc, char *argv[]) {
 
-    int verbose = 0, status;
+    int status;
 
-    switch (argc) {
-    case 1:
-        break;
-    case 2:
-        if(strncmp(argv[1], "-v", 2) != 0)
-            goto usage;
-        verbose = 1;
-        break;
-    default:
-        goto usage;
+    if(argc != 1) {
+        fprintf(stderr, "usage xparam\n");
+        exit(EXIT_FAILURE);
     }
 
     time_t      currtime = time(NULL);
@@ -129,8 +122,4 @@ int main(int argc, char *argv[]) {
     te_free_variables(pars);
 
     return 0;
-
- usage:
-    fprintf(stderr, "usage xparam [-v]\n");
-    exit(EXIT_FAILURE);
 }

@@ -207,7 +207,6 @@ int main(int argc, char **argv) {
         if(verbose) {
             printf("bits(%u) = ", u);
             printBits(sizeof(tipId_t), &maxtid, stdout);
-            putchar('\n');
         }
         assert(maxtid == (1u << u) - 1);
         assert(maxtid == twopwr - 1);

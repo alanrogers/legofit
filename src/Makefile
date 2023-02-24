@@ -1,8 +1,8 @@
 destination := $(HOME)/bin
 git_version := "$(shell git describe --dirty --always --tags)"
 global_destination := $(HOME)/grp1/bin
-opt := -DNDEBUG -O2  -finline-functions  # For full optimization
-#opt := -O0 -g -fno-inline-functions -rdynamic -DDEBUG     # For debugging
+#opt := -DNDEBUG -O2  -finline-functions  # For full optimization
+opt := -O0 -g -fno-inline-functions -rdynamic -DDEBUG     # For debugging
 #opt := -O2  -g -finline-functions  # Optimization + debugging
 #prof := -pg -g -rdynamic                    # For profiling under gcc
 #prof := --fprofile-generate -g              # For profiling under clang
@@ -11,7 +11,7 @@ incl := -I/usr/local/include -I/opt/local/include
 
 targets := legosim legofit tabpat sitepat scrmpat daf raf numcores \
      joinraf raf2daf bepe booma pclgo resid simpat ms2sim clic rafdaf \
-     mapmix pripos
+     mapmix pripos mkfitted
 pytargets := diverg.py bootci.py flatfile.py axt2raf.py flatpat.py
 
 CC := gcc
@@ -161,6 +161,10 @@ RAF := raf.o misc.o
 raf : $(RAF)
 	$(CC) $(CFLAGS) -o $@ $(RAF) $(lib)
 
+MKFITTED := mkfitted.o misc.o strdblqueue.o strdblmap.o binary.o
+mkfitted : $(MKFITTED)
+	$(CC) $(CFLAGS) -o $@ $(MKFITTED) $(lib)
+
 NUMCORES := numcores.o misc.o
 numcores : $(NUMCORES)
 	$(CC) $(CFLAGS) -o $@ $(NUMCORES) $(lib)
@@ -176,6 +180,8 @@ ptrptrmap.o : ptrptrmap.c ptrptrmap.h hashmap.h hashmap.src
 ptru32map.o : ptru32map.c ptru32map.h hashmap.h hashmap.src
 
 u64u64map.o : u64u64map.c u64u64map.h hashmap.h hashmap.src
+
+strdblmap.o : strdblmap.c strdblmap.h hashmap.h hashmap.src
 
 # Make dependencies file
 depend : *.c *.h

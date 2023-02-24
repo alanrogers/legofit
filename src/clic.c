@@ -112,7 +112,7 @@ int main(int argc, char **argv){
     // Read legofit files into an array of FIFO queues
     StrDblQueue *queue[nfiles];
     for(i=0; i < nfiles; ++i) {
-        queue[i] = StrDblQueue_parseLegofit(legofname[i]);
+        queue[i] = StrDblQueue_parseLegofit(legofname[i], 1);
         if(queue[i] == NULL) {
             fprintf(stderr,"%s:%d: could not parse legofit file \"%s\"\n",
                     __FILE__,__LINE__, legofname[i]);

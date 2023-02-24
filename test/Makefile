@@ -10,9 +10,9 @@ tests := xbinary xboot xbranchtab xcomb xdafreader \
   xjobqueue xlblndx xlinereader xlongvec xmctree xmisc xmpfrmatcoal \
   xparam xparse xparseopf xparstore xpointbuff xpopnode xptrlst xptrptrmap \
   xptrqueue xptru32map \
-  xptrvec xresid xsegment \
+  xptrvec xresid xsegment xstrdblmap xstrstrmap xstrdblqueue \
   xstrptrmap xrafreader xrational xscrmreader xsampndx xsetpart \
-  xsimsched xstate xstrdblqueue xstrint xtinyexpr xtokenizer \
+  xsimsched xstate xstrint xtinyexpr xtokenizer \
   xu64u64map xu64i64map xuintqueue xmatcoal \
   xbooma xsimreader
 
@@ -106,6 +106,8 @@ test : $(tests)
 	-./xsimsched
 	-./xstate
 	-./xstrdblqueue
+	-./xstrdblmap
+	-./xstrstrmap
 	-./xstrint
 	-./xstrptrmap
 	-./xtinyexpr
@@ -185,6 +187,14 @@ xstate : $(XSTATE)
 XSTRPTRMAP := xstrptrmap.o strptrmap.o misc.o dprintf.o
 xstrptrmap : $(XSTRPTRMAP)
 	$(CC) $(CFLAGS) -o $@ $(XSTRPTRMAP) $(lib)
+
+XSTRDBLMAP := xstrdblmap.o strdblmap.o binary.o misc.o
+xstrdblmap : $(XSTRDBLMAP)
+	$(CC) $(CFLAGS) -o $@ $(XSTRDBLMAP) $(lib)
+
+XSTRSTRMAP := xstrstrmap.o strstrmap.o binary.o misc.o
+xstrstrmap : $(XSTRSTRMAP)
+	$(CC) $(CFLAGS) -o $@ $(XSTRSTRMAP) $(lib)
 
 XDTNORM := xdtnorm.o dtnorm.o
 xdtnorm : $(XDTNORM)
