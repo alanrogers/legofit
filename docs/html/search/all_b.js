@@ -20,9 +20,12 @@ var searchData=
   ['legosim_17',['legosim',['../legosim.html',1,'']]],
   ['legosim_2ec_18',['legosim.c',['../legosim_8c.html',1,'']]],
   ['linereader_19',['LineReader',['../struct_line_reader.html',1,'']]],
-  ['lint_5fdiv_5fround_20',['LInt_div_round',['../boot_8c.html#a421ff6ef1bff827e129cb9393906c49f',1,'boot.c']]],
-  ['long_5ffirst_5fgeq_21',['long_first_geq',['../misc_8c.html#a6425787232b86c7902d3053901dfc9e8',1,'misc.c']]],
-  ['long_5flast_5fleq_22',['long_last_leq',['../misc_8c.html#a56fc0975f9e72470c5b74035cdd4641c',1,'misc.c']]],
-  ['longvec_23',['LongVec',['../struct_long_vec.html',1,'LongVec'],['../_long_vec.html',1,'(Global Namespace)']]],
-  ['longvec_2ec_24',['longvec.c',['../longvec_8c.html',1,'']]]
+  ['linereader_5fnext_20',['LineReader_next',['../mkfitted_8c.html#add3d1ae58880391309bd6f7db2369573',1,'mkfitted.c']]],
+  ['linereader_5fpr_5fnewval_21',['LineReader_pr_newval',['../mkfitted_8c.html#a9c5219b8f3a636b6b8a6b51a3f19ace1',1,'mkfitted.c']]],
+  ['linereader_5fpr_5forig_22',['LineReader_pr_orig',['../mkfitted_8c.html#a07ae19c92ae5ee2282bd462bcb8212fa',1,'mkfitted.c']]],
+  ['lint_5fdiv_5fround_23',['LInt_div_round',['../boot_8c.html#a421ff6ef1bff827e129cb9393906c49f',1,'boot.c']]],
+  ['long_5ffirst_5fgeq_24',['long_first_geq',['../misc_8c.html#a6425787232b86c7902d3053901dfc9e8',1,'misc.c']]],
+  ['long_5flast_5fleq_25',['long_last_leq',['../misc_8c.html#a56fc0975f9e72470c5b74035cdd4641c',1,'misc.c']]],
+  ['longvec_26',['LongVec',['../struct_long_vec.html',1,'LongVec'],['../_long_vec.html',1,'(Global Namespace)']]],
+  ['longvec_2ec_27',['longvec.c',['../longvec_8c.html',1,'']]]
 ];

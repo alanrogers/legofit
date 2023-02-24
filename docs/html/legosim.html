@@ -23,7 +23,7 @@
   <td id="projectalign">
    <div id="projectname">Legofit
    </div>
-   <div id="projectbrief">infers population history from nucleotide site</div>
+   <div id="projectbrief">infers population history from nucleotide site patterns.</div>
   </td>
  </tr>
  </tbody>
@@ -112,7 +112,7 @@ Option -U cannot be used with -b or --branch_length.
 </pre><p> Here, the "SitePat" column labels site patterns. For example, site pattern xy (denoted by "x:y" in this output) refers to nocleotide sites at which the derived allele is present in single haploid samples from X and Y but not in samples from other populations. The probability of this site pattern, under the model of history specified in file <code>input.lgo</code>, is given in the "Prob" column. When the <code>-d</code> or <code>--deterministic</code> options are used, these probabilities are calculated by a deterministic algorithm.</p>
 <p >In the example above, I used <code>-d 0</code>, which tells legosim to ignore only those states with probability 0. Thus, the answers will be extremely accurate. When neither <code>-d</code> nor <code>--deterministic</code> are used, the probabilities are estimated by coalescent simulation.</p>
 <p >The deterministic algorithm sums across all possible histories of the samples defined in the .lgo file. The number of histories increases rapidly with sample size and with the number of migration events. For larger models, it is not feasible to use <code>-d 0</code>. However, one can still use the deterministic algorithm to obtain an approximate answer, using an argument such as <code>-d 1e-6</code>. This tells legosim to use the deterministic algorithm while ignoring states whose probability is less than or equal to 1e-6. Nonzero arguments to <code>-d</code> will introduce bias. To evaluate the magnitude of this bias, compare the results to those obtained using the stochastic algorithm or (where feasible) the deterministic one with <code>-d 0</code>.</p>
-<p >When the deterministic algorithm is used, legosim and legofit print a line of output that looks like this: </p><pre class="fragment"># Summed probability of ignored improbable events: 3.515617e-04
+<p >When the deterministic algorithm is used, legosim prints a line of output that looks like this: </p><pre class="fragment"># Summed probability of ignored improbable events: 3.515617e-04
 </pre><p> This "summed probability" can exceed 1, because it sums across several probability distributions. Nonetheless, when it is small, that is an indication that we have not ignored much of any of these distributions.</p>
 <p >To simulate site pattern counts across an entire genome, use the <code>-U</code> option, whose argument give the expected number of mutations per generation per haploid genome. This argument should equal <img class="formulaInl" alt="$\mu L$" src="form_4.png"/>, where <img class="formulaInl" alt="$\mu$" src="form_5.png"/> is the mutation rate per nucleotide site per generation, and <img class="formulaInl" alt="$L$" src="form_6.png"/> is the number of nucleotide sites sequenced per haploid genome, including monomorphic sites but excluding those that fail quality control. For example, adding <code>-U 18</code> to the command above led to the following output: </p><pre class="fragment">#######################################
 # legosim: site pattern probabilities #
@@ -141,7 +141,7 @@ Option -U cannot be used with -b or --branch_length.
 </div><!-- PageDoc -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Feb 1 2023 15:17:26 for Legofit by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.4
+Generated on Thu Feb 23 2023 18:00:09 for Legofit by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.4
 </small></address>
 </body>
 </html>

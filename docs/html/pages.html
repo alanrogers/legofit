@@ -23,7 +23,7 @@
   <td id="projectalign">
    <div id="projectname">Legofit
    </div>
-   <div id="projectbrief">infers population history from nucleotide site</div>
+   <div id="projectbrief">infers population history from nucleotide site patterns.</div>
   </td>
  </tr>
  </tbody>
@@ -84,28 +84,29 @@ $(function() {
 <tr id="row_13_"><td class="entry"><span style="width:16px;display:inline-block;">&#160;</span><a class="el" href="legosim.html" target="_self">legosim</a></td><td class="desc">Generate site patterns by coalescent simulation </td></tr>
 <tr id="row_14_" class="even"><td class="entry"><span style="width:16px;display:inline-block;">&#160;</span><a class="el" href="_long_vec.html" target="_self">LongVec</a></td><td class="desc">An expandable vector of long ints </td></tr>
 <tr id="row_15_"><td class="entry"><span style="width:16px;display:inline-block;">&#160;</span><a class="el" href="mapmix.html" target="_self">mapmix</a></td><td class="desc">Map admixture across the genome </td></tr>
-<tr id="row_16_" class="even"><td class="entry"><span style="width:16px;display:inline-block;">&#160;</span><a class="el" href="ms2sim.html" target="_self">ms2sim</a></td><td class="desc">Ms2sim translates output from Dick Hudson's <code>ms</code> program into "sim" format, which is described on the <a class="el" href="simpat.html">simpat</a> page </td></tr>
-<tr id="row_17_"><td class="entry"><span style="width:16px;display:inline-block;">&#160;</span><a class="el" href="pclgo.html" target="_self">pclgo</a></td><td class="desc">Re-express free variables in terms of principal components </td></tr>
-<tr id="row_18_" class="even"><td class="entry"><span style="width:16px;display:inline-block;">&#160;</span><a class="el" href="pripos.html" target="_self">pripos</a></td><td class="desc">Convert prior prob of admixture into posterior prob </td></tr>
-<tr id="row_19_"><td class="entry"><span style="width:16px;display:inline-block;">&#160;</span><a class="el" href="_ptr_lst.html" target="_self">PtrLst</a></td><td class="desc">An expandable array (or stack) of pointers </td></tr>
-<tr id="row_20_" class="even"><td class="entry"><span style="width:16px;display:inline-block;">&#160;</span><a class="el" href="_ptr_vec.html" target="_self">PtrVec</a></td><td class="desc">An expandable array (or stack) of pointers </td></tr>
-<tr id="row_21_"><td class="entry"><span style="width:16px;display:inline-block;">&#160;</span><a class="el" href="raf.html" target="_self">raf</a></td><td class="desc">Calculate reference allele frequency, raf </td></tr>
-<tr id="row_22_" class="even"><td class="entry"><span style="width:16px;display:inline-block;">&#160;</span><a class="el" href="raf2daf.html" target="_self">raf2daf</a></td><td class="desc">Convert raf files to daf files </td></tr>
-<tr id="row_23_"><td class="entry"><span style="width:16px;display:inline-block;">&#160;</span><a class="el" href="rafdaf.html" target="_self">rafdaf</a></td><td class="desc">Read a list of .raf files and write derived allele frequencies </td></tr>
-<tr id="row_24_" class="even"><td class="entry"><span style="width:16px;display:inline-block;">&#160;</span><a class="el" href="rational.html" target="_self">rational</a></td><td class="desc">Exact arithmetic with rational numbers </td></tr>
-<tr id="row_25_"><td class="entry"><span style="width:16px;display:inline-block;">&#160;</span><a class="el" href="resid.html" target="_self">resid</a></td><td class="desc">Print site pattern frequencies or residuals </td></tr>
-<tr id="row_26_" class="even"><td class="entry"><span style="width:16px;display:inline-block;">&#160;</span><a class="el" href="scrmpat.html" target="_self">scrmpat</a></td><td class="desc">Tabulate site pattern frequencies from .daf files </td></tr>
-<tr id="row_27_"><td class="entry"><span style="width:16px;display:inline-block;">&#160;</span><a class="el" href="scrmreader.html" target="_self">scrmreader</a></td><td class="desc">Interface to scrm output files </td></tr>
-<tr id="row_28_" class="even"><td class="entry"><span style="width:16px;display:inline-block;">&#160;</span><a class="el" href="simpat.html" target="_self">simpat</a></td><td class="desc">Tabulate site pattern frequencies from data produced by ms2sim or msprime </td></tr>
-<tr id="row_29_"><td class="entry"><span style="width:16px;display:inline-block;">&#160;</span><a class="el" href="simreader.html" target="_self">simreader</a></td><td class="desc">Interface to output files produced by ms2sim and msprime </td></tr>
-<tr id="row_30_" class="even"><td class="entry"><span style="width:16px;display:inline-block;">&#160;</span><a class="el" href="sitepat.html" target="_self">sitepat</a></td><td class="desc">Tabulate site pattern frequencies from .raf files </td></tr>
-<tr id="row_31_"><td class="entry"><span style="width:16px;display:inline-block;">&#160;</span><a class="el" href="tabpat.html" target="_self">tabpat</a></td><td class="desc">Tabulate site pattern frequencies from .daf files </td></tr>
+<tr id="row_16_" class="even"><td class="entry"><span style="width:16px;display:inline-block;">&#160;</span><a class="el" href="mkfitted.html" target="_self">mkfitted</a></td><td class="desc">Make a fitted .lgo file from .legofit output </td></tr>
+<tr id="row_17_"><td class="entry"><span style="width:16px;display:inline-block;">&#160;</span><a class="el" href="ms2sim.html" target="_self">ms2sim</a></td><td class="desc">Ms2sim translates output from Dick Hudson's <code>ms</code> program into "sim" format, which is described on the <a class="el" href="simpat.html">simpat</a> page </td></tr>
+<tr id="row_18_" class="even"><td class="entry"><span style="width:16px;display:inline-block;">&#160;</span><a class="el" href="pclgo.html" target="_self">pclgo</a></td><td class="desc">Re-express free variables in terms of principal components </td></tr>
+<tr id="row_19_"><td class="entry"><span style="width:16px;display:inline-block;">&#160;</span><a class="el" href="pripos.html" target="_self">pripos</a></td><td class="desc">Convert prior prob of admixture into posterior prob </td></tr>
+<tr id="row_20_" class="even"><td class="entry"><span style="width:16px;display:inline-block;">&#160;</span><a class="el" href="_ptr_lst.html" target="_self">PtrLst</a></td><td class="desc">An expandable array (or stack) of pointers </td></tr>
+<tr id="row_21_"><td class="entry"><span style="width:16px;display:inline-block;">&#160;</span><a class="el" href="_ptr_vec.html" target="_self">PtrVec</a></td><td class="desc">An expandable array (or stack) of pointers </td></tr>
+<tr id="row_22_" class="even"><td class="entry"><span style="width:16px;display:inline-block;">&#160;</span><a class="el" href="raf.html" target="_self">raf</a></td><td class="desc">Calculate reference allele frequency, raf </td></tr>
+<tr id="row_23_"><td class="entry"><span style="width:16px;display:inline-block;">&#160;</span><a class="el" href="raf2daf.html" target="_self">raf2daf</a></td><td class="desc">Convert raf files to daf files </td></tr>
+<tr id="row_24_" class="even"><td class="entry"><span style="width:16px;display:inline-block;">&#160;</span><a class="el" href="rafdaf.html" target="_self">rafdaf</a></td><td class="desc">Read a list of .raf files and write derived allele frequencies </td></tr>
+<tr id="row_25_"><td class="entry"><span style="width:16px;display:inline-block;">&#160;</span><a class="el" href="rational.html" target="_self">rational</a></td><td class="desc">Exact arithmetic with rational numbers </td></tr>
+<tr id="row_26_" class="even"><td class="entry"><span style="width:16px;display:inline-block;">&#160;</span><a class="el" href="resid.html" target="_self">resid</a></td><td class="desc">Print site pattern frequencies or residuals </td></tr>
+<tr id="row_27_"><td class="entry"><span style="width:16px;display:inline-block;">&#160;</span><a class="el" href="scrmpat.html" target="_self">scrmpat</a></td><td class="desc">Tabulate site pattern frequencies from .daf files </td></tr>
+<tr id="row_28_" class="even"><td class="entry"><span style="width:16px;display:inline-block;">&#160;</span><a class="el" href="scrmreader.html" target="_self">scrmreader</a></td><td class="desc">Interface to scrm output files </td></tr>
+<tr id="row_29_"><td class="entry"><span style="width:16px;display:inline-block;">&#160;</span><a class="el" href="simpat.html" target="_self">simpat</a></td><td class="desc">Tabulate site pattern frequencies from data produced by ms2sim or msprime </td></tr>
+<tr id="row_30_" class="even"><td class="entry"><span style="width:16px;display:inline-block;">&#160;</span><a class="el" href="simreader.html" target="_self">simreader</a></td><td class="desc">Interface to output files produced by ms2sim and msprime </td></tr>
+<tr id="row_31_"><td class="entry"><span style="width:16px;display:inline-block;">&#160;</span><a class="el" href="sitepat.html" target="_self">sitepat</a></td><td class="desc">Tabulate site pattern frequencies from .raf files </td></tr>
+<tr id="row_32_" class="even"><td class="entry"><span style="width:16px;display:inline-block;">&#160;</span><a class="el" href="tabpat.html" target="_self">tabpat</a></td><td class="desc">Tabulate site pattern frequencies from .daf files </td></tr>
 </table>
 </div><!-- directory -->
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Feb 1 2023 15:17:26 for Legofit by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.4
+Generated on Thu Feb 23 2023 18:00:09 for Legofit by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.4
 </small></address>
 </body>
 </html>

@@ -12,7 +12,9 @@ var searchData=
   ['state_9',['State',['../struct_state.html',1,'']]],
   ['state_10',['state',['../structstate.html',1,'']]],
   ['strdbl_11',['StrDbl',['../struct_str_dbl.html',1,'']]],
-  ['strdblqueue_12',['StrDblQueue',['../struct_str_dbl_queue.html',1,'']]],
-  ['strint_13',['StrInt',['../struct_str_int.html',1,'']]],
-  ['strptrmap_14',['StrPtrMap',['../struct_str_ptr_map.html',1,'']]]
+  ['strdblmap_12',['StrDblMap',['../struct_str_dbl_map.html',1,'']]],
+  ['strdblqueue_13',['StrDblQueue',['../struct_str_dbl_queue.html',1,'']]],
+  ['strint_14',['StrInt',['../struct_str_int.html',1,'']]],
+  ['strptrmap_15',['StrPtrMap',['../struct_str_ptr_map.html',1,'']]],
+  ['strstrmap_16',['StrStrMap',['../struct_str_str_map.html',1,'']]]
 ];

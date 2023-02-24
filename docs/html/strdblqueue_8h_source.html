@@ -23,7 +23,7 @@
   <td id="projectalign">
    <div id="projectname">Legofit
    </div>
-   <div id="projectbrief">infers population history from nucleotide site</div>
+   <div id="projectbrief">infers population history from nucleotide site patterns.</div>
   </td>
  </tr>
  </tbody>
@@ -99,7 +99,7 @@ $(function() {
 <div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span><span class="keywordtype">void</span>         StrDblQueue_print(<span class="keyword">const</span> <a class="code hl_struct" href="struct_str_dbl_queue.html">StrDblQueue</a> *self, FILE *fp);</div>
 <div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span><span class="keywordtype">int</span>          <a class="code hl_function" href="strdblqueue_8c.html#a84e10f535af0cbb7c8185176779f1edf">StrDblQueue_compare</a>(<a class="code hl_struct" href="struct_str_dbl_queue.html">StrDblQueue</a> *lhs, <a class="code hl_struct" href="struct_str_dbl_queue.html">StrDblQueue</a> *rhs);</div>
 <div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span><span class="comment">// StrDbl      *StrDblQueue_get(StrDblQueue *self, StrDbl *strdbl, int index);</span></div>
-<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span><a class="code hl_struct" href="struct_str_dbl_queue.html">StrDblQueue</a> *StrDblQueue_parseLegofit(<span class="keyword">const</span> <span class="keywordtype">char</span> *fname);</div>
+<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span><a class="code hl_struct" href="struct_str_dbl_queue.html">StrDblQueue</a> *StrDblQueue_parseLegofit(<span class="keyword">const</span> <span class="keywordtype">char</span> *fname, <span class="keywordtype">int</span> freeonly);</div>
 <div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span><a class="code hl_struct" href="struct_str_dbl_queue.html">StrDblQueue</a> *<a class="code hl_function" href="strdblqueue_8c.html#aebdd77613ccb589da093d3b558de6d6c">StrDblQueue_parseSitePat</a>(<span class="keyword">const</span> <span class="keywordtype">char</span> *fname);</div>
 <div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span><span class="keywordtype">double</span>       StrDblQueue_msd(<span class="keyword">const</span> <a class="code hl_struct" href="struct_str_dbl_queue.html">StrDblQueue</a> *a, <span class="keyword">const</span> <a class="code hl_struct" href="struct_str_dbl_queue.html">StrDblQueue</a> *b);</div>
 <div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span><span class="keywordtype">void</span> StrDblQueue_normalize(<a class="code hl_struct" href="struct_str_dbl_queue.html">StrDblQueue</a> *self);</div>
@@ -109,14 +109,14 @@ $(function() {
 <div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>                      gsl_matrix *cov);</div>
 <div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span> </div>
 <div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span><span class="preprocessor">#endif</span></div>
-<div class="ttc" id="astrdblqueue_8c_html_a84e10f535af0cbb7c8185176779f1edf"><div class="ttname"><a href="strdblqueue_8c.html#a84e10f535af0cbb7c8185176779f1edf">StrDblQueue_compare</a></div><div class="ttdeci">int StrDblQueue_compare(StrDblQueue *lhs, StrDblQueue *rhs)</div><div class="ttdoc">Compare the str fields in two StrDblQueue objects.</div><div class="ttdef"><b>Definition:</b> strdblqueue.c:106</div></div>
-<div class="ttc" id="astrdblqueue_8c_html_aebdd77613ccb589da093d3b558de6d6c"><div class="ttname"><a href="strdblqueue_8c.html#aebdd77613ccb589da093d3b558de6d6c">StrDblQueue_parseSitePat</a></div><div class="ttdeci">StrDblQueue * StrDblQueue_parseSitePat(const char *fname)</div><div class="ttdoc">Parse a data file as produced either by sitepat, tabpat, legosim, or legofit.</div><div class="ttdef"><b>Definition:</b> strdblqueue.c:207</div></div>
+<div class="ttc" id="astrdblqueue_8c_html_a84e10f535af0cbb7c8185176779f1edf"><div class="ttname"><a href="strdblqueue_8c.html#a84e10f535af0cbb7c8185176779f1edf">StrDblQueue_compare</a></div><div class="ttdeci">int StrDblQueue_compare(StrDblQueue *lhs, StrDblQueue *rhs)</div><div class="ttdoc">Compare the str fields in two StrDblQueue objects.</div><div class="ttdef"><b>Definition:</b> strdblqueue.c:90</div></div>
+<div class="ttc" id="astrdblqueue_8c_html_aebdd77613ccb589da093d3b558de6d6c"><div class="ttname"><a href="strdblqueue_8c.html#aebdd77613ccb589da093d3b558de6d6c">StrDblQueue_parseSitePat</a></div><div class="ttdeci">StrDblQueue * StrDblQueue_parseSitePat(const char *fname)</div><div class="ttdoc">Parse a data file as produced either by sitepat, tabpat, legosim, or legofit.</div><div class="ttdef"><b>Definition:</b> strdblqueue.c:193</div></div>
 <div class="ttc" id="astruct_str_dbl_html"><div class="ttname"><a href="struct_str_dbl.html">StrDbl</a></div><div class="ttdef"><b>Definition:</b> strdblqueue.h:15</div></div>
 <div class="ttc" id="astruct_str_dbl_queue_html"><div class="ttname"><a href="struct_str_dbl_queue.html">StrDblQueue</a></div><div class="ttdef"><b>Definition:</b> strdblqueue.h:22</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Feb 1 2023 15:17:25 for Legofit by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.4
+Generated on Thu Feb 23 2023 18:00:08 for Legofit by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.4
 </small></address>
 </body>
 </html>

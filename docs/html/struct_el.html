@@ -23,7 +23,7 @@
   <td id="projectalign">
    <div id="projectname">Legofit
    </div>
-   <div id="projectbrief">infers population history from nucleotide site</div>
+   <div id="projectbrief">infers population history from nucleotide site patterns.</div>
   </td>
  </tr>
  </tbody>
@@ -83,9 +83,18 @@ Data Fields</h2></td></tr>
 <tr class="memitem:aeb5db42323d40a3cfe957e7930b31c4c"><td class="memItemLeft" align="right" valign="top"><a id="aeb5db42323d40a3cfe957e7930b31c4c" name="aeb5db42323d40a3cfe957e7930b31c4c"></a>
 void *&#160;</td><td class="memItemRight" valign="bottom"><b>ptr</b></td></tr>
 <tr class="separator:aeb5db42323d40a3cfe957e7930b31c4c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aef4d08cd79dbf8d6138ce53c5d748230"><td class="memItemLeft" align="right" valign="top"><a id="aef4d08cd79dbf8d6138ce53c5d748230" name="aef4d08cd79dbf8d6138ce53c5d748230"></a>
+char *&#160;</td><td class="memItemRight" valign="bottom"><b>key</b></td></tr>
+<tr class="separator:aef4d08cd79dbf8d6138ce53c5d748230"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a740b4f200eda23390498f138bcaa496d"><td class="memItemLeft" align="right" valign="top"><a id="a740b4f200eda23390498f138bcaa496d" name="a740b4f200eda23390498f138bcaa496d"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>value</b></td></tr>
+<tr class="separator:a740b4f200eda23390498f138bcaa496d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac312401226d7c3488be35523ec2cabf6"><td class="memItemLeft" align="right" valign="top"><a id="ac312401226d7c3488be35523ec2cabf6" name="ac312401226d7c3488be35523ec2cabf6"></a>
 char&#160;</td><td class="memItemRight" valign="bottom"><b>key</b> [KEYSIZE]</td></tr>
 <tr class="separator:ac312401226d7c3488be35523ec2cabf6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af7ce168c4e9d9d21ad716aa26c5521ae"><td class="memItemLeft" align="right" valign="top"><a id="af7ce168c4e9d9d21ad716aa26c5521ae" name="af7ce168c4e9d9d21ad716aa26c5521ae"></a>
+char *&#160;</td><td class="memItemRight" valign="bottom"><b>value</b></td></tr>
+<tr class="separator:af7ce168c4e9d9d21ad716aa26c5521ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p >A single key-value pair, with a pointer to the next one. </p>
@@ -106,19 +115,21 @@ char&#160;</td><td class="memItemRight" valign="bottom"><b>key</b> [KEYSIZE]</td
 <p>next item in list </p>
 <p >ptr to next item in list </p>
 
-<p class="reference">Referenced by <a class="el" href="strptrmap_8c.html#afc45d5547135790a038fdb213dd674a1">El_free()</a>, <a class="el" href="idsetset_8c.html#a4aa6a294f3cb1954dfbaa119b90f83a8">El_free_deep()</a>, <a class="el" href="idsetset_8c.html#afeb9560fa6556eb8f0470bd233ea020f">El_free_shallow()</a>, <a class="el" href="strptrmap_8c.html#a1a4a1279a7bc907a41289bca3dc12e75">El_insert()</a>, <a class="el" href="idsetset_8c.html#a230f071244e203fa86dca0b676fa5ddb">IdSetSet_next()</a>, and <a class="el" href="strptrmap_8c.html#af4341b138fa5efdce4a98c58806df4aa">StrPtrMap_get()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="strdblmap_8c.html#aebae97aaac0baf958ed551dced65826a">El_free()</a>, <a class="el" href="idsetset_8c.html#a4aa6a294f3cb1954dfbaa119b90f83a8">El_free_deep()</a>, <a class="el" href="idsetset_8c.html#afeb9560fa6556eb8f0470bd233ea020f">El_free_shallow()</a>, <a class="el" href="strdblmap_8c.html#ad73ecc39b17d46ad860d234b39591893">El_insert()</a>, <a class="el" href="idsetset_8c.html#a230f071244e203fa86dca0b676fa5ddb">IdSetSet_next()</a>, <a class="el" href="strdblmap_8c.html#ad71e4d70df77730fb84f754b2fdcfc37">StrDblMap_get()</a>, <a class="el" href="strdblmap_8c.html#a1e214962723621d4f09d71431a988982">StrDblMap_hasKey()</a>, <a class="el" href="strdblmap_8c.html#a053037fd1db79cc1dd0c9c8fc28164e1">StrDblMap_keys()</a>, <a class="el" href="strptrmap_8c.html#af4341b138fa5efdce4a98c58806df4aa">StrPtrMap_get()</a>, <a class="el" href="strstrmap_8c.html#a4d58fe03130d4d951dbe5ff57dbe306f">StrStrMap_get()</a>, <a class="el" href="strstrmap_8c.html#a9363446ddbdf7d8893908c74cfb8cf05">StrStrMap_hasKey()</a>, and <a class="el" href="strstrmap_8c.html#a663cda3bdb63265dc93ceb750bcc0119">StrStrMap_keys()</a>.</p>
 
 </div>
 </div>
 <hr/>The documentation for this struct was generated from the following files:<ul>
 <li><a class="el" href="idsetset_8c.html">idsetset.c</a></li>
 <li><a class="el" href="ptrqueue_8c.html">ptrqueue.c</a></li>
+<li><a class="el" href="strdblmap_8c.html">strdblmap.c</a></li>
 <li><a class="el" href="strptrmap_8c.html">strptrmap.c</a></li>
+<li><a class="el" href="strstrmap_8c.html">strstrmap.c</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Feb 1 2023 15:17:26 for Legofit by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.4
+Generated on Thu Feb 23 2023 18:00:09 for Legofit by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.4
 </small></address>
 </body>
 </html>

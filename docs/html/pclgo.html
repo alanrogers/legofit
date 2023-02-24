@@ -23,7 +23,7 @@
   <td id="projectalign">
    <div id="projectname">Legofit
    </div>
-   <div id="projectbrief">infers population history from nucleotide site</div>
+   <div id="projectbrief">infers population history from nucleotide site patterns.</div>
   </td>
  </tr>
  </tbody>
@@ -68,7 +68,7 @@ $(function() {
 <div class="contents">
 <div class="textblock"><p >Re-express free variables in terms of principal components.</p>
 <dl class="section author"><dt>Author</dt><dd>Alan R. Rogers</dd></dl>
-<h1><a class="anchor" id="autotoc_md15"></a>
+<h1><a class="anchor" id="autotoc_md16"></a>
 pclgo: re-express free variables in terms of principal components.</h1>
 <p >First run <code>legofit</code> on a series of bootstrap or simulation replicates to produce a series of .legofiles. All these <code>legofit</code> runs should use the same .lgo file. <code>pclgo</code> reads this .lgo file and also all the .legofit files. It uses the .legofit files to do a principal components analysis of the free variables, and then rewrites a portion of the .lgo file, re-expressing all the free variables as linear functions of the principle components. In the rewrite, all the free variables are principal component scores and are therefore uncorrelated. The output of pclgo is not a complete .lgo file. It must be integrated into a new .lgo file.</p>
 <p >You can do this with a text editor. But here is a trick that uses the unix shell: </p><pre class="fragment">(grep ^# a.lgo; pclgo a.lgo a2.legofit a2boot*.legofit;\
@@ -80,7 +80,7 @@ pclgo: re-express free variables in terms of principal components.</h1>
 </div><!-- PageDoc -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Feb 1 2023 15:17:26 for Legofit by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.4
+Generated on Thu Feb 23 2023 18:00:09 for Legofit by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.4
 </small></address>
 </body>
 </html>

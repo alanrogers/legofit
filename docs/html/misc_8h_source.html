@@ -23,7 +23,7 @@
   <td id="projectalign">
    <div id="projectname">Legofit
    </div>
-   <div id="projectbrief">infers population history from nucleotide site</div>
+   <div id="projectbrief">infers population history from nucleotide site patterns.</div>
   </td>
  </tr>
  </tbody>
@@ -233,18 +233,18 @@ $(function() {
 <div class="ttc" id="amisc_8c_html_ab191fded8294e275b0482ef284d55893"><div class="ttname"><a href="misc_8c.html#ab191fded8294e275b0482ef284d55893">readline</a></div><div class="ttdeci">int readline(int dim, char buff[dim], FILE *fp)</div><div class="ttdoc">Read a line of input into buff.</div><div class="ttdef"><b>Definition:</b> misc.c:679</div></div>
 <div class="ttc" id="amisc_8c_html_abd16d2a54d304bd00bc4b91b33161178"><div class="ttname"><a href="misc_8c.html#abd16d2a54d304bd00bc4b91b33161178">strltrunc</a></div><div class="ttdeci">char * strltrunc(char *s, int n)</div><div class="ttdoc">Truncate string to n characters (plus terminating '\0') by removing characters from the left.</div><div class="ttdef"><b>Definition:</b> misc.c:587</div></div>
 <div class="ttc" id="amisc_8c_html_abf4c448297addd526c592ae87af926df"><div class="ttname"><a href="misc_8c.html#abf4c448297addd526c592ae87af926df">legalName</a></div><div class="ttdeci">int legalName(const char *name)</div><div class="ttdoc">Return nonzero if name is legal; zero otherwise.</div><div class="ttdef"><b>Definition:</b> misc.c:714</div></div>
-<div class="ttc" id="amisc_8c_html_ac2acd6d687d246dce65de53955860033"><div class="ttname"><a href="misc_8c.html#ac2acd6d687d246dce65de53955860033">strhash</a></div><div class="ttdeci">unsigned long strhash(const char *ss)</div><div class="ttdoc">Hash a character string.</div><div class="ttdef"><b>Definition:</b> misc.c:440</div></div>
+<div class="ttc" id="amisc_8c_html_ac2acd6d687d246dce65de53955860033"><div class="ttname"><a href="misc_8c.html#ac2acd6d687d246dce65de53955860033">strhash</a></div><div class="ttdeci">unsigned long strhash(const char *ss)</div><div class="ttdoc">Hash a character string using algorithm of Daniel J. Boorstein.</div><div class="ttdef"><b>Definition:</b> misc.c:440</div></div>
 <div class="ttc" id="amisc_8c_html_ac3d1eb605aa6b87e66b0afc63a870808"><div class="ttname"><a href="misc_8c.html#ac3d1eb605aa6b87e66b0afc63a870808">nextWhitesepToken</a></div><div class="ttdeci">char * nextWhitesepToken(char **str)</div><div class="ttdoc">Return tokens separated by 1 or more spaces and/or tabs.</div><div class="ttdef"><b>Definition:</b> misc.c:519</div></div>
 <div class="ttc" id="amisc_8c_html_ac9f293330b36d1804a41296150cf4739"><div class="ttname"><a href="misc_8c.html#ac9f293330b36d1804a41296150cf4739">stutter</a></div><div class="ttdeci">void stutter(char c, int n, FILE *fp)</div><div class="ttdoc">Print character c n times on output fp.</div><div class="ttdef"><b>Definition:</b> misc.c:798</div></div>
 <div class="ttc" id="amisc_8c_html_ad06e4f24ec41904269cf89fab7281a07"><div class="ttname"><a href="misc_8c.html#ad06e4f24ec41904269cf89fab7281a07">tokenize</a></div><div class="ttdeci">int tokenize(int dim, char *token[dim], char *s, const char *delim)</div><div class="ttdoc">Separate string s into tokens, separated by any character in string delim.</div><div class="ttdef"><b>Definition:</b> misc.c:532</div></div>
 <div class="ttc" id="amisc_8c_html_adb5b7a048bd734ee8fb9da6ec0f8b7ae"><div class="ttname"><a href="misc_8c.html#adb5b7a048bd734ee8fb9da6ec0f8b7ae">mybasename</a></div><div class="ttdeci">const char * mybasename(const char *pathname)</div><div class="ttdoc">Strip leading pathname components; return a pointer to the filename.</div><div class="ttdef"><b>Definition:</b> misc.c:703</div></div>
 <div class="ttc" id="amisc_8c_html_ae2604a1414994a8066b52290cbb75c6c"><div class="ttname"><a href="misc_8c.html#ae2604a1414994a8066b52290cbb75c6c">stripchr</a></div><div class="ttdeci">int stripchr(char *s, int c)</div><div class="ttdoc">Remove character c from string s. Return length of string.</div><div class="ttdef"><b>Definition:</b> misc.c:455</div></div>
 <div class="ttc" id="amisc_8c_html_ae936034070afb8b66f075d806ab57092"><div class="ttname"><a href="misc_8c.html#ae936034070afb8b66f075d806ab57092">Dbl_first_geq</a></div><div class="ttdeci">unsigned Dbl_first_geq(double val, unsigned len, double v[len])</div><div class="ttdoc">Vector v must be sorted in ascending order before this function is called.</div><div class="ttdef"><b>Definition:</b> misc.c:189</div></div>
-<div class="ttc" id="amisc_8c_html_af33f46b2dc9a2a79fd524f578b99dc21"><div class="ttname"><a href="misc_8c.html#af33f46b2dc9a2a79fd524f578b99dc21">LDbl_near</a></div><div class="ttdeci">int LDbl_near(long double x, long double y)</div><div class="ttdoc">Return 1 if the relative difference between x and y is less than or equal to 8*LDBL_EPSILON.</div><div class="ttdef"><b>Definition:</b> misc.c:791</div></div>
+<div class="ttc" id="amisc_8c_html_af33f46b2dc9a2a79fd524f578b99dc21"><div class="ttname"><a href="misc_8c.html#af33f46b2dc9a2a79fd524f578b99dc21">LDbl_near</a></div><div class="ttdeci">int LDbl_near(long double x, long double y)</div><div class="ttdoc">Return 1 if the relative difference between x and y is less than or equal to 8*DBL_EPSILON.</div><div class="ttdef"><b>Definition:</b> misc.c:791</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Feb 1 2023 15:17:25 for Legofit by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.4
+Generated on Thu Feb 23 2023 18:00:08 for Legofit by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.4
 </small></address>
 </body>
 </html>

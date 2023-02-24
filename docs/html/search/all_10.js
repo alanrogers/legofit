@@ -42,7 +42,7 @@ var searchData=
   ['removezeroes_39',['removeZeroes',['../misc_8c.html#a203229086bf951b1b6f3b67a5a1e1d43',1,'misc.c']]],
   ['resid_40',['resid',['../resid.html',1,'']]],
   ['resid_2ec_41',['resid.c',['../resid_8c.html',1,'']]],
-  ['resize_42',['resize',['../idsetset_8c.html#a37998a31309b0a44b45727f738aba139',1,'idsetset.c']]],
+  ['resize_42',['resize',['../idsetset_8c.html#a37998a31309b0a44b45727f738aba139',1,'resize(IdSetSet *self, int dim):&#160;idsetset.c'],['../strdblmap_8c.html#a4e00dc19ac920b0301109c594b116010',1,'resize(StrDblMap *self):&#160;strdblmap.c'],['../strstrmap_8c.html#a84eea74cb8fab7aac6a3ceff02859d92',1,'resize(StrStrMap *self):&#160;strstrmap.c']]],
   ['rev32_43',['rev32',['../binary_8c.html#a01ee6112eec801512cf1786dc210689f',1,'binary.c']]],
   ['rev64_44',['rev64',['../binary_8c.html#a14b1e0d0cd943411ea28651d50668358',1,'binary.c']]],
   ['rngseed_2ec_45',['rngseed.c',['../rngseed_8c.html',1,'']]]
