@@ -48,6 +48,11 @@ gene flow. The package consists of the following programs
 
 - @ref legotree "legotree.py" makes a graph from a .lgo file.
 
+- @ref mkfitted "mkfitted" reads a .lgo file and a .legofit
+  file. Rewrites the .lgo file replacing values of free and
+  constrained variables with the fitted values from the .legofit
+  file.
+
 - @ref ms2sim "ms2sim" reads the output of the ms coalescent
   simulator and rewrites it in "sim" format, which can be piped to
   @ref simpat "simpat" to tabulate site pattern frequencies.
