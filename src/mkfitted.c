@@ -4,7 +4,9 @@
 @author Alan R. Rogers
 @brief Make a fitted .lgo file from .legofit output
 
-# `mkfitted`: make a fitted .lgo file from .legofit output
+# mkfitted: make a fitted .lgo file from .legofit output
+
+usage: mkfitted <original.lgo> <fitted.legofit>
 
 @copyright Copyright (c) 2023, Alan R. Rogers
 <rogers@anthro.utah.edu>. This file is released under the Internet
