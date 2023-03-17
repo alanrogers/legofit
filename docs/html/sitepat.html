@@ -67,10 +67,10 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><p >Tabulate site pattern frequencies from .raf files.</p>
-<h1><a class="anchor" id="autotoc_md40"></a>
+<h1><a class="anchor" id="autotoc_md42"></a>
 Sitepat: tabulates site patterns</h1>
 <p >Sitepat reads data in .raf format and tabulates counts of nucleotide site patterns, writing the result to standard output. Optionally, it also calculates a moving-blocks bootstrap, writing each bootstrap replicate into a separate file.</p>
-<h1><a class="anchor" id="autotoc_md41"></a>
+<h1><a class="anchor" id="autotoc_md43"></a>
 Usage</h1>
 <pre class="fragment">Usage: sitepat [options] &lt;x&gt;=&lt;in_1&gt; &lt;y&gt;=&lt;in_2&gt; ... outgroup=&lt;in_K&gt;
    where &lt;x&gt; and &lt;y&gt; are arbitrary labels, and &lt;in_i&gt; are input
@@ -99,9 +99,9 @@ Options may include:
    -h or --help
       Print this message
 </pre><p> Reference genomes are often useful as outgroups, but they must first be aligned to the target genome. These alignments are typically distributed in axt format. To convert from axt format to raf format, see <a class="el" href="axt2raf.html">axt2raf</a>.</p>
-<h1><a class="anchor" id="autotoc_md42"></a>
+<h1><a class="anchor" id="autotoc_md44"></a>
 Example</h1>
-<p >Before running <code>sitepat</code>, use <a class="el" href="index.html#raf">raf</a> to convert the input data into raf format. To save space, you may want to compress the ".raf" files using the external utility "gzip". The names of these compressed files should end in ".gz", and <code>sitepat</code> will use an external utility (<code>gunzip</code>) to decompress them. If <code>gunzip</code> has not been installed, <code>sitepat</code> cannot read compressed input files.</p>
+<p >Before running <code>sitepat</code>, use <a class="el" href="raf.html">raf</a> to convert the input data into raf format. To save space, you may want to compress the ".raf" files using the external utility "gzip". The names of these compressed files should end in ".gz", and <code>sitepat</code> will use an external utility (<code>gunzip</code>) to decompress them. If <code>gunzip</code> has not been installed, <code>sitepat</code> cannot read compressed input files.</p>
 <p >When making bootstraps (using the <code>-r</code> or <code>--bootreps</code> options), sitepat must read the data files twice. If the files are compressed, they must be decompressed twice. It may be faster to use uncompressed input files when making bootstraps.</p>
 <p >Let us assume you have generated raf files, and that directory ~/raf contains a separate raf file for each population. We want to compare 4 populations, whose .raf files are <code>yri.raf</code>, <code>ceu.raf</code>, <code>altai.raf</code>, and <code>denisova.raf</code>. Ancestral alleles are to be called using <code>chimp.raf</code> as an outgroup. The following command will do this, putting the results into <code>obs.txt</code>. </p><pre class="fragment">sitepat x=raf/yri.raf \
        y=raf/ceu.raf \
@@ -163,7 +163,7 @@ Example</h1>
 </div><!-- PageDoc -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sat Feb 25 2023 07:43:34 for Legofit by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.4
+Generated on Fri Mar 17 2023 17:45:48 for Legofit by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.4
 </small></address>
 </body>
 </html>

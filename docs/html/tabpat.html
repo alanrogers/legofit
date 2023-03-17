@@ -67,10 +67,10 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><p >Tabulate site pattern frequencies from .daf files.</p>
-<h1><a class="anchor" id="autotoc_md43"></a>
+<h1><a class="anchor" id="autotoc_md45"></a>
 Tabpat: tabulates site patterns</h1>
 <p >Tabpat reads data in .daf format and tabulates counts of nucleotide site patterns, writing the result to standard output. Optionally, it also calculates a moving-blocks bootstrap, writing each bootstrap replicate into a separate file.</p>
-<h1><a class="anchor" id="autotoc_md44"></a>
+<h1><a class="anchor" id="autotoc_md46"></a>
 Usage</h1>
 <pre class="fragment">Usage: tabpat [options] &lt;x&gt;=&lt;in1&gt; &lt;y&gt;=&lt;in2&gt; ...
    where &lt;x&gt; and &lt;y&gt; are arbitrary labels, and &lt;in1&gt; and &lt;in2&gt; are input
@@ -92,9 +92,9 @@ Options may include:
       log all sites to tabpat.log
    -h or --help
       Print this message
-</pre> <h1><a class="anchor" id="autotoc_md45"></a>
+</pre> <h1><a class="anchor" id="autotoc_md47"></a>
 Example</h1>
-<p >Before running <code>tabpat</code>, use <a class="el" href="index.html#daf">daf</a> to convert the input data into daf format. Let us assume you have done this, and that directory ~/daf contains a separate daf file for each population. We want to compare 4 populations, whose .daf files are <code>yri.daf</code>, <code>ceu.daf</code>, <code>altai.daf</code>, and <code>denisova.daf</code>. The following command will do this, putting the results into <code>obs.txt</code>. </p><pre class="fragment">tabpat x=~/daf/yri.daf \
+<p >Before running <code>tabpat</code>, use <a class="el" href="daf.html">daf</a> to convert the input data into daf format. Let us assume you have done this, and that directory ~/daf contains a separate daf file for each population. We want to compare 4 populations, whose .daf files are <code>yri.daf</code>, <code>ceu.daf</code>, <code>altai.daf</code>, and <code>denisova.daf</code>. The following command will do this, putting the results into <code>obs.txt</code>. </p><pre class="fragment">tabpat x=~/daf/yri.daf \
        y=~/daf/ceu.daf \
        n=~/daf/altai.daf \
        d=~/daf/denisova.daf &gt; obs.txt
@@ -152,7 +152,7 @@ Example</h1>
 </div><!-- PageDoc -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sat Feb 25 2023 07:43:34 for Legofit by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.4
+Generated on Fri Mar 17 2023 17:45:48 for Legofit by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.4
 </small></address>
 </body>
 </html>

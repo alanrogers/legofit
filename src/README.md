@@ -251,7 +251,7 @@ been previously called. The second ("raf") does not. Instead, the
 program @ref sitepat "sitepat" uses an outgroup sequence to call
 ancestral alleles on the fly.
 
-## daf format {#daf}
+## daf format
 
 This was the only input data format in early versions of the legofit
 package. We began moving away from it when we realized that, under
@@ -301,7 +301,7 @@ The lines should be sorted lexically by chromosome. Within
 chromosomes, they should be sorted in ascending numerical order of
 column 2. There should be no duplicate (chromosome, position) pairs.
 
-## raf format {#raf}
+## raf format
 
 The suffix "raf" stands for "reference allele frequency". See the
 @ref raf "raf" command for instructions on translating from "vcf" or
