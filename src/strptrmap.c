@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#define KEYSIZE 20
+#define KEYSIZE 200
 
 /// PNT_DIM: dimention of hash table must be a power of 2
 #define PNT_DIM 32u
@@ -49,8 +49,19 @@ El         *El_new(const char *key, void *ptr) {
     CHECKMEM(new);
 
     new->next = NULL;
-    snprintf(new->key, sizeof(new->key), "%s", key);
-    assert(0 == strncmp(new->key, key, sizeof(new->key)));
+    int status = snprintf(new->key, sizeof(new->key), "%s", key);
+#ifndef NDEBUG
+    if(status < 0) {
+        fprintf(stderr,"%s:%d: snprintf returned error. key=%s\n",
+                __FILE__,__LINE__, key);
+        exit(EXIT_FAILURE);
+    }
+    if( 0 != strncmp(new->key, key, sizeof(new->key)) ) {
+        fprintf(stderr,"%s:%d: copy (%s) != key (%s)\n",
+                __FILE__,__LINE__, new->key, key);
+        exit(EXIT_FAILURE);
+    }
+#endif    
     new->ptr = ptr;
     return new;
 }
