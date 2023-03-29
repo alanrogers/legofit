@@ -50,12 +50,17 @@ El         *El_new(const char *key, void *ptr) {
 
     new->next = NULL;
     int status = snprintf(new->key, sizeof(new->key), "%s", key);
-#ifndef NDEBUG
     if(status < 0) {
         fprintf(stderr,"%s:%d: snprintf returned error. key=%s\n",
                 __FILE__,__LINE__, key);
+        if(strlen(key) >= KEYSIZE) {
+            fprintf(stderr, "%s:%d: key length=%d; max=%d\n",
+                    __FILE__,__LINE__, strlen(key),
+                    KEYSIZE-1);
+        }
         exit(EXIT_FAILURE);
     }
+#ifndef NDEBUG
     if( 0 != strncmp(new->key, key, sizeof(new->key)) ) {
         fprintf(stderr,"%s:%d: copy (%s) != key (%s)\n",
                 __FILE__,__LINE__, new->key, key);
