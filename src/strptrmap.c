@@ -108,7 +108,6 @@ El *El_insert(El *self, const char *key, void *ptr, int *status) {
     return self;
 }
 
-
 /// Destroy a linked list of El objects.
 void El_free(El * e) {
     if(e == NULL)
