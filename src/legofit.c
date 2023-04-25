@@ -299,6 +299,8 @@ void usage(void) {
             " to prevent numerical problems");
     tellopt("-F <x> or --scaleFactor <x>", "set DE scale factor");
     tellopt("-h or --help", "print this message");
+    tellopt("--hi_t <x>", "set maximum value of time parameters");
+    tellopt("--hi_2N <x>", "set maximum value of population size parameters");
     tellopt("-p <x> or --ptsPerDim <x>", "number of DE points per free var");
     tellopt("-s <x> or --strategy <x>", "set DE strategy");
     tellopt("-S <g>@<r> or --stage <g>@<r>",
@@ -325,6 +327,8 @@ int main(int argc, char **argv) {
 
     static struct option myopts[] = {
         /* {char *name, int has_arg, int *flag, int val} */
+        {"hi_2N", required_argument, 0, '2'},
+        {"hi_t", required_argument, 0, '3'},
         {"clic", no_argument, 0, 'c'},
         {"deterministic", required_argument, 0, 'd'},
         {"epsilon", no_argument, 0, 'e'},
@@ -406,6 +410,22 @@ int main(int argc, char **argv) {
         if(i == -1)
             break;
         switch (i) {
+        case '2':
+            hi_twoN = strtod(optarg, &end);
+            if(*end != '\0') {
+                fprintf(stderr,"\nIllegal argument to --hi_2N.\n"
+                        "Can't parse %s as a double.\n\n", optarg);
+                usage();
+            }
+            break;
+        case '3':
+            hi_t = strtod(optarg, &end);
+            if(*end != '\0') {
+                fprintf(stderr,"\nIllegal argument to --hi_t.\n"
+                        "Can't parse %s as a double.\n\n", optarg);
+                usage();
+            }
+            break;
         case 'c':
             write_clic_pts = 1;
             break;
@@ -691,6 +711,10 @@ int main(int argc, char **argv) {
     printf("#    CR              : %lg\n", CR);
     printf("#    tolerance       : %lg\n", ytol);
     printf("# nthreads           : %d\n", nThreads);
+    printf("# range of 2N params : (%lg, %lg)\n",
+           lo_twoN, hi_twoN);
+    printf("# range of t params  : (%lg, %lg)\n",
+           lo_t, hi_t);
     printf("# lgo input file     : %s\n", lgofname);
     printf("# site pat input file: %s\n", patfname);
     printf("# free parameters    : %d\n", dim);
