@@ -23,7 +23,7 @@ long double maxAbsErr(int dim, long double x[dim], long double y[dim]);
 void usage(void);
 
 long double maxAbsErr(int dim, long double x[dim], long double y[dim]) {
-    double maxerr=0.0, err;
+    long double maxerr=0.0, err;
 
     for(int i=0; i<dim; ++i) {
         err = fabsl(x[i] - y[i]);
