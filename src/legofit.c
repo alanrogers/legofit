@@ -711,9 +711,9 @@ int main(int argc, char **argv) {
     printf("#    CR              : %lg\n", CR);
     printf("#    tolerance       : %lg\n", ytol);
     printf("# nthreads           : %d\n", nThreads);
-    printf("# range of 2N params : (%lg, %lg)\n",
+    printf("# range of 2N params : [%lg, %lg]\n",
            lo_twoN, hi_twoN);
-    printf("# range of t params  : (%lg, %lg)\n",
+    printf("# range of t params  : [%lg, %lg]\n",
            lo_t, hi_t);
     printf("# lgo input file     : %s\n", lgofname);
     printf("# site pat input file: %s\n", patfname);
