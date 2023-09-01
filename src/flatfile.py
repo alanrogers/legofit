@@ -44,6 +44,7 @@
 import sys
 from math import floor, ceil
 import datetime
+from os.path import basename
 
 # Print usage message and abort
 def usage(msg1):
@@ -121,7 +122,7 @@ if len(fnames) < 1:
 print("# flatfile.py run at: %s" % datetime.datetime.now())
 print("# input files:", end=' ')
 for i in range(len(fnames)):
-    print(fnames[i], end=' ')
+    print(basename(fnames[i]), end=' ')
 print()
 
 allmaps = []  # allmaps[i] is the dictionary for file i

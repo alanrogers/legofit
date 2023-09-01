@@ -510,15 +510,17 @@ void *Segment_root(void *vself) {
         r1 = Segment_root(self->parent[1]);
         if(r0 != r1) {
             fprintf(stderr,
-                    "%s:%s:%d: Population network has multiple roots\n",
-                    __FILE__, __func__, __LINE__);
+                    "%s:%s:%d: Population network has multiple roots:"
+                    " %s and %s\n",
+                    __FILE__, __func__, __LINE__,
+                    r0->label, r1->label);
             exit(EXIT_FAILURE);
         }
         return r0;
         break;
     default:
-        fprintf(stderr, "%s:%s:%d: Node %d parents\n",
-                __FILE__, __func__, __LINE__, self->nparents);
+        fprintf(stderr, "%s:%s:%d: Node %s has %d parents\n",
+                __FILE__, __func__, __LINE__, self->label, self->nparents);
         exit(EXIT_FAILURE);
     }
     /* NOTREACHED */
