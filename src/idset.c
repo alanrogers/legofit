@@ -91,8 +91,14 @@ static IdSet *IdSet_new_noEventLst(int nIds, const tipId_t *tid) {
     IdSet *self = malloc(size);
     CHECKMEM(self);
     self->nIds = nIds;
+    self->pr = 0.0L;
+    self->evlst = NULL;
 
     memcpy(self->tid, tid, nIds * sizeof(tipId_t));
+
+#ifndef NDEBUG    
+    IdSet_sanityCheck(self, __FILE__, __LINE__);
+#endif    
 
     return self;
 }
@@ -111,6 +117,10 @@ IdSet *IdSet_new(int nIds, const tipId_t *tid, EventLst *evlst) {
 
     self->evlst = evlst;
     self->pr = EventLst_prob(evlst);
+
+#ifndef NDEBUG    
+    IdSet_sanityCheck(self, __FILE__, __LINE__);
+#endif    
 
     return self;
 }
@@ -189,6 +199,10 @@ IdSet *IdSet_join(IdSet *left, IdSet *right, int nsamples,
 
     IdSet *new = IdSet_new_noEventLst(nIds, tid);
 
+#ifndef NDEBUG    
+    IdSet_sanityCheck(new, __FILE__, __LINE__);
+#endif    
+    
     new->pr = pr;
     new->evlst = evlst;
 
@@ -237,6 +251,11 @@ IdSet *IdSet_addSamples(IdSet *old, int nsamples, tipId_t *samples) {
     old->evlst = NULL;
 
     IdSet_free(old);
+
+#ifndef NDEBUG    
+    IdSet_sanityCheck(new, __FILE__, __LINE__);
+#endif    
+
     return new;
 }
 
@@ -251,7 +270,7 @@ IdSet *IdSet_newTip(tipId_t tid) {
     self->tid[0] = tid;
 
 #ifndef NDEBUG    
-    EventLst_sanityCheck(self->evlst, __FILE__, __LINE__);
+    IdSet_sanityCheck(self, __FILE__, __LINE__);
 #endif    
     
     return self;
@@ -410,6 +429,10 @@ IdSet *IdSet_subset(const IdSet *self, int n, int *ndx) {
     new->pr = self->pr;
     new->evlst = EventLst_dup(self->evlst);
     
+#ifndef NDEBUG    
+    IdSet_sanityCheck(self, __FILE__, __LINE__);
+#endif    
+
     return new;
 }
 

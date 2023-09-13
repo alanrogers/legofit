@@ -790,8 +790,14 @@ int visitSetPart(unsigned n, unsigned a[n], void *data) {
         qsort(&sitepat[0], (size_t) k, sizeof(sitepat[0]), tipidcmp);
 
         EventLst *evlst = IdSet_dupEventLst(descendants);
+#ifndef NDEBUG    
+        EventLst_sanityCheck(evlst, __FILE__, __LINE__);
+#endif    
         evlst = EventLst_insert(evlst, vdat->event, vdat->outcome,
                                 p * vdat->prior);
+#ifndef NDEBUG    
+        EventLst_sanityCheck(evlst, __FILE__, __LINE__);
+#endif    
         IdSet *ancestors = IdSet_new(k, sitepat, evlst);
 
         // Ignore improbable IdSets

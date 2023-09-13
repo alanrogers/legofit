@@ -88,7 +88,7 @@ static inline double survival(double t, double twoN);
 #  define REQUIRE(x, file, line) do {                                   \
         if (!(x)) {                                                     \
             dostacktrace(__FILE__,__LINE__,stderr);                     \
-            fprintf(stderr,"ERR@%s:%d->%s:%d: Sanity check FAIL\n",     \
+            fprintf(stderr,"ERR@%s:%d->%s:%d: FAILED REQUIREMENT\n",     \
                     (file), (line), __FILE__,__LINE__);                 \
             exit(EXIT_FAILURE);                                         \
         }                                                               \
