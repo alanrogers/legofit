@@ -17,7 +17,14 @@
 // Exclude IdSet objects whose probability is <= improbable.
 long double improbable = 0.0L;
 
-// The total probability of events ignored because they were improbable.
+// The total probability of events ignored because they were
+// improbable.
+//
+// Not protected by a mutex because this value is only interpretable in
+// legosim, which is single-threaded. Under legofit, different threads
+// write to this value, and it may be corrupted by attempts at simultaneous
+// access. But this doesn't matter, because legofit doesn't report the
+// value anyway. If it did, a mutex would be needed.
 long double pr_ignored = 0.0L;
 
 // A set of tipId_t values.
