@@ -288,7 +288,6 @@ int main(int argc, char **argv) {
     fflush(stdout);
 
     unsigned long nsites = 0, nbadaa = 0, nfixed = 0;
-    long snpndx = -1;
 
     // Read data
     fprintf(stderr, "Doing %s pass through data to tabulate patterns..\n",
@@ -315,8 +314,6 @@ int main(int argc, char **argv) {
                     __FILE__,__LINE__, errbuff);
             exit(EXIT_FAILURE);
         }
-
-        ++snpndx;
 
         // p and q are frequencies of derived and ancestral alleles
         double p[n], q[n];

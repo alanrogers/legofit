@@ -54,7 +54,7 @@ El         *El_new(const char *key, void *ptr) {
         fprintf(stderr,"%s:%d: snprintf returned error. key=%s\n",
                 __FILE__,__LINE__, key);
         if(strlen(key) >= KEYSIZE) {
-            fprintf(stderr, "%s:%d: key length=%d; max=%d\n",
+            fprintf(stderr, "%s:%d: key length=%zu; max=%d\n",
                     __FILE__,__LINE__, strlen(key),
                     KEYSIZE-1);
         }

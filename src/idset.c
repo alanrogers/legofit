@@ -38,7 +38,7 @@ static void merge3(int nw, tipId_t *w, int nz, tipId_t *z,
                    int nx, tipId_t *x, int ny, tipId_t *y);
 static IdSet *IdSet_new_noEventLst(int nIds, const tipId_t *tid);
 
-void IdSet_sanityCheck(IdSet *self, const char *file, int lineno) {
+void IdSet_sanityCheck(const IdSet *self, const char *file, int lineno) {
 #ifndef NDEBUG
     if(self == NULL)
        return;

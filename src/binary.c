@@ -229,7 +229,7 @@ uint32_t uint64Hash(uint64_t key)
 
 /// Return 1 if the values in array share no bits; 0 otherwise.
 /// Returns 1 if n==0.
-int no_shared_bits(int n, tipId_t *tid) {
+int no_shared_bits(int n, const tipId_t *tid) {
     tipId_t u = 0; // union of prior tipId_t values
     for(int i=0; i < n; ++i) {
         if(u & tid[i])

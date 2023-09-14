@@ -1007,12 +1007,10 @@ int main(int argc, char **argv) {
             // par is the name of the current parameter
             const char *par = node->name;
             int exist[nmodels]; // 0 for models lacking par
-            int nExist = 0;     // # models containing par
             double wsum = 0.0;
             for(k = 0; k < nmodels; ++k) {
                 if(ModPar_exists(modpar[k], par)) {
                     // par exists in model k
-                    ++nExist;
                     exist[k] = 1;
                     wsum += w[k];
                 } else

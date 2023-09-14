@@ -19,7 +19,7 @@ IdSet *IdSet_join(IdSet *left, IdSet *right, int nsamples,
 IdSet *IdSet_new(int nIds, const tipId_t *tid, EventLst *evlst);
 IdSet *IdSet_newTip(tipId_t tid);
 void   IdSet_print(IdSet *self, FILE *fp);
-void   IdSet_sanityCheck(IdSet *self, const char *file, int lineno);
+void   IdSet_sanityCheck(const IdSet *self, const char *file, int lineno);
 void   IdSet_free(IdSet *self);
 int    IdSet_nIds(IdSet *self);
 long double IdSet_prob(IdSet *self);
