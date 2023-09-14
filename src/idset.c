@@ -96,10 +96,6 @@ static IdSet *IdSet_new_noEventLst(int nIds, const tipId_t *tid) {
 
     memcpy(self->tid, tid, nIds * sizeof(tipId_t));
 
-#ifndef NDEBUG    
-    IdSet_sanityCheck(self, __FILE__, __LINE__);
-#endif    
-
     return self;
 }
 
@@ -110,10 +106,6 @@ static IdSet *IdSet_new_noEventLst(int nIds, const tipId_t *tid) {
 IdSet *IdSet_new(int nIds, const tipId_t *tid, EventLst *evlst) {
 
     IdSet *self = IdSet_new_noEventLst(nIds, tid);
-
-#ifndef NDEBUG    
-    EventLst_sanityCheck(evlst, __FILE__, __LINE__);
-#endif    
 
     self->evlst = evlst;
     self->pr = EventLst_prob(evlst);
@@ -199,10 +191,6 @@ IdSet *IdSet_join(IdSet *left, IdSet *right, int nsamples,
 
     IdSet *new = IdSet_new_noEventLst(nIds, tid);
 
-#ifndef NDEBUG    
-    IdSet_sanityCheck(new, __FILE__, __LINE__);
-#endif    
-    
     new->pr = pr;
     new->evlst = evlst;
 
