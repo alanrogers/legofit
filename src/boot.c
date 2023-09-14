@@ -156,7 +156,7 @@ void Boot_sanityCheck(const Boot * self, const char *file, int line) {
     REQUIRE(self->start != NULL, file, line);
 
     unsigned long endpos = self->nsnp - self->blocksize + 1;
-    long prev;
+    long prev = -1;
 
     for(i = 0; i < self->nrep; ++i) {
         REQUIRE(self->count[i] != NULL, file, line);

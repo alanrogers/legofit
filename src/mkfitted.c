@@ -160,8 +160,12 @@ enum linetype LineReader_next(LineReader *self, FILE *fp) {
                 __FILE__,__LINE__);
         exit(EXIT_FAILURE);
     }
+#ifndef NDEBUG    
     int status = snprintf(self->varname, len+1, "%s", name);
     assert(status >= 0);
+#else
+    snprintf(self->varname, len+1, "%s", name);
+#endif    
     if( !legalName(self->varname) ) {
         fprintf(stderr, "%s:%d: %s is not a legal variable name\n",
                 __FILE__,__LINE__, self->varname);
