@@ -1352,7 +1352,7 @@ static IdSetSet **get_descendants1(int wdim, IdSetSet ** w, int nsamples,
 
     if(wdim == 0) {
         // w is empty: there is only one IdSet, which contains
-        // the samples, and goes in d[n-1] = d[nsamples].
+        // the samples, and goes in d[n-1] == d[nsamples].
         for(i = 0; i < n - 1; ++i)
             d[i] = IdSetSet_new(0);
         d[n - 1] = IdSetSet_new(1);

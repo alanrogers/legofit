@@ -219,7 +219,11 @@ IdSet *IdSet_join(IdSet *left, IdSet *right, int nsamples,
         IdSet_print(right, stderr);
         putc('\n', stderr);
     }
-#endif    
+#endif
+
+#ifndef NDEBUG
+    IdSet_sanityCheck(new);
+#endif
 
     return new;
 }

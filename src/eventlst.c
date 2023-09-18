@@ -152,8 +152,11 @@ long double EventLst_prob(EventLst *head) {
     EventLst *mo;
     long double pr = 1.0L;
 
-    for(mo=head; mo; mo = mo->next)
+    for(mo=head; mo; mo = mo->next) {
         pr *= mo->pr;
+    }
+
+    assert(pr >= 0.0L);
 
     return pr;
 }
