@@ -1,9 +1,9 @@
 destination := $(HOME)/bin
 git_version := "$(shell git describe --dirty --always --tags)"
 global_destination := $(HOME)/grp2/bin
-#opt := -DNDEBUG -O2  -finline-functions  # For full optimization
+opt := -DNDEBUG -O2  -finline-functions  # For full optimization
 #opt := -O0 -g -fno-inline-functions -rdynamic -DDEBUG     # For debugging
-opt := -O2  -g -finline-functions  # Optimization + debugging
+#opt := -O2  -g -finline-functions  # Optimization + debugging
 #prof := -pg -g -rdynamic                    # For profiling under gcc
 #prof := --fprofile-generate -g              # For profiling under clang
 prof :=
