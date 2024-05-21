@@ -900,7 +900,7 @@ int main(int argc, char **argv) {
     unsigned ord[npat];
     orderpat(npat, ord, pat);
 
-    printf("#%14s %10s\n", "SitePat", "BranchLen");
+    printf("#%14s %s\n", "SitePat", "BranchLen");
     char buff[100], buff2[100];
     for(j = 0; j < npat; ++j) {
         if(!doSing && isPow2(pat[ord[j]]))
