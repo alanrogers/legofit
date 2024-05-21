@@ -14,7 +14,7 @@ targets := legosim legofit tabpat sitepat scrmpat daf raf numcores \
      mapmix pripos mkfitted
 pytargets := diverg.py bootci.py flatfile.py axt2raf.py flatpat.py
 
-CC := gcc
+CC := clang
 
 # Flags to determine the warning messages issued by the compiler
 warn := \
@@ -49,7 +49,7 @@ ubsan =
 CFLAGS := -std=gnu99 $(ubsan) $(warn) $(incl) $(opt) $(prof) \
  -DGIT_VERSION=\"$(git_version)\"
 
-lib := -L/usr/local/lib -lgsl -lgslcblas -lpthread -lm
+lib := -L/opt/homebrew/lib -L/usr/local/lib -lgsl -lgslcblas -lpthread -lm
 
 .c.o:
 	$(CC) $(CFLAGS) $(incl) -c -o ${@F}  $<

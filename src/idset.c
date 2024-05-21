@@ -222,7 +222,7 @@ IdSet *IdSet_join(IdSet *left, IdSet *right, int nsamples,
 #endif
 
 #ifndef NDEBUG
-    IdSet_sanityCheck(new);
+    IdSet_sanityCheck(new,__FILE__,__LINE__);
 #endif
 
     return new;
