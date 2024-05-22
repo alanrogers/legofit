@@ -651,8 +651,6 @@ int main(int argc, char **argv) {
 
     for(i = 0; i < npat; ++i) {
         if(pat[i] == union_all_samples) {
-            char lbl[100];
-            patLbl(sizeof(lbl), lbl, pat[i], &lndx);
 #ifndef NDEBUG            
             for(j=0; j<nDataFiles; ++j) {
                 assert(Dbl_near(mat[i * nDataFiles + j], 0.0));
