@@ -96,7 +96,7 @@ struct TaskArg {
     void       *jobData;
 };
 
-static inline void assignd(int dim, double a[], double b[]);
+static inline void assignd(int dim, double a[dim], double b[dim]);
 void        sample(int k, int rtn[k], int n, int array[n],
                    const gsl_rng * rng);
 TaskArg    *TaskArg_new(int dim,

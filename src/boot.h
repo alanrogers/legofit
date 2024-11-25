@@ -26,7 +26,7 @@ void        Boot_sanityCheck(const Boot * self, const char *file, int line);
 #endif
 
 void        confidenceBounds(double *lowBnd, double *highBnd, double confidence,
-							 long len, double v[len]);
+						 long len, double v[len]);
 
 #  ifndef NDEBUG
 unsigned    Boot_multiplicity_slow(Boot * self, long snp, long rep);
