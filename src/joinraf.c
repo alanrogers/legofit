@@ -14,6 +14,11 @@ the input files.
 
 # Usage
 
+    joinraf <in_1> <in_2> ...
+       where <in_i> are input files in raf format.   Writes to standard output.
+       Each input file should summarize the same number of genomes.
+    Maximum number of input files: 64
+
 @copyright Copyright (c) 2018, Alan R. Rogers
 <rogers@anthro.utah.edu>. This file is released under the Internet
 Systems Consortium License, which can be found in file "LICENSE".
@@ -72,8 +77,15 @@ int main(int argc, char **argv) {
     // Each argument should be the name of an input file.
     printf("# Input files:\n");
     for(i = 0; i < n; ++i) {
-        r[i] = RAFReader_new(argv[i+1]);
-        printf("# %s\n", argv[i+1]);
+        char *arg = argv[i+1];
+
+        if(arg[0] == '-')
+            // There are no flag arguments
+            usage();
+        else
+            printf("# %s\n", arg);
+        
+        r[i] = RAFReader_new(arg);
     }
 
     // Iterate through raf files
