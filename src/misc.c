@@ -195,7 +195,7 @@ unsigned Dbl_first_geq(double val, unsigned len, double v[len]) {
     if(val > v[hi])
         return len;
     while(lo < hi) {
-        mid = lo + ((hi - lo) / 2);
+        mid = lo + (hi - lo) / 2;
         if(mid == lo)
             break;
         if(v[mid] < val)
@@ -229,7 +229,7 @@ long long_first_geq(long val, long *v, long len) {
     if(val > v[hi])
         return len;
     while(lo < hi) {
-        mid = lo + ((hi - lo) / 2);
+        mid = lo + (hi - lo) / 2;
         if(mid == lo)
             break;
         if(v[mid] < val)
@@ -263,7 +263,7 @@ long long_last_leq(long val, long *v, long len) {
     if(val < v[0])
         return -1;
     while(lo < hi) {
-        mid = hi - ((hi - lo) / 2);
+        mid = hi - (hi - lo) / 2;
         if(mid == hi)
             break;
         if(v[mid] > val)
