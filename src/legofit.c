@@ -312,6 +312,7 @@ void usage(void) {
     tellopt("--stateOut <filename>",
             "write final state to file");
     tellopt("-T <x> or --tol <x>", "termination criterion");
+    tellopt("-t <x> or --threads <x>", "num threads; 0 => auto");
     tellopt("-v or --verbose", "verbose output");
     tellopt("--version", "Print version and exit");
     tellopt("-x <x> or --crossover <x>", "set DE crossover probability");
@@ -688,10 +689,7 @@ int main(int argc, char **argv) {
     }
 
     if(nThreads == 0) {
-        if(deterministic)
-            nThreads = ceil(0.5 * getNumCores());
-        else
-            nThreads = ceil(0.75 * getNumCores());
+        nThreads = ceil(0.75 * getNumCores());
     }
 
     // There's no point in using more threads than there are points in
