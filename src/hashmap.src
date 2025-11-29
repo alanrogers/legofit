@@ -1,5 +1,5 @@
 /**
- * @file hashmap.c
+ * @file hashmap.src
  * @author Alan R. Rogers
  * @brief Generic hashmap code.
  *
@@ -151,10 +151,11 @@ VALTYPE FUNC(MAPTYPE, get)(MAPTYPE * self, const KEYTYPE key, int *status) {
             *status = 0;
             return el->value;
         }else if(cmp < 0) {
-            *status = 1;
-            return 0;
+            goto not_found;
         }
     }
+
+not_found:	
     *status = 1;
     return 0;
 }
