@@ -43,11 +43,15 @@ void PLOT(NODETYPE *root, SampNdx *sndx, FILE *fp) {
 
     if(PtrQueue_size(time_zero) > 1) {
         fputs("  { rank = same;", fp);
-        while( (s=PtrQueue_pop(time_zero)) != NULL) {
-            fprintf(fp, " %s", s);
+        while( PtrQueue_size(time_zero) > 1) {
+            s=PtrQueue_pop(time_zero);
+            fprintf(fp, " %s ->", s);
             free(s);
         }
-        fputs("};\n", fp);
+        // pop last entry
+        s=PtrQueue_pop(time_zero);
+        fprintf(fp, " %s [style = invis]}\n", s);
+        free(s);
     }
 
     while( (s=PtrQueue_pop(dual_parents)) != NULL) {
@@ -72,6 +76,7 @@ static void GET_PLOT_DATA(NODETYPE *self, FILE * fp,
                           PtrQueue *dual_parents,
                           PtrQueue *edge) {
 
+    fprintf(stderr,"%s\n", self->label);
     char s[200] = {0};
     
     if(self->visited)
