@@ -220,89 +220,6 @@ void PopNode_print(void *vroot, FILE * fp, int indent) {
     PopNode_print_r(root, fp, indent);
 }
 
-void PopNode_plot(PopNode *root, FILE *fp) {
-    PtrQueue *time_zero = PtrQueue_new();
-    PtrQueue *has_sample = PtrQueue_new();
-    PtrQueue *dual_parents = PtrQueue_new();
-    PtrQueue *edge = PtrQueue_new();
-
-    fprintf(fp, "digraph {\n");
-    fprintf(fp, "  ratio = 1.5;\n");
-
-    PopNode_unvisit(root);
-    PopNode_get_plot_data(root, fp, has_sample, time_zero, dual_parents, edge);
-
-    char *s;
-
-    while( (s=PtrQueue_pop(has_sample)) != NULL) {
-        fprintf(fp, "  %s [shape = square];\n", s);
-        free(s);
-    }
-
-    if(PtrQueue_size(time_zero) > 1) {
-        fputs("{ rank = same;", fp);
-        while( (s=PtrQueue_pop(time_zero)) != NULL) {
-            fprintf(fp, " %s", s);
-            free(s);
-        }
-        fputs("};\n", fp);
-    }
-
-    while( (s=PtrQueue_pop(dual_parents)) != NULL) {
-        fprintf(fp, "  { rank = same; %s};\n", s);
-        free(s);
-    }
-    
-    while( (s=PtrQueue_pop(edge)) != NULL) {
-        fprintf(fp, "  %s;\n", s);
-        free(s);
-    }
-
-    fprintf(fp, "}\n");
-
-    PtrQueue_free(has_sample);
-    PtrQueue_free(time_zero);
-    PtrQueue_free(dual_parents);
-    PtrQueue_free(edge);
-}
-
-static void PopNode_get_plot_data(PopNode *self, FILE * fp,
-                                  PtrQueue *has_sample,
-                                  PtrQueue *time_zero,
-                                  PtrQueue *dual_parents,
-                                  PtrQueue *edge) {
-
-    char s[200] = {0};
-    
-    if(self->visited)
-        return;
-    self->visited = 1;
-
-    if(self->nsamples > 0) {
-        PtrQueue_push(has_sample, strdup(self->label));
-    }
-    if(self->start == 0) {
-        PtrQueue_push(time_zero, strdup(self->label));
-    }
-    if(self->nparents == 2) {
-        sprintf(s, "%s %s", self->parent[0]->label,
-                self->parent[1]->label);
-        PtrQueue_push(dual_parents, strdup(s));
-    }
-    if(self->nchildren == 1) {
-        sprintf(s, "%s -> %s", self->label, self->child[0]->label);
-        PtrQueue_push(edge, strdup(s));
-    }else if(self->nchildren == 2) {
-        sprintf(s, "%s -> {%s %s}", self->label, self->child[0]->label,
-                self->child[1]->label);
-        PtrQueue_push(edge, strdup(s));
-    }
-
-    for(int i = 0; i < self->nchildren; ++i)
-        PopNode_get_plot_data(self->child[i], fp, has_sample, time_zero,
-                              dual_parents, edge);
-}
-
 /// Print a PopNode and (recursively) its descendants.
 static void PopNode_print_r(PopNode *self, FILE * fp, int indent) {
 
@@ -911,6 +828,11 @@ static void PopNode_duplicate_nodes(PopNode * old, PtrPtrMap * ppm) {
     if(old->nchildren > 1)
         PopNode_duplicate_nodes(old->child[1], ppm);
 }
+
+// Include generic code for plotting functions
+#define NODETYPE PopNode
+#  include "plot.c"
+#undef NODETYPE
 
 #ifdef TEST
 

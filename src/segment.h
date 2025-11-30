@@ -17,7 +17,6 @@ void     Segment_newSample(Segment * self, unsigned ndx);
 int      Segment_mix(void * vchild, int mix_i, void * vintrogressor,
                      void * vnative, ParStore *ps);
 void     Segment_print(void *vroot, FILE * fp, int indent);
-void     Segment_plot(Segment *root, FILE *fp);
 void     Segment_prune(Segment *self);
 void    *Segment_root(void * vself);
 void     Segment_sanityCheck(Segment * self, const char *file, int lineno);
@@ -25,5 +24,9 @@ void     Segment_unvisit(Segment *self);
 void     Segment_update(Segment *self, ParStore *ps);
 void     Segment_clear(Segment * self);
 int      Segment_isClear(const Segment * self);
+
+#define NODETYPE Segment
+#  include "plot.h"
+#undef NODETYPE
 
 #endif

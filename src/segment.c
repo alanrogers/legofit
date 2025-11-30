@@ -33,12 +33,6 @@ extern tipId_t union_all_samples;
 
 extern long double improbable, pr_ignored;
 
-static void Segment_get_plot_data(Segment *self, FILE * fp,
-                                  PtrQueue *has_sample,
-                                  PtrQueue *time_zero,
-                                  PtrQueue *dual_parents,
-                                  PtrQueue *edge);
-
 typedef struct MigDat MigDat;
 typedef struct CombDat CombDat;
 typedef struct SetPartDat SetPartDat;
@@ -682,62 +676,6 @@ void Segment_print(void *vroot, FILE * fp, int indent) {
     Segment *root = vroot;
     Segment_unvisit(root);
     Segment_print_r(root, fp, indent);
-}
-
-void Segment_plot(Segment *root, FILE *fp) {
-    PtrQueue *time_zero = PtrQueue_new();
-    PtrQueue *has_sample = PtrQueue_new();
-    PtrQueue *dual_parents = PtrQueue_new();
-    PtrQueue *edge = PtrQueue_new();
-
-    fprintf(fp, "digraph {\n");
-    fprintf(fp, "  ratio = 1.5;\n");
-
-    Segment_unvisit(root);
-    Segment_get_plot_data(root, fp, has_sample, time_zero, dual_parents, edge);
-
-    char *s;
-
-    while( (s=PtrQueue_pop(has_sample)) != NULL) {
-        fprintf(fp, "  %s [shape = square];\n", s);
-        free(s);
-    }
-
-    if(PtrQueue_size(time_zero) > 1) {
-        fputs("{ rank = same;", fp);
-        while( (s=PtrQueue_pop(time_zero)) != NULL) {
-            fprintf(fp, " %s", s);
-            free(s);
-        }
-        fputs("};\n", fp);
-    }
-
-    while( (s=PtrQueue_pop(dual_parents)) != NULL) {
-        fprintf(fp, "  { rank = same; %s};\n", s);
-        free(s);
-    }
-    
-    while( (s=PtrQueue_pop(edge)) != NULL) {
-        fprintf(fp, "  %s;\n", s);
-        free(s);
-    }
-
-    fprintf(fp, "}\n");
-
-    PtrQueue_free(has_sample);
-    PtrQueue_free(time_zero);
-    PtrQueue_free(dual_parents);
-    PtrQueue_free(edge);
-}
-
-static void Segment_get_plot_data(Segment *self, FILE * fp,
-                                  PtrQueue *has_sample,
-                                  PtrQueue *time_zero,
-                                  PtrQueue *dual_parents,
-                                  PtrQueue *edge) {
-    fprintf(stderr,"%s@%d: Func %s isn't written yet.\n",
-            __FILE__, __LINE__, __func__);
-    exit(1);
 }
 
 static void Segment_print_r(Segment *self, FILE * fp, int indent) {
@@ -1778,3 +1716,8 @@ static int tipidcmp(const void *vx, const void *vy) {
         return -1;
     return 0;
 }
+
+// Include generic code for plotting functions
+#define NODETYPE Segment
+#  include "plot.c"
+#undef NODETYPE
