@@ -37,11 +37,6 @@ static void PopNode_duplicate_nodes(PopNode * old, PtrPtrMap * ppm);
 static void unlink_child(PopNode * child, PopNode * parent);
 static int PopNode_equals_r(PopNode * a, PopNode * b);
 static void PopNode_print_r(PopNode *self, FILE * fp, int indent);
-static void PopNode_get_plot_data(PopNode *self, FILE * fp,
-                                  PtrQueue *has_sample,
-                                  PtrQueue *time_zero,
-                                  PtrQueue *dual_parents,
-                                  PtrQueue *edge);
 
 struct PopNode {
     char *label;                // name of current segment
