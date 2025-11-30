@@ -115,6 +115,11 @@ void  MCTree_print(void * vself, FILE * fp) {
     LblNdx_print(&self->lblndx, fp);
 }
 
+void MCTree_plot(void *vself, FILE *fp) {
+    MCTree *self = (MCTree *) vself;
+    Segment_plot(self->rootPop, fp);
+}
+
 /// Print a description of parameters.
 void MCTree_printParStore(void * vself, FILE * fp) {
     MCTree *self = vself;

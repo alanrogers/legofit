@@ -20,6 +20,7 @@ void       *PopNode_new(int twoN_i, int start_i, ParStore *ps,
                         const char *label);
 void        PopNode_newSample(PopNode * self, unsigned ndx);
 void        PopNode_print(void *vroot, FILE * fp, int indent);
+void        PopNode_plot(PopNode *root, FILE *fp);
 void       *PopNode_root(void * vself);
 void        PopNode_update(PopNode *self, ParStore *ps);
 void        PopNode_unvisit(PopNode *self);

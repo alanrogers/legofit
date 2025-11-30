@@ -175,13 +175,13 @@ TRY := try.o binary.o
 try : $(TRY)
 	$(CC) $(CFLAGS) -o $@ $(TRY) $(lib)
 
-ptrptrmap.o : ptrptrmap.c ptrptrmap.h hashmap.h hashmap.src
+ptrptrmap.o : ptrptrmap.c ptrptrmap.h hashmap.h hashmap.c
 
-ptru32map.o : ptru32map.c ptru32map.h hashmap.h hashmap.src
+ptru32map.o : ptru32map.c ptru32map.h hashmap.h hashmap.c
 
-u64u64map.o : u64u64map.c u64u64map.h hashmap.h hashmap.src
+u64u64map.o : u64u64map.c u64u64map.h hashmap.h hashmap.c
 
-strdblmap.o : strdblmap.c strdblmap.h hashmap.h hashmap.src
+strdblmap.o : strdblmap.c strdblmap.h hashmap.h hashmap.c
 
 # Make dependencies file
 depend : *.c *.h

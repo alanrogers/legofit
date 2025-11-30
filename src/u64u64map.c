@@ -14,4 +14,4 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "hashmap.src"
+#include "hashmap.c"

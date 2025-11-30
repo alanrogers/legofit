@@ -25,6 +25,7 @@ EXTERN void        (*Network_brlen)(void *self, BranchTab *branchtab,
                                     int doSing,
                                     long unsigned *event_counter);
 EXTERN void        (*Network_print)(void *self, FILE *fp);
+EXTERN void        (*Network_plot)(void *self, FILE *fp);
 EXTERN void        (*Network_printParStore)(void *self, FILE *fp);
 EXTERN void        (*Network_printParStoreFree)(void *self, FILE *fp);
 EXTERN void        (*Network_randomize)(void *self, gsl_rng *rng);

@@ -1,7 +1,7 @@
 /**
  * @file ptrqueue.c
  * @author Alan R. Rogers
- * @brief A FIFO queue of pointers.
+ * @brief A queue of pointers.
  * @copyright Copyright (c) 2020, Alan R. Rogers
  * <rogers@anthro.utah.edu>. This file is released under the Internet
  * Systems Consortium License, which can be found in file "LICENSE".

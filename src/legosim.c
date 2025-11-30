@@ -17,6 +17,8 @@
           Deterministic algorithm, ignoring states with Pr <= x
        --network
           Print summary of population network and exit
+       --plot <filename> or -p <filename>
+          Create a dot-format file for plotting the network.
        -U <x>
           Mutations per generation per haploid genome.
        -h or --help
@@ -165,6 +167,7 @@ void usage(void) {
     tellopt("-d <x> or --deterministic <x>",
             "Deterministic algorithm, ignoring states with Pr <= x");
     tellopt("--network", "Print summary of population network and exit");
+    tellopt("--plot <f>", "Write dot-format plot commands to file f");
     tellopt("-U <x>", "Mutations per generation per haploid genome.");
     tellopt("-h or --help", "print this message");
     tellopt("--version", "print version and exit");
@@ -183,6 +186,7 @@ int main(int argc, char **argv) {
          {"branch_length", no_argument, 0, 'b'},
          {"deterministic", required_argument, 0, 'd'},
          {"network", no_argument, 0, 'n'},
+         {"plot", required_argument, 0, 'p'},
          {"nItr", required_argument, 0, 'i'},
          {"mutations", required_argument, 0, 'U'},
          {"singletons", no_argument, 0, '1'},
@@ -204,6 +208,7 @@ int main(int argc, char **argv) {
     long        nreps = 100;
     int         deterministic = 0, stochastic = 0;
     int         show_network = 0;
+    char        *plotfile = NULL;
     char        fname[200] = { '\0' };
 
     // Ignore IdSet objects with probabilities <= improbable.
@@ -225,7 +230,7 @@ int main(int argc, char **argv) {
     // command line arguments
     for(;;) {
         char *end;
-        i = getopt_long(argc, argv, "bd:ni:U:1h", myopts, &optndx);
+        i = getopt_long(argc, argv, "bd:np:i:U:1h", myopts, &optndx);
         if(i == -1)
             break;
         switch (i) {
@@ -246,6 +251,9 @@ int main(int argc, char **argv) {
             break;
         case 'n':
             show_network = 1;
+            break;
+        case 'p':
+            plotfile = optarg;
             break;
         case 'e':
             break;
@@ -327,7 +335,6 @@ int main(int argc, char **argv) {
                (doSing ? "including" : "excluding"));
     }
 
-
     Bounds bnd = {
             .lo_twoN = lo_twoN,
             .hi_twoN = hi_twoN,
@@ -339,6 +346,14 @@ int main(int argc, char **argv) {
 
     if(show_network) {
         Network_print(network, stdout);
+        return 0;
+    }
+
+    if(plotfile) {
+        printf(" writing plot commands to file %s\n", plotfile);
+        FILE *fp = fopen(plotfile, "w");
+        Network_plot(network, fp);
+        fclose(fp);
         return 0;
     }
 

@@ -1,5 +1,5 @@
 /**
- * @file hashmap.src
+ * @file hashmap.c
  * @author Alan R. Rogers
  * @brief Generic hashmap code.
  *

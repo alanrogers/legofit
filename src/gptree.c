@@ -51,6 +51,11 @@ void GPTree_print(void *vself, FILE *fp) {
     LblNdx_print(&self->lblndx, fp);
 }
 
+void GPTree_plot(void *vself, FILE *fp) {
+    GPTree *self = (GPTree *) vself;
+    PopNode_plot(self->rootPop, fp);
+}
+
 /// Initialize vector x. If ndx==0, simply copy the parameter vector
 /// from the GPTree object. Otherwise, randomize the GPTree first.
 /// This ensures that differential evolution starts with a set of

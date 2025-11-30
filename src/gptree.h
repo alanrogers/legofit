@@ -21,6 +21,7 @@ void        GPTree_patprob(void *vself, BranchTab *branchtab,
                             gsl_rng *rng, unsigned long nreps,
                             int doSing);
 void        GPTree_print(void *vself, FILE *fp);
+void        GPTree_plot(void *vself, FILE *fp);
 void        GPTree_printParStore(void *vself, FILE *fp);
 void        GPTree_printParStoreFree(void *vself, FILE *fp);
 void        GPTree_randomize(void *vself, gsl_rng *rng);

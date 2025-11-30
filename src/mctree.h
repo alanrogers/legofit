@@ -19,6 +19,7 @@ void        MCTree_brlen(void * vself, BranchTab * branchtab, gsl_rng * rng,
                          unsigned long nreps, int doSing,
                          long unsigned *event_counter);
 void        MCTree_print(void * vself, FILE * fp);
+void        MCTree_plot(void *vself, FILE *fp);
 void        MCTree_printParStore(void * vself, FILE * fp);
 void        MCTree_printParStoreFree(void *self, FILE *fp);
 void        MCTree_randomize(void *self, gsl_rng *rng);
