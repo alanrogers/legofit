@@ -19,14 +19,12 @@ NODETYPE.
 //#include "ptrqueue.h"
 
 static void GET_PLOT_DATA(NODETYPE *self, FILE * fp,
-                                         PtrQueue *has_sample,
                                          PtrQueue *time_zero,
                                          PtrQueue *dual_parents,
                                          PtrQueue *edge);
 
-void PLOT(NODETYPE *root, FILE *fp) {
+void PLOT(NODETYPE *root, SampNdx *sndx, FILE *fp) {
     PtrQueue *time_zero = PtrQueue_new();
-    PtrQueue *has_sample = PtrQueue_new();
     PtrQueue *dual_parents = PtrQueue_new();
     PtrQueue *edge = PtrQueue_new();
 
@@ -34,13 +32,13 @@ void PLOT(NODETYPE *root, FILE *fp) {
     fprintf(fp, "  ratio = 1.5;\n");
 
     UNVISIT(root);
-    GET_PLOT_DATA(root, fp, has_sample, time_zero, dual_parents, edge);
+    GET_PLOT_DATA(root, fp, time_zero, dual_parents, edge);
 
     char *s;
 
-    while( (s=PtrQueue_pop(has_sample)) != NULL) {
-        fprintf(fp, "  %s [shape = square];\n", s);
-        free(s);
+    for(int i=0; i < SampNdx_size(sndx); ++i) {
+        NODETYPE *node = SampNdx_get(sndx, i);
+        fprintf(fp, "  %s [shape=square];\n", node->label);
     }
 
     if(PtrQueue_size(time_zero) > 1) {
@@ -64,14 +62,12 @@ void PLOT(NODETYPE *root, FILE *fp) {
 
     fprintf(fp, "}\n");
 
-    PtrQueue_free(has_sample);
     PtrQueue_free(time_zero);
     PtrQueue_free(dual_parents);
     PtrQueue_free(edge);
 }
 
 static void GET_PLOT_DATA(NODETYPE *self, FILE * fp,
-                          PtrQueue *has_sample,
                           PtrQueue *time_zero,
                           PtrQueue *dual_parents,
                           PtrQueue *edge) {
@@ -82,9 +78,6 @@ static void GET_PLOT_DATA(NODETYPE *self, FILE * fp,
         return;
     self->visited = 1;
 
-    if(self->nsamples > 0) {
-        PtrQueue_push(has_sample, strdup(self->label));
-    }
     if(self->start == 0) {
         PtrQueue_push(time_zero, strdup(self->label));
     }
@@ -104,8 +97,7 @@ static void GET_PLOT_DATA(NODETYPE *self, FILE * fp,
     }
 
     for(int i = 0; i < self->nchildren; ++i)
-        GET_PLOT_DATA(self->child[i], fp, has_sample, time_zero,
-                      dual_parents, edge);
+        GET_PLOT_DATA(self->child[i], fp, time_zero, dual_parents, edge);
 }
 
 #undef INNER

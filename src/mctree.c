@@ -117,7 +117,7 @@ void  MCTree_print(void * vself, FILE * fp) {
 
 void MCTree_plot(void *vself, FILE *fp) {
     MCTree *self = (MCTree *) vself;
-    Segment_plot(self->rootPop, fp);
+    Segment_plot(self->rootPop, &self->sndx, fp);
 }
 
 /// Print a description of parameters.
@@ -136,12 +136,6 @@ void MCTree_printParStoreFree(void * vself, FILE * fp) {
 /// Get the LblNdx object from a MCTree
 LblNdx MCTree_getLblNdx(void * vself) {
     return ((MCTree *) vself)->lblndx;
-}
-
-/// Return number of samples in network.
-unsigned MCTree_nsamples(const void *vself) {
-    const MCTree *self = vself;
-    return LblNdx_size(&self->lblndx);
 }
 
 /// Duplicate a MCTree object
@@ -350,6 +344,12 @@ void MCTree_brlen(void * vself, BranchTab * branchtab, gsl_rng * rng,
         exit(EXIT_FAILURE);
     }
     //BranchTab_normalize(branchtab);
+}
+
+/// Return number of samples in network.
+unsigned MCTree_nsamples(const void *vself) {
+    const MCTree *self = vself;
+    return LblNdx_size(&self->lblndx);
 }
 
 unsigned MCTree_nSamples(void *vself) {
