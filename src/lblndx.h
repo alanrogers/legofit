@@ -18,6 +18,7 @@ unsigned    LblNdx_size(const LblNdx * self);
 void        LblNdx_sanityCheck(const LblNdx *self, const char *file, int line);
 int         LblNdx_equals(const LblNdx *lhs, const LblNdx *rhs);
 tipId_t     LblNdx_getTipId(const LblNdx *self, const char *lbl);
+tipId_t     LblNdx_getTipId_1(const LblNdx *self, const char *lbl);
 void        LblNdx_print(const LblNdx *self, FILE *fp);
 int         LblNdx_collapse(LblNdx *self, tipId_t collapse, const char *lbl);
 int         LblNdx_rmPops(LblNdx *self, tipId_t remove);

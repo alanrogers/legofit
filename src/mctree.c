@@ -117,7 +117,7 @@ void  MCTree_print(void * vself, FILE * fp) {
 
 void MCTree_plot(void *vself, FILE *fp) {
     MCTree *self = (MCTree *) vself;
-    Segment_plot(self->rootPop, &self->sndx, fp);
+    Segment_plot(self->rootPop, &self->sndx, &self->lblndx, fp);
 }
 
 /// Print a description of parameters.

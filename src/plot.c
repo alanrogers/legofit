@@ -18,12 +18,15 @@ NODETYPE.
 
 //#include "ptrqueue.h"
 
+#include "sampndx.h"
+#include "lblndx.h"
+
 static void GET_PLOT_DATA(NODETYPE *self, FILE * fp,
                                          PtrQueue *time_zero,
                                          PtrQueue *dual_parents,
                                          PtrQueue *edge);
 
-void PLOT(NODETYPE *root, SampNdx *sndx, FILE *fp) {
+void PLOT(NODETYPE *root, SampNdx *sndx, LblNdx *lblndx, FILE *fp) {
     PtrQueue *time_zero = PtrQueue_new();
     PtrQueue *dual_parents = PtrQueue_new();
     PtrQueue *edge = PtrQueue_new();
@@ -41,17 +44,41 @@ void PLOT(NODETYPE *root, SampNdx *sndx, FILE *fp) {
         fprintf(fp, "  %s [shape=square];\n", node->label);
     }
 
-    if(PtrQueue_size(time_zero) > 1) {
+    // All nodes that occur at time zero should be on a single
+    // horizontal rank. They should also appear left-to-right
+    // in the order they occur in the .lgo file. To accomplish this,
+    // the following paragraph generates a line of .dot input of the
+    // following form:
+    //
+    //     { rank = same; x -> y -> z [style = invis]}
+    //
+    // where x, y, and z are the nodes at time 0 and they are listed
+    // in the order of their appearance in the .lgo file. The string
+    // "[style = invis]" instructs Graphviz not to print the arrows
+    // specified here. Their only purpose is to specify the horizontal
+    // order of x, y, and z.
+    int nsamples = PtrQueue_size(time_zero);
+    if(nsamples > 1) {
         fputs("  { rank = same;", fp);
-        while( PtrQueue_size(time_zero) > 1) {
-            s=PtrQueue_pop(time_zero);
-            fprintf(fp, " %s ->", s);
-            free(s);
+
+        char *lbl[nsamples];
+        tipId_t pat[nsamples];
+        unsigned ord[nsamples];
+
+        for(int i=0; i < nsamples; ++i) {
+            lbl[i]=PtrQueue_pop(time_zero);
+            pat[i] = LblNdx_getTipId(lblndx, lbl[i]);
         }
-        // pop last entry
-        s=PtrQueue_pop(time_zero);
-        fprintf(fp, " %s [style = invis]}\n", s);
-        free(s);
+
+        orderpat(nsamples, ord, pat);
+
+        for(int i = 0; i < nsamples-1; ++i) {
+            fprintf(fp, " %s ->", lbl[ord[i]]);
+        }
+        fprintf(fp, " %s [style = invis]};\n", lbl[ord[nsamples-1]]);
+
+        for(int i=0; i<nsamples; ++i)
+            free(lbl[i]);
     }
 
     while( (s=PtrQueue_pop(dual_parents)) != NULL) {
@@ -76,7 +103,6 @@ static void GET_PLOT_DATA(NODETYPE *self, FILE * fp,
                           PtrQueue *dual_parents,
                           PtrQueue *edge) {
 
-    fprintf(stderr,"%s\n", self->label);
     char s[200] = {0};
     
     if(self->visited)

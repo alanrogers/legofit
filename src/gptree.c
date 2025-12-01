@@ -53,7 +53,7 @@ void GPTree_print(void *vself, FILE *fp) {
 
 void GPTree_plot(void *vself, FILE *fp) {
     GPTree *self = (GPTree *) vself;
-    PopNode_plot(self->rootPop, &self->sndx, fp);
+    PopNode_plot(self->rootPop, &self->sndx, &self->lblndx, fp);
 }
 
 /// Initialize vector x. If ndx==0, simply copy the parameter vector

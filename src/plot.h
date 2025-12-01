@@ -12,7 +12,7 @@ version, include this into a .h file that defines NODETYPE.
 // of the NODETYPE macro.
 #define PLOT FUNC(NODETYPE, plot)
 
-void PLOT(NODETYPE *root, SampNdx *sndx, FILE *fp);
+void PLOT(NODETYPE *root, SampNdx *sndx, LblNdx *lblndx, FILE *fp);
 
 #undef INNER
 #undef FUNC

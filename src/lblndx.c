@@ -15,7 +15,6 @@
 #include <assert.h>
 
 int         comparePtrs(const void *void_x, const void *void_y);
-tipId_t     LblNdx_getTipId_1(const LblNdx *self, const char *lbl);
 static      int make_map(size_t n, int map[n], tipId_t collapse);
 static      void make_rm_map(size_t n, int map[n], tipId_t remove);
 
@@ -91,10 +90,10 @@ int         LblNdx_equals(const LblNdx *lhs, const LblNdx *rhs) {
     return 1;
 }
 
-// Return tipId_t value corresponding to a label. The label should
+// Return tipId_t value corresponding to label `lbl`. The label should
 // refer to a single population. In other words, it should not contain
 // the ":" character. For the i'th label, this value equals the i'th
-// power of 2.
+// power of 2. If `lbl` does not exist in `self`, return 0.
 tipId_t     LblNdx_getTipId_1(const LblNdx *self, const char *lbl) {
     unsigned i;
     const tipId_t unity = 1;
@@ -142,7 +141,8 @@ tipId_t LblNdx_getTipId(const LblNdx *self, const char *lbl) {
             fprintf(stderr,"%s:%d: buffer overflow\n", __FILE__,__LINE__);
             exit(EXIT_FAILURE);
         default:
-            fprintf(stderr,"%s:%d: unknown error\n", __FILE__,__LINE__);
+            fprintf(stderr,"%s:%d: unknown error (%d)\n",
+                    __FILE__,__LINE__, status);
             exit(EXIT_FAILURE);
         }
         id = LblNdx_getTipId_1(self, buff);
