@@ -239,7 +239,7 @@ To turn this input into a .png graphics file, type
 
 This produces the graph shown below.
 
-![Graph of network in toy.lgo](./toy.png)
+![Graph of network in toy.lgo](../master/assets/toy.png)
 
 I often find it useful to edit the .dot file, adding lines to place
 segments in the same rank or to constrain their positions within a
