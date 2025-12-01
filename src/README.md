@@ -44,7 +44,8 @@ gene flow. The package consists of the following programs
   counts.
 
 - @ref legosim "legosim" predicts site pattern counts from
-  assumptions about population history.
+  assumptions about population history and optionally makes a graph
+  of the network of population history nodes.
 
 - @ref legotree "legotree.py" makes a graph from a .lgo file.
 

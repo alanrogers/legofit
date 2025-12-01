@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['y',['y',['../legotree_8py.html#aa994f1c8d7adb65cb58a536962c541b8',1,'legotree']]]
+  ['zero_20ndash_20one_0',['mapmix &amp;ndash;zero &amp;lt;a.legosim&amp;gt; &amp;ndash;one &amp;lt;b.legosim&amp;gt;',['../mapmix.html#autotoc_md16',1,'']]]
 ];

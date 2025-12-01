@@ -60,12 +60,14 @@ from X and Y but not in samples from other populations. The
 probability of this site pattern, under the model of history specified
 in file `input.lgo`, is given in the "Prob" column. When the `-d` or
 `--deterministic` options are used, these probabilities are calculated
-by a deterministic algorithm. 
+by a deterministic algorithm.
 
 In the example above, I used `-d 0`, which tells legosim to ignore
 only those states with probability 0. Thus, the answers will be
 extremely accurate. When neither `-d` nor `--deterministic` are used,
 the probabilities are estimated by coalescent simulation.
+
+## Ignoring states of low probability
 
 The deterministic algorithm sums across all possible histories of the
 samples defined in the .lgo file. The number of histories increases
@@ -87,6 +89,14 @@ output that looks like this:
 This "summed probability" can exceed 1, because it sums across several
 probability distributions. Nonetheless, when it is small, that is an
 indication that we have not ignored much of any of these distributions.
+To rexpress this as a fraction of the of the total probability mass,
+run legosim with argument `-d 1`. This ignores all events, so the
+summed probability of ignored events will be an integer, which equals
+the number of probability distributions involved. Divide the original
+summed probability by this number to express it as a fraction of total
+probability mass.
+
+## Simulating site pattern counts
 
 To simulate site pattern counts across an entire genome, use the `-U`
 option, whose argument give the expected number of mutations per
@@ -128,7 +138,114 @@ treats nucleotide sites as independent, ignoring linkage
 disequilibrium. The counts it provides are correct in expectation, but
 their variances in repeated runs of the program are too small.
 
-@copyright Copyright (c) 2015, 2016, 2020, Alan R. Rogers
+## Printing a summary of the network of nodes
+
+Use the `--network` option to print a summary of the network of
+nodes. As an example, let us use the following file, which is called
+`toy.lgo`: 
+
+    # Toy .lgo file
+    time fixed    zero=0
+    twoN fixed     one=1
+    time free     Txyn=25000       # archaic-modern separation time
+    time fixed    Tn=2000          # time of Neanderthal admixture
+    time fixed    Txy=4000         # Africa-Eurasia separation time
+    twoN free   twoNn=1e3          # archaic population size
+    twoN free  twoNxy=1e4          # early modern population size
+    mixFrac free  mN=0.02          # Neanderthal admixture into y
+    segment x     t=zero   twoN=one    samples=1  # Africa
+    segment y     t=zero   twoN=one    samples=1  # Eurasia
+    segment n     t=Tn     twoN=twoNn  samples=1  # Neanderthal
+    segment y2    t=Tn     twoN=twoNxy            # pre-mig eurasia
+    segment xy    t=Txy    twoN=twoNxy            # early modern
+    segment xyn   t=Txyn   twoN=twoNn             # ancestral
+    mix    y  from y2 + mN * n      # y is a mixture of y2 and n
+    derive x  from xy               # x is child of xy
+    derive y2 from xy               # y2 is child of xy
+    derive xy from xyn              # xy is child of xyn
+    derive n  from xyn              # n is child of xyn
+
+At the command line, type `legosim --network toy.lgo`. This produces
+output that ends with:
+
+    xyn: twoN=1000 ntrval=(25000.000000,inf)
+      children: xy n
+    |xy: twoN=10000 ntrval=(4000.000000,25000.000000)
+    |  parents: xyn
+    |  children: x y2
+    ||x: twoN=1 ntrval=(0.000000,4000.000000)
+    ||  parents: xy
+    ||y2: twoN=10000 ntrval=(2000.000000,4000.000000)
+    ||  parents: xy
+    ||  children: y
+    |||y: twoN=1 ntrval=(0.000000,2000.000000)
+    |||  parents: y2 n
+    |n: twoN=1000 ntrval=(2000.000000,25000.000000)
+    |  parents: xyn
+    |  children: y
+    Samples:
+      0     x
+      1     y
+      2     n
+
+
+The first line of output tells us that xyn is the root segment, that
+its population is `twoN=1000`, and that is spans an interval ranging
+from 2500 generations ago to infinity. The second line tells us that
+it has two "children", segments xy and n. The children and their
+children are described in the lines that follow, preceded by "|"
+characters to indicate the depth of nesting.
+
+## Plotting the network
+
+To make a graph of the network, use the `--plot <f.dot>` option, where
+`f.dot` is the name of the file to be written as output. If that file
+already exists, it will be overwritten. This output file is written in
+the .dot format used by [GraphViz][GraphViz] to describe directed
+graphs. I ran `legosim --plot toy.dot toy.lgo`, which produced
+toy.lgo, an output file that looks like this
+
+    digraph {
+      ratio = 1.5;
+      margin = 0;
+      x [shape=square];
+      y [shape=square];
+      n [shape=square];
+      { rank = same; x -> y [style = invis]};
+      { rank = same; y2 n};
+      xyn -> {xy n};
+      xy -> {x y2};
+      y2 -> y;
+      n -> y;
+    }
+
+You can edit this file to tweak the resulting graph. In the first
+line, `ratio = 1.5` sets the aspect ratio--the ratio of height to
+width, and `margin = 0` says not to put white space around the graph.
+The "shape=square" lines ensure that segments with data are plotted
+with squares to distinguish them from segments without data. The line
+`{ rank = same; x -> y [style = invis]}` says that x and y should have
+the same "rank" (vertical position) and that x should be to the left
+of right. Legosim emits a line like this so that all segments that end
+at time zero have the same rank and are plotted in the order that they
+appear in the .lgo file. The next line, `{ rank = same; y2 n}` says
+that y2 and n are in the same rank but allows GraphViz to decide how
+to arrange them within that rank. The remaining lines describe the
+arrows to be drawn between segments.
+
+To turn this input into a .png graphics file, type `dot -Tpng toy.dot
+> toy.png`. This produces the graph shown below.
+
+![Graph of network in toy.lgo](./toy.png)
+
+I often find it useful to edit the .dot file, adding lines to place
+segments in the same rank or to constrain their positions within a
+rank. To do this, just follow the conventions illustrated in the .dot
+file above.
+
+[GraphViz]: https://graphviz.com
+
+@copyright Copyright (c) 2025, Alan R. Rogers
 <rogers@anthro.utah.edu>. This file is released under the Internet
 Systems Consortium License, which can be found in file "LICENSE".
 */

@@ -11,5 +11,6 @@ var searchData=
   ['jobqueue_5fnomorejobs_8',['JobQueue_noMoreJobs',['../jobqueue_8c.html#a879444d1ff44266f7b4961342e3286d6',1,'JobQueue_noMoreJobs(JobQueue *jq):&#160;jobqueue.c'],['../jobqueue_8h.html#a879444d1ff44266f7b4961342e3286d6',1,'JobQueue_noMoreJobs(JobQueue *jq):&#160;jobqueue.c']]],
   ['jobqueue_5fwaitonjobs_9',['JobQueue_waitOnJobs',['../jobqueue_8c.html#a4d8078d2d1828a13abf90fc053ea40e0',1,'JobQueue_waitOnJobs(JobQueue *jq):&#160;jobqueue.c'],['../jobqueue_8h.html#a4d8078d2d1828a13abf90fc053ea40e0',1,'JobQueue_waitOnJobs(JobQueue *jq):&#160;jobqueue.c']]],
   ['joinraf_10',['joinraf',['../joinraf.html',1,'']]],
-  ['joinraf_2ec_11',['joinraf.c',['../joinraf_8c.html',1,'']]]
+  ['joinraf_2ec_11',['joinraf.c',['../joinraf_8c.html',1,'']]],
+  ['joinraf_3a_20merge_20two_20or_20more_20raf_20files_12',['Joinraf: merge two or more raf files',['../joinraf.html#autotoc_md7',1,'']]]
 ];

@@ -1,4 +1,31 @@
 var searchData=
 [
-  ['joinraf_0',['joinraf',['../joinraf.html',1,'']]]
+  ['file_0',['file',['../bootci.html#autotoc_md3',1,'bootci.py: calculate confidence interval from a flat file.'],['../index.html#lgo',1,'Describing population history in an lgo file']]],
+  ['file_20from_20legofit_20output_1',['mkfitted: make a fitted .lgo file from .legofit output',['../mkfitted.html#autotoc_md18',1,'']]],
+  ['file_20of_20estimates_2',['flatfile.py: read legofit output files; write flat file of estimates',['../flatfile.html#autotoc_md6',1,'']]],
+  ['files_3',['files',['../joinraf.html#autotoc_md7',1,'Joinraf: merge two or more raf files'],['../raf2daf.html#autotoc_md21',1,'raf2daf: converts raf files to daf files']]],
+  ['files_20and_20write_20derived_20allele_20frequencies_4',['Rafdaf: read .raf files and write derived allele frequencies',['../rafdaf.html#autotoc_md23',1,'']]],
+  ['files_20to_20daf_20files_5',['raf2daf: converts raf files to daf files',['../raf2daf.html#autotoc_md21',1,'']]],
+  ['files_20write_20flat_20file_20of_20estimates_6',['flatfile.py: read legofit output files; write flat file of estimates',['../flatfile.html#autotoc_md6',1,'']]],
+  ['fitted_20lgo_20file_20from_20legofit_20output_7',['mkfitted: make a fitted .lgo file from .legofit output',['../mkfitted.html#autotoc_md18',1,'']]],
+  ['flat_20file_8',['bootci.py: calculate confidence interval from a flat file.',['../bootci.html#autotoc_md3',1,'']]],
+  ['flat_20file_20of_20estimates_9',['flatfile.py: read legofit output files; write flat file of estimates',['../flatfile.html#autotoc_md6',1,'']]],
+  ['flatfile_10',['flatfile',['../flatfile.html',1,'']]],
+  ['flatfile_20py_3a_20read_20legofit_20output_20files_20write_20flat_20file_20of_20estimates_11',['flatfile.py: read legofit output files; write flat file of estimates',['../flatfile.html#autotoc_md6',1,'']]],
+  ['flatpat_12',['flatpat',['../flatpat.html',1,'']]],
+  ['for_20exact_20arithmetic_20with_20rational_20numbers_13',['&lt;span class=&quot;tt&quot;&gt;rational&lt;/span&gt;: a library for exact arithmetic with rational numbers',['../rational.html#autotoc_md25',1,'']]],
+  ['format_14',['format',['../axt2raf.html#autotoc_md0',1,'axt2raf.py: convert axt format to raf format'],['../index.html#autotoc_md28',1,'daf format'],['../index.html#autotoc_md29',1,'raf format']]],
+  ['format_20to_20raf_20format_15',['axt2raf.py: convert axt format to raf format',['../axt2raf.html#autotoc_md0',1,'']]],
+  ['format_20which_16',['ms2sim, a program that converts &lt;span class=&quot;tt&quot;&gt;ms&lt;/span&gt; output into sim format, which',['../ms2sim.html#autotoc_md19',1,'']]],
+  ['free_20variables_20in_20terms_20of_20principal_20components_17',['pclgo: re-express free variables in terms of principal components.',['../pclgo.html#autotoc_md20',1,'']]],
+  ['frequencies_18',['frequencies',['../diverg.html#autotoc_md5',1,'diverg.py: compare two sets of site-pattern counts or frequencies'],['../rafdaf.html#autotoc_md23',1,'Rafdaf: read .raf files and write derived allele frequencies']]],
+  ['frequencies_20or_20residuals_19',['&lt;span class=&quot;tt&quot;&gt;resid&lt;/span&gt;: print site pattern frequencies or residuals',['../resid.html#autotoc_md39',1,'']]],
+  ['from_20a_20flat_20file_20',['bootci.py: calculate confidence interval from a flat file.',['../bootci.html#autotoc_md3',1,'']]],
+  ['from_20assumptions_20about_20history_21',['Predicting site pattern counts from assumptions about history',['../index.html#autotoc_md31',1,'']]],
+  ['from_20constraints_22',['Biases arising from constraints',['../index.html#autotoc_md36',1,'']]],
+  ['from_20genetic_20data_23',['Estimating parameters from genetic data',['../index.html#autotoc_md33',1,'']]],
+  ['from_20identifiability_20problems_24',['Bias arising from identifiability problems',['../index.html#autotoc_md38',1,'']]],
+  ['from_20legofit_20output_25',['mkfitted: make a fitted .lgo file from .legofit output',['../mkfitted.html#autotoc_md18',1,'']]],
+  ['from_20selection_20of_20variant_20sites_26',['Bias arising from selection of variant sites',['../index.html#autotoc_md37',1,'']]],
+  ['from_20site_20pattern_20data_27',['&lt;span class=&quot;tt&quot;&gt;legofit&lt;/span&gt;: estimate population history from site pattern data',['../legofit.html#autotoc_md9',1,'']]]
 ];

@@ -1,8 +1,5 @@
 var searchData=
 [
-  ['raf_0',['raf',['../raf.html',1,'']]],
-  ['raf2daf_1',['raf2daf',['../raf2daf.html',1,'']]],
-  ['rafdaf_2',['rafdaf',['../rafdaf.html',1,'']]],
-  ['rational_3',['rational',['../rational.html',1,'']]],
-  ['resid_4',['resid',['../resid.html',1,'']]]
+  ['joinraf_0',['joinraf',['../joinraf.html',1,'']]],
+  ['joinraf_3a_20merge_20two_20or_20more_20raf_20files_1',['Joinraf: merge two or more raf files',['../joinraf.html#autotoc_md7',1,'']]]
 ];

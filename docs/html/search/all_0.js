@@ -1,7 +1,28 @@
 var searchData=
 [
-  ['alignment_0',['Alignment',['../classaxt2raf_1_1_alignment.html',1,'axt2raf']]],
-  ['assignd_1',['assignd',['../diffev_8c.html#ada6f8840cfdf1da66cbb1a2c5f55242b',1,'diffev.c']]],
-  ['axt2raf_2',['axt2raf',['../axt2raf.html',1,'']]],
-  ['axt2raf_2epy_3',['axt2raf.py',['../axt2raf_8py.html',1,'']]]
+  ['a_20fitted_20lgo_20file_20from_20legofit_20output_0',['mkfitted: make a fitted .lgo file from .legofit output',['../mkfitted.html#autotoc_md18',1,'']]],
+  ['a_20flat_20file_1',['bootci.py: calculate confidence interval from a flat file.',['../bootci.html#autotoc_md3',1,'']]],
+  ['a_20library_20for_20exact_20arithmetic_20with_20rational_20numbers_2',['&lt;span class=&quot;tt&quot;&gt;rational&lt;/span&gt;: a library for exact arithmetic with rational numbers',['../rational.html#autotoc_md25',1,'']]],
+  ['a_20network_20of_20populations_3',['legosim: coalescent simulations within a network of populations',['../legosim.html#autotoc_md10',1,'']]],
+  ['a_20program_20that_20converts_20ms_20output_20into_20sim_20format_20which_4',['ms2sim, a program that converts &lt;span class=&quot;tt&quot;&gt;ms&lt;/span&gt; output into sim format, which',['../ms2sim.html#autotoc_md19',1,'']]],
+  ['a_20summary_20of_20the_20network_20of_20nodes_5',['Printing a summary of the network of nodes',['../legosim.html#autotoc_md13',1,'']]],
+  ['about_20history_6',['Predicting site pattern counts from assumptions about history',['../index.html#autotoc_md31',1,'']]],
+  ['admixture_20at_20each_20nucleotide_20site_7',['Mapmix: estimate admixture at each nucleotide site',['../mapmix.html#autotoc_md15',1,'']]],
+  ['alignment_8',['Alignment',['../classaxt2raf_1_1_alignment.html',1,'axt2raf']]],
+  ['allele_20frequencies_9',['Rafdaf: read .raf files and write derived allele frequencies',['../rafdaf.html#autotoc_md23',1,'']]],
+  ['an_20lgo_20file_10',['Describing population history in an lgo file',['../index.html#lgo',1,'']]],
+  ['and_20testing_11',['Installation and testing',['../index.html#installation',1,'']]],
+  ['and_20write_20derived_20allele_20frequencies_12',['Rafdaf: read .raf files and write derived allele frequencies',['../rafdaf.html#autotoc_md23',1,'']]],
+  ['arising_20from_20constraints_13',['Biases arising from constraints',['../index.html#autotoc_md36',1,'']]],
+  ['arising_20from_20identifiability_20problems_14',['Bias arising from identifiability problems',['../index.html#autotoc_md38',1,'']]],
+  ['arising_20from_20selection_20of_20variant_20sites_15',['Bias arising from selection of variant sites',['../index.html#autotoc_md37',1,'']]],
+  ['arithmetic_20with_20rational_20numbers_16',['&lt;span class=&quot;tt&quot;&gt;rational&lt;/span&gt;: a library for exact arithmetic with rational numbers',['../rational.html#autotoc_md25',1,'']]],
+  ['assignd_17',['assignd',['../diffev_8c.html#ada6f8840cfdf1da66cbb1a2c5f55242b',1,'diffev.c']]],
+  ['assumptions_20about_20history_18',['Predicting site pattern counts from assumptions about history',['../index.html#autotoc_md31',1,'']]],
+  ['at_20each_20nucleotide_20site_19',['Mapmix: estimate admixture at each nucleotide site',['../mapmix.html#autotoc_md15',1,'']]],
+  ['averaging_20',['&lt;span class=&quot;tt&quot;&gt;booma&lt;/span&gt;: bootstrap model averaging',['../booma.html#autotoc_md2',1,'']]],
+  ['axt_20format_20to_20raf_20format_21',['axt2raf.py: convert axt format to raf format',['../axt2raf.html#autotoc_md0',1,'']]],
+  ['axt2raf_22',['axt2raf',['../axt2raf.html',1,'']]],
+  ['axt2raf_20py_3a_20convert_20axt_20format_20to_20raf_20format_23',['axt2raf.py: convert axt format to raf format',['../axt2raf.html#autotoc_md0',1,'']]],
+  ['axt2raf_2epy_24',['axt2raf.py',['../axt2raf_8py.html',1,'']]]
 ];

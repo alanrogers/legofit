@@ -1,6 +1,26 @@
 var searchData=
 [
-  ['openoutput_0',['openOutput',['../mapmix_8c.html#a3c9dafb39df03133aae3ebf2ec45ebf7',1,'mapmix.c']]],
-  ['order_5ferror_1',['ORDER_ERROR',['../parse_8c.html#a2f861c80cfb67bd8d136e7c0da74584e',1,'parse.c']]],
-  ['orderpat_2',['orderpat',['../lblndx_8c.html#acb466a24960d4c9bb5f77873c4dace04',1,'lblndx.c']]]
+  ['of_20estimates_0',['flatfile.py: read legofit output files; write flat file of estimates',['../flatfile.html#autotoc_md6',1,'']]],
+  ['of_20low_20probability_1',['Ignoring states of low probability',['../legosim.html#autotoc_md11',1,'']]],
+  ['of_20nodes_2',['Printing a summary of the network of nodes',['../legosim.html#autotoc_md13',1,'']]],
+  ['of_20populations_3',['legosim: coalescent simulations within a network of populations',['../legosim.html#autotoc_md10',1,'']]],
+  ['of_20prediction_20error_4',['&lt;span class=&quot;tt&quot;&gt;bepe&lt;/span&gt;: calculate the bootstrap estimate of prediction error',['../bepe.html#autotoc_md1',1,'']]],
+  ['of_20principal_20components_5',['pclgo: re-express free variables in terms of principal components.',['../pclgo.html#autotoc_md20',1,'']]],
+  ['of_20site_20pattern_20counts_20or_20frequencies_6',['diverg.py: compare two sets of site-pattern counts or frequencies',['../diverg.html#autotoc_md5',1,'']]],
+  ['of_20site_20patterns_7',['Sort order of site patterns',['../index.html#autotoc_md34',1,'']]],
+  ['of_20the_20network_20of_20nodes_8',['Printing a summary of the network of nodes',['../legosim.html#autotoc_md13',1,'']]],
+  ['of_20variant_20sites_9',['Bias arising from selection of variant sites',['../index.html#autotoc_md37',1,'']]],
+  ['one_10',['mapmix &amp;ndash;zero &amp;lt;a.legosim&amp;gt; &amp;ndash;one &amp;lt;b.legosim&amp;gt;',['../mapmix.html#autotoc_md16',1,'']]],
+  ['openoutput_11',['openOutput',['../mapmix_8c.html#a3c9dafb39df03133aae3ebf2ec45ebf7',1,'mapmix.c']]],
+  ['or_20frequencies_12',['diverg.py: compare two sets of site-pattern counts or frequencies',['../diverg.html#autotoc_md5',1,'']]],
+  ['or_20more_20raf_20files_13',['Joinraf: merge two or more raf files',['../joinraf.html#autotoc_md7',1,'']]],
+  ['or_20residuals_14',['&lt;span class=&quot;tt&quot;&gt;resid&lt;/span&gt;: print site pattern frequencies or residuals',['../resid.html#autotoc_md39',1,'']]],
+  ['order_15',['Sort order',['../index.html#sortorder',1,'']]],
+  ['order_20of_20site_20patterns_16',['Sort order of site patterns',['../index.html#autotoc_md34',1,'']]],
+  ['order_5ferror_17',['ORDER_ERROR',['../parse_8c.html#a2f861c80cfb67bd8d136e7c0da74584e',1,'parse.c']]],
+  ['orderpat_18',['orderpat',['../lblndx_8c.html#acb466a24960d4c9bb5f77873c4dace04',1,'lblndx.c']]],
+  ['outgroup_19',['&amp;lt;x&amp;gt;=&amp;lt;in_1&amp;gt; &amp;lt;y&amp;gt;=&amp;lt;in_2&amp;gt; ... outgroup=&amp;lt;in_K&amp;gt;',['../mapmix.html#autotoc_md17',1,'']]],
+  ['output_20',['mkfitted: make a fitted .lgo file from .legofit output',['../mkfitted.html#autotoc_md18',1,'']]],
+  ['output_20files_20write_20flat_20file_20of_20estimates_21',['flatfile.py: read legofit output files; write flat file of estimates',['../flatfile.html#autotoc_md6',1,'']]],
+  ['output_20into_20sim_20format_20which_22',['ms2sim, a program that converts &lt;span class=&quot;tt&quot;&gt;ms&lt;/span&gt; output into sim format, which',['../ms2sim.html#autotoc_md19',1,'']]]
 ];

@@ -1,0 +1,20 @@
+# Toy .lgo file
+time fixed    zero=0
+twoN fixed     one=1
+time free     Txyn=25000       # archaic-modern separation time
+time fixed    Tn=2000          # time of Neanderthal admixture
+time fixed    Txy=4000         # Africa-Eurasia separation time
+twoN free   twoNn=1e3          # archaic population size
+twoN free  twoNxy=1e4          # early modern population size
+mixFrac free  mN=0.02          # Neanderthal admixture into y
+segment x     t=zero   twoN=one    samples=1  # Africa
+segment y     t=zero   twoN=one    samples=1  # Eurasia
+segment n     t=Tn     twoN=twoNn  samples=1  # Neanderthal
+segment y2    t=Tn     twoN=twoNxy            # pre-mig eurasia
+segment xy    t=Txy    twoN=twoNxy            # early modern
+segment xyn   t=Txyn   twoN=twoNn             # ancestral
+mix    y  from y2 + mN * n      # y is a mixture of y2 and n
+derive x  from xy               # x is child of xy
+derive y2 from xy               # y2 is child of xy
+derive xy from xyn              # xy is child of xyn
+derive n  from xyn              # n is child of xyn
