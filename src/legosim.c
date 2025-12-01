@@ -233,8 +233,11 @@ that y2 and n are in the same rank but allows GraphViz to decide how
 to arrange them within that rank. The remaining lines describe the
 arrows to be drawn between segments.
 
-To turn this input into a .png graphics file, type `dot -Tpng toy.dot
-> toy.png`. This produces the graph shown below.
+To turn this input into a .png graphics file, type
+
+    dot -Tpng toy.dot > toy.png
+
+This produces the graph shown below.
 
 ![Graph of network in toy.lgo](./toy.png)
 
