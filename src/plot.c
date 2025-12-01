@@ -33,6 +33,7 @@ void PLOT(NODETYPE *root, SampNdx *sndx, LblNdx *lblndx, FILE *fp) {
 
     fprintf(fp, "digraph {\n");
     fprintf(fp, "  ratio = 1.5;\n");
+    fprintf(fp, "  margin = 0;\n");
 
     UNVISIT(root);
     GET_PLOT_DATA(root, fp, time_zero, dual_parents, edge);
