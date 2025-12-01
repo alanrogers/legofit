@@ -209,8 +209,8 @@ Plotting the network</h2>
   n -&gt; y;
 }
 </pre><p>You can edit this file to tweak the resulting graph. In the first line, <span class="tt">ratio = 1.5</span> sets the aspect ratio&ndash;the ratio of height to width, and <span class="tt">margin = 0</span> says not to put white space around the graph. The "shape=square" lines ensure that segments with data are plotted with squares to distinguish them from segments without data. The line <span class="tt">{ rank = same; x -&gt; y [style = invis]}</span> says that x and y should have the same "rank" (vertical position) and that x should be to the left of right. Legosim emits a line like this so that all segments that end at time zero have the same rank and are plotted in the order that they appear in the .lgo file. The next line, <span class="tt">{ rank = same; y2 n}</span> says that y2 and n are in the same rank but allows GraphViz to decide how to arrange them within that rank. The remaining lines describe the arrows to be drawn between segments.</p>
-<p>To turn this input into a .png graphics file, type <span class="tt">dot -Tpng toy.dot
-&lt;blockquote&gt;&amp;zwj;toy.png</span>. This produces the graph shown below. </p>
+<p>To turn this input into a .png graphics file, type </p><pre class="fragment">dot -Tpng toy.dot &gt; toy.png
+</pre><p>This produces the graph shown below.</p>
 <p><img src="./toy.png" alt="Graph of network in toy.lgo" class="inline"/></p>
 <p>I often find it useful to edit the .dot file, adding lines to place segments in the same rank or to constrain their positions within a rank. To do this, just follow the conventions illustrated in the .dot file above.</p>
 <dl class="section copyright"><dt>Copyright</dt><dd>Copyright (c) 2025, Alan R. Rogers <a href="#" onclick="location.href='mai'+'lto:'+'rog'+'er'+'s@a'+'nt'+'hro'+'.u'+'tah'+'.e'+'du'; return false;">roger<span class="obfuscator">.nosp@m.</span>s@an<span class="obfuscator">.nosp@m.</span>thro.<span class="obfuscator">.nosp@m.</span>utah<span class="obfuscator">.nosp@m.</span>.edu</a>. This file is released under the Internet Systems Consortium License, which can be found in file "LICENSE". </dd></dl>
