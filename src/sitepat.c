@@ -18,8 +18,9 @@ replicate into a separate file.
        Final label must be "outgroup". Writes to standard output.
 
        If input file name ends with .gz, input is decompressed using
-       gunzip. Maximum number of input files: 32 plus outgroup. Minimum is
-       2 plus outgroup.
+       gunzip. Each gzipped input file is decompressed in its own
+       parallel process. Maximum number of input files: 32 plus
+       outgroup. Minimum is 2 plus outgroup.
 
     Options may include:
        -f <name> or --bootfile <name>

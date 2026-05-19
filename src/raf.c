@@ -54,6 +54,8 @@ Systems Consortium License, which can be found in file "LICENSE".
 #include <string.h>
 #include <assert.h>
 
+#define BUFFSIZE 16384
+
 int main(int argc, char **argv) {
 
     if(argc != 1) {
@@ -63,8 +65,7 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
-    const int   buffsize = 16384;
-    char        buff[buffsize];
+    char        buff[BUFFSIZE];
 
     // Keep track of the number of sites at which various types of
     // problem arise.
@@ -79,12 +80,15 @@ int main(int argc, char **argv) {
 
     printf("#%s\t%s\t%s\t%s\t%s\n", "chr", "pos", "ref", "alt", "raf");
     while(1) {
-        if(NULL == fgets(buff, buffsize, stdin)) {
+        if(NULL == fgets(buff, BUFFSIZE, stdin)) {
             break;
         }
         if(NULL == strchr(buff, '\n') && !feof(stdin)) {
             fprintf(stderr, "%s:%d: Buffer overflow. size=%zu\n",
                     __FILE__, __LINE__, sizeof(buff));
+            buff[BUFFSIZE-1] = '\0';
+            fprintf(stderr, "truncated input: %s\n",
+                    buff);
             exit(EXIT_FAILURE);
         }
         char       *chr, *pos, *reftoken, *alttoken;

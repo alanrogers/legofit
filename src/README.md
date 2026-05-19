@@ -417,15 +417,14 @@ the other hand, this works fine:
 Because "-Txy" cannot be interpreted as a literal number, legofit
 treats it as an operator (-) followed by a variable name.
 
-All types of parameter can be used in constraint
-equation. Independent variables must be declared in the .lgo file
-before they are used in a constraint equation. The parser can
-recognize complex mathematical expressions and knows about the
-standard mathematical functions. The y'th power of x can be written
-either as "x^y" or as "pow(x,y)". The natural log can be written
-either as "log" or as "ln". Parentheses are allowed, and operators
-have the usual precedence. For example, the following lines are
-equivalent:
+All types of parameter can be used in constraint equation. Independent
+variables must be declared in the .lgo file before they are used in a
+constraint equation. The parser can recognize complex mathematical
+expressions and knows about the standard mathematical functions. The
+y'th power of x can be written either as "x^y" or as "pow(x,y)". The
+natural log can be written either as "log" or as "ln". Parentheses are
+allowed, and operators have the usual precedence. For example, the
+following lines are equivalent:
 
     twoN constrained x=exp(a)*pow(b,y)
     twoN constrained x=e^a*b^y
