@@ -10,14 +10,14 @@ tests := xbinary xboot xbranchtab xcomb xdafreader \
   xjobqueue xlblndx xlinereader xlongvec xmctree xmisc xmpfrmatcoal \
   xparam xparse xparseopf xparstore xpointbuff xpopnode xptrlst xptrptrmap \
   xptrqueue xptru32map \
-  xptrvec xresid xsegment xstrdblmap xstrstrmap xstrdblqueue \
+  xptrvec xraf xresid xsegment xstrdblmap xstrstrmap xstrdblqueue \
   xstrptrmap xrafreader xrational xscrmreader xsampndx xsetpart \
   xsimsched xstate xstrint xtinyexpr xtokenizer \
   xu64u64map xu64i64map xuintqueue xmatcoal \
   xbooma xsimreader
 
 
-CC := gcc
+CC := clang
 
 # Flags to determine the warning messages issued by the compiler
 warn := \
@@ -52,7 +52,7 @@ endif
 CFLAGS := -g -std=gnu99 $(warn) $(ubsan) $(incl) $(opt) $(prof) $(osargs) \
  -DGIT_VERSION=\"$(git_version)\"
 
-lib := -L/usr/local/lib -lgsl -lgslcblas -lpthread -lm
+lib := -L/opt/homebrew/lib -L/usr/local/lib -lgsl -lgslcblas -lpthread -lm
 
 .c.o:
 	$(CC) $(CFLAGS) -c -o ${@F}  $<
@@ -96,6 +96,7 @@ test : $(tests)
 	-./xptrqueue
 	-./xptru32map
 	-./xptrvec
+	-./xraf
 	-./xrafreader
 	-./xrational
 	-./xresid
@@ -237,6 +238,10 @@ XDAFREADER := xdafreader.o dafreader.o misc.o lblndx.o tokenizer.o binary.o \
    strint.o
 xdafreader : $(XDAFREADER)
 	$(CC) $(CFLAGS) -o $@ $(XDAFREADER) $(lib)
+
+XRAF := xraf.o raf.o rafreader.o misc.o tokenizer.o binary.o
+xraf : $(XRAF)
+	$(CC) $(CFLAGS) -o $@ $(XRAF) $(lib)
 
 XRAFREADER := xrafreader.o rafreader.o misc.o lblndx.o tokenizer.o binary.o \
    strint.o error.o

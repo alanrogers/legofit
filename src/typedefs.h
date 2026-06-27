@@ -35,6 +35,7 @@ typedef struct PtrU32Map PtrU32Map;
 typedef struct PtrLst PtrLst;
 typedef struct PtrQueue PtrQueue;
 typedef struct PtrVec PtrVec;
+typedef struct RafDat RafDat;
 typedef struct ScrmReader ScrmReader;
 typedef struct Segment Segment;
 typedef struct SimReader SimReader;

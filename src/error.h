@@ -17,7 +17,11 @@ enum {NO_ANCESTRAL_ALLELE=1000,
       NAME_MISMATCH,
       TOO_MANY_PARENTS,
       TOO_MANY_CHILDREN,
-      DATE_MISMATCH};
+      DATE_MISMATCH,
+      TRUNC_INPUT,
+      EMPTY_FIELD,
+      DUPLICATE_NUCPOS,
+      BAD_GTYPE};
 
 int mystrerror_r(int errnum, char *buff, size_t len);
 

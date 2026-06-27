@@ -48,7 +48,9 @@ rejected sites is written to stderr.
 Systems Consortium License, which can be found in file "LICENSE".
 */
 
+#include "raf.h"
 #include "misc.h"
+#include "error.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -56,16 +58,13 @@ Systems Consortium License, which can be found in file "LICENSE".
 
 #define BUFFSIZE 16384
 
-int main(int argc, char **argv) {
-
-    if(argc != 1) {
-        fprintf(stderr, "Usage: raf\n");
-        fprintf(stderr, "       Reads standard input;"
-                " writes to standard output.\n");
-        exit(EXIT_FAILURE);
-    }
-
+// Translate genotypes into raf-format output.  Implemented as a
+// separate function to facilitate debugging. Reads from stream
+// "input"; writes to "output".
+int raf(FILE *input, FILE *output) {
     char        buff[BUFFSIZE];
+    long unsigned lastnucpos = 0, nucpos;
+    char        lastchr[100] = { '\0' };
 
     // Keep track of the number of sites at which various types of
     // problem arise.
@@ -75,12 +74,11 @@ int main(int argc, char **argv) {
     long int         indelref=0, indelalt=0;
     long int         nbad = 0, ngood = 0;
     int         ok;             // is current line acceptable?
-    long unsigned lastnucpos = 0, nucpos;
-    char        lastchr[100] = { '\0' };
 
-    printf("#%s\t%s\t%s\t%s\t%s\n", "chr", "pos", "ref", "alt", "raf");
+    fprintf(output,
+            "#%s\t%s\t%s\t%s\t%s\n", "chr", "pos", "ref", "alt", "raf");
     while(1) {
-        if(NULL == fgets(buff, BUFFSIZE, stdin)) {
+        if(NULL == fgets(buff, BUFFSIZE, input)) {
             break;
         }
         if(NULL == strchr(buff, '\n') && !feof(stdin)) {
@@ -89,7 +87,7 @@ int main(int argc, char **argv) {
             buff[BUFFSIZE-1] = '\0';
             fprintf(stderr, "truncated input: %s\n",
                     buff);
-            exit(EXIT_FAILURE);
+            return BUFFER_OVERFLOW;
         }
         char       *chr, *pos, *reftoken, *alttoken;
         char       *gtype, *next = buff;
@@ -126,7 +124,7 @@ int main(int argc, char **argv) {
         if(empty_field) {
             fprintf(stderr, "%s:%d: aborting; empty input field(s)\n",
                     __FILE__, __LINE__);
-            exit(EXIT_FAILURE);
+            return EMPTY_FIELD;
         }
 
         nucpos = strtoul(pos, NULL, 10);
@@ -143,31 +141,30 @@ int main(int argc, char **argv) {
 
         // Check sort of chromosomes
         if(*lastchr) {
-            int         diff = strcmp(lastchr, chr);
+            int diff = strcmp(lastchr, chr);
             if(diff > 0) {
                 // bad sort
                 fprintf(stderr, "%s:%d: unsorted chromosomes\n",
                         __FILE__, __LINE__);
                 fprintf(stderr, "    %s > %s\n", lastchr, chr);
-                exit(1);
+                return BAD_SORT;
             } else if(diff < 0) {
                 // new chromosome
-                int         status =
-                    snprintf(lastchr, sizeof lastchr, "%s", chr);
+                int status = snprintf(lastchr, sizeof lastchr, "%s", chr);
                 if(status >= sizeof lastchr) {
                     fprintf(stderr, "%s:%d: buffer overflow\n",
                             __FILE__, __LINE__);
-                    exit(1);
+                    return BUFFER_OVERFLOW;
                 }
                 lastnucpos = 0;
             }
         } else {
             // initialize lastchr
-            int         status = snprintf(lastchr, sizeof lastchr, "%s", chr);
+            int status = snprintf(lastchr, sizeof lastchr, "%s", chr);
             if(status >= sizeof lastchr) {
                 fprintf(stderr, "%s:%d: buffer overflow\n",
                         __FILE__, __LINE__);
-                exit(1);
+                return BUFFER_OVERFLOW;
             }
             assert(lastnucpos == 0);
         }
@@ -179,14 +176,14 @@ int main(int argc, char **argv) {
                         __FILE__, __LINE__, chr, nucpos);
                 fprintf(stderr, "%s:%d: Previous : chr=%s pos=%lu\n",
                         __FILE__, __LINE__, lastchr, lastnucpos);
-                exit(1);
+                return DUPLICATE_NUCPOS;
             } else if(lastnucpos > nucpos) {
                 fprintf(stderr, "%s:%d: Missorted nucleotide positions\n",
                         __FILE__, __LINE__);
                 fprintf(stderr, "   Current : chr=%s pos=%lu\n", chr, nucpos);
                 fprintf(stderr, "   Previous: chr=%s pos=%lu\n",
                         lastchr, lastnucpos);
-                exit(1);
+                return BAD_SORT;
             }
         }
         lastnucpos = nucpos;
@@ -264,7 +261,7 @@ int main(int argc, char **argv) {
                 fprintf(stderr,
                         "  chr=%s pos=%s ref=%s alt=%s gtype=%s\n",
                         chr, pos, ref[0], alt[0], gtype);
-                exit(EXIT_FAILURE);
+                return BAD_GTYPE;
             }
             // gtype is a string like "0|1" or "0/1".
             switch (gtype[0]) {
@@ -283,7 +280,7 @@ int main(int argc, char **argv) {
                 fprintf(stderr,
                         "  chr=%s pos=%s ref=%s alt=%s gtype=%s\n",
                         chr, pos, ref[0], alt[0], gtype);
-                exit(EXIT_FAILURE);
+                return BAD_GTYPE;
             }
 
             switch (gtype[2]) {
@@ -302,7 +299,7 @@ int main(int argc, char **argv) {
                 fprintf(stderr,
                         "  chr=%s pos=%s ref=%s alt=%s gtype=%s\n",
                         chr, pos, ref[0], alt[0], gtype);
-                exit(EXIT_FAILURE);
+                return BAD_GTYPE;
             }
             gtype = strsep(&next, "\t");    // additional fields
         }
@@ -314,10 +311,11 @@ int main(int argc, char **argv) {
         } else
             ++ngood;
 
-        double      p = x / ((double) n);
-        printf("%s\t%s\t%s\t%s\t%0.18g\n",
-               chr, pos, ref[0], alt[0], p);
+        double p = x / ((double) n);
+        fprintf(output, "%s\t%s\t%s\t%s\t%0.18g\n",
+                chr, pos, ref[0], alt[0], p);
     }
+
     fprintf(stderr, "raf: %ld good sites; %ld rejected\n", ngood, nbad);
     if(zeroref)
         fprintf(stderr, "raf: bad sites with 0 ref alleles: %ld\n", zeroref);

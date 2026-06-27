@@ -1,6 +1,6 @@
 destination := $(HOME)/bin
-git_version := "$(shell git describe --dirty --always --tags)"
 global_destination := $(HOME)/grp2/bin
+git_version := "$(shell git describe --dirty --always --tags)"
 opt := -DNDEBUG -O2  -finline-functions  # For full optimization
 #opt := -O0 -g -fno-inline-functions -rdynamic -DDEBUG     # For debugging
 #opt := -O2  -g -finline-functions  # Optimization + debugging
@@ -28,6 +28,7 @@ warn := \
  -Wno-unused-parameter \
  -Wno-unused-function \
  -Wshadow \
+ -Wno-gnu-folding-constant \
  -Wwrite-strings
 
 # MacOS only
