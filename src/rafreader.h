@@ -28,6 +28,7 @@ RAFReader  *RAFReader_new(const char *fname);
 void        RAFReader_clearChromosomes(int n, RAFReader *r[n]);
 void        RAFReader_free(RAFReader * self);
 int         RAFReader_next(RAFReader * self);
+int         RAFReader_next_verbose(RAFReader * self, int verbose);
 double      RAFReader_raf(RAFReader * r);
 double      RAFReader_daf(RAFReader * r);
 int         RAFReader_alleleCheck(int n, RAFReader * r[n]);

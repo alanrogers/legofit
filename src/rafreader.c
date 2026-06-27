@@ -127,7 +127,12 @@ int iscomment(const char *s) {
 /// NO_ANCESTRAL_ALLELE, BUFFER_OVERFLOW, BAD_RAF_INPUT, BAD_SORT,
 /// MONOMORPHIC_SITE, or an errno code for failure to parse a
 /// floating-point number.
-int RAFReader_next(RAFReader * self) {
+int RAFReader_next(RAFReader *self) {
+    // RAFReader_next is always verbose
+    return RAFReader_next_verbose(self, 1);
+}
+
+int RAFReader_next_verbose(RAFReader * self, int verbose) {
     int ntokens;
     int status;
     char buff[1024];
@@ -174,11 +179,13 @@ int RAFReader_next(RAFReader * self) {
     }
     int diff = strcmp(prev, self->chr);
     if(diff > 0) {
-        fprintf(stderr, "%s:%s:%d: Chromosomes missorted in input.\n",
-                __FILE__, __func__, __LINE__);
-        fprintf(stderr, "          \"%s\" precedes \"%s\".\n",
-                prev, self->chr);
-        Tokenizer_print(self->tkz, stderr);
+        if(verbose) {
+            fprintf(stderr, "%s:%s:%d: Chromosomes missorted in input.\n",
+                    __FILE__, __func__, __LINE__);
+            fprintf(stderr, "          \"%s\" precedes \"%s\".\n",
+                    prev, self->chr);
+            Tokenizer_print(self->tkz, stderr);
+        }
         return BAD_SORT;
     } else if(diff < 0) {
         // new chromosome
@@ -189,14 +196,18 @@ int RAFReader_next(RAFReader * self) {
     // Nucleotide position
     self->nucpos = strtoul(Tokenizer_token(self->tkz, 1), NULL, 10);
     if(prevnucpos == self->nucpos) {
-        fprintf(stderr, "%s:%s:%d:"
-                " Duplicate line in raf file. chr=%s nucpos=%lu\n",
-                __FILE__, __func__, __LINE__, self->chr, self->nucpos);
+        if(verbose) {
+            fprintf(stderr, "%s:%s:%d:"
+                    " Duplicate line in raf file. chr=%s nucpos=%lu\n",
+                    __FILE__, __func__, __LINE__, self->chr, self->nucpos);
+        }
         return BAD_SORT;
     } else if(prevnucpos > (long long) self->nucpos) {
-        fprintf(stderr, "%s:%d: positions missorted chr=%s "
-                "prevnucpos=%lld curr nucpos=%lu\n",
-                __FILE__, __LINE__, self->chr, prevnucpos, self->nucpos);
+        if(verbose) {
+            fprintf(stderr, "%s:%d: positions missorted chr=%s "
+                    "prevnucpos=%lld curr nucpos=%lu\n",
+                    __FILE__, __LINE__, self->chr, prevnucpos, self->nucpos);
+        }
         return BAD_SORT;
     }
     // Reference allele
@@ -220,8 +231,11 @@ int RAFReader_next(RAFReader * self) {
         char err_buff[50];
         strerror_r(errno, err_buff, sizeof(err_buff));
 #ifdef NDEBUG
-        fprintf(stderr, "%s:%d: Bad float \"%s\" (%s); chr=%s pos=%lu\n",
-                __FILE__, __LINE__, token, err_buff, self->chr, self->nucpos);
+        if(verbose) {
+            fprintf(stderr, "%s:%d: Bad float \"%s\" (%s); chr=%s pos=%lu\n",
+                    __FILE__, __LINE__, token, err_buff, self->chr,
+                    self->nucpos);
+        }
 #endif
         return errno;
     }

@@ -141,7 +141,7 @@ xcomb : $(XCOMB)
 XSEGMENT := xsegment.o misc.o segment.o idset.o branchtab.o eventlst.o \
     parstore.o param.o ptrlst.o ptrptrmap.o ptrqueue.o idsetset.o strint.o \
     tinyexpr.o dtnorm.o binary.o setpart.o u64u64map.o matcoal.o comb.o \
-    rational.o strptrmap.o lblndx.o u64i64map.o externs.o
+    rational.o strptrmap.o lblndx.o u64i64map.o externs.o sampndx.o
 xsegment : $(XSEGMENT)
 	$(CC) $(CFLAGS) -o $@ $(XSEGMENT) $(lib)
 
@@ -320,7 +320,7 @@ xpopnode.o : ../src/popnode.c
 
 XPOPNODE := xpopnode.o dtnorm.o misc.o gene.o parstore.o tinyexpr.o \
    param.o branchtab.o ptrptrmap.o ptrqueue.o strint.o \
-   binary.o strptrmap.o lblndx.o
+   binary.o strptrmap.o lblndx.o sampndx.o
 xpopnode : $(XPOPNODE)
 	$(CC) $(CFLAGS) -o $@ $(XPOPNODE) $(lib)
 
@@ -383,7 +383,7 @@ xstrint : $(XSTRINT)
 	$(CC) $(CFLAGS) -o $@ $(XSTRINT) $(lib)
 
 u64u64map.o : ../src/u64u64map.c ../src/u64u64map.h ../src/hashmap.h \
-   ../src/hashmap.src
+   ../src/hashmap.c
 
 XU64U64MAP := xu64u64map.o misc.o binary.o u64u64map.o
 xu64u64map : $(XU64U64MAP)
@@ -394,14 +394,14 @@ xu64i64map : $(XU64I64MAP)
 	$(CC) $(CFLAGS) -o $@ $(XU64I64MAP) $(lib)
 
 ptru32map.o : ../src/ptru32map.c ../src/ptru32map.h ../src/hashmap.h \
-   ../src/hashmap.src
+   ../src/hashmap.c
 
 XPTRU32MAP := xptru32map.o misc.o binary.o ptru32map.o
 xptru32map : $(XPTRU32MAP)
 	$(CC) $(CFLAGS) -o $@ $(XPTRU32MAP) $(lib)
 
 ptrptrmap.o : ../src/ptrptrmap.c ../src/ptrptrmap.h ../src/hashmap.h \
-   ../src/hashmap.src
+   ../src/hashmap.c
 
 XPTRPTRMAP := xptrptrmap.o misc.o binary.o ptrptrmap.o
 xptrptrmap : $(XPTRPTRMAP)

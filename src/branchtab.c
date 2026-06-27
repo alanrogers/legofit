@@ -374,7 +374,7 @@ void make_collapse_map(size_t n, tipId_t map[n], tipId_t collapse) {
     }
     int i, shift=0;
     tipId_t min = 0, bit = 1u;
-    for(i=0; i < n; ++i, bit <<= 1) {
+    for(i=0; i < n; ++i) {
         if( collapse & bit ) {
             if(min == 0) {
                 min = bit;
@@ -383,6 +383,8 @@ void make_collapse_map(size_t n, tipId_t map[n], tipId_t collapse) {
             map[i] = min;
         }else
             map[i] = bit >> shift;
+        if( i < n-1 )
+            bit <<= 1;
     }
 }
 
@@ -407,12 +409,14 @@ void make_rm_map(size_t n, tipId_t map[n], tipId_t remove) {
     }
     int i, shift=0;
     tipId_t bit = 1u;
-    for(i=0; i < n; ++i, bit <<= 1) {
+    for(i=0; i < n; ++i) {
         if( remove & bit ) {
             ++shift;
             map[i] = 0;
         }else
             map[i] = bit >> shift;
+        if( i < n-1 )
+            bit <<= 1;
     }
 }
 
@@ -421,9 +425,12 @@ void make_rm_map(size_t n, tipId_t map[n], tipId_t remove) {
 // value of "old".
 tipId_t remap_bits(size_t n, tipId_t map[n], tipId_t old) {
     tipId_t new = 0u, bit=1u;
-    for(int i=0; i<n; ++i, bit <<= 1)
+    for(int i=0; i < n; ++i) {
         if( old & bit )
             new |= map[i];
+        if(i < n-1)
+            bit <<= 1;
+    }
     return new;
 }
 

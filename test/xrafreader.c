@@ -19,32 +19,35 @@
 #error "Unit tests must be compiled without -DNDEBUG flag"
 #endif
 
+#define TAB "\t"
+
 const char *badInput =
-    "#chr\tpos\tref\talt\traf\n"
-    "10\t1\ta\tt\t5e-1\n"
-    "1\t1\ta\t.\t0\n"
-    "10\t200\tg\tc\t1e0\n"
-    "10\t201\tg\tc\t1e99999\n"
-    "10\t202\tg\tc\t1e-99999\n" "10\t203\tg\tc\tnot-a-float\n";
+    "#chr" TAB "pos" TAB "ref" TAB "alt" TAB "raf\n"
+    "10" TAB "1" TAB "a" TAB "t" TAB "5e-1\n"
+    "1" TAB "1" TAB "a" TAB "." TAB "0\n"
+    "10" TAB "200" TAB "g" TAB "c" TAB "1e0\n"
+    "10" TAB "201" TAB "g" TAB "c" TAB "1e99999\n"
+    "10" TAB "202" TAB "g" TAB "c" TAB "1e-99999\n"
+    "10" TAB "203" TAB "g" TAB "c" TAB "not-a-float\n";
 
 const char *tstInput[3] = {
-    "#chr\tpos\tref\talt\traf\n"
-    "1\t1\ta\tt\t0\n"
-    "10\t1\ta\tt\t5e-1\n"
-    "10\t200\tg\tc\t1e0\n",
+    "#chr" TAB "pos" TAB "ref" TAB "alt" TAB "raf\n"
+    "1" TAB "1" TAB "a" TAB "t" TAB "0\n"
+    "10" TAB "1" TAB "a" TAB "t" TAB "5e-1\n"
+    "10" TAB "200" TAB "g" TAB "c" TAB "1e0\n",
 
-    "#chr\tpos\tref\talt\traf\n"
-    "1\t1\ta\tt\t0.5\n"
-    "1\t2\ta\t.\t0.5\n"
-    "10\t1\ta\tt\t1e-1\n"
-    "10\t200\tg\tc\t1\n"
-    "10\t201\tg\tc\t1\n",
+    "#chr" TAB "pos" TAB "ref" TAB "alt" TAB "raf\n"
+    "1" TAB "1" TAB "a" TAB "t" TAB "0.5\n"
+    "1" TAB "2" TAB "a" TAB "." TAB "0.5\n"
+    "10" TAB "1" TAB "a" TAB "t" TAB "1e-1\n"
+    "10" TAB "200" TAB "g" TAB "c" TAB "1\n"
+    "10" TAB "201" TAB "g" TAB "c" TAB "1\n",
 
-    "#chr\tpos\tref\talt\traf\n"
-    "1\t1\ta\t.\t1\n"
-    "10\t1\ta\tt\t0\n"
-    "10\t100\ta\tt\t0\n"
-    "10\t200\tg\tc\t0\n"
+    "#chr" TAB "pos" TAB "ref" TAB "alt" TAB "raf\n"
+    "1" TAB "1" TAB "a" TAB "." TAB "1\n"
+    "10" TAB "1" TAB "a" TAB "t" TAB "0\n"
+    "10" TAB "100" TAB "a" TAB "t" TAB "0\n"
+    "10" TAB "200" TAB "g" TAB "c" TAB "0\n"
 };
 
 int main(int argc, char **argv) {
@@ -75,7 +78,7 @@ int main(int argc, char **argv) {
     RAFReader  *rdr = RAFReader_new(badraf);
 
     for(i=0; i<7; ++i) {
-        status = RAFReader_next(rdr);
+        status = RAFReader_next_verbose(rdr, 0);
         if(i==0)
             assert(status==0);
         else if(i==1)
@@ -109,7 +112,7 @@ int main(int argc, char **argv) {
     for(i = 0; i < 3; ++i) {
         r[i] = RAFReader_new(tst[i]);
         do{
-            status = RAFReader_next(r[i]);
+            status = RAFReader_next_verbose(r[i], 0);
             switch (status) {
             case 0:
                 if(verbose)
