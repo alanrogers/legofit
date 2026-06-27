@@ -158,7 +158,7 @@ DAF := daf.o misc.o
 daf : $(DAF)
 	$(CC) $(CFLAGS) -o $@ $(DAF) $(lib)
 
-RAF := raf.o misc.o
+RAF := rafmain.o raf.o misc.o
 raf : $(RAF)
 	$(CC) $(CFLAGS) -o $@ $(RAF) $(lib)
 

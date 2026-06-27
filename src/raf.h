@@ -3,6 +3,6 @@
 
 #include <stdio.h>
 
-int raf(FILE *input, FILE *output);
+int raf(FILE *input, FILE *output, int verbose);
 
 #endif

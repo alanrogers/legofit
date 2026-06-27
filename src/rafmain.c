@@ -22,7 +22,8 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
-    int status = raf(stdin, stdout);
+    int verbose = 0;
+    int status = raf(stdin, stdout, verbose);
 
     return status==0 ? 0 : EXIT_FAILURE;
 }

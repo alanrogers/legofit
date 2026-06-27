@@ -61,7 +61,7 @@ Systems Consortium License, which can be found in file "LICENSE".
 // Translate genotypes into raf-format output.  Implemented as a
 // separate function to facilitate debugging. Reads from stream
 // "input"; writes to "output".
-int raf(FILE *input, FILE *output) {
+int raf(FILE *input, FILE *output, int verbose) {
     char        buff[BUFFSIZE];
     long unsigned lastnucpos = 0, nucpos;
     char        lastchr[100] = { '\0' };
@@ -77,10 +77,7 @@ int raf(FILE *input, FILE *output) {
 
     fprintf(output,
             "#%s\t%s\t%s\t%s\t%s\n", "chr", "pos", "ref", "alt", "raf");
-    while(1) {
-        if(NULL == fgets(buff, BUFFSIZE, input)) {
-            break;
-        }
+    while(NULL != fgets(buff, BUFFSIZE, input)) {
         if(NULL == strchr(buff, '\n') && !feof(stdin)) {
             fprintf(stderr, "%s:%d: Buffer overflow. size=%zu\n",
                     __FILE__, __LINE__, sizeof(buff));
@@ -122,8 +119,10 @@ int raf(FILE *input, FILE *output) {
         }
 
         if(empty_field) {
-            fprintf(stderr, "%s:%d: aborting; empty input field(s)\n",
-                    __FILE__, __LINE__);
+            if(verbose) {
+                fprintf(stderr, "%s:%d: aborting; empty input field(s)\n",
+                        __FILE__, __LINE__);
+            }
             return EMPTY_FIELD;
         }
 
@@ -144,16 +143,20 @@ int raf(FILE *input, FILE *output) {
             int diff = strcmp(lastchr, chr);
             if(diff > 0) {
                 // bad sort
-                fprintf(stderr, "%s:%d: unsorted chromosomes\n",
-                        __FILE__, __LINE__);
-                fprintf(stderr, "    %s > %s\n", lastchr, chr);
+                if(verbose) {
+                    fprintf(stderr, "%s:%d: unsorted chromosomes\n",
+                            __FILE__, __LINE__);
+                    fprintf(stderr, "    %s > %s\n", lastchr, chr);
+                }
                 return BAD_SORT;
             } else if(diff < 0) {
                 // new chromosome
                 int status = snprintf(lastchr, sizeof lastchr, "%s", chr);
                 if(status >= sizeof lastchr) {
-                    fprintf(stderr, "%s:%d: buffer overflow\n",
-                            __FILE__, __LINE__);
+                    if(verbose) {
+                        fprintf(stderr, "%s:%d: buffer overflow\n",
+                                __FILE__, __LINE__);
+                    }
                     return BUFFER_OVERFLOW;
                 }
                 lastnucpos = 0;
@@ -162,8 +165,10 @@ int raf(FILE *input, FILE *output) {
             // initialize lastchr
             int status = snprintf(lastchr, sizeof lastchr, "%s", chr);
             if(status >= sizeof lastchr) {
-                fprintf(stderr, "%s:%d: buffer overflow\n",
-                        __FILE__, __LINE__);
+                if(verbose) {
+                    fprintf(stderr, "%s:%d: buffer overflow\n",
+                            __FILE__, __LINE__);
+                }
                 return BUFFER_OVERFLOW;
             }
             assert(lastnucpos == 0);
@@ -172,17 +177,20 @@ int raf(FILE *input, FILE *output) {
         // Check sort of nucleotide positions
         if(lastnucpos) {
             if(lastnucpos == nucpos) {
-                fprintf(stderr, "%s:%d: Duplicate: chr=%s pos=%lu\n",
-                        __FILE__, __LINE__, chr, nucpos);
-                fprintf(stderr, "%s:%d: Previous : chr=%s pos=%lu\n",
-                        __FILE__, __LINE__, lastchr, lastnucpos);
+                if(verbose) {
+                    fprintf(stderr, "%s:%d: Duplicate: chr=%s pos=%lu\n",
+                            __FILE__, __LINE__, chr, nucpos);
+                }
                 return DUPLICATE_NUCPOS;
             } else if(lastnucpos > nucpos) {
-                fprintf(stderr, "%s:%d: Missorted nucleotide positions\n",
-                        __FILE__, __LINE__);
-                fprintf(stderr, "   Current : chr=%s pos=%lu\n", chr, nucpos);
-                fprintf(stderr, "   Previous: chr=%s pos=%lu\n",
-                        lastchr, lastnucpos);
+                if(verbose) {
+                    fprintf(stderr, "%s:%d: Missorted nucleotide positions\n",
+                            __FILE__, __LINE__);
+                    fprintf(stderr, "   Current : chr=%s pos=%lu\n",
+                            chr, nucpos);
+                    fprintf(stderr, "   Previous: chr=%s pos=%lu\n",
+                            lastchr, lastnucpos);
+                }
                 return BAD_SORT;
             }
         }
@@ -256,13 +264,16 @@ int raf(FILE *input, FILE *output) {
         while(gtype != NULL) {
             gtype = stripWhiteSpace(gtype);
             if(strlen(gtype) != 3) {
-                fprintf(stderr, "%s:%d: Bad genotype: \"%s\"\n",
-                        __FILE__, __LINE__, gtype);
-                fprintf(stderr,
-                        "  chr=%s pos=%s ref=%s alt=%s gtype=%s\n",
-                        chr, pos, ref[0], alt[0], gtype);
+                if(verbose) {
+                    fprintf(stderr, "%s:%d: Bad genotype: \"%s\"\n",
+                            __FILE__, __LINE__, gtype);
+                    fprintf(stderr,
+                            "  chr=%s pos=%s ref=%s alt=%s gtype=%s\n",
+                            chr, pos, ref[0], alt[0], gtype);
+                }
                 return BAD_GTYPE;
             }
+            
             // gtype is a string like "0|1" or "0/1".
             switch (gtype[0]) {
             case '.':
@@ -275,11 +286,13 @@ int raf(FILE *input, FILE *output) {
                 ++n;
                 break;
             default:
-                fprintf(stderr, "%s:%d: Bad genotype: \"%s\"\n",
-                        __FILE__, __LINE__, gtype);
-                fprintf(stderr,
-                        "  chr=%s pos=%s ref=%s alt=%s gtype=%s\n",
-                        chr, pos, ref[0], alt[0], gtype);
+                if(verbose) {
+                    fprintf(stderr, "%s:%d: Bad genotype: \"%s\"\n",
+                            __FILE__, __LINE__, gtype);
+                    fprintf(stderr,
+                            "  chr=%s pos=%s ref=%s alt=%s gtype=%s\n",
+                            chr, pos, ref[0], alt[0], gtype);
+                }
                 return BAD_GTYPE;
             }
 
@@ -294,11 +307,13 @@ int raf(FILE *input, FILE *output) {
                 ++n;
                 break;
             default:
-                fprintf(stderr, "%s:%d: Bad genotype: %s\n",
-                        __FILE__, __LINE__, gtype);
-                fprintf(stderr,
-                        "  chr=%s pos=%s ref=%s alt=%s gtype=%s\n",
-                        chr, pos, ref[0], alt[0], gtype);
+                if(verbose) {
+                    fprintf(stderr, "%s:%d: Bad genotype: %s\n",
+                            __FILE__, __LINE__, gtype);
+                    fprintf(stderr,
+                            "  chr=%s pos=%s ref=%s alt=%s gtype=%s\n",
+                            chr, pos, ref[0], alt[0], gtype);
+                }
                 return BAD_GTYPE;
             }
             gtype = strsep(&next, "\t");    // additional fields
@@ -316,29 +331,34 @@ int raf(FILE *input, FILE *output) {
                 chr, pos, ref[0], alt[0], p);
     }
 
-    fprintf(stderr, "raf: %ld good sites; %ld rejected\n", ngood, nbad);
-    if(zeroref)
-        fprintf(stderr, "raf: bad sites with 0 ref alleles: %ld\n", zeroref);
-    if(zeroalt)
-        fprintf(stderr, "raf: bad sites with 0 alt alleles: %ld\n", zeroalt);
-    if(zerogtype)
-        fprintf(stderr, "raf: bad sites with 0 genotypes: %ld\n", zerogtype);
-    if(multref)
-        fprintf(stderr, "raf: bad sites with multiple ref alleles: %ld\n",
-                multref);
-    if(multalt)
-        fprintf(stderr, "raf: bad sites with multiple alt alleles: %ld\n",
-                multalt);
-    if(indelref)
-        fprintf(stderr,
-                "raf: bad sites with ref allele an indel: %ld\n",
-                indelref);
-    if(indelalt)
-        fprintf(stderr,
-                "raf: bad sites with alt allele an indel: %ld\n",
-                indelalt);
-    if(missref)
-        fprintf(stderr, "raf: bad sites with missing ref alleles: %ld\n",
-                missref);
+    if(verbose) {
+        fprintf(stderr, "raf: %ld good sites; %ld rejected\n", ngood, nbad);
+        if(zeroref)
+            fprintf(stderr, "raf: bad sites with 0 ref alleles: %ld\n",
+                    zeroref);
+        if(zeroalt)
+            fprintf(stderr, "raf: bad sites with 0 alt alleles: %ld\n",
+                    zeroalt);
+        if(zerogtype)
+            fprintf(stderr, "raf: bad sites with 0 genotypes: %ld\n",
+                    zerogtype);
+        if(multref)
+            fprintf(stderr, "raf: bad sites with multiple ref alleles: %ld\n",
+                    multref);
+        if(multalt)
+            fprintf(stderr, "raf: bad sites with multiple alt alleles: %ld\n",
+                    multalt);
+        if(indelref)
+            fprintf(stderr,
+                    "raf: bad sites with ref allele an indel: %ld\n",
+                    indelref);
+        if(indelalt)
+            fprintf(stderr,
+                    "raf: bad sites with alt allele an indel: %ld\n",
+                    indelalt);
+        if(missref)
+            fprintf(stderr, "raf: bad sites with missing ref alleles: %ld\n",
+                    missref);
+    }
     return 0;
 }
