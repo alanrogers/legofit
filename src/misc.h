@@ -88,12 +88,17 @@ static inline FILE *mustopen(const char *fname, const char *mode,
     } while(0)
 
 #  define REQUIRE(x, file, line) do {                                   \
-        if (!(x)) {                                                     \
-            dostacktrace(__FILE__,__LINE__,stderr);                     \
+    if (!(x)) {                                                         \
+        dostacktrace(__FILE__,__LINE__,stderr);                         \
+        if( strcmp(file, __FILE__) != 0 || line!=__LINE__) {            \
             fprintf(stderr,"ERR@%s:%d->%s:%d: FAILED REQUIREMENT\n",    \
                     (file), (line), __FILE__,__LINE__);                 \
-            exit(EXIT_FAILURE);                                         \
+        }else{                                                          \
+            fprintf(stderr,"ERR@%s:%d: FAILED REQUIREMENT\n",           \
+                    (file), (line));                                    \
         }                                                               \
+        exit(EXIT_FAILURE);                                             \
+    }                                                                   \
     } while(0)
 
 // If PTR!=NULL, add offset OSET to pointer PTR (if SIGN>0) or

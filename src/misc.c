@@ -433,6 +433,7 @@ char *strlowercase(char *s) {
     return s;
 }
 
+
 /// Hash a character string using algorithm of Daniel J. Boorstein
 #ifdef __clang__
 unsigned long strhash(const char *ss) __attribute__ ((no_sanitize("integer"))) {
@@ -724,7 +725,11 @@ int legalName(const char *name) {
 // encountered or m characters have been copied.  Make sure src is
 // terminated with '\0'. If dst is too small to hold null-terminated
 // string, return BUFFER_OVERFLOW. Otherwise, return 0.
-int strnncopy(size_t n, char dst[n], size_t m, const char src[m]) {
+//
+// Using pointer arguments rather than variable-sized arrays, because
+// it's legal for m to be zero, but variable-sized arrays must have
+// positive size. 
+int strnncopy(size_t n, char *dst, size_t m, const char *src) {
     if(n == 0)
         return BUFFER_OVERFLOW;
     int i;

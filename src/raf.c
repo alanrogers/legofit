@@ -88,39 +88,38 @@ int raf(FILE *input, FILE *output, int verbose) {
         }
         char       *chr, *pos, *reftoken, *alttoken;
         char       *gtype, *next = buff;
-        int         empty_field = 0;
 
         chr = strsep(&next, "\t");  // field 0
-        if(chr==NULL) {
-            fprintf(stderr, "%s:%d: empty chr field in input\n",
-                    __FILE__, __LINE__);
-            empty_field=1;
+        if(strlen(chr)==0) {
+            if(verbose) {
+                fprintf(stderr, "%s:%d: empty chr field in input\n",
+                        __FILE__, __LINE__);
+            }
+            return EMPTY_FIELD;
         }
 
         pos = strsep(&next, "\t");  // field 1
-        if(pos==NULL) {
-            fprintf(stderr, "%s:%d: empty pos field in input\n",
-                    __FILE__, __LINE__);
-            empty_field=1;
+        if(strlen(pos)==0) {
+            if(verbose) {
+                fprintf(stderr, "%s:%d: empty pos field in input\n",
+                        __FILE__, __LINE__);
+            }
+            return EMPTY_FIELD;
         }
 
         reftoken = strsep(&next, "\t");  // field 2
-        if(reftoken==NULL) {
-            fprintf(stderr, "%s:%d: empty ref field in input\n",
-                    __FILE__, __LINE__);
-            empty_field=1;
+        if(strlen(reftoken)==0) {
+            if(verbose) {
+                fprintf(stderr, "%s:%d: empty ref field in input\n",
+                        __FILE__, __LINE__);
+            }
+            return EMPTY_FIELD;
         }
 
         alttoken = strsep(&next, "\t");  // field 3
-        if(alttoken==NULL) {
-            fprintf(stderr, "%s:%d: empty alt field in input\n",
-                    __FILE__, __LINE__);
-            empty_field=1;
-        }
-
-        if(empty_field) {
+        if(strlen(alttoken)==0) {
             if(verbose) {
-                fprintf(stderr, "%s:%d: aborting; empty input field(s)\n",
+                fprintf(stderr, "%s:%d: empty alt field in input\n",
                         __FILE__, __LINE__);
             }
             return EMPTY_FIELD;

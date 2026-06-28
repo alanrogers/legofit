@@ -41,7 +41,7 @@ const char *tstInput[7] = {
     "chr1" TAB "5" TAB "G" TAB "c" TAB "0/1" TAB "0|1" "\n"
     "chr1" TAB "1" TAB "a" TAB "t" TAB "0/0" TAB "0|1" "\n",
 
-    // 4: Missing field
+    // 4: Missing ref field
     "chr1" TAB "1" TAB TAB "t" TAB "0/0" TAB "0|1" "\n",
 
     // 5: Bad genotype
@@ -100,7 +100,7 @@ int main(int argc, char **argv) {
     REQUIRE(BAD_SORT==raf_status(3, outfname), __FILE__, __LINE__);
 
     // input file 4
-    REQUIRE(0==raf_status(4, outfname), __FILE__, __LINE__);
+    REQUIRE(EMPTY_FIELD==raf_status(4, outfname), __FILE__, __LINE__);
     
     // input file 5
     REQUIRE(BAD_GTYPE==raf_status(5, outfname), __FILE__, __LINE__);
