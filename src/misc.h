@@ -61,6 +61,8 @@ int         strnncopy(size_t n, char dst[n], size_t m, const char src[m]);
 void        collapse_whitespace(char * buff);
 void        stutter(char c, int n, FILE * fp);
 static inline double survival(double t, double twoN);
+static inline FILE *mustopen(const char *fname, const char *mode,
+                             const char *srcfile, int srcline);
 
 #  define ERR(code, msg) do{                        \
         char buff[50];                              \
@@ -88,7 +90,7 @@ static inline double survival(double t, double twoN);
 #  define REQUIRE(x, file, line) do {                                   \
         if (!(x)) {                                                     \
             dostacktrace(__FILE__,__LINE__,stderr);                     \
-            fprintf(stderr,"ERR@%s:%d->%s:%d: FAILED REQUIREMENT\n",     \
+            fprintf(stderr,"ERR@%s:%d->%s:%d: FAILED REQUIREMENT\n",    \
                     (file), (line), __FILE__,__LINE__);                 \
             exit(EXIT_FAILURE);                                         \
         }                                                               \
@@ -104,7 +106,7 @@ static inline double survival(double t, double twoN);
             else                                                        \
                 (PTR) = (void *) (((size_t) (PTR)) - ((size_t) (OSET))); \
         }                                                               \
-    }while(0);
+    }while(0)
 
 /// Return 1 if the relative difference between x and y is less than or
 /// equal to 8*DBL_EPSILON.
@@ -135,11 +137,27 @@ static inline int Dbl_equals_allowNonfinite(double x, double y) {
     return 0;
 }
 
+/// open file; abort on fail
+static inline FILE *mustopen(const char *fname, const char *mode,
+                             const char *srcfile, int srcline) {
+    FILE *fp = fopen(fname, mode);
+    if(fp==NULL) {
+        fprintf(stderr,"%s:%d -> %s:%d: can't open %s with mode %s\n",
+                __FILE__, __LINE__, srcfile, srcline,
+                fname, mode);
+        exit(EXIT_FAILURE);
+    }
+    return fp;
+}
+            
+#  if 0
+/// Delete this as sure as it's clear that nothing breaks.
 /// survival fuction
 static inline double survival(double t, double twoN) {
     assert(t >= 0.0);
     assert(twoN > 0.0);
     return exp(-t / twoN);
 }
+#  endif
 
 #endif

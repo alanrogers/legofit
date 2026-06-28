@@ -18,6 +18,8 @@
 #error "Unit tests must be compiled without -DNDEBUG flag"
 #endif
 
+int raf_status(int idata, const char *outfname);
+
 #define TAB "\t"
 
 const char *tstInput[7] = {
@@ -49,151 +51,59 @@ const char *tstInput[7] = {
     "chr1" TAB "1" TAB "a" TAB "t" TAB "0/0" TAB "0/a" "\n",
 };
 
-int main(int argc, char **argv) {
-
-    int status;
-
-    if(argc != 1) {
-        fprintf(stderr, "usage: xraf [-v]\n");
-        exit(1);
-    }
+// Write the dataset indexed by `idata` to disk, process it with
+// `raf`, and return the status code.
+int raf_status(int idata, const char *outfname) {
     const char *infname = "rafin.tmp";
-    const char *outfname = "rafout.tmp";
-    FILE *ifp, *ofp;
 
-    // input file 0
-    ifp = fopen(infname, "w");
-    assert(ifp);
-    fputs(tstInput[0], ifp);
+    FILE *ifp = mustopen(infname, "w", __FILE__, __LINE__);
+    fputs(tstInput[idata], ifp);
     fclose(ifp);
-    ifp = fopen(infname, "r");
-    assert(ifp);
-    ofp = fopen(outfname, "w");
-    if(ofp == NULL) {
-        fprintf(stderr, "%s:%d: can't write file %s\n",
-                __FILE__, __LINE__, outfname);
-        exit(1);
-    }
-    status = raf(ifp, ofp, 0);
-    assert(status==0);
+    ifp = mustopen(infname, "r", __FILE__, __LINE__);
+    FILE *ofp = mustopen(outfname, "w", __FILE__, __LINE__);
+    int status = raf(ifp, ofp, 0);
     fclose(ifp);
     fclose(ofp);
+    return status;
+}
+
+int main(int argc, char **argv) {
+
+    const char *outfname = "rafout.tmp";
+
+    // input file 0
+    REQUIRE(0==raf_status(0, outfname), __FILE__, __LINE__);
     RAFReader  *rdr = RAFReader_new(outfname);
     assert(rdr);
-    assert(0 == RAFReader_next(rdr));
-    assert(RAFReader_raf(rdr) == 0.75);
+    REQUIRE(0 == RAFReader_next(rdr), __FILE__, __LINE__);
+    REQUIRE(RAFReader_raf(rdr) == 0.75, __FILE__, __LINE__);
 
-    assert(0 == RAFReader_next(rdr));
-    assert(RAFReader_raf(rdr) == 0.5);
+    REQUIRE(0 == RAFReader_next(rdr), __FILE__, __LINE__);
+    REQUIRE(RAFReader_raf(rdr) == 0.5, __FILE__, __LINE__);
 
-    assert(0 == RAFReader_next(rdr));
-    assert(RAFReader_raf(rdr) == 0.75);
+    REQUIRE(0 == RAFReader_next(rdr), __FILE__, __LINE__);
+    REQUIRE(RAFReader_raf(rdr) == 0.75, __FILE__, __LINE__);
 
-    assert(0 == RAFReader_next(rdr));
-    assert(RAFReader_raf(rdr) == 0.5);
+    REQUIRE(0 == RAFReader_next(rdr), __FILE__, __LINE__);
+    REQUIRE(RAFReader_raf(rdr) == 0.5, __FILE__, __LINE__);
 
-    assert(EOF == RAFReader_next(rdr));
+    REQUIRE(EOF == RAFReader_next(rdr), __FILE__, __LINE__);
     RAFReader_free(rdr);
 
     // input file 1
-    ifp = fopen(infname, "w");
-    assert(ifp);
-    fputs(tstInput[1], ifp);
-    fclose(ifp);
-    ifp = fopen(infname, "r");
-    assert(ifp);
-    ofp = fopen(outfname, "w");
-    if(ofp == NULL) {
-        fprintf(stderr, "%s:%d: can't write file %s\n",
-                __FILE__, __LINE__, outfname);
-        exit(1);
-    }
-    status = raf(ifp, ofp, 0);
-    assert(status==BAD_SORT);
-    fclose(ifp);
-    fclose(ofp);
+    REQUIRE(BAD_SORT==raf_status(1, outfname), __FILE__, __LINE__);
 
     // input file 2
-    ifp = fopen(infname, "w");
-    assert(ifp);
-    fputs(tstInput[2], ifp);
-    fclose(ifp);
-    ifp = fopen(infname, "r");
-    assert(ifp);
-    ofp = fopen(outfname, "w");
-    if(ofp == NULL) {
-        fprintf(stderr, "%s:%d: can't write file %s\n",
-                __FILE__, __LINE__, outfname);
-        exit(1);
-    }
-    status = raf(ifp, ofp, 0);
-    assert(status==DUPLICATE_NUCPOS);
-    fclose(ifp);
-    fclose(ofp);
+    REQUIRE(DUPLICATE_NUCPOS==raf_status(2, outfname), __FILE__, __LINE__);
 
     // input file 3
-    ifp = fopen(infname, "w");
-    assert(ifp);
-    fputs(tstInput[3], ifp);
-    fclose(ifp);
-    ifp = fopen(infname, "r");
-    assert(ifp);
-    ofp = fopen(outfname, "w");
-    if(ofp == NULL) {
-        fprintf(stderr, "%s:%d: can't write file %s\n",
-                __FILE__, __LINE__, outfname);
-        exit(1);
-    }
-    status = raf(ifp, ofp, 0);
-    assert(status==BAD_SORT);
-    fclose(ifp);
-    fclose(ofp);
+    REQUIRE(BAD_SORT==raf_status(3, outfname), __FILE__, __LINE__);
 
     // input file 4
-    ifp = fopen(infname, "w");
-    assert(ifp);
-    fputs(tstInput[4], ifp);
-    fclose(ifp);
-    ifp = fopen(infname, "r");
-    assert(ifp);
-    ofp = fopen(outfname, "w");
-    if(ofp == NULL) {
-        fprintf(stderr, "%s:%d: can't write file %s\n",
-                __FILE__, __LINE__, outfname);
-        exit(1);
-    }
-    status = raf(ifp, ofp, 0);
-    if(status!=0) {
-        fprintf(stderr,"%s:%d: bad rtn from raf. %d instead of %d\n",
-                __FILE__, __LINE__, status, 0);
-        unitTstResult("raf", "FAIL");
-        exit(1);
-    }
-    fclose(ifp);
-    fclose(ofp);
+    REQUIRE(0==raf_status(4, outfname), __FILE__, __LINE__);
     
     // input file 5
-    ifp = fopen(infname, "w");
-    assert(ifp);
-    fputs(tstInput[5], ifp);
-    fclose(ifp);
-    ifp = fopen(infname, "r");
-    assert(ifp);
-    ofp = fopen(outfname, "w");
-    if(ofp == NULL) {
-        fprintf(stderr, "%s:%d: can't write file %s\n",
-                __FILE__, __LINE__, outfname);
-        exit(1);
-    }
-    status = raf(ifp, ofp, 0);
-    if(status!=BAD_GTYPE) {
-        fprintf(stderr,"%s:%d: bad rtn from raf. %d instead of %d\n",
-                __FILE__, __LINE__, status, BAD_GTYPE);
-        unitTstResult("raf", "FAIL");
-        exit(1);
-    }
-    fclose(ifp);
-    fclose(ofp);
+    REQUIRE(BAD_GTYPE==raf_status(5, outfname), __FILE__, __LINE__);
     
     unitTstResult("raf", "OK");
 

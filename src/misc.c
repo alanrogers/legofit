@@ -36,7 +36,7 @@
 /// optimizations are turned on, because then the executable
 /// doesn't know the names of functions. The stack trace shows
 /// addresses instead.
-/// Call like this: "dostacktrace(__FILE__, __LINE__)"
+/// Call like this: "dostacktrace(__FILE__, __LINE__, ofp)"
 void dostacktrace(const char *file, int line, FILE * ofp) {
 #ifndef NDEBUG
     void *callstack[CALLSTACK_SIZE];
@@ -46,7 +46,7 @@ void dostacktrace(const char *file, int line, FILE * ofp) {
     fprintf(ofp, "dostacktrace called from %s:%d:\n", file, line);
     backtrace_symbols_fd(callstack, nsymbols, fileno(ofp));
 #else
-    fprintf(ofp, "Stack trace not available because of NDEBUG option.\n");
+    fprintf(ofp, "Stack trace not available because NDEBUG is defined.\n");
 #endif
 }
 
