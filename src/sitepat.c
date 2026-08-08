@@ -463,6 +463,17 @@ int main(int argc, char **argv) {
         Stack_free(stk);
     }
 
+    // singleton[i] = 1 or 0 to indicate whether pat[i] is a singleton
+    int singleton[npat];
+    memset(singleton, 0, sizeof(singleton));
+    if(doSing) {
+        for(i=0; i<npat; ++i) {
+            if(isPow2(pat[i])) {
+                singleton[i] = 1;
+            }
+        }
+    }
+
     // Sort site patterns. Major sort is by number of "on" bits,
     // so that doubleton patterns come first, then tripletons, ets.
     // Secondary sort is by order in which labels are listed
@@ -657,6 +668,9 @@ int main(int argc, char **argv) {
                 else
                     z *= q[j];
                 pattern >>= 1u;
+            }
+            if(singleton[i]) {
+                fprintf(stderr," %lf\n", z);
             }
             if(!isfinite(z)) {
                 fprintf(stderr, "%s:%d nonfinite z=%lf\n",
