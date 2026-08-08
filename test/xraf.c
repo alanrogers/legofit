@@ -49,6 +49,9 @@ const char *tstInput[7] = {
 
     // 6: Bad genotype
     "chr1" TAB "1" TAB "a" TAB "t" TAB "0/0" TAB "0/a" "\n",
+
+    // 7: Missing genotypes
+    "chr1" TAB "1" TAB "a" TAB "t""\n",
 };
 
 // Write the dataset indexed by `idata` to disk, process it with
