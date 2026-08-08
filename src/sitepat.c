@@ -581,6 +581,9 @@ int main(int argc, char **argv) {
             bootreps > 0 ? "2nd" : "single");
     int         chrndx = -1, currChr = INT_MAX;
     RAFReader_clearChromosomes(n, r);
+    if(doSing) {
+        RAFReader_printHdr(stderr);
+    }
     done=0;
     while( !done ) {
         status = RAFReader_multiNext(n, r);
@@ -669,8 +672,9 @@ int main(int argc, char **argv) {
                     z *= q[j];
                 pattern >>= 1u;
             }
-            if(singleton[i]) {
-                fprintf(stderr," %lf\n", z);
+            if(singleton[i] && z >= 0.5) {
+                fprintf(stderr, "singleton z=%lf > 0.5\n", z);
+                RAFReader_printArray(n, r, stderr);
             }
             if(!isfinite(z)) {
                 fprintf(stderr, "%s:%d nonfinite z=%lf\n",
