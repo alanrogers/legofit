@@ -576,14 +576,16 @@ int main(int argc, char **argv) {
     unsigned long nsites = 0, nfixed=0, nbadaa = 0, nbadref=0, nmultalt=0;
     long        snpndx = -1;
 
-    // Iterate through raf files
-    fprintf(stderr, "Doing %s pass through data to tabulate patterns..\n",
-            bootreps > 0 ? "2nd" : "single");
-    int         chrndx = -1, currChr = INT_MAX;
     RAFReader_clearChromosomes(n, r);
     if(doSing) {
         RAFReader_printHdr(stderr);
     }
+    tipId_t d_tid = LblNdx_getTipId(&lndx, "d");
+
+    // Iterate through raf files
+    fprintf(stderr, "Doing %s pass through data to tabulate patterns..\n",
+            bootreps > 0 ? "2nd" : "single");
+    int         chrndx = -1, currChr = INT_MAX;
     done=0;
     while( !done ) {
         status = RAFReader_multiNext(n, r);
@@ -672,8 +674,8 @@ int main(int argc, char **argv) {
                     z *= q[j];
                 pattern >>= 1u;
             }
-            if(singleton[i] && z >= 0.5) {
-                fprintf(stderr, "singleton z=%lf > 0.5\n", z);
+            if(d_tid == pattern && z >= 0.5) {
+                fprintf(stderr, "d: z=%lf > 0.5\n", z);
                 RAFReader_printArray(n, r, stderr);
             }
             if(!isfinite(z)) {
