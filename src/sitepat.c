@@ -674,7 +674,7 @@ int main(int argc, char **argv) {
                     z *= q[j];
                 pattern >>= 1u;
             }
-            if(d_tid == pattern && z >= 0.5) {
+            if(d_tid == pat[i] && z >= 0.5) {
                 fprintf(stderr, "d: z=%lf > 0.5\n", z);
                 RAFReader_printArray(n, r, stderr);
             }
