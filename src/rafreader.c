@@ -450,8 +450,8 @@ void RAFReader_print(RAFReader * r, FILE * fp) {
                 __FILE__, __func__, __LINE__);
         exit(EXIT_FAILURE);
     }
-    fprintf(fp, "%30s %5s %10lu %3s %3s %8.6lg %8.6lg\n",
-            strltrunc(buff, 30), r->chr, r->nucpos, r->ref, r->alt, r->raf,
+    fprintf(fp, "%25s %5s %10lu %3s %3s %8.6lg %8.6lg\n",
+            strltrunc(buff, 25), r->chr, r->nucpos, r->ref, r->alt, r->raf,
             r->daf);
 }
 
