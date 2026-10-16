@@ -110,6 +110,10 @@ Rational Rational_inv(Rational x) {
     long y = x.num;
     x.num = x.den;
     x.den = y;
+    if(x.den < 0) {
+        x.num = -x.num;
+        x.den = -x.den;
+    }
     return x;
 }
 
