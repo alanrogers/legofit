@@ -30,6 +30,7 @@ int main(void) {
     int verbose=0;
     Rational x = Rational_set(105, 140);
     Rational y = Rational_set(18,91);
+    Rational neg = Rational_set(123, -456); // -41 / 152
 
     long euclid = gcd_euclid(105, 140);
     long lame = gcd(105, 140);
@@ -37,11 +38,15 @@ int main(void) {
     assert(euclid == lame);
     assert(Rational_eq(x, Rational_set(3,4)));
     assert(Rational_eq(y, Rational_set(36,182)));
+    assert(Rational_eq(neg, Rational_set(-41, 152)));
+    assert(Rational_eq(Rational_inv(neg), Rational_set(-152, 41)));
     if(verbose) {
         printf("x=");
         Rational_pr(x, stdout);
         printf(", y=");
         Rational_pr(y, stdout);
+        printf(", neg=");
+        Rational_pr(neg, stdout);
         putchar('\n');
     }
 
@@ -83,10 +88,10 @@ int main(void) {
         Rational_pr(z, stdout);
         putchar('\n');
     }
-    assert(Rational_eq(z, Rational_set(-201,364)));
 
     assert(Rational_eq(Rational_neg(z), Rational_set(201, 364)));
     assert(Rational_eq(Rational_inv(x), Rational_set(4,3)));
+    assert(Rational_eq(Rational_inv(neg), Rational_set(-152, 41)));
 
     x = Rational_set(LONG_MAX, LONG_MAX);
     assert(Rational_eq(x, Rational_unity));

@@ -10,6 +10,16 @@ Compile with
 
     -fsanitize=undefined,integer -fno-sanitize-recover=undefined,integer
 
+These functions do not allocate or free. Rational numbers can be
+created like this:
+
+    Rational x = Rational_set(18, 91);
+
+Here, the left side allocates a new Rational. The right side creates a
+new Rational, whose value is copied into the one on the left. In
+general, these functions return values, which should be assigned to
+pre-existing Rational variables.    
+
 @copyright Copyright (c) 2016, Alan R. Rogers
 <rogers@anthro.utah.edu>. This file is released under the Internet
 Systems Consortium License, which can be found in file "LICENSE".
